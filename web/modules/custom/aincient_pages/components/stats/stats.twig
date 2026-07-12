@@ -1,0 +1,19 @@
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('muted')] %}
+
+<section class="{{ tone_class }}">
+  <div class="mx-auto max-w-7xl px-6 py-14">
+    <dl class="flex flex-wrap justify-center gap-x-16 gap-y-10 text-center">
+      {% for item in items %}
+        <div class="min-w-[8rem]">
+          <dt class="font-display text-4xl sm:text-5xl [font-weight:var(--stats-value-weight)] tracking-[var(--stats-value-tracking)]">{{ item.value }}</dt>
+          <dd class="mt-2 text-sm font-medium uppercase tracking-wider opacity-70">{{ item.label }}</dd>
+        </div>
+      {% endfor %}
+    </dl>
+  </div>
+</section>

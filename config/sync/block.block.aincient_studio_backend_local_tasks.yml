@@ -1,0 +1,22 @@
+uuid: 867e0e42-b2ed-481c-8974-24544e5b1c0d
+langcode: en
+status: true
+dependencies:
+  theme:
+    - aincient_studio_backend
+_core:
+  default_config_hash: IsTWTFQrnSlIM8pFU9rkE5ku8I151AVuYMtgW9kYl48
+id: aincient_studio_backend_local_tasks
+theme: aincient_studio_backend
+region: content
+weight: -10
+provider: null
+plugin: local_tasks_block
+settings:
+  id: local_tasks_block
+  label: Tabs
+  label_display: '0'
+  provider: core
+  primary: true
+  secondary: true
+visibility: {  }

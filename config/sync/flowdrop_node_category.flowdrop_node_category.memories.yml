@@ -1,0 +1,12 @@
+uuid: f2a92798-37ec-4852-9e5b-93a0e67eebae
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: RmKgyeFvvV2BI_cSVfkCk1b3NRKVzLCpCS96K2DUlfk
+id: memories
+enabled: true
+label: Memories
+description: 'Give your AI workflows memory by storing and recalling conversation history, context, and important information across interactions.'
+icon: 'mdi:chip'
+color: '#3b82f6'

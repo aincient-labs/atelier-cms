@@ -1,0 +1,30 @@
+uuid: a1c2e3f4-5b6d-4e8f-9a0b-1c2d3e4f5a6b
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_find_reference
+label: 'Capability: Find reference'
+description: 'Find REAL existing content to reference in a page, returned as a text TOKEN you put straight into a prop. A `media:<id>` token goes in an image / avatar / cover prop; an `entity:node:<id>` token goes in an embed section''s `entity` (append @teaser/@full for a view mode); a `block:<id>` token goes in a block section''s `ref`. Pass "query" to filter and optional "types" (CSV of: media, node, block) to narrow. ALWAYS prefer a media token to a raw image URL. If nothing fits, tell the user to upload the image or author the block in the page studio — do not invent a token.'
+category: processing
+icon: 'mdi:cog'
+plugin_version: 1.0.0
+enabled: true
+parameters: {  }
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:find_reference'
+visual_type: tool
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true

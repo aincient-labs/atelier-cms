@@ -1,0 +1,50 @@
+# Schema for the aincient_policy config entity (Phase 3, DECISIONS 0134).
+aincient_audit.policy.*:
+  type: config_entity
+  label: 'Policy'
+  mapping:
+    id:
+      type: machine_name
+      label: 'ID'
+    label:
+      type: label
+      label: 'Label'
+    weight:
+      type: integer
+      label: 'Weight'
+    workflow:
+      type: string
+      label: 'Workflow'
+    kind:
+      type: string
+      label: 'Execution mode'
+    enforcement:
+      type: string
+      label: 'Enforcement'
+    selector:
+      type: mapping
+      label: 'Selector'
+      mapping:
+        bundles:
+          type: sequence
+          label: 'Bundles'
+          sequence:
+            type: string
+        moderation_states:
+          type: sequence
+          label: 'Moderation states'
+          sequence:
+            type: string
+        langcodes:
+          type: sequence
+          label: 'Languages'
+          sequence:
+            type: string
+    parameters:
+      type: sequence
+      label: 'Parameters'
+      # v1 knobs are all integer thresholds (title_min/max, description_min/max).
+      # Phase 4 adds per-parameter metadata + typing when the studio generates
+      # controls; revisit the element type then if a non-integer knob appears.
+      sequence:
+        type: integer

@@ -1,0 +1,23 @@
+name: Embed
+status: experimental
+group: 'AIncient Sections'
+description: 'Surfaces an existing Drupal entity (a page, article, media item) rendered in a chosen view mode. The rendered entity is supplied as the "body" slot; the props frame it with the shared tone/heading band.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+    eyebrow:
+      type: string
+      description: 'Short kicker line above the heading.'
+    heading:
+      type: string
+      description: 'Optional section heading above the embedded content.'
+    subheading:
+      type: string
+      description: 'Supporting line under the heading.'
+slots:
+  body:
+    title: 'Embedded entity'
+    description: 'The render array of the resolved entity (set by the renderer).'

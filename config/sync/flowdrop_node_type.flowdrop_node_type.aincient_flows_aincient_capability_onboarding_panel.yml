@@ -1,0 +1,29 @@
+uuid: fe8502af-2d1a-4fb7-82ae-7eb5a8ccbc24
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_onboarding_panel
+label: 'Capability: Connect AI (onboarding)'
+description: 'Show the first-run "connect AI" panel in the chat: a field to paste an Anthropic API key, a chat-model picker, and a Connect button that validates and stores the key. Call this when AI is not yet configured on the site. Takes no arguments — it renders the panel.'
+category: processing
+icon: 'mdi:cog'
+plugin_version: 1.0.0
+enabled: true
+parameters: {  }
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:onboarding_panel'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

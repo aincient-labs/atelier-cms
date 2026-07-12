@@ -1,0 +1,30 @@
+name: Hero
+status: experimental
+group: 'AIncient Landing'
+description: 'Top-of-page hero. The agent picks a variant + tone; copy is free.'
+props:
+  type: object
+  properties:
+    variant:
+      type: string
+      enum: [centered, split]
+      default: centered
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    cta_label: { type: string }
+    cta_url: { type: string }
+    secondary_label: { type: string }
+    secondary_url: { type: string }
+slots:
+  # The hero image, supplied by the renderer as a Rift responsive <picture>
+  # render array (view mode "hero", 4x3) resolved from the page-schema's
+  # `image` media token — NOT authored as a prop. Alt rides inside the picture
+  # (sourced from the Media entity). See PageSpikeController::component().
+  image:
+    title: 'Hero image'
+    description: 'Responsive <picture> built by the renderer from the image media token.'

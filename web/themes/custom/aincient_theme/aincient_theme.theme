@@ -1,0 +1,239 @@
+<?php
+
+/**
+ * @file
+ * AIncient front-end theme: brand the document + wrap every page in the site
+ * chrome (header/footer) and brand design tokens.
+ *
+ * The chrome and tokens are owned by the aincient_pages module (the
+ * `aincient_pages.chrome` service), so the generated full-bleed pages
+ * (/page/{id}) and every themed Drupal page share ONE source of truth and stay
+ * visually consistent.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Component\Utility\Html;
+use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\node\NodeInterface;
+
+/**
+ * The auth routes that share the chrome-less, centred auth template.
+ */
+const AINCIENT_THEME_AUTH_ROUTES = ['user.login', 'user.register', 'user.pass'];
+
+/**
+ * Implements hook_theme_suggestions_page_alter().
+ *
+ * Route every auth surface (login / password reset / register) to the ONE
+ * shared page--auth template, so they render an identical chrome-less card
+ * instead of each falling back to the full-chrome page.html.twig (which also
+ * carries the local-task tabs we deliberately drop on auth pages).
+ */
+function aincient_theme_theme_suggestions_page_alter(array &$suggestions, array $variables): void {
+  if (in_array(\Drupal::routeMatch()->getRouteName(), AINCIENT_THEME_AUTH_ROUTES, TRUE)) {
+    $suggestions[] = 'page__auth';
+  }
+}
+
+/**
+ * Implements hook_preprocess_html().
+ *
+ * Inject the brand CSS-var override into the document head and brand the body.
+ */
+function aincient_theme_preprocess_html(array &$variables): void {
+  // Brand the <body> with the token-driven base utilities.
+  foreach (['min-h-screen', 'bg-background', 'text-foreground', 'font-sans', 'antialiased'] as $class) {
+    $variables['attributes']['class'][] = $class;
+  }
+
+  // The auth screens run their own centred, chrome-less layout (page--auth)
+  // with their own heading — flag the body so CSS can hide Drupal's default
+  // left-aligned page-title block there.
+  if (in_array(\Drupal::routeMatch()->getRouteName(), AINCIENT_THEME_AUTH_ROUTES, TRUE)) {
+    $variables['attributes']['class'][] = 'ain-auth';
+  }
+
+  if (!\Drupal::hasService('aincient_pages.chrome')) {
+    return;
+  }
+  // The always-on, self-hosted monochrome emoji font (DECISIONS 0058) — served
+  // from our own origin, so the one font the visitor can't opt out of leaks no
+  // IP to Google. The font_sans/font_display stacks fall back to it for emoji.
+  $variables['#attached']['library'][] = 'aincient_pages/emoji-font';
+  // Load the brand's web fonts per the operator's delivery choice:
+  //  - self-host → a plain <link> to the woff2 we vendored to our own origin;
+  //  - Google    → a CONSENT-GATED <link> (media="not all" so it does NOT fetch
+  //                until consent.js flips it — privacy by default);
+  //  - none      → nothing (the system-font stack carries the page).
+  $brand = \Drupal::service('aincient_pages.brand');
+  $webFont = $brand->webFont();
+  if ($webFont['mode'] === 'selfhost') {
+    $variables['#attached']['html_head'][] = [
+      ['#tag' => 'link', '#attributes' => ['rel' => 'stylesheet', 'href' => $webFont['href']]],
+      'aincient_fonts',
+    ];
+  }
+  elseif ($webFont['mode'] === 'google') {
+    // No href — a link with no href can't fetch (media="not all" still gets
+    // downloaded at low priority by Blink, which would leak the IP). The URL
+    // rides in data-href; consent.js sets href to fetch it once consent is given.
+    $variables['#attached']['html_head'][] = [
+      ['#tag' => 'link', '#attributes' => [
+        'rel' => 'stylesheet',
+        'data-href' => $webFont['href'],
+        'data-consent' => 'fonts',
+      ]],
+      'aincient_fonts',
+    ];
+  }
+  // The GDPR consent banner — attached ONLY when something third-party is
+  // actually active (today: Google-delivered fonts), so a self-hosted site shows
+  // no banner. The front-end reads its categories from a JSON <script>.
+  $consent = \Drupal::service('aincient_pages.consent');
+  if ($consent->isActive()) {
+    $variables['#attached']['library'][] = 'aincient_pages/consent';
+    $variables['#attached']['html_head'][] = [
+      [
+        '#tag' => 'script',
+        '#attributes' => ['type' => 'application/json', 'id' => 'aincient-consent-config'],
+        '#value' => $consent->configJson(),
+      ],
+      'aincient_consent_config',
+    ];
+  }
+  $style = \Drupal::service('aincient_pages.chrome')->brandStyle();
+  if ($style !== '') {
+    // Scoped to `html:root` so it always beats the stylesheet's preset :root
+    // block regardless of <head> ordering. Re-skins the whole site live.
+    $variables['#attached']['html_head'][] = [
+      ['#tag' => 'style', '#value' => $style],
+      'aincient_brand_tokens',
+    ];
+  }
+  // The chrome reflects brand config + the main/footer menus — invalidate with
+  // them so an edited brand or menu reskins/relinks cached pages.
+  CacheableMetadata::createFromRenderArray($variables)
+    ->addCacheTags(['config:aincient_pages.brand', 'config:system.menu.main', 'config:system.menu.footer'])
+    ->applyTo($variables);
+}
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * Build the brand header + footer (the site chrome) for the page template.
+ */
+function aincient_theme_preprocess_page(array &$variables): void {
+  if (!\Drupal::hasService('aincient_pages.chrome')) {
+    return;
+  }
+  $chrome = \Drupal::service('aincient_pages.chrome');
+  $variables['site_header'] = [
+    '#type' => 'component',
+    '#component' => 'aincient_pages:site-header',
+    '#props' => $chrome->headerProps(),
+  ];
+  $variables['site_footer'] = [
+    '#type' => 'component',
+    '#component' => 'aincient_pages:site-footer',
+    '#props' => $chrome->footerProps(),
+  ];
+
+  // Auth pages (login/register/reset) render through a chrome-less, centered
+  // page template (page--auth.html.twig) — give it the brand wordmark and an
+  // explicit status-messages render (the centred layout prints no region that
+  // would otherwise carry them, e.g. a failed-login error). Each route gets its
+  // own heading plus ONE plain cross-link (replacing the local-task tabs) so a
+  // visitor can move between sign-in and reset.
+  $route = \Drupal::routeMatch()->getRouteName();
+  if (in_array($route, AINCIENT_THEME_AUTH_ROUTES, TRUE)) {
+    $identity = \Drupal::service('aincient_pages.site_identity');
+    // Per-route heading + the single cross-link to the counterpart surface.
+    $copy = [
+      'user.login' => [
+        'heading' => t('Sign in'),
+        'alt' => ['label' => t('Forgot your password?'), 'url' => '/user/password'],
+      ],
+      'user.pass' => [
+        'heading' => t('Reset your password'),
+        'alt' => ['label' => t('Back to sign in'), 'url' => '/user/login'],
+      ],
+      'user.register' => [
+        'heading' => t('Create your account'),
+        'alt' => ['label' => t('Back to sign in'), 'url' => '/user/login'],
+      ],
+    ][$route];
+    $variables['ain_auth'] = [
+      'name' => $identity->name() ?: \Drupal::config('system.site')->get('name'),
+      'tagline' => $identity->tagline(),
+      'logo_url' => $identity->logoUrl(),
+      'messages' => ['#type' => 'status_messages'],
+      'heading' => $copy['heading'],
+      'alt' => $copy['alt'],
+    ];
+  }
+}
+
+/**
+ * Implements hook_preprocess_node().
+ *
+ * Build clean, plain-string meta (author + date) for every node, plus the full
+ * teaser prop bag, so node templates render through the token-driven
+ * aincient_pages:article-teaser SDC (listings) and the shared prose styles
+ * (full view) — consistent with the page builder. Computing strings here keeps
+ * the templates free of field/entity plumbing.
+ */
+function aincient_theme_preprocess_node(array &$variables): void {
+  $node = $variables['node'] ?? NULL;
+  if (!$node instanceof NodeInterface) {
+    return;
+  }
+
+  $owner = $node->getOwner();
+  $variables['ain_meta'] = [
+    'author' => $owner ? $owner->getDisplayName() : '',
+    'date' => \Drupal::service('date.formatter')
+      ->format($node->getCreatedTime(), 'custom', 'M j, Y'),
+  ];
+
+  if (($variables['view_mode'] ?? '') === 'teaser') {
+    // Prefer the dedicated teaser fields (aincient_page's PRESENCE block — how
+    // the page shows up when referenced as a card). Fall back to the node label
+    // and, for body-bearing bundles, a trimmed body summary — aincient_page has
+    // NO body field, so its card comes entirely from the teaser fields.
+    $teaserTitle = $node->hasField('field_teaser_title') && !$node->get('field_teaser_title')->isEmpty()
+      ? trim((string) $node->get('field_teaser_title')->value)
+      : $node->label();
+
+    $summary = '';
+    if ($node->hasField('field_teaser_description') && !$node->get('field_teaser_description')->isEmpty()) {
+      $summary = trim((string) $node->get('field_teaser_description')->value);
+    }
+    elseif ($node->hasField('body') && !$node->get('body')->isEmpty()) {
+      $body = $node->get('body')->first();
+      $raw = (string) (!empty($body->summary) ? $body->summary : $body->value);
+      $summary = trim(mb_strimwidth(Html::decodeEntities(strip_tags($raw)), 0, 220, '…'));
+    }
+
+    // The teaser image is a media:<id> token — resolve it to a URL (16:9 style)
+    // through the same seam every other schema image uses.
+    $image = '';
+    $imageAlt = '';
+    if ($node->hasField('field_teaser_image') && !$node->get('field_teaser_image')->isEmpty()) {
+      $token = trim((string) $node->get('field_teaser_image')->value);
+      if ($token !== '') {
+        $resolver = \Drupal::service('aincient_pages.embed_resolver');
+        $image = (string) ($resolver->url($token, '640w360h') ?? '');
+        $imageAlt = (string) ($resolver->alt($token) ?? '');
+      }
+    }
+
+    $variables['teaser'] = [
+      'title' => $teaserTitle,
+      'url' => $node->toUrl()->toString(),
+      'summary' => $summary,
+      'image' => $image,
+      'image_alt' => $imageAlt,
+    ] + $variables['ain_meta'];
+  }
+}

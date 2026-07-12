@@ -1,0 +1,42 @@
+uuid: 55adae80-0300-444c-8493-baba5698a078
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_propose_brand_status
+label: 'Capability: Propose brand status'
+description: 'PROPOSE a change to the brand design-intent status (stage + lock). Does NOT persist — it shows the user a confirm/decline card; only they can apply it. Use when the working mode should shift (guided when honouring supplied inputs; polish/locked when the brand is settling).'
+category: tools
+icon: 'mdi:cog'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  locked:
+    configurable: false
+    connectable: true
+    required: false
+  rationale:
+    configurable: false
+    connectable: true
+    required: false
+  stage:
+    configurable: false
+    connectable: true
+    required: true
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:propose_brand_status'
+visual_type: tool
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

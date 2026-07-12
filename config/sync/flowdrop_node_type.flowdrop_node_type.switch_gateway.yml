@@ -1,0 +1,42 @@
+uuid: c6af7733-6d0a-4a4d-b7af-65a340e53fd9
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: DAJzLDS0Tnat7mm5LgZsKka5x_wae6KauS8I12Pk1Ws
+id: switch_gateway
+label: 'Switch Gateway'
+description: 'A selection control flow mechanism that changes execution control based on the value of an expression.'
+category: logic
+icon: 'mdi:source-fork'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  branches:
+    configurable: true
+    connectable: false
+    required: false
+    default:
+      -
+        name: Default
+        value: default
+  default_branch:
+    configurable: true
+    connectable: false
+    required: false
+    default: default
+  expression:
+    configurable: false
+    connectable: true
+    required: false
+outputs: {  }
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:switch_gateway'
+visual_type: gateway
+supported_visual_types:
+  - gateway
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

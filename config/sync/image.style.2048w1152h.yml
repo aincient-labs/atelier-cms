@@ -1,0 +1,18 @@
+uuid: f8c3f27e-8695-4468-b459-38d559eb2644
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 2048w1152h
+label: 2048w1152h
+effects:
+  c641614d-63a5-4135-876a-e5fb3a3e8798:
+    uuid: c641614d-63a5-4135-876a-e5fb3a3e8798
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 2048
+      height: 1152
+      crop_type: focal_point
+      upscale: false

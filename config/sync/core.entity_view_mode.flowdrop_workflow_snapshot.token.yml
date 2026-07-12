@@ -1,0 +1,11 @@
+uuid: 363af049-4c31-4a4b-a060-7546bd9d16fc
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_runtime
+id: flowdrop_workflow_snapshot.token
+label: Token
+description: null
+targetEntityType: flowdrop_workflow_snapshot
+cache: true

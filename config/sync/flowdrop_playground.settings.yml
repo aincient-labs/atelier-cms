@@ -1,0 +1,6 @@
+_core:
+  default_config_hash: 4vIq9e6aUTighuH_7HpgDI-Qigd2qGKyLcPwzPg7PQQ
+default_session_timeout: 3600
+max_sessions_per_workflow: 10
+message_retention_days: 30
+auto_run: true

@@ -1,0 +1,41 @@
+{#
+/**
+ * @file
+ * Article Teaser — a listing card built from brand design tokens.
+ *
+ * Colours (bg-card/border-border/text-primary-on-surface), radius (rounded-2xl →
+ * --radius-2xl), shadow (shadow-sm → --shadow-sm) and the display font all
+ * resolve to tokens, so editing the brand reskins every teaser with no rebuild
+ * — the same system the page builder uses.
+ */
+#}
+<article class="group flex flex-col overflow-hidden border bg-card text-card-foreground transition rounded-[var(--card-radius)] border-[color:var(--card-border)] shadow-[var(--card-shadow)] hover:border-[color:var(--primary)] hover:shadow-[var(--shadow-md)]">
+  {% if image %}
+    <a href="{{ url }}" class="block aspect-[16/9] overflow-hidden bg-muted" tabindex="-1" aria-hidden="true">
+      <img src="{{ image }}" alt="{{ image_alt }}" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+    </a>
+  {% endif %}
+  <div class="flex flex-col p-6 sm:p-7">
+  {% if author or date %}
+    <div class="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      {% if author %}<span class="font-medium">{{ author }}</span>{% endif %}
+      {% if author and date %}<span aria-hidden="true">&middot;</span>{% endif %}
+      {% if date %}<time>{{ date }}</time>{% endif %}
+    </div>
+  {% endif %}
+
+  <h2 class="font-display text-2xl [font-weight:var(--heading-weight)] leading-snug tracking-tight">
+    <a href="{{ url }}" class="text-foreground no-underline transition group-hover:text-primary-on-surface">{{ title }}</a>
+  </h2>
+
+  {% if summary %}
+    <p class="mt-3 leading-relaxed opacity-70">{{ summary }}</p>
+  {% endif %}
+
+  {% if more_url %}
+    <a href="{{ more_url }}" class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-on-surface no-underline hover:underline">
+      {{ more_label|default('Read more') }}<span aria-hidden="true">&rarr;</span>
+    </a>
+  {% endif %}
+  </div>
+</article>

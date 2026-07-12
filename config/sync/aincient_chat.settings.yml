@@ -1,0 +1,56 @@
+features:
+  checks_enabled: false
+default_studio: general
+studios:
+  general:
+    agents:
+      - aincient_operator_agent_loop
+    default: aincient_operator_agent_loop
+  design_system:
+    agents:
+      - brand_studio_rice
+    default: brand_studio_rice
+  globals:
+    agents:
+      - aincient_chrome_agent
+    default: aincient_chrome_agent
+  content:
+    agents:
+      - aincient_pages_agent
+    default: aincient_pages_agent
+  media:
+    agents:
+      - aincient_image_agent
+    default: aincient_image_agent
+  checks:
+    agents:
+      - aincient_audit_agent
+    default: aincient_audit_agent
+workflow_metadata:
+  aincient_operator_agent_loop:
+    welcome: 'Welcome to your studio'
+    description: 'I will show you around and point you to the right room — say it in plain words.'
+    sample_asks:
+      - 'Show me around my new site'
+      - 'Where do I change the colours and fonts?'
+      - 'Build a landing page for our spring launch'
+  brand_studio_rice:
+    welcome: 'Let’s design your brand'
+    description: 'Describe the look and feel you want — colours, type, mood — and I’ll preview it live in the studio.'
+    freeform_only: true
+  aincient_chrome_agent:
+    welcome: 'Let’s shape your header & footer'
+    description: 'Tell me how the site’s header, footer, and identity should look.'
+    freeform_only: true
+  aincient_image_agent:
+    welcome: 'Let’s make an image'
+    description: 'Describe the image you want, or ask me to edit the one you’re viewing — I’ll generate it and save it to your Library.'
+    freeform_only: true
+  aincient_pages_agent:
+    welcome: 'Let’s build your page'
+    description: 'Tell me what the page is for — I’ll compose it section by section in the live studio to refine and publish.'
+    freeform_only: true
+  aincient_audit_agent:
+    welcome: 'Let’s check a page'
+    description: 'Pick a page and I’ll audit its SEO, meta tags, and internal links — I only report findings, I never change anything.'
+    freeform_only: true

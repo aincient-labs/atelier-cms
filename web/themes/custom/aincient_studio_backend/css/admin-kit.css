@@ -1,0 +1,641 @@
+/**
+ * Studio Backend — the Atelier admin kit.
+ *
+ * Styles CORE's markup (Stark base = a near-blank slate) to the Atelier cut,
+ * so raw Drupal furniture — tabs, action links, forms, tables, messages —
+ * reads as the console's kit. Every recipe is a port of the console
+ * implementation (chat-ui/src/styles.css): buttons = the .ain-topbtn voices,
+ * inputs = .ain-field__input, tabs = .ain-globals__tab, chips =
+ * .ain-audit__count. Tokens come from studio-backend.css :root (mirrored from
+ * the console) — this file never invents a colour.
+ *
+ * The laws that bind here (docs/brand.md §10): one cinnabar per screen — the
+ * primary action + the active state, nothing else; state is a whisper (tints,
+ * never fills); light falls, nothing glows (soft diffuse shadow, tint focus
+ * ring); one radius family — 4 chips / 7 controls / 10 cards / 14 panels;
+ * buttons advance (lift off the paper), inputs recede (pressed into it).
+ */
+
+/* ============================================================ local tasks === */
+/* Primary tabs = the console's flat segmented row: borderless links, the
+   active one takes the 2px cinnabar underline (the screen's active-state
+   accent). Markup classes come from the theme's menu-local-tasks override. */
+
+.sb-content .tabs {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border-bottom: 1px solid var(--ain-border);
+}
+.sb-content .tabs li { margin: 0; }
+.sb-content .tabs a {
+  display: block;
+  padding: 0.5rem 0.875rem;
+  margin-bottom: -1px;
+  color: var(--ain-text-dim) !important;
+  border-bottom: 2px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.sb-content .tabs a:hover { color: var(--ain-text) !important; text-decoration: none; }
+.sb-content .tabs a.is-active,
+.sb-content .tabs li.is-active a {
+  color: var(--ain-text) !important;
+  border-bottom-color: var(--ain-accent);
+}
+/* Secondary tabs are quiet — smaller, no rule of their own. */
+.sb-content .tabs--secondary { border-bottom: none; margin-top: -1rem; }
+.sb-content .tabs--secondary a { font-size: 0.8125rem; font-weight: 500; }
+
+/* =========================================================== action links === */
+/* "Add user" etc. — the page's one primary lives here (a button is a promise;
+   the wrapping ul comes from the block--local-actions-block override). */
+
+.sb-content .action-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+.sb-content .action-links li { margin: 0; }
+
+/* ================================================================ buttons === */
+/* The .ain-topbtn anatomy: raised paper + hairline + soft diffuse shadow is
+   the secondary default; primary is the ONE cinnabar fill per view; hover
+   stays achromatic (the pigment belongs to primary + active, not to every
+   button the pointer crosses). Press settles 1px into the paper. */
+
+.sb-content .button,
+.sb-content button,
+.sb-content input[type="submit"],
+.sb-content input[type="button"],
+.sb-content input[type="reset"],
+.sb-content .action-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ain-text) !important;
+  background: var(--ain-surface);
+  border: 1px solid var(--ain-border);
+  border-radius: var(--ain-radius);
+  padding: 0.5rem 0.875rem;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+  transition: border-color 0.12s, background 0.12s, box-shadow 0.08s, transform 0.08s;
+}
+.sb-content .button:not(:disabled):hover,
+.sb-content button:not(:disabled):hover,
+.sb-content input[type="submit"]:not(:disabled):hover,
+.sb-content input[type="button"]:not(:disabled):hover {
+  background: var(--ain-surface-2);
+  text-decoration: none;
+}
+.sb-content .button:not(:disabled):active,
+.sb-content button:not(:disabled):active,
+.sb-content input[type="submit"]:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-shadow) 30%, transparent);
+}
+/* Focus = the accent TINT ring — never a glow, never the browser blue. */
+.sb-content .button:focus-visible,
+.sb-content button:focus-visible,
+.sb-content input[type="submit"]:focus-visible,
+.sb-content .action-links a:focus-visible {
+  outline: 3px solid color-mix(in oklch, var(--ain-accent) 30%, transparent);
+  outline-offset: 1px;
+}
+/* Disabled = dimmed in place: same shape, shadow removed (no dry-firing). */
+.sb-content .button:disabled,
+.sb-content button:disabled,
+.sb-content input[type="submit"]:disabled {
+  cursor: default;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+/* Primary — the one filled cinnabar control per view. */
+.sb-content .button--primary,
+.sb-content input[type="submit"].button--primary,
+.sb-content .action-links a {
+  background: var(--ain-accent);
+  border-color: var(--ain-accent);
+  color: var(--ain-on-accent) !important;
+}
+.sb-content .button--primary:not(:disabled):hover,
+.sb-content input[type="submit"].button--primary:not(:disabled):hover,
+.sb-content .action-links a:hover {
+  background: color-mix(in oklch, var(--ain-accent) 90%, var(--ain-text));
+  border-color: color-mix(in oklch, var(--ain-accent) 90%, var(--ain-text));
+  text-decoration: none;
+}
+
+/* A primary-styled LINK sitting INSIDE a form (e.g. ai_metering's "Sync now
+   from LiteLLM", which ships `button button--primary` in its render array) is a
+   secondary ACTION, not the page's one promise — the cinnabar fill belongs to
+   the real submit ("Save configuration"). Demote it to the raised-paper voice
+   so a screen never carries two loud fills (Law 07 "navigation is links"; Law
+   08 "one primary per view"). Scoped to `form` so genuine action links stay
+   the page's one cinnabar. */
+.sb-content form a.button--primary {
+  background: var(--ain-surface);
+  border-color: var(--ain-border);
+  color: var(--ain-text) !important;
+}
+.sb-content form a.button--primary:not(:disabled):hover {
+  background: var(--ain-surface-2);
+  border-color: var(--ain-border);
+}
+
+/* Danger — the brick-FILLED voice is the irreversible SUBMIT only: the actual
+   destructive press (delete/cancel confirm buttons). It must never sit beside
+   the cinnabar primary as a second loud warm fill (Law 01 "one pigment, one
+   place"; Law 08 "one primary per view"). */
+.sb-content input[type="submit"].button--danger,
+.sb-content button.button--danger,
+.sb-content .button.delete {
+  background: var(--ain-danger);
+  border-color: var(--ain-danger);
+  color: var(--ain-on-accent) !important;
+}
+/* Deepen the brick on hover — without this, the generic .button:hover (higher
+   specificity) repaints danger to the pale surface tint, leaving near-white
+   text on a near-white ground. */
+.sb-content input[type="submit"].button--danger:not(:disabled):hover,
+.sb-content button.button--danger:not(:disabled):hover,
+.sb-content .button.delete:not(:disabled):hover {
+  background: color-mix(in oklch, var(--ain-danger) 90%, var(--ain-text));
+  border-color: color-mix(in oklch, var(--ain-danger) 90%, var(--ain-text));
+}
+
+/* A destructive NAVIGATION link (an <a> that routes to a confirm page, e.g.
+   "Cancel account" on the account form) takes the QUIET destructive voice —
+   brick ink on paper, no fill (Law 07 "navigation is links"; Law 08 "every
+   other control takes secondary, quiet, or destructive voice"). The fill is
+   earned only on the confirm step, not by the link that leads there. */
+.sb-content a.button--danger {
+  background: transparent;
+  border-color: color-mix(in oklch, var(--ain-danger) 40%, var(--ain-border));
+  color: var(--ain-danger) !important;
+  box-shadow: none;
+}
+.sb-content a.button--danger:not(:disabled):hover {
+  background: color-mix(in oklch, var(--ain-danger) 8%, var(--ain-surface));
+  border-color: color-mix(in oklch, var(--ain-danger) 55%, var(--ain-border));
+}
+
+.sb-content .button--small { font-size: 0.8125rem; padding: 0.3125rem 0.625rem; }
+
+/* ================================================================== forms === */
+
+.sb-content .form-item { margin-block: 0 1.25rem; }
+
+/* Field labels are the kit's whisper eyebrow: mono, uppercase, dim — and
+   block-level, so the label sits above its control instead of squishing
+   against it. */
+.sb-content .form-item > label,
+.sb-content .fieldset-legend {
+  display: block;
+  font-family: var(--ain-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ain-text-dim);
+  margin: 0 0 6px;
+}
+/* Option labels (radios/checkboxes) are body text, not eyebrows. */
+.sb-content label.option {
+  display: inline;
+  font-family: var(--ain-font);
+  font-size: inherit;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ain-text);
+  margin: 0;
+}
+/* The required marker whispers in ochre (system/base ships an svg star —
+   replace it). */
+.sb-content .form-required::after {
+  content: " *";
+  background: none;
+  color: var(--ain-accent-2);
+}
+.sb-content .description,
+.sb-content .form-item__description {
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+  margin-top: 0.375rem;
+  max-width: 46rem;
+}
+
+/* Inputs recede — raised paper with the hairline + inset shade doing the
+   work (the console's .ain-field__input recipe); focus = tint ring. */
+.sb-content input[type="text"],
+.sb-content input[type="email"],
+.sb-content input[type="password"],
+.sb-content input[type="search"],
+.sb-content input[type="number"],
+.sb-content input[type="url"],
+.sb-content input[type="tel"],
+.sb-content input[type="date"],
+.sb-content input[type="time"],
+.sb-content select,
+.sb-content textarea {
+  font: inherit;
+  color: var(--ain-text);
+  background: var(--ain-surface);
+  border: 1px solid var(--ain-border);
+  border-radius: var(--ain-radius);
+  padding: 0.5rem 0.625rem;
+  max-width: 100%;
+  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-shadow) 8%, transparent);
+  transition: border-color 0.12s, background 0.12s;
+}
+.sb-content textarea { line-height: 1.5; }
+.sb-content input[type="text"]:hover,
+.sb-content input[type="email"]:hover,
+.sb-content input[type="password"]:hover,
+.sb-content input[type="search"]:hover,
+.sb-content select:hover,
+.sb-content textarea:hover { background: var(--ain-surface-2); }
+.sb-content input:focus,
+.sb-content select:focus,
+.sb-content textarea:focus {
+  outline: none;
+  border-color: color-mix(in oklch, var(--ain-accent) 40%, transparent);
+  background: var(--ain-surface);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ain-accent) 10%, transparent);
+}
+.sb-content input.error,
+.sb-content select.error,
+.sb-content textarea.error { border-color: var(--ain-danger); }
+
+/* Selection controls: native geometry, the accent carries the checked state
+   (the console's .ain-field__checkbox approach — no bespoke drawing). */
+.sb-content input[type="checkbox"],
+.sb-content input[type="radio"] {
+  accent-color: var(--ain-accent);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+  box-shadow: none;
+}
+.sb-content .form-type-checkbox,
+.sb-content .form-type-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block: 0 0.5rem;
+}
+.sb-content .form-radios,
+.sb-content .form-checkboxes { display: flex; flex-direction: column; gap: 0.25rem; }
+
+/* Fieldsets (Status / Roles) — a hairline card, the legend as the eyebrow. */
+.sb-content fieldset {
+  min-width: 0;
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  background: var(--ain-surface);
+  padding: 1rem 1.25rem 1.125rem;
+  margin: 0 0 1.25rem;
+}
+/* Render the legend INSIDE the card (by default a legend rides the fieldset
+   border), so the eyebrow sits on the paper like every other field label. */
+.sb-content fieldset legend { float: left; width: 100%; margin-bottom: 0.625rem; }
+.sb-content fieldset legend + * { clear: both; }
+
+/* Details (Language / Locale settings) — the same card, with a summary door. */
+.sb-content details {
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  background: var(--ain-surface);
+  margin: 0 0 1.25rem;
+}
+.sb-content details summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+}
+.sb-content details summary::-webkit-details-marker { display: none; }
+.sb-content details summary::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-right: 1.6px solid var(--ain-text-dim);
+  border-bottom: 1.6px solid var(--ain-text-dim);
+  transform: rotate(-45deg);
+  transition: transform 0.12s;
+}
+.sb-content details[open] > summary::before { transform: rotate(45deg); }
+.sb-content details > .details-wrapper { padding: 0.25rem 1.25rem 1rem; }
+/* Core renders a details body two ways: wrapped in a .details-wrapper (Claro)
+   or as BARE direct children of <details> (e.g. ai_metering's settings form,
+   which builds its panels by hand). Without a wrapper the body items fall to
+   zero padding and hang off the card's left edge + floor — give them the same
+   inset the wrapper carries. */
+.sb-content details > *:not(summary):not(.details-wrapper) { margin-inline: 1.25rem; }
+.sb-content details > *:not(summary):last-child { margin-bottom: 1.25rem; }
+
+/* File widget — the browse control takes the secondary button voice. */
+.sb-content input[type="file"] {
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--ain-text-dim);
+}
+.sb-content input[type="file"]::file-selector-button {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ain-text);
+  background: var(--ain-surface);
+  border: 1px solid var(--ain-border);
+  border-radius: var(--ain-radius);
+  padding: 0.4375rem 0.75rem;
+  margin-right: 0.625rem;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+  transition: background 0.12s;
+}
+.sb-content input[type="file"]::file-selector-button:hover { background: var(--ain-surface-2); }
+.sb-content .form-managed-file { display: flex; align-items: center; flex-wrap: wrap; gap: 0.625rem; }
+
+/* Password meter — a meter may fill (it measures, it doesn't shout); the
+   scale reads in the earth set: brick → ochre → verdigris. */
+.sb-content .password-strength { margin-top: 0.5rem; max-width: 20rem; }
+.sb-content .password-strength__meter {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--ain-surface-2);
+  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-shadow) 8%, transparent);
+  overflow: hidden;
+}
+.sb-content .password-strength__indicator {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--ain-text-faint);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+.sb-content .password-strength__indicator.is-weak { background: var(--ain-danger); }
+.sb-content .password-strength__indicator.is-fair { background: var(--ain-accent-2); }
+.sb-content .password-strength__indicator.is-good,
+.sb-content .password-strength__indicator.is-strong { background: var(--ain-jade); }
+.sb-content .password-strength__title,
+.sb-content .password-confirm-message {
+  font-size: 0.8125rem;
+  color: var(--ain-text-dim);
+  margin-top: 0.25rem;
+}
+.sb-content .password-confirm-message .ok { color: var(--ain-jade); font-weight: 600; }
+.sb-content .password-confirm-message .error { color: var(--ain-danger); font-weight: 600; }
+.sb-content .password-suggestions {
+  font-size: 0.8125rem;
+  color: var(--ain-text-dim);
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  background: var(--ain-surface);
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0 0;
+  max-width: 34rem;
+}
+.sb-content .password-suggestions ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
+
+.sb-content .form-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+.sb-content .container-inline > * { display: inline-block; vertical-align: middle; }
+
+/* ================================================================= tables === */
+/* Incl. Views listings (/admin/users). Paper card, mono eyebrow thead,
+   hairline rows — a list of people should read calm. */
+
+.sb-content table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--ain-surface);
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-block: 0 1.5rem;
+}
+.sb-content thead th {
+  text-align: left;
+  font-family: var(--ain-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ain-text-dim);
+  background: var(--ain-surface-2);
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--ain-border);
+}
+.sb-content thead th a { color: var(--ain-text-dim) !important; }
+.sb-content thead th a:hover { color: var(--ain-text) !important; text-decoration: none; }
+/* Sort indicator — core ships a 16px, baseline-aligned box, which floats the
+   arrow well above the mono whisper label and crowds the text. Scale it to the
+   label, sit it on the text middle, and give it a breath of air. */
+.sb-content .tablesort {
+  width: 0.9em;
+  height: 0.9em;
+  margin-inline-start: 0.4em;
+  vertical-align: -0.1em;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.sb-content tbody td,
+.sb-content tbody th {
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--ain-border);
+  vertical-align: middle;
+}
+.sb-content tbody tr:last-child td { border-bottom: none; }
+.sb-content tbody tr:hover { background: var(--ain-surface-2); }
+/* The sticky-header clone (core/drupal.tableheader). */
+.sb-backend table.sticky-header {
+  background: var(--ain-surface-2);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+}
+/* Lists inside cells (e.g. a user's roles) — inline labels, never bullets.
+   The dropbutton ul keeps its own anatomy. */
+.sb-content td ul:not(.dropbutton) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.sb-content td ul:not(.dropbutton) li { margin: 0; }
+/* A role is a category, not a state — brand-neutral surface fill. */
+.sb-content td[class*="views-field-roles"] li,
+.sb-content td .item-list li {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.3125rem 0.5rem;
+  border-radius: 4px;
+  background: var(--ain-surface-2);
+  color: var(--ain-text);
+}
+
+/* ========================================================== whisper chips === */
+/* State is a whisper: mono tint chips (the console's .ain-audit__count
+   recipe) — never a saturated fill. Used by the Views status field override
+   and anything else that must name a state. */
+
+.sb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--ain-mono);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 4px 7px;
+  border-radius: 4px;
+  color: var(--ain-text-dim);
+  background: color-mix(in oklch, var(--ain-text) 6%, transparent);
+}
+.sb-chip--jade { color: var(--ain-jade); background: color-mix(in oklch, var(--ain-jade) 10%, transparent); }
+.sb-chip--ochre { color: var(--ain-accent-2); background: color-mix(in oklch, var(--ain-accent-2) 12%, transparent); }
+.sb-chip--brick { color: var(--ain-danger); background: color-mix(in oklch, var(--ain-danger) 10%, transparent); }
+
+/* ============================================================= dropbutton === */
+/* Row operations — compact hairline widget, quiet actions (core's
+   drupal.dropbutton library supplies the mechanics). */
+
+.sb-content .dropbutton-widget {
+  border: 1px solid var(--ain-border);
+  border-radius: 4px;
+  background: var(--ain-surface);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+}
+.sb-content ul.dropbutton { list-style: none; margin: 0; padding: 0; }
+.sb-content .dropbutton li { margin: 0; }
+.sb-content .dropbutton a {
+  display: block;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ain-text) !important;
+}
+.sb-content .dropbutton a:hover { background: var(--ain-surface-2); text-decoration: none; }
+.sb-content .dropbutton .dropbutton-toggle button {
+  padding: 0;
+  width: 1.5rem;
+  align-self: stretch;
+  border: none;
+  border-left: 1px solid var(--ain-border);
+  border-radius: 0 3px 3px 0;
+  background: transparent;
+  box-shadow: none;
+}
+.sb-content .dropbutton .dropbutton-arrow { border-top-color: var(--ain-text-dim); }
+
+/* ======================================================== exposed filters === */
+
+.sb-content .views-exposed-form {
+  background: var(--ain-surface);
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.sb-content .views-exposed-form .form--inline,
+.sb-content .views-exposed-form > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+.sb-content .views-exposed-form .form-item,
+.sb-content .views-exposed-form .form-actions { margin: 0; }
+
+/* =============================================================== messages === */
+/* Whisper cards — the tint names the mood, the ink stays ink. Classes come
+   from the theme's status-messages override. */
+
+.sb-backend .messages {
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  background: var(--ain-surface);
+  padding: 0.875rem 1.125rem;
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+}
+.sb-backend .messages--status {
+  border-color: color-mix(in oklch, var(--ain-jade) 35%, var(--ain-border));
+  background: color-mix(in oklch, var(--ain-jade) 8%, var(--ain-surface));
+}
+.sb-backend .messages--warning {
+  border-color: color-mix(in oklch, var(--ain-accent-2) 40%, var(--ain-border));
+  background: color-mix(in oklch, var(--ain-accent-2) 10%, var(--ain-surface));
+}
+.sb-backend .messages--error {
+  border-color: color-mix(in oklch, var(--ain-danger) 35%, var(--ain-border));
+  background: color-mix(in oklch, var(--ain-danger) 8%, var(--ain-surface));
+}
+.sb-backend .messages ul { margin: 0; padding-left: 1.1rem; }
+.sb-backend .messages a { font-weight: 600; }
+
+/* ================================================================== pager === */
+
+.sb-content .pager__items {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0;
+  justify-content: center;
+}
+.sb-content .pager__item a,
+.sb-content .pager__item.is-active {
+  display: inline-block;
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--ain-radius);
+  border: 1px solid var(--ain-border);
+}
+.sb-content .pager__item.is-active { background: var(--ain-surface-2); font-weight: 600; }
+
+/* ================================================================ dialogs === */
+/* Modal panels take the 14px radius; the overlay is a shadow tint, never a
+   blur or a glow. */
+
+.sb-backend .ui-dialog {
+  border: 1px solid var(--ain-border);
+  border-radius: 14px;
+  background: var(--ain-surface);
+  box-shadow: 0 18px 50px -20px var(--ain-shadow);
+  padding: 0;
+  overflow: hidden;
+}
+.sb-backend .ui-dialog .ui-dialog-titlebar {
+  background: var(--ain-surface-2);
+  border-bottom: 1px solid var(--ain-border);
+  font-family: var(--ain-font-display);
+  font-weight: 600;
+  padding: 0.75rem 1.25rem;
+}
+.sb-backend .ui-dialog .ui-dialog-content { padding: 1rem 1.25rem; }
+.sb-backend .ui-widget-overlay {
+  background: color-mix(in oklch, var(--ain-shadow) 40%, transparent);
+  opacity: 1;
+}

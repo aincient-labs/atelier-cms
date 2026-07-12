@@ -1,0 +1,30 @@
+uuid: 92face12-c3f9-4c3d-9777-53c86cd49b24
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_brand_picker
+label: 'Capability: Quick brand picker'
+description: 'Show the user an interactive quick brand picker in the chat: pick a primary and accent colour from a swatch grid, or apply a starting preset (SaaS / Playful / Editorial). Picks apply to the whole site immediately. Call this when the user wants to choose or tweak the main brand colours, or asks to "show me brand options" / "let me pick a colour". Takes no arguments — it renders the picker.'
+category: tools
+icon: 'mdi:palette-swatch-variant'
+plugin_version: 1.0.0
+enabled: true
+parameters: {  }
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:brand_picker'
+visual_type: tool
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

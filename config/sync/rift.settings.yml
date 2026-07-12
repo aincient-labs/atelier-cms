@@ -1,0 +1,74 @@
+_core:
+  default_config_hash: qJthA5N7mYXqbaMzjjJhyfYqlNI5F0CtYi0KMfHEqXo
+media_source: multiple_image
+source: combined_image_style
+aspect_ratios:
+  - 4x3
+  - 16x9
+  - 2x1
+  - 1x1
+config:
+  screens:
+    xs:
+      width: 320
+      media: '(max-width: 320px)'
+    sm:
+      width: 480
+      media: '(max-width: 480px)'
+    md:
+      width: 640
+      media: '(max-width: 640px)'
+    lg:
+      width: 1024
+      media: '(max-width: 1024px)'
+    xl:
+      width: 1280
+      media: '(max-width: 1280px)'
+  transforms: ''
+  multipliers:
+    - 1x
+    - 2x
+  quality:
+    1x: 80
+    2x: 70
+  formats:
+    - webp
+  attributes:
+    loading: lazy
+    preload: ''
+  fallback_transform: 1280w960h-webp-80
+view_modes:
+  hero:
+    label: 'Hero (4x3)'
+    sizes: 'xs:100vw sm:100vw md:100vw lg:100vw xl:100vw'
+    aspect_ratios: '4x3 4x3 4x3 4x3 4x3'
+    attributes:
+      loading: eager
+    fallback_transform: 1280w960h-webp-80
+  cover:
+    label: 'Article cover (2x1)'
+    sizes: 'xs:100vw sm:100vw md:100vw lg:100vw xl:100vw'
+    aspect_ratios: '2x1 2x1 2x1 2x1 2x1'
+    attributes:
+      loading: eager
+    fallback_transform: 1280w640h-webp-80
+  content:
+    label: 'Content image (4x3)'
+    sizes: 'xs:100vw sm:100vw md:100vw lg:100vw xl:100vw'
+    aspect_ratios: '4x3 4x3 4x3 4x3 4x3'
+    fallback_transform: 1280w960h-webp-80
+  gallery:
+    label: 'Gallery (4x3)'
+    sizes: 'xs:100vw sm:100vw md:100vw lg:100vw xl:100vw'
+    aspect_ratios: '4x3 4x3 4x3 4x3 4x3'
+    fallback_transform: 1280w960h-webp-80
+  card:
+    label: 'Card (16x9)'
+    sizes: 'xs:100vw sm:100vw md:100vw lg:100vw xl:100vw'
+    aspect_ratios: '16x9 16x9 16x9 16x9 16x9'
+    fallback_transform: 1280w720h-webp-80
+  avatar:
+    label: 'Avatar (1x1)'
+    sizes: 'xs:100vw sm:100vw md:100vw lg:100vw xl:100vw'
+    aspect_ratios: '1x1 1x1 1x1 1x1 1x1'
+    fallback_transform: 512w512h-webp-80

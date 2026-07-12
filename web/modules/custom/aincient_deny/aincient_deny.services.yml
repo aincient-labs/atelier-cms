@@ -1,0 +1,5 @@
+services:
+  aincient_deny.route_subscriber:
+    class: Drupal\aincient_deny\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }

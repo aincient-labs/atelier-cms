@@ -1,0 +1,19 @@
+uuid: ce26460e-4b92-4a9c-891b-4a4621a2ef85
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_page_structure
+    - node.type.aincient_page
+id: node.aincient_page.field_page_structure
+field_name: field_page_structure
+entity_type: node
+bundle: aincient_page
+label: 'Page structure'
+description: 'The shared, language-independent page layout (type + slots) produced by PageStore. A translation may leave this empty to inherit the source layout.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

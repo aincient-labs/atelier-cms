@@ -1,0 +1,12 @@
+{#
+/**
+ * @file
+ * People listing (/admin/users) — the Status cell as a whisper chip.
+ *
+ * State is a whisper (Law 02): active reads in verdigris tint, blocked in
+ * brick tint — never a saturated fill. The entity on the result row decides
+ * the tint; the label text stays whatever the view's field settings say.
+ */
+#}
+{% set is_active = row._entity ? row._entity.isActive() : true %}
+<span class="sb-chip {{ is_active ? 'sb-chip--jade' : 'sb-chip--brick' }}">{{ output }}</span>

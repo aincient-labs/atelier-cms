@@ -1,0 +1,18 @@
+uuid: 3abe8d28-17a3-4289-90c1-ce0cc15effda
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 2560w2560h
+label: 2560w2560h
+effects:
+  6fcb297c-f017-48cb-8672-2570d5013fcb:
+    uuid: 6fcb297c-f017-48cb-8672-2570d5013fcb
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 2560
+      height: 2560
+      crop_type: focal_point
+      upscale: false

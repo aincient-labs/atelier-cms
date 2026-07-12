@@ -1,0 +1,11 @@
+{#
+/**
+ * @file
+ * Studio Backend override: wrap local actions ("Add user") in the
+ * .action-links list (Claro's pattern) — Stark ships no wrapper at all, so
+ * the actions rendered as bare bullet-list items the kit CSS couldn't reach.
+ */
+#}
+{% if content %}
+  <ul class="action-links">{{ content }}</ul>
+{% endif %}

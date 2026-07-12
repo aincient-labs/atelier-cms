@@ -1,0 +1,32 @@
+uuid: e3d36aae-1020-4d0e-a5c0-c1e762ace20e
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_chat
+_core:
+  default_config_hash: Qxmfx6PBNFRCEr33EcHkgnoNs-65AaDVb1bipdNWo7g
+id: get_node_types
+label: 'Get Node Types'
+description: 'Fetches available FlowDrop node type definitions as a slimmed JSON string for use in LLM prompts.'
+category: helpers
+icon: 'mdi:format-list-bulleted-type'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  exclude:
+    configurable: true
+    connectable: false
+    required: false
+    default: {  }
+outputs:
+  node_types:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_chat:get_node_types'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

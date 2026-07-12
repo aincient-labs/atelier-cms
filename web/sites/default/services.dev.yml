@@ -1,0 +1,8 @@
+# Local development only — loaded by settings.php ONLY when IS_DDEV_PROJECT is set,
+# and appended AFTER services.yml so it wins. NEVER loaded by the appliance/production
+# install (docker/settings.appliance.php does not include this file).
+#
+# Restores the uid 1 super-user permission bypass (god-mode) for developer convenience.
+# The shipped default is hardened (services.yml: security.enable_super_user: false).
+parameters:
+  security.enable_super_user: true

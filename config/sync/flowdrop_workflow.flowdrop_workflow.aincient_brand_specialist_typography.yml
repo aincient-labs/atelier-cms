@@ -1,0 +1,204 @@
+uuid: a7c1e2d4-7b3f-4e8a-9c1d-2f6b8a0e4d51
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_brand_validate_slice
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+id: aincient_brand_specialist_typography
+label: 'Brand specialist: Typography'
+description: 'Single-pass typography specialist. Takes a typography instruction (+ optional current state), decides the typeface PAIRING and type-scale presets, and returns a brand-preview slice (presets_json/tokens_json/fonts) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: -40
+      'y': 0
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+      metadata:
+        node_type_id: chat_input
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 202
+  -
+    id: simple_chat.1
+    position:
+      x: 360
+      'y': 0
+    data:
+      label: 'Typography reasoning'
+      config:
+        operation_type: 'aincient_role:task'
+        model: null
+        temperature: 0
+        maxTokens: 900
+        systemPrompt: |-
+          You are the TYPOGRAPHY specialist for AIncient's brand studio. You receive a
+          single instruction describing a desired typography change (it may also restate
+          the current look). Decide the best typeface PAIRING and type-scale presets, and
+          return them. You APPLY NOTHING — you only return a slice for the orchestrator.
+
+          Return ONLY a single JSON object (no prose, no markdown fence). Use any of these
+          keys; omit a key you are not setting:
+          - "presets_json": an object choosing typography presets by group:
+            - pairing — display+body typeface pairing: inter, editorial, geometric,
+              technical, warm, corporate, superfamily. (Loads the web fonts for you.)
+            - text_size — body reading size: compact, default, large.
+            - heading_weight — heading/display heaviness: regular, medium, bold, heavy.
+          - "tokens_json": raw font tokens ONLY for a fine adjustment no preset expresses:
+            font_family_base, font_family_display, heading_tracking. Prefer presets; only
+            hand-pick a font family when the user names a specific family.
+          - "fonts": comma-separated Google Font family names to load — ONLY when you set a
+            raw font_family token to a custom family.
+
+          Rules:
+          - ALWAYS prefer a pairing preset over hand-picking font families. If the user
+            names a pairing id (Inter, Editorial, Warm, …), use that exact id; never
+            substitute your own fonts.
+          - Touch ONLY typography. Do NOT emit colour, radius, shadow, density, or spacing
+            tokens — other specialists own those.
+          - If the instruction implies no typography change, return {}.
+
+          Example — instruction "use the Warm pairing with heavier headings":
+          {"presets_json": {"pairing": "warm", "heading_weight": "heavy"}}
+      metadata:
+        node_type_id: flowdrop_ai_provider_simple_chat
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 420
+  -
+    id: chat_output.1
+    position:
+      x: 760
+      'y': 0
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+      metadata:
+        node_type_id: chat_output
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 182
+  -
+    id: brand_validate_slice.1
+    position:
+      x: 580
+      'y': 240
+    data:
+      label: 'Validate brand slice'
+      config: {  }
+      metadata:
+        node_type_id: aincient_flows_brand_validate_slice
+    measured:
+      width: 280
+      height: 360
+edges:
+  -
+    id: xy-edge__chat_input.1chat_input.1-output-message-simple_chat.1simple_chat.1-input-message
+    source: chat_input.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: simple_chat.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__simple_chat.1simple_chat.1-output-response-brand_validate_slice.1brand_validate_slice.1-input-slice
+    source: simple_chat.1
+    target: brand_validate_slice.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: simple_chat.1-output-response
+    targetHandle: brand_validate_slice.1-input-slice
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__brand_validate_slice.1brand_validate_slice.1-output-slice-chat_output.1chat_output.1-input-message
+    source: brand_validate_slice.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: brand_validate_slice.1-output-slice
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+metadata:
+  format: flowdrop
+  schemaVersion: 1.0.0
+created: 1782300000
+changed: 1782428924
+uid: 1
+input_ports:
+  -
+    name: ask
+    node_id: chat_input.1
+    port: message
+output_ports:
+  -
+    name: slice
+    node_id: chat_output.1
+    port: message
+parameter_schema:
+  type: object
+  required:
+    - ask
+  properties:
+    ask:
+      type: string
+      default: ''
+      required: true
+      description: 'The typography instruction to act on — what the user wants for typefaces / type scale, optionally including the current look to build on. Pass the typography-relevant part of the request only.'
+output_schema:
+  type: object
+  properties:
+    slice:
+      type: string
+schema_version: 1.0.0

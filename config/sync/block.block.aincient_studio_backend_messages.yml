@@ -1,0 +1,22 @@
+uuid: 7d39ee08-09fe-43dd-8f69-ba9a7f24ca22
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - aincient_studio_backend
+_core:
+  default_config_hash: Dpr20w1w2daYKXvilzpWHGCvmbZ0kb6PcmNkAY2Ge5w
+id: aincient_studio_backend_messages
+theme: aincient_studio_backend
+region: highlighted
+weight: 0
+provider: null
+plugin: system_messages_block
+settings:
+  id: system_messages_block
+  label: 'Status messages'
+  label_display: '0'
+  provider: system
+visibility: {  }

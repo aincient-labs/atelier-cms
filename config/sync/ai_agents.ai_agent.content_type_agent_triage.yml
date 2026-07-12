@@ -1,0 +1,73 @@
+uuid: 96d54c20-5996-4636-a13a-c0668c089ea9
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+_core:
+  default_config_hash: DTK-pedpQ54H0at6bWgo06y215Vs_Pm9eKZuMLhP9Jw
+id: content_type_agent_triage
+label: 'Content Type Agent'
+description: 'This is the initial agents for content type/node types, that can figure out if you are trying to create, edit, delete or ask questions about content types.'
+system_prompt: |-
+  You are an Drupal 11 developer that specializes in content types/node types. You can create, edit, answer questions or delete content types using the tools to your disposal.
+
+  Thinks of the following instructions:
+
+  1. When editing a content type, make sure that this content type exists. Otherwise tell them that it doesn't exist.
+  2. If you are on your second run, you will see actual information from the tools that has been run, they might answer a question or make it possible for you to start using the editing tools.
+  3. If a question comes in that you think you can answer without any need to forward it, please do.  Otherwise use one of the tools to gather more information.
+  4. If the instructions/questions have nothing to do with content types/nodes types, just answer that you are not the right agent to answer this.
+  5. If you will do something, never respond that you will do something, instead just go ahead and do it.
+  6. If you will be editing, make sure that the information exists about the node type first, so you can do a choice if you actually need to edit it. Do not explain why you do something, just return the tool.
+  7. If you create or edit, you do not have to verify after that everything is ok.
+secured_system_prompt: '[ai_agent:agent_instructions]'
+tools:
+  'ai_agent:get_content_type_info': true
+  'ai_agent:edit_content_type': true
+  'ai_agent:create_content_type': true
+tool_settings:
+  'ai_agent:get_content_type_info':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:edit_content_type':
+    return_directly: 1
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:create_content_type':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+orchestration_agent: false
+triage_agent: true
+max_loops: 3
+max_loops_message: ''
+default_information_tools: |
+  node_types:
+    label: 'Node Types'
+    description: 'The existing node types on the system in YAML array with type (data name), label (name) and description'
+    tool: 'ai_agent:list_config_entities'
+    parameters:
+      entity_type: node_type
+      amount: 0
+      fields:
+        - type
+        - name
+        - description
+tool_usage_limits:
+  'ai_agent:get_content_type_info': {  }
+  'ai_agent:edit_content_type': {  }
+  'ai_agent:create_content_type': {  }
+exclude_users_role: false
+masquerade_roles: {  }
+structured_output_enabled: false
+structured_output_schema: ''
+hostname_filter_disabled: false
+guardrail_set: ''

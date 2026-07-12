@@ -1,0 +1,15 @@
+uuid: b9396edb-0f10-4d59-86be-05e50ec0de19
+langcode: en
+status: true
+dependencies: {  }
+name: 1280w
+label: 1280w
+effects:
+  c168645e-dbc8-42a2-9042-5efa7762ea0f:
+    uuid: c168645e-dbc8-42a2-9042-5efa7762ea0f
+    id: image_scale
+    weight: 1
+    data:
+      width: 1280
+      height: null
+      upscale: false

@@ -1,0 +1,45 @@
+{#
+/**
+ * @file
+ * The Studio Backend landing (/admin) — a short serif welcome and one
+ * link-card per curated section (Law 07: navigation is links, not buttons),
+ * plus the way back to the console. The console card's icon carries the
+ * screen's single cinnabar; everything else is ink on paper.
+ *
+ * Icons are Lucide-geometry inline SVGs — the same paths as the sidebar
+ * (aincient_studio_backend/templates/page.html.twig).
+ */
+#}
+<div class="sb-landing">
+  <p class="sb-landing__intro">{{ 'The room behind the console — the people who work here, and what the work costs.'|t }}</p>
+
+  <div class="sb-landing__grid">
+    {% for section in sections %}
+      <a href="{{ section.url }}" class="sb-landing__card">
+        <span class="sb-landing__icon" aria-hidden="true">
+          {% if section.key == 'people' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 6.2a3 3 0 0 1 0 5.6"/><path d="M17.5 14.5a5.5 5.5 0 0 1 3 4.5"/></svg>
+          {% elseif section.key == 'metering' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></svg>
+          {% elseif section.key == 'metering_settings' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h9"/><path d="M18 8h1"/><circle cx="16" cy="8" r="2"/><path d="M5 16h3"/><path d="M12 16h7"/><circle cx="10" cy="16" r="2"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          {% endif %}
+        </span>
+        <span class="sb-landing__label">{{ section.label }}</span>
+        <span class="sb-landing__desc">{{ section.description }}</span>
+      </a>
+    {% endfor %}
+
+    {% if console_url %}
+      <a href="{{ console_url }}" class="sb-landing__card sb-landing__card--console">
+        <span class="sb-landing__icon sb-landing__icon--console" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 5.5 7 12l6.5 6.5"/><path d="M7 12h13"/></svg>
+        </span>
+        <span class="sb-landing__label">{{ 'Console'|t }}</span>
+        <span class="sb-landing__desc">{{ 'Back to the bench — where the making happens.'|t }}</span>
+      </a>
+    {% endif %}
+  </div>
+</div>

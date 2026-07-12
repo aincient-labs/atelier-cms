@@ -1,0 +1,18 @@
+uuid: c7367a08-fb1c-4dab-8cd1-3de6385184a8
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 1280w960h
+label: 1280w960h
+effects:
+  e14377f7-f870-4b3f-8441-dbc0ea113ef1:
+    uuid: e14377f7-f870-4b3f-8441-dbc0ea113ef1
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 1280
+      height: 960
+      crop_type: focal_point
+      upscale: false

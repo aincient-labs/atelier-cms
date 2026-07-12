@@ -1,0 +1,11 @@
+services:
+  aincient_core.admin_landing_route_subscriber:
+    class: Drupal\aincient_core\Routing\AdminLandingRouteSubscriber
+    tags:
+      - { name: event_subscriber }
+  aincient_core.model_role_resolver:
+    class: Drupal\aincient_core\ModelRoleResolver
+    arguments:
+      - '@config.factory'
+      - '@ai.provider'
+      - '@module_handler'

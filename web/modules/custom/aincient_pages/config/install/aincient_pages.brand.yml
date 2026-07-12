@@ -1,0 +1,10 @@
+# Foundations: the design-token layer. Brand IDENTITY (name/logo/tagline/footer
+# note) lives in aincient_pages.identity, not here.
+#
+# No seeded overrides: the brand is defined by the design-token registry
+# defaults (design-tokens.yml), which resolve through the Tier 1 palette to the
+# immutable Tailwind base. Overrides land here only when a user edits the brand.
+tokens: {  }
+font_families:
+  - Inter
+  - Inter Tight

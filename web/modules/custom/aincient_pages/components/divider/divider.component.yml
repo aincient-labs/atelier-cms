@@ -1,0 +1,16 @@
+name: Divider
+status: experimental
+group: 'AIncient Landing'
+description: 'A light separator between sections — a rule, breathing space, or a small label.'
+props:
+  type: object
+  properties:
+    variant:
+      type: string
+      enum: [line, space, label]
+      default: line
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    label: { type: string }

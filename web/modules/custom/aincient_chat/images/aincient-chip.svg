@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AIncient" viewBox="0 0 288 288">
+  <defs>
+    <!--
+      Recolours the chip body to the OPPOSITE of currentColor: collapse to
+      luminance, then threshold each channel (>=0.5 -> black, <0.5 -> white).
+      Pairs with the currentColor frame so the border always tracks the text
+      colour and the bands sit on a contrasting backdrop.
+    -->
+    <filter id="aincient-chip-contrast" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%">
+      <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0
+                                           0.2126 0.7152 0.0722 0 0
+                                           0.2126 0.7152 0.0722 0 0
+                                           0      0      0      1 0"/>
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="1 0"/>
+        <feFuncG type="discrete" tableValues="1 0"/>
+        <feFuncB type="discrete" tableValues="1 0"/>
+      </feComponentTransfer>
+    </filter>
+    <style>
+      .aincient-band-red    { fill: var(--aincient-band-red,    #f35045); }
+      .aincient-band-orange { fill: var(--aincient-band-orange, #fba100); }
+      .aincient-band-green  { fill: var(--aincient-band-green,  #01cb8b); }
+      .aincient-band-purple { fill: var(--aincient-band-purple, #8257e9); }
+    </style>
+  </defs>
+  <g>
+    <title>AIncient</title>
+    <path fill="currentColor" filter="url(#aincient-chip-contrast)" d="M 48,16 v 16 h -16 v 16 h -16 v 192 h 16 v 16 h 16 v 16 h 192 v -16 h 16 v -16 h 16 v -192 h -16 v -16 h -16 v -16 z"/>
+    <path class="aincient-band-red" d="M 64,48 v 16 h -16 v 32 h 192 v -32 h -16 v -16 z"/>
+    <rect class="aincient-band-orange" x="48" y="96" width="192" height="48"/>
+    <rect class="aincient-band-green" x="48" y="144" width="192" height="48"/>
+    <path class="aincient-band-purple" d="M 48,192 v 32 h 16 v 16 h 160 v -16 h 16 v -32 z"/>
+    <path style="fill:currentColor" d="M 48,16 v 16 h -16 v 16 h -16 v 192 h 16 v 16 h 16 v 16 h 192 v -16 h 16 v -16 h 16 v -192 h -16 v -16 h -16 v -16 z m 16,16 h 160 v 16 h 16 v 16 h 16 v 160 h -16 v 16 h -16 v 16 h -160 v -16 h -16 v -16 h -16 v -160 h 16 v -16 h 16 z"/>
+  </g>
+</svg>

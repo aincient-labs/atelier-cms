@@ -1,0 +1,26 @@
+name: Markdown
+status: experimental
+group: 'AIncient Landing'
+description: 'A block of long-form body text authored in Markdown, rendered with a reading-optimised prose measure. tone sets the surface band.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    # `bare` drops the section band + outer padding/measure so the block can be
+    # embedded INSIDE a container (e.g. an accordion panel), where the parent
+    # owns the surface and spacing. Set by the renderer for nested blocks, never
+    # authored — it is NOT in ComponentCatalog::SECTIONS['markdown'] props, so a
+    # top-level markdown can never select it.
+    variant:
+      type: string
+      enum: [default, bare]
+      default: default
+    # Sanitised HTML supplied by the renderer (CommonMark + Xss::filterAdmin of
+    # the page-schema's `markdown` source prop) — NOT authored directly. See
+    # PageSpikeController::renderSection() and MarkdownRenderer.
+    html:
+      type: string
+      description: 'Rendered, sanitised article HTML (built from the Markdown source).'

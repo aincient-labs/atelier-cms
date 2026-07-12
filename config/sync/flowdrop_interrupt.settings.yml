@@ -1,0 +1,6 @@
+_core:
+  default_config_hash: 6ba33b4yVIyQUBPiu99mQzbUiuy1bc1hOxHCXP98Fio
+default_expiration: 0
+cleanup_enabled: true
+cleanup_max_age: 604800
+timer_max_delay: 31536000

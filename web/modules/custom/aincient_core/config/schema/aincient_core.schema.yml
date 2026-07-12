@@ -1,0 +1,20 @@
+aincient_core.model_roles:
+  type: config_object
+  label: 'Atelier model roles'
+  mapping:
+    roles:
+      type: sequence
+      label: 'Role bindings'
+      sequence:
+        type: mapping
+        label: 'Role binding'
+        mapping:
+          provider_id:
+            type: string
+            label: 'Provider id'
+          model_id:
+            type: string
+            label: 'Model id'
+    default_role:
+      type: string
+      label: 'Default role'

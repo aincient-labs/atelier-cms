@@ -1,0 +1,21 @@
+name: 'Features'
+status: experimental
+group: 'AIncient Landing'
+description: 'A heading plus a grid of feature cards (icon optional). columns reflow the cards.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    columns:
+      type: integer
+      enum: [2, 3]
+      default: 3
+    features:
+      type: array
+      description: 'Array of { icon, title, body }. icon = emoji or short text glyph.'

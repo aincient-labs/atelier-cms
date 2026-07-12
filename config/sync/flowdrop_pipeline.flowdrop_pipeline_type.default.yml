@@ -1,0 +1,18 @@
+uuid: 2712d095-2e6c-4376-90d3-60b470b908bc
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - flowdrop_pipeline
+_core:
+  default_config_hash: j1Zp0zrSbgKIbSnS8VPo3RfZjMvJrlXn4Qm7z-Rx-nE
+id: default
+label: Default
+description: ''
+default_max_concurrent_jobs: 5
+default_job_priority_strategy: dependency_order
+default_retry_strategy: individual
+execution_timeout: 3600
+memory_limit: 512
+allowed_workflow_types: {  }

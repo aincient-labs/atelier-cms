@@ -1,0 +1,12 @@
+uuid: 79a94c5e-65ad-40d3-9a18-3f2e592f9456
+langcode: en
+status: true
+dependencies: {  }
+label: 2x1
+id: 2x1
+description: ''
+aspect_ratio: '2:1'
+soft_limit_width: null
+soft_limit_height: null
+hard_limit_width: null
+hard_limit_height: null

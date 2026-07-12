@@ -1,0 +1,56 @@
+uuid: 5c7535f6-e3bd-4670-b14d-ec6321fffbfb
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: VtaksfqpnXL_WcDysIrZUSUAIqOcjgdHnTUi3E5LW3w
+id: date_time
+label: 'Date Time'
+description: 'Date and time operations'
+category: tools
+icon: 'mdi:clock-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  datetime:
+    configurable: false
+    connectable: true
+    required: false
+  format:
+    configurable: true
+    connectable: false
+    required: false
+    default: 'Y-m-d H:i:s'
+  operation:
+    configurable: true
+    connectable: false
+    required: false
+    default: current
+  timezone:
+    configurable: true
+    connectable: false
+    required: false
+    default: UTC
+outputs:
+  datetime:
+    exposed: true
+  format:
+    exposed: true
+  iso:
+    exposed: true
+  operation:
+    exposed: true
+  timestamp:
+    exposed: true
+  timezone:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:date_time'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

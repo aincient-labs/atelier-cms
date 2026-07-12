@@ -1,0 +1,13 @@
+{% set on_dark = tone in ['brand', 'inverted'] %}
+
+<div class="flex h-full flex-col overflow-hidden rounded-[var(--card-radius)] border border-[color:var(--card-border)] {{ on_dark ? 'bg-background/5' : 'bg-card text-card-foreground' }} shadow-[var(--card-shadow)] transition hover:shadow-[var(--shadow-md)]">
+  {# image_html is a container-query Rift picture pre-rendered by the renderer
+     (slots can't nest per grid row); image is its raw-URL fallback. #}
+  {% if image_html %}{{ image_html|raw }}{% elseif image %}<img src="{{ image }}" alt="" class="aspect-[16/9] w-full object-cover">{% endif %}
+  <div class="flex flex-1 flex-col p-6">
+    {% if icon %}<div class="flex h-11 w-11 items-center justify-center rounded-[var(--card-radius)] bg-primary/10 text-2xl">{{ icon }}</div>{% endif %}
+    {% if title %}<h3 class="{{ icon ? 'mt-4' : '' }} font-display text-lg [font-weight:var(--subheading-weight)]">{{ title }}</h3>{% endif %}
+    {% if body %}<p class="mt-2 text-sm leading-relaxed opacity-70">{{ body|inline_md }}</p>{% endif %}
+    {% if cta_label %}<a href="{{ cta_url|default('#') }}" class="mt-4 inline-flex items-center text-sm font-semibold {{ on_dark ? '' : 'text-primary-on-surface' }} transition hover:opacity-80">{{ cta_label }} &rarr;</a>{% endif %}
+  </div>
+</div>

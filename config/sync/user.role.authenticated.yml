@@ -1,0 +1,24 @@
+uuid: f30c7aa1-4c4f-4fdf-907c-d5259f50e385
+langcode: en
+status: true
+dependencies:
+  config:
+    - filter.format.basic_html
+  module:
+    - ai_metering
+    - file
+    - filter
+    - media
+    - search
+    - system
+id: authenticated
+label: 'Authenticated user'
+weight: 1
+is_admin: false
+permissions:
+  - 'access content'
+  - 'delete own files'
+  - 'search content'
+  - 'use ai_metering'
+  - 'use text format basic_html'
+  - 'view media'

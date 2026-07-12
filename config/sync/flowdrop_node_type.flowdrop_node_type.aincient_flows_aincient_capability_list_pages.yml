@@ -1,0 +1,30 @@
+uuid: b30cb746-156b-446f-b0ed-0e97d5547b02
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_list_pages
+label: 'Capability: List pages'
+description: 'Show the user a table of the pages that already exist on the site, so they can pick one. Each row opens that page in the right studio for the current task when clicked. Call this when the user asks to edit / open / change / check / audit an existing page, asks "what pages do I have", or wants to continue working on a page they made earlier. Takes no arguments — it renders the table.'
+category: processing
+icon: 'mdi:cog'
+plugin_version: 1.0.0
+enabled: true
+parameters: {  }
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:list_pages'
+visual_type: tool
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true

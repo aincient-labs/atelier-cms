@@ -1,0 +1,73 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# DDEV per-service secrets (e.g. ANTHROPIC_API_KEY) — never commit
+.ddev/.env
+.ddev/.env.*
+
+# Drupal private files (outside web root)
+/private/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Drupal — Composer-managed core/contrib (not committed; reproduced from composer.lock)
+web/core/
+web/modules/contrib/
+web/themes/contrib/
+web/profiles/contrib/
+web/libraries/
+web/sites/*/files/
+web/sites/*/private/
+web/sites/*/settings.local.php
+web/sites/*/settings.ddev.php
+# Scaffolded docroot files (managed by drupal/core-composer-scaffold)
+web/index.php
+web/update.php
+web/autoload.php
+web/robots.txt
+web/.htaccess
+web/.ht.router.php
+web/web.config
+web/sites/*/default.services.yml
+web/sites/*/default.settings.php
+
+# Local composer path-repo checkouts (e.g. local flowdrop dev clone — see composer.json
+# "repositories"). Not committed; each dev points it at their own local checkout.
+/packages/
+
+# Tooling
+ralph/
+.claude/
+
+# AI-dev workspace — PRIVATE process repo, never part of the distribution.
+# .dev/ is its own git repo (plans, decisions, STATE, strategy docs).
+# CLAUDE.md is a symlink into it. See .dev/README.md.
+/.dev/
+/CLAUDE.md
+/.editorconfig
+/.gitattributes
+# Playwright MCP scratch (browser verification artifacts)
+.playwright-mcp/
+
+# Docs hosted on mintlify via dedicated repository
+# This allow us to expose the repository to various collaborators.
+/.docs/
+
+# Installer/manager (aincient CLI + Tauri GUI) — its own git repo, not part of
+# the Drupal distribution. See manager/README.md.
+/manager/

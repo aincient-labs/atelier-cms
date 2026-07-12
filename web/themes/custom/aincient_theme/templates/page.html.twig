@@ -1,0 +1,31 @@
+{#
+/**
+ * @file
+ * AIncient theme implementation for a single page.
+ *
+ * site_header / site_footer are the brand chrome (SDC), built in
+ * aincient_theme_preprocess_page() from the shared aincient_pages.chrome
+ * service — the SAME header/footer the generated full-bleed pages use.
+ */
+#}
+<div class="flex min-h-screen flex-col">
+  {{ site_header }}
+
+  <main role="main" class="flex-1">
+    <a id="main-content" tabindex="-1"></a>
+
+    {% if page.highlighted %}
+      <div class="mx-auto w-full max-w-7xl px-6 pt-6">{{ page.highlighted }}</div>
+    {% endif %}
+
+    {% if page.breadcrumb %}
+      <div class="mx-auto w-full max-w-7xl px-6 pt-6 text-sm text-muted-foreground">{{ page.breadcrumb }}</div>
+    {% endif %}
+
+    <div class="mx-auto w-full max-w-5xl px-6 py-12">
+      {{ page.content }}
+    </div>
+  </main>
+
+  {{ site_footer }}
+</div>

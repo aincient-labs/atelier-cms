@@ -1,0 +1,5 @@
+aincient_core.model_roles:
+  title: 'Atelier models'
+  description: 'Bind each Atelier model role (high thinking, task, fast, image) to a provider and model.'
+  route_name: aincient_core.model_roles
+  parent: system.admin_config_ui

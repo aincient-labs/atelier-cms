@@ -1,0 +1,30 @@
+uuid: 45d62284-b57e-4af5-891c-f7d03c87ee7f
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_workflow_executor
+id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour
+label: 'Run workflow: Brand colour & contrast specialist'
+description: 'Delegate a COLOUR/palette change (mood, named theme, fixing a WCAG contrast warning). Pass the colour-relevant part of the request — include any contrast warnings — as ask; returns a brand-preview slice (tokens_json) to apply via preview_brand.'
+category: tools
+icon: 'mdi:palette-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  ask:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  slice:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_workflow_executor:flowdrop_workflow:aincient_brand_specialist_colour'
+visual_type: default
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true

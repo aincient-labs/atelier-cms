@@ -1,0 +1,22 @@
+uuid: 7f1c40db-e2c7-4a16-b0d3-3ab37529aba3
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - aincient_studio_backend
+_core:
+  default_config_hash: XqP-TT3D0BHyW3vJ033jEBxkHPy8BL3jl1kAttTTJLY
+id: aincient_studio_backend_content
+theme: aincient_studio_backend
+region: content
+weight: 0
+provider: null
+plugin: system_main_block
+settings:
+  id: system_main_block
+  label: 'Main page content'
+  label_display: '0'
+  provider: system
+visibility: {  }

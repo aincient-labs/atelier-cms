@@ -1,0 +1,32 @@
+{#
+/**
+ * @file
+ * Full node → a token-driven article: a muted meta divider (author · date) then
+ * the body wrapped in `.prose-aincient`, the shared long-form reading styles
+ * (the same prose the page builder's Prose component uses).
+ *
+ * The page title is rendered by the page_title block when the node is its own
+ * page (`page` is true); this template owns the meta + content only.
+ */
+#}
+<article{{ attributes }}>
+  {{ title_prefix }}
+  {% if not page %}
+    <h2 class="font-display text-2xl font-bold tracking-tight">
+      <a href="{{ url }}" class="text-foreground no-underline hover:text-primary-on-surface">{{ label }}</a>
+    </h2>
+  {% endif %}
+  {{ title_suffix }}
+
+  {% if display_submitted and ain_meta %}
+    <div class="mb-8 border-b border-border pb-5 text-sm text-muted-foreground">
+      {%- if ain_meta.author %}<span>{{ ain_meta.author }}</span>{% endif -%}
+      {%- if ain_meta.author and ain_meta.date %} <span aria-hidden="true">&middot;</span> {% endif -%}
+      {%- if ain_meta.date %}<time>{{ ain_meta.date }}</time>{% endif -%}
+    </div>
+  {% endif %}
+
+  <div class="prose-aincient">
+    {{ content }}
+  </div>
+</article>

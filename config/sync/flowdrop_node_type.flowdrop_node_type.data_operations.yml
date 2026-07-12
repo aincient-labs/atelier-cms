@@ -1,0 +1,55 @@
+uuid: deba1bfd-ba50-4c2c-b2f2-4c4619aa13dd
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: i2CGveqzKtBd2_ux7N26zGgukB7lFwBO8TMsqZbi9eM
+id: data_operations
+label: 'Data Operations'
+description: 'Perform various data operations on arrays and objects'
+category: data
+icon: 'mdi:database-cog-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  condition:
+    configurable: true
+    connectable: false
+    required: false
+    default: equals
+  data:
+    configurable: false
+    connectable: true
+    required: false
+  key:
+    configurable: true
+    connectable: false
+    required: false
+  operation:
+    configurable: true
+    connectable: false
+    required: false
+    default: filter
+  value:
+    configurable: true
+    connectable: false
+    required: false
+outputs:
+  input_count:
+    exposed: true
+  operation:
+    exposed: true
+  output_count:
+    exposed: true
+  result:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:data_operations'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

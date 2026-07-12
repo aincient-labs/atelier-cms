@@ -1,0 +1,53 @@
+uuid: 89482b5a-2c17-4c41-8861-cffa9a52a64b
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: rOVBvZVnsODQidL4z6tU4kgUKkZior0sl1QXy2pUjp4
+id: html_to_markdown
+label: 'HTML to Markdown'
+description: 'Convert HTML content to Markdown format'
+category: data
+icon: 'mdi:language-markdown'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  bold_style:
+    configurable: true
+    connectable: false
+    required: false
+    default: '**'
+  heading_style:
+    configurable: true
+    connectable: false
+    required: false
+    default: atx
+  html:
+    configurable: false
+    connectable: true
+    required: false
+  italic_style:
+    configurable: true
+    connectable: false
+    required: false
+    default: '*'
+  strip_placeholder_links:
+    configurable: true
+    connectable: false
+    required: false
+    default: false
+outputs:
+  markdown:
+    exposed: true
+  success:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:html_to_markdown'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

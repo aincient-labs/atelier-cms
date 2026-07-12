@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.aincient_page.field_page_content
+    - field.field.node.aincient_page.field_page_structure
+    - node.type.aincient_page
+  module:
+    - user
+id: node.aincient_page.default
+targetEntityType: node
+bundle: aincient_page
+mode: default
+content:
+  links:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 100
+    region: content
+hidden:
+  field_page_content: true
+  field_page_structure: true

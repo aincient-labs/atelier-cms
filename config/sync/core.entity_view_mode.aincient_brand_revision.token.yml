@@ -1,0 +1,11 @@
+uuid: e211b279-179b-45e8-a151-ae312e32cb5f
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_pages
+id: aincient_brand_revision.token
+label: Token
+description: null
+targetEntityType: aincient_brand_revision
+cache: true

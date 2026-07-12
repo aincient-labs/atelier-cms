@@ -1,0 +1,9 @@
+'administer aincient chat':
+  title: 'Administer AIncient chat'
+  description: 'Configure the chat layer defaults (the FlowDrop workflow the console runs, …).'
+  restrict access: true
+
+# Per-studio access permissions (`use aincient studio <key>`), one per
+# specialised studio, minted from the Studio enum so they can't drift.
+permission_callbacks:
+  - \Drupal\aincient_chat\StudioPermissions::permissions

@@ -1,0 +1,7 @@
+# Neutral by default: no vendor is recommended. Set to a drupal/ai provider
+# plugin id to highlight one in the onboarding picker (the sponsorship seam).
+recommended_provider: ''
+# Optional intro video for the studio-tour widget (a YouTube URL the tour card
+# renders as a click-to-load embed). Empty = no video block.
+tour_video_url: ''
+tour_video_title: ''

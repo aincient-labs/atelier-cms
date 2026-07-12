@@ -1,0 +1,42 @@
+uuid: 613edfc9-4d16-4ea5-8b91-3d2fc4215800
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_chat
+_core:
+  default_config_hash: x7uA_YktQ18HnuukyRlqx9boPSNp8Gj3hkOgfChx76w
+id: build_system_prompt
+label: 'Build System Prompt'
+description: 'Combines node types and workflow state into a FlowDrop chat system prompt.'
+category: helpers
+icon: 'mdi:text-box-edit-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  node_types:
+    configurable: false
+    connectable: true
+    required: false
+    default: '[]'
+  template:
+    configurable: true
+    connectable: false
+    required: false
+    default: ''
+  workflow_state:
+    configurable: false
+    connectable: true
+    required: false
+    default: null
+outputs:
+  system_prompt:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_chat:build_system_prompt'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

@@ -1,0 +1,53 @@
+uuid: 07c26ed8-84bb-4b77-b4ab-a85ac2411929
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_memory
+_core:
+  default_config_hash: La6LAfGvO-ymAqRi_zPnyPYsr_5-2cY4ehwlDchV49s
+id: memory_write_raw
+label: 'Memory Write (Explicit)'
+description: 'Write a value to memory with fully explicit scope and scope ID. No auto-population from execution context.'
+category: memory
+icon: 'mdi:database-edit-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  key:
+    configurable: false
+    connectable: true
+    required: true
+  scope:
+    configurable: false
+    connectable: true
+    required: true
+  scope_id:
+    configurable: false
+    connectable: true
+    required: false
+    default: ''
+  ttl:
+    configurable: true
+    connectable: false
+    required: false
+    default: 0
+  value:
+    configurable: false
+    connectable: true
+    required: true
+outputs:
+  key:
+    exposed: false
+  scope:
+    exposed: false
+  success:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_memory:memory_write_raw'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

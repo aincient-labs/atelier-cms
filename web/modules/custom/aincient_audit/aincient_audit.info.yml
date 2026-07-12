@@ -1,0 +1,13 @@
+name: 'AIncient Audit'
+type: module
+description: 'Read-only page health checks (SEO, meta tags, internal-link integrity) surfaced in the Checks studio. Audits ONLY — it never writes; findings are computed deterministically (metatag.manager + Drupal''s router) so the agent narrates facts, not hallucinations.'
+package: AIncient
+core_version_requirement: ^11
+dependencies:
+  - drupal:node
+  - ai:ai
+  - metatag:metatag
+  - aincient_pages
+  - aincient_core
+  - flowdrop:flowdrop_runtime
+  - flowdrop:flowdrop_workflow

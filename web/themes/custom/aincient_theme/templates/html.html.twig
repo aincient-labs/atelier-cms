@@ -1,0 +1,34 @@
+{#
+/**
+ * @file
+ * AIncient theme implementation for the basic structure of a single page.
+ *
+ * The brand token <style> is part of {{ head_placeholder }} (an html_head
+ * attachment scoped to `html:root`), so it overrides the stylesheet's preset
+ * no matter the order here.
+ */
+#}
+<!DOCTYPE html>
+<html{{ html_attributes }}>
+  <head>
+    <head-placeholder token="{{ placeholder_token }}">
+    <title>{{ head_title|safe_join(' | ') }}</title>
+    {#
+      No unconditional Google preconnect — that would open a connection to Google
+      on every page even when fonts are self-hosted or consent hasn't been given.
+      The brand web-font <link> (self-hosted, or consent-gated Google) is injected
+      via hook_preprocess_html (html_head); consent.js handles the Google case.
+    #}
+    <css-placeholder token="{{ placeholder_token }}">
+    <js-placeholder token="{{ placeholder_token }}">
+  </head>
+  <body{{ attributes }}>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:m-3 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
+      {{ 'Skip to main content'|t }}
+    </a>
+    {{ page_top }}
+    {{ page }}
+    {{ page_bottom }}
+    <js-bottom-placeholder token="{{ placeholder_token }}">
+  </body>
+</html>

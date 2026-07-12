@@ -1,0 +1,247 @@
+{#
+  Studio Backend override of ai_metering's dashboard template.
+
+  A fork of modules/contrib/ai_metering/templates/ai-metering-dashboard.html.twig,
+  identical EXCEPT two columns are removed from the editor-breakdown table:
+
+    - "Alert threshold" — the per-user override is non-functional in our build
+      (it only fed email alerts + the row's HIGH badge, and the badge already
+      falls back to the GLOBAL default, which we keep via `effective_threshold`
+      below). We ship only the Monthly Budget control, which is the one that
+      actually enforces (blocks / falls back) real AI calls.
+    - "Details" — held only a "View calls" link into the ai_usage_log view,
+      which is retired (disabled). With no other content it was dead chrome.
+
+  Removing them here (rather than hiding with CSS) keeps the markup honest and
+  lets the functional test assert the columns are truly gone
+  (AiMeteringDashboardColumnsTest). If contrib changes this template upstream,
+  reconcile this copy. Variables: rows (keyed by uid), totals, month_label,
+  active_month, available_months, display_currency, alert_threshold.
+#}
+
+{# Chart data lives in drupalSettings.aiMetering.dashboard (see controller);
+   charts and table sorting are rendered by js/ai-metering-dashboard.js. #}
+{% set all_same_budget = true %}
+{% set first_budget = null %}
+{% for uid, data in rows %}
+  {% if first_budget is null %}
+    {% set first_budget = data.monthly_budget %}
+  {% elseif first_budget != data.monthly_budget %}
+    {% set all_same_budget = false %}
+  {% endif %}
+{% endfor %}
+
+<div class="ai-dashboard">
+
+  {# ===== SYSTEM LIMITS PANEL (ai_usage_limits integration) ===== #}
+  {% if system_limits is not empty %}
+  <div class="ai-dashboard__system-limits">
+    <div class="ai-dashboard__system-limits-header">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <strong>{{ 'System-wide limits'|t }}</strong>
+      <span class="ai-dashboard__system-limits-note">{{ '(via ai_usage_limits — hard stop, shared across all users)'|t }}</span>
+      <a href="{{ system_limits|first.settings_url }}" class="ai-dashboard__system-limits-link">{{ 'Configure'|t }} →</a>
+    </div>
+    <div class="ai-dashboard__system-limits-grid">
+      {% for provider_id, sl in system_limits %}
+        {% set bar_color = sl.pct_used >= 90 ? '#dc3545' : sl.pct_used >= 70 ? '#fd7e14' : '#0d6efd' %}
+        <div class="ai-dashboard__sl-card">
+          <div class="ai-dashboard__sl-provider">{{ sl.label }}</div>
+          {% if sl.total_limit > 0 %}
+            <div class="ai-dashboard__sl-row">
+              <span>{{ 'Total'|t }}</span>
+              <div class="ai-dashboard__sl-bar-wrap">
+                <div class="ai-dashboard__sl-bar" style="width:{{ sl.pct_used }}%;background:{{ bar_color }}"></div>
+              </div>
+              <span class="ai-dashboard__sl-numbers">
+                {{ sl.total_used|number_format }} / {{ sl.total_limit|number_format }}
+                <strong>({{ sl.pct_used }}%)</strong>
+              </span>
+            </div>
+          {% endif %}
+          {% if sl.input_limit > 0 %}
+            <div class="ai-dashboard__sl-row ai-dashboard__sl-row--sub">
+              <span>{{ 'Input'|t }}</span>
+              <span>{{ sl.input_used|number_format }} / {{ sl.input_limit|number_format }}</span>
+            </div>
+          {% endif %}
+          {% if sl.output_limit > 0 %}
+            <div class="ai-dashboard__sl-row ai-dashboard__sl-row--sub">
+              <span>{{ 'Output'|t }}</span>
+              <span>{{ sl.output_used|number_format }} / {{ sl.output_limit|number_format }}</span>
+            </div>
+          {% endif %}
+          <div class="ai-dashboard__sl-window">{{ 'Rolling @days-day window'|t({'@days': sl.retention_days}) }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ===== KPI HEADER ===== #}
+  <div class="ai-dashboard__kpis">
+    <div class="ai-dashboard__kpi">
+      <div class="ai-dashboard__kpi-value">{{ totals.calls }}</div>
+      <div class="ai-dashboard__kpi-label">{{ 'AI calls this month'|t }}</div>
+      <div class="ai-dashboard__kpi-sub">
+        <span class="ai-dashboard__kpi-sub--cloud">☁ {{ totals.cloud_calls ?: 0 }} cloud</span>
+        <span class="ai-dashboard__kpi-sub--local"> · ⬡ {{ totals.local_calls ?: 0 }} local</span>
+      </div>
+    </div>
+    <div class="ai-dashboard__kpi">
+      <div class="ai-dashboard__kpi-value">{{ (totals.total_input + totals.total_output)|number_format }}</div>
+      <div class="ai-dashboard__kpi-label">{{ 'Total tokens'|t }}</div>
+    </div>
+    <div class="ai-dashboard__kpi ai-dashboard__kpi--cost">
+      <div class="ai-dashboard__kpi-value">{{ totals.cost_display }}</div>
+      <div class="ai-dashboard__kpi-label">{{ 'Cloud cost — @month'|t({'@month': month_label}) }}</div>
+    </div>
+    {% if all_same_budget and first_budget %}
+    <div class="ai-dashboard__kpi">
+      <div class="ai-dashboard__kpi-value">{{ first_budget|number_format }}</div>
+      <div class="ai-dashboard__kpi-label">{{ 'Tokens/mo per editor (default)'|t }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ===== CHARTS ROW ===== #}
+  {% if rows is not empty %}
+  <div class="ai-dashboard__charts">
+    <div class="ai-dashboard__chart-box">
+      <div class="ai-dashboard__chart-title">{{ 'Tokens consumed per editor'|t }}</div>
+      <canvas id="ai-chart-tokens" height="140"></canvas>
+    </div>
+    <div class="ai-dashboard__chart-box">
+      <div class="ai-dashboard__chart-title">{{ 'Quota usage (%)'|t }}</div>
+      <canvas id="ai-chart-quota" height="140"></canvas>
+    </div>
+    <div class="ai-dashboard__chart-box">
+      <div class="ai-dashboard__chart-title">{{ 'AI calls per editor'|t }}</div>
+      <canvas id="ai-chart-calls" height="140"></canvas>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ===== MONTH / YEAR FILTER ===== #}
+  {% if available_months is not empty %}
+  {% set month_names = {
+    '01': 'January'|t,  '02': 'February'|t, '03': 'March'|t,
+    '04': 'April'|t,    '05': 'May'|t,       '06': 'June'|t,
+    '07': 'July'|t,     '08': 'August'|t,    '09': 'September'|t,
+    '10': 'October'|t,  '11': 'November'|t,  '12': 'December'|t,
+  } %}
+  <form method="get" action="" class="ai-dashboard__month-form" id="ai-month-form">
+    {# Hidden field carries the combined YYYY-MM value submitted to the controller #}
+    <input type="hidden" name="month" id="ai-month-hidden" value="{{ active_month }}">
+
+    <label for="ai-month-select" class="ai-dashboard__month-label">{{ 'Month:'|t }}</label>
+    <select id="ai-month-select" class="ai-dashboard__month-select">
+      {% for num, name in month_names %}
+        <option value="{{ num }}" {% if num == active_mon %}selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="ai-year-select" class="ai-dashboard__month-label" style="margin-left:1rem;">{{ 'Year:'|t }}</label>
+    <select id="ai-year-select" class="ai-dashboard__month-select">
+      {% for yr in available_years %}
+        <option value="{{ yr }}" {% if yr == active_year %}selected{% endif %}>{{ yr }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  {% endif %}
+
+  {# ===== TABLE ===== #}
+  {% if rows is empty %}
+    <p class="ai-dashboard__empty">{{ 'No AI usage recorded for @month.'|t({'@month': month_label}) }}</p>
+  {% else %}
+    <div class="ai-dashboard__table-header">
+      <h3>{{ 'Editor breakdown — @month'|t({'@month': month_label}) }}</h3>
+      <div class="ai-dashboard__actions">
+        <div class="ai-dashboard__sort-controls">
+          <span>{{ 'Sort by:'|t }}</span>
+          <button class="ai-sort-btn active" data-col="0">{{ 'Editor'|t }}</button>
+          <button class="ai-sort-btn" data-col="2">{{ 'Calls'|t }}</button>
+          <button class="ai-sort-btn" data-col="4">{{ 'Cost'|t }}</button>
+          <button class="ai-sort-btn" data-col="5">{{ 'Quota %'|t }}</button>
+        </div>
+        <div class="ai-dashboard__exports">
+          <a href="{{ url('ai_metering.export_csv') }}" class="button button--small">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            {{ 'Export CSV'|t }}
+          </a>
+          <a href="{{ url('ai_metering.export_json') }}" class="button button--small">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            {{ 'Export JSON'|t }}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <table class="ai-dashboard__table" id="ai-usage-table">
+      <thead>
+        <tr>
+          <th data-col="0">{{ 'Editor'|t }}</th>
+          <th>{{ 'Provider'|t }}</th>
+          <th data-col="2">{{ 'Calls'|t }}</th>
+          <th>{{ 'Tokens (in / out)'|t }}</th>
+          <th data-col="4">{{ 'Cost'|t }}</th>
+          <th data-col="5">{{ 'Quota used'|t }}</th>
+          <th>{{ 'Monthly budget (tokens)'|t }}</th>
+          <th>{{ 'Budget (est. @cur)'|t({'@cur': display_currency}) }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for uid, data in rows %}
+          {# Effective threshold: per-user override or global default. We no
+             longer expose the per-user editor, so this resolves to the global
+             default for every row — which still drives the HIGH badge below. #}
+          {% set effective_threshold = data.alert_threshold is not null ? data.alert_threshold : alert_threshold %}
+          <tr class="{% if data.pct_used >= 100 %}ai-dashboard__row--exceeded{% elseif data.pct_used >= effective_threshold %}ai-dashboard__row--warning{% endif %}"
+              data-uid="{{ uid }}">
+            <td><strong>{{ data.username }}</strong></td>
+            <td><span class="ai-badge ai-badge--provider">{{ data.provider_id }}</span></td>
+            <td>{{ data.calls }}</td>
+            <td>{{ data.total_input|number_format }} / {{ data.total_output|number_format }}</td>
+            <td>{{ data.cost_display }}</td>
+            <td>
+              <div class="ai-dashboard__bar-wrap">
+                <div class="ai-dashboard__bar {% if data.pct_used >= 100 %}ai-dashboard__bar--exceeded{% elseif data.pct_used >= effective_threshold %}ai-dashboard__bar--warning{% endif %}"
+                     style="width: {{ data.pct_used }}%"></div>
+              </div>
+              {{ data.tokens_used|number_format }} / {{ data.monthly_budget|number_format }}
+              <strong>({{ data.pct_used }}%)</strong>
+              {% if data.pct_used >= 100 %}<span class="ai-badge ai-badge--danger">{{ 'EXCEEDED'|t }}</span>{% endif %}
+              {% if data.pct_used >= effective_threshold and data.pct_used < 100 %}<span class="ai-badge ai-badge--warning">{{ 'HIGH'|t }}</span>{% endif %}
+            </td>
+            <td>
+              <div class="ai-quota-editor" id="ai-quota-result-{{ uid }}">
+                <input type="number" class="ai-quota-input" value="{{ data.monthly_budget }}"
+                       min="0" step="10000" data-uid="{{ uid }}">
+                <button class="button button--small ai-quota-save"
+                  hx-post="{{ set_quota_url }}"
+                  hx-target="#ai-quota-result-{{ uid }}"
+                  hx-swap="innerHTML"
+                  hx-vals='js:{"uid": "{{ uid }}", "budget": document.querySelector(".ai-quota-input[data-uid=\"{{ uid }}\"]").value}'
+                  >{{ 'Save'|t }}</button>
+              </div>
+            </td>
+            <td>{{ data.dollar_budget_display }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="ai-dashboard__totals-row">
+          <td><strong>{{ 'TEAM TOTAL'|t }}</strong></td>
+          <td></td>
+          <td><strong>{{ totals.calls }}</strong></td>
+          <td><strong>{{ totals.total_input|number_format }} / {{ totals.total_output|number_format }}</strong></td>
+          <td><strong>{{ totals.cost_display }}</strong></td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+    </table>
+  {% endif %}
+
+</div>

@@ -1,0 +1,67 @@
+uuid: 641fdc37-13df-43ee-95af-117da8c42fee
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: z2gTz3c0Dr4ThwV5v3Q-299VzGI0pNguBxXxcgLxAGo
+id: http_request
+label: 'HTTP Request'
+description: 'HTTP request operations'
+category: tools
+icon: 'mdi:api'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  body:
+    configurable: true
+    connectable: false
+    required: false
+  follow_redirects:
+    configurable: true
+    connectable: false
+    required: false
+    default: true
+  headers:
+    configurable: true
+    connectable: false
+    required: false
+    default: {  }
+  method:
+    configurable: true
+    connectable: false
+    required: false
+    default: GET
+  timeout:
+    configurable: true
+    connectable: false
+    required: false
+    default: 30
+  url:
+    configurable: false
+    connectable: true
+    required: false
+outputs:
+  body:
+    exposed: true
+  headers:
+    exposed: true
+  json:
+    exposed: true
+  method:
+    exposed: true
+  request_time:
+    exposed: true
+  status_code:
+    exposed: true
+  url:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:http_request'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

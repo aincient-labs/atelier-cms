@@ -1,0 +1,109 @@
+{#
+/**
+ * @file
+ * AIncient override of the core Navigation layout template.
+ *
+ * Verbatim copy of core/modules/navigation/layouts/navigation.html.twig with
+ * ONE change: the sidebar logo opens the AIncient console (the product home)
+ * instead of <front>, and shows the AIncient chip mark. Re-sync with core on
+ * Drupal core upgrades. Repointed here via aincient_chat_theme_registry_alter().
+ *
+ * Available variables:
+ * - content: The content for this layout.
+ * - attributes: HTML attributes for the layout <div>.
+ * - settings: layout settings (hide_logo, logo_path, logo_width, logo_height).
+ * - aincient_chip: The AIncient chip mark (added by aincient_chat).
+ * @ingroup themeable
+ */
+#}
+{% set control_bar_attributes = create_attribute() %}
+
+<div{{ control_bar_attributes
+  .addClass('admin-toolbar-control-bar')
+  .setAttribute('data-drupal-admin-styles', '')
+}}>
+  <div class="admin-toolbar-control-bar__content">
+    {% include 'navigation:toolbar-button' with {
+      attributes: create_attribute({'aria-expanded': 'false', 'aria-controls': 'admin-toolbar', 'type': 'button'}),
+      icon: { icon_id: 'burger' },
+      text: 'Expand sidebar'|t,
+      modifiers: ['small-offset'],
+      extra_classes: [
+        'admin-toolbar-control-bar__burger',
+      ],
+    } only %}
+  </div>
+</div>
+
+<aside{{ attributes
+  .addClass('admin-toolbar')
+  .setAttribute('id', 'admin-toolbar')
+  .setAttribute('data-drupal-admin-styles', true)
+  .setAttribute('role', 'presentation')
+}}>
+  {# This lil' div will get the Drupal.displace() attributes added to it via JS. #}
+  <div class="admin-toolbar__displace-placeholder"></div>
+
+  {% set nav_id = 'admin-toolbar__scroll-wrapper-' ~ random() %}
+  <nav class="admin-toolbar__scroll-wrapper" aria-labelledby="{{ nav_id }}">
+    <h2 id="{{ nav_id }}" class="visually-hidden">{{ 'Administrative sidebar'|t }}</h2>
+    {% set title_menu = 'admin-toolbar-title'|clean_unique_id %}
+    {# @todo - We should get rid of this ID below. #}
+    <div{{ region_attributes.content
+      .setAttribute('id', 'menu-builder')
+      .addClass('admin-toolbar__content')
+    }}>
+      {# @todo - Needs to be placed here so we can have the header footer on mobile. #}
+      <div class="admin-toolbar__header">
+        {% if not settings.hide_logo %}
+          {# AIncient: logo links to the console and shows the chip mark. #}
+          <a class="admin-toolbar__logo" href="{{ path('aincient_chat.console') }}" title="{{ 'Open the AIncient console'|t }}">
+            {% if aincient_chip %}
+              {{ aincient_chip }}
+            {% elseif settings.logo_path is not null %}
+              <img alt="{{ 'Navigation logo'|t }}" src="{{ settings.logo_path }}" loading="eager" width="{{ settings.logo_width|default(40) }}" height="{{ settings.logo_height|default(40) }}">
+            {% else %}
+              {% include '@navigation/logo.svg.twig' with {
+                label: 'Navigation logo'|t
+              } only %}
+            {% endif %}
+          </a>
+        {% endif %}
+        {% include 'navigation:toolbar-button' with {
+          attributes: create_attribute({ 'data-toolbar-back-control': true, 'tabindex': '-1' }),
+          extra_classes: ['admin-toolbar__back-button'],
+          icon: { icon_id: 'arrow-left' },
+          text: 'Back'|t,
+        } only %}
+        {# The close button should be in the tab sequence. Therefore, `tabindex` is omitted here. #}
+        {% include 'navigation:toolbar-button' with {
+          action: 'Collapse sidebar'|t,
+          attributes: create_attribute({ 'aria-controls': 'admin-toolbar', 'type': 'button' }),
+          extra_classes: ['admin-toolbar__close-button'],
+          icon: { icon_id: 'cross' },
+        } only %}
+      </div>
+
+      {{ content.content_top }}
+      {{ content.content }}
+    </div>
+
+    {% set title_menu_footer = 'admin-toolbar-footer'|clean_unique_id %}
+    <div{{ region_attributes.footer
+      .setAttribute('id', 'menu-footer')
+      .addClass('admin-toolbar__footer')
+    }}>
+      {{ content.footer }}
+      <button aria-controls="admin-toolbar" class="admin-toolbar__expand-button" type="button">
+        {{ icon('navigation', 'chevron', { class: 'admin-toolbar__expand-button-chevron', size: 16 }) }}
+        <span class="visually-hidden" data-toolbar-text>{{ 'Collapse sidebar'|t }}</span>
+      </button>
+    </div>
+  </nav>
+</aside>
+<div class="admin-toolbar-overlay" aria-controls="admin-toolbar" data-drupal-admin-styles></div>
+<script>
+  if (localStorage.getItem('Drupal.navigation.sidebarExpanded') !== 'false' && (window.matchMedia('(min-width: 1024px)').matches)) {
+    document.documentElement.setAttribute('data-admin-toolbar', 'expanded');
+  }
+</script>

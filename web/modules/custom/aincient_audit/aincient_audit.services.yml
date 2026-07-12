@@ -1,0 +1,78 @@
+services:
+  # Resolves a node's effective meta tags — shared by the SEO check and the
+  # read_meta_tags capability so "what tags do I have" and the audit agree.
+  aincient_audit.meta_reader:
+    class: Drupal\aincient_audit\MetaTagReader
+    arguments: ['@metatag.manager']
+
+  # Shipped default-policy checks (DECISIONS 0129). Tagged so AuditEngine (and,
+  # next, PolicyEvaluator) collect them in report order via priority — higher
+  # priority runs first, so `seo` precedes `links`.
+  aincient_audit.check.seo_meta:
+    class: Drupal\aincient_audit\Check\SeoMetaCheck
+    arguments: ['@aincient_audit.meta_reader']
+    tags:
+      - { name: aincient_audit.check, priority: 20 }
+  aincient_audit.check.internal_links:
+    class: Drupal\aincient_audit\Check\InternalLinkCheck
+    arguments: ['@aincient_pages.store', '@class_resolver', '@path.validator', '@request_stack']
+    tags:
+      - { name: aincient_audit.check, priority: 10 }
+
+  # A by-id lookup over the tagged checks. Exists because a FlowDrop node
+  # processor's static create() can't consume a !tagged_iterator directly — the
+  # policy_check node injects this and calls get($id). Same priority order as
+  # the engine sees (seo before links).
+  aincient_audit.check_registry:
+    class: Drupal\aincient_audit\Check\CheckRegistry
+    arguments:
+      - !tagged_iterator { tag: aincient_audit.check }
+
+  # Dedicated log channel for the policy-evaluation path.
+  logger.channel.aincient_audit:
+    parent: logger.channel_base
+    arguments: ['aincient_audit']
+
+  # Per-policy revision history (Phase 4) — the Brand-studio parallel. Records a
+  # snapshot on every policy config save and restores past states verbatim.
+  aincient_audit.policy_revisioner:
+    class: Drupal\aincient_audit\PolicyRevisioner
+    arguments:
+      - '@entity_type.manager'
+      - '@config.factory'
+      - '@current_user'
+
+  # The single robust seam: snapshots a policy into history on every config SAVE,
+  # catching every write path (studio Publish, admin form, import, restore, seed)
+  # without instrumenting each writer. Best-effort — never blocks a policy save.
+  aincient_audit.policy_config_subscriber:
+    class: Drupal\aincient_audit\EventSubscriber\PolicyConfigSubscriber
+    arguments:
+      - '@aincient_audit.policy_revisioner'
+      - '@database'
+      - '@logger.channel.aincient_audit'
+    tags:
+      - { name: event_subscriber }
+
+  # Runs the shipped default policies AS FlowDrop workflows, synchronously and
+  # DB-free (DECISIONS 0129): PHP selector prefilter → SynchronousOrchestrator →
+  # read `findings` → validate shape → stamp policyId → aggregate. The seam
+  # AuditEngine::audit() delegates to.
+  aincient_audit.policy_evaluator:
+    class: Drupal\aincient_audit\PolicyEvaluator
+    arguments:
+      - '@flowdrop_runtime.synchronous_orchestrator'
+      - '@entity_type.manager'
+      - '@logger.channel.aincient_audit'
+
+  # The deterministic, read-only page auditor — the single source of findings for
+  # BOTH the Checks studio panel (AuditController) and the page agent
+  # (run_page_audit capability), so the two never disagree. A thin facade: owns
+  # the report envelope + the meta reader, delegates the findings to the
+  # policy evaluator (workflow-backed).
+  aincient_audit.engine:
+    class: Drupal\aincient_audit\AuditEngine
+    arguments:
+      - '@aincient_pages.store'
+      - '@aincient_audit.meta_reader'
+      - '@aincient_audit.policy_evaluator'

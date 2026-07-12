@@ -1,0 +1,18 @@
+{#
+/**
+ * @file
+ * AIncient: primary/secondary local tasks as a branded pill tab bar.
+ */
+#}
+{% if primary %}
+  <nav class="ain-tabs" aria-label="{{ 'Primary tabs'|t }}">
+    <h2 class="sr-only">{{ 'Primary tabs'|t }}</h2>
+    <ul class="ain-tabs__list">{{ primary }}</ul>
+  </nav>
+{% endif %}
+{% if secondary %}
+  <nav class="ain-tabs ain-tabs--secondary" aria-label="{{ 'Secondary tabs'|t }}">
+    <h2 class="sr-only">{{ 'Secondary tabs'|t }}</h2>
+    <ul class="ain-tabs__list">{{ secondary }}</ul>
+  </nav>
+{% endif %}

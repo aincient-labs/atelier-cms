@@ -1,0 +1,17 @@
+name: Pricing
+status: experimental
+group: 'AIncient Landing'
+description: 'Plan/price tiers side by side. Mark one tier featured to draw the eye.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    tiers:
+      type: array
+      description: 'Array of { name, price, period, description, features (string[]), cta_label, cta_url, featured (bool) }.'

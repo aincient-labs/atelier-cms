@@ -1,0 +1,30 @@
+uuid: a2324d34-5b0a-4759-a832-5369455d7b72
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_workflow_executor
+id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape
+label: 'Run workflow: Brand shape & density specialist'
+description: 'Delegate a SHAPE change (corner roundness, shadow depth, spacing density, per-component knobs). Pass the shape-relevant part of the request as ask; returns a brand-preview slice (presets_json/tokens_json) to apply via preview_brand.'
+category: tools
+icon: 'mdi:shape-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  ask:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  slice:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_workflow_executor:flowdrop_workflow:aincient_brand_specialist_shape'
+visual_type: default
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true

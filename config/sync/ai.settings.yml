@@ -1,0 +1,25 @@
+_core:
+  default_config_hash: WWvo9_41v-oaqjbKdBtohSrem-s9w-7MIfvCWjZvAI4
+prompt_logging: false
+prompt_logging_tags: ''
+default_providers:
+  chat:
+    provider_id: ''
+    model_id: ''
+  chat_with_complex_json:
+    provider_id: ''
+    model_id: ''
+  chat_with_image_vision:
+    provider_id: ''
+    model_id: ''
+  chat_with_structured_response:
+    provider_id: ''
+    model_id: ''
+  chat_with_tools:
+    provider_id: ''
+    model_id: ''
+default_vdb_provider: ''
+request_timeout: 60
+allowed_hosts: {  }
+allowed_hosts_rewrite_links: false
+global_guardrails: {  }

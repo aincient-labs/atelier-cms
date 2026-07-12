@@ -1,0 +1,26 @@
+# The always-on, self-hosted monochrome emoji font (DECISIONS 0058). Vendored
+# under fonts/ by scripts/fetch-emoji-font.php so emoji are served from OUR
+# origin (no visitor-IP leak to Google — the user can't opt out of the emoji
+# font the way they can swap the brand font for a system stack) and render
+# consistently regardless of the visitor's OS. Attached on the themed render
+# path (aincient_theme); the bespoke page shell (PageSpikeController) links
+# fonts/noto-emoji.css directly since it emits raw HTML, not a render array.
+emoji-font:
+  version: 1.x
+  css:
+    theme:
+      fonts/noto-emoji.css: {}
+
+# GDPR consent banner (public site). Vanilla JS/CSS — no Drupal.behaviors
+# dependency — so the same files drive both the themed render path (attached as
+# this library) and the raw-HTML page shell (PageSpikeController links them
+# directly). The banner reads its config from a JSON <script> element, gates the
+# Google-Fonts <link> until consent, and styles itself from the END-USER's brand
+# tokens. See src/ConsentSettings.php.
+consent:
+  version: 1.x
+  css:
+    theme:
+      css/consent.css: {}
+  js:
+    js/consent.js: { attributes: { defer: true } }

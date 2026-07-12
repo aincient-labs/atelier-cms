@@ -1,0 +1,97 @@
+uuid: 02b26fa7-462e-4211-8e1b-79c949ebc5f9
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+id: aincient_pages_node_query
+label: 'Find content'
+description: 'Query Drupal nodes with configurable conditions'
+category: data
+icon: 'mdi:clipboard-text-search-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  access_check:
+    configurable: false
+    connectable: false
+    required: false
+    default: true
+  bundle:
+    configurable: false
+    connectable: false
+    required: false
+    default: aincient_page
+  changed_after:
+    configurable: false
+    connectable: true
+    required: false
+    default: 0
+  conditions:
+    configurable: false
+    connectable: true
+    required: false
+    default: {  }
+  entity_type:
+    configurable: false
+    connectable: false
+    required: false
+    default: node
+  limit:
+    configurable: false
+    connectable: false
+    required: false
+    default: 10
+  load_entities:
+    configurable: false
+    connectable: false
+    required: false
+    default: true
+  offset:
+    configurable: false
+    connectable: true
+    required: false
+    default: 0
+  published_only:
+    configurable: false
+    connectable: true
+    required: false
+    default: false
+  sort_direction:
+    configurable: false
+    connectable: true
+    required: false
+    default: DESC
+  sort_field:
+    configurable: false
+    connectable: true
+    required: false
+    default: changed
+outputs:
+  bundle:
+    exposed: true
+  count:
+    exposed: true
+  entities:
+    exposed: true
+  entity_type:
+    exposed: false
+  error_message:
+    exposed: true
+  has_more:
+    exposed: true
+  ids:
+    exposed: true
+  results:
+    exposed: true
+  success:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:entity_query'
+visual_type: tool
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true

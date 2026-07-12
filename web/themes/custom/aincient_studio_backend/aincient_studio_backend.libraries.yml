@@ -1,0 +1,11 @@
+global:
+  version: 1.x
+  css:
+    theme:
+      css/studio-backend.css: {}
+      css/admin-kit.css: {}
+  dependencies:
+    # Self-hosted brand fonts (Fraunces display serif + grotesk), shared with
+    # the console — the backend serif is the real thing, not the Palatino
+    # fallback, and leaks no operator IP to Google.
+    - aincient_chat/fonts

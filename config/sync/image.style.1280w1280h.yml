@@ -1,0 +1,18 @@
+uuid: c06550d1-41b5-4c8e-ba0c-5fe0afffca87
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 1280w1280h
+label: 1280w1280h
+effects:
+  3f3fb96d-39d4-4e88-b74a-0501428a3c75:
+    uuid: 3f3fb96d-39d4-4e88-b74a-0501428a3c75
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 1280
+      height: 1280
+      crop_type: focal_point
+      upscale: false

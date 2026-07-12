@@ -1,0 +1,24 @@
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('muted')] %}
+
+<section class="{{ tone_class }}">
+  <div class="mx-auto max-w-7xl px-6 py-12">
+    {% if heading %}<p class="text-center text-sm font-semibold uppercase tracking-wider opacity-60">{{ heading }}</p>{% endif %}
+    <div class="{{ heading ? 'mt-8' : '' }} flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
+      {% for logo in logos %}
+        {% set mark %}
+          {% if logo.image %}
+            <img src="{{ logo.image }}" alt="{{ logo.name }}" class="h-8 w-auto object-contain opacity-70 transition hover:opacity-100">
+          {% else %}
+            <span class="font-display text-lg font-semibold opacity-60 transition hover:opacity-100">{{ logo.name }}</span>
+          {% endif %}
+        {% endset %}
+        {% if logo.url %}<a href="{{ logo.url }}" class="inline-flex">{{ mark }}</a>{% else %}{{ mark }}{% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>

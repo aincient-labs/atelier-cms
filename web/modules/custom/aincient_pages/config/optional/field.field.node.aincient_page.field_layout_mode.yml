@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_layout_mode
+    - node.type.aincient_page
+id: node.aincient_page.field_layout_mode
+field_name: field_layout_mode
+entity_type: node
+bundle: aincient_page
+label: 'Layout mode'
+description: 'Per-translation page layout mode: symmetric (inherit the source layout) or asymmetric (this translation owns a diverged layout). Ignored on the source language.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

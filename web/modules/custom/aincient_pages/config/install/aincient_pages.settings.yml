@@ -1,0 +1,6 @@
+translation:
+  # New translations inherit the source layout by default (symmetric): edit the
+  # source layout once, every language follows. A translation may opt into its
+  # own layout (asymmetric / copy-on-write) when allow_divergence is on.
+  default_mode: symmetric
+  allow_divergence: true

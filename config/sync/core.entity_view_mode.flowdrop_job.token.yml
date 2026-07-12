@@ -1,0 +1,11 @@
+uuid: 912ea0fb-663f-4765-9fff-152129ed9e96
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_job
+id: flowdrop_job.token
+label: Token
+description: null
+targetEntityType: flowdrop_job
+cache: true

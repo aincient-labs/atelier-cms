@@ -1,0 +1,44 @@
+uuid: 29071dc1-f1c5-4096-8458-75395bf6f175
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_memory
+_core:
+  default_config_hash: A3umSLvN5ah3lenqbs3GGisWUHGQ2VXehF5M3u3KjEs
+id: memory_delete_raw
+label: 'Memory Delete (Explicit)'
+description: 'Delete a key from memory with fully explicit scope and scope ID. No auto-population from execution context.'
+category: memory
+icon: 'mdi:database-remove-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  key:
+    configurable: false
+    connectable: true
+    required: true
+  scope:
+    configurable: false
+    connectable: true
+    required: true
+  scope_id:
+    configurable: false
+    connectable: true
+    required: false
+    default: ''
+outputs:
+  key:
+    exposed: false
+  scope:
+    exposed: false
+  success:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_memory:memory_delete_raw'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

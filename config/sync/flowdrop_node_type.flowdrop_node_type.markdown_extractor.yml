@@ -1,0 +1,41 @@
+uuid: 0887b6a4-e35b-401a-b38e-180c93f42d31
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: 2AqbO0448ek2A7k_YLRHn3HHLT_cMcgHrVSAsVdiGJU
+id: markdown_extractor
+label: 'Markdown Extractor'
+description: 'Extract title, body, sections, and front matter from a markdown string'
+category: data
+icon: 'mdi:language-markdown'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  text:
+    configurable: false
+    connectable: true
+    required: false
+outputs:
+  body:
+    exposed: true
+  front_matter:
+    exposed: true
+  plain_text:
+    exposed: true
+  raw:
+    exposed: true
+  sections:
+    exposed: true
+  title:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:markdown_extractor'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

@@ -1,0 +1,52 @@
+aincient_chat.settings:
+  type: config_object
+  label: 'AIncient chat settings'
+  mapping:
+    features:
+      type: mapping
+      label: 'Release feature flags — gate in-progress studios out of the console'
+      mapping:
+        checks_enabled:
+          type: boolean
+          label: 'Enable the Checks studio (policy runtime is mid-build; ships off)'
+    default_studio:
+      type: string
+      label: 'The studio a fresh console session opens in'
+    studios:
+      type: sequence
+      label: 'Studio → agents map'
+      sequence:
+        type: mapping
+        label: 'Studio'
+        mapping:
+          agents:
+            type: sequence
+            label: 'Agents (FlowDrop workflows) in this studio'
+            sequence:
+              type: string
+              label: 'Workflow ID'
+          default:
+            type: string
+            label: 'Default agent for this studio'
+    workflow_metadata:
+      type: sequence
+      label: 'Per-flow welcome customisation'
+      sequence:
+        type: mapping
+        label: 'Flow presentation'
+        mapping:
+          welcome:
+            type: label
+            label: 'Welcome heading'
+          description:
+            type: label
+            label: 'Welcome description'
+          sample_asks:
+            type: sequence
+            label: 'Sample asks'
+            sequence:
+              type: label
+              label: 'Sample ask'
+          freeform_only:
+            type: boolean
+            label: 'Freeform only (no sample asks)'

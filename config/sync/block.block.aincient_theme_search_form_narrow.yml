@@ -1,0 +1,23 @@
+uuid: fe6a1e3b-d5cf-4446-a4b5-1c7c65ee9050
+langcode: en
+status: true
+dependencies:
+  module:
+    - search
+  theme:
+    - aincient_theme
+_core:
+  default_config_hash: _nZjxxdypO6xrOAJkCYD81v0L7wh2zbCAVO7_C-UKIc
+id: aincient_theme_search_form_narrow
+theme: aincient_theme
+region: primary_menu
+weight: -4
+provider: null
+plugin: search_form_block
+settings:
+  id: search_form_block
+  label: 'Search form (narrow)'
+  label_display: '0'
+  provider: search
+  page_id: null
+visibility: {  }

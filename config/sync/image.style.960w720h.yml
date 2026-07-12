@@ -1,0 +1,18 @@
+uuid: 477e4718-ee15-4fb9-a99b-59d6a195ddf6
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 960w720h
+label: 960w720h
+effects:
+  f194c505-57fa-4a8d-9af2-c3b69c1e187b:
+    uuid: f194c505-57fa-4a8d-9af2-c3b69c1e187b
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 960
+      height: 720
+      crop_type: focal_point
+      upscale: false

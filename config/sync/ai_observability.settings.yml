@@ -1,0 +1,16 @@
+_core:
+  default_config_hash: of8eJeE-9g4TORUxeXH1EAwJWJdfn0HiUl1XCw0rOIc
+logging_enabled: true
+log_event_types:
+  - Drupal\ai\Event\PreGenerateResponseEvent
+  - Drupal\ai\Event\PostGenerateResponseEvent
+  - Drupal\ai\Event\PostStreamingResponseEvent
+log_input: false
+log_output: false
+log_tags: {  }
+fallback_log_message_mode: true
+otel_enabled: false
+otel_spans: true
+otel_spans_store_input: false
+otel_spans_store_output: false
+otel_metrics: true

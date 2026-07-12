@@ -1,0 +1,29 @@
+name: Content
+status: experimental
+group: 'AIncient Landing'
+description: 'A prose block paired with an image (or text-only). variant places the image left/right.'
+props:
+  type: object
+  properties:
+    variant:
+      type: string
+      enum: [image-right, image-left, text-only]
+      default: image-right
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    body: { type: string }
+    cta_label: { type: string }
+    cta_url: { type: string }
+slots:
+  # The paired image, supplied by the renderer as a Rift responsive <picture>
+  # render array (view mode "content", 4x3) resolved from the page-schema's
+  # `image` media token — NOT authored as a prop. Alt rides inside the picture
+  # (sourced from the Media entity). See PageSpikeController::component().
+  image:
+    title: 'Content image'
+    description: 'Responsive <picture> built by the renderer from the image media token.'

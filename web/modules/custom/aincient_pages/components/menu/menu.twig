@@ -1,0 +1,84 @@
+{#
+  Generic recursive menu. Renders a nested {label, url, below} tree (see
+  SiteChrome::nav / MenuRepository::tree) in one of two presentations:
+
+   - header: a horizontal nav whose items with children reveal a CSS-only
+     dropdown panel on hover AND keyboard focus (group-hover + group-focus-within,
+     no JS). Deeper levels fly out to the side. Named groups (m0/m1/m2) keep each
+     depth's hover independent so hovering a parent doesn't open every descendant.
+   - footer: grouped columns — each top-level item is a heading with its children
+     stacked beneath it; deeper levels indent.
+
+  Tailwind v4 scans for LITERAL utility strings, so every class (incl. the named
+  group/reveal variants) is written out verbatim below — never interpolated.
+#}
+{% import _self as menu %}
+{% if (variant|default('header')) == 'footer' %}
+  {{ menu.footer_level(items|default([]), 0, max_depth|default(0), name|default('')) }}
+{% else %}
+  {{ menu.header_level(items|default([]), 0, max_depth|default(0), name|default(''), align|default('end')) }}
+{% endif %}
+
+{% macro header_level(items, depth, max_depth, name, align) %}
+  {% import _self as menu %}
+  {% set groups = {0: 'group/m0', 1: 'group/m1', 2: 'group/m2'} %}
+  {# Reveal on hover AND keyboard focus, pure CSS. We toggle opacity +
+     pointer-events (NOT Tailwind's `invisible`/`visible`: those class names
+     collide with Drupal core's hidden.module.css `.invisible{visibility:hidden!important}`,
+     which would win regardless of specificity). #}
+  {% set reveals = {
+    0: 'group-hover/m0:pointer-events-auto group-hover/m0:opacity-100 group-focus-within/m0:pointer-events-auto group-focus-within/m0:opacity-100',
+    1: 'group-hover/m1:pointer-events-auto group-hover/m1:opacity-100 group-focus-within/m1:pointer-events-auto group-focus-within/m1:opacity-100',
+    2: 'group-hover/m2:pointer-events-auto group-hover/m2:opacity-100 group-focus-within/m2:pointer-events-auto group-focus-within/m2:opacity-100'
+  } %}
+  {# Open flyouts away from the nearest viewport edge so they never overflow:
+     an end-aligned nav (default, sits at the right) anchors the top panel to the
+     trigger's right edge and flies deeper levels out to the left; a start/centre
+     nav does the mirror. Every class is a literal so Tailwind v4's scanner emits it. #}
+  {% set is_end = (align|default('end')) == 'end' %}
+  {% set top_pos = is_end ? 'right-0 top-full pt-2' : 'left-0 top-full pt-2' %}
+  {% set side_pos = is_end ? 'right-full top-0 pr-2' : 'left-full top-0 pl-2' %}
+  <ul{% if depth == 0 and name %} data-menu="{{ name }}"{% endif %} class="{{ depth == 0 ? 'flex items-center gap-7' : 'min-w-[12rem] rounded-[var(--popover-radius)] border border-[color:var(--popover-border)] bg-background p-1.5 shadow-[var(--popover-shadow)]' }}">
+    {% for item in items %}
+      {% set kids = item.below|default([]) %}
+      {% set has_children = kids is not empty and (max_depth == 0 or depth + 1 < max_depth) %}
+      <li class="relative {{ has_children ? groups[depth]|default('group/m2') : '' }}">
+        <a href="{{ item.url|default('#') }}"{{ has_children ? ' aria-haspopup="true"' : '' }} class="{{ depth == 0 ? 'inline-flex items-center gap-1 py-2 opacity-75 hover:opacity-100 transition' : 'flex items-center justify-between gap-3 rounded px-3 py-1.5 opacity-75 hover:opacity-100 hover:bg-foreground/5 transition' }}">
+          <span>{{ item.label }}</span>
+          {% if has_children %}
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3 w-3 shrink-0 opacity-60">
+              {% if depth == 0 %}
+                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              {% elseif is_end %}
+                <path d="M10 4l-4 4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              {% else %}
+                <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              {% endif %}
+            </svg>
+          {% endif %}
+        </a>
+        {% if has_children %}
+          <div class="absolute z-40 pointer-events-none opacity-0 transition duration-150 {{ depth == 0 ? top_pos : side_pos }} {{ reveals[depth]|default(reveals[2]) }}">
+            {{ menu.header_level(kids, depth + 1, max_depth, '', align) }}
+          </div>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
+
+{% macro footer_level(items, depth, max_depth, name) %}
+  {% import _self as menu %}
+  <ul{% if depth == 0 and name %} data-menu="{{ name }}"{% endif %} class="{{ depth == 0 ? 'flex flex-wrap gap-x-10 gap-y-6 text-sm' : 'mt-2 flex flex-col gap-1.5' }}">
+    {% for item in items %}
+      {% set kids = item.below|default([]) %}
+      {% set has_children = kids is not empty and (max_depth == 0 or depth + 1 < max_depth) %}
+      <li class="{{ depth == 0 and has_children ? 'flex flex-col' : '' }}">
+        <a href="{{ item.url|default('#') }}" class="{{ depth == 0 and has_children ? 'font-semibold opacity-100 hover:opacity-80 transition' : 'opacity-75 hover:opacity-100 transition' }}">{{ item.label }}</a>
+        {% if has_children %}
+          {{ menu.footer_level(kids, depth + 1, max_depth, '') }}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}

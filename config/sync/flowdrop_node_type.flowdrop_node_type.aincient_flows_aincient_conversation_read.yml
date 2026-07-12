@@ -1,0 +1,48 @@
+uuid: c99f02af-91f5-4385-af1c-9329036dbd1a
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_conversation_read
+label: 'Conversation read'
+description: 'Read the conversation buffer; loop-back edges land here so each iteration re-reads it fresh.'
+category: memories
+icon: 'mdi:database-search'
+plugin_version: 0.1.0
+enabled: true
+parameters:
+  backend:
+    configurable: true
+    connectable: false
+    required: false
+    default: entity
+  key:
+    configurable: true
+    connectable: false
+    required: false
+    default: conversation
+  loop_back:
+    configurable: false
+    connectable: true
+    required: false
+  scope:
+    configurable: true
+    connectable: false
+    required: false
+    default: session
+outputs:
+  count:
+    exposed: true
+  messages:
+    exposed: true
+  resolved_scope_id:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_conversation_read'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

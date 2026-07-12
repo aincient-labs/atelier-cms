@@ -1,0 +1,8 @@
+_core:
+  default_config_hash: BwHHQJrSk7VanXaYUmkJQXYtNXzg7ZhXxiau9wY8YOw
+enabled: false
+allowed_event_types: {  }
+allowed_roles: {  }
+excluded_roles: {  }
+track_login_history: false
+include_ip_address: false

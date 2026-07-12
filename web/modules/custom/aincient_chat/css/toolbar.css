@@ -1,0 +1,33 @@
+/**
+ * @file
+ * Branding for the "AIncient" admin-toolbar tab.
+ *
+ * The tab renders the brand wordmark as an inline SVG (injected by
+ * hook_toolbar). The chip ring and lettering are currentColor, so they pick up
+ * the colour set below — the brand ink on the toolbar's dark bar. Only the four
+ * chip bands are fixed. The SVG is sized by height; its viewBox keeps the
+ * aspect (≈5.8:1), so the link width is content-driven.
+ *
+ * Claro sizes toolbar icons with em-based padding at a specificity that
+ * outranks a plain class selector, so the padding reset is forced with
+ * !important — the standard way to re-skin the core toolbar tab.
+ */
+.toolbar-bar .toolbar-tab a.toolbar-icon-aincient-console {
+  display: inline-flex;
+  align-items: center;
+  height: 39px;
+  padding: 0 16px !important;
+  /* currentColor for the inline wordmark — brand ink on the dark bar. */
+  color: #f7f6f8;
+}
+
+/* No Claro glyph box; the inline SVG is the mark. */
+.toolbar-bar .toolbar-tab a.toolbar-icon-aincient-console::before {
+  display: none;
+}
+
+.toolbar-bar .toolbar-tab a.toolbar-icon-aincient-console svg {
+  display: block;
+  height: 20px;
+  width: auto;
+}

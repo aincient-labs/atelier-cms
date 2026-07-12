@@ -1,0 +1,35 @@
+uuid: f4ae92ff-c80a-4732-b238-408fcb469738
+langcode: en
+status: true
+dependencies: {  }
+id: merge
+label: Merge
+description: 'Combine several named inputs into one array or object'
+category: processing
+icon: 'mdi:call-merge'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  dynamicInputs:
+    configurable: true
+    connectable: false
+    required: false
+    default: {  }
+  output_mode:
+    configurable: true
+    connectable: false
+    required: false
+    default: array
+outputs:
+  merged:
+    exposed: true
+tags:
+  - merge
+  - data
+executor_plugin: 'flowdrop_node_processor:merge'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

@@ -1,0 +1,11 @@
+uuid: 255db275-60b0-41f9-8f26-f17a898ec43b
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_interrupt
+id: flowdrop_interrupt.token
+label: Token
+description: null
+targetEntityType: flowdrop_interrupt
+cache: true

@@ -1,0 +1,18 @@
+uuid: 10daabf5-8eec-4d97-82ea-2252385f8920
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 512w512h
+label: 512w512h
+effects:
+  1d04f5fb-b22f-404c-a294-c23c9ae4616e:
+    uuid: 1d04f5fb-b22f-404c-a294-c23c9ae4616e
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 512
+      height: 512
+      crop_type: focal_point
+      upscale: false

@@ -1,0 +1,52 @@
+uuid: 29fe153d-a244-48cb-909f-06092baa3e85
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: ResXYJ_1SIxMK5cUDg05c1AyFMj4El93m6eEKVifbPM
+id: split_text
+label: 'Split Text'
+description: 'Split text into chunks'
+category: processing
+icon: 'mdi:arrow-split-vertical'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  chunkSize:
+    configurable: true
+    connectable: false
+    required: false
+    default: 100
+  method:
+    configurable: true
+    connectable: false
+    required: false
+    default: words
+  separator:
+    configurable: true
+    connectable: false
+    required: false
+    default: ' '
+  text:
+    configurable: false
+    connectable: true
+    required: false
+outputs:
+  chunk_size:
+    exposed: true
+  chunks:
+    exposed: true
+  method:
+    exposed: true
+  total_chunks:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:split_text'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

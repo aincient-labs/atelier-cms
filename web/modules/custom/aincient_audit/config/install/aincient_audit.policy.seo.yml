@@ -1,0 +1,24 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_workflow.flowdrop_workflow.aincient_policy_seo
+  enforced:
+    module:
+      - aincient_audit
+id: seo
+label: 'SEO & meta tags'
+weight: -20
+workflow: aincient_policy_seo
+kind: deterministic
+enforcement: advisory
+selector:
+  bundles:
+    - aincient_page
+  moderation_states: {  }
+  langcodes: {  }
+parameters:
+  title_min: 30
+  title_max: 60
+  description_min: 50
+  description_max: 160

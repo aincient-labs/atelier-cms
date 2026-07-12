@@ -1,0 +1,23 @@
+{#
+/**
+ * @file
+ * Node teaser → the shared aincient_pages:article-teaser SDC.
+ *
+ * Listings render through the SAME token-driven component system as the page
+ * builder, so a brand change reskins teasers with no rebuild. Props are built
+ * in aincient_theme_preprocess_node().
+ */
+#}
+<div class="mb-6">
+  {{ include('aincient_pages:article-teaser', {
+    title: teaser.title,
+    url: teaser.url,
+    summary: teaser.summary,
+    image: teaser.image,
+    image_alt: teaser.image_alt,
+    author: teaser.author,
+    date: teaser.date,
+    more_url: teaser.url,
+    more_label: 'Read more'|t,
+  }, with_context = false) }}
+</div>

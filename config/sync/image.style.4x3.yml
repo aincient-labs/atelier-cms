@@ -1,0 +1,18 @@
+uuid: da55ed1d-b489-433f-8690-910076dde03c
+langcode: en
+status: true
+dependencies:
+  config:
+    - crop.type.4x3
+  module:
+    - crop
+name: 4x3
+label: 4x3
+effects:
+  87676777-b46d-4efa-bfd5-062ac49c8957:
+    uuid: 87676777-b46d-4efa-bfd5-062ac49c8957
+    id: crop_crop
+    weight: 1
+    data:
+      crop_type: 4x3
+      automatic_crop_provider: null

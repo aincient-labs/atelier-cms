@@ -1,0 +1,19 @@
+<header class="bg-background text-foreground">
+  <div class="mx-auto max-w-3xl px-6 pt-20 pb-10 text-center">
+    {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{{ eyebrow }}</p>{% endif %}
+    <h1 class="mt-4 font-display text-4xl sm:text-5xl [font-weight:var(--display-weight)] tracking-tight leading-[1.08]">{{ title }}</h1>
+    {% if lead %}<p class="mt-6 text-xl opacity-70 leading-relaxed">{{ lead }}</p>{% endif %}
+    {% if author or date %}
+      <div class="mt-8 flex items-center justify-center gap-3 text-sm opacity-70">
+        {% if author %}<span class="font-medium">{{ author }}</span>{% endif %}
+        {% if author and date %}<span aria-hidden="true">&middot;</span>{% endif %}
+        {% if date %}<time>{{ date }}</time>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+  {% if cover %}
+    <div class="mx-auto max-w-5xl px-6">
+      <div class="ain-img w-full rounded-[var(--card-radius)] overflow-hidden aspect-[16/8] ring-1 ring-border">{% block cover %}{{ cover }}{% endblock %}</div>
+    </div>
+  {% endif %}
+</header>

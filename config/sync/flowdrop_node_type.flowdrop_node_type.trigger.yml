@@ -1,0 +1,46 @@
+uuid: 029323c3-3121-49fd-8439-8694deb1e399
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_trigger
+_core:
+  default_config_hash: Q39lYz1Y5x9tKyWjJzf6p7Bnt4q6Ablgw-TdXET7tGA
+id: trigger
+label: Trigger
+description: 'Start workflow on events (entity changes, user actions, form submissions, cron, etc.)'
+category: inputs
+icon: 'mdi:flash-outline'
+plugin_version: 2.2.0
+enabled: true
+parameters:
+  variant:
+    configurable: false
+    connectable: false
+    required: false
+    default: start
+outputs:
+  cron:
+    exposed: true
+  data:
+    exposed: true
+  form:
+    exposed: true
+  form_id:
+    exposed: true
+  form_state:
+    exposed: true
+  form_values:
+    exposed: true
+  user:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_trigger:trigger'
+visual_type: terminal
+supported_visual_types:
+  - default
+  - simple
+  - terminal
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

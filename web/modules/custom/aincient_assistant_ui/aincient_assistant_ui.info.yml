@@ -1,0 +1,7 @@
+name: 'AIncient assistant-ui'
+type: module
+description: 'Exposes assistant-ui operator-console configuration (theme, …) to the frontend.'
+package: AIncient
+core_version_requirement: ^11
+dependencies:
+  - aincient_chat

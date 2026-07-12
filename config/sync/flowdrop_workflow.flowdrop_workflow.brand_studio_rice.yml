@@ -1,0 +1,959 @@
+uuid: 856bb471-0066-4558-977e-48c9fba2fc36
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_brand_picker
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_preview_brand
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_propose_brand_status
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_reset_preview
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_conversation_append
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_conversation_read
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_invoke
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_brand_apply_slices
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_brand_state
+    - flowdrop_node_type.flowdrop_node_type.aincient_reason
+    - flowdrop_node_type.flowdrop_node_type.boolean_gateway
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_node_processor_toolbox
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography
+    - flowdrop_node_type.flowdrop_node_type.prompt_template
+id: brand_studio_rice
+label: 'Brand Studio - Rice'
+description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: -2140
+      'y': 560
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+      metadata:
+        node_type_id: chat_input
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+          hiddenPorts: {  }
+    measured:
+      width: 280
+      height: 742
+  -
+    id: aincient_reason.2
+    position:
+      x: -380
+      'y': -920
+    data:
+      label: 'Reason (agent step)'
+      config:
+        model: ''
+        operation_type: 'aincient_role:reasoning'
+        temperature: 0
+        maxTokens: 1024
+        systemPrompt: ''
+      metadata:
+        node_type_id: aincient_reason
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+        swap:
+          previousNodeId: aincient_reason.1
+    measured:
+      width: 280
+      height: 762
+  -
+    id: boolean_gateway.1
+    position:
+      x: 560
+      'y': -500
+    data:
+      label: 'Boolean Gateway'
+      config:
+        branches:
+          -
+            name: 'True'
+            value: true
+          -
+            name: 'False'
+            value: false
+      metadata:
+        node_type_id: boolean_gateway
+    measured:
+      width: 280
+      height: 382
+  -
+    id: aincient_flows_aincient_invoke.2
+    position:
+      x: 1480
+      'y': -860
+    data:
+      label: 'Invoke tool'
+      config: {  }
+      metadata:
+        node_type_id: aincient_flows_aincient_invoke
+      extensions:
+        swap:
+          previousNodeId: aincient_flows_aincient_invoke.1
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 582
+  -
+    id: chat_output.1
+    position:
+      x: 1780
+      'y': -40
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+      metadata:
+        node_type_id: chat_output
+    measured:
+      width: 280
+      height: 542
+  -
+    id: aincient_flows_aincient_conversation_append.1
+    position:
+      x: -1540
+      'y': 480
+    data:
+      label: 'Append user turn'
+      config:
+        role: user
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+          hiddenPorts: {  }
+    measured:
+      width: 280
+      height: 882
+  -
+    id: aincient_flows_aincient_conversation_read.1
+    position:
+      x: -900
+      'y': 260
+    data:
+      label: 'Read conversation'
+      config:
+        key: conversation
+        scope: session
+        backend: entity
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_read
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+          hiddenPorts: {  }
+    measured:
+      width: 280
+      height: 642
+  -
+    id: aincient_flows_aincient_conversation_append.2
+    position:
+      x: 240
+      'y': -160
+    data:
+      label: 'Append assistant turn'
+      config:
+        role: user
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 882
+  -
+    id: aincient_flows_aincient_conversation_append.3
+    position:
+      x: 2420
+      'y': -580
+    data:
+      label: 'Append tool results'
+      config:
+        role: user
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 882
+  -
+    id: flowdrop_node_processor_toolbox.1
+    position:
+      x: -900
+      'y': -720
+    data:
+      label: 'Tool Box'
+      config: {  }
+      metadata:
+        node_type_id: flowdrop_node_processor_toolbox
+    measured:
+      width: 280
+      height: 382
+  -
+    id: aincient_flows_aincient_capability_brand_picker.1
+    position:
+      x: -1480
+      'y': -420
+    data:
+      label: 'Capability: Quick brand picker'
+      config:
+        nodeType: tool
+        maxRetries: 0
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_brand_picker
+    measured:
+      width: 280
+      height: 100
+  -
+    id: aincient_flows_aincient_capability_reset_preview.1
+    position:
+      x: -1480
+      'y': 60
+    data:
+      label: 'Capability: Reset brand preview'
+      config:
+        nodeType: tool
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_reset_preview
+    measured:
+      width: 280
+      height: 100
+  -
+    id: aincient_flows_aincient_capability_preview_brand.1
+    position:
+      x: -1480
+      'y': -180
+    data:
+      label: 'Capability: Preview brand'
+      config:
+        nodeType: tool
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_preview_brand
+    measured:
+      width: 280
+      height: 100
+    nodeId: aincient_flows_aincient_capability_preview_brand.1
+  -
+    id: aincient_flows_aincient_capability_propose_brand_status.1
+    position:
+      x: -1480
+      'y': 300
+    data:
+      label: 'Capability: Propose brand status'
+      config:
+        nodeType: tool
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_propose_brand_status
+    measured:
+      width: 280
+      height: 100
+    nodeId: aincient_flows_aincient_capability_propose_brand_status.1
+  -
+    id: prompt_template.3
+    position:
+      x: -900
+      'y': -300
+    data:
+      label: 'Prompt Template'
+      config:
+        template: |-
+          {% verbatim %}
+          You are AIncient's branding ORCHESTRATOR. The brand STUDIO is open beside this
+          chat — a live preview the user is watching. You do NOT design tokens or apply
+          anything yourself: you understand the user's intent and DELEGATE each look/feel
+          change to the right specialist. The studio applies your specialists' work to the
+          live preview AUTOMATICALLY once you finish — there is no apply/preview tool for you
+          to call, and you never need one.
+
+          SPECIALISTS — each is a tool that takes an `ask` (the part of the request about its
+          dimension). Delegating to a specialist IS the action; you do NOT read, forward, or
+          re-send what it returns — with ONE exception (see REJECTIONS below):
+          - brand_specialist_typography — typefaces, body text size, heading weight.
+          - brand_specialist_colour — the palette, moods / named themes (neon, dark,
+            editorial, playful…), and contrast-safe colour.
+          - brand_specialist_shape — corner roundness, shadow depth/elevation, spacing
+            density, per-component shape.
+          A request can touch several dimensions — call EACH relevant specialist exactly ONCE
+          (one tool call at a time) with just its slice of the ask. Call a specialist once and
+          move on; do NOT call the same specialist twice in a turn (the only exception is one
+          corrective re-call to fix a reported rejection — see REJECTIONS). The studio collects every
+          slice you delegated and applies the COMPLETE look in one step when you're done — so
+          one call per dimension is all it takes; a change that doesn't show in the preview
+          mid-turn (e.g. fonts, which apply on Publish) is NOT a failure and must not be
+          retried.
+
+          - To let the owner pick headline colours visually, call **brand_picker** — an
+            interactive primary/accent + preset picker. Prefer it for "let me choose / show
+            me options".
+          - If the user wants to start over / undo / revert their preview edits, call
+            **reset_preview** (no arguments) — it clears the unsaved draft back to the saved
+            brand. Don't delegate a reset to a specialist.
+          - The brand has a STATUS (a working mode: stage = ideating / guided / polish, plus a
+            lock). You do NOT set it — but when the mode no longer fits, you may PROPOSE a change
+            with **propose_brand_status** {stage, locked, rationale}. It shows the user a confirm
+            card; only they apply it. Propose **guided** when they shift to honouring specific
+            supplied inputs rather than exploring; propose **polish** (optionally **locked**) when
+            the brand is settling and only small, surgical tweaks remain. Give a short rationale,
+            and don't propose every turn — only on a genuine shift, and never the current status.
+
+          REJECTIONS — a specialist result may include a "rejected" list of changes that
+          FAILED validation ({token, value, reason}). This is the ONE thing you must read in a
+          result. If it is present and non-empty, you MUST be honest: tell the user, briefly
+          and in plain language, which change could not be applied and why (use the reason) —
+          never claim a rejected change succeeded. When the reason explains how to fix it
+          (e.g. a colour must reference a palette colour, or a value is the wrong kind), you
+          MAY re-delegate to the SAME specialist ONCE with a corrected `ask` that states the
+          fix. If the corrected attempt is also rejected, stop and tell the user plainly.
+          Changes with no "rejected" entry applied fine — frame those normally.
+
+          Brand changes stage as an UNSAVED draft in the preview; they go live ONLY when the
+          user clicks **Publish**. There is no "save brand" tool — never say you "saved",
+          "applied it live", or "published". Say the new look is ready in the preview and they
+          can Publish to keep it.
+
+          Your job is: understand → delegate each dimension to its specialist exactly once →
+          reply. Do NOT hand-write design tokens or presets, and do NOT try to apply or preview
+          anything — that is handled for you. Call ONE tool at a time. When a tool result
+          carries a `__widget__` field, reply with a single short framing sentence — do not
+          restate the data. Keep replies brief and concrete.
+          {% endverbatim %}
+          {% if stage_directive is defined and stage_directive %}
+
+          {{ stage_directive }}
+          Let this status govern how sweeping your changes are — delegate the SAME dimensions, but frame each specialist's `ask` to respect it.
+          {% endif %}
+          {% if brand_brief is defined and brand_brief %}
+
+          CURRENT SAVED BRAND — the brand as saved right now (before any unsaved preview edits below):
+          {{ brand_brief }}
+          {% endif %}
+          {% if live_preview_state is defined and live_preview_state %}
+          LIVE PREVIEW STATE — the user is currently previewing these UNSAVED brand edits, layered on top of the saved brand:
+          {{ live_preview_state }}
+          Treat this as the current look on screen. Build on it (don't restate the saved defaults), and only change what the user asks for.
+          {% endif %}
+        nodeType: default
+      metadata:
+        node_type_id: prompt_template
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 502
+    nodeId: prompt_template.3
+  -
+    id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1
+    position:
+      x: -1480
+      'y': -300
+    data:
+      label: 'Run workflow: Brand typography specialist'
+      config:
+        nodeType: tool
+        instanceTitle: 'Typography specialist'
+      metadata:
+        node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 100
+  -
+    id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1
+    position:
+      x: -1480
+      'y': -60
+    data:
+      label: 'Run workflow: Brand colour & contrast specialist'
+      config:
+        nodeType: tool
+        instanceTitle: 'Colour specialist'
+      metadata:
+        node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 100
+  -
+    id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1
+    position:
+      x: -1480
+      'y': 180
+    data:
+      label: 'Run workflow: Brand shape & density specialist'
+      config:
+        nodeType: tool
+        instanceTitle: 'Shape specialist'
+      metadata:
+        node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 100
+  -
+    id: brand_apply_slices.1
+    position:
+      x: 1140
+      'y': -140
+    data:
+      label: 'Apply brand slices'
+      config: {  }
+      metadata:
+        node_type_id: aincient_flows_brand_apply_slices
+    measured:
+      width: 280
+      height: 522
+  -
+    id: brand_state.1
+    position:
+      x: -1240
+      'y': -640
+    data:
+      label: 'Brand state'
+      config: {  }
+      metadata:
+        node_type_id: aincient_flows_brand_state
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 360
+edges:
+  -
+    id: xy-edge__flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: xy-edge__flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: xy-edge__flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: xy-edge__aincient_reason.1aincient_reason.1-output-has_tool_calls-boolean_gateway.1boolean_gateway.1-input-value
+    source: aincient_reason.2
+    target: boolean_gateway.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: logic
+      metadata:
+        edgeType: data
+        sourcePortDataType: boolean
+    sourceHandle: aincient_reason.2-output-has_tool_calls
+    targetHandle: boolean_gateway.1-input-value
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__aincient_reason.1aincient_reason.1-output-text-chat_output.1chat_output.1-input-message
+    source: aincient_reason.2
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: aincient_reason.2-output-text
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__boolean_gateway.1boolean_gateway.1-output-False-brand_apply_slices.1brand_apply_slices.1-input-trigger
+    source: boolean_gateway.1
+    target: brand_apply_slices.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: boolean_gateway.1-output-False
+    targetHandle: brand_apply_slices.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+    selected: false
+  -
+    id: xy-edge__aincient_reason.1aincient_reason.1-output-tool_calls-aincient_flows_aincient_invoke.1aincient_flows_aincient_invoke.1-input-tool_calls
+    source: aincient_reason.2
+    target: aincient_flows_aincient_invoke.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_reason.2-output-tool_calls
+    targetHandle: aincient_flows_aincient_invoke.2-input-tool_calls
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: chat_input.1-chat_input.1-output-message-aincient_flows_aincient_conversation_append.1-aincient_flows_aincient_conversation_append.1-input-content
+    source: chat_input.1
+    target: aincient_flows_aincient_conversation_append.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: aincient_flows_aincient_conversation_append.1-input-content
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-output-messages-aincient_reason.2-aincient_reason.2-input-messages
+    source: aincient_flows_aincient_conversation_read.1
+    target: aincient_reason.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_flows_aincient_conversation_read.1-output-messages
+    targetHandle: aincient_reason.2-input-messages
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: aincient_reason.2-aincient_reason.2-output-assistant_message-aincient_flows_aincient_conversation_append.2-aincient_flows_aincient_conversation_append.2-input-message
+    source: aincient_reason.2
+    target: aincient_flows_aincient_conversation_append.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: aincient_reason.2-output-assistant_message
+    targetHandle: aincient_flows_aincient_conversation_append.2-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: aincient_flows_aincient_invoke.2-aincient_flows_aincient_invoke.2-output-tool_messages-aincient_flows_aincient_conversation_append.3-aincient_flows_aincient_conversation_append.3-input-messages
+    source: aincient_flows_aincient_invoke.2
+    target: aincient_flows_aincient_conversation_append.3
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_flows_aincient_invoke.2-output-tool_messages
+    targetHandle: aincient_flows_aincient_conversation_append.3-input-messages
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-output-tool-aincient_flows_aincient_invoke.2aincient_flows_aincient_invoke.2-input-tool
+    source: flowdrop_node_processor_toolbox.1
+    target: aincient_flows_aincient_invoke.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: flowdrop_node_processor_toolbox.1-output-tool
+    targetHandle: aincient_flows_aincient_invoke.2-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: xy-edge__flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-output-tool-aincient_reason.2aincient_reason.2-input-tool
+    source: flowdrop_node_processor_toolbox.1
+    target: aincient_reason.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: flowdrop_node_processor_toolbox.1-output-tool
+    targetHandle: aincient_reason.2-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: aincient_flows_aincient_conversation_append.1-aincient_flows_aincient_conversation_append.1-output-trigger-aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-input-trigger
+    source: aincient_flows_aincient_conversation_append.1
+    target: aincient_flows_aincient_conversation_read.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: aincient_flows_aincient_conversation_append.1-output-trigger
+    targetHandle: aincient_flows_aincient_conversation_read.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+    selected: false
+  -
+    id: aincient_flows_aincient_conversation_append.3-aincient_flows_aincient_conversation_append.3-output-trigger-aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-input-loop_back
+    source: aincient_flows_aincient_conversation_append.3
+    target: aincient_flows_aincient_conversation_read.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: loopback
+        sourcePortDataType: trigger
+    sourceHandle: aincient_flows_aincient_conversation_append.3-output-trigger
+    targetHandle: aincient_flows_aincient_conversation_read.1-input-loop_back
+    style: 'stroke: var(--fd-edge-loopback); stroke-dasharray: var(--fd-edge-loopback-dasharray); stroke-width: var(--fd-edge-loopback-width); opacity: var(--fd-edge-loopback-opacity);'
+    markerEnd:
+      type: arrowclosed
+      width: 14
+      height: 14
+      color: var(--fd-edge-loopback)
+    class: flowdrop--edge--loopback
+    selected: false
+  -
+    id: xy-edge__aincient_flows_aincient_capability_brand_picker.1aincient_flows_aincient_capability_brand_picker.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_brand_picker.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_brand_picker.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: xy-edge__aincient_flows_aincient_capability_reset_preview.1aincient_flows_aincient_capability_reset_preview.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_reset_preview.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_reset_preview.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+  -
+    id: xy-edge__aincient_flows_aincient_capability_propose_brand_status.1aincient_flows_aincient_capability_propose_brand_status.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_propose_brand_status.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_propose_brand_status.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: xy-edge__prompt_template.3prompt_template.3-output-prompt-aincient_reason.2aincient_reason.2-input-systemPrompt
+    source: prompt_template.3
+    target: aincient_reason.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: prompt_template.3-output-prompt
+    targetHandle: aincient_reason.2-input-systemPrompt
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__brand_state.1brand_state.1-output-variables-prompt_template.3prompt_template.3-input-variables
+    source: brand_state.1
+    target: prompt_template.3
+    data:
+      targetNodeType: universalNode
+      targetCategory: prompts
+      metadata:
+        edgeType: data
+        sourcePortDataType: object
+    sourceHandle: brand_state.1-output-variables
+    targetHandle: prompt_template.3-input-variables
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: aincient_flows_aincient_conversation_read.1-output-messages-brand_apply_slices.1-input-messages
+    source: aincient_flows_aincient_conversation_read.1
+    target: brand_apply_slices.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_flows_aincient_conversation_read.1-output-messages
+    targetHandle: brand_apply_slices.1-input-messages
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__brand_apply_slices.1brand_apply_slices.1-output-trigger-chat_output.1chat_output.1-input-trigger
+    source: brand_apply_slices.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: brand_apply_slices.1-output-trigger
+    targetHandle: chat_output.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+    selected: false
+  -
+    id: xy-edge__boolean_gateway.1boolean_gateway.1-output-True-aincient_flows_aincient_invoke.2aincient_flows_aincient_invoke.2-input-trigger
+    source: boolean_gateway.1
+    target: aincient_flows_aincient_invoke.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: boolean_gateway.1-output-True
+    targetHandle: aincient_flows_aincient_invoke.2-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+    selected: false
+  -
+    id: xy-edge__aincient_flows_aincient_capability_preview_brand.1aincient_flows_aincient_capability_preview_brand.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_preview_brand.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_preview_brand.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+metadata:
+  createdAt: '2026-06-03T14:05:56.071Z'
+  updatedAt: '2026-06-27T12:48:09.710Z'
+  schemaVersion: 1.0.0
+  versionId: 1782564374479-lxuv867t9
+  updateNumber: 363
+  format: flowdrop
+created: 1782316908
+changed: 1782564490
+uid: 1
+input_ports:
+  -
+    name: variables
+    node_id: brand_state.1
+    port: variables
+output_ports: null
+parameter_schema:
+  type: object
+  properties:
+    variables:
+      type: mixed
+      default: {  }
+output_schema: null
+schema_version: 1.0.0

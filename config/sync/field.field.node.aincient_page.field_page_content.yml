@@ -1,0 +1,19 @@
+uuid: 94e2a352-1060-4791-867b-1f189248ee97
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_page_content
+    - node.type.aincient_page
+id: node.aincient_page.field_page_content
+field_name: field_page_content
+entity_type: node
+bundle: aincient_page
+label: 'Page content'
+description: 'The per-language content overlay (title + per-slot copy) produced by PageStore. Translatable so each language carries its own words while sharing the structure.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

@@ -1,0 +1,62 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - aincient_flows
+id: aincient_reason
+label: 'Reason (agent step)'
+description: 'One tool-aware LLM inference: emits the next tool_calls or a final answer (executes nothing). The agent loop is authored around it.'
+category: agents
+icon: 'mdi:brain'
+plugin_version: 0.1.0
+enabled: true
+parameters:
+  message:
+    configurable: false
+    connectable: true
+    required: false
+  messages:
+    configurable: false
+    connectable: true
+    required: false
+  tools:
+    configurable: false
+    connectable: true
+    required: false
+  loop_back:
+    configurable: false
+    connectable: true
+    required: false
+  model:
+    configurable: true
+    connectable: false
+    required: false
+  temperature:
+    configurable: true
+    connectable: false
+    required: false
+  maxTokens:
+    configurable: true
+    connectable: false
+    required: false
+  systemPrompt:
+    configurable: true
+    connectable: false
+    required: false
+outputs:
+  tool_calls:
+    exposed: true
+  text:
+    exposed: true
+  has_tool_calls:
+    exposed: true
+  assistant_message:
+    exposed: true
+tags:
+  - aincient
+  - agent
+executor_plugin: 'aincient_flows:reason'
+visual_type: default
+supported_visual_types:
+  - default

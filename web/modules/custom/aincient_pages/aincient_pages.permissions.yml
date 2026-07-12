@@ -1,0 +1,8 @@
+'administer aincient pages':
+  title: 'Administer AIncient pages'
+  description: 'Create, edit, delete, and unpublish AI-generated pages.'
+  restrict access: true
+'diverge aincient page layout':
+  title: 'Diverge a page translation layout'
+  description: 'Flip a page translation to its own (asymmetric) layout, detaching it from the source so source layout edits no longer propagate. The reverse (re-inherit) is always allowed.'
+  restrict access: true

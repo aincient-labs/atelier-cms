@@ -1,0 +1,244 @@
+name: 'AIncient CMS'
+description: 'An AI-first, chat-driven Drupal distribution. Log in and create, find, update, and delete content by talking to an AI operator console — no admin forms required.'
+type: 'Distribution'
+recipes:
+  # Stand on Drupal's Standard site as the base: content types (article/page),
+  # text formats + editor, search, admin theme, the editor/admin roles. AIncient
+  # layers the AI operator console on top of a familiar, complete Drupal site.
+  # Root-relative path: required to include a core recipe from outside core/recipes.
+  - core/recipes/standard
+install:
+  # SEO essentials for agent-composed pages: clean URL aliases + meta/OG tags.
+  - token
+  - pathauto
+  - metatag
+  # The AI stack.
+  - key
+  - ai
+  # Ship three first-class providers so the onboarding picker is a real choice:
+  # Anthropic (recommended default), OpenAI, and Ollama (local/self-hosted).
+  - ai_provider_anthropic
+  - ai_provider_openai
+  - ai_provider_ollama
+  # The AIncient operator console (deps pull in node + ai + aincient_core).
+  - aincient_core
+  - aincient_chat
+  - aincient_assistant_ui
+  # First-run onboarding: presents the connect-AI wizard on a keyless install.
+  # Without this the console has no way to prompt for AI setup on a fresh site.
+  - aincient_onboarding
+  # Demo showcase: seeds a branded homepage (an aincient_page) and points the
+  # front page at it, so a fresh install opens on a polished, on-brand site that
+  # sells the product and invites the visitor to log in and try it. Pulls in
+  # aincient_pages (the page-gen stack the front-end theme is coupled to).
+  - aincient_demo
+  # The AIncient front-end theme + the block module for its placements. Listed
+  # AFTER the base recipe set Olivero, so the system.theme action below flips the
+  # default to AIncient. Reuses the aincient_pages chrome (header/footer SDC) +
+  # brand tokens, so every anonymous page is branded — and the chrome-less
+  # centered-card login (page--user--login.html.twig) only applies when this is
+  # the active default theme.
+  - block
+  - aincient_theme
+config:
+  # Building-block friendly: don't fail if optional config already exists.
+  strict: false
+  actions:
+    # The chat-first experience is the product — every authenticated user gets it.
+    user.role.authenticated:
+      grantPermissions:
+        - 'use aincient operator console'
+    system.site:
+      simpleConfigUpdate:
+        name: 'AIncient CMS'
+    # Make AIncient the front-end default (the base recipe set Olivero).
+    system.theme:
+      simpleConfigUpdate:
+        default: aincient_theme
+    # Place the front-end blocks into AIncient's regions. createIfNotExists +
+    # set* mirrors core/recipes/core_recommended_front_end_theme: idempotent and
+    # safe alongside block_theme_initialize() (which runs on theme install and may
+    # pre-create some of these) — the set* actions still pin the correct region.
+    block.block.aincient_theme_site_branding:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: system_branding_block
+        settings:
+          id: system_branding_block
+          label: 'Site branding'
+          label_display: '0'
+          provider: system
+          use_site_logo: true
+          use_site_name: true
+          use_site_slogan: true
+      setRegion: header
+      setStatus: true
+      setWeight: 0
+    block.block.aincient_theme_main_menu:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: 'system_menu_block:main'
+        settings:
+          id: 'system_menu_block:main'
+          label: 'Main navigation'
+          label_display: '0'
+          provider: system
+          level: 1
+          depth: 2
+          expand_all_items: true
+      setRegion: primary_menu
+      setStatus: true
+      setWeight: 0
+    block.block.aincient_theme_account_menu:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: 'system_menu_block:account'
+        settings:
+          id: 'system_menu_block:account'
+          label: 'User account menu'
+          label_display: '0'
+          provider: system
+          level: 1
+          depth: 1
+          expand_all_items: false
+      setRegion: header
+      setStatus: true
+      setWeight: -4
+    block.block.aincient_theme_search_form_wide:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: search_form_block
+        settings:
+          id: search_form_block
+          label: 'Search form (wide)'
+          label_display: '0'
+          provider: search
+          page_id: null
+      setRegion: header
+      setStatus: true
+      setWeight: -5
+    block.block.aincient_theme_search_form_narrow:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: search_form_block
+        settings:
+          id: search_form_block
+          label: 'Search form (narrow)'
+          label_display: '0'
+          provider: search
+          page_id: null
+      setRegion: primary_menu
+      setStatus: true
+      setWeight: -4
+    block.block.aincient_theme_help:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: help_block
+        settings:
+          id: help_block
+          label: Help
+          label_display: '0'
+          provider: help
+      setRegion: header
+      setStatus: true
+      setWeight: 0
+    block.block.aincient_theme_breadcrumbs:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: system_breadcrumb_block
+        settings:
+          id: system_breadcrumb_block
+          label: Breadcrumbs
+          label_display: '0'
+          provider: system
+      setRegion: breadcrumb
+      setStatus: true
+      setWeight: 0
+    block.block.aincient_theme_messages:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: system_messages_block
+        settings:
+          id: system_messages_block
+          label: 'Status messages'
+          label_display: '0'
+          provider: system
+      setRegion: highlighted
+      setStatus: true
+      setWeight: -5
+    block.block.aincient_theme_primary_admin_actions:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: local_actions_block
+        settings:
+          id: local_actions_block
+          label: 'Primary admin actions'
+          label_display: '0'
+          provider: core
+      setRegion: highlighted
+      setStatus: true
+      setWeight: -5
+    block.block.aincient_theme_primary_local_tasks:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: local_tasks_block
+        settings:
+          id: local_tasks_block
+          label: 'Primary tabs'
+          label_display: '0'
+          provider: core
+          primary: true
+          secondary: false
+      setRegion: highlighted
+      setStatus: true
+      setWeight: -4
+    block.block.aincient_theme_secondary_local_tasks:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: local_tasks_block
+        settings:
+          id: local_tasks_block
+          label: 'Secondary tabs'
+          label_display: '0'
+          provider: core
+          primary: false
+          secondary: true
+      setRegion: highlighted
+      setStatus: true
+      setWeight: -2
+    block.block.aincient_theme_page_title:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: page_title_block
+        settings:
+          id: page_title_block
+          label: 'Page title'
+          label_display: '0'
+          provider: core
+      setRegion: content
+      setStatus: true
+      setWeight: -10
+    block.block.aincient_theme_content:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: system_main_block
+        settings:
+          id: system_main_block
+          label: 'Main page content'
+          label_display: '0'
+          provider: system
+      setRegion: content
+      setStatus: true
+      setWeight: 0
+    block.block.aincient_theme_powered:
+      createIfNotExists:
+        theme: aincient_theme
+        plugin: system_powered_by_block
+        settings:
+          id: system_powered_by_block
+          label: 'Powered by Drupal'
+          label_display: '0'
+          provider: system
+      setRegion: footer_bottom
+      setStatus: true
+      setWeight: 0

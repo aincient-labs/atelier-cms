@@ -1,0 +1,16 @@
+name: Banner
+status: experimental
+group: 'AIncient Landing'
+description: 'A short, bold full-width statement band — one big sentence with an optional action.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: brand
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    cta_label: { type: string }
+    cta_url: { type: string }

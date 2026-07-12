@@ -1,0 +1,20 @@
+uuid: f4042d06-fd74-4b71-9f3e-2a9f91fba5ae
+langcode: en
+status: true
+dependencies:
+  theme:
+    - aincient_studio_backend
+_core:
+  default_config_hash: avR_j1eFK5jT5vvgR6NiJ8Tcstgct33-6GPz0XPbubU
+id: aincient_studio_backend_local_actions
+theme: aincient_studio_backend
+region: content
+weight: -20
+provider: null
+plugin: local_actions_block
+settings:
+  id: local_actions_block
+  label: 'Primary admin actions'
+  label_display: '0'
+  provider: core
+visibility: {  }

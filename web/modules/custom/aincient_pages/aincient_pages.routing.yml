@@ -1,0 +1,654 @@
+# Spike routes: render a hand-authored brief (simulating the agent's output).
+aincient_pages.landing:
+  path: '/spike/landing'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageSpikeController::render'
+    brief: landing
+    _title: 'AIncient — landing spike'
+  requirements:
+    _access: 'TRUE'
+
+aincient_pages.blog:
+  path: '/spike/blog'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageSpikeController::render'
+    brief: blog
+    _title: 'AIncient — blog spike'
+  requirements:
+    _access: 'TRUE'
+
+# Component showcase: every placeable section + the grid layout container, so
+# the full library can be eyeballed (and reskinned by the live brand) at once.
+aincient_pages.showcase:
+  path: '/spike/showcase'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageSpikeController::render'
+    brief: showcase
+    _title: 'AIncient — component showcase'
+  requirements:
+    _access: 'TRUE'
+
+# Brand demo: a self-referential showcase that exercises the full token set
+# across all tones — the canonical target for live brand preview.
+aincient_pages.brand_demo:
+  path: '/demo/brand'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageSpikeController::render'
+    brief: brand-demo
+    _title: 'AIncient — brand demo'
+  requirements:
+    _access: 'TRUE'
+
+# NOTE: aincient_page nodes render chrome-less at their OWN node canonical
+# (/node/{nid} + pathauto alias) via PageRouteSubscriber, so metatag/pathauto
+# apply natively. There is no separate /page route. Pages are edited through
+# the chat console's page studio (preview/apply/save below), not a backend form.
+
+# JSON token manifest for the chat console's live brand editor (metadata +
+# current value per token). Read-only; the frontend previews edits client-side.
+aincient_pages.brand_manifest:
+  path: '/aincient/brand/manifest'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BrandController::manifest'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio design_system'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Publish the brand studio's working token diff — the console's one deliberate
+# global write. The picker + studio edit a preview-only draft; this is the only
+# thing that persists, through the same BrandRepository path the form/AI tool
+# use, so it records an attributed, reversible revision. Gated like the manifest.
+aincient_pages.brand_save:
+  path: '/aincient/brand/save'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BrandController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio design_system'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Persist the brand design-intent status (stage + lock) IMMEDIATELY — separate
+# from brand_save because status is a MODE, not draft content, so it does not
+# ride the token draft→Publish cycle. Gated like the manifest/save.
+aincient_pages.brand_status:
+  path: '/aincient/brand/status'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BrandController::setStatus'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio design_system'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# ── Globals studios API (chat console) ──────────────────────────────────────
+# The chrome parallel of the brand/page studio API: the Header/Footer/Brand-
+# identity studios edit a preview-only draft (chrome layout + identity + the two
+# chrome menus); preview renders it without persisting; save is the one
+# deliberate write (layout + identity + menu reconciliation). Gated like brand.
+
+# Current chrome state + the editing vocabulary (layout enums, identity, menus).
+aincient_pages.chrome_manifest:
+  path: '/aincient/chrome/manifest'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\ChromeController::manifest'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio globals'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Render the chrome around a placeholder body from the draft (iframe srcdoc). No write.
+aincient_pages.chrome_preview:
+  path: '/aincient/chrome/preview'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\ChromeController::preview'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio globals'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Publish the chrome draft: layout + identity + reconcile the main/footer menus.
+aincient_pages.chrome_save:
+  path: '/aincient/chrome/save'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\ChromeController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio globals'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# NOTE: logo/favicon uploads no longer have bespoke endpoints — they go through
+# the unified reference picker (/aincient/media/upload → a `media:<id>` token),
+# and the token is persisted by chrome_save. (Library IA increment #3c.)
+
+# ── Page studio API (chat console) ──────────────────────────────────────────
+# Mirror of the brand studio API: the studio edits a preview-only page-schema
+# draft client-side; preview renders it without persisting; save is the one
+# deliberate write. Gated like the brand endpoints.
+
+# Apply the page agent's ops to the working draft (PageStore::applyOps). No write.
+aincient_pages.page_apply:
+  path: '/aincient/page/apply'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::apply'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Render a draft page-schema to chrome-less HTML (studio iframe srcdoc). No write.
+aincient_pages.page_preview:
+  path: '/aincient/page/preview'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::preview'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Save the studio's working draft (editorial workflow): persists a forward draft
+# revision — does NOT publish. Create a new draft page or update one.
+aincient_pages.page_save:
+  path: '/aincient/page/save'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Editorial transitions for a page (the decoupled "go live" + review lifecycle).
+# All gated at the route by the broad console permission; the per-transition
+# permission (publish/approve/…) is enforced in the store against the user's
+# legal transitions. publish = write-latest-then-go-live.
+aincient_pages.page_publish:
+  path: '/aincient/page/publish'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::publish'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Editor-lock API (single-writer per node+language). Available to BOTH page-
+# editing studios (content + checks) — the OR permission — because the lock and
+# handover span them; the real floor is per-node update access, checked in the
+# controller.
+aincient_pages.page_lock_acquire:
+  path: '/aincient/page/lock/acquire'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\LockController::acquire'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content+use aincient studio checks'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.page_lock_release:
+  path: '/aincient/page/lock/release'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\LockController::release'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content+use aincient studio checks'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.page_lock_status:
+  path: '/aincient/page/lock/status'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\LockController::status'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content+use aincient studio checks'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.page_submit_review:
+  path: '/aincient/page/submit-review'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::submitReview'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.page_approve:
+  path: '/aincient/page/approve'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::approve'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.page_reject:
+  path: '/aincient/page/reject'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::reject'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.page_archive:
+  path: '/aincient/page/archive'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::archive'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.page_restore:
+  path: '/aincient/page/restore'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::restore'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# ── Unified reference API (chat console) ────────────────────────────────────
+# One SEARCH + one DESCRIBE over every referenceable type (media, nodes, blocks —
+# Users/Brand later), behind the studio's <ReferenceField> and the agent's
+# find_reference tool. Pickers write back the type's text TOKEN (media:<id> /
+# entity:node:<id> / block:<id>); resolve drives the in-field preview. Gated like
+# the page endpoints.
+
+# Search pickable references across types (?types=media,node,block&q=…).
+aincient_pages.reference_search:
+  path: '/aincient/reference/search'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\ReferenceController::search'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Resolve one stored token to a descriptor for the in-field preview (?token=…).
+aincient_pages.reference_resolve:
+  path: '/aincient/reference/resolve'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\ReferenceController::resolve'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# ── Media upload (chat console) ─────────────────────────────────────────────
+# The one media-specific write — creating an image from an upload. (Browse +
+# preview go through the unified reference API above; the agent's find_reference
+# tool reads the same library.)
+
+# Upload a new image into the library (multipart: file + optional alt).
+aincient_pages.media_upload:
+  path: '/aincient/media/upload'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\MediaController::upload'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Resolve a media token to a display-sized derivative (?token=…&style=…) — the
+# Presence preview cards render at real card size, where a picker thumb is blurry.
+aincient_pages.media_url:
+  path: '/aincient/media/url'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\MediaController::url'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# The editable detail of one image — the "open this media item" entry point for
+# the media studio's non-AI editor rail (mirror of block_schema).
+aincient_pages.media_schema:
+  path: '/aincient/media/{media}/schema'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\MediaController::detail'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Update an image's name / alt text (the editor rail's Save).
+aincient_pages.media_save:
+  path: '/aincient/media/{media}'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\MediaController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Swap an image's underlying file, keeping the same media:<id> token.
+aincient_pages.media_replace:
+  path: '/aincient/media/{media}/file'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\MediaController::replaceFile'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Overwrite an image with ANOTHER item's bytes (commit an edit onto the original),
+# keeping the target's media:<id> token.
+aincient_pages.media_replace_from:
+  path: '/aincient/media/{media}/replace-from'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\MediaController::replaceFrom'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Delete an image-media item (the human's explicit discard of an unwanted asset).
+aincient_pages.media_delete:
+  path: '/aincient/media/{media}/delete'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\MediaController::delete'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# The component catalog the studio's structured section editor renders from.
+aincient_pages.page_manifest:
+  path: '/aincient/page/manifest'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::manifest'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Existing pages for the studio's page picker (id/title/changed/url, newest first).
+aincient_pages.page_list:
+  path: '/aincient/page/list'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::list'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# The stored schema for an existing page — the "edit this page" entry point.
+aincient_pages.page_schema:
+  path: '/aincient/page/{node}/schema'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::pageSchema'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      node:
+        type: 'entity:node'
+
+# Flip a page translation to its OWN (asymmetric) layout — copy-on-write. Gated
+# by the divergence permission (it detaches the translation from source layout
+# edits). Body: { "langcode": "<lc>" }.
+aincient_pages.page_diverge:
+  path: '/aincient/page/{node}/diverge'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::diverge'
+  methods: [POST]
+  requirements:
+    _permission: 'diverge aincient page layout'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      node:
+        type: 'entity:node'
+
+# Re-inherit the source layout for a translation (asymmetric → symmetric). Always
+# allowed (re-inheriting is never a governance risk). Body: { "langcode": "<lc>" }.
+aincient_pages.page_converge:
+  path: '/aincient/page/{node}/converge'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PageController::converge'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      node:
+        type: 'entity:node'
+
+# ── Global block API (chat console) ─────────────────────────────────────────
+# Reusable fragments authored in the same studio (sections-only). A page places
+# one with a `block` slot; the renderer expands the block's sections inline.
+
+# Save the studio's working block fragment as a DRAFT (editorial workflow) —
+# create a new draft block or update one. Does NOT publish.
+aincient_pages.block_save:
+  path: '/aincient/block/save'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BlockController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Editorial transitions for a block (mirror of the page transitions above).
+aincient_pages.block_publish:
+  path: '/aincient/block/publish'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BlockController::publish'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.block_submit_review:
+  path: '/aincient/block/submit-review'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BlockController::submitReview'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.block_approve:
+  path: '/aincient/block/approve'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BlockController::approve'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.block_reject:
+  path: '/aincient/block/reject'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BlockController::reject'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.block_archive:
+  path: '/aincient/block/archive'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BlockController::archive'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.block_restore:
+  path: '/aincient/block/restore'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BlockController::restore'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# The stored fragment for an existing block — the "edit this block" entry point.
+aincient_pages.block_schema:
+  path: '/aincient/block/{media}/schema'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BlockController::blockSchema'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# The no-AI design-system editor.
+aincient_pages.brand_form:
+  path: '/admin/config/content/aincient-brand'
+  defaults:
+    _form: '\Drupal\aincient_pages\Form\BrandForm'
+    _title: 'AIncient brand'
+  requirements:
+    _permission: 'administer aincient pages'
+
+# Brand revision history (snapshot-on-save) + one-click restore.
+aincient_pages.brand_history:
+  path: '/admin/config/content/aincient-brand/history'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\BrandHistoryController::list'
+    _title: 'Brand history'
+  requirements:
+    _permission: 'administer aincient pages'
+
+aincient_pages.brand_restore:
+  path: '/admin/config/content/aincient-brand/history/{revision}/restore'
+  defaults:
+    _form: '\Drupal\aincient_pages\Form\BrandRestoreForm'
+    _title: 'Restore brand'
+  requirements:
+    _permission: 'administer aincient pages'
+    revision: '\d+'

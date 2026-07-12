@@ -1,0 +1,58 @@
+uuid: 66f4bf7f-9e08-4525-9267-0e8c96f267e6
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_interrupt
+_core:
+  default_config_hash: nrzrejKp76ghaxxo7XYwVhWDOf6R-t8fF7heIZ1rZUs
+id: choice_input
+label: 'Choice Input'
+description: 'Pauses workflow for user to select from options'
+category: human_in_loop
+icon: 'mdi:format-list-bulleted-type'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  max_selections:
+    configurable: true
+    connectable: false
+    required: false
+  message:
+    configurable: true
+    connectable: true
+    required: true
+  min_selections:
+    configurable: true
+    connectable: false
+    required: false
+  multiple:
+    configurable: true
+    connectable: false
+    required: false
+  options:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  response_time:
+    exposed: true
+  selected:
+    exposed: true
+  selection_count:
+    exposed: true
+  user_id:
+    exposed: true
+tags:
+  - human-in-loop
+  - interrupt
+  - choice
+  - selection
+executor_plugin: 'flowdrop_interrupt:choice_input'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

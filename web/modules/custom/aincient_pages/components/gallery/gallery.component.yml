@@ -1,0 +1,21 @@
+name: Gallery
+status: experimental
+group: 'AIncient Landing'
+description: 'A grid of images (screenshots, work, photos). columns reflows the grid.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    columns:
+      type: integer
+      enum: [2, 3, 4]
+      default: 3
+    images:
+      type: array
+      description: 'Array of { image, caption }. caption optional.'

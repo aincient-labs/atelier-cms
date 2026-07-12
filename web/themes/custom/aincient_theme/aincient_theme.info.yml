@@ -1,0 +1,19 @@
+name: AIncient
+type: theme
+description: 'Brand-aligned front-end theme. Reuses the AIncient page-generation stack — SDC chrome + Tailwind v4 + the brand design tokens — so every anonymous page is branded and consistent.'
+core_version_requirement: ^11
+base theme: stark
+# Hard runtime coupling: the site chrome (header/footer SDC) + brand tokens come
+# from the aincient_pages module, which the distribution always enables.
+libraries:
+  - aincient_theme/global
+regions:
+  header: 'Header'
+  primary_menu: 'Primary menu'
+  breadcrumb: 'Breadcrumb'
+  highlighted: 'Highlighted'
+  content: 'Content'
+  footer_top: 'Footer top'
+  footer_bottom: 'Footer bottom'
+  page_top: 'Page top'
+  page_bottom: 'Page bottom'

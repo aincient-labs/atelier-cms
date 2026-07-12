@@ -1,0 +1,59 @@
+uuid: 6b12913f-7ec0-400d-9896-1d441ace33aa
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_ai_provider
+_core:
+  default_config_hash: k_ONXRh-BMvTvwJKeLe27lrQt_y_cXlc_lK-zPOxa3A
+id: flowdrop_ai_provider_text_to_image
+label: 'Text to Image'
+description: 'Generate images from text descriptions using AI models'
+category: ai
+icon: 'mdi:image-plus'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  height:
+    configurable: true
+    connectable: false
+    required: false
+    default: 512
+  model:
+    configurable: true
+    connectable: false
+    required: false
+    default: ''
+  num_images:
+    configurable: true
+    connectable: false
+    required: false
+    default: 1
+  prompt:
+    configurable: false
+    connectable: true
+    required: true
+  width:
+    configurable: true
+    connectable: false
+    required: false
+    default: 512
+outputs:
+  images:
+    exposed: true
+  model:
+    exposed: false
+  provider:
+    exposed: false
+tags:
+  - model
+  - ai
+  - image
+  - generation
+executor_plugin: 'flowdrop_ai_provider:text_to_image'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

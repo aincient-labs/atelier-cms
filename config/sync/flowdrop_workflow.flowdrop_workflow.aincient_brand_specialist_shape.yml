@@ -1,0 +1,250 @@
+uuid: 6631b736-6728-45b4-b580-adc776afb09e
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_brand_validate_slice
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+id: aincient_brand_specialist_shape
+label: 'Brand specialist: Shape & density'
+description: 'Single-pass shape & density specialist. Takes a shape/depth/density instruction (+ optional current state), decides roundness/depth/density presets and any fine component knobs, and returns a brand-preview slice (presets_json/tokens_json) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: -40
+      'y': 0
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+      metadata:
+        node_type_id: chat_input
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 202
+  -
+    id: simple_chat.1
+    position:
+      x: 360
+      'y': 0
+    data:
+      label: 'Shape reasoning'
+      config:
+        operation_type: 'aincient_role:task'
+        model: null
+        temperature: 0
+        maxTokens: 900
+        systemPrompt: |-
+          You are the SHAPE & DENSITY specialist for AIncient's brand studio. You receive a
+          single instruction about corner roundness, shadow style/depth, spacing density, or
+          per-component shape. Decide the presets and any fine shadow axes, and return them.
+          You APPLY NOTHING — return a slice only.
+
+          Return ONLY a single JSON object (no prose, no markdown fence). Use any of these
+          keys; omit a key you are not setting:
+          - "presets_json": an object choosing presets by group:
+            - roundness — corner radius across the site: sharp, soft, rounded, pill.
+            - direction — where the shadow falls (light comes from the opposite side):
+              top_left, top, top_right, left, center, right, bottom_left, bottom,
+              bottom_right. Use center for a glow/halo. "light from the top-left" ⇒
+              bottom_right.
+            - density — component padding: tight, comfortable, roomy.
+          - "tokens_json": the SHADOW AXES. There is NO "shadow style" preset — build
+            and adjust the shadow from these decoupled dials; change ONE and the rest of
+            the look is preserved:
+              - shadow_distance (length, e.g. "8px") — how far it's cast. THE dial for
+                "bigger"/"smaller". "0" = a centred halo.
+              - shadow_blur (length, e.g. "12px") — diffusion. THE dial for "softer"
+                (larger) vs "harder"/"crisper" ("0" = a hard, crisp edge).
+              - shadow_strength (number 0–1, e.g. "0.2") — opacity. THE dial for
+                "darker"/"lighter". "0" = no shadow at all (flat).
+              - shadow_color — the tint. PREFER a reference to a palette colour:
+                "var(--neutral-ink)" for a normal drop, "var(--brand-primary)" or
+                "var(--brand-accent)" for a coloured glow. If the user wants a specific
+                tint the palette has no slot for, a RAW colour is allowed here (this is
+                the only colour token that accepts one), e.g. "oklch(0.9 0.05 340)".
+            Recipes (compose from the axes — there is no one-click bundle):
+              - flat ⇒ shadow_strength "0".
+              - soft drop ⇒ moderate shadow_blur, low shadow_strength, ink tint.
+              - glow/neon ⇒ shadow_distance "0", larger shadow_blur, shadow_color
+                "var(--brand-primary)", direction center.
+              - hard/retro ⇒ shadow_blur "0", shadow_strength "1", ink tint, a corner
+                direction (e.g. bottom_right).
+            Also for fine component knobs no preset expresses (lengths, e.g. "8px" or a
+            radius reference like "var(--radius-lg)"): button_radius, card_radius,
+            input_radius, tabs_radius, popover_radius, site_header_height. And for a
+            border: border_width (a length, e.g. "2px" — the GLOBAL border thickness) and
+            button_border_width (the per-component override for buttons; a length, or
+            var(--border-width) to re-track the global). Style is always solid. The
+            per-component border COLOUR is button_border_color / card_border_color /
+            popover_border_color — these are COLOUR tokens, so they take a palette reference
+            only ("var(--neutral-ink)", "var(--border)"), never a shorthand like
+            "1px solid #000". A bordered button needs BOTH a width AND a colour — buttons
+            default to a transparent border, so a width alone stays invisible.
+
+          Rules:
+          - USE ONLY THESE TOKEN NAMES (exactly as written): shadow_distance, shadow_blur,
+            shadow_strength, shadow_color, button_radius, card_radius, input_radius,
+            tabs_radius, popover_radius, site_header_height, border_width,
+            button_border_width, button_border_color, card_border_color,
+            popover_border_color. Never invent a name or a
+            var(--…) target — a radius value is one of var(--radius-sm|md|lg|xl|2xl|full)
+            or a raw length; an unknown name/ref is dropped.
+          - REFERENCES point at EXISTING tokens only. A colour token (button_border_color,
+            card_border_color, popover_border_color) must be "var(--<palette-or-semantic-colour>)"
+            — e.g. var(--neutral-ink), var(--border), var(--brand-primary). shadow_color is the
+            sole token that also accepts a raw colour.
+          - For an ADJUSTMENT to the current shadow ("make it bigger", "softer",
+            "darker", "light from the left"), change ONLY the one axis (or direction)
+            involved — never restate the whole look, so the rest is preserved.
+          - Touch ONLY shape/depth/density. Do NOT emit typography or palette/semantic
+            colour tokens — the one exception is the shadow TINT (shadow_color), which is
+            yours, and the component border colours above.
+          - If the instruction implies no shape change, return {}.
+
+          Examples:
+          - "sharp corners and a flat look" ⇒ {"presets_json": {"roundness": "sharp"}, "tokens_json": {"shadow_strength": "0"}}
+          - "a hard retro shadow"           ⇒ {"tokens_json": {"shadow_blur": "0", "shadow_strength": "1", "shadow_color": "var(--neutral-ink)"}, "presets_json": {"direction": "bottom_right"}}
+          - "make that shadow bigger"        ⇒ {"tokens_json": {"shadow_distance": "8px"}}
+          - "softer shadow, light from top-left" ⇒ {"tokens_json": {"shadow_blur": "14px"}, "presets_json": {"direction": "bottom_right"}}
+          - "a neon glow in the brand colour" ⇒ {"tokens_json": {"shadow_distance": "0", "shadow_blur": "18px", "shadow_color": "var(--brand-primary)", "shadow_strength": "0.5"}, "presets_json": {"direction": "center"}}
+          - "outlined buttons with a thin border" ⇒ {"tokens_json": {"button_border_width": "1px", "button_border_color": "var(--border)"}}
+      metadata:
+        node_type_id: flowdrop_ai_provider_simple_chat
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 420
+  -
+    id: chat_output.1
+    position:
+      x: 760
+      'y': 0
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+      metadata:
+        node_type_id: chat_output
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 182
+  -
+    id: brand_validate_slice.1
+    position:
+      x: 580
+      'y': 240
+    data:
+      label: 'Validate brand slice'
+      config: {  }
+      metadata:
+        node_type_id: aincient_flows_brand_validate_slice
+    measured:
+      width: 280
+      height: 360
+edges:
+  -
+    id: xy-edge__chat_input.1chat_input.1-output-message-simple_chat.1simple_chat.1-input-message
+    source: chat_input.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: simple_chat.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__simple_chat.1simple_chat.1-output-response-brand_validate_slice.1brand_validate_slice.1-input-slice
+    source: simple_chat.1
+    target: brand_validate_slice.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: simple_chat.1-output-response
+    targetHandle: brand_validate_slice.1-input-slice
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__brand_validate_slice.1brand_validate_slice.1-output-slice-chat_output.1chat_output.1-input-message
+    source: brand_validate_slice.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: brand_validate_slice.1-output-slice
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+metadata:
+  format: flowdrop
+  schemaVersion: 1.0.0
+created: 1782300000
+changed: 1782428924
+uid: 1
+input_ports:
+  -
+    name: ask
+    node_id: chat_input.1
+    port: message
+output_ports:
+  -
+    name: slice
+    node_id: chat_output.1
+    port: message
+parameter_schema:
+  type: object
+  required:
+    - ask
+  properties:
+    ask:
+      type: string
+      default: ''
+      required: true
+      description: 'The shape instruction to act on — what the user wants for corner roundness, shadow depth, spacing density, or per-component shape, optionally including the current look. Pass the shape-relevant part of the request only.'
+output_schema:
+  type: object
+  properties:
+    slice:
+      type: string
+schema_version: 1.0.0

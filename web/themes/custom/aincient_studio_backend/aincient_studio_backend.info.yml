@@ -1,0 +1,14 @@
+name: 'Studio Backend'
+type: theme
+description: 'The AIncient admin surface — a stark, brand-aligned backend (GitHub-style sidebar + main) for the few operations that live outside the chat console: People and AI metering. Base: core Stark, so there is almost nothing to un-style.'
+core_version_requirement: ^11
+base theme: stark
+libraries:
+  - aincient_studio_backend/global
+# The chrome is a fixed left sidebar (brand + section nav + account) beside a
+# scrolling main column — the toolbar/Navigation is deliberately suppressed
+# (html.html.twig never prints page_top), so this sidebar IS the nav.
+regions:
+  sidebar: 'Sidebar'
+  highlighted: 'Highlighted'
+  content: 'Main content'

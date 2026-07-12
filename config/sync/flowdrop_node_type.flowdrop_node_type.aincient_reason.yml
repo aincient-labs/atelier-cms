@@ -1,0 +1,70 @@
+uuid: cb6cb3a7-69de-4633-8f84-59a9f3208251
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+id: aincient_reason
+label: 'Reason (agent step)'
+description: 'One tool-aware LLM inference: emits the next tool_calls or a final answer (executes nothing). The agent loop is authored around it.'
+category: agents
+icon: 'mdi:brain'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  loop_back:
+    configurable: false
+    connectable: true
+    required: false
+  maxTokens:
+    configurable: true
+    connectable: false
+    required: false
+    default: 1024
+  messages:
+    configurable: false
+    connectable: true
+    required: false
+    default: {  }
+  model:
+    configurable: true
+    connectable: false
+    required: false
+    default: claude-sonnet-4-5-20250929
+  operation_type:
+    configurable: true
+    connectable: false
+    required: false
+    default: 'aincient_role:task'
+  systemPrompt:
+    configurable: true
+    connectable: true
+    required: false
+  temperature:
+    configurable: true
+    connectable: false
+    required: false
+    default: 0.0
+  tool:
+    configurable: false
+    connectable: true
+    required: false
+outputs:
+  assistant_message:
+    exposed: true
+  has_tool_calls:
+    exposed: true
+  text:
+    exposed: true
+  tool_calls:
+    exposed: true
+tags:
+  - aincient
+  - agent
+executor_plugin: 'flowdrop_node_processor:reason'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

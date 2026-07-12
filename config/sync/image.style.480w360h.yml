@@ -1,0 +1,18 @@
+uuid: 69f3a8ce-bfca-4680-a006-a038813bc434
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 480w360h
+label: 480w360h
+effects:
+  8b0756a8-4e34-481a-817d-28db50cbe60d:
+    uuid: 8b0756a8-4e34-481a-817d-28db50cbe60d
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 480
+      height: 360
+      crop_type: focal_point
+      upscale: false

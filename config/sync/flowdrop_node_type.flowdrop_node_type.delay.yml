@@ -1,0 +1,45 @@
+uuid: 17b18fc6-9610-41f1-b105-13697c09732c
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_interrupt
+id: delay
+label: Delay
+description: 'Pauses the workflow for a set duration, resuming automatically'
+category: timing
+icon: 'mdi:timer-sand'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  unit:
+    configurable: true
+    connectable: false
+    required: false
+  value:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  drift_seconds:
+    exposed: true
+  resolved_by_timer:
+    exposed: true
+  resumed_at:
+    exposed: true
+  scheduled_at:
+    exposed: true
+  user_id:
+    exposed: true
+tags:
+  - timing
+  - delay
+  - interrupt
+executor_plugin: 'flowdrop_interrupt:delay'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

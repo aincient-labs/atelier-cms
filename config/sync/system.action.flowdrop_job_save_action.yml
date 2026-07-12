@@ -1,0 +1,13 @@
+uuid: c0372c6f-2dde-4c29-876e-c49fc1d16a93
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_job
+_core:
+  default_config_hash: ZtXh5tnVOaW5oV-ZU_M628hyPGvpWxNo_LQnGg4FOcs
+id: flowdrop_job_save_action
+label: 'Save flowdrop jobs'
+type: flowdrop_job
+plugin: 'entity:save_action:flowdrop_job'
+configuration: {  }

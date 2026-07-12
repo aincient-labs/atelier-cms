@@ -1,0 +1,13 @@
+name: 'AIncient Core'
+type: module
+description: 'Foundational module for AIncient CMS: shared permissions and base services for the AI operator console. Feature code lives in aincient_chat, aincient_flows, aincient_pages, etc.'
+package: AIncient
+core_version_requirement: ^11
+dependencies:
+  # The model-role resolver + console form/Drush commands route through drupal/ai.
+  - ai:ai
+# NOTE: we do NOT hard-depend on flowdrop_ai_provider even though
+# AincientCoreServiceProvider swaps its model_service for a role-aware subclass:
+# the swap is guarded by hasDefinition() and the subclass is only loaded when
+# that service exists, so aincient_core stays installable (and unit-testable)
+# without the FlowDrop AI provider. In the distribution it is always present.

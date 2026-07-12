@@ -1,0 +1,115 @@
+aincient_pages.brand:
+  type: config_object
+  label: 'AIncient Foundations (design tokens)'
+  mapping:
+    tokens:
+      type: sequence
+      label: 'Design token overrides'
+      sequence:
+        type: string
+        label: 'Token value'
+    font_families:
+      type: sequence
+      label: 'Web font families to load'
+      sequence:
+        type: string
+        label: 'Family name'
+    font_delivery:
+      type: string
+      label: 'Brand font delivery (google = consent-gated Google Fonts | selfhost = vendored to our origin)'
+    status:
+      type: mapping
+      label: 'Brand design-intent status (shared by the studio + the brand agent)'
+      mapping:
+        stage:
+          type: string
+          label: 'Design stage (ideating | guided | polish)'
+        locked:
+          type: boolean
+          label: 'Whether the brand is settled — no sweeping / cross-axis changes'
+
+aincient_pages.identity:
+  type: config_object
+  label: 'AIncient brand identity'
+  mapping:
+    guidelines:
+      type: mapping
+      label: 'Brand guidelines'
+      mapping:
+        name:
+          type: label
+          label: 'Brand name'
+        tagline:
+          type: label
+          label: 'Tagline'
+        description:
+          type: string
+          label: 'Description'
+        tone:
+          type: string
+          label: 'Tone of voice'
+        imagery_style:
+          type: string
+          label: 'Imagery style (art direction for generated/selected images)'
+        imagery_avoid:
+          type: string
+          label: 'Imagery to avoid'
+    logo:
+      type: string
+      label: 'Logo media token (media:<id>, or empty)'
+    favicon:
+      type: string
+      label: 'Favicon media token (media:<id>, or empty)'
+    footer_note:
+      type: label
+      label: 'Footer note'
+
+aincient_pages.chrome:
+  type: config_object
+  label: 'AIncient chrome layout (header/footer arrangement)'
+  mapping:
+    header:
+      type: mapping
+      label: 'Header layout'
+      mapping:
+        logo_position:
+          type: string
+          label: 'Logo position (left|center)'
+        sticky:
+          type: boolean
+          label: 'Stick the header to the top on scroll'
+        nav_alignment:
+          type: string
+          label: 'Nav alignment (end|center|start)'
+    footer:
+      type: mapping
+      label: 'Footer layout'
+      mapping:
+        layout:
+          type: string
+          label: 'Footer layout (inline|stacked)'
+        show_tagline:
+          type: boolean
+          label: 'Show the tagline under the footer name'
+
+aincient_pages.settings:
+  type: config_object
+  label: 'AIncient pages settings'
+  mapping:
+    translation:
+      type: mapping
+      label: 'Page translation governance'
+      mapping:
+        default_mode:
+          type: string
+          label: 'Default layout mode for new translations (symmetric|asymmetric)'
+        allow_divergence:
+          type: boolean
+          label: 'Whether a translation may diverge to its own (asymmetric) layout'
+
+# The block media source (DECISIONS 0137): a global block stored as Media. The
+# source_configuration is just the source field (the content-overlay field), so
+# it reuses core's field_aware base exactly as the file/image sources do.
+media.source.aincient_block_fragment:
+  type: media.source.field_aware
+  label: '"Global block" media source configuration'

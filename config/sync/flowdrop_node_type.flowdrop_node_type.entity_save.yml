@@ -1,0 +1,80 @@
+uuid: 20a9c3d7-032f-4b2c-98dd-ff97ccf91219
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: AkVzWKEqR9dvwPJsjvMp9YCVJ3ey78nvZUz6Cac1VNQ
+id: entity_save
+label: 'Entity Save'
+description: 'Create or update Drupal entities'
+category: data
+icon: 'mdi:content-save'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  allowed_fields:
+    configurable: true
+    connectable: false
+    required: false
+    default: {  }
+  bundle:
+    configurable: true
+    connectable: true
+    required: false
+    default: ''
+  entity_id:
+    configurable: false
+    connectable: true
+    required: false
+    default: ''
+  entity_type:
+    configurable: true
+    connectable: true
+    required: true
+    default: node
+  new_revision:
+    configurable: true
+    connectable: true
+    required: false
+    default: false
+  revision_log_message:
+    configurable: true
+    connectable: true
+    required: false
+    default: ''
+  values:
+    configurable: true
+    connectable: true
+    required: false
+    default: {  }
+outputs:
+  bundle:
+    exposed: true
+  changed:
+    exposed: true
+  created:
+    exposed: true
+  entity_id:
+    exposed: true
+  entity_type:
+    exposed: true
+  is_new:
+    exposed: true
+  label:
+    exposed: true
+  revision_id:
+    exposed: true
+  skipped_fields:
+    exposed: true
+  uuid:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:entity_save'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

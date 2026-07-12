@@ -1,0 +1,51 @@
+uuid: 21d52ae2-a77b-493d-aab9-0b9fe12e593c
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: Wk7YcyrmEHFyOgrj0Sm6Tkklh-Ei5CjfnINtxulY7II
+id: chat_input
+label: 'Chat Input'
+description: 'Chat input for playground workflows with optional conversation history'
+category: inputs
+icon: 'mdi:chat-plus-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  history:
+    configurable: false
+    connectable: true
+    required: false
+  message:
+    configurable: false
+    connectable: true
+    required: false
+  messageId:
+    configurable: false
+    connectable: true
+    required: false
+  sessionId:
+    configurable: false
+    connectable: true
+    required: false
+outputs:
+  history:
+    exposed: true
+  message:
+    exposed: true
+  messageId:
+    exposed: true
+  sessionId:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:chat_input'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+  - square
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

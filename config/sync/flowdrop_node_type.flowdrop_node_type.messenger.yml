@@ -1,0 +1,42 @@
+uuid: e020ebe3-edd3-46d4-af2b-eda4dd045fe3
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: cf8niyzgq-8nUhFiiPpFQW5jQ_CQcdAm5tiMPXTaAUY
+id: messenger
+label: Messenger
+description: "Display messages using Drupal's messenger service"
+category: helpers
+icon: 'mdi:message-badge-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  message:
+    configurable: false
+    connectable: true
+    required: false
+  type:
+    configurable: true
+    connectable: false
+    required: false
+    default: status
+outputs:
+  displayed:
+    exposed: true
+  message:
+    exposed: true
+  type:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:messenger'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+  - square
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

@@ -1,0 +1,15 @@
+uuid: 16fd34dc-75a1-426c-900f-8f5d72b22837
+langcode: en
+status: true
+dependencies: {  }
+name: 640w
+label: 640w
+effects:
+  a5018046-452f-4f51-a0ba-49b2a5486a65:
+    uuid: a5018046-452f-4f51-a0ba-49b2a5486a65
+    id: image_scale
+    weight: 1
+    data:
+      width: 640
+      height: null
+      upscale: false

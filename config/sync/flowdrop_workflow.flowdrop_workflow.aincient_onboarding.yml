@@ -1,0 +1,111 @@
+uuid: 679a8609-d123-4316-a7fd-f86ce2065744
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_onboarding_panel
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+id: aincient_onboarding
+label: 'Setup Wizard'
+description: ''
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: 240
+      'y': 140
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+      metadata:
+        node_type_id: chat_input
+    measured:
+      width: 280
+      height: 742
+  -
+    id: aincient_flows_aincient_capability_onboarding_panel.1
+    position:
+      x: 680
+      'y': 320
+    data:
+      label: 'Capability: Connect AI (onboarding)'
+      config: {  }
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_onboarding_panel
+    measured:
+      width: 280
+      height: 462
+  -
+    id: chat_output.1
+    position:
+      x: 1200
+      'y': 380
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+      metadata:
+        node_type_id: chat_output
+    measured:
+      width: 280
+      height: 542
+edges:
+  -
+    id: xy-edge__aincient_flows_aincient_capability_onboarding_panel.1aincient_flows_aincient_capability_onboarding_panel.1-output-result-chat_output.1chat_output.1-input-message
+    source: aincient_flows_aincient_capability_onboarding_panel.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: aincient_flows_aincient_capability_onboarding_panel.1-output-result
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__chat_input.1chat_input.1-output-trigger-aincient_flows_aincient_capability_onboarding_panel.1aincient_flows_aincient_capability_onboarding_panel.1-input-trigger
+    source: chat_input.1
+    target: aincient_flows_aincient_capability_onboarding_panel.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: chat_input.1-output-trigger
+    targetHandle: aincient_flows_aincient_capability_onboarding_panel.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+metadata:
+  createdAt: '2026-06-14T20:30:52.307Z'
+  updatedAt: '2026-06-22T01:21:44.784Z'
+  schemaVersion: 1.0.0
+  created: 1781469033
+  changed: 1781997496
+  versionId: 1781469186262-tcgw25kxf
+  updateNumber: 5
+  format: flowdrop
+created: 1781469033
+changed: 1782428924
+uid: 0
+input_ports: null
+output_ports: null
+parameter_schema: null
+output_schema: null
+schema_version: 0.0.0

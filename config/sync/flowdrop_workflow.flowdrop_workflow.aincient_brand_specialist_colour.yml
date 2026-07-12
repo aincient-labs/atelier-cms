@@ -1,0 +1,256 @@
+uuid: b9c30013-b74c-4707-8832-85bbf39ebaeb
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_brand_validate_slice
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+id: aincient_brand_specialist_colour
+label: 'Brand specialist: Colour & contrast'
+description: 'Single-pass colour & contrast specialist. Takes a colour instruction (+ optional current state and WCAG warnings), decides a complete contrast-safe palette, and returns a brand-preview slice (tokens_json) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: -40
+      'y': 0
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+      metadata:
+        node_type_id: chat_input
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 202
+  -
+    id: simple_chat.1
+    position:
+      x: 360
+      'y': 0
+    data:
+      label: 'Colour reasoning'
+      config:
+        operation_type: 'aincient_role:task'
+        model: null
+        temperature: 0
+        maxTokens: 900
+        systemPrompt: |-
+          You are the COLOUR & CONTRAST specialist for AIncient's brand studio. You receive
+          a single instruction about a colour/palette change (it may include the current
+          look and any WCAG contrast warnings to fix). Decide a COMPLETE, coherent,
+          contrast-safe palette and return it. You APPLY NOTHING — return a slice only.
+
+          Return ONLY a single JSON object (no prose, no markdown fence) with:
+          - "tokens_json": an object mapping colour token names to values.
+
+          WHERE A RAW COLOUR GOES — this is the most important rule:
+          - PALETTE tokens are the ONE place a raw colour is chosen. Set THESE with a raw
+            oklch()/hex value; the rest of the system inherits from them. Almost every
+            request is satisfied by setting palette tokens alone — DO THIS BY DEFAULT.
+            Palette tokens (set as RAW colours):
+            • brand_primary + brand_primary_foreground (text on the primary fill)
+            • brand_accent + brand_accent_foreground
+            • neutral_surface (page + card BACKGROUND) + neutral_ink (BODY TEXT on it —
+              the opposite light/dark end from the surface)
+            • neutral_subtle (the MUTED SURFACE) + neutral_muted_foreground (muted text on
+              it — keep them ≥4.5:1)
+            • neutral_border
+          - SEMANTIC roles (background, foreground, primary, primary_foreground, accent,
+            accent_foreground, muted, muted_foreground, card, card_foreground, border,
+            selection, focus_ring) and COMPONENT colours (button_bg, button_fg,
+            button_border_color, card_border_color, popover_border_color,
+            site_footer_bg, site_footer_fg) are NOT places to put a raw colour — they MUST
+            be a REFERENCE to a palette token, e.g. "primary": "var(--brand-primary)",
+            "card_border_color": "var(--neutral-border)". A raw colour here is rejected.
+            To make one of these a NEW colour, set a PALETTE token to that colour first,
+            then point the role at it. Only override these for fine control; usually you
+            don't need to — they already inherit from the palette.
+
+          USE ONLY THESE TOKEN NAMES — never invent a name (no "light_pink", no
+          "accent_pink"); to add a colour, repurpose a palette slot above. var(--…) targets
+          must be existing tokens (e.g. var(--brand-primary), var(--brand-accent),
+          var(--neutral-ink), var(--neutral-surface), var(--border)).
+
+          Rules:
+          - SCOPE — match the palette you emit to what was actually asked. There are two
+            kinds of colour request; decide which one this is FIRST:
+            (a) A NAMED THEME / MOOD / full re-look ("make it neon", "go dark", "an editorial
+                feel", "playful", "reskin it") → set a COMPLETE palette in one go — always
+                neutral_surface, neutral_ink, brand_primary, brand_accent together. Assume
+                stale values from a previous look; don't patch just one token.
+            (b) A SINGLE-AXIS adjustment ("lighten the background", "make the surface warmer",
+                "a softer accent", "darken the links", "change the border") → touch ONLY the
+                named token(s) and the contrast pair they force (e.g. lighten neutral_surface
+                → also set neutral_ink if AA needs it). Do NOT emit brand_primary or
+                brand_accent unless the instruction is explicitly about the primary/accent
+                colour. A background/surface change must NOT drift the brand colours.
+            When unsure whether a phrase is a mood or a single-axis tweak, treat it as (b) and
+            change the least — a scoped edit is always safe to widen next turn; an unwanted
+            palette sweep is the bug we're avoiding.
+          - COLOUR PAIRS: every surface has a paired on-colour. Set a surface and its
+            on-colour TOGETHER and keep them ≥4.5:1 (WCAG AA). Pairs: background/foreground,
+            primary/primary_foreground, accent/accent_foreground, muted/muted_foreground,
+            card/card_foreground, brand_primary/brand_primary_foreground, brand_accent/
+            brand_accent_foreground.
+          - BRAND PRIMARY IS A FILL — pick it VIVID. brand_primary renders on buttons and
+            active states with its paired brand_primary_foreground guaranteeing legibility,
+            so it is FREE to be any lightness. Do NOT darken or desaturate it to make it
+            readable as text — that produces a muted, dull primary. Accent TEXT (links,
+            markers) uses the DERIVED primary_on_surface token, which auto-blends primary
+            toward the page ink and stays legible on any surface by construction. Choose
+            brand_primary for brand impact and saturation, not text contrast.
+          - DARK/NEON: dark neutral_surface + light neutral_ink (+ glow handled elsewhere).
+            LIGHT/AIRY: light surface + dark ink.
+          - INTERACTION accents (selection = the text-highlight tint, drawn translucent;
+            focus_ring = the keyboard focus outline) DEFAULT to the accent and rarely need
+            touching. Set them ONLY when the instruction is explicitly about text selection
+            or the focus ring ("make the selection pink", "blue focus ring") — point them at
+            a palette token (var(--brand-accent) re-tracks the accent). Never emit them for a
+            general palette/mood change; a full re-look leaves them inheriting brand_accent.
+          - BUTTON BORDER (button_border_color) defaults transparent, so buttons are
+            borderless. Set it (to a palette reference) ONLY for an outlined/bordered-button
+            request ("give buttons a thin outline", "outlined buttons"); leave it otherwise.
+          - Touch ONLY colours. Do NOT emit typography, radius, shadow, or density tokens.
+          - If the instruction implies no colour change, return {}.
+
+          Example — instruction "make it neon":
+          {"tokens_json": {"neutral_surface":"oklch(0.15 0.02 270)","neutral_ink":"oklch(0.97 0 0)","brand_primary":"oklch(0.78 0.26 195)","brand_primary_foreground":"oklch(0.15 0.02 270)","brand_accent":"oklch(0.75 0.27 330)","brand_accent_foreground":"oklch(0.15 0.02 270)"}}
+      metadata:
+        node_type_id: flowdrop_ai_provider_simple_chat
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 420
+  -
+    id: chat_output.1
+    position:
+      x: 760
+      'y': 0
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+      metadata:
+        node_type_id: chat_output
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 182
+  -
+    id: brand_validate_slice.1
+    position:
+      x: 580
+      'y': 240
+    data:
+      label: 'Validate brand slice'
+      config: {  }
+      metadata:
+        node_type_id: aincient_flows_brand_validate_slice
+    measured:
+      width: 280
+      height: 360
+edges:
+  -
+    id: xy-edge__chat_input.1chat_input.1-output-message-simple_chat.1simple_chat.1-input-message
+    source: chat_input.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: simple_chat.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__simple_chat.1simple_chat.1-output-response-brand_validate_slice.1brand_validate_slice.1-input-slice
+    source: simple_chat.1
+    target: brand_validate_slice.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: simple_chat.1-output-response
+    targetHandle: brand_validate_slice.1-input-slice
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__brand_validate_slice.1brand_validate_slice.1-output-slice-chat_output.1chat_output.1-input-message
+    source: brand_validate_slice.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: brand_validate_slice.1-output-slice
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+metadata:
+  format: flowdrop
+  schemaVersion: 1.0.0
+created: 1782300000
+changed: 1782428924
+uid: 1
+input_ports:
+  -
+    name: ask
+    node_id: chat_input.1
+    port: message
+output_ports:
+  -
+    name: slice
+    node_id: chat_output.1
+    port: message
+parameter_schema:
+  type: object
+  required:
+    - ask
+  properties:
+    ask:
+      type: string
+      default: ''
+      required: true
+      description: 'The colour instruction to act on — what the user wants for the palette/mood, optionally including the current look to build on and any WCAG contrast warnings to fix. Pass the colour-relevant part of the request only.'
+output_schema:
+  type: object
+  properties:
+    slice:
+      type: string
+schema_version: 1.0.0

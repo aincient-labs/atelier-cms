@@ -1,0 +1,38 @@
+# Icon pack for AIncient marks used in the admin Navigation (Drupal 11 Icon API).
+# The svg extractor inlines each file's child nodes and exposes the source
+# viewBox to the template, so any viewBox scales cleanly to the 20px toolbar
+# size. Icons: `console` (the AI-sparkles glyph on the AIncient Console menu
+# link) and `aincient-chip` (the brand chip, available for reuse). Referenced as
+# pack_id: aincient from aincient_chat.links.menu.yml.
+aincient:
+  enabled: true
+  label: "AIncient"
+  description: "AIncient brand marks for the admin Navigation."
+  extractor: svg
+  config:
+    sources:
+      - images/console.svg
+      - images/aincient-chip.svg
+  settings:
+    size:
+      title: "Size"
+      description: "Set a size for this icon."
+      type: "integer"
+      default: 20
+    class:
+      title: "Class"
+      description: "Set a class for this icon."
+      type: "string"
+      default: ""
+  template: >
+    <svg
+      {{ attributes
+          .setAttribute('viewBox', attributes.viewBox|default('0 0 24 24'))
+          .setAttribute('class', class)
+          .setAttribute('width', size|default('20'))
+          .setAttribute('height', size|default('20'))
+          .setAttribute('aria-hidden', 'true')
+      }}
+    >
+      {{ content }}
+    </svg>

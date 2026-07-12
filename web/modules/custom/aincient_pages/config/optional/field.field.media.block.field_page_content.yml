@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.field_page_content
+    - media.type.block
+id: media.block.field_page_content
+field_name: field_page_content
+entity_type: media
+bundle: block
+label: 'Block content'
+description: 'The per-language content overlay (title + per-slot copy) produced by PageStore — the block source field. Translatable so each language carries its own words while sharing the structure.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

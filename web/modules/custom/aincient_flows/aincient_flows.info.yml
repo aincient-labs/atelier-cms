@@ -1,0 +1,12 @@
+name: 'AIncient Flows'
+type: module
+description: 'Integration layer: exposes AIncient capabilities (aincient_pages/aincient_brand/aincient_onboarding) as FlowDrop nodes so owner-authored flows can orchestrate them under an allow-list.'
+package: AIncient
+core_version_requirement: ^11
+dependencies:
+  - flowdrop:flowdrop
+  - flowdrop_ai_provider:flowdrop_ai_provider
+  - flowdrop_memory:flowdrop_memory
+  - ai:ai
+  - aincient_pages
+  - aincient_audit

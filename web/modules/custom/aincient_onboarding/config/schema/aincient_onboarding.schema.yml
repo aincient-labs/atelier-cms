@@ -1,0 +1,19 @@
+aincient_onboarding.settings:
+  type: config_object
+  label: 'AIncient onboarding settings'
+  mapping:
+    recommended_provider:
+      type: string
+      label: 'Recommended AI provider'
+      # The drupal/ai provider plugin id shown in the wizard's highlighted
+      # "first choice" slot. This is the seam the future promotion/sponsorship
+      # manifest plugs into (see the onboarding proposal). Empty (the default)
+      # means no provider is highlighted — a neutral distribution.
+    tour_video_url:
+      type: string
+      label: 'Studio tour intro video URL'
+      # A YouTube URL the studio-tour widget offers as a click-to-load embed.
+      # Empty (the default) hides the video block entirely.
+    tour_video_title:
+      type: string
+      label: 'Studio tour intro video title'

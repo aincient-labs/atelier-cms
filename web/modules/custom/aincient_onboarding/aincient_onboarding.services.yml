@@ -1,0 +1,14 @@
+services:
+  aincient_onboarding.provider_connector:
+    class: Drupal\aincient_onboarding\ProviderConnector
+    arguments:
+      - '@state'
+      - '@entity_type.manager'
+      - '@config.factory'
+      - '@ai.provider'
+      - '@aincient_core.model_role_resolver'
+  aincient_onboarding.provider_catalog:
+    class: Drupal\aincient_onboarding\ProviderCatalog
+    arguments:
+      - '@ai.provider'
+      - '@config.factory'

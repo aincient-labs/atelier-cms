@@ -1,0 +1,3 @@
+translation:
+  default_mode: symmetric
+  allow_divergence: true

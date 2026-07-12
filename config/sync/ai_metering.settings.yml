@@ -1,0 +1,59 @@
+_core:
+  default_config_hash: ssAGF7tXNhpqNIW47yW3AHUCiZRWf2kD4zhLLUgo31M
+model_routing:
+  small_threshold: 500
+  small_model: claude-haiku-4-5-20251001
+  large_model: claude-sonnet-4-5-20250929
+  small_label: 'Haiku (Fast & Economical)'
+  large_label: 'Sonnet (High Quality)'
+pricing:
+  active_source: litellm
+  'anthropic:claude-haiku-4-5-20251001':
+    input_per_token: 2.5E-7
+    output_per_token: 1.25E-6
+    cache_read_per_token: 2.5E-8
+  'anthropic:claude-sonnet-4-5-20250929':
+    input_per_token: 3.0E-6
+    output_per_token: 1.5E-5
+    cache_read_per_token: 3.0E-7
+  'anthropic:claude-opus-4-5-20250929':
+    input_per_token: 1.5E-5
+    output_per_token: 7.5E-5
+    cache_read_per_token: 1.5E-6
+  'openai:gpt-4o':
+    input_per_token: 2.5E-6
+    output_per_token: 1.0E-5
+    cache_read_per_token: 1.25E-6
+  'openai:gpt-4o-mini':
+    input_per_token: 1.5E-7
+    output_per_token: 6.0E-7
+    cache_read_per_token: 7.5E-8
+  'ollama:_default':
+    input_per_token: 0.0
+    output_per_token: 0.0
+    cache_read_per_token: 0.0
+quota:
+  default_monthly_tokens: 100000
+  output_ratio: 0.2
+  fallback_provider: ''
+  fallback_model: ''
+  translate_output_ratio: 1.1
+alerts:
+  threshold_pct: 75
+  emails: {  }
+notifications:
+  user_on_fallback: true
+  admin_on_fallback: true
+litellm:
+  enabled: false
+  proxy_url: ''
+  api_key: ''
+currency:
+  display: USD
+  cache_ttl: 3600
+  manual_rates:
+    CAD: 1.36
+    EUR: 0.92
+    GBP: 0.78
+    AUD: 1.52
+    JPY: 153.0

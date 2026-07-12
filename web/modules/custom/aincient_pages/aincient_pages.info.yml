@@ -1,0 +1,36 @@
+name: 'AIncient Pages (spike)'
+type: module
+description: 'SPIKE: agent-composed pages. A page-schema → SDC renderer over a token-first component palette, with two regimes — blog (locked recipe) and landing (expressive composition grammar).'
+package: AIncient
+core_version_requirement: ^11
+# Generated pages persist as `aincient_page` nodes (schema split across
+# field_page_structure + field_page_content), so the pages get the full node
+# ecosystem for free.
+dependencies:
+  # The Media studio's generate_image capability resolves the site's image model
+  # through the aincient_core model-role layer (the explicit `image` role binding),
+  # so image generation is provider-neutral like every other LLM call.
+  - aincient_core
+  - drupal:node
+  # Editorial workflow: pages/blocks are moderated content (Draft · Needs review
+  # · Published · Archived) via the `aincient_editorial` workflow, so a save is a
+  # draft revision and publishing is a separate, explicit transition. NodeModeration
+  # wraps the content_moderation services; the workflow ships in config/sync.
+  - drupal:content_moderation
+  # Page translation: the structure/content split shares one layout across
+  # languages while the copy diverges (symmetric) or, when a translation
+  # diverges, owns its own (asymmetric). Inert until a 2nd language is added.
+  - drupal:content_translation
+  # Media as entities: image/avatar/cover props reference Media by token
+  # (media:ID / entity:media:ID@viewmode), resolved to image-style URLs + alt
+  # at render via EntityEmbedResolver. The agent emits tokens, not raw URLs.
+  - drupal:media
+  # Global blocks are a `block` media bundle (DECISIONS 0138) referenced by a media
+  # token — so they browse/pick through the Library (media_library) alongside
+  # images. media_library is the site-enabled Library UI (core.extension), not a
+  # code-level dependency of this module: it discovers the block media type on its
+  # own, so it is deliberately NOT listed here.
+  # Responsive images render through Rift (view-mode → <picture>/container-query)
+  # when present — a SOFT integration (rift is enabled via config/sync, not a
+  # hard module dep): EntityEmbedResolver::picture() no-ops without it and the
+  # renderer falls back to a plain <img>, so composition never requires rift.

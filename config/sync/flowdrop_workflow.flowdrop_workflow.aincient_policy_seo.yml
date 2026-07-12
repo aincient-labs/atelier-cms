@@ -1,0 +1,53 @@
+uuid: 5a7b7240-1ffb-4013-8b2e-3984c1e9dc44
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_policy_check
+id: aincient_policy_seo
+label: 'Policy: SEO & meta tags'
+description: 'The shipped default SEO & meta-tag policy (DECISIONS 0129). Runs the `seo` check against the target node — read from the workflow initial data — and returns its findings. Deterministic — no LLM, no HTTP; run synchronously and DB-free by the PolicyEvaluator.'
+nodes:
+  -
+    id: policy_check.1
+    position:
+      x: 0
+      'y': 0
+    data:
+      label: 'SEO & meta tags'
+      config:
+        check: seo
+      metadata:
+        node_type_id: aincient_flows_policy_check
+    measured:
+      width: 280
+      height: 300
+edges: {  }
+metadata:
+  version: 1.0.0
+created: 1783123200
+changed: 1783123200
+uid: 1
+input_ports: null
+output_ports:
+  -
+    name: findings
+    node_id: policy_check.1
+    port: findings
+parameter_schema:
+  type: object
+  properties:
+    node_id:
+      type: string
+      default: ''
+      description: 'The target aincient_page node id to check.'
+    langcode:
+      type: string
+      default: ''
+      description: 'The translation to check (optional; defaults to the resolved revision language).'
+output_schema:
+  type: object
+  properties:
+    findings:
+      type: array
+schema_version: 1.0.0

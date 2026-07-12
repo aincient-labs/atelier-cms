@@ -1,0 +1,34 @@
+uuid: 04224fbc-07ba-4e7e-aadd-4c32a0b7c2a9
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_preview_page
+label: 'Capability: Preview page'
+description: 'Edit the page the user is composing in the LIVE page studio by emitting a list of section OPS. This recomposes the preview INSTANTLY and stages it as an unsaved draft — it does NOT publish (the user does that with the Publish button). Use it for every change so the user sees it happen. Ops (JSON array): set_meta {type?,preset?,title?}; add_section {component, props?, after?}; update_section {index, props}; remove_section {index}; reorder {order:[…]}. The current draft and its section indexes are shown in the system prompt as LIVE PAGE STATE; component names + props are listed there too.'
+category: processing
+icon: 'mdi:cog'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  ops:
+    configurable: true
+    connectable: true
+    required: false
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:preview_page'
+visual_type: default
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

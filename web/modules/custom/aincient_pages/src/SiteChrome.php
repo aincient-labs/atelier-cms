@@ -1,0 +1,132 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Drupal\aincient_pages;
+
+use Drupal\Core\Menu\MenuLinkTreeInterface;
+use Drupal\Core\Menu\MenuTreeParameters;
+
+/**
+ * The site chrome: the brand header + footer that wrap EVERY anonymous page.
+ *
+ * Single source of truth for the header/footer so the two render paths stay
+ * consistent: the generated-page controller (full-bleed, at the aincient_page
+ * node's own canonical URL) and the
+ * `aincient_theme` front-end theme (every Drupal-native page) both build their
+ * chrome from here. Identity (name/logo/tagline/footer note) comes from
+ * {@see SiteIdentity}; the design-token style override from {@see BrandRepository}
+ * (Foundations); the nav from Drupal's core `main`/`footer` menus.
+ */
+final class SiteChrome {
+
+  /**
+   * How deep the chrome nav renders. Top level + this many sublevels of nesting
+   * (so 3 == top + 2 nested levels). Bump this to allow deeper dropdowns.
+   */
+  private const MAX_DEPTH = 3;
+
+  public function __construct(
+    private readonly MenuLinkTreeInterface $menuTree,
+    private readonly BrandRepository $brand,
+    private readonly SiteIdentity $identity,
+    private readonly ChromeRepository $chrome,
+  ) {}
+
+  /** Props for the `aincient_pages:site-header` SDC. */
+  public function headerProps(): array {
+    return [
+      'name' => $this->identity->name(),
+      'logo_url' => $this->identity->logoUrl(),
+      'nav' => $this->nav('main'),
+    ] + $this->chrome->header();
+  }
+
+  /** Props for the `aincient_pages:site-footer` SDC. */
+  public function footerProps(): array {
+    $note = $this->identity->footerNote();
+    if ($note === '') {
+      $note = '© ' . date('Y') . ' ' . ($this->identity->name() ?: 'AIncient');
+    }
+    return [
+      'name' => $this->identity->name(),
+      'tagline' => $this->identity->tagline(),
+      'logo_url' => $this->identity->logoUrl(),
+      'nav' => $this->nav('footer'),
+      'note' => $note,
+    ] + $this->chrome->footer();
+  }
+
+  /**
+   * A Drupal menu as a nested [{label, url, below: [...]}] tree.
+   *
+   * Sourced from core's menu system (managed at /admin/structure/menu, or the
+   * Globals studio for `main`/`footer`) — access-checked and sorted by the menu's
+   * own weights. Nesting is capped at {@see self::MAX_DEPTH}; `below` holds the
+   * same shape recursively (empty for a leaf).
+   */
+  public function nav(string $menuName): array {
+    $params = (new MenuTreeParameters())->onlyEnabledLinks()->setMaxDepth(self::MAX_DEPTH);
+    $tree = $this->menuTree->transform($this->menuTree->load($menuName, $params), [
+      ['callable' => 'menu.default_tree_manipulators:checkAccess'],
+      ['callable' => 'menu.default_tree_manipulators:generateIndexAndSort'],
+    ]);
+    return $this->toLinks($tree);
+  }
+
+  /**
+   * Recursively flatten a menu link tree into [{label, url, below}] nodes.
+   *
+   * @param array<mixed> $tree
+   *   A list of \Drupal\Core\Menu\MenuLinkTreeElement, keyed/sorted by the
+   *   generateIndexAndSort manipulator.
+   */
+  private function toLinks(array $tree): array {
+    $links = [];
+    foreach ($tree as $element) {
+      if (!$element->link->isEnabled()) {
+        continue;
+      }
+      $links[] = [
+        'label' => (string) $element->link->getTitle(),
+        'url' => $element->link->getUrlObject()->toString(),
+        'below' => $element->subtree ? $this->toLinks($element->subtree) : [],
+      ];
+    }
+    return $links;
+  }
+
+  /**
+   * A render array for ANY Drupal menu, by name, via the generic menu SDC.
+   *
+   * The reusable entry point: give it a menu machine name and a presentation
+   * variant ('header' dropdown / 'footer' grouped list) and get the
+   * `aincient_pages:menu` component populated with that menu's nested links.
+   */
+  public function menu(string $menuName, string $variant = 'header'): array {
+    return [
+      '#type' => 'component',
+      '#component' => 'aincient_pages:menu',
+      '#props' => [
+        'items' => $this->nav($menuName),
+        'name' => $menuName,
+        'variant' => $variant,
+      ],
+    ];
+  }
+
+  /**
+   * The brand `<style>` payload for the document head: a CSS-var :root override
+   * scoped to `html:root` so it always wins over the stylesheet's `:root`
+   * token defaults regardless of head order. Empty string when no brand tokens
+   * are set.
+   */
+  public function brandStyle(): string {
+    $css = $this->brand->cssVariables();
+    // cssVariables() emits ":root{…}"; bump specificity to html:root so the
+    // inline override beats the compiled stylesheet's ":root{…}" defaults no
+    // matter the <head> ordering (equal-specificity selectors are order-dependent).
+    return $css === '' ? '' : preg_replace('/^:root/', 'html:root', $css, 1);
+  }
+
+}

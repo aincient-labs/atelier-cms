@@ -1,0 +1,50 @@
+uuid: 1972f543-35fb-46fd-ad43-ed9487b5efd5
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_ai_provider
+_core:
+  default_config_hash: iDhIvbvMjYnmis1c8CoEX_7SWBgIWABOq0jvsFQSDJU
+id: flowdrop_ai_provider_summarize
+label: Summarize
+description: 'Summarize long text into a shorter version using AI models'
+category: ai
+icon: 'mdi:text-short'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  model:
+    configurable: true
+    connectable: false
+    required: false
+    default: ''
+  prompt:
+    configurable: true
+    connectable: false
+    required: false
+    default: ''
+  text:
+    configurable: false
+    connectable: true
+    required: true
+outputs:
+  model:
+    exposed: false
+  provider:
+    exposed: false
+  summary:
+    exposed: true
+tags:
+  - model
+  - ai
+  - text
+  - summarization
+  - nlp
+executor_plugin: 'flowdrop_ai_provider:summarize'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

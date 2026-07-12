@@ -1,0 +1,26 @@
+name: 'Site header'
+status: experimental
+group: 'AIncient Chrome'
+description: 'Brand header shown on every page: logo or name + navigation.'
+props:
+  type: object
+  properties:
+    name: { type: string }
+    logo_url: { type: string }
+    nav:
+      type: array
+      description: 'Array of { label, url }.'
+    logo_position:
+      type: string
+      enum: [left, center]
+      default: left
+      description: 'Where the logo/wordmark sits in the bar.'
+    sticky:
+      type: boolean
+      default: true
+      description: 'Stick the header to the top of the viewport on scroll.'
+    nav_alignment:
+      type: string
+      enum: [end, center, start]
+      default: end
+      description: 'How the nav links align in the remaining bar space (left logo only).'

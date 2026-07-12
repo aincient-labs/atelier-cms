@@ -1,0 +1,11 @@
+uuid: 0aee47a0-2dd8-41d6-a8d1-f96b3e66bc74
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_stategraph
+id: state_checkpoint.token
+label: Token
+description: null
+targetEntityType: state_checkpoint
+cache: true

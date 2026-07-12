@@ -1,0 +1,55 @@
+# AIncient CMS — tester topology (image-only).
+#
+# This is the compose file handed to evaluators. Unlike the dev compose
+# (docker/compose.yaml) it does NOT build from source and has NO privileged
+# updater sidecar — it just pulls the published image and runs it.
+#
+# Upgrades: `docker compose pull && docker compose up -d`. The app converges
+# itself on every start (snapshot → updatedb → health-check → roll back on
+# failure), so pulling a newer image tag IS the upgrade — no extra step.
+
+name: aincient
+
+services:
+  db:
+    # postgres:16 + pgvector preinstalled (multi-arch). See plans/pgvector.md.
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: aincient
+      POSTGRES_USER: aincient
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aincient}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      # pg_isready ships inside the official postgres image.
+      test: ["CMD-SHELL", "pg_isready -U aincient -d aincient"]
+      interval: 10s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    # The published appliance image. Override the tag via AINCIENT_IMAGE in .env.
+    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/cms:edge}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: pgsql://aincient:${DB_PASSWORD:-aincient}@db/aincient
+      HASH_SALT: ${HASH_SALT:?set HASH_SALT in .env (openssl rand -hex 32)}
+      # Unset = accept any Host header + a logged warning. Fine for a local
+      # evaluation; scope it before exposing the box (see .env.example).
+      AINCIENT_TRUSTED_HOSTS: ${AINCIENT_TRUSTED_HOSTS:-}
+      # Blank = converge mints a random admin password on first boot (printed to
+      # the app log + written to private/INITIAL_ADMIN_PASSWORD).
+      AINCIENT_ADMIN_PASS: ${ADMIN_PASS:-}
+    ports:
+      - "${HTTP_PORT:-41221}:80"   # 41221 = "AINCI" in leet
+    volumes:
+      - files:/opt/drupal/web/sites/default/files
+      - private:/opt/drupal/private   # admin password + DB snapshots live here
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  files:
+  private:

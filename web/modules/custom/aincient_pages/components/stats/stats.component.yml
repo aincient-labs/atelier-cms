@@ -1,0 +1,14 @@
+name: Stats
+status: experimental
+group: 'AIncient Landing'
+description: 'A row of headline numbers. Great for social proof under a hero.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: muted
+    items:
+      type: array
+      description: 'Array of { value, label }.'

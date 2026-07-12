@@ -1,0 +1,10 @@
+# Tabs on the brand editor: Settings (the form) + History (revisions).
+aincient_pages.brand_form_tab:
+  title: 'Settings'
+  route_name: aincient_pages.brand_form
+  base_route: aincient_pages.brand_form
+
+aincient_pages.brand_history_tab:
+  title: 'History'
+  route_name: aincient_pages.brand_history
+  base_route: aincient_pages.brand_form

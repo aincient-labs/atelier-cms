@@ -1,0 +1,9 @@
+name: 'AIncient Brand'
+type: module
+description: 'The branding agent layer — draft-only AI capabilities (quick brand picker + live token preview) that power a branding-specialist FlowDrop workflow. The agent only previews; brand goes live solely via the Brand studio''s Publish (no server-side write). Brand domain logic lives in aincient_pages; this module is the agent/widget surface on top of it.'
+package: AIncient
+core_version_requirement: ^11
+dependencies:
+  - ai:ai
+  - aincient_pages
+  - aincient_core

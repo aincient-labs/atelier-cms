@@ -1,0 +1,40 @@
+uuid: 2eb4331c-08c3-44a5-bfcc-fee6ea56c10d
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_policy_check
+label: 'Policy check'
+description: 'Run a deterministic page-health check (seo / links) against a node and return its findings. Pure PHP — no LLM, no HTTP; safe to run synchronously and DB-free.'
+category: memories
+icon: 'mdi:clipboard-check-outline'
+plugin_version: 0.1.0
+enabled: true
+parameters:
+  check:
+    configurable: true
+    connectable: false
+    required: true
+    default: ''
+  langcode:
+    configurable: false
+    connectable: true
+    required: false
+    default: ''
+  node_id:
+    configurable: false
+    connectable: true
+    required: false
+    default: ''
+outputs:
+  findings:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:policy_check'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

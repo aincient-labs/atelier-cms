@@ -1,0 +1,24 @@
+name: Accordion
+status: experimental
+group: 'AIncient Landing'
+description: 'A disclosure list whose panels hold RICH content blocks (not just text like faq) — a native <details> accordion, no JS. Panel bodies are pre-rendered by the renderer from a bounded set of child blocks (one level deep). tone sets the surface band.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    exclusive:
+      type: boolean
+      default: false
+      description: 'When true, at most one panel is open at a time (native <details name> grouping).'
+    name:
+      type: string
+      description: 'Stable group name for exclusive <details> grouping — set by the renderer from the section slot id, not authored.'
+    panels:
+      type: array
+      description: 'Array of { label, open, body_html } — body_html is the renderer-built HTML of the panel''s child blocks (see ACCORDION_BLOCKS). Authored as { label, open, blocks:[{component,props}] }; the renderer flattens blocks → body_html.'

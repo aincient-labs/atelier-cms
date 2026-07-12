@@ -1,0 +1,30 @@
+uuid: c227d369-c89a-4659-bf30-ce75cf0802c6
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_workflow_executor
+id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography
+label: 'Run workflow: Brand typography specialist'
+description: 'Delegate a TYPOGRAPHY change (typeface pairing, type size, heading weight). Pass the typography-relevant part of the request as ask; returns a brand-preview slice (presets_json/tokens_json/fonts) to apply via preview_brand.'
+category: tools
+icon: 'mdi:format-font'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  ask:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  slice:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_workflow_executor:flowdrop_workflow:aincient_brand_specialist_typography'
+visual_type: default
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true

@@ -1,0 +1,12 @@
+uuid: d9ceaedb-27da-41a5-921f-4333c61f7e81
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: ICG9gHi5uBzNeuYbodWefk_L2rByR01Lb98zCiWBDn4
+id: tools
+enabled: true
+label: Tools
+description: 'Extend your workflow capabilities with external tools, APIs, calculators, web scrapers, and other specialized utilities.'
+icon: 'mdi:wrench'
+color: '#f59e0b'

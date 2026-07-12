@@ -1,0 +1,5 @@
+_core:
+  default_config_hash: EZy1tHXHOULMu9lJiXT_OQtKVNLkycFAZLA3f1myvvU
+api_key: ''
+openai_moderation: false
+version: '20240229'

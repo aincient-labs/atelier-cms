@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * @file
+ * Install/update hooks for the aincient_chat module.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+ * Add the `archived` field to chat turns (thread archive support).
+ */
+function aincient_chat_update_10001(): void {
+  $field = BaseFieldDefinition::create('boolean')
+    ->setLabel(t('Archived'))
+    ->setDescription(t('Whether the thread this turn belongs to is archived (hidden from the main list).'))
+    ->setDefaultValue(FALSE);
+
+  \Drupal::entityDefinitionUpdateManager()
+    ->installFieldStorageDefinition('archived', 'aincient_chat_turn', 'aincient_chat', $field);
+}
+
+/**
+ * Retire the legacy aincient_chat_turn entity (the old conversation buffer).
+ *
+ * The console store is now the FlowDrop session (decision 2026-06-02), and the
+ * legacy drupal/ai `agent` tool-loop that wrote ChatTurn rows has been retired,
+ * so the entity type and its table are unused. Uninstall it via the last
+ * installed definition (the entity class is gone, so we read from the schema
+ * repository rather than the code-defined type).
+ */
+function aincient_chat_update_10002(): void {
+  $manager = \Drupal::entityDefinitionUpdateManager();
+  $type = $manager->getEntityType('aincient_chat_turn');
+  if ($type !== NULL) {
+    $manager->uninstallEntityType($type);
+  }
+}

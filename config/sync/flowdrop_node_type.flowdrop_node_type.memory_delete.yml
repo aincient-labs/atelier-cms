@@ -1,0 +1,42 @@
+uuid: 4602e712-71e5-4024-afd9-839867b78754
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_memory
+_core:
+  default_config_hash: lw6PNvao9zA5vbNWcTmgrq5lW7sqyEj1tU4hKq63IIM
+id: memory_delete
+label: 'Memory Delete'
+description: 'Delete a key from scoped memory. Scope ID is automatically derived from the execution context.'
+category: memory
+icon: 'mdi:database-remove'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  key:
+    configurable: false
+    connectable: true
+    required: true
+  scope:
+    configurable: true
+    connectable: false
+    required: false
+    default: global
+outputs:
+  key:
+    exposed: false
+  resolved_scope_id:
+    exposed: false
+  scope:
+    exposed: false
+  success:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_memory:memory_delete'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

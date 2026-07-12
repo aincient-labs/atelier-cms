@@ -1,0 +1,20 @@
+uuid: 27b7f7d2-7dae-423d-bb07-8277119fccbd
+langcode: en
+status: true
+dependencies:
+  theme:
+    - aincient_theme
+_core:
+  default_config_hash: 6aOgWsNTXjqrDm98TXSAjP6qd2nCijD1xw45MrnbK-Y
+id: aincient_theme_page_title
+theme: aincient_theme
+region: content
+weight: -10
+provider: null
+plugin: page_title_block
+settings:
+  id: page_title_block
+  label: 'Page title'
+  label_display: '0'
+  provider: core
+visibility: {  }

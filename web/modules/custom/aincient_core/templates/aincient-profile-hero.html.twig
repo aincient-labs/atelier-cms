@@ -1,0 +1,70 @@
+{#
+/**
+ * @file
+ * Branded profile hero for the user canonical page (/user/N).
+ *
+ * Fronts the otherwise-empty user page with an identity card. Built in
+ * aincient_core_preprocess_user() and styled by the Studio Backend theme
+ * (aincient_studio_backend/css/studio-backend.css). Plain paper with a
+ * hairline — at this size the mark alone carries the brand (Law 03), and
+ * state is a whisper chip, never a fill (Law 02).
+ *
+ * Available variables:
+ * - display_name: The user's display name.
+ * - initials: One- or two-letter monogram for the avatar fallback.
+ * - picture_url: URL of the uploaded profile picture, or NULL for the fallback.
+ * - account_name: The raw account (login) name.
+ * - is_active: TRUE if the account is active, FALSE if blocked.
+ * - roles: List of non-locked role labels.
+ * - member_since: Formatted join date (e.g. "July 2, 2026").
+ * - member_for: Humanised account age (e.g. "34 minutes").
+ * - email: The user's email, or NULL when the viewer may not see it.
+ */
+#}
+<div class="ain-profile-hero">
+  <div class="ain-profile-hero__body">
+    {% if picture_url %}
+      <img class="ain-profile-hero__avatar ain-profile-hero__avatar--photo" src="{{ picture_url }}" alt="{{ 'Profile picture of @name'|t({'@name': display_name}) }}">
+    {% else %}
+      <div class="ain-profile-hero__avatar" aria-hidden="true">{{ initials }}</div>
+    {% endif %}
+    <div class="ain-profile-hero__meta">
+      <div class="ain-profile-hero__nameline">
+        <span class="ain-profile-hero__name">{{ display_name }}</span>
+        <span class="ain-profile-hero__status ain-profile-hero__status--{{ is_active ? 'active' : 'blocked' }}">
+          {{ is_active ? 'Active'|t : 'Blocked'|t }}
+        </span>
+      </div>
+      {% if account_name and account_name != display_name %}
+        <div class="ain-profile-hero__handle">@{{ account_name }}</div>
+      {% endif %}
+      {% if roles %}
+        <div class="ain-profile-hero__roles">
+          {% for role in roles %}
+            <span class="ain-profile-hero__role">{{ role }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <dl class="ain-profile-hero__facts">
+        {% if email %}
+          <div class="ain-profile-hero__fact">
+            <dt>{{ 'Email'|t }}</dt>
+            <dd><a href="mailto:{{ email }}">{{ email }}</a></dd>
+          </div>
+        {% endif %}
+        {% if member_since %}
+          <div class="ain-profile-hero__fact">
+            <dt>{{ 'Joined'|t }}</dt>
+            <dd>{{ member_since }}</dd>
+          </div>
+        {% endif %}
+        {% if member_for %}
+          <div class="ain-profile-hero__fact">
+            <dt>{{ 'Member for'|t }}</dt>
+            <dd>{{ member_for }}</dd>
+          </div>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+</div>

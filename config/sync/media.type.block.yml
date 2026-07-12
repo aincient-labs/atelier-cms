@@ -1,0 +1,16 @@
+uuid: 0edb4628-f5c5-4299-84e6-d317812b584f
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - aincient_pages
+id: block
+label: 'Global block'
+description: 'A reusable GLOBAL BLOCK — a saved page-schema fragment (a shared CTA, banner, footer note) stored as Media so it lives in the Library alongside images and is referenced by the universal media:<id> token. It has no page of its own; its sections are spliced into a host page wherever a slot references it. Edit once, every page using it updates.'
+source: aincient_block_fragment
+queue_thumbnail_downloads: false
+new_revision: true
+source_configuration:
+  source_field: field_page_content
+field_map: {  }

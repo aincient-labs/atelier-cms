@@ -1,0 +1,21 @@
+{# Layout variants from the chrome config (see ChromeRepository). The justify
+   utilities are written as literals in the map below so the Tailwind v4 content
+   scanner emits them. #}
+{% set is_centered = (logo_position|default('left')) == 'center' %}
+{% set nav_justify = {'end': 'justify-end', 'center': 'justify-center', 'start': 'justify-start'}[nav_alignment|default('end')]|default('justify-end') %}
+<header class="{{ (sticky ?? true) ? 'sticky top-0 z-30 ' : '' }}border-b border-border bg-background/85 backdrop-blur">
+  <div class="mx-auto max-w-7xl px-6 {{ is_centered ? 'py-4 flex flex-col items-center gap-3' : 'h-[var(--site-header-height)] flex items-center gap-6' }}">
+    <a href="/" class="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-foreground">
+      {% if logo_url %}
+        <img src="{{ logo_url }}" alt="{{ name|default('Home') }}" class="h-8 w-auto">
+      {% else %}
+        {{ name|default('Home') }}
+      {% endif %}
+    </a>
+    {% if nav %}
+      <nav aria-label="Primary" class="hidden md:flex text-sm font-medium text-foreground {{ is_centered ? 'justify-center' : 'flex-1 ' ~ nav_justify }}">
+        {{ include('aincient_pages:menu', { items: nav, name: 'main', variant: 'header', align: nav_alignment|default('end') }, with_context = false) }}
+      </nav>
+    {% endif %}
+  </div>
+</header>

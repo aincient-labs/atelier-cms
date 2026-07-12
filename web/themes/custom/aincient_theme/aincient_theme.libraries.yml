@@ -1,0 +1,5 @@
+global:
+  version: 1.x
+  css:
+    theme:
+      css/aincient-theme.css: { minified: true }

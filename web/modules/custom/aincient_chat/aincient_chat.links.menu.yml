@@ -1,0 +1,27 @@
+# A one-click entry to the console (/aincient) in the admin Navigation sidebar.
+# The D11 Navigation module's "Administration" block renders the admin menu from
+# level 2, so this must hang off system.admin (the /admin root) to appear as a
+# top-level sidebar item next to Content/Structure — a level-1 (parentless) link
+# is skipped. The deep negative weight floats it above every other admin entry.
+# The icon option overrides the Navigation default (which would look for an icon
+# named after the plugin id) with the AI-sparkles glyph from our icon pack. We
+# deliberately do NOT reuse the brand chip here: the chip is already the sidebar
+# hero logo (see aincient_chat_preprocess_navigation), so a second chip would
+# duplicate the mark. Same permission as the route, so it auto-hides for users
+# who can't open it.
+aincient_chat.console:
+  title: 'AIncient Console'
+  description: 'Open the AIncient operator console.'
+  route_name: aincient_chat.console
+  parent: system.admin
+  weight: -100
+  options:
+    icon:
+      pack_id: aincient
+      icon_id: console
+
+aincient_chat.settings:
+  title: 'AIncient chat'
+  description: 'Configure the chat layer defaults (the FlowDrop workflow the console runs, …).'
+  route_name: aincient_chat.settings
+  parent: system.admin_config_ui

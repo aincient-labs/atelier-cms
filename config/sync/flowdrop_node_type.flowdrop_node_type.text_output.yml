@@ -1,0 +1,41 @@
+uuid: c11371b6-0b32-4740-9df7-218a818143f1
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: b36P1iPPeHaGEptZXDDbki0MqZcBH0sJPZW-VmNRsfM
+id: text_output
+label: 'Text Output'
+description: 'Basic text output'
+category: outputs
+icon: 'mdi:alphabetical-variant'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  format:
+    configurable: true
+    connectable: false
+    required: false
+    default: plain
+  maxLength:
+    configurable: true
+    connectable: false
+    required: false
+    default: 1000
+  text:
+    configurable: false
+    connectable: true
+    required: false
+outputs: {  }
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:text_output'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+  - square
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

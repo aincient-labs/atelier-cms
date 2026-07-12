@@ -1,0 +1,30 @@
+fonts:
+  # Self-hosted brand fonts (Fraunces display serif + Schibsted Grotesk) —
+  # served from our origin, never Google, so operator surfaces leak no IP.
+  # Shared by the console and the Studio Backend admin theme.
+  # Regenerate via aincient_core/scripts/fetch-brand-fonts.php.
+  version: 0.1.0
+  css:
+    theme:
+      fonts/console-fonts.css: {}
+
+console:
+  # Footer-scoped (default): lands in the shell's scripts_bottom placeholder,
+  # AFTER Drupal's settings JSON + drupalSettingsLoader, so window.drupalSettings
+  # is populated before the bundle reads it. Mounts on DOMContentLoaded.
+  version: 0.1.0
+  js:
+    js/dist/aincient-chat.js: { minified: true }
+  css:
+    theme:
+      js/dist/aincient-chat.css: {}
+  dependencies:
+    - core/drupalSettings
+    - aincient_chat/fonts
+
+toolbar:
+  # Icon for the "AIncient" admin-toolbar tab (hook_toolbar in the .module).
+  version: 0.1.0
+  css:
+    theme:
+      css/toolbar.css: {}

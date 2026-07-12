@@ -1,0 +1,59 @@
+uuid: a52c2693-28a3-49dd-b652-7dfdd1e3e436
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: P1pgSLUETwnyQQKTutWqsqlgb_XHOQFV6WGPx5v5LIk
+id: data_extractor
+label: 'Data Extractor'
+description: 'Extract data using configurable expression engines (JSONPath, property path, etc.).'
+category: data
+icon: 'mdi:database-arrow-down-outline'
+plugin_version: 2.1.0
+enabled: true
+parameters:
+  data:
+    configurable: false
+    connectable: true
+    required: false
+  default:
+    configurable: true
+    connectable: false
+    required: false
+  engine:
+    configurable: true
+    connectable: false
+    required: false
+    default: jsonpath
+  extract_all:
+    configurable: true
+    connectable: false
+    required: false
+    default: false
+  path:
+    configurable: true
+    connectable: false
+    required: false
+outputs:
+  data:
+    exposed: true
+  engine:
+    exposed: true
+  is_jsonpath:
+    exposed: true
+  match_count:
+    exposed: true
+  path:
+    exposed: true
+  success:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:data_extractor'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

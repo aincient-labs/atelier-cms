@@ -1,0 +1,38 @@
+uuid: 1c5f229f-6c3c-4715-94ad-9b61847fea52
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_generate_alt_text
+label: 'Capability: Generate alt text'
+description: 'Look at an existing image and write concise, descriptive alt text for it, then save that onto the image. Pass "source" as the image''s media:<id> token; optionally pass "context" to steer the description. Updates the image''s alt text in place (does not create a new image).'
+category: processing
+icon: 'mdi:image-text'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  context:
+    configurable: true
+    connectable: true
+    required: false
+  source:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:generate_alt_text'
+visual_type: default
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

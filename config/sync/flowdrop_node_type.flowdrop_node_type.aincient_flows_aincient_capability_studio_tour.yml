@@ -1,0 +1,30 @@
+uuid: 0ee1af70-b2bf-425f-b150-4f55407c7cdf
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_studio_tour
+label: 'Capability: Studio tour'
+description: 'Show the user a visual map of the console: one card per area (Pages, Library, Design System, Globals) with what it is for, its current status, and a link that opens it. Call this when the user asks to be shown around, asks what they can do here, asks where to find or change something (pages, images, colours, fonts, logo, header, footer), or at the start of onboarding. Takes no arguments — it renders the map.'
+category: processing
+icon: 'mdi:cog'
+plugin_version: 1.0.0
+enabled: true
+parameters: {  }
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:studio_tour'
+visual_type: tool
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true

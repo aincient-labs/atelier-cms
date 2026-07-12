@@ -1,0 +1,12 @@
+uuid: e96f4d6a-cde2-42aa-8a4d-653034c92834
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: egSqHXbj2GM1Ix_QB8SPYrfR1wUuX7gc5kltw27A2zY
+id: embeddings
+enabled: true
+label: Embeddings
+description: 'Convert text into numerical vectors that capture semantic meaning, enabling similarity search and machine learning applications.'
+icon: 'mdi:vector-polygon'
+color: '#6366f1'

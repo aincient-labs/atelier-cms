@@ -1,0 +1,18 @@
+uuid: a5022638-bd1e-42b5-9ba4-2e034c28362e
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 480w270h
+label: 480w270h
+effects:
+  e1146508-fd8c-4de3-a21f-504130486734:
+    uuid: e1146508-fd8c-4de3-a21f-504130486734
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 480
+      height: 270
+      crop_type: focal_point
+      upscale: false

@@ -1,0 +1,21 @@
+{# Layout variant from the chrome config (see ChromeRepository). #}
+{% set stacked = (layout|default('inline')) == 'stacked' %}
+<footer class="bg-[var(--site-footer-bg)] text-[var(--site-footer-fg)]">
+  <div class="mx-auto max-w-7xl px-6 py-12 flex flex-col gap-6 {{ stacked ? 'items-center text-center' : 'md:flex-row md:items-center md:justify-between' }}">
+    <div class="flex items-center gap-3 {{ stacked ? 'flex-col' : '' }}">
+      {% if logo_url %}<img src="{{ logo_url }}" alt="{{ name|default('AIncient') }}" class="h-7 w-auto">{% endif %}
+      <div>
+        <p class="font-display text-lg font-bold">{{ name|default('AIncient') }}</p>
+        {% if tagline and (show_tagline ?? true) %}<p class="mt-1 text-sm opacity-70">{{ tagline }}</p>{% endif %}
+      </div>
+    </div>
+    {% if nav %}
+      <nav aria-label="Footer" class="{{ stacked ? 'flex justify-center' : '' }}">
+        {{ include('aincient_pages:menu', { items: nav, name: 'footer', variant: 'footer' }, with_context = false) }}
+      </nav>
+    {% endif %}
+  </div>
+  <div class="border-t border-background/15">
+    <div class="mx-auto max-w-7xl px-6 py-4 text-xs opacity-60">{{ note|default('AIncient') }}</div>
+  </div>
+</footer>

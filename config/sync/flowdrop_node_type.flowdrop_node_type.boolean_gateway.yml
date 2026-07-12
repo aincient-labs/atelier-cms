@@ -1,0 +1,41 @@
+uuid: a08ac6d7-c597-4838-be66-977c4e40f17f
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: 07iqyl9CMYyk4ZjoTqza8K36i3gYX_W0hkptcIlN5mc
+id: boolean_gateway
+label: 'Boolean Gateway'
+description: 'Split execution paths based on conditions for workflow branching'
+category: logic
+icon: 'mdi:source-branch'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  branches:
+    configurable: true
+    connectable: false
+    required: false
+    default:
+      -
+        name: 'True'
+        value: true
+      -
+        name: 'False'
+        value: false
+  value:
+    configurable: false
+    connectable: true
+    required: false
+    default: false
+outputs: {  }
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:boolean_gateway'
+visual_type: gateway
+supported_visual_types:
+  - gateway
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

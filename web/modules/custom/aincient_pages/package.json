@@ -1,0 +1,14 @@
+{
+  "name": "aincient-pages",
+  "private": true,
+  "description": "Tailwind v4 build for the AIncient Pages component palette (spike).",
+  "scripts": {
+    "tokens": "php scripts/build-tokens.php",
+    "build": "php scripts/build-tokens.php && tailwindcss -i build/input.css -o assets/aincient-pages.css --minify",
+    "watch": "tailwindcss -i build/input.css -o assets/aincient-pages.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  }
+}

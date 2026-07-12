@@ -1,0 +1,84 @@
+uuid: 05aa59e5-0c99-455c-811b-6e6ec779d0c8
+langcode: en
+status: true
+dependencies:
+  config:
+    - media.type.block
+    - node.type.aincient_page
+  module:
+    - content_moderation
+id: aincient_editorial
+label: 'AIncient editorial'
+type: content_moderation
+type_settings:
+  states:
+    archived:
+      label: Archived
+      weight: 3
+      published: false
+      default_revision: true
+    draft:
+      label: Draft
+      weight: 0
+      published: false
+      default_revision: false
+    needs_review:
+      label: 'Needs review'
+      weight: 1
+      published: false
+      default_revision: false
+    published:
+      label: Published
+      weight: 2
+      published: true
+      default_revision: true
+  transitions:
+    approve:
+      label: Approve
+      from:
+        - needs_review
+      to: published
+      weight: 2
+    archive:
+      label: Archive
+      from:
+        - published
+      to: archived
+      weight: 5
+    create_new_draft:
+      label: 'Create new draft'
+      from:
+        - draft
+        - published
+      to: draft
+      weight: 0
+    publish:
+      label: Publish
+      from:
+        - draft
+      to: published
+      weight: 4
+    reject:
+      label: Reject
+      from:
+        - needs_review
+      to: draft
+      weight: 3
+    restore:
+      label: Restore
+      from:
+        - archived
+      to: draft
+      weight: 6
+    submit_for_review:
+      label: 'Submit for review'
+      from:
+        - draft
+        - needs_review
+      to: needs_review
+      weight: 1
+  entity_types:
+    media:
+      - block
+    node:
+      - aincient_page

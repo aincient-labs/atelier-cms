@@ -1,0 +1,185 @@
+<?php
+
+/**
+ * @file
+ * Hooks for AIncient Pages.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
+
+// aincient_page / aincient_block nodes are authored and edited through the chat
+// console's studio (the AI + the studio's structured controls), not the backend
+// node form. The only backend affordance is the "Edit in studio" operation
+// below — it deep-links the content list's operations menu to the studio.
+
+/**
+ * Implements hook_entity_operation().
+ *
+ * Adds an "Edit in studio" link to the operations menu (e.g. on /admin/content)
+ * for the studio-authored bundles. The studio opens the draft from a query-param
+ * deep link on the console SPA — `?page=<nid>` / `?block=<nid>` — the contract
+ * documented in chat-ui/src/url-sync.ts (useUrlPageSync). The default node
+ * "Edit" still goes to the raw field form; this routes the operator to the
+ * structured editor that actually understands the page/block schema.
+ */
+function aincient_pages_entity_operation(EntityInterface $entity): array {
+  // Map each studio-authored bundle to the deep-link query param the SPA reads.
+  // A global block is now a `block` MEDIA entity (DECISIONS 0138), so the op is
+  // offered on the media admin too, still deep-linking `?block=<id>`.
+  $param = match (TRUE) {
+    $entity->getEntityTypeId() === 'node' && $entity->bundle() === 'aincient_page' => 'page',
+    $entity->getEntityTypeId() === 'media' && $entity->bundle() === 'block' => 'block',
+    default => NULL,
+  };
+  if ($param === NULL) {
+    return [];
+  }
+
+  // Only offer the link to users who can actually open the console AND edit
+  // pages — otherwise the deep link lands on a console that 403s the load.
+  $account = \Drupal::currentUser();
+  if (!$account->hasPermission('use aincient operator console')
+    || !$account->hasPermission('administer aincient pages')) {
+    return [];
+  }
+
+  return [
+    'edit_in_studio' => [
+      'title' => t('Edit in studio'),
+      'weight' => -10,
+      'url' => Url::fromRoute('aincient_chat.console', [], [
+        'query' => [$param => $entity->id()],
+      ]),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_node_access().
+ *
+ * The ONE custom access rule of the editorial workflow (the rest is core
+ * content_moderation transition permissions): some moderation states are
+ * READ-ONLY. This is the single source the studio, the node form, Views and any
+ * future surface all read — "can edit?" is `$node->access('update')`, never a
+ * bespoke per-surface policy (see plans/content-workflow.md).
+ *
+ * Policy (state × the edit table): a node Under review or Archived cannot be
+ * edited in place — an edit would change what a reviewer is approving, or
+ * silently revive archived content. To resume editing the user takes an explicit
+ * transition (Withdraw/reject → Draft, or Restore → Draft), which is a separate
+ * permission, not `update`. Draft and Published stay editable (Published edits
+ * fork a new forward draft; the live page is untouched until re-publish).
+ *
+ * Deny is decisive (forbidden() wins over any module's allow), but it is scoped
+ * to the studio-authored bundles and to the `update` op only, and it is checked
+ * against the SPECIFIC revision passed in (the studio edits the latest/pending
+ * revision — its state may differ from the published default). Users who bypass
+ * node access (administrators) are unaffected, as with all node access hooks.
+ */
+function aincient_pages_node_access(EntityInterface $node, string $op, AccountInterface $account): AccessResult {
+  return $node->bundle() === 'aincient_page'
+    ? _aincient_pages_editorial_access($node, $op)
+    : AccessResult::neutral();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_access() for media.
+ *
+ * A global block is a `block` media entity under the SAME editorial workflow
+ * (DECISIONS 0138), so it gets the SAME read-only gate as a page node — else a
+ * block Under review / Archived would report editable and the studio would let
+ * an author change what a reviewer is approving.
+ */
+function aincient_pages_media_access(EntityInterface $media, string $op, AccountInterface $account): AccessResult {
+  return $media->bundle() === 'block'
+    ? _aincient_pages_editorial_access($media, $op)
+    : AccessResult::neutral();
+}
+
+/**
+ * The editorial read-only gate shared by page nodes and block media.
+ *
+ * Some moderation states are READ-ONLY: a `needs_review` / `archived` item cannot
+ * be edited in place — an edit would change what a reviewer is approving, or
+ * silently revive archived content. Resuming needs an explicit transition
+ * (reject / restore → Draft), a separate permission, not `update`. Draft and
+ * Published stay editable (Published edits fork a new forward draft). Deny is
+ * decisive and scoped to `update`, checked against the SPECIFIC revision passed
+ * in; entity-access bypass (administrators) is unaffected, as with all such hooks.
+ */
+function _aincient_pages_editorial_access(EntityInterface $entity, string $op): AccessResult {
+  if ($op !== 'update' || !$entity->hasField('moderation_state')) {
+    return AccessResult::neutral();
+  }
+  $state = (string) $entity->get('moderation_state')->value;
+  $readOnly = in_array($state, ['needs_review', 'archived'], TRUE);
+  // Vary the cache by the moderation state so the decision flips when the entity
+  // transitions (the access result is per-revision; the state field drives it).
+  return ($readOnly ? AccessResult::forbidden('AIncient: content is read-only in this editorial state.') : AccessResult::neutral())
+    ->addCacheableDependency($entity);
+}
+
+/**
+ * Implements hook_metatags_alter().
+ *
+ * The Presence editor lets an author pick (or upload) a media item for the Open
+ * Graph image, stored — like every other schema image — as a `media:<id>` token
+ * in `field_metatag` so it round-trips through the studio picker. External
+ * crawlers read og:image straight out of the HEAD, so resolve the token to an
+ * absolute, directly-fetchable URL as the tag is built. A raw URL (pasted
+ * directly, or any non-media value) is left untouched. Runs before Metatag's
+ * token replacement, so the resolved URL flows through the normal tag pipeline.
+ */
+function aincient_pages_metatags_alter(array &$metatags, array &$context): void {
+  if (empty($metatags['og_image']) || !is_string($metatags['og_image'])) {
+    return;
+  }
+  /** @var \Drupal\aincient_pages\EntityEmbedResolver $resolver */
+  $resolver = \Drupal::service('aincient_pages.embed_resolver');
+  $url = $resolver->absoluteUrl($metatags['og_image']);
+  if ($url !== NULL) {
+    $metatags['og_image'] = $url;
+  }
+}
+
+/**
+ * Implements hook_page_attachments_alter().
+ *
+ * When the operator has uploaded a favicon in the Globals studio (stored on the
+ * `aincient_pages.identity` config as a managed-file id), emit it as the site's
+ * `<link rel="icon">` and drop core's default favicon link so ours is the only
+ * one. Core adds its favicon in hook_page_attachments (BareHtmlPageRenderer),
+ * which runs before this _alter, so the default link is present to replace here.
+ * Cache-tagged on the identity config so a re-upload/removal invalidates pages.
+ */
+function aincient_pages_page_attachments_alter(array &$attachments): void {
+  if (!\Drupal::hasService('aincient_pages.site_identity')) {
+    return;
+  }
+  // Tag every page on the identity config so uploading/removing a favicon busts
+  // the cache — even pages that rendered while no favicon was set (which is why
+  // this runs before the early return, not only in the has-favicon branch).
+  $attachments['#cache']['tags'][] = 'config:aincient_pages.identity';
+
+  /** @var array{href: string, type: string}|null $favicon */
+  $favicon = \Drupal::service('aincient_pages.site_identity')->faviconLink();
+  if ($favicon === NULL) {
+    return;
+  }
+  // Drop core's default favicon so the page carries exactly one rel="icon".
+  foreach ($attachments['#attached']['html_head_link'] ?? [] as $i => $link) {
+    if (($link[0]['rel'] ?? NULL) === 'icon') {
+      unset($attachments['#attached']['html_head_link'][$i]);
+    }
+  }
+  $attachments['#attached']['html_head_link'][][] = [
+    'rel' => 'icon',
+    'href' => $favicon['href'],
+    'type' => $favicon['type'],
+  ];
+}

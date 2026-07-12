@@ -1,0 +1,16 @@
+{% if variant|default('default') == 'bare' %}
+  {# Chrome-light: no section band, no outer padding/measure — the container
+     (e.g. an accordion panel) owns the surface and spacing. #}
+  <div class="prose-aincient prose-aincient--tight">{{ html|raw }}</div>
+{% else %}
+  {% set tone_class = {
+    default: 'bg-background text-foreground',
+    muted: 'bg-muted text-muted-foreground',
+    brand: 'bg-primary text-primary-foreground',
+    inverted: 'bg-foreground text-background',
+  }[tone|default('default')] %}
+
+  <section class="{{ tone_class }}">
+    <div class="prose-aincient prose-aincient--tight mx-auto max-w-2xl px-6 py-14">{{ html|raw }}</div>
+  </section>
+{% endif %}

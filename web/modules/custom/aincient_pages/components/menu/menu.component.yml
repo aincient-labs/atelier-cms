@@ -1,0 +1,27 @@
+name: 'Menu'
+status: experimental
+group: 'AIncient Chrome'
+description: 'Generic, recursive navigation menu for any Drupal menu. Renders a nested {label, url, below} tree as either a header dropdown nav or a grouped footer list.'
+props:
+  type: object
+  properties:
+    items:
+      type: array
+      description: 'Nested links: array of { label, url, below: [...] }. `below` holds the same shape recursively.'
+    name:
+      type: string
+      description: 'The menu machine name (used for the nav aria-label / styling hook).'
+    variant:
+      type: string
+      enum: [header, footer]
+      default: header
+      description: 'header = hover/focus dropdown nav; footer = grouped/indented column list.'
+    max_depth:
+      type: integer
+      default: 0
+      description: 'Cosmetic depth cap (0 = render whatever depth the items carry).'
+    align:
+      type: string
+      enum: [start, center, end]
+      default: end
+      description: 'Header only: which edge the nav sits against. Flyouts open away from the nearest viewport edge (end = right-anchored, fly left; otherwise left-anchored, fly right) so they never overflow off-screen.'

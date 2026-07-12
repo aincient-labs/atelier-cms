@@ -1,0 +1,38 @@
+uuid: 562bc49e-96b9-4c17-b05d-5383f1811524
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_aincient_capability_propose_media_name
+label: 'Capability: Propose a name'
+description: 'Look at an existing image and propose a short, human name (title) for it — for the Library ledger, in place of a raw prompt. Pass "source" as the image''s media:<id> token; optionally pass "direction" to steer the name. Proposes a name into the editor for the human to review and Save (does not save it, does not create a new image).'
+category: processing
+icon: 'mdi:rename-box'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  direction:
+    configurable: true
+    connectable: true
+    required: false
+  source:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  ok:
+    exposed: true
+  result:
+    exposed: true
+  tool:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:aincient_capability:propose_media_name'
+visual_type: default
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

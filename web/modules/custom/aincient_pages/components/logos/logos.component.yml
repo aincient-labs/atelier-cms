@@ -1,0 +1,15 @@
+name: Logos
+status: experimental
+group: 'AIncient Landing'
+description: 'A quiet row of partner/customer logo marks ("trusted by").'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: muted
+    heading: { type: string }
+    logos:
+      type: array
+      description: 'Array of { name, image, url }. image optional (falls back to the name as text).'

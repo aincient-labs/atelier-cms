@@ -1,0 +1,15 @@
+uuid: d6d8776f-756c-443b-abfd-bcb6e7054661
+langcode: en
+status: true
+dependencies: {  }
+name: 480w
+label: 480w
+effects:
+  82c6b15d-5486-49ad-b3d0-f8c2a148cca4:
+    uuid: 82c6b15d-5486-49ad-b3d0-f8c2a148cca4
+    id: image_scale
+    weight: 1
+    data:
+      width: 480
+      height: null
+      upscale: false

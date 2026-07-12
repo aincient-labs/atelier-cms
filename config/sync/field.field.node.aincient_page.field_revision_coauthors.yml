@@ -1,0 +1,19 @@
+uuid: 44fdd6cb-b8b5-41d9-8087-a81677b93aa3
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_revision_coauthors
+    - node.type.aincient_page
+id: node.aincient_page.field_revision_coauthors
+field_name: field_revision_coauthors
+entity_type: node
+bundle: aincient_page
+label: 'Revision co-authors'
+description: "Provenance for each revision: the non-human contributors (Studio + Agent) that produced it, alongside the human revision author. One JSON record per delta — {actor, id, thread?, run?} — stamped by PageStore on save/publish. Revisionable and multi-value so a revision's history reads as the page's path (edited by <human>, with <studio> · <agent>)."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

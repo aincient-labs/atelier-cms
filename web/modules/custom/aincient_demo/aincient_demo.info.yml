@@ -1,0 +1,8 @@
+name: 'AIncient Demo'
+type: module
+description: 'Ships the demo homepage (a branded aincient_page) and points the front page at it. Enabled by the distribution recipe; a one-shot showcase, never a hard dependency of the product modules.'
+package: AIncient
+core_version_requirement: ^11
+dependencies:
+  - aincient_pages
+  - drupal:node

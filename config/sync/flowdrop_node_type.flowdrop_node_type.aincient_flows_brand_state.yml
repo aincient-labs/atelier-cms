@@ -1,0 +1,36 @@
+uuid: 5e76c3a4-0695-4f3f-b0fd-b4410f465c4a
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_brand_state
+label: 'Brand state'
+description: 'Read the saved brand design-intent status at runtime and emit the stage directive + saved-brand brief into the prompt.'
+category: memories
+icon: 'mdi:flag-outline'
+plugin_version: 0.1.0
+enabled: true
+parameters:
+  variables:
+    configurable: false
+    connectable: true
+    required: false
+    default: {  }
+outputs:
+  brand_brief:
+    exposed: true
+  effective_mode:
+    exposed: true
+  status_directive:
+    exposed: true
+  variables:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:brand_state'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

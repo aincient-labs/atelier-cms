@@ -1,0 +1,13 @@
+uuid: dde910ed-2dca-4d62-adb3-19aea8737bf0
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_pipeline
+_core:
+  default_config_hash: jl6pvxLM-BCZUSu1UOZomKFpH1q1WnTtJDSaajlTn6I
+id: flowdrop_pipeline_delete_action
+label: 'Delete flowdrop pipelines'
+type: flowdrop_pipeline
+plugin: 'entity:delete_action:flowdrop_pipeline'
+configuration: {  }

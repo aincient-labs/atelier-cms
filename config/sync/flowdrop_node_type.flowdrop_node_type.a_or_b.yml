@@ -1,0 +1,46 @@
+uuid: f9e5280c-c9a4-46c7-8fc1-9bc9376d00aa
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: bBgZzMzu1QkYpk-CYPZrv4VzVHZll0X5BY381-wglE8
+id: a_or_b
+label: A/B
+description: 'Simple boolean gateway for A/B use case'
+category: logic
+icon: 'mdi:ab-testing'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  branches:
+    configurable: true
+    connectable: false
+    required: false
+    default:
+      -
+        name: A
+        value: a
+      -
+        name: B
+        value: b
+  weight_a:
+    configurable: false
+    connectable: false
+    required: false
+    default: 50.0
+  weight_b:
+    configurable: false
+    connectable: false
+    required: false
+    default: 50.0
+outputs: {  }
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:a_or_b'
+visual_type: gateway
+supported_visual_types:
+  - gateway
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

@@ -1,0 +1,10 @@
+guidelines:
+  name: AIncient
+  tagline: 'Agentic Content Management'
+  description: 'Autonomous content systems that think, adapt, and evolve. Built for teams who want AI to work *with* them, not *for* them.'
+  tone: 'thoughtful, intelligent, human-first'
+  imagery_style: 'Clean, calm, and human. Soft natural light, generous negative space, muted paper-like tones with a single confident accent. Real, unstaged moments over concept art.'
+  imagery_avoid: 'Generic corporate stock photos, glossy 3D render cliches, busy gradients, literal robots or glowing-brain AI tropes, heavy drop shadows.'
+logo: 'media:7'
+favicon: 'media:7'
+footer_note: '© 2025 AIncient. Agentic content, intelligently human.'

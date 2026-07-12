@@ -1,0 +1,133 @@
+{
+    "name": "drupal/aincient",
+    "description": "Atelier CMS — an AI-first, chat-driven Drupal distribution. North star: 1M Drupal installs.",
+    "type": "project",
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://www.drupal.org/project/aincient",
+    "support": {
+        "docs": "https://www.drupal.org/docs/user_guide/en/index.html",
+        "chat": "https://www.drupal.org/node/314178"
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://packages.drupal.org/8"
+        }
+    ],
+    "require": {
+        "composer/installers": "^2.3",
+        "cweagans/composer-patches": "^1.7.3",
+        "drupal/admin_theme": "^1.1",
+        "drupal/ai": "^1.4.3",
+        "drupal/ai_agents": "^1.3.1",
+        "drupal/ai_metering": "^1.0@beta",
+        "drupal/ai_provider_anthropic": "^1.2.2",
+        "drupal/ai_provider_nanobanana": "^1.0@beta",
+        "drupal/ai_provider_ollama": "^1.2@rc",
+        "drupal/ai_provider_openai": "^1.2.2",
+        "drupal/ai_provider_openrouter": "^1.1.6",
+        "drupal/config_ignore": "^3.4",
+        "drupal/config_split": "^2.0.2",
+        "drupal/core": "^11.3.13",
+        "drupal/core-composer-scaffold": "^11.3.13",
+        "drupal/core-project-message": "^11.3.13",
+        "drupal/core-recipe-unpack": "^11.3.13",
+        "drupal/flowdrop": "^2.0.0-alpha6",
+        "drupal/flowdrop_ai_provider": "2.x-dev",
+        "drupal/gemini_provider": "^1.0.1",
+        "drupal/metatag": "^2.2",
+        "drupal/pathauto": "^1.15",
+        "drupal/rabbit_hole": "^1.2",
+        "drupal/redirect": "^1.13",
+        "drupal/revision_graph": "^3.1.1",
+        "drupal/rift": "^2.0.0-rc1",
+        "drupal/schema_metatag": "^3.0.4",
+        "drupal/simple_sitemap": "^4.2.3",
+        "drupal/tome": "^1.14",
+        "drush/drush": "^13.7.4",
+        "league/commonmark": "^2.8.2"
+    },
+    "conflict": {
+        "drupal/drupal": "*"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "test": "SIMPLETEST_DB=sqlite://localhost//tmp/phpunit.sqlite BROWSERTEST_OUTPUT_DIRECTORY=/tmp phpunit -c web/core/phpunit.xml.dist web/modules/custom"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "cweagans/composer-patches": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "drupal/core-composer-scaffold": true,
+            "drupal/core-project-message": true,
+            "drupal/core-recipe-unpack": true,
+            "php-http/discovery": true,
+            "php-tuf/composer-integration": true,
+            "phpstan/extension-installer": true,
+            "tbachert/spi": true
+        },
+        "sort-packages": true,
+        "audit": {
+            "abandoned": "report"
+        },
+        "policy": {
+            "advisories": {
+                "block": false
+            }
+        }
+    },
+    "extra": {
+        "enable-patching": true,
+        "composer-exit-on-patch-failure": true,
+        "patches": {
+            "drupal/ai_provider_nanobanana": {
+                "Tolerate an unset API key on a keyless boot (no NULL into typed string)": "patches/nanobanana-null-key.patch"
+            },
+            "drupal/admin_theme": {
+                "PHP 8.4: use explicit nullable type on isAdminRoute() param": "patches/admin-theme-nullable-route.patch"
+            }
+        },
+        "drupal-scaffold": {
+            "locations": {
+                "web-root": "web/"
+            }
+        },
+        "installer-paths": {
+            "web/core": [
+                "type:drupal-core"
+            ],
+            "web/libraries/{$name}": [
+                "type:drupal-library"
+            ],
+            "web/modules/contrib/{$name}": [
+                "type:drupal-module"
+            ],
+            "web/profiles/contrib/{$name}": [
+                "type:drupal-profile"
+            ],
+            "web/themes/contrib/{$name}": [
+                "type:drupal-theme"
+            ],
+            "drush/Commands/contrib/{$name}": [
+                "type:drupal-drush"
+            ],
+            "web/modules/custom/{$name}": [
+                "type:drupal-custom-module"
+            ],
+            "web/profiles/custom/{$name}": [
+                "type:drupal-custom-profile"
+            ],
+            "web/themes/custom/{$name}": [
+                "type:drupal-custom-theme"
+            ],
+            "recipes/{$name}": [
+                "type:drupal-recipe"
+            ]
+        }
+    },
+    "require-dev": {
+        "drupal/core-dev": "^11.3.13"
+    }
+}

@@ -1,0 +1,9 @@
+'use aincient operator console':
+  title: 'Use the AIncient operator console'
+  description: 'Access the AI chat console and send messages to the assistant. The agent acts with this user''s permissions, so grant to trusted roles only.'
+  restrict access: true
+
+'approve templates':
+  title: 'Approve AIncient templates'
+  description: 'Approve AI-generated SDC templates for publication (the HITL gate).'
+  restrict access: true

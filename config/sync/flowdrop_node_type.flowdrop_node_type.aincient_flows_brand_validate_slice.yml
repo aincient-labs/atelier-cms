@@ -1,0 +1,30 @@
+uuid: 3f5ea4fe-bbe3-4d42-ad8e-c0a657bdf8ba
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_brand_validate_slice
+label: 'Validate brand slice'
+description: "Re-validate a brand specialist's slice against the design-token registry; strip invalid tokens and report them with reasons."
+category: memories
+icon: 'mdi:check-decagram-outline'
+plugin_version: 0.1.0
+enabled: true
+parameters:
+  slice:
+    configurable: false
+    connectable: true
+    required: true
+    default: ''
+outputs:
+  slice:
+    exposed: true
+tags: {  }
+executor_plugin: 'aincient_flows:brand_validate_slice'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

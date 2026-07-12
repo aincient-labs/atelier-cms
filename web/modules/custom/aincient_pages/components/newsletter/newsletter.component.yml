@@ -1,0 +1,15 @@
+name: Newsletter
+status: experimental
+group: 'AIncient Landing'
+description: 'An email sign-up band — one field plus one button (form is inert in preview).'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: muted
+    heading: { type: string }
+    subheading: { type: string }
+    cta_label: { type: string }
+    placeholder: { type: string }

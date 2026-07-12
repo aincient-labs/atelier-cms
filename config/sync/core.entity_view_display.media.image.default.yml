@@ -1,0 +1,67 @@
+uuid: eb99cf35-51df-4f0c-bacc-a4e832ca5c00
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.image.field_media_image
+    - media.type.image
+  module:
+    - rift
+    - rift_container_query
+    - user
+id: media.image.default
+targetEntityType: media
+bundle: image
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_media_image:
+    type: rift_image_entity_reference_picture
+    label: visually_hidden
+    settings:
+      view_mode: content
+      link: false
+    third_party_settings:
+      rift_container_query:
+        enable_container_queries: true
+    weight: 0
+    region: content
+  thumbnail:
+    type: rift_image_entity_reference_picture
+    label: hidden
+    settings:
+      view_mode: gallery
+      link: false
+    third_party_settings:
+      rift_container_query:
+        enable_container_queries: true
+    weight: 5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  langcode: true
+  name: true

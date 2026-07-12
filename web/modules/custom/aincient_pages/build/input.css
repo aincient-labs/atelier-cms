@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/* Scan the component templates + controller for utility classes. */
+@source "../components/**/*.twig";
+@source "../src/**/*.php";
+
+/* ── Design tokens ─────────────────────────────────────────────────────────
+   The @theme inline var→utility maps + the :root base defaults are GENERATED
+   from design-tokens.yml (scripts/build-tokens.php → tokens.generated.css), so
+   the module and the front-end theme share one token surface. A rebrand is just
+   a new set of values injected as :root overrides at render time (no rebuild).
+   Edit tokens in design-tokens.yml, not here. */
+@import "./tw-palette.generated.css";
+@import "./tokens.generated.css";
+
+/* ── Interaction: selection tint + keyboard focus ring ───────────────────────
+   Both default (in tokens.generated.css) to the accent hue and stay brand-
+   overridable via the `selection` / `focus_ring` tokens.
+   - ::selection is rendered TRANSLUCENT and never recolours the text, so
+     selecting can never break the selected text's contrast.
+   - :focus-visible is kept OPAQUE — a focus indicator needs ≥3:1 non-text
+     contrast to count as visible (WCAG 2.4.11). */
+@layer base {
+  ::selection { background-color: color-mix(in oklab, var(--selection) 30%, transparent); }
+  :where(a, button, input, textarea, select, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Long-form article styling for the blog regime (no plugin dependency). */
+@layer components {
+  .prose-aincient { @apply text-[1.075rem]; line-height: var(--prose-leading); }
+  .prose-aincient > * + * { margin-top: 1.3em; }
+  .prose-aincient h2 { @apply font-display text-2xl font-bold tracking-tight mt-12 mb-4; }
+  .prose-aincient h3 { @apply font-display text-xl font-semibold mt-8 mb-3; }
+  .prose-aincient p { @apply opacity-90; }
+  .prose-aincient a { @apply text-primary-on-surface underline underline-offset-4 hover:opacity-80; }
+  .prose-aincient ul { @apply list-disc pl-6 space-y-2 opacity-90; }
+  .prose-aincient ol { @apply list-decimal pl-6 space-y-2 opacity-90; }
+  .prose-aincient blockquote { @apply border-l-4 border-primary/40 pl-5 italic opacity-80; }
+  .prose-aincient code { @apply rounded bg-muted px-1.5 py-0.5 text-[0.9em]; }
+  .prose-aincient img { @apply rounded-xl my-8 w-full ring-1 ring-border; }
+  .prose-aincient hr { @apply my-10 border-border; }
+
+  /* Denser measure for the placeable `markdown` SECTION — the blog measure
+     above is tuned for a full article page and reads too airy inside a stacked
+     landing section. Tightens line-height + block gaps and adds an h1 rule
+     (Markdown authors lead with `#`, which the article measure never styles).
+     Scoped to the modifier, so the blog body is untouched. */
+  .prose-aincient--tight { @apply text-base leading-7; }
+  .prose-aincient--tight > * + * { margin-top: 1em; }
+  .prose-aincient--tight h1 { @apply font-display text-3xl font-bold tracking-tight mt-0 mb-4; }
+  .prose-aincient--tight h2 { @apply mt-8 mb-3; }
+  .prose-aincient--tight h3 { @apply mt-6 mb-2; }
+  .prose-aincient--tight img { @apply my-6; }
+  .prose-aincient--tight hr { @apply my-7; }
+}
+
+/* ── Responsive image slots (Rift) ───────────────────────────────────────────
+   Image props render through Rift as an SDC slot, not an <img src>. The .ain-img
+   wrapper owns the layout (radius/shadow/aspect) the old <img> carried; the Rift
+   <picture> + its <img> just fill it. See PageSpikeController::component() and
+   EntityEmbedResolver::picture(). */
+.ain-img picture { display: block; width: 100%; height: 100%; }
+.ain-img picture img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Full-URL fallback ONLY: a raw external image URL (Unsplash &c.) — or a rift-less
+   media token — renders as a bare <img> DIRECT child of .ain-img (never wrapped in
+   a <picture>; see PageSpikeController::imgSlot()). Give it the SAME fill as the
+   rift <img> above so it covers the wrapper's aspect box (object-fit: cover) instead
+   of keeping its own intrinsic ratio, and so a broken/slow URL holds the box height
+   rather than collapsing to 0. The `> img` direct-child selector is what scopes this
+   to the full-URL path — the responsive rift image is .ain-img > picture > img, so it
+   is untouched and keeps its existing (working) responsive-picture behaviour. */
+.ain-img > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Container-query mode (card/gallery, Phase 3): Rift emits its own self-sizing
+   markup, so just let it fill the wrapper. Folds in the rift_container_query
+   base library (the bespoke page shell doesn't auto-attach #attached libs). */
+.rift-cq-image-container { container-type: inline-size; width: 100%; }
+.rift-cq-image { background-repeat: no-repeat; background-size: contain; }

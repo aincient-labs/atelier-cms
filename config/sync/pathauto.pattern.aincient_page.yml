@@ -1,0 +1,24 @@
+uuid: 7036d17f-537c-47f1-ad6d-b3d058bf3dcf
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.aincient_page
+  module:
+    - node
+id: aincient_page
+label: 'AIncient page'
+type: 'canonical_entities:node'
+pattern: '/pages/[node:title]'
+selection_criteria:
+  0ac1481c-90e2-4f01-867f-81278ad7cbf8:
+    id: 'entity_bundle:node'
+    negate: false
+    uuid: 2693d30e-afda-4173-961c-34afcb458ad0
+    context_mapping:
+      node: node
+    bundles:
+      aincient_page: aincient_page
+selection_logic: and
+weight: 0
+relationships: {  }

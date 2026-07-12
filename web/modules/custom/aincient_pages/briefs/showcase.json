@@ -1,0 +1,189 @@
+{
+  "type": "landing",
+  "title": "AIncient — component showcase",
+  "sections": [
+    {
+      "component": "hero",
+      "props": {
+        "variant": "split",
+        "tone": "default",
+        "eyebrow": "Component library",
+        "heading": "Every section, one brand.",
+        "subheading": "This page exercises the whole marketing palette so you can judge a brand against real components — not a single mock.",
+        "cta_label": "Get started",
+        "cta_url": "#",
+        "secondary_label": "See the docs",
+        "secondary_url": "#",
+        "image": "https://picsum.photos/seed/aincient-hero/800/600"
+      }
+    },
+    {
+      "component": "logos",
+      "props": {
+        "tone": "muted",
+        "heading": "Trusted by teams everywhere",
+        "logos": [
+          { "name": "Northwind" },
+          { "name": "Acme" },
+          { "name": "Globex" },
+          { "name": "Initech" },
+          { "name": "Umbra" }
+        ]
+      }
+    },
+    {
+      "component": "stats",
+      "props": {
+        "tone": "default",
+        "items": [
+          { "value": "12k+", "label": "teams onboard" },
+          { "value": "99.98%", "label": "uptime" },
+          { "value": "4.9/5", "label": "rating" },
+          { "value": "3 min", "label": "to first value" }
+        ]
+      }
+    },
+    {
+      "component": "features",
+      "props": {
+        "tone": "muted",
+        "eyebrow": "Why us",
+        "heading": "Built for the way you work",
+        "columns": 3,
+        "features": [
+          { "icon": "⚡", "title": "Fast", "body": "Ships in milliseconds, not minutes." },
+          { "icon": "🔒", "title": "Secure", "body": "Governed by an allow-list at every edge." },
+          { "icon": "✶", "title": "Composable", "body": "One brand reskins every component." }
+        ]
+      }
+    },
+    {
+      "component": "content",
+      "props": {
+        "variant": "image-right",
+        "tone": "default",
+        "eyebrow": "The idea",
+        "heading": "Explain one thing, beautifully",
+        "body": "The content section pairs prose with an image. Alternate the image side as you stack them down the page for a natural rhythm.",
+        "image": "https://picsum.photos/seed/aincient-content/720/540",
+        "cta_label": "Learn more",
+        "cta_url": "#"
+      }
+    },
+    {
+      "component": "gallery",
+      "props": {
+        "tone": "muted",
+        "heading": "From the gallery",
+        "columns": 3,
+        "images": [
+          { "image": "https://picsum.photos/seed/g1/600/450", "caption": "First light" },
+          { "image": "https://picsum.photos/seed/g2/600/450", "caption": "Second look" },
+          { "image": "https://picsum.photos/seed/g3/600/450", "caption": "Third angle" }
+        ]
+      }
+    },
+    {
+      "component": "testimonials",
+      "props": {
+        "tone": "default",
+        "eyebrow": "Loved by customers",
+        "heading": "Don't take our word for it",
+        "columns": 3,
+        "quotes": [
+          { "quote": "It paid for itself in a week.", "author": "Dana Lee", "role": "VP Eng, Northwind" },
+          { "quote": "The cleanest tool we've adopted.", "author": "Sam Ortiz", "role": "Design Lead, Acme" },
+          { "quote": "Our whole team gets it instantly.", "author": "Priya N.", "role": "PM, Globex" }
+        ]
+      }
+    },
+    {
+      "component": "team",
+      "props": {
+        "tone": "muted",
+        "eyebrow": "Who we are",
+        "heading": "Meet the team",
+        "columns": 4,
+        "members": [
+          { "name": "Ada Stone", "role": "Founder" },
+          { "name": "Bo Rivera", "role": "Engineering" },
+          { "name": "Cy Okafor", "role": "Design" },
+          { "name": "Devi Rao", "role": "Support" }
+        ]
+      }
+    },
+    {
+      "component": "pricing",
+      "props": {
+        "tone": "default",
+        "eyebrow": "Pricing",
+        "heading": "Simple, honest plans",
+        "tiers": [
+          { "name": "Starter", "price": "$0", "period": "mo", "description": "For trying it out.", "features": ["1 project", "Community support"], "cta_label": "Start free", "cta_url": "#" },
+          { "name": "Pro", "price": "$29", "period": "mo", "description": "For growing teams.", "features": ["Unlimited projects", "Priority support", "Brand studio"], "cta_label": "Go Pro", "cta_url": "#", "featured": true },
+          { "name": "Scale", "price": "$99", "period": "mo", "description": "For organisations.", "features": ["SSO", "Audit log", "SLA"], "cta_label": "Contact us", "cta_url": "#" }
+        ]
+      }
+    },
+    {
+      "component": "grid",
+      "props": {
+        "tone": "muted",
+        "eyebrow": "Resources",
+        "heading": "Dig deeper",
+        "columns": 3,
+        "cards": [
+          { "icon": "📘", "title": "Guides", "body": "Step-by-step walkthroughs.", "cta_label": "Read", "cta_url": "#" },
+          { "icon": "🧩", "title": "Recipes", "body": "Drop-in building blocks.", "cta_label": "Browse", "cta_url": "#" },
+          { "icon": "🛟", "title": "Support", "body": "We're here to help.", "cta_label": "Ask", "cta_url": "#" }
+        ]
+      }
+    },
+    {
+      "component": "faq",
+      "props": {
+        "tone": "default",
+        "eyebrow": "FAQ",
+        "heading": "Questions, answered",
+        "questions": [
+          { "question": "Is there a free plan?", "answer": "Yes — Starter is free forever." },
+          { "question": "Can I bring my own brand?", "answer": "Absolutely. Every component reskins from your design tokens." },
+          { "question": "How do I cancel?", "answer": "One click, any time, no questions asked." }
+        ]
+      }
+    },
+    {
+      "component": "banner",
+      "props": {
+        "tone": "inverted",
+        "heading": "Designed once, branded everywhere.",
+        "cta_label": "Try the studio",
+        "cta_url": "#"
+      }
+    },
+    {
+      "component": "newsletter",
+      "props": {
+        "tone": "muted",
+        "heading": "Stay in the loop",
+        "subheading": "Product news, no spam. Unsubscribe any time.",
+        "cta_label": "Subscribe",
+        "placeholder": "you@company.com"
+      }
+    },
+    {
+      "component": "divider",
+      "props": { "variant": "label", "tone": "default", "label": "And finally" }
+    },
+    {
+      "component": "cta",
+      "props": {
+        "tone": "brand",
+        "heading": "Ready to build your site?",
+        "subheading": "Spin up a branded page in minutes.",
+        "cta_label": "Get started",
+        "cta_url": "#"
+      }
+    }
+  ]
+}

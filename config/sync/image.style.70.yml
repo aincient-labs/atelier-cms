@@ -1,0 +1,15 @@
+uuid: c522e25b-97cf-45af-a298-294a164b09cf
+langcode: en
+status: true
+dependencies:
+  module:
+    - image_style_quality
+name: '70'
+label: '70'
+effects:
+  2f2dfdef-be24-4fb7-8729-94a82a80987e:
+    uuid: 2f2dfdef-be24-4fb7-8729-94a82a80987e
+    id: image_style_quality
+    weight: 1
+    data:
+      quality: 70

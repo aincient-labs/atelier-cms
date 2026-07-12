@@ -1,0 +1,18 @@
+uuid: 92df36ab-9843-4fae-a9ff-9132019207dc
+langcode: en
+status: true
+dependencies:
+  config:
+    - crop.type.2x1
+  module:
+    - crop
+name: 2x1
+label: 2x1
+effects:
+  bd7ac5e5-e325-43c4-86ba-4172529bf19b:
+    uuid: bd7ac5e5-e325-43c4-86ba-4172529bf19b
+    id: crop_crop
+    weight: 1
+    data:
+      crop_type: 2x1
+      automatic_crop_provider: null

@@ -1,0 +1,7 @@
+_core:
+  default_config_hash: zYDzCAcp3-qmjU3QjiY7Sfgv_KBzBHKezOEA950Su4Q
+enabled: false
+allowed_event_types: {  }
+log_cron_triggers: false
+min_interval: 0
+max_workflows_per_run: 0

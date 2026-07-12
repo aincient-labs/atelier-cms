@@ -1,0 +1,51 @@
+uuid: a6869c08-1147-4bef-a11b-8a68ea122577
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_ai_provider
+_core:
+  default_config_hash: 6_dyj0e-xSDL502dHqgf8Ak6NY9OFtHjkLmenP95awY
+id: flowdrop_ai_provider_guardrails
+label: 'AI Guardrails'
+description: 'Apply AI guardrail checks to validate or filter text content in workflows'
+category: ai
+icon: 'mdi:shield-check-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  guardrail_set:
+    configurable: true
+    connectable: false
+    required: true
+  mode:
+    configurable: true
+    connectable: false
+    required: false
+    default: input
+  text:
+    configurable: false
+    connectable: true
+    required: true
+outputs:
+  passed:
+    exposed: true
+  results:
+    exposed: false
+  stop_score:
+    exposed: true
+  text:
+    exposed: true
+  violation_message:
+    exposed: true
+tags:
+  - ai
+  - safety
+  - guardrails
+executor_plugin: 'flowdrop_ai_provider:guardrails'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

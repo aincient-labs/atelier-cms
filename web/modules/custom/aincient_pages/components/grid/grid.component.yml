@@ -1,0 +1,21 @@
+name: Grid
+status: experimental
+group: 'AIncient Layout'
+description: 'A bounded grid of equal card tiles (one level deep, no nesting). columns reflows the tiles.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    columns:
+      type: integer
+      enum: [2, 3, 4]
+      default: 3
+    cards:
+      type: array
+      description: 'Array of { title, body, icon, image, cta_label, cta_url }. Each renders as a card tile.'

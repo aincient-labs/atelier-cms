@@ -1,0 +1,50 @@
+uuid: a5755c69-1b03-4b97-badb-b284c8acfce6
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_ai_provider
+_core:
+  default_config_hash: yvoNYlFaQVDTdzpacjsntt0VE8x3j6I-af65FAJtS14
+id: flowdrop_ai_provider_image_and_audio_to_video
+label: 'Image and Audio to Video'
+description: 'AI image and audio to video transformation'
+category: ai
+icon: 'mdi:video-plus'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  audio_file:
+    configurable: false
+    connectable: true
+    required: true
+  image_file:
+    configurable: false
+    connectable: true
+    required: true
+  model:
+    configurable: true
+    connectable: false
+    required: false
+    default: ''
+outputs:
+  model:
+    exposed: false
+  provider:
+    exposed: false
+  video:
+    exposed: true
+tags:
+  - model
+  - ai
+  - image
+  - audio
+  - video
+  - generation
+executor_plugin: 'flowdrop_ai_provider:image_and_audio_to_video'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

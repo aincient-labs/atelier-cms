@@ -1,0 +1,101 @@
+<?php
+
+/**
+ * @file
+ * Studio Backend — the AIncient admin theme.
+ *
+ * Builds the fixed left sidebar (brand + section nav + account) for
+ * page.html.twig. The nav is a short, HAND-CURATED list — the only backend
+ * surfaces an operator needs outside the chat console (People + AI metering) —
+ * NOT a Drupal menu, so it never grows a raw-Drupal admin tree. Each item is
+ * dropped when the current user can't reach it, so the sidebar never links to a
+ * 403.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Url;
+
+/**
+ * The curated sidebar sections: [route, label]. The registry lives in
+ * aincient_core's StudioSections so the sidebar and the /admin landing can
+ * never drift; the inline list is only the fallback for a backend running
+ * without aincient_core.
+ */
+function _aincient_studio_backend_sections(): array {
+  if (class_exists(\Drupal\aincient_core\StudioSections::class)) {
+    return \Drupal\aincient_core\StudioSections::sections();
+  }
+  return [
+    'people' => ['route' => 'view.aincient_users.page_1', 'label' => t('People')],
+    'metering' => ['route' => 'ai_metering.dashboard', 'label' => t('AI metering')],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function aincient_studio_backend_preprocess_html(array &$variables): void {
+  $variables['attributes']['class'][] = 'sb-backend';
+}
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * Assemble the sidebar: the section nav (access-filtered + active-marked), the
+ * brand home link, and the signed-in account footer.
+ */
+function aincient_studio_backend_preprocess_page(array &$variables): void {
+  $current = \Drupal::routeMatch()->getRouteName();
+
+  $items = [];
+  foreach (_aincient_studio_backend_sections() as $key => $section) {
+    try {
+      $url = Url::fromRoute($section['route']);
+    }
+    catch (\Throwable $e) {
+      // Route not available (e.g. ai_metering uninstalled) — skip the item.
+      continue;
+    }
+    // Don't link to a page the current user can't open.
+    if (!$url->access()) {
+      continue;
+    }
+    $items[] = [
+      'key' => $key,
+      'label' => $section['label'],
+      'url' => $url->toString(),
+      'active' => $current === $section['route'],
+    ];
+  }
+  $variables['sb_nav'] = $items;
+
+  // The brand mark returns to the admin landing (/admin).
+  $variables['sb_home_url'] = Url::fromRoute('system.admin')->toString();
+
+  // A "Console" affordance to switch back to the chat console (/aincient) —
+  // dropped when the current user can't reach it, so it never links to a 403.
+  try {
+    $console = Url::fromRoute('aincient_chat.console');
+    if ($console->access()) {
+      $variables['sb_console_url'] = $console->toString();
+    }
+  }
+  catch (\Throwable $e) {
+    // aincient_chat uninstalled — no console link.
+  }
+
+  $account = \Drupal::currentUser();
+  if ($account->isAuthenticated()) {
+    $variables['sb_user'] = [
+      'name' => $account->getDisplayName(),
+      'url' => Url::fromRoute('entity.user.canonical', ['user' => $account->id()])->toString(),
+      'logout' => Url::fromRoute('user.logout')->toString(),
+    ];
+  }
+
+  // Active state varies by route; the access-filtered nav + account vary by
+  // user. Vary the cached page on both so the sidebar is never stale.
+  $variables['#cache']['contexts'][] = 'route.name';
+  $variables['#cache']['contexts'][] = 'user';
+}

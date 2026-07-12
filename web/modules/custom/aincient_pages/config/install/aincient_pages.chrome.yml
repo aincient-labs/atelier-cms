@@ -1,0 +1,7 @@
+header:
+  logo_position: left
+  sticky: true
+  nav_alignment: end
+footer:
+  layout: inline
+  show_tagline: true

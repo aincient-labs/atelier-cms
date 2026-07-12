@@ -1,0 +1,56 @@
+uuid: 4b526554-89e1-4826-8402-b5357514d59a
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: UZ4hutnYH3Fuh0QICJ7WuPUCuT2x_uxUySMiMEdAHBQ
+id: data_to_dataframe
+label: 'Data to Dataframe'
+description: 'Convert data to dataframe format'
+category: data
+icon: 'mdi:database-export-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  data:
+    configurable: false
+    connectable: true
+    required: false
+  format:
+    configurable: true
+    connectable: false
+    required: false
+    default: json
+  includeIndex:
+    configurable: true
+    connectable: false
+    required: false
+    default: false
+  orient:
+    configurable: true
+    connectable: false
+    required: false
+    default: records
+outputs:
+  columns_count:
+    exposed: true
+  dataframe:
+    exposed: true
+  format:
+    exposed: true
+  include_index:
+    exposed: true
+  orient:
+    exposed: true
+  rows_count:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:data_to_dataframe'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

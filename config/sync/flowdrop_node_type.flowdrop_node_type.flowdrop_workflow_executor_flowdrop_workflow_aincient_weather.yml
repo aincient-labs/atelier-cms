@@ -1,0 +1,30 @@
+uuid: d1fbe1d6-8a29-4fcd-9cb8-e08a7b01f701
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_workflow_executor
+id: flowdrop_workflow_executor_flowdrop_workflow_aincient_weather
+label: 'Run workflow: Weather'
+description: "A weather lookup. Take the user's chat message as a location. GET the Open-Meteo geocoding API to resolve it to latitude/longitude/name. Then GET the Open-Meteo forecast API for that lat/lon. Reshape the response into a JSON envelope and return it as the chat output."
+category: tools
+icon: 'mdi:cloud-question-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  location:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  message:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_workflow_executor:flowdrop_workflow:aincient_weather'
+visual_type: default
+supported_visual_types:
+  - default
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true

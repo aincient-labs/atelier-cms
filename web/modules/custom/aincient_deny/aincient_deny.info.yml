@@ -1,0 +1,5 @@
+name: 'AIncient Deny'
+type: module
+description: "Denies certain operations that doesn't align with AIncient's architecture"
+package: AIncient
+core_version_requirement: ^10 || ^11

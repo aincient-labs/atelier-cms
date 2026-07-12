@@ -1,0 +1,15 @@
+name: 'CTA Band'
+status: experimental
+group: 'AIncient Landing'
+description: 'A closing call-to-action band. Usually brand-toned to stand out.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: brand
+    heading: { type: string }
+    subheading: { type: string }
+    cta_label: { type: string }
+    cta_url: { type: string }

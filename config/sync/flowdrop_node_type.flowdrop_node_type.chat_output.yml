@@ -1,0 +1,49 @@
+uuid: caaebd0b-2d80-415f-a15a-0ce20d45fe7c
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: B4NK3yTZlY2ghsWZIEedj7Kee6SqrS7j1iBZ5hJ0StE
+id: chat_output
+label: 'Chat Output'
+description: 'Output chat messages in various formats'
+category: processing
+icon: 'mdi:chat-alert-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  format:
+    configurable: true
+    connectable: false
+    required: false
+    default: text
+  message:
+    configurable: false
+    connectable: true
+    required: false
+  showTimestamp:
+    configurable: true
+    connectable: false
+    required: false
+    default: false
+outputs:
+  format:
+    exposed: true
+  message:
+    exposed: true
+  metadata:
+    exposed: true
+  timestamp:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:chat_output'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+  - square
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

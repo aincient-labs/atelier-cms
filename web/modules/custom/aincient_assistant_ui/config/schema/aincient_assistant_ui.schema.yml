@@ -1,0 +1,10 @@
+aincient_assistant_ui.settings:
+  type: config_object
+  label: 'AIncient assistant-ui settings'
+  mapping:
+    theme:
+      type: string
+      label: 'Default theme'
+    allow_user_switch:
+      type: boolean
+      label: 'Allow users to switch theme'

@@ -1,0 +1,21 @@
+uuid: 48e15119-35c0-4318-8fc6-edb81f641276
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_metatag
+    - node.type.aincient_page
+  module:
+    - metatag
+id: node.aincient_page.field_metatag
+field_name: field_metatag
+entity_type: node
+bundle: aincient_page
+label: 'Meta tags'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: metatag

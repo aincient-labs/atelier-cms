@@ -1,0 +1,51 @@
+uuid: abe82aaf-e4e4-46ee-945a-917a2cc9611c
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_interrupt
+id: rate_limit
+label: 'Rate Limit'
+description: 'Limits how often execution passes through, pausing excess runs until the window frees up'
+category: timing
+icon: 'mdi:speedometer-slow'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  identifier:
+    configurable: true
+    connectable: true
+    required: false
+  limit:
+    configurable: true
+    connectable: false
+    required: true
+  window:
+    configurable: true
+    connectable: false
+    required: true
+outputs:
+  drift_seconds:
+    exposed: true
+  resolved_by_timer:
+    exposed: true
+  resumed_at:
+    exposed: true
+  scheduled_at:
+    exposed: true
+  throttled:
+    exposed: true
+  user_id:
+    exposed: true
+tags:
+  - timing
+  - rate-limit
+  - interrupt
+executor_plugin: 'flowdrop_interrupt:rate_limit'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

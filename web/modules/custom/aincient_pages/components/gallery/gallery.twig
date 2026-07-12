@@ -1,0 +1,35 @@
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('default')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
+{% set cols = {
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-2 lg:grid-cols-3',
+  4: 'sm:grid-cols-2 lg:grid-cols-4',
+}[columns|default(3)] %}
+
+<section class="{{ tone_class }}">
+  <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
+    {% if eyebrow or heading or subheading %}
+      <div class="mb-12 max-w-2xl">
+        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? 'opacity-90' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
+        {% if heading %}<h2 class="mt-3 font-display text-3xl sm:text-4xl [font-weight:var(--heading-weight)] tracking-tight">{{ heading }}</h2>{% endif %}
+        {% if subheading %}<p class="mt-4 text-lg opacity-70">{{ subheading|inline_md }}</p>{% endif %}
+      </div>
+    {% endif %}
+    <div class="grid gap-4 {{ cols }}">
+      {% for img in images %}
+        <figure class="overflow-hidden rounded-[var(--card-radius)] ring-1 ring-border">
+          {# image_html is a container-query Rift picture pre-rendered by the
+             renderer (slots can't nest per gallery cell); image is its raw-URL
+             fallback. Alt rides inside the picture (aria-label) for image_html. #}
+          {% if img.image_html %}{{ img.image_html|raw }}{% elseif img.image %}<img src="{{ img.image }}" alt="{{ img.caption }}" class="aspect-[4/3] h-full w-full object-cover transition duration-300 hover:scale-105">{% endif %}
+          {% if img.caption %}<figcaption class="bg-card text-card-foreground px-3 py-2 text-xs opacity-70">{{ img.caption|inline_md }}</figcaption>{% endif %}
+        </figure>
+      {% endfor %}
+    </div>
+  </div>
+</section>

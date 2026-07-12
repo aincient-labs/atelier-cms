@@ -1,0 +1,84 @@
+<?php
+
+/**
+ * @file
+ * Install/uninstall hooks for AIncient Demo.
+ *
+ * Seeds the demo homepage (a branded `aincient_page` node) and points the front
+ * page at it. This is one-shot showcase content — created on install, removed on
+ * uninstall — so it never pollutes config or the kernel-test fixture (the product
+ * modules don't depend on this one).
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_install().
+ *
+ * Compose the demo homepage from briefs/home.json (validated through the page
+ * grammar) and set it as the site front page.
+ */
+function aincient_demo_install(): void {
+  $state = \Drupal::state();
+  // Idempotent: never seed a second homepage if one is already on record.
+  if ($state->get('aincient_demo.home_nid')) {
+    return;
+  }
+
+  $brief = __DIR__ . '/briefs/home.json';
+  $schema = json_decode((string) file_get_contents($brief), TRUE);
+  if (!is_array($schema)) {
+    \Drupal::logger('aincient_demo')->warning('Demo homepage brief missing or invalid; skipped seeding.');
+    return;
+  }
+
+  // Persist as a PUBLISHED aincient_page authored to the site owner (uid 1) —
+  // not whoever happens to run the installer. writeSchema() clamps to the
+  // grammar (the same guardrail the agent goes through) and splits the schema
+  // across the structure + content fields. Under the editorial workflow new
+  // content defaults to Draft, so publish explicitly via moderation_state (the
+  // front page must point at a *live* node) — a bare status=TRUE is ignored once
+  // content_moderation owns the publish flag.
+  $node = \Drupal::entityTypeManager()->getStorage('node')->create([
+    'type' => 'aincient_page',
+    'uid' => 1,
+    'moderation_state' => 'published',
+  ]);
+  \Drupal::service('aincient_pages.store')->writeSchema($node, $schema);
+  $node->save();
+
+  $state->set('aincient_demo.home_nid', (int) $node->id());
+
+  // Point the front page at the demo homepage (it renders chrome-less + branded
+  // via the aincient_page canonical route). Remember the prior value to restore.
+  $site = \Drupal::configFactory()->getEditable('system.site');
+  $state->set('aincient_demo.previous_front', (string) $site->get('page.front'));
+  $site->set('page.front', '/node/' . $node->id())->save();
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Remove the demo homepage and restore the previous front-page setting.
+ */
+function aincient_demo_uninstall(): void {
+  $state = \Drupal::state();
+
+  $nid = $state->get('aincient_demo.home_nid');
+  if ($nid) {
+    $node = \Drupal::entityTypeManager()->getStorage('node')->load($nid);
+    if ($node) {
+      $node->delete();
+    }
+  }
+
+  $site = \Drupal::configFactory()->getEditable('system.site');
+  $previous = $state->get('aincient_demo.previous_front');
+  // Only reclaim the front page if it still points at our (now-deleted) node.
+  if ($nid && $site->get('page.front') === '/node/' . $nid) {
+    $site->set('page.front', $previous ?: '/node')->save();
+  }
+
+  $state->delete('aincient_demo.home_nid');
+  $state->delete('aincient_demo.previous_front');
+}

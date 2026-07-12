@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="418.47635"
+   height="418.47635"
+   viewBox="0 0 110.72187 110.72186"
+   version="1.1"
+   id="svg5"
+   inkscape:export-filename="logo-chip.svg"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   sodipodi:docname="logo.svg"
+   inkscape:version="1.2 (dc2aeda, 2022-05-15)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     showguides="true"
+     inkscape:zoom="0.39877331"
+     inkscape:cx="537.89958"
+     inkscape:cy="18.807678"
+     inkscape:window-width="1920"
+     inkscape:window-height="937"
+     inkscape:window-x="1312"
+     inkscape:window-y="30"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g17222" />
+  <defs
+     id="defs2">
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath9266">
+      <text
+         xml:space="preserve"
+         style="font-size:70.5556px;font-family:'Malayalam MN';-inkscape-font-specification:'Malayalam MN';fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583;stroke-dasharray:none;stroke-opacity:1"
+         x="127.7314"
+         y="143.54085"
+         id="text9270"><tspan
+           sodipodi:role="line"
+           id="tspan9268"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:70.5556px;font-family:'Iowan Old Style';-inkscape-font-specification:'Iowan Old Style';stroke-width:0.264583"
+           x="127.7314"
+           y="143.54085">A</tspan></text>
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-82.020833,-82.020833)">
+    <g
+       id="g17222">
+      <path
+         style="fill:#c2452a;fill-opacity:1;stroke:none;stroke-width:0.264583;stroke-dasharray:none;stroke-opacity:1"
+         d="m 147.34886,87.685514 -59.76588,99.633596 40.07243,0.0598 59.6637,-99.795976 z"
+         id="path5667-8-7" />
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.79375;stroke-dasharray:none;stroke-opacity:1"
+         id="rect448-0"
+         width="99.736115"
+         height="99.736115"
+         x="87.582977"
+         y="87.582977" />
+      <path
+         style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.264583;stroke-dasharray:none;stroke-opacity:1"
+         d="m 161.67599,69.164683 -59.76587,99.633577 40.07242,0.0598 59.6637,-99.795964 z"
+         id="path5667"
+         clip-path="url(#clipPath9266)"
+         transform="translate(-14.194849,18.623259)" />
+    </g>
+  </g>
+</svg>

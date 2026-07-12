@@ -1,0 +1,296 @@
+# AIncient design-token registry — the single source of truth.
+#
+# A CONSTRAINED, LAYERED graph. References may only point DOWN a tier:
+#
+#   Tier 0  Tailwind base   --color-{hue}-{step}   IMMUTABLE, not in this file.
+#           The full Tailwind palette, emitted to build/tw-palette.generated.css
+#           from node_modules/tailwindcss/theme.css (scripts/build-tokens.php).
+#           The swatch source; never edited, only referenced.
+#   Tier 1  palette          AIncient's brand palette — the ONE place a colour is
+#           chosen. Each token defaults to var(--color-…) (a Tier 0 swatch) but
+#           may be overridden to a raw value for exact-match brands. Also holds
+#           the raw radius / shadow / type / font scales.
+#   Tier 2  semantic         purpose tokens (primary, background, font-sans) —
+#           reference Tier 1 ONLY. Colour tokens are reference-only (no raw).
+#   Tier 3  component         per-component knobs (button-bg, card-radius) —
+#           reference Tier 1 or Tier 2.
+#
+# The reference contract is enforced in TokenValue/DesignTokens::validate: a
+# var() target must sit in a tier permitted for the referrer, and colour tokens
+# below Tier 1 must be references (raw colours enter only at Tier 1). Non-colour
+# scalar knobs (density, border_width, button_weight) may stay raw at any tier.
+#
+# This file drives FIVE consumers: per-type validation (TokenValue), the no-AI
+# editor (BrandForm), the AI agent (preview_brand + manifestSummary), the runtime
+# override CSS (BrandRepository::cssVariables), and the build-time base CSS
+# (scripts/build-tokens.php → build/tokens.generated.css). Config
+# (aincient_pages.brand) stores ONLY user overrides; defaults live here.
+#
+# Token name uses underscores (config-key friendly); css_var defaults to name
+# with _→-. type ∈ color | length | number | font-family | shadow | enum
+# (+ values starting `var(` are validated as a reference). See src/TokenValue.php.
+#
+# ── NAMING CONVENTION (the tier is carried by the name FAMILY + this manifest's
+#    grouping, NOT by a tier prefix — names stay idiomatic so an AI agent and a
+#    human theme dev both recognise them on sight) ────────────────────────────
+#   • PALETTE names are always FAMILY-PREFIXED — `brand_*`, `neutral_*`, or a
+#     scale family (`radius_*`, `shadow_*`, `size_*`, `weight_*`, `leading_*`,
+#     `tracking_*`, `font_family_*`). A family prefix ⇒ this is a raw ingredient.
+#   • SEMANTIC names are the bare role words shadcn/ui uses (`background`,
+#     `foreground`, `primary`, `primary_foreground`, `muted`, `accent`, `card`,
+#     `border`, …) plus a few role-typography knobs (`font_sans`, `heading_weight`).
+#     A bare role word ⇒ semantic. These are what Tailwind utilities map to
+#     (`bg-primary`, `text-foreground`), so keep them identical to the ecosystem.
+#   • COMPONENT names are `{component}_{property}` with a LOCKED property vocab:
+#       _bg  _fg  _border_color  _radius  _shadow  _weight  _height
+#     so per-component overrides are predictable — knowing a component exists,
+#     you can guess its knobs (`button_bg`, `card_radius`, `site_footer_fg`). The
+#     name prefix matches the token's `component:` field. `_border_color` is the
+#     border COLOUR only (it is a colour token); border WIDTH is the single global
+#     `border_width` knob (there is no per-component width), and the style is always
+#     solid — so "thin black border" = set `*_border_color` + `border_width`.
+#   • PAIRING: every on-colour is `<surface>_foreground` (never `_contrast`/`_fg`
+#     at palette/semantic tier). Component shorthand pairs are `_bg`/`_fg`.
+#   • A surface colour declares its on-colour with `on: <foreground_token>`. The
+#     pair is contrast-checked (WCAG AA, 4.5:1) on preview + publish — see
+#     src/ColorContrast.php. Set a surface and its on-colour together so text
+#     stays legible; the agent/studio surface the ratio so a weak pair is caught.
+#   • ACCENT TEXT (brand colour used as TEXT, not as a fill — links, markers) does
+#     NOT read raw `primary`: a fill colour is free to be any lightness (its paired
+#     on-colour guarantees the text on it), but the SAME colour used as text on a
+#     neutral surface can be illegible. So accent text uses the DERIVED
+#     `primary_on_surface` token — primary blended toward the page ink, which keeps
+#     it legible on either a light or a dark neutral surface by construction (no
+#     per-brand check needed). The legacy advisory `legible_on: [<surface>, …]` key
+#     is still honoured by ColorContrast if any token re-declares it, but no token
+#     does now that accent text is structurally guaranteed.
+
+tokens:
+
+  # ══ TIER 1 · PALETTE ══════════════════════════════════════════════════════
+  # AIncient's brand palette. Colours default to a Tier 0 Tailwind swatch; this
+  # is the only tier where a raw colour may be entered (advanced brands needing
+  # an exact match). Everything below references these, never Tier 0 directly.
+
+  # ── Brand colours (surface + its on-colour; `on:` names the paired token) ────
+  brand_primary:            { tier: palette, category: color, type: color, on: brand_primary_foreground, default: 'var(--color-indigo-600)', label: 'Brand primary', description: 'The lead brand colour. Pick a swatch or set an exact value.' }
+  brand_primary_foreground: { tier: palette, category: color, type: color, default: 'var(--color-white)',   label: 'On brand primary', description: 'Text/icons that sit on the primary fill.' }
+  brand_accent:             { tier: palette, category: color, type: color, on: brand_accent_foreground, default: 'var(--color-amber-500)',  label: 'Brand accent', description: 'Secondary highlight colour.' }
+  brand_accent_foreground:  { tier: palette, category: color, type: color, default: 'var(--color-slate-900)', label: 'On brand accent', description: 'Text/icons that sit on the accent fill.' }
+
+  # ── Neutral ramp ─────────────────────────────────────────────────────────--
+  neutral_surface:           { tier: palette, category: color, type: color, default: 'var(--color-white)',     label: 'Surface', description: 'Page/card background.' }
+  neutral_subtle:            { tier: palette, category: color, type: color, default: 'var(--color-slate-50)',  label: 'Subtle surface', description: 'The muted surface (muted fills, hovers, secondary panels). Pairs with neutral_muted_foreground for text.' }
+  neutral_border:            { tier: palette, category: color, type: color, default: 'var(--color-slate-200)', label: 'Border', description: 'Hairlines, dividers.' }
+  neutral_muted_foreground:  { tier: palette, category: color, type: color, default: 'var(--color-slate-500)', label: 'Muted text', description: 'Text/on-colour for the muted (subtle) surface. Secondary/disabled text.' }
+  neutral_ink:               { tier: palette, category: color, type: color, default: 'var(--color-slate-900)', label: 'Ink', description: 'Primary text, near-black.' }
+
+  # ── Font families ───────────────────────────────────────────────────────────
+  font_family_base:    { tier: palette, category: typography, type: font-family, default: '"Inter", ui-sans-serif, system-ui, sans-serif',                       label: 'Body typeface',    description: 'The body-text typeface stack. THE token to set for the body font. To use a non-system font, load it under Web fonts first, then name it here.' }
+  font_family_display: { tier: palette, category: typography, type: font-family, default: '"Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif',         label: 'Heading typeface', description: 'The heading + brand-name typeface stack. THE token to set for the display/heading font. To use a non-system font, load it under Web fonts first, then name it here.' }
+
+  # ── Radius scale ─────────────────────────────────────────────────────────--
+  radius_none: { tier: palette, category: radius, type: length, default: '0',       label: 'Radius none' }
+  radius_sm:   { tier: palette, category: radius, type: length, default: '0.25rem',  label: 'Radius sm' }
+  radius_md:   { tier: palette, category: radius, type: length, default: '0.375rem', label: 'Radius md' }
+  radius_lg:   { tier: palette, category: radius, type: length, default: '0.5rem',   label: 'Radius lg' }
+  radius_xl:   { tier: palette, category: radius, type: length, default: '0.75rem',  label: 'Radius xl' }
+  radius_2xl:  { tier: palette, category: radius, type: length, default: '1rem',     label: 'Radius 2xl' }
+  radius_full: { tier: palette, category: radius, type: length, default: '9999px',   label: 'Radius full (pill)' }
+
+  # ── Shadow axes ──────────────────────────────────────────────────────────--
+  # Shadow is DECOMPOSED into independent axis dials (below) instead of opaque
+  # `box-shadow` literals, so a change to one perceptual property leaves the
+  # others untouched — the surgical edit the brand AGENT needs ("make it bigger"
+  # bumps distance; the shape stays hard if blur is 0). The sm/md/lg/2xl RUNGS are
+  # `derived`: their value is a calc() that synthesises the box-shadow from these
+  # axes (scaled by per-rung factors). md is the 1× anchor — the axis values are
+  # the literal shadow AT md, so the agent's "distance" reads as the offset it
+  # sees. The factors are DECOUPLED per channel: OFFSET (distance) climbs gently
+  # (0.5 → 1 → 1.5 → 2.25) so a hard shadow — where the offset IS the whole
+  # visual — never balloons into a detached slab at the large rungs; BLUR climbs
+  # faster (0.5 → 1 → 2 → 3.5) so soft shadows still gain real depth toward the
+  # top, the way real elevation diffuses; SPREAD tracks the offset so the tuck
+  # stays proportional. (A single shared factor can't serve both hard and soft —
+  # the old uniform 0.3→6.5 ladder turned 2xl into a 6.5× offset that looked
+  # broken on hard shadows.) Derived rungs are never user/agent-writable and
+  # never appear in the editor — they are emitted only to the base CSS, so the
+  # browser recomputes them whenever an axis var changes (the same var-chain trick
+  # the colour tiers use; works identically in the server CSS and the live preview).
+  shadow_distance: { tier: palette, category: shadow, type: length, default: '4px',   label: 'Shadow distance', description: 'How far the shadow is cast (the offset length at the md rung). Larger = more lifted; 0 = a centred halo/glow. THE dial for "bigger/smaller".' }
+  shadow_blur:     { tier: palette, category: shadow, type: length, default: '6px',   label: 'Shadow blur',     description: 'Edge diffusion (blur radius at the md rung). 0 = hard/crisp (neo-brutalist); larger = softer/more diffuse. THE dial for "harder/softer".' }
+  shadow_spread:   { tier: palette, category: shadow, type: length, default: '-1px',  label: 'Shadow spread', advanced: true, description: 'Spread radius at the md rung. Negative tucks the shadow under the element (the classic drop look); positive enlarges it.' }
+  shadow_strength: { tier: palette, category: shadow, type: number, default: '0.1',   label: 'Shadow strength', description: 'Opacity of the shadow colour, 0–1. 0 = invisible, 1 = solid. THE dial for "darker/lighter".' }
+  # Direction is set via the `direction` preset group (a named 9-way enum the agent
+  # picks from), which expands to these two unitless offset multipliers. Internal:
+  # tracked + published, but never rendered as a raw control.
+  shadow_dir_x:    { tier: palette, category: shadow, type: number, default: '0', label: 'Shadow direction X', internal: true }
+  shadow_dir_y:    { tier: palette, category: shadow, type: number, default: '1', label: 'Shadow direction Y', internal: true }
+
+  # ── Shadow rungs (DERIVED — synthesised from the axes above) ────────────────
+  shadow_sm:   { tier: palette, category: shadow, type: shadow, derived: true, label: 'Shadow sm', default: 'calc(var(--shadow-distance) * var(--shadow-dir-x) * 0.5) calc(var(--shadow-distance) * var(--shadow-dir-y) * 0.5) calc(var(--shadow-blur) * 0.5) calc(var(--shadow-spread) * 0.5) color-mix(in oklab, var(--shadow-color) calc(var(--shadow-strength) * 100%), transparent)' }
+  shadow_md:   { tier: palette, category: shadow, type: shadow, derived: true, label: 'Shadow md', default: 'calc(var(--shadow-distance) * var(--shadow-dir-x)) calc(var(--shadow-distance) * var(--shadow-dir-y)) var(--shadow-blur) var(--shadow-spread) color-mix(in oklab, var(--shadow-color) calc(var(--shadow-strength) * 100%), transparent)' }
+  shadow_lg:   { tier: palette, category: shadow, type: shadow, derived: true, label: 'Shadow lg', default: 'calc(var(--shadow-distance) * var(--shadow-dir-x) * 1.5) calc(var(--shadow-distance) * var(--shadow-dir-y) * 1.5) calc(var(--shadow-blur) * 2) calc(var(--shadow-spread) * 1.5) color-mix(in oklab, var(--shadow-color) calc(var(--shadow-strength) * 100%), transparent)' }
+  shadow_2xl:  { tier: palette, category: shadow, type: shadow, derived: true, label: 'Shadow 2xl', default: 'calc(var(--shadow-distance) * var(--shadow-dir-x) * 2.25) calc(var(--shadow-distance) * var(--shadow-dir-y) * 2.25) calc(var(--shadow-blur) * 3.5) calc(var(--shadow-spread) * 2.25) color-mix(in oklab, var(--shadow-color) calc(var(--shadow-strength) * 100%), transparent)' }
+
+  # ── Font-size scale ──────────────────────────────────────────────────────--
+  # `theme_key`/`line_height` override Tailwind's text-* utilities, so every
+  # `text-4xl` etc. in templates becomes token-driven (rebrandable) while keeping
+  # its default line-height.
+  size_xs:   { tier: palette, category: typography, type: length, default: '0.75rem',  theme_key: text-xs,   line_height: '1rem',    label: 'Size xs' }
+  size_sm:   { tier: palette, category: typography, type: length, default: '0.875rem', theme_key: text-sm,   line_height: '1.25rem', label: 'Size sm' }
+  size_base: { tier: palette, category: typography, type: length, default: '1rem',     theme_key: text-base, line_height: '1.5rem',  label: 'Size base' }
+  size_lg:   { tier: palette, category: typography, type: length, default: '1.125rem', theme_key: text-lg,   line_height: '1.75rem', label: 'Size lg' }
+  size_xl:   { tier: palette, category: typography, type: length, default: '1.25rem',  theme_key: text-xl,   line_height: '1.75rem', label: 'Size xl' }
+  size_2xl:  { tier: palette, category: typography, type: length, default: '1.5rem',   theme_key: text-2xl,  line_height: '2rem',    label: 'Size 2xl' }
+  size_3xl:  { tier: palette, category: typography, type: length, default: '1.875rem', theme_key: text-3xl,  line_height: '2.25rem', label: 'Size 3xl' }
+  size_4xl:  { tier: palette, category: typography, type: length, default: '2.25rem',  theme_key: text-4xl,  line_height: '2.5rem',  label: 'Size 4xl' }
+  size_5xl:  { tier: palette, category: typography, type: length, default: '3rem',     theme_key: text-5xl,  line_height: '1',       label: 'Size 5xl' }
+  size_6xl:  { tier: palette, category: typography, type: length, default: '3.75rem',  theme_key: text-6xl,  line_height: '1',       label: 'Size 6xl' }
+
+  # ── Font-weight / leading / tracking scales ──────────────────────────────--
+  weight_normal:    { tier: palette, category: typography, type: number, default: '400', label: 'Weight normal' }
+  weight_medium:    { tier: palette, category: typography, type: number, default: '500', label: 'Weight medium' }
+  weight_semibold:  { tier: palette, category: typography, type: number, default: '600', label: 'Weight semibold' }
+  weight_bold:      { tier: palette, category: typography, type: number, default: '700', label: 'Weight bold' }
+  weight_extrabold: { tier: palette, category: typography, type: number, default: '800', label: 'Weight extrabold' }
+  leading_tight:   { tier: palette, category: typography, type: number, default: '1.25',  label: 'Leading tight' }
+  leading_snug:    { tier: palette, category: typography, type: number, default: '1.375', label: 'Leading snug' }
+  leading_normal:  { tier: palette, category: typography, type: number, default: '1.5',   label: 'Leading normal' }
+  leading_relaxed: { tier: palette, category: typography, type: number, default: '1.625', label: 'Leading relaxed' }
+  tracking_tighter: { tier: palette, category: typography, type: length, default: '-0.05em',  label: 'Tracking tighter' }
+  tracking_tight:   { tier: palette, category: typography, type: length, default: '-0.025em', label: 'Tracking tight' }
+  tracking_normal:  { tier: palette, category: typography, type: length, default: '0em',      label: 'Tracking normal' }
+  tracking_wide:    { tier: palette, category: typography, type: length, default: '0.025em',  label: 'Tracking wide' }
+
+  # ══ TIER 2 · SEMANTIC ═════════════════════════════════════════════════════
+  # Purpose tokens. Colour tokens reference Tier 1 palette colours ONLY.
+
+  # ── Colour (surface + on-colour pairs; `on:` names the paired token, which is
+  #    contrast-checked AA on preview/publish) ──────────────────────────────--
+  background:         { tier: semantic, category: color, type: color, on: foreground,         default: 'var(--neutral-surface)',        label: 'Background', description: 'Page background.' }
+  foreground:         { tier: semantic, category: color, type: color, default: 'var(--neutral-ink)',            label: 'Text', description: 'Default body text.' }
+  primary:            { tier: semantic, category: color, type: color, on: primary_foreground, default: 'var(--brand-primary)',          label: 'Primary', description: 'Brand accent FILL: buttons, active states, rings/borders. (Accent TEXT — links/markers — uses the derived primary_on_surface, which stays legible on any neutral surface, so primary itself is free to be any lightness here.)' }
+  primary_foreground: { tier: semantic, category: color, type: color, default: 'var(--brand-primary-foreground)', label: 'On primary', description: 'Text/icons on primary fills.' }
+  primary_on_surface: { tier: semantic, category: color, type: color, derived: true, default: 'color-mix(in oklab, var(--primary), var(--foreground) 56%)', label: 'Primary (accent text)', description: 'DERIVED: primary blended toward the page ink (foreground) so brand-coloured TEXT — links, accent markers — stays legible on any neutral surface; auto-darkens on light themes, auto-lightens on dark. Never set directly; recomputed live from primary + foreground. Exposed as the text-primary-on-surface utility.' }
+  muted:              { tier: semantic, category: color, type: color, on: muted_foreground,   default: 'var(--neutral-subtle)',         label: 'Muted surface' }
+  muted_foreground:   { tier: semantic, category: color, type: color, default: 'var(--neutral-muted-foreground)', label: 'Muted text' }
+  accent:             { tier: semantic, category: color, type: color, on: accent_foreground,  default: 'var(--brand-accent)',           label: 'Accent' }
+  accent_foreground:  { tier: semantic, category: color, type: color, default: 'var(--brand-accent-foreground)', label: 'On accent' }
+  # Interaction accents — both default to (inherit) the accent hue and stay
+  # independently retintable. theme_skip: neither is a surface utility; each is
+  # consumed by a hand-written rule in build/input.css.
+  #   selection — the ::selection rule renders this TRANSLUCENT (a tint) and never
+  #     overrides the selected text's own colour, so selecting text can't drop it
+  #     below its contrast floor. Store a clean accent ref here; the alpha lives at
+  #     the consumption site.
+  #   focus_ring — the global :focus-visible outline. Kept OPAQUE: a focus
+  #     indicator needs ≥3:1 non-text contrast to count as visible (WCAG 2.4.11),
+  #     so unlike selection it is NOT tinted down.
+  #   Both default to the PALETTE accent (var(--brand-accent)), not the semantic
+  #   `accent` — a semantic token may only reference the palette tier (REFERABLE),
+  #   and this way a palette rebrand updates accent + selection + focus_ring as one.
+  selection:          { tier: semantic, category: color, type: color, theme_skip: true, default: 'var(--brand-accent)', label: 'Selection highlight', description: 'Text-selection (::selection) tint. Rendered translucent so selected text keeps its own colour and contrast. Defaults to the accent hue.' }
+  focus_ring:         { tier: semantic, category: color, type: color, theme_skip: true, default: 'var(--brand-accent)', label: 'Focus ring', description: 'Keyboard focus-visible outline colour. Kept opaque — a visible focus indicator needs ≥3:1 contrast (WCAG 2.4.11). Defaults to the accent hue.' }
+  border:             { tier: semantic, category: color, type: color, default: 'var(--neutral-border)',         label: 'Border' }
+  card:               { tier: semantic, category: color, type: color, on: card_foreground,    default: 'var(--neutral-surface)',        label: 'Card surface' }
+  card_foreground:    { tier: semantic, category: color, type: color, default: 'var(--neutral-ink)',            label: 'On card' }
+  # The shadow colour/tint. Semantic so it can reference a palette colour (ink for
+  # a normal drop, the brand primary for a glow). Reference-only (a colour below
+  # palette must be a var ref); its opacity is the separate `shadow_strength` dial.
+  # category: shadow so it groups with the shadow axes; theme_skip so it never
+  # becomes a Tailwind colour utility.
+  # raw_color: this is the ONE colour token that accepts a raw value below the
+  # palette tier. It's theme_skip (never a Tailwind utility) and purely
+  # decorative, and the palette is a CLOSED vocabulary with no slot for an
+  # arbitrary shadow tint — so a custom shadow colour (e.g. a pastel pink on a
+  # brand with no pink) has nowhere to live as a reference. PREFER a palette ref
+  # (var(--brand-primary) etc.); a raw colour is the escape hatch. See DECISIONS.
+  shadow_color:       { tier: semantic, category: shadow, type: color, theme_skip: true, raw_color: true, default: 'var(--neutral-ink)', label: 'Shadow colour', description: 'The colour the shadow is tinted with — point it at a palette colour (var(--neutral-ink) for a normal drop, var(--brand-primary) for a glow), or give a raw colour for a custom tint. Opacity is the shadow_strength dial.' }
+
+  # ── Typography / space / border ───────────────────────────────────────────
+  # The font_sans/font_display stacks END in "Noto Emoji" — the always-loaded
+  # monochrome emoji font (BrandRepository::EMOJI_FONT). It carries no Latin
+  # glyphs and no colour, so it only catches emoji codepoints the brand font
+  # can't render, and those emoji inherit the element's text colour (on-brand,
+  # no markup) instead of the visitor's OS emoji set. Appended LAST (after the
+  # generic fallback, the GitHub/system-ui convention): per-glyph fallback still
+  # reaches it for emoji, and a brand override of font_family_base keeps emoji
+  # because the append lives here in the semantic stack. Invisible plumbing, not
+  # a tunable token — see decisions/DECISIONS.md 0058.
+  font_sans:         { tier: semantic, category: typography, type: font-family, default: 'var(--font-family-base), "Noto Emoji"',    label: 'Body font',    description: 'Where body text gets its font. Inherits the Body typeface (font_family_base) — override only to point body text at a different family than the palette.' }
+  font_display:      { tier: semantic, category: typography, type: font-family, default: 'var(--font-family-display), "Noto Emoji"', label: 'Heading font', description: 'Where headings + the brand name get their font. Inherits the Heading typeface (font_family_display) — override only to point headings at a different family than the palette.' }
+  body_size:         { tier: semantic, category: typography, type: length, default: 'var(--size-base)',      label: 'Body text size' }
+  body_leading:      { tier: semantic, category: typography, type: number, default: 'var(--leading-normal)', label: 'Body line height' }
+  display_weight:    { tier: semantic, category: typography, type: number, default: 'var(--weight-extrabold)', label: 'Display weight', description: 'The largest marketing headlines (hero/CTA h1-h2) + big stat/price numbers. Heavier than section headings for display punch.' }
+  heading_weight:    { tier: semantic, category: typography, type: number, default: 'var(--weight-bold)',    label: 'Heading weight', description: 'Section headings (h1/h2) + article headings.' }
+  subheading_weight: { tier: semantic, category: typography, type: number, default: 'var(--weight-semibold)', label: 'Subheading weight', description: 'h3-level headings + item/card titles.' }
+  heading_tracking:  { tier: semantic, category: typography, type: length, default: 'var(--tracking-tight)',  label: 'Heading letter-spacing' }
+  density:           { tier: semantic, category: space,      type: number, default: '1',                     label: 'Density', description: 'Scales component padding: 0.85 compact … 1.15 roomy.' }
+  border_width:      { tier: semantic, category: border,     type: length, default: '1px', theme_key: 'default-border-width', label: 'Border width' }
+
+  # ══ TIER 3 · COMPONENT ════════════════════════════════════════════════════
+  # Per-component knobs. Reference Tier 1 (scales) or Tier 2 (semantic).
+
+  # ── Button ──────────────────────────────────────────────────────────────--
+  button_radius: { tier: component, category: radius, component: button, type: length, default: 'var(--radius-full)',         label: 'Button radius' }
+  button_bg:     { tier: component, category: color,  component: button, type: color,  default: 'var(--primary)',             label: 'Button background' }
+  button_fg:     { tier: component, category: color,  component: button, type: color,  default: 'var(--primary-foreground)',  label: 'Button text' }
+  button_shadow: { tier: component, category: shadow, component: button, type: shadow, default: 'var(--shadow-sm)',           label: 'Button shadow' }
+  button_weight: { tier: component, category: typography, component: button, type: number, default: '600',                    label: 'Button font weight' }
+  # Border colour defaults transparent so buttons render borderless until a colour
+  # is picked (the width is always reserved, so colouring it never shifts layout).
+  button_border_color: { tier: component, category: color,  component: button, type: color,  css_var: button-border, default: 'transparent',        label: 'Button border colour' }
+  # Dedicated width, but its default REFERENCES the global border_width — so buttons
+  # track the global knob until someone sets a button-specific width.
+  button_border_width: { tier: component, category: border, component: button, type: length, default: 'var(--border-width)',  label: 'Button border width' }
+
+  # ── Card ────────────────────────────────────────────────────────────────--
+  card_radius: { tier: component, category: radius, component: card, type: length, default: 'var(--radius-2xl)', label: 'Card radius' }
+  card_shadow: { tier: component, category: shadow, component: card, type: shadow, default: 'var(--shadow-sm)',  label: 'Card shadow' }
+  # css_var pinned to the original `card-border` so the rename is agent-facing
+  # ONLY — the Twig consumers + generated CSS keep referencing var(--card-border).
+  card_border_color: { tier: component, category: color,  component: card, type: color,  css_var: card-border,  default: 'var(--border)',    label: 'Card border colour' }
+
+  # ── Popover (dropdowns / flyouts / floating panels) ───────────────────────
+  # The elevated-surface family for things that float ABOVE the page (header
+  # menu flyouts, etc). Distinct from card: a small overlay reads best a touch
+  # tighter than a content card but with a stronger lift, since it hovers free.
+  popover_radius: { tier: component, category: radius, component: popover, type: length, default: 'var(--radius-lg)', label: 'Popover radius' }
+  popover_shadow: { tier: component, category: shadow, component: popover, type: shadow, default: 'var(--shadow-lg)', label: 'Popover shadow' }
+  popover_border_color: { tier: component, category: color,  component: popover, type: color,  css_var: popover-border,  default: 'var(--border)',    label: 'Popover border colour' }
+
+  # ── Input / tabs ──────────────────────────────────────────────────────────
+  input_radius: { tier: component, category: radius, component: input, type: length, default: 'var(--radius-lg)',   label: 'Input radius' }
+  tabs_radius:  { tier: component, category: radius, component: tabs,  type: length, default: 'var(--radius-full)', label: 'Tabs radius' }
+
+  # ── Site header / footer ──────────────────────────────────────────────────
+  site_header_height: { tier: component, category: space, component: site-header, type: length, default: '4rem',             label: 'Header height' }
+  site_footer_bg:     { tier: component, category: color, component: site-footer, type: color,  default: 'var(--foreground)', label: 'Footer background' }
+  site_footer_fg:     { tier: component, category: color, component: site-footer, type: color,  default: 'var(--background)', label: 'Footer text' }
+
+  # ── Section text (per-component heading/value typography) ──────────────────
+  # The display sections (hero/cta/stats) share ONE semantic display_weight and
+  # all hardcode `tracking-tight`; features shares heading_weight/subheading_weight.
+  # These knobs let one section's heading run heavier or tighter than another's
+  # without moving every section. Each default IS the current value (the shared
+  # semantic weight, or the tracking-tight literal), so a fresh brand is unchanged.
+  # Sizes stay on the responsive Tailwind text-* scale (a single token would drop
+  # the sm: breakpoint jump); hero heading leading stays per-variant.
+  #
+  # type: enum — a CLOSED set rendered as a select in the studio (not a free
+  # field). The weight/tracking options REFERENCE the palette scale so a rebrand
+  # of weight_* / tracking_* still reflows through; the first weight option is the
+  # section's inherited semantic weight ("Inherit"). enum_labels parallels enum
+  # by index and supplies the human-facing option names. Defaults stay byte-for-
+  # byte identical, so a fresh brand still renders unchanged.
+  hero_heading_weight:       { tier: component, category: typography, component: hero,     type: enum, default: 'var(--display-weight)',    enum: ['var(--display-weight)', 'var(--weight-normal)', 'var(--weight-medium)', 'var(--weight-semibold)', 'var(--weight-bold)', 'var(--weight-extrabold)'], enum_labels: ['Inherit', 'Regular', 'Medium', 'Semibold', 'Bold', 'Extra bold'], label: 'Hero heading weight' }
+  hero_heading_tracking:     { tier: component, category: typography, component: hero,     type: enum, default: 'var(--tracking-tight)',    enum: ['var(--tracking-tighter)', 'var(--tracking-tight)', 'var(--tracking-normal)', 'var(--tracking-wide)'], enum_labels: ['Tighter', 'Tight', 'Normal', 'Wide'], label: 'Hero heading letter-spacing' }
+  cta_heading_weight:        { tier: component, category: typography, component: cta,      type: enum, default: 'var(--display-weight)',    enum: ['var(--display-weight)', 'var(--weight-normal)', 'var(--weight-medium)', 'var(--weight-semibold)', 'var(--weight-bold)', 'var(--weight-extrabold)'], enum_labels: ['Inherit', 'Regular', 'Medium', 'Semibold', 'Bold', 'Extra bold'], label: 'CTA heading weight' }
+  cta_heading_tracking:      { tier: component, category: typography, component: cta,      type: enum, default: 'var(--tracking-tight)',    enum: ['var(--tracking-tighter)', 'var(--tracking-tight)', 'var(--tracking-normal)', 'var(--tracking-wide)'], enum_labels: ['Tighter', 'Tight', 'Normal', 'Wide'], label: 'CTA heading letter-spacing' }
+  stats_value_weight:        { tier: component, category: typography, component: stats,    type: enum, default: 'var(--display-weight)',    enum: ['var(--display-weight)', 'var(--weight-normal)', 'var(--weight-medium)', 'var(--weight-semibold)', 'var(--weight-bold)', 'var(--weight-extrabold)'], enum_labels: ['Inherit', 'Regular', 'Medium', 'Semibold', 'Bold', 'Extra bold'], label: 'Stat value weight' }
+  stats_value_tracking:      { tier: component, category: typography, component: stats,    type: enum, default: 'var(--tracking-tight)',    enum: ['var(--tracking-tighter)', 'var(--tracking-tight)', 'var(--tracking-normal)', 'var(--tracking-wide)'], enum_labels: ['Tighter', 'Tight', 'Normal', 'Wide'], label: 'Stat value letter-spacing' }
+  features_heading_weight:   { tier: component, category: typography, component: features, type: enum, default: 'var(--heading-weight)',     enum: ['var(--heading-weight)', 'var(--weight-normal)', 'var(--weight-medium)', 'var(--weight-semibold)', 'var(--weight-bold)', 'var(--weight-extrabold)'], enum_labels: ['Inherit', 'Regular', 'Medium', 'Semibold', 'Bold', 'Extra bold'], label: 'Features heading weight' }
+  features_heading_tracking: { tier: component, category: typography, component: features, type: enum, default: 'var(--tracking-tight)',    enum: ['var(--tracking-tighter)', 'var(--tracking-tight)', 'var(--tracking-normal)', 'var(--tracking-wide)'], enum_labels: ['Tighter', 'Tight', 'Normal', 'Wide'], label: 'Features heading letter-spacing' }
+  features_title_weight:     { tier: component, category: typography, component: features, type: enum, default: 'var(--subheading-weight)',  enum: ['var(--subheading-weight)', 'var(--weight-normal)', 'var(--weight-medium)', 'var(--weight-semibold)', 'var(--weight-bold)', 'var(--weight-extrabold)'], enum_labels: ['Inherit', 'Regular', 'Medium', 'Semibold', 'Bold', 'Extra bold'], label: 'Feature title weight' }
+  prose_leading:             { tier: component, category: typography, component: prose,    type: enum, default: '2rem',                     enum: ['1.5rem', '1.75rem', '2rem', '2.25rem'], enum_labels: ['Snug', 'Normal', 'Relaxed', 'Loose'], label: 'Prose line height', description: 'Line height of long-form prose body text.' }

@@ -1,0 +1,13 @@
+uuid: c86e1465-0641-4710-8792-91f3107befed
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_job
+_core:
+  default_config_hash: e7MrxvxBNxepHzjp4XYztaTeloSt9Ebc_wLWlARSQ8s
+id: flowdrop_job_delete_action
+label: 'Delete flowdrop jobs'
+type: flowdrop_job
+plugin: 'entity:delete_action:flowdrop_job'
+configuration: {  }

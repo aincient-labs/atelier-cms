@@ -1,0 +1,11 @@
+uuid: 2751591a-c9dd-4463-bb4b-2c7172c33ed7
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_session
+id: flowdrop_session_message.token
+label: Token
+description: null
+targetEntityType: flowdrop_session_message
+cache: true

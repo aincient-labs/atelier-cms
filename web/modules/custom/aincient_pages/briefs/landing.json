@@ -1,0 +1,72 @@
+{
+  "type": "landing",
+  "title": "Lumen — analytics that explain themselves",
+  "sections": [
+    {
+      "component": "hero",
+      "props": {
+        "variant": "centered",
+        "tone": "default",
+        "eyebrow": "Now with AI narratives",
+        "heading": "Analytics that explain themselves.",
+        "subheading": "Lumen turns your product data into plain-language answers — so every team ships with conviction, not guesswork.",
+        "cta_label": "Start free",
+        "cta_url": "#",
+        "secondary_label": "Watch the 2-min tour",
+        "secondary_url": "#"
+      }
+    },
+    {
+      "component": "stats",
+      "props": {
+        "tone": "muted",
+        "items": [
+          { "value": "12k+", "label": "teams onboard" },
+          { "value": "99.98%", "label": "uptime" },
+          { "value": "4.9/5", "label": "G2 rating" },
+          { "value": "3 min", "label": "to first insight" }
+        ]
+      }
+    },
+    {
+      "component": "features",
+      "props": {
+        "eyebrow": "Why Lumen",
+        "heading": "Everything you need to understand your product",
+        "subheading": "No SQL, no dashboards graveyard. Ask in words, get answers you can act on.",
+        "columns": 3,
+        "features": [
+          { "icon": "✶", "title": "Ask in plain English", "body": "Type a question, get a chart and a one-line takeaway. Lumen writes the query for you." },
+          { "icon": "◆", "title": "Narrated trends", "body": "Every metric comes with an AI explanation of what changed and likely why." },
+          { "icon": "◷", "title": "Real-time alerts", "body": "Get pinged the moment a number moves outside its expected band." },
+          { "icon": "⛁", "title": "Connect anything", "body": "Warehouses, Postgres, Stripe, Segment — live in minutes, no pipeline babysitting." },
+          { "icon": "⚷", "title": "Governed by default", "body": "Row-level permissions and audit trails your security team will actually approve." },
+          { "icon": "↯", "title": "Share as stories", "body": "Turn an investigation into a shareable, narrated report in one click." }
+        ]
+      }
+    },
+    {
+      "component": "features",
+      "props": {
+        "tone": "inverted",
+        "eyebrow": "Loved by operators",
+        "heading": "Built for the people who actually ask the questions",
+        "columns": 2,
+        "features": [
+          { "icon": "“", "title": "“We cancelled three dashboards.”", "body": "Lumen answers in seconds what used to be a Friday-afternoon SQL spelunking session." },
+          { "icon": "“", "title": "“Onboarding took one coffee.”", "body": "Connected our warehouse and had the exec team self-serving the same day." }
+        ]
+      }
+    },
+    {
+      "component": "cta",
+      "props": {
+        "tone": "brand",
+        "heading": "See your data explain itself.",
+        "subheading": "Free for 14 days. No credit card. Cancel anytime.",
+        "cta_label": "Start free",
+        "cta_url": "#"
+      }
+    }
+  ]
+}

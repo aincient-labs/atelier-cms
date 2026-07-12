@@ -1,0 +1,3 @@
+services:
+  aincient_brand.presets:
+    class: Drupal\aincient_brand\BrandPresets

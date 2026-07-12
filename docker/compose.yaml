@@ -1,0 +1,97 @@
+# AIncient appliance — reference topology.
+#
+#   app      the AIncient image; converges on start, serves the console.
+#   db       persistent state (the only thing that must survive image swaps).
+#   updater  the privileged "one-click upgrade" sidecar — watches a shared flag
+#            and, when the console requests it, pulls the new image + recreates
+#            `app` (whose entrypoint then converges). Discourse's host-side
+#            launcher, reimagined as a sidecar.
+#
+# Upgrade, end to end:
+#   1. operator/console signals an upgrade  → writes /shared/upgrade.request
+#   2. updater sees the flag                → docker compose pull + up -d app
+#   3. app restarts on the new image        → entrypoint runs converge.sh
+#   4. converge snapshots, runs updatedb, health-checks (rolls back on failure)
+
+name: aincient
+
+services:
+  db:
+    # pgvector/pgvector:pg16 = official postgres:16 + the pgvector extension
+    # preinstalled (multi-arch: arm64 + amd64). converge activates it via
+    # CREATE EXTENSION. See plans/pgvector.md (Phase 0).
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: aincient
+      POSTGRES_USER: aincient
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aincient}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aincient -d aincient"]
+      interval: 10s
+      retries: 10
+
+  app:
+    # Pin a tag in production; `latest` here is what the updater pulls.
+    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/cms:latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: pgsql://aincient:${DB_PASSWORD:-aincient}@db/aincient
+      HASH_SALT: ${HASH_SALT:?set HASH_SALT in .env}
+      # Scope trusted hosts in production (comma-separated regexes). Unset =
+      # accept-any + a logged warning. See docker/settings.appliance.php.
+      AINCIENT_TRUSTED_HOSTS: ${AINCIENT_TRUSTED_HOSTS:-}
+      # Leave ADMIN_PASS unset to have converge generate a random password on
+      # first install (printed to the app log + written to private/INITIAL_ADMIN_PASSWORD).
+      AINCIENT_ADMIN_PASS: ${ADMIN_PASS:-}
+    ports:
+      - "${HTTP_PORT:-41221}:80"   # 41221 = "AINCI" in leet
+    volumes:
+      - files:/opt/drupal/web/sites/default/files
+      - private:/opt/drupal/private          # snapshots live here
+      - upgrade-signal:/shared                # the flag the console writes
+    restart: unless-stopped
+
+  updater:
+    build:
+      context: .
+      dockerfile: updater/Dockerfile
+    environment:
+      # What the sidecar acts on when it sees the flag.
+      COMPOSE_PROJECT_DIR: /project
+      # Recreate `app` in the SAME compose project that launched the stack, not a
+      # second one. `docker compose` honors COMPOSE_PROJECT_NAME automatically;
+      # without it the sidecar falls back to this file's `name: aincient` and, if
+      # the operator (or the e2e harness) ran under a custom project, recreates a
+      # rival `app` that collides on the published host port. Defaults to the
+      # file's own name so production (no override) is unaffected.
+      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-aincient}
+      APP_SERVICE: app
+      # The sidecar re-materialises the `app` service via `docker compose up`,
+      # which re-parses this file — so it needs the SAME variables the app
+      # service interpolates, or compose can't resolve them (and would fall back
+      # to the wrong default image). The Docker socket already makes this
+      # container root-equivalent, so carrying the secrets here adds no new risk.
+      AINCIENT_IMAGE: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/cms:latest}
+      HASH_SALT: ${HASH_SALT:?set HASH_SALT in .env}
+      DB_PASSWORD: ${DB_PASSWORD:-aincient}
+      AINCIENT_TRUSTED_HOSTS: ${AINCIENT_TRUSTED_HOSTS:-}
+      ADMIN_PASS: ${ADMIN_PASS:-}
+      HTTP_PORT: ${HTTP_PORT:-41221}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # PRIVILEGED — see README
+      - ..:/project:ro                              # compose files + Dockerfile
+      - upgrade-signal:/shared                      # reads /shared/upgrade.request
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  files:
+  private:
+  upgrade-signal:

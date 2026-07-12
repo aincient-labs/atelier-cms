@@ -1,0 +1,150 @@
+<?php
+
+/**
+ * @file
+ * AIncient Chat module hooks.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Markup;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_entity_operation().
+ *
+ * Adds an "Edit in studio" operation to aincient_page nodes (the content list +
+ * node operations), the discoverable front door to editing an existing page in
+ * the chat console's Page studio. Links to /aincient?page=<nid>, which the SPA's
+ * useUrlPageSync deep link loads into the studio. Gated on both console access
+ * and the page-studio edit permission so it only shows to operators who can use it.
+ */
+function aincient_chat_entity_operation(EntityInterface $entity): array {
+  if ($entity->getEntityTypeId() !== 'node' || $entity->bundle() !== 'aincient_page') {
+    return [];
+  }
+  $account = \Drupal::currentUser();
+  if (!$account->hasPermission('use aincient operator console')
+    || !$account->hasPermission('administer aincient pages')) {
+    return [];
+  }
+  return [
+    'edit_in_studio' => [
+      'title' => t('Edit in studio'),
+      'weight' => -5,
+      'url' => Url::fromRoute('aincient_chat.console', [], [
+        'query' => ['page' => $entity->id()],
+      ]),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_toolbar().
+ *
+ * Adds an "AIncient" tab to the admin toolbar so operators can jump back to
+ * the console from any admin page (same pattern as FlowDrop's toolbar item).
+ */
+function aincient_chat_toolbar(): array {
+  // The brand wordmark inlined into the tab: chip ring + lettering are
+  // currentColor, so the SVG picks up the toolbar bar's (light) text colour —
+  // one themable asset, no baked-in ink. Its aria-label gives the link its
+  // accessible name ("AIncient"). The file is bundled with the module and
+  // trusted, so the markup is safe to render verbatim.
+  $module_path = \Drupal::service('extension.list.module')->getPath('aincient_chat');
+  $wordmark = (string) @file_get_contents($module_path . '/images/aincient.svg');
+
+  $items['aincient_chat'] = [
+    '#type' => 'toolbar_item',
+    // Right after "Back to site": the console is the product's home.
+    '#weight' => -15,
+    '#access' => \Drupal::currentUser()->hasPermission('use aincient operator console'),
+    '#cache' => [
+      'contexts' => ['user.permissions'],
+    ],
+    'tab' => [
+      '#type' => 'link',
+      '#title' => $wordmark !== '' ? Markup::create($wordmark) : t('AIncient'),
+      '#url' => Url::fromRoute('aincient_chat.console'),
+      '#attributes' => [
+        'title' => t('Open the AIncient operator console'),
+        'class' => ['toolbar-icon', 'toolbar-icon-aincient-console'],
+      ],
+    ],
+    '#attached' => [
+      'library' => ['aincient_chat/toolbar'],
+    ],
+  ];
+  return $items;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for user_login_form.
+ *
+ * After login, send the user straight to the AIncient operator console — the
+ * chat-first experience is the product. (Power users can still navigate to
+ * /admin manually.)
+ */
+function aincient_chat_form_user_login_form_alter(array &$form, FormStateInterface $form_state): void {
+  $form['#submit'][] = 'aincient_chat_user_login_submit';
+}
+
+/**
+ * Submit handler: redirect to the console after login.
+ */
+function aincient_chat_user_login_submit(array $form, FormStateInterface $form_state): void {
+  // Respect an explicit ?destination= if present; otherwise go to the console.
+  $request = \Drupal::request();
+  if (!$request->query->has('destination')) {
+    $form_state->setRedirect('aincient_chat.console');
+  }
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Repoints the Navigation sidebar layout template at our copy, so the sidebar
+ * logo opens the AIncient console (the product's home) instead of the public
+ * front page, and renders the AIncient chip mark. A no-op when the core
+ * Navigation module is absent — the hook simply isn't registered.
+ */
+function aincient_chat_theme_registry_alter(array &$theme_registry): void {
+  if (isset($theme_registry['navigation'])) {
+    $theme_registry['navigation']['path'] = \Drupal::service('extension.list.module')
+      ->getPath('aincient_chat') . '/templates';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for the navigation layout.
+ *
+ * Exposes the AIncient chip mark to our navigation template override. The chip
+ * is the canonical brand asset (currentColor frame + brand bands); we inject a
+ * fixed render size so it sits in the logo slot like the stock 40px logo.
+ *
+ * The chip is wrapped in an OPEN declarative shadow root so Gin's navigation
+ * CSS cannot bleed in and repaint it. Gin assumes the sidebar logo is a generic
+ * mark and ships high-specificity rules (it borrows an #id inside :is()) that
+ * recolour `.admin-toolbar__logo svg rect|path` to its own theme palette. Once
+ * the chip lives inside a shadow root those selectors no longer reach it, while
+ * `color`/`currentColor` still inherits across the boundary so the frame keeps
+ * tracking the sidebar text colour. The chip is fully self-contained (its own
+ * defs/filter/style), which also keeps its filter id from colliding with the
+ * light DOM. Declarative shadow DOM is activated by the HTML parser on the
+ * server-rendered full page load, which is how the sidebar is delivered.
+ */
+function aincient_chat_preprocess_navigation(array &$variables): void {
+  $module_path = \Drupal::service('extension.list.module')->getPath('aincient_chat');
+  $chip = (string) @file_get_contents($module_path . '/images/aincient-chip.svg');
+  if ($chip !== '') {
+    // The source SVG sizes via viewBox only; pin a 40px footprint to match the
+    // stock navigation logo and avoid a full-viewport render.
+    $chip = preg_replace('/<svg /', '<svg width="40" height="40" ', $chip, 1);
+    // Encapsulate in an open declarative shadow root to stop Gin's CSS bleed.
+    $chip = '<span class="aincient-chip" style="display:inline-flex;line-height:0;color:#000">'
+      . '<template shadowrootmode="open">' . $chip . '</template></span>';
+    $variables['aincient_chip'] = Markup::create($chip);
+  }
+}

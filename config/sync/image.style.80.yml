@@ -1,0 +1,15 @@
+uuid: 088d955d-a77c-43c0-bff2-a86360597fea
+langcode: en
+status: true
+dependencies:
+  module:
+    - image_style_quality
+name: '80'
+label: '80'
+effects:
+  efab5a59-3a43-4da5-9146-d1dc0cf4ce72:
+    uuid: efab5a59-3a43-4da5-9146-d1dc0cf4ce72
+    id: image_style_quality
+    weight: 1
+    data:
+      quality: 80

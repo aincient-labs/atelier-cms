@@ -1,0 +1,29 @@
+name: Image
+status: experimental
+group: 'AIncient Landing'
+description: 'A single standalone image with an optional caption — a figure.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    # `bare` drops the section band + outer padding so the figure can sit INSIDE
+    # a container (e.g. an accordion panel), where the parent owns the surface and
+    # spacing. Set by the renderer for nested blocks, never authored — it is NOT
+    # in ComponentCatalog::SECTIONS['image'] props, so a top-level image can never
+    # select it (mirrors `markdown`).
+    variant:
+      type: string
+      enum: [default, bare]
+      default: default
+    caption: { type: string }
+slots:
+  # The figure image, supplied by the renderer as a Rift responsive <picture>
+  # render array (view mode "content", 4x3) resolved from the page-schema's
+  # `image` media token — NOT authored as a prop. Alt rides inside the picture
+  # (sourced from the Media entity). See PageSpikeController::component().
+  image:
+    title: 'Image'
+    description: 'Responsive <picture> built by the renderer from the image media token.'

@@ -1,0 +1,9 @@
+# Console settings form for the AIncient model roles. Binding a role to a
+# provider:model is a site-wide configuration action.
+aincient_core.model_roles:
+  path: '/admin/config/aincient/models'
+  defaults:
+    _form: 'Drupal\aincient_core\Form\ModelRolesForm'
+    _title: 'Atelier models'
+  requirements:
+    _permission: 'administer site configuration'

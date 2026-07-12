@@ -1,0 +1,38 @@
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('default')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
+{% set cols = {
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-2 lg:grid-cols-4',
+}[columns|default(3)] %}
+
+<section class="{{ tone_class }}">
+  <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
+    {% if eyebrow or heading or subheading %}
+      <div class="mb-14 max-w-2xl">
+        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? 'opacity-90' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
+        {% if heading %}<h2 class="mt-3 font-display text-3xl sm:text-4xl [font-weight:var(--heading-weight)] tracking-tight">{{ heading }}</h2>{% endif %}
+        {% if subheading %}<p class="mt-4 text-lg opacity-70">{{ subheading|inline_md }}</p>{% endif %}
+      </div>
+    {% endif %}
+    <div class="grid gap-8 {{ cols }}">
+      {% for m in members %}
+        <div class="text-center">
+          {% if m.avatar %}
+            <img src="{{ m.avatar }}" alt="{{ m.name }}" class="mx-auto h-28 w-28 rounded-full object-cover ring-1 ring-border">
+          {% else %}
+            <div class="mx-auto flex h-28 w-28 items-center justify-center rounded-full {{ on_dark ? 'bg-background/15' : 'bg-primary/10' }} font-display text-2xl font-bold {{ on_dark ? '' : 'text-primary-on-surface' }}">{{ m.name|first|upper }}</div>
+          {% endif %}
+          <h3 class="mt-4 font-display text-lg [font-weight:var(--subheading-weight)]">{{ m.name }}</h3>
+          {% if m.role %}<p class="text-sm {{ on_dark ? 'opacity-90' : 'text-primary-on-surface' }}">{{ m.role }}</p>{% endif %}
+          {% if m.bio %}<p class="mt-2 text-sm opacity-70">{{ m.bio|inline_md }}</p>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>

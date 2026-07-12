@@ -1,0 +1,1020 @@
+uuid: e6063d74-a1af-4182-a863-2bbb56b2f4bf
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_list_pages
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_preview_page
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_read_meta_tags
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_run_page_audit
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_conversation_append
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_conversation_read
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_invoke
+    - flowdrop_node_type.flowdrop_node_type.aincient_reason
+    - flowdrop_node_type.flowdrop_node_type.boolean_gateway
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.confirmation
+    - flowdrop_node_type.flowdrop_node_type.data_extractor
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_node_processor_toolbox
+    - flowdrop_node_type.flowdrop_node_type.prompt_template
+    - flowdrop_node_type.flowdrop_node_type.switch_gateway
+id: aincient_audit_agent
+label: 'Page audit agent'
+description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: -2140
+      'y': 560
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+      metadata:
+        node_type_id: chat_input
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+          hiddenPorts: {  }
+    measured:
+      width: 280
+      height: 742
+  -
+    id: aincient_reason.2
+    position:
+      x: -200
+      'y': -840
+    data:
+      label: 'Reason (agent step)'
+      config:
+        model: ''
+        temperature: 0
+        maxTokens: 1024
+        systemPrompt: ''
+      metadata:
+        node_type_id: aincient_reason
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+        swap:
+          previousNodeId: aincient_reason.1
+    measured:
+      width: 280
+      height: 762
+  -
+    id: boolean_gateway.1
+    position:
+      x: 820
+      'y': -480
+    data:
+      label: 'Boolean Gateway'
+      config:
+        branches:
+          -
+            name: 'True'
+            value: true
+          -
+            name: 'False'
+            value: false
+      metadata:
+        node_type_id: boolean_gateway
+    measured:
+      width: 280
+      height: 382
+  -
+    id: aincient_flows_aincient_invoke.2
+    position:
+      x: 2720
+      'y': -1400
+    data:
+      label: 'Invoke tool'
+      config: {  }
+      metadata:
+        node_type_id: aincient_flows_aincient_invoke
+      extensions:
+        swap:
+          previousNodeId: aincient_flows_aincient_invoke.1
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 582
+  -
+    id: chat_output.1
+    position:
+      x: 1360
+      'y': -100
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+      metadata:
+        node_type_id: chat_output
+    measured:
+      width: 280
+      height: 542
+  -
+    id: confirmation.1
+    position:
+      x: 2180
+      'y': -1120
+    data:
+      label: Confirmation
+      config:
+        message: 'Approve this action?'
+        confirm_label: Approve
+        cancel_label: Decline
+        branches:
+          -
+            name: 'True'
+            value: true
+          -
+            name: 'False'
+            value: false
+        nodeType: gateway
+        instanceTitle: 'Approval guardrail'
+      metadata:
+        node_type_id: confirmation
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 382
+  -
+    id: aincient_flows_aincient_conversation_append.1
+    position:
+      x: -1540
+      'y': 480
+    data:
+      label: 'Append user turn'
+      config:
+        role: user
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+          hiddenPorts: {  }
+    measured:
+      width: 280
+      height: 882
+  -
+    id: aincient_flows_aincient_conversation_read.1
+    position:
+      x: -960
+      'y': 340
+    data:
+      label: 'Read conversation'
+      config:
+        key: conversation
+        scope: session
+        backend: entity
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_read
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+          hiddenPorts: {  }
+    measured:
+      width: 280
+      height: 642
+  -
+    id: aincient_flows_aincient_conversation_append.2
+    position:
+      x: 240
+      'y': -160
+    data:
+      label: 'Append assistant turn'
+      config:
+        role: user
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 882
+  -
+    id: aincient_flows_aincient_conversation_append.3
+    position:
+      x: 3160
+      'y': -540
+    data:
+      label: 'Append tool results'
+      config:
+        role: user
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 882
+  -
+    id: aincient_flows_aincient_conversation_append.4
+    position:
+      x: 2640
+      'y': -620
+    data:
+      label: 'Append declined results'
+      config:
+        role: user
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 882
+  -
+    id: flowdrop_node_processor_toolbox.1
+    position:
+      x: -900
+      'y': -720
+    data:
+      label: 'Tool Box'
+      config: {  }
+      metadata:
+        node_type_id: flowdrop_node_processor_toolbox
+    measured:
+      width: 280
+      height: 382
+  -
+    id: data_extractor.1
+    position:
+      x: 1180
+      'y': -1220
+    data:
+      label: 'Data Extractor'
+      config:
+        path: '$[0].name'
+        default: null
+        extract_all: false
+        engine: jsonpath
+      metadata:
+        node_type_id: data_extractor
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 682
+  -
+    id: switch_gateway.1
+    position:
+      x: 1700
+      'y': -1120
+    data:
+      label: 'Switch Gateway'
+      config:
+        default_branch: default
+        branches:
+          -
+            name: 'Pick brand'
+            value: capability_quick_brand_picker
+          -
+            name: Default
+            value: default
+      metadata:
+        node_type_id: switch_gateway
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 402
+  -
+    id: aincient_flows_aincient_capability_list_pages.1
+    position:
+      x: -1500
+      'y': -300
+    data:
+      label: 'Capability: List pages'
+      config:
+        nodeType: tool
+        maxRetries: 0
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_list_pages
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 100
+  -
+    id: prompt_template.3
+    position:
+      x: -900
+      'y': -300
+    data:
+      label: 'Prompt Template'
+      config:
+        template: |-
+          You are the Checks REPAIR agent for an AIncient CMS site. You audit pages AND you
+          fix the specific issue you're asked about — with the SMALLEST possible edit. Your
+          job is to preserve the content: clear the cited finding and change NOTHING else. You
+          are not the page builder — never rewrite, restructure, re-tone, or expand content,
+          and never touch a section a finding doesn't name.
+
+          Tools:
+          - run_page_audit(node_id) — run the read-only audit (SEO, meta tags, internal
+            links). Your source of truth for what's wrong.
+          - read_meta_tags(node_id) — just the current effective meta tags.
+          - list_pages — show the user their pages (when they name a page, not an id, or ask
+            "what pages do I have"). Read the node id from the result.
+          - preview_page — STAGE a fix as an unsaved preview. Call it with a JSON array of
+            ops. It does NOT save: the change appears in the live preview and the person
+            reviews it and clicks Publish (or Save draft). Never say you saved or published —
+            say you've staged/previewed the change for them to publish.
+
+          The page you're fixing is the one open in the Checks studio; its current draft is
+          below as live_page_state — read it to ground every fix in the ACTUAL content.
+          {% if live_page_state is defined and live_page_state %}
+          CURRENT PAGE DRAFT (JSON):
+          {{ live_page_state }}
+          {% endif %}
+
+          Every finding from run_page_audit carries a "remediation" object telling you EXACTLY
+          how to fix it — read it, don't guess:
+          - remediation.aiFixable must be true. If it's false or absent (e.g. a passing check, or
+            a soft/editorial issue), don't stage a fix — describe the issue and suggest a value
+            in words instead.
+          - action "edit_field" → a meta/SEO field. Emit ONE set_meta op whose key is
+            remediation.field, with a fitting value grounded in the ACTUAL page content; respect
+            remediation.constraints (min/max characters). The field maps straight to a set_meta
+            key:
+              title         → [{"op":"set_meta","title":"<a 30–60 char title>"}]
+              description   → [{"op":"set_meta","description":"<a 50–160 char summary>"}]
+              canonical_url → [{"op":"set_meta","canonical_url":"https://…"}]
+              og_title / og_description / og_image → [{"op":"set_meta","og_title":"…"}]
+                              (og_image is a raw image URL)
+            Pass an empty string to clear a field back to the site default.
+          - action "edit_prop" → a broken internal link. remediation.target.href is the bad
+            href; find that link in the page draft and correct just that one href with an
+            update_section op that changes only that prop — leave the surrounding content
+            byte-for-byte identical.
+
+          How to work:
+          - If the user names a page but gives no id, call list_pages first and match it.
+          - When asked to fix a finding, make the one smallest change that clears it, stage it
+            with preview_page, and tell the person to review the preview and Publish.
+          - When asked to "fix all" / "fix this check", batch only the fixable findings into a
+            single preview_page call — still minimal, still content-preserving.
+          - When just asked to audit/check, run_page_audit and summarise briefly: FAILs first,
+            then WARNs, grouped by check; name the problem and where it is. Don't dump JSON.
+          - Keep replies short and plain.
+        nodeType: default
+        maxRetries: 0
+      metadata:
+        node_type_id: prompt_template
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 502
+  -
+    id: aincient_flows_aincient_capability_run_page_audit.1
+    position:
+      x: -1500
+      'y': -440
+    data:
+      label: 'Capability: Run page audit'
+      config:
+        nodeType: tool
+        maxRetries: 0
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_run_page_audit
+    measured:
+      width: 280
+      height: 100
+  -
+    id: aincient_flows_aincient_capability_read_meta_tags.1
+    position:
+      x: -1500
+      'y': -580
+    data:
+      label: 'Capability: Read meta tags'
+      config:
+        nodeType: tool
+        maxRetries: 0
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_read_meta_tags
+    measured:
+      width: 280
+      height: 100
+  -
+    id: aincient_flows_aincient_capability_preview_page.1
+    position:
+      x: -1500
+      'y': -720
+    data:
+      label: 'Capability: Preview page'
+      config:
+        nodeType: tool
+        maxRetries: 0
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_preview_page
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 100
+edges:
+  -
+    id: xy-edge__aincient_reason.1aincient_reason.1-output-has_tool_calls-boolean_gateway.1boolean_gateway.1-input-value
+    source: aincient_reason.2
+    target: boolean_gateway.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: logic
+      metadata:
+        edgeType: data
+        sourcePortDataType: boolean
+    sourceHandle: aincient_reason.2-output-has_tool_calls
+    targetHandle: boolean_gateway.1-input-value
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__aincient_reason.1aincient_reason.1-output-text-chat_output.1chat_output.1-input-message
+    source: aincient_reason.2
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: aincient_reason.2-output-text
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__boolean_gateway.1boolean_gateway.1-output-False-chat_output.1chat_output.1-input-trigger
+    source: boolean_gateway.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: boolean_gateway.1-output-False
+    targetHandle: chat_output.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+    selected: false
+  -
+    id: xy-edge__aincient_reason.1aincient_reason.1-output-tool_calls-aincient_flows_aincient_invoke.1aincient_flows_aincient_invoke.1-input-tool_calls
+    source: aincient_reason.2
+    target: aincient_flows_aincient_invoke.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_reason.2-output-tool_calls
+    targetHandle: aincient_flows_aincient_invoke.2-input-tool_calls
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__confirmation.1confirmation.1-output-True-aincient_flows_aincient_invoke.1aincient_flows_aincient_invoke.1-input-trigger
+    source: confirmation.1
+    target: aincient_flows_aincient_invoke.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+    sourceHandle: confirmation.1-output-True
+    targetHandle: aincient_flows_aincient_invoke.2-input-trigger
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: chat_input.1-chat_input.1-output-message-aincient_flows_aincient_conversation_append.1-aincient_flows_aincient_conversation_append.1-input-content
+    source: chat_input.1
+    target: aincient_flows_aincient_conversation_append.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: aincient_flows_aincient_conversation_append.1-input-content
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-output-messages-aincient_reason.2-aincient_reason.2-input-messages
+    source: aincient_flows_aincient_conversation_read.1
+    target: aincient_reason.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_flows_aincient_conversation_read.1-output-messages
+    targetHandle: aincient_reason.2-input-messages
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: aincient_reason.2-aincient_reason.2-output-assistant_message-aincient_flows_aincient_conversation_append.2-aincient_flows_aincient_conversation_append.2-input-message
+    source: aincient_reason.2
+    target: aincient_flows_aincient_conversation_append.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: aincient_reason.2-output-assistant_message
+    targetHandle: aincient_flows_aincient_conversation_append.2-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: aincient_flows_aincient_invoke.2-aincient_flows_aincient_invoke.2-output-tool_messages-aincient_flows_aincient_conversation_append.3-aincient_flows_aincient_conversation_append.3-input-messages
+    source: aincient_flows_aincient_invoke.2
+    target: aincient_flows_aincient_conversation_append.3
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_flows_aincient_invoke.2-output-tool_messages
+    targetHandle: aincient_flows_aincient_conversation_append.3-input-messages
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: aincient_reason.2-aincient_reason.2-output-tool_calls-aincient_flows_aincient_conversation_append.4-aincient_flows_aincient_conversation_append.4-input-declined_tool_calls
+    source: aincient_reason.2
+    target: aincient_flows_aincient_conversation_append.4
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_reason.2-output-tool_calls
+    targetHandle: aincient_flows_aincient_conversation_append.4-input-declined_tool_calls
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__confirmation.1confirmation.1-output-False-aincient_flows_aincient_conversation_append.4aincient_flows_aincient_conversation_append.4-input-trigger
+    source: confirmation.1
+    target: aincient_flows_aincient_conversation_append.4
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+    sourceHandle: confirmation.1-output-False
+    targetHandle: aincient_flows_aincient_conversation_append.4-input-trigger
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-output-tool-aincient_flows_aincient_invoke.2aincient_flows_aincient_invoke.2-input-tool
+    source: flowdrop_node_processor_toolbox.1
+    target: aincient_flows_aincient_invoke.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: flowdrop_node_processor_toolbox.1-output-tool
+    targetHandle: aincient_flows_aincient_invoke.2-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: xy-edge__flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-output-tool-aincient_reason.2aincient_reason.2-input-tool
+    source: flowdrop_node_processor_toolbox.1
+    target: aincient_reason.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: flowdrop_node_processor_toolbox.1-output-tool
+    targetHandle: aincient_reason.2-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+    selected: false
+  -
+    id: aincient_flows_aincient_conversation_append.1-aincient_flows_aincient_conversation_append.1-output-trigger-aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-input-trigger
+    source: aincient_flows_aincient_conversation_append.1
+    target: aincient_flows_aincient_conversation_read.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: aincient_flows_aincient_conversation_append.1-output-trigger
+    targetHandle: aincient_flows_aincient_conversation_read.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+  -
+    id: aincient_flows_aincient_conversation_append.3-aincient_flows_aincient_conversation_append.3-output-trigger-aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-input-loop_back
+    source: aincient_flows_aincient_conversation_append.3
+    target: aincient_flows_aincient_conversation_read.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: loopback
+        sourcePortDataType: trigger
+    sourceHandle: aincient_flows_aincient_conversation_append.3-output-trigger
+    targetHandle: aincient_flows_aincient_conversation_read.1-input-loop_back
+    style: 'stroke: var(--fd-edge-loopback); stroke-dasharray: var(--fd-edge-loopback-dasharray); stroke-width: var(--fd-edge-loopback-width); opacity: var(--fd-edge-loopback-opacity);'
+    markerEnd:
+      type: arrowclosed
+      width: 14
+      height: 14
+      color: var(--fd-edge-loopback)
+    class: flowdrop--edge--loopback
+  -
+    id: aincient_flows_aincient_conversation_append.4-aincient_flows_aincient_conversation_append.4-output-trigger-aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-input-loop_back
+    source: aincient_flows_aincient_conversation_append.4
+    target: aincient_flows_aincient_conversation_read.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: loopback
+        sourcePortDataType: trigger
+    sourceHandle: aincient_flows_aincient_conversation_append.4-output-trigger
+    targetHandle: aincient_flows_aincient_conversation_read.1-input-loop_back
+    style: 'stroke: var(--fd-edge-loopback); stroke-dasharray: var(--fd-edge-loopback-dasharray); stroke-width: var(--fd-edge-loopback-width); opacity: var(--fd-edge-loopback-opacity);'
+    markerEnd:
+      type: arrowclosed
+      width: 14
+      height: 14
+      color: var(--fd-edge-loopback)
+    class: flowdrop--edge--loopback
+  -
+    id: xy-edge__aincient_reason.2aincient_reason.2-output-tool_calls-data_extractor.1data_extractor.1-input-data
+    source: aincient_reason.2
+    target: data_extractor.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: data
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: aincient_reason.2-output-tool_calls
+    targetHandle: data_extractor.1-input-data
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__data_extractor.1data_extractor.1-output-data-switch_gateway.1switch_gateway.1-input-expression
+    source: data_extractor.1
+    target: switch_gateway.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: logic
+      metadata:
+        edgeType: data
+        sourcePortDataType: mixed
+    sourceHandle: data_extractor.1-output-data
+    targetHandle: switch_gateway.1-input-expression
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: 'xy-edge__switch_gateway.1switch_gateway.1-output-Set Brand-confirmation.1confirmation.1-input-trigger'
+    source: switch_gateway.1
+    target: confirmation.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: human_in_loop
+      metadata:
+        edgeType: data
+    sourceHandle: 'switch_gateway.1-output-Set Brand'
+    targetHandle: confirmation.1-input-trigger
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: 'xy-edge__switch_gateway.1switch_gateway.1-output-Restore Brand-confirmation.1confirmation.1-input-trigger'
+    source: switch_gateway.1
+    target: confirmation.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: human_in_loop
+      metadata:
+        edgeType: data
+    sourceHandle: 'switch_gateway.1-output-Restore Brand'
+    targetHandle: confirmation.1-input-trigger
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__boolean_gateway.1boolean_gateway.1-output-True-switch_gateway.1switch_gateway.1-input-trigger
+    source: boolean_gateway.1
+    target: switch_gateway.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: logic
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: boolean_gateway.1-output-True
+    targetHandle: switch_gateway.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+  -
+    id: xy-edge__switch_gateway.1switch_gateway.1-output-Default-aincient_flows_aincient_invoke.2aincient_flows_aincient_invoke.2-input-trigger
+    source: switch_gateway.1
+    target: aincient_flows_aincient_invoke.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: switch_gateway.1-output-Default
+    targetHandle: aincient_flows_aincient_invoke.2-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+  -
+    id: 'xy-edge__switch_gateway.1switch_gateway.1-output-Pick brand-confirmation.1confirmation.1-input-trigger'
+    source: switch_gateway.1
+    target: confirmation.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: human_in_loop
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: 'switch_gateway.1-output-Pick brand'
+    targetHandle: confirmation.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+  -
+    id: xy-edge__aincient_flows_aincient_capability_list_pages.1aincient_flows_aincient_capability_list_pages.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_list_pages.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_list_pages.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+  -
+    id: xy-edge__aincient_flows_aincient_capability_preview_page.1aincient_flows_aincient_capability_preview_page.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_preview_page.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_preview_page.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+  -
+    id: xy-edge__prompt_template.3prompt_template.3-output-prompt-aincient_reason.2aincient_reason.2-input-systemPrompt
+    source: prompt_template.3
+    target: aincient_reason.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: prompt_template.3-output-prompt
+    targetHandle: aincient_reason.2-input-systemPrompt
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__aincient_flows_aincient_capability_read_meta_tags.1aincient_flows_aincient_capability_read_meta_tags.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_read_meta_tags.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_read_meta_tags.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+  -
+    id: xy-edge__aincient_flows_aincient_capability_run_page_audit.1aincient_flows_aincient_capability_run_page_audit.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_run_page_audit.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_run_page_audit.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+metadata:
+  createdAt: '2026-06-03T14:05:56.071Z'
+  updatedAt: '2026-06-30T13:31:15.655Z'
+  schemaVersion: 1.0.0
+  versionId: 1782826241324-soy8n67fm
+  updateNumber: 359
+  format: flowdrop
+created: 1782826022
+changed: 1782826275
+uid: 1
+input_ports:
+  -
+    name: variables
+    node_id: prompt_template.3
+    port: variables
+  -
+    name: message
+    node_id: chat_input.1
+    port: message
+output_ports: null
+parameter_schema:
+  type: object
+  properties:
+    variables:
+      type: mixed
+      default: {  }
+    message:
+      type: string
+      default: ''
+output_schema: null
+schema_version: 1.0.0

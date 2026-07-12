@@ -1,0 +1,104 @@
+services:
+  logger.channel.aincient_chat:
+    parent: logger.channel_base
+    arguments: ['aincient_chat']
+
+  aincient_chat.router:
+    class: Drupal\aincient_chat\Chat\HybridChatRouter
+
+  # Shapes a signed-in user into the console's read-only identity card (name,
+  # email, avatar, AIncient roles, tenure, status). Shared by the shell
+  # (window.aincientChat.viewer) and the self-service account pane, which returns
+  # a refreshed card after a save so the flyout updates without a reload.
+  aincient_chat.viewer_card:
+    class: Drupal\aincient_chat\Account\ViewerCard
+    arguments:
+      - '@entity_type.manager'
+      - '@date.formatter'
+      - '@file_url_generator'
+      - '@user.data'
+
+  # The admin-curated set of FlowDrop workflows the console may run: the
+  # default-lane binding plus the list users can pick from when starting a
+  # conversation. Also the validation gate for the POST `workflow` field.
+  aincient_chat.workflow_catalog:
+    class: Drupal\aincient_chat\Chat\WorkflowCatalog
+    arguments:
+      - '@config.factory'
+      - '@entity_type.manager'
+
+  # The console conversation store, backed by FlowDrop sessions (single lane).
+  # The sidebar/history/archive/delete endpoints read threads from here.
+  aincient_chat.thread_store:
+    class: Drupal\aincient_chat\Chat\SessionThreadStore
+    arguments:
+      - '@entity_type.manager'
+      - '@logger.channel.aincient_chat'
+
+  # Names a thread after its first exchange (study 02, Plate 8): the outcome in
+  # ≤5 words via the FAST model role, stored in session metadata. Every failure
+  # degrades to the raw-first-message fallback — naming never gates a turn.
+  aincient_chat.thread_namer:
+    class: Drupal\aincient_chat\Chat\ThreadNamer
+    arguments:
+      - '@aincient_chat.thread_store'
+      - '@aincient_core.model_role_resolver'
+      - '@ai.provider'
+      - '@logger.channel.aincient_chat'
+
+  # The non-agent flow dispatch seam (async / long-running / HITL). Backed by
+  # FlowDrop's interrupt engine (ChoiceNode HITL); falls back gracefully when
+  # FlowDrop isn't enabled. Swap back to StubFlowDispatcher to simulate.
+  aincient_chat.flow_dispatcher:
+    class: Drupal\aincient_chat\Chat\FlowDropDispatcher
+    arguments:
+      - '@logger.channel.aincient_chat'
+      - '@aincient_chat.workflow_catalog'
+
+  # Per-request side channel into the chat SSE stream: the controller arms it
+  # inside the streamed-response callback; event subscribers push frames onto
+  # the open stream while the FlowDrop turn blocks the generator. No-op when
+  # not armed (cron, playground, normal requests).
+  aincient_chat.stream_relay:
+    class: Drupal\aincient_chat\Chat\StreamRelay
+
+  # Live node-execution trail: relays FlowDrop's per-node JobCompletedEvent
+  # onto the armed stream as `node` frames. Subscribes by literal event name,
+  # so it registers fine when FlowDrop is absent (the event just never fires).
+  aincient_chat.node_progress_subscriber:
+    class: Drupal\aincient_chat\EventSubscriber\NodeProgressSubscriber
+    arguments:
+      - '@aincient_chat.stream_relay'
+    tags:
+      - { name: event_subscriber }
+
+  # Live Brand preview streaming: as each brand specialist sub-workflow
+  # completes mid-turn, applies its slice to a transient brand_preview frame on
+  # the armed stream (one-way server→client; the agent never sees it). The
+  # shared applier is resolved lazily — aincient_chat doesn't depend on
+  # aincient_pages. Subscribes by literal event name, so it's installable
+  # without FlowDrop.
+  aincient_chat.brand_slice_stream_subscriber:
+    class: Drupal\aincient_chat\EventSubscriber\BrandSliceStreamSubscriber
+    arguments:
+      - '@aincient_chat.stream_relay'
+    tags:
+      - { name: event_subscriber }
+
+  # Live token-usage + cost meter: relays ai_metering's per-call record-created
+  # event onto the armed stream as `usage` frames. Subscribes by literal event
+  # name, so it registers fine when ai_metering is absent (the event never
+  # fires). The console sums the frames into a per-turn footer + session total.
+  aincient_chat.usage_stream_subscriber:
+    class: Drupal\aincient_chat\EventSubscriber\UsageStreamSubscriber
+    arguments:
+      - '@aincient_chat.stream_relay'
+    tags:
+      - { name: event_subscriber }
+
+  aincient_chat.processor:
+    class: Drupal\aincient_chat\Chat\ChatProcessor
+    arguments:
+      - '@aincient_chat.router'
+      - '@aincient_chat.flow_dispatcher'
+      - '@logger.channel.aincient_chat'

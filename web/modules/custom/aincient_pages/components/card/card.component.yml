@@ -1,0 +1,17 @@
+name: Card
+status: experimental
+group: 'AIncient Layout'
+description: 'A single tile within a grid container (title, body, optional icon/image/link). Not placed directly — grid renders it.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    title: { type: string }
+    body: { type: string }
+    icon: { type: string }
+    image: { type: string }
+    cta_label: { type: string }
+    cta_url: { type: string }

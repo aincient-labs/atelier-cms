@@ -1,0 +1,10 @@
+uuid: 68e51943-6484-4bdb-a9b8-e6a75093f12c
+langcode: en
+status: true
+dependencies: {  }
+id: timing
+enabled: true
+label: Timing
+description: 'Pause workflow execution for a duration or until a point in time, resuming automatically.'
+icon: 'mdi:timer-outline'
+color: '#0ea5e9'

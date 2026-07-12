@@ -1,0 +1,15 @@
+uuid: 58f1a6fe-4442-4fa0-a30b-c64a1fa8a997
+langcode: en
+status: true
+dependencies: {  }
+name: 960w
+label: 960w
+effects:
+  f8cac20c-ef83-4b11-8b03-bf211331712c:
+    uuid: f8cac20c-ef83-4b11-8b03-bf211331712c
+    id: image_scale
+    weight: 1
+    data:
+      width: 960
+      height: null
+      upscale: false

@@ -1,0 +1,34 @@
+name: 'Article Teaser'
+status: experimental
+group: 'AIncient Content'
+description: 'A content teaser card for listings: meta, linked title, summary, read-more. Token-driven so it rebrands with the rest of the site.'
+props:
+  type: object
+  properties:
+    image:
+      type: string
+      description: 'Teaser image URL (resolved from a media:<id> token via an image style). Optional; omit for a text-only card.'
+    image_alt:
+      type: string
+      description: 'Alt text for the teaser image.'
+    title:
+      type: string
+      description: 'The content title (rendered as a link to url).'
+    url:
+      type: string
+      description: 'Canonical URL of the content.'
+    summary:
+      type: string
+      description: 'Plain-text teaser summary.'
+    author:
+      type: string
+      description: 'Author display name (optional).'
+    date:
+      type: string
+      description: 'Formatted publication date (optional).'
+    more_url:
+      type: string
+      description: 'Read-more target (usually the same as url).'
+    more_label:
+      type: string
+      description: 'Read-more link label.'

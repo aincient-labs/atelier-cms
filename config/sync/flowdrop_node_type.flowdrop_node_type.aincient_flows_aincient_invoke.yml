@@ -1,0 +1,38 @@
+uuid: 6ee9e6cc-833b-4256-ad26-4ba555705b6f
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+id: aincient_flows_aincient_invoke
+label: 'Invoke tool'
+description: 'Run the tool calls a Reason node chose (each an auditable node execution via the tool invoker)'
+category: tools
+icon: 'mdi:apple-keyboard-command'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  tool:
+    configurable: false
+    connectable: true
+    required: false
+  tool_calls:
+    configurable: false
+    connectable: true
+    required: false
+    default: {  }
+outputs:
+  ok:
+    exposed: true
+  tool_messages:
+    exposed: true
+  tool_results:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:tool_invoke'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

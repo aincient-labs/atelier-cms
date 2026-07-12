@@ -1,0 +1,294 @@
+/**
+ * Atelier layer over the AI Metering dashboard (contrib `ai_metering`).
+ *
+ * The metering report (/admin/reports/ai-metering) ships bespoke
+ * `.ai-dashboard__*` widgets coloured with Bootstrap-ish literals (#0d6efd
+ * blue, #343a40 slate, #198754 green) that no theme layer can reach — so next
+ * to the Studio Backend's gesso chrome they read as "raw contrib." This file
+ * re-skins those widgets to the Atelier cut (docs/brand.md §3/§10): paper
+ * cards with 1px hairlines + soft diffuse shadow, the radius family
+ * (4 chips / 7 controls / 10 cards), state as muted-earth whisper tints —
+ * never a saturated fill — and no violet/orange anywhere (the spectrum
+ * belongs to the mark, not to chrome).
+ *
+ * Loaded with js/ai-metering-brand.js — which re-themes the Chart.js
+ * canvases, whose colours live in contrib JS, not CSS — as a dependency of
+ * `ai_metering/ai_metering_dashboard` via aincient_core_library_info_alter(),
+ * so both ride along on exactly the metering pages and only there. The
+ * `--ain-*` tokens come from the active admin theme
+ * (aincient_studio_backend/css/studio-backend.css :root).
+ *
+ * `!important` only where overriding a property contrib's ai-metering.css
+ * also sets: the two files share the `theme` CSS bucket, so load order isn't
+ * guaranteed — !important wins deterministically (the contrib rules carry
+ * none). New selectors (e.g. the preview banner) need none.
+ */
+
+.ai-dashboard {
+  --aim-dim: var(--ain-text-dim);
+  --aim-card-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+}
+
+/* ===== Chart grid: make the tracks shrinkable + wrap ===== */
+/* Contrib sets `grid-template-columns: repeat(3, 1fr)`. But `1fr` is
+   `minmax(auto, 1fr)`, and the `auto` floor is the track's min-content — which
+   the Chart.js canvas pins wide — so the three columns never shrink below
+   ~581px each and blow past the viewport under ~1770px wide. Swap to a
+   `minmax(0, …)` floor so tracks can shrink (Chart.js's ResizeObserver then
+   redraws the canvas to fit), and `auto-fit` so they wrap to 2-/1-up on narrow
+   screens instead of overflowing. `min(100%, 320px)` keeps a single column
+   from overflowing when the viewport itself is under 320px. */
+.ai-dashboard__charts {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important;
+}
+
+/* ===== Cards: KPI tiles + chart boxes — paper, hairline, soft lift ===== */
+.ai-dashboard__kpi,
+.ai-dashboard__chart-box {
+  border: 1px solid var(--ain-border) !important;
+  border-radius: 10px !important;
+  background: var(--ain-surface) !important;
+  box-shadow: var(--aim-card-shadow) !important;
+}
+/* No accent edges on tiles — one pigment, one place (Law 01). */
+.ai-dashboard__kpi--cost,
+.ai-dashboard__kpi--provider {
+  border-top: 1px solid var(--ain-border) !important;
+}
+.ai-dashboard__kpi-value {
+  color: var(--ain-text) !important;
+}
+.ai-dashboard__kpi-label,
+.ai-dashboard__kpi-sub {
+  color: var(--aim-dim) !important;
+}
+.ai-dashboard__kpi-label a {
+  color: var(--ain-jade) !important;
+}
+/* The cloud/local split whispers in the earth set — no violet, no mint. */
+.ai-dashboard__kpi-sub--cloud {
+  color: var(--ain-accent-2) !important;
+}
+.ai-dashboard__kpi-sub--local {
+  color: var(--ain-jade) !important;
+}
+.ai-dashboard__chart-title {
+  color: var(--aim-dim) !important;
+}
+
+/* ===== Table: paper thead (mono eyebrow), hairline rows ===== */
+.ai-dashboard__table th {
+  background: var(--ain-surface-2) !important;
+  color: var(--ain-text-dim) !important;
+  font-family: var(--ain-mono) !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  border-bottom: 1px solid var(--ain-border) !important;
+}
+#ai-usage-table thead th[data-col]:hover {
+  background: var(--ain-surface) !important;
+  color: var(--ain-text) !important;
+}
+.ai-dashboard__table td {
+  border-bottom-color: var(--ain-border) !important;
+}
+.ai-dashboard__totals-row td {
+  background: var(--ain-surface-2) !important;
+}
+/* Status rows are whispers, not celebrations (Law 02). */
+.ai-dashboard__row--warning td {
+  background: color-mix(in oklch, var(--ain-accent-2) 8%, var(--ain-surface)) !important;
+}
+.ai-dashboard__row--exceeded td {
+  background: color-mix(in oklch, var(--ain-danger) 8%, var(--ain-surface)) !important;
+}
+
+/* ===== Progress bars — a meter may fill, in the earth set:
+   verdigris → ochre (warning) → brick (exceeded). ===== */
+.ai-dashboard__bar-wrap,
+.ai-dashboard__bar {
+  border-radius: 4px !important;
+}
+.ai-dashboard__bar-wrap {
+  background: var(--ain-surface-2) !important;
+  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-shadow) 8%, transparent);
+}
+.ai-dashboard__bar {
+  background: var(--ain-jade) !important;
+}
+.ai-dashboard__row--warning .ai-dashboard__bar,
+.ai-dashboard__bar--warning {
+  background: var(--ain-accent-2) !important;
+}
+.ai-dashboard__row--exceeded .ai-dashboard__bar,
+.ai-dashboard__bar--exceeded {
+  background: var(--ain-danger) !important;
+}
+
+/* ===== Badges — whisper chips (tint, never a fill; Law 02/13). ===== */
+.ai-badge {
+  font-family: var(--ain-mono) !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  border-radius: 4px !important;
+}
+/* A provider name is machine text — the mono tint chip. */
+.ai-badge--provider {
+  color: var(--ain-text-dim) !important;
+  border: none !important;
+  background: color-mix(in oklch, var(--ain-text) 6%, transparent) !important;
+}
+.ai-badge--warning {
+  color: var(--ain-accent-2) !important;
+  background: color-mix(in oklch, var(--ain-accent-2) 12%, transparent) !important;
+}
+.ai-badge--danger {
+  color: var(--ain-danger) !important;
+  background: color-mix(in oklch, var(--ain-danger) 12%, transparent) !important;
+}
+
+/* ===== Sort pills → ONE segmented control (Law 07): a single hairline
+   group; buttons quiet inside; active = the accent tint, the screen's
+   active-state accent. ===== */
+.ai-dashboard__sort-controls {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  color: var(--aim-dim) !important;
+}
+.ai-sort-btn {
+  color: var(--ain-text-dim) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--ain-radius, 7px) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.ai-sort-btn:hover {
+  color: var(--ain-text) !important;
+  background: var(--ain-surface-2) !important;
+}
+.ai-sort-btn.active {
+  color: var(--ain-text) !important;
+  border-color: color-mix(in oklch, var(--ain-accent) 45%, transparent) !important;
+  background: color-mix(in oklch, var(--ain-accent) 12%, transparent) !important;
+}
+
+/* ===== Export buttons — anchors carry an inline leading SVG that sits on
+   the text baseline (not centred). Make them inline-flex so the icon and
+   label share a centre axis; the admin kit supplies the secondary voice. ===== */
+.ai-dashboard__exports .button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4em !important;
+}
+.ai-dashboard__exports .button svg {
+  flex-shrink: 0;
+}
+
+/* ===== Form controls — month/year selects + quota inputs recede (inset
+   shade, hairline; focus = the accent tint ring, never a halo). ===== */
+.ai-dashboard__month-label {
+  color: var(--aim-dim) !important;
+}
+.ai-dashboard__month-select,
+.ai-quota-input {
+  color: var(--ain-text) !important;
+  border: 1px solid var(--ain-border) !important;
+  border-radius: var(--ain-radius, 7px) !important;
+  background: var(--ain-surface) !important;
+  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-shadow) 8%, transparent) !important;
+}
+.ai-dashboard__month-select:hover,
+.ai-quota-input:hover {
+  background: var(--ain-surface-2) !important;
+}
+.ai-dashboard__month-select:focus,
+.ai-quota-input:focus {
+  outline: none !important;
+  border-color: color-mix(in oklch, var(--ain-accent) 40%, transparent) !important;
+  background: var(--ain-surface) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ain-accent) 10%, transparent) !important;
+}
+/* Quota / threshold editors: the Save settles BELOW its field rather than
+   beside it (contrib rows them side by side) — the breakdown row is dense, so
+   stacking the two controls into a left-aligned column reads calmer. */
+.ai-dashboard .ai-quota-editor {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0.375rem !important;
+}
+
+/* ===== System-limits panel (ai_usage_limits integration) — a recessed
+   hairline card; inner cards on the 7px control radius. ===== */
+.ai-dashboard__system-limits {
+  border: 1px solid var(--ain-border) !important;
+  border-radius: 10px !important;
+  background: var(--ain-surface-2) !important;
+  box-shadow: var(--aim-card-shadow) !important;
+}
+.ai-dashboard__system-limits-header {
+  color: var(--ain-text) !important;
+}
+.ai-dashboard__system-limits-note,
+.ai-dashboard__sl-window {
+  color: var(--aim-dim) !important;
+}
+.ai-dashboard__system-limits-link {
+  color: var(--ain-jade) !important;
+}
+.ai-dashboard__sl-card {
+  border: 1px solid var(--ain-border) !important;
+  border-radius: var(--ain-radius, 7px) !important;
+  background: var(--ain-surface) !important;
+}
+.ai-dashboard__sl-provider,
+.ai-dashboard__sl-numbers {
+  color: var(--ain-text) !important;
+}
+.ai-dashboard__sl-bar-wrap,
+.ai-dashboard__sl-bar {
+  border-radius: 4px !important;
+}
+.ai-dashboard__sl-bar-wrap {
+  background: var(--ain-surface-2) !important;
+}
+
+/* ===== The PREVIEW · ROADMAP banner (ships unstyled from contrib) — a
+   hairline card; the badge is the Law-13 mono tint chip. New selectors, so
+   no !important needed; scoped under .ai-dashboard. ===== */
+.ai-dashboard__preview-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 0.9rem;
+  color: var(--aim-dim);
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  background: var(--ain-surface);
+  box-shadow: var(--aim-card-shadow);
+  font-size: 0.85rem;
+}
+.ai-dashboard__preview-badge {
+  flex-shrink: 0;
+  padding: 3px 7px;
+  font-family: var(--ain-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ain-accent-2);
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--ain-accent-2) 12%, transparent);
+}
+.ai-dashboard__role-note,
+.ai-dashboard__provider-split {
+  color: var(--aim-dim);
+}
+
+.ai-dashboard__empty {
+  color: var(--aim-dim) !important;
+}

@@ -1,0 +1,21 @@
+uuid: fdd96b41-3851-40f9-a677-ea019fdbf768
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - flowdrop_ai_provider
+_core:
+  default_config_hash: sk47SsWCsR4hshtkml0itfTGFPahmmW-PefI4O0Lz6Y
+id: flowdrop
+label: 'FlowDrop Workflow Prompt'
+variables:
+  -
+    name: message
+    help_text: 'The user message or input text'
+    required: false
+  -
+    name: workflowName
+    help_text: 'The name of the current workflow'
+    required: false
+tokens: {  }

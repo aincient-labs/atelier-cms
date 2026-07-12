@@ -1,0 +1,10 @@
+name: Prose
+status: experimental
+group: 'AIncient Blog'
+description: 'Long-form article body. Reading-optimised measure + type scale.'
+props:
+  type: object
+  properties:
+    html:
+      type: string
+      description: 'Sanitised article body HTML.'

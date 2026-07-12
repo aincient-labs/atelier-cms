@@ -1,0 +1,68 @@
+uuid: d3ec3326-91f9-486a-8e13-cfeec9fa511c
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_ai_provider
+_core:
+  default_config_hash: YUzzkx4RflcyNyQgD-cRyHnGctnSIErB49tDiBVN-3A
+id: flowdrop_ai_provider_chat
+label: Chat
+description: 'AI chat model for conversation and text generation'
+category: ai
+icon: 'mdi:robot'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  history:
+    configurable: false
+    connectable: true
+    required: false
+    default: {  }
+  maxTokens:
+    configurable: true
+    connectable: false
+    required: false
+    default: 1000
+  message:
+    configurable: false
+    connectable: true
+    required: true
+  model:
+    configurable: true
+    connectable: false
+    required: false
+    default: ''
+  systemPrompt:
+    configurable: true
+    connectable: true
+    required: false
+    default: ''
+  temperature:
+    configurable: true
+    connectable: false
+    required: false
+    default: 0.7
+outputs:
+  max_tokens:
+    exposed: false
+  model:
+    exposed: false
+  provider:
+    exposed: false
+  response:
+    exposed: true
+  temperature:
+    exposed: false
+  tokens_used:
+    exposed: false
+tags:
+  - model
+  - ai
+executor_plugin: 'flowdrop_ai_provider:chat'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

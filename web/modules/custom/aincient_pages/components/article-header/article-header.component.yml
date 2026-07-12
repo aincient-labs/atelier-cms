@@ -1,0 +1,20 @@
+name: 'Article Header'
+status: experimental
+group: 'AIncient Blog'
+description: 'Locked blog header: category, title, lead, author/date, optional cover.'
+props:
+  type: object
+  properties:
+    eyebrow: { type: string }
+    title: { type: string }
+    lead: { type: string }
+    author: { type: string }
+    date: { type: string }
+slots:
+  # The blog cover, supplied by the renderer as a Rift responsive <picture>
+  # render array (view mode "cover", 2x1) resolved from the page-schema's
+  # `cover` media token — NOT authored as a prop. Alt rides inside the picture
+  # (sourced from the Media entity). See PageSpikeController::component().
+  cover:
+    title: 'Cover image'
+    description: 'Responsive <picture> built by the renderer from the cover media token.'

@@ -1,0 +1,11 @@
+_core:
+  default_config_hash: LiM3HZwscnjr59TD6NxLYSk20IChRfhwJl6qHcR5fSc
+default_settings: |
+  {
+    "theme": {
+      "preference": "dark"
+    }
+  }
+exposed_categories:
+  - theme
+  - ui

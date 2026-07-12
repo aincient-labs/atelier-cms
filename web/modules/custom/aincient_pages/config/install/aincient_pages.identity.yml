@@ -1,0 +1,15 @@
+# Brand identity (a Globals item): who the site IS — name, voice, logo, footer
+# note. Distinct from the design-token Foundations layer (aincient_pages.brand).
+# Consumed by the site header/footer and the page agent's brief. Empty by
+# default; values land here when a user edits the brand.
+#
+# logo/favicon are `media:<id>` TOKENS (the unified Library picker's value), or ''
+# for none — the same universal media token used everywhere else (DECISIONS 0127).
+guidelines:
+  name: ''
+  tagline: ''
+  description: ''
+  tone: ''
+logo: ''
+favicon: ''
+footer_note: ''

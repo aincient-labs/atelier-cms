@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies: {  }
+name: 'AIncient page'
+type: aincient_page
+description: 'An agent-composed page. The validated page-schema (JSON) lives in the Page schema field; rendered chrome-less at the node''s canonical URL (/node/{nid} or its pathauto alias).'
+help: null
+new_revision: true
+preview_mode: 0
+display_submitted: false

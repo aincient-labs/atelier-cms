@@ -1,0 +1,107 @@
+uuid: 247a8dc9-3947-4fb9-a70b-a871eb2b15b7
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.aincient_page.field_layout_mode
+    - field.field.node.aincient_page.field_metatag
+    - field.field.node.aincient_page.field_page_content
+    - field.field.node.aincient_page.field_page_structure
+    - field.field.node.aincient_page.field_revision_coauthors
+    - field.field.node.aincient_page.field_teaser_description
+    - field.field.node.aincient_page.field_teaser_image
+    - field.field.node.aincient_page.field_teaser_title
+    - node.type.aincient_page
+    - workflows.workflow.aincient_editorial
+  module:
+    - content_moderation
+    - metatag
+    - path
+id: node.aincient_page.default
+targetEntityType: node
+bundle: aincient_page
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_metatag:
+    type: metatag_firehose
+    weight: 26
+    region: content
+    settings:
+      sidebar: true
+      use_details: true
+    third_party_settings: {  }
+  langcode:
+    type: language_select
+    weight: 1
+    region: content
+    settings:
+      include_locked: true
+    third_party_settings: {  }
+  moderation_state:
+    type: moderation_state_default
+    weight: 100
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  simple_sitemap:
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 6
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  translation:
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  url_redirects:
+    weight: 50
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  field_layout_mode: true
+  field_page_content: true
+  field_page_structure: true
+  field_revision_coauthors: true
+  field_teaser_description: true
+  field_teaser_image: true
+  field_teaser_title: true
+  promote: true
+  sticky: true

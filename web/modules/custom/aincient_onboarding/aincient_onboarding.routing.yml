@@ -1,0 +1,53 @@
+# The onboarding wizard's two-step handshake. Both endpoints are gated on site
+# configuration — connecting AI is an administrative, site-wide action.
+
+# Step 1: validate a credential against the chosen provider and return its chat
+# models + a suggested model per AIncient role. Persists nothing.
+aincient_onboarding.validate:
+  path: '/aincient/onboarding/validate'
+  defaults:
+    _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::validate'
+  methods: [POST]
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+# Step 2: re-validate and, on success, persist — store the credential via the
+# Key module in Drupal State (DB-backed, never exported to config/git), pin the
+# default chat provider, and bind every model role.
+aincient_onboarding.save:
+  path: '/aincient/onboarding/save'
+  defaults:
+    _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+# Multi-connect step: validate ONE provider (or key group) and store its
+# credential — no role binding, no completion flag yet. Returns the provider's
+# chat + image models and a suggested provider:model per role. The wizard calls
+# this once per provider the operator connects.
+aincient_onboarding.connect_provider:
+  path: '/aincient/onboarding/connect-provider'
+  defaults:
+    _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::connectProvider'
+  methods: [POST]
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+# Multi-connect finalise: bind each role to a chosen provider:model (across all
+# the providers connected above), project onto the framework, and flag complete.
+aincient_onboarding.finalize:
+  path: '/aincient/onboarding/finalize'
+  defaults:
+    _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::finalize'
+  methods: [POST]
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _auth: ['cookie', 'basic_auth']

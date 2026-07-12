@@ -1,0 +1,9 @@
+name: Byline
+status: experimental
+group: 'AIncient Blog'
+description: 'Author card closing a blog post.'
+props:
+  type: object
+  properties:
+    author: { type: string }
+    bio: { type: string }

@@ -1,0 +1,19 @@
+langcode: en
+status: true
+dependencies:
+  theme:
+    - aincient_studio_backend
+id: aincient_studio_backend_local_tasks
+theme: aincient_studio_backend
+region: content
+weight: -10
+provider: null
+plugin: local_tasks_block
+settings:
+  id: local_tasks_block
+  label: 'Tabs'
+  label_display: '0'
+  provider: core
+  primary: true
+  secondary: true
+visibility: {  }

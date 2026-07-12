@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/* Scan the theme templates/hooks AND the shared aincient_pages chrome/section
+   components, so this one stylesheet covers everything the theme renders. */
+@source "../templates/**/*.twig";
+@source "../*.theme";
+@source "../../../../modules/custom/aincient_pages/components/**/*.twig";
+
+/* ── Design tokens ─────────────────────────────────────────────────────────
+   The @theme inline var→utility maps + :root base defaults are GENERATED from
+   the shared registry (aincient_pages/design-tokens.yml → tokens.generated.css),
+   so the theme and the page-generation stack stay in lockstep. Edit tokens in
+   design-tokens.yml, not here. */
+@import "../../../../modules/custom/aincient_pages/build/tw-palette.generated.css";
+@import "../../../../modules/custom/aincient_pages/build/tokens.generated.css";
+
+/* Base: readable defaults for Drupal-rendered markup (node content, forms,
+   login) which carry no utility classes of their own. Keeps the theme usable,
+   not just the SDC sections. */
+@layer base {
+  /* Body + heading typography from the type-system tokens (size via the
+     tokenized text-* utilities; weight/leading/tracking via semantic tokens). */
+  body { font-size: var(--body-size); line-height: var(--body-leading); }
+  a { @apply text-primary-on-surface underline underline-offset-4 hover:opacity-80; }
+  h1 { @apply font-display text-3xl; font-weight: var(--heading-weight); letter-spacing: var(--heading-tracking); }
+  h2 { @apply font-display text-2xl; font-weight: var(--heading-weight); letter-spacing: var(--heading-tracking); }
+  h3 { @apply font-display text-xl; font-weight: var(--subheading-weight); }
+  label { @apply block text-sm font-medium; }
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="search"], input[type="url"], input[type="tel"], input[type="number"],
+  input[type="date"], select, textarea {
+    /* w-full so Drupal's size="60" inputs fit their container (card/form). */
+    @apply w-full max-w-full border border-border bg-background px-3 py-2
+           text-foreground outline-none focus:ring-2 focus:ring-primary/40;
+    border-radius: var(--input-radius);
+  }
+  button, input[type="submit"], .button {
+    @apply inline-flex items-center justify-center px-5 py-2.5 no-underline transition
+           hover:opacity-90 cursor-pointer;
+    border-radius: var(--button-radius);
+    background: var(--button-bg);
+    color: var(--button-fg);
+    box-shadow: var(--button-shadow);
+    font-weight: var(--button-weight);
+  }
+  .messages { @apply rounded-lg border border-border bg-muted px-4 py-3 text-sm; }
+  .tabs { @apply mb-6 flex gap-2 text-sm; }
+}
+
+/* ── Primitives: tabs, forms, cards ────────────────────────────────────────
+   Brand the markup Drupal emits (local tasks, form items) using stable core
+   classes, so login/admin/node pages get real containers — not bare lists. */
+@layer components {
+  /* Local tasks → pill tab bar. */
+  .ain-tabs { @apply mb-8; }
+  .ain-tabs__list { @apply flex flex-wrap gap-1 border-b border-border pb-3; }
+  .ain-tab { @apply list-none; }
+  .ain-tab a {
+    @apply inline-block px-4 py-1.5 text-sm font-medium no-underline
+           text-muted-foreground transition hover:bg-muted hover:text-foreground;
+    border-radius: var(--tabs-radius);
+  }
+  .ain-tab a.is-active { @apply bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground; }
+  .ain-tabs--secondary .ain-tabs__list { @apply border-0 pb-0; }
+
+  /* Form primitives: spacing + readable description + action row. */
+  .form-item { @apply mb-4; }
+  .form-item > label,
+  .form-item__label { @apply mb-1 block; }
+  .form-item .description,
+  .form-item__description,
+  .description { @apply mt-1.5 text-sm text-muted-foreground; }
+  .form-actions { @apply mt-6 flex flex-wrap items-center gap-3; }
+
+  /* Card primitive + the auth forms (login / register / reset) as a card.
+     Radius/shadow/border + density-driven padding come from component tokens. */
+  .ain-card,
+  .user-login-form,
+  .user-pass,
+  .user-register-form {
+    @apply border bg-card;
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    border-color: var(--card-border);
+    padding: calc(2rem * var(--density));
+  }
+  .user-login-form,
+  .user-pass,
+  .user-register-form { @apply max-w-md; }
+
+  /* Auth screens: the centred template supplies its own heading + wordmark, so
+     hide Drupal's default left-aligned page title block there (the theme renders
+     it as #block-…-page-title, no .block-page-title-block class). */
+  .ain-auth [id$="page-title"] { @apply hidden; }
+}
+
+/* Long-form article styling — scoped to node content only (NOT forms/admin),
+   so it doesn't bleed into the rest of the site. (no plugin dependency). */
+@layer components {
+  .prose-aincient,
+  .node__content { @apply text-[1.075rem]; line-height: var(--prose-leading); }
+  .prose-aincient > * + *,
+  .node__content > * + * { margin-top: 1.3em; }
+  .prose-aincient h2,
+  .node__content h2 { @apply font-display text-2xl mt-12 mb-4; font-weight: var(--heading-weight); letter-spacing: var(--heading-tracking); }
+  .prose-aincient h3,
+  .node__content h3 { @apply font-display text-xl mt-8 mb-3; font-weight: var(--subheading-weight); }
+  .prose-aincient p,
+  .node__content p { @apply opacity-90; }
+  .prose-aincient a,
+  .node__content a { @apply text-primary-on-surface underline underline-offset-4 hover:opacity-80; }
+  .prose-aincient ul,
+  .node__content ul { @apply list-disc pl-6 space-y-2 opacity-90; }
+  .prose-aincient ol,
+  .node__content ol { @apply list-decimal pl-6 space-y-2 opacity-90; }
+  .prose-aincient blockquote,
+  .node__content blockquote { @apply border-l-4 border-primary/40 pl-5 italic opacity-80; }
+  .prose-aincient code,
+  .node__content code { @apply rounded bg-muted px-1.5 py-0.5 text-[0.9em]; }
+  .prose-aincient img,
+  .node__content img { @apply rounded-xl my-8 max-w-full ring-1 ring-border; }
+  .prose-aincient hr,
+  .node__content hr { @apply my-10 border-border; }
+}

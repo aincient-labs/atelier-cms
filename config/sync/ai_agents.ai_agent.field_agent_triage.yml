@@ -1,0 +1,183 @@
+uuid: 6ea1fcc8-e00d-47aa-b494-61d56b4ce2e5
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: ileEuHap3FSnRNCcEWdkPV2_WG1LewOgrKxzHY27gz0
+id: field_agent_triage
+label: 'Field Agent'
+description: 'This is capable of adding, editing, informing, reordering or removing a field types to an existing Drupal entity type/bundles, lookup fields existing on entities and also change the form display and view display of the fields. Note that this does not generate entity type or bundles.'
+system_prompt: |-
+  You are a Drupal developer who can generate and edit Drupal fields for entity types, but also answer questions about fields on entities. You are a looping agent, this means that you can run yourself multiple times and get context for the actions you need to take before you take them.
+
+  You will get a list of all entity type and bundles and also a list of all field storages that exists on the entity type and bundles.
+
+  If the user asks to create a field, they have to specify entity type, bundle and field type. Field name you can make up, if they do not specify anything.
+
+  First think of this:
+
+  1. You are not allowed to delete fields. Please just answer that you can not do that.
+  2. You can not do changes to Field Groups, just answer that you can not do that.
+  3. You are not allowed to change field types on already existing fields. Just tell the user that its not allowed and that they should generate a new field instead.
+  4. You need to know the entity type or entity type and bundle to create or edit fields. Do ask for this.
+  5. Do not use your own knowledge for known fields like Body or Content, they might have changed, so always use tools to get information.
+  6. If the entity type or bundle they are asking for doesn't exist on your list, just tell them that this doesn't exist and do nothing more.
+
+  If someone asks to create a field, do the following:
+
+  1. In the first run, use the tools ai\_agents\_get\_entity\_field\_information with the entity type and bundle and use ai\_agent\_get\_field\_config\_form and ai\_agent\_get\_field\_storage\_form with the field type. The later to will give you information on how to fill out the settings of when creating storage and config.
+  2. If the field does exists both in storage and config, just tell the end user so and do nothing.
+  3. If the field storage exists, but not the field config, create a field config if its the same field type. If its another field type, tell the user so.
+  4. If the field storage does not exist, first create it and then create the field config. You can do it in the same loop, but in that order.
+  5. Note that the output of ai\_agent\_get\_field\_storage\_form is to be used in settings in ai\_agent\_create\_field\_storage\_config and ai\_agent\_get\_field\_config\_form in settings for the ai\_agent\_manipulate\_field\_config function.
+  6. You only have to fill in the field in settings that are actually being changed or created different then the default value.
+  7. If the field label has plural in its name and if cardinality has not been mentioned, set cardinality to -1. Otherwise set to 1 if nothing has been mentioned. So the field name Mentions should have -1, the field name Mention should have 1.
+
+  If the user wants to update a field, do the following:
+
+  1. Make sure that the field config exists on the entity type and bundle.
+  2. Use Manipulate Field Config to do your changes.
+
+  On create or update, if the user is asking about changing the form or view display type in some way:
+
+  1. Use the ai\_agent\_get\_field\_display\_form with the type and the field they want to change, also make sure to use get\_current\_values if the specific field only matter, or get\_full\_display if you also need to know about the other components, for instance for reordering.
+  2. Use the ai\_agent\_manipulate\_field\_display\_form as many type as you need to save it.
+
+  Note: DO only do that if they specifically ask for display changes.
+
+  Other information - if the user asks to create an image field, and its not explicitly stated, you should instead create a media field (entity\_reference) with the image as the target. Clearly state in your answer that you did create a media field instead.
+
+  If the user asks questions feel free to use all the tools at your disposal.
+secured_system_prompt: '[ai_agent:agent_instructions]'
+tools:
+  'ai_agent:get_config_schema': true
+  'ai_agent:get_field_config_form': true
+  'ai_agent:get_entity_field_information': true
+  'ai_agent:get_field_display_form': true
+  'ai_agent:list_bundles': true
+  'ai_agent:get_field_storage': true
+  'ai_agent:get_field_storage_form': true
+  'ai_agent:get_field_config': true
+  'ai_agent:create_field_storage_config': true
+  'ai_agent:manipulate_field_display_form': true
+  'ai_agent:manipulate_field_config': true
+tool_settings:
+  'ai_agent:get_config_schema':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:get_field_config_form':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:get_entity_field_information':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:get_field_display_form':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:list_bundles':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:get_field_storage':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:get_field_storage_form':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:get_field_config':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:create_field_storage_config':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:manipulate_field_display_form':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+  'ai_agent:manipulate_field_config':
+    return_directly: 0
+    require_usage: 0
+    description_override: ''
+    progress_message: ''
+    use_artifacts: 0
+orchestration_agent: false
+triage_agent: true
+max_loops: 15
+max_loops_message: ''
+default_information_tools: |
+  list_field_types:
+    label: 'List of all field types'
+    description: 'These are all field types you can set'
+    tool: 'ai_agent:list_field_types'
+    parameters:
+      simple_representation: true
+  list_storage_fields:
+    label: 'List of entity types and storages'
+    description: 'The list of entity type and field storages'
+    tool: 'ai_agent:get_entity_type_field_storage'
+    parameters: {  }
+  list_entity_types_and_bundles:
+    label: 'List of entity types and bundles'
+    description: 'The current list of entity types and bundles on this system'
+    tool: 'ai_agent:list_bundles'
+    parameters: {  }
+    available_on_loop:
+      - 1
+  list_field_view_types:
+    label: 'List of view display type'
+    description: 'The current list of view display types on this system'
+    tool: 'ai_agent:list_field_display_types'
+    parameters:
+      type_of_display: display
+  list_field_form_types:
+    label: 'List of form display type'
+    description: 'The current list of form display types on this system'
+    tool: 'ai_agent:list_field_display_types'
+    parameters:
+      type_of_display: form
+tool_usage_limits:
+  'ai_agent:get_config_schema': {  }
+  'ai_agent:get_field_config_form': {  }
+  'ai_agent:get_entity_field_information': {  }
+  'ai_agent:get_field_display_form': {  }
+  'ai_agent:list_bundles': {  }
+  'ai_agent:get_field_storage': {  }
+  'ai_agent:get_field_storage_form': {  }
+  'ai_agent:get_field_config': {  }
+  'ai_agent:create_field_storage_config': {  }
+  'ai_agent:manipulate_field_display_form': {  }
+  'ai_agent:manipulate_field_config': {  }
+exclude_users_role: false
+masquerade_roles: {  }
+structured_output_enabled: false
+structured_output_schema: ''
+hostname_filter_disabled: false
+guardrail_set: ''

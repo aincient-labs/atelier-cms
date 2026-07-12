@@ -1,0 +1,31 @@
+# Brand layer over the FlowDrop editor / playground (the third backend
+# surface). Attached to `flowdrop_ui_components/flowdrop` via
+# hook_library_info_alter so it loads in the `theme` bucket, after the Svelte
+# bundle's `component` CSS. Depends on theme-layer (-> design-tokens) so it
+# sorts after both FlowDrop token files within the theme bucket.
+flowdrop_brand:
+  css:
+    theme:
+      # Self-hosted Schibsted Grotesk — served from our origin, never Google,
+      # so the editor chrome leaks no operator IP (docs/brand.md §2.4 /
+      # DECISIONS 0058). Regenerate via scripts/fetch-brand-fonts.php.
+      fonts/brand-fonts.css: {}
+      css/flowdrop-brand.css: {}
+  dependencies:
+    - flowdrop_ui_components/theme-layer
+
+# Atelier layer over the contrib AI Metering dashboard (its bespoke
+# `.ai-dashboard__*` widgets + the Chart.js canvases). Attached to
+# `ai_metering/ai_metering_dashboard` via hook_library_info_alter so it loads
+# on exactly the metering report pages. The `--ain-*` tokens come from the
+# Studio Backend theme's :root (studio-backend.css), so no extra token
+# dependency.
+ai_metering_brand:
+  css:
+    theme:
+      css/ai-metering-brand.css: {}
+  js:
+    js/ai-metering-brand.js: {}
+  dependencies:
+    - core/drupal
+    - core/once

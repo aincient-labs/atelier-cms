@@ -1,0 +1,44 @@
+{#
+/**
+ * @file
+ * Branded, chrome-less auth screen — the AIncient product front door.
+ *
+ * Shared by every auth surface (login / password reset / register): the theme
+ * routes all three routes to this template via a page suggestion (see
+ * aincient_theme_theme_suggestions_page_alter()), so they look identical.
+ *
+ * A centred brand wordmark above the card-styled form (the .user-login-form /
+ * .user-pass / .user-register-form card styling lives in build/input.css). No
+ * site header/footer and no local-task tabs: this is an auth surface, not a
+ * content page. Instead of tabs, one plain cross-link moves between sign-in and
+ * reset. Brand vars + the per-route heading/link come from
+ * aincient_theme_preprocess_page().
+ */
+#}
+<div class="flex min-h-screen flex-col items-center justify-center bg-muted px-6 py-12">
+  <div class="w-full max-w-md">
+
+    <div class="mb-8 flex flex-col items-center text-center">
+      {% if ain_auth.logo_url %}
+        <img src="{{ ain_auth.logo_url }}" alt="{{ ain_auth.name }}" class="mb-4 h-12 w-auto" />
+      {% else %}
+        <span class="font-display text-2xl font-semibold text-foreground">{{ ain_auth.name }}</span>
+      {% endif %}
+      {% if ain_auth.tagline %}
+        <p class="mt-2 text-sm text-muted-foreground">{{ ain_auth.tagline }}</p>
+      {% endif %}
+      <h1 class="mt-6 font-display text-xl text-foreground">{{ ain_auth.heading }}</h1>
+    </div>
+
+    {{ ain_auth.messages }}
+
+    {{ page.content }}
+
+    {% if ain_auth.alt.url %}
+      <p class="mt-6 text-center text-sm text-muted-foreground">
+        <a href="{{ ain_auth.alt.url }}" class="font-medium text-foreground underline underline-offset-4 hover:no-underline">{{ ain_auth.alt.label }}</a>
+      </p>
+    {% endif %}
+
+  </div>
+</div>

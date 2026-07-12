@@ -1,0 +1,254 @@
+<?php
+
+/**
+ * @file
+ * Install/update hooks for AIncient Pages.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Define the editor-lock table (one live editor per node + language).
+ *
+ * Backs {@see \Drupal\aincient_pages\EditLock}: a DB-backed single-writer lock
+ * keyed on the composite (nid, langcode). Not an entity — it's transient control
+ * state, not content — so a plain schema table keeps it cheap and queryable (the
+ * force-release / "who holds what" surface). content_moderation gives no
+ * concurrency control, so this is the guard that makes "two studios editing one
+ * draft" structurally impossible.
+ */
+function aincient_pages_schema(): array {
+  $schema['aincient_edit_lock'] = [
+    'description' => 'Single-writer editor lock per node + language (see EditLock).',
+    'fields' => [
+      'nid' => [
+        'description' => 'The locked node id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'langcode' => [
+        'description' => 'The locked translation langcode.',
+        'type' => 'varchar_ascii',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'uid' => [
+        'description' => 'The human editor holding the lock.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'studio' => [
+        'description' => 'The studio the holder is editing in (content/checks/…).',
+        'type' => 'varchar_ascii',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'lock_token' => [
+        'description' => 'Opaque fencing token — every write must present it.',
+        'type' => 'varchar_ascii',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'acquired_at' => [
+        'description' => 'Unix timestamp the lock was (re)acquired.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => ['nid', 'langcode'],
+    'indexes' => [
+      'holder' => ['uid'],
+    ],
+  ];
+  return $schema;
+}
+
+/**
+ * Create the editor-lock table on already-installed sites (appliance converge).
+ */
+function aincient_pages_update_10008(): void {
+  $schema = \Drupal::database()->schema();
+  if (!$schema->tableExists('aincient_edit_lock')) {
+    $spec = aincient_pages_schema()['aincient_edit_lock'];
+    $schema->createTable('aincient_edit_lock', $spec);
+  }
+}
+
+/**
+ * Install the aincient_page entity type on already-installed sites.
+ *
+ * Fresh installs get the entity automatically on module install; this hook
+ * brings existing installs up to date — exactly the appliance converge path
+ * (`drush updatedb` runs it on upgrade).
+ */
+function aincient_pages_update_10001(): void {
+  $manager = \Drupal::entityDefinitionUpdateManager();
+  if (!$manager->getEntityType('aincient_page')) {
+    $type = \Drupal::entityTypeManager()->getDefinition('aincient_page');
+    $manager->installEntityType($type);
+  }
+}
+
+/**
+ * Seed the brand / design-system config on existing installs.
+ */
+function aincient_pages_update_10002(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_pages.brand');
+  if (empty($config->get('tokens'))) {
+    $config->setData([
+      'guidelines' => ['name' => '', 'tagline' => '', 'description' => '', 'tone' => ''],
+      'tokens' => [
+        'background' => '#ffffff',
+        'foreground' => '#0f172a',
+        'primary' => '#4f46e5',
+        'primary_foreground' => '#ffffff',
+        'muted' => '#f8fafc',
+        'muted_foreground' => '#64748b',
+        'accent' => '#f59e0b',
+        'accent_foreground' => '#0f172a',
+        'border' => '#e5e7eb',
+      ],
+    ])->save();
+  }
+}
+
+/**
+ * Add brand assets (logo), navigation, and footer note keys.
+ */
+function aincient_pages_update_10003(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_pages.brand');
+  if ($config->get('logo') === NULL) {
+    $config->set('logo', 0);
+  }
+  if ($config->get('footer_note') === NULL) {
+    $config->set('footer_note', '');
+  }
+  if ($config->get('nav') === NULL) {
+    $config->set('nav', []);
+  }
+  $config->save();
+}
+
+/**
+ * Retire the brand 'nav' key — header/footer nav now come from core menus.
+ *
+ * The site-header/site-footer chrome reads the 'main' and 'footer' menus
+ * (managed at /admin/structure/menu) instead of a bespoke brand nav list, so
+ * the stale config key is removed to keep config-schema validation clean.
+ */
+function aincient_pages_update_10004(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_pages.brand');
+  if ($config->get('nav') !== NULL) {
+    $config->clear('nav')->save();
+  }
+}
+
+/**
+ * Adopt the 3-tier design-token registry.
+ *
+ * The 9 existing colour overrides keep their names (they were already semantic
+ * tokens), so customised values carry over verbatim. Primitive/component
+ * defaults live in build/tokens.generated.css (NOT config — config holds only
+ * overrides), so nothing else needs seeding. We add the two new semantic colour
+ * tokens (card/card_foreground) only if a custom palette was set, so a branded
+ * card surface tracks the brand background/foreground.
+ */
+function aincient_pages_update_10005(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_pages.brand');
+  $tokens = $config->get('tokens') ?: [];
+  // Only act if the site customised its palette (otherwise defaults apply).
+  if ($tokens && !isset($tokens['card']) && isset($tokens['background'])) {
+    $tokens['card'] = $tokens['background'];
+  }
+  if ($tokens && !isset($tokens['card_foreground']) && isset($tokens['foreground'])) {
+    $tokens['card_foreground'] = $tokens['foreground'];
+  }
+  $config->set('tokens', $tokens)->save();
+}
+
+/**
+ * Seed the web-font loader (Google Font families) for the full type system.
+ *
+ * The header/footer/theme now build their font <link> from this list (built-in
+ * Inter + Inter Tight by default), so a font-family token can name any loaded
+ * web font, not just system fonts.
+ */
+function aincient_pages_update_10006(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_pages.brand');
+  if ($config->get('font_families') === NULL) {
+    $config->set('font_families', ['Inter', 'Inter Tight'])->save();
+  }
+}
+
+/**
+ * Install the brand revision-history entity on existing sites.
+ *
+ * Fresh installs get it on module install; this brings existing installs up to
+ * date (the appliance converge path runs `drush updatedb`). Brand snapshots
+ * start accumulating from the next brand save onward.
+ */
+function aincient_pages_update_10007(): void {
+  $manager = \Drupal::entityDefinitionUpdateManager();
+  if (!$manager->getEntityType('aincient_brand_revision')) {
+    $type = \Drupal::entityTypeManager()->getDefinition('aincient_brand_revision');
+    $manager->installEntityType($type);
+  }
+}
+
+/**
+ * Seed the site-identity favicon key (operator-uploadable favicon) on existing sites.
+ *
+ * Fresh installs ship `favicon: 0` in config/install; this brings existing
+ * installs up to the same baseline (no favicon until the operator uploads one).
+ */
+function aincient_pages_update_10009(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_pages.identity');
+  if ($config->get('favicon') === NULL) {
+    $config->set('favicon', 0)->save();
+  }
+}
+
+/**
+ * Retire the aincient_block node bundle — global blocks are now `block` media.
+ *
+ * Config convergence, NOT data migration: pre-launch, there is no aincient_block
+ * content and nothing references a node-era block, so the old bundle is deleted
+ * outright (DECISIONS 0138). Rebinds the editorial workflow onto media:block and
+ * drops the orphaned node type; the shared field STORAGES (field_page_content /
+ * field_page_structure) stay — aincient_page still uses them.
+ */
+function aincient_pages_update_10010(): void {
+  $etm = \Drupal::entityTypeManager();
+
+  // 1) Rebind the editorial workflow: + media:block, − node:aincient_block. Do
+  //    this first so content_moderation no longer guards the node bundle when we
+  //    delete it below.
+  $workflow = $etm->getStorage('workflow')->load('aincient_editorial');
+  if ($workflow) {
+    /** @var \Drupal\content_moderation\Plugin\WorkflowType\ContentModerationInterface $plugin */
+    $plugin = $workflow->getTypePlugin();
+    if (!$plugin->appliesToEntityTypeAndBundle('media', 'block')) {
+      $plugin->addEntityTypeAndBundle('media', 'block');
+    }
+    if ($plugin->appliesToEntityTypeAndBundle('node', 'aincient_block')) {
+      $plugin->removeEntityTypeAndBundle('node', 'aincient_block');
+    }
+    $workflow->save();
+  }
+
+  // 2) Delete the orphaned node type. Deleting the bundle cascades its field
+  //    INSTANCES + form/view displays; core's config-dependency cleanup revokes
+  //    the aincient_block permissions from the content roles.
+  $node_type = $etm->getStorage('node_type')->load('aincient_block');
+  if ($node_type) {
+    $node_type->delete();
+  }
+}

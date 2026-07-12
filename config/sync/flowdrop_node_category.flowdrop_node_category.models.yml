@@ -1,0 +1,12 @@
+uuid: ff36da36-d357-4641-b10d-940b8742148e
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: lZ_JXMPBKTD-_bd6ot-gy6q9NCWx3G0UVMAYrU1ELtA
+id: models
+enabled: true
+label: Models
+description: 'Connect to AI models like ChatGPT, Claude, Llama, and other large language models to generate text, answer questions, or complete tasks.'
+icon: 'mdi:robot'
+color: '#6366f1'

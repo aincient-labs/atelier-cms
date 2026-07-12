@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Exposes assistant-ui console configuration (theme, …) to the frontend.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_aincient_console_settings_alter().
+ *
+ * Contributes config to `window.aincientChat`, which the assistant-ui console
+ * reads (see \Drupal\aincient_chat\Controller\ConsoleController). Start small:
+ * the theme and whether users may switch it at runtime.
+ */
+function aincient_assistant_ui_aincient_console_settings_alter(array &$settings): void {
+  $config = \Drupal::config('aincient_assistant_ui.settings');
+  $settings['theme'] = $config->get('theme') ?: 'dark';
+  $settings['allowThemeSwitch'] = $config->get('allow_user_switch') ?? TRUE;
+}

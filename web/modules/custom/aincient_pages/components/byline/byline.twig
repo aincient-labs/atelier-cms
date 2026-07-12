@@ -1,0 +1,11 @@
+<div class="bg-muted text-muted-foreground">
+  <div class="mx-auto max-w-2xl px-6 py-12">
+    <div class="flex items-center gap-4 rounded-[var(--card-radius)] border border-[color:var(--card-border)] bg-card text-card-foreground p-6">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary-on-surface">{{ author|slice(0, 1)|upper }}</div>
+      <div>
+        <p class="font-semibold">{{ author }}</p>
+        {% if bio %}<p class="mt-1 text-sm opacity-70">{{ bio|inline_md }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>

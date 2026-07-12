@@ -1,0 +1,9 @@
+_core:
+  default_config_hash: OG-e89vaTkD_ywjVn90ekXqKeb3eGazVT1T4qQ1bweI
+snapshot_cleanup:
+  enabled: true
+  max_age: 604800
+  statuses:
+    - completed
+    - failed
+  batch_size: 100

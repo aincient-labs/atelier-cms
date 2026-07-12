@@ -1,0 +1,38 @@
+uuid: f1e2b385-c619-4010-823c-6baf12e4cc31
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: mYRoUS12Qdiyb_3nBNM985t6TOUPdIWVQXlx34Ui9fk
+id: markdown_to_html
+label: 'Markdown to HTML'
+description: 'Convert markdown text to safe HTML, preserving headings, links, and basic formatting'
+category: data
+icon: 'mdi:language-html5'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  strip_h1:
+    configurable: true
+    connectable: false
+    required: false
+    default: false
+  text:
+    configurable: false
+    connectable: true
+    required: false
+outputs:
+  html:
+    exposed: true
+  raw:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:markdown_to_html'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

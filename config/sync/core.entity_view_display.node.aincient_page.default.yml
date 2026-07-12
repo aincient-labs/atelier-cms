@@ -1,0 +1,48 @@
+uuid: 49ebc636-8bbd-4bd5-82be-0b4c38259550
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.aincient_page.field_layout_mode
+    - field.field.node.aincient_page.field_metatag
+    - field.field.node.aincient_page.field_page_content
+    - field.field.node.aincient_page.field_page_structure
+    - field.field.node.aincient_page.field_revision_coauthors
+    - field.field.node.aincient_page.field_teaser_description
+    - field.field.node.aincient_page.field_teaser_image
+    - field.field.node.aincient_page.field_teaser_title
+    - node.type.aincient_page
+  module:
+    - metatag
+    - user
+id: node.aincient_page.default
+targetEntityType: node
+bundle: aincient_page
+mode: default
+content:
+  content_moderation_control:
+    settings: {  }
+    third_party_settings: {  }
+    weight: -20
+    region: content
+  field_metatag:
+    type: metatag_empty_formatter
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 101
+    region: content
+  links:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 100
+    region: content
+hidden:
+  field_layout_mode: true
+  field_page_content: true
+  field_page_structure: true
+  field_revision_coauthors: true
+  field_teaser_description: true
+  field_teaser_image: true
+  field_teaser_title: true
+  langcode: true

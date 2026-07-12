@@ -1,0 +1,7 @@
+aincient_assistant_ui.settings:
+  path: '/admin/config/aincient-assistant-ui'
+  defaults:
+    _form: 'Drupal\aincient_assistant_ui\Form\SettingsForm'
+    _title: 'AIncient assistant-ui'
+  requirements:
+    _permission: 'administer aincient assistant ui'

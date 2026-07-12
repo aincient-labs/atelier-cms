@@ -1,0 +1,162 @@
+<?php
+
+/**
+ * @file
+ * AIncient Onboarding module hooks.
+ */
+
+declare(strict_types=1);
+
+use Drupal\aincient_core\ModelRoles;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_aincient_console_settings_alter().
+ *
+ * Makes first-run onboarding PROACTIVE. The console (aincient_chat) renders a
+ * dedicated full-screen wizard whenever `window.aincientChat.onboarding.needed`
+ * is TRUE, so a fresh, keyless install presents setup the moment the user lands
+ * — instead of the old behaviour where the connect-AI panel only appeared after
+ * the user happened to send a chat message.
+ *
+ * This runs through aincient_chat's settings-alter hook precisely so the chat
+ * module never has to depend on this one: if onboarding isn't installed, the
+ * `onboarding` block simply isn't present and the console behaves normally.
+ *
+ * The block carries everything the wizard needs to run without a second
+ * round-trip up front: the provider catalog (the picker), the AIncient model
+ * roles (the per-role pickers shown after a credential validates), the
+ * validate + save endpoints, and whether THIS user may actually configure the
+ * site (operators without the permission get a clear "ask your admin" message
+ * rather than a form that can't succeed). The model catalogue itself is fetched
+ * per-provider by the validate step, since it can't be known before a credential
+ * is proven (and Ollama's models depend on what's pulled locally).
+ *
+ * Re-running for testing: appending `?onboarding=1` to the console URL forces
+ * the wizard even on an already-configured site, so the whole flow can be
+ * exercised repeatedly without first resetting state. The save path is itself
+ * idempotent — it re-validates and overwrites — and still requires the
+ * site-config permission, so this is a safe, admin-only override rather than a
+ * way to bypass anything.
+ */
+function aincient_onboarding_aincient_console_settings_alter(array &$settings): void {
+  /** @var \Drupal\aincient_onboarding\ProviderConnector $connector */
+  $connector = \Drupal::service('aincient_onboarding.provider_connector');
+
+  $isAdmin = \Drupal::currentUser()->hasPermission('administer site configuration');
+  // `?onboarding=1` (admins only) re-shows the wizard on a configured site so it
+  // can be re-run safely (Law 14 — the door opens twice); otherwise it shows only
+  // when the site genuinely needs first-run setup.
+  $forced = (bool) \Drupal::request()->query->get('onboarding') && $isAdmin;
+
+  if (!$forced && !$connector->needsOnboarding()) {
+    // Configured site, no wizard shown. Admins still get a pointer so the user
+    // menu can offer "Set up AI providers" — the v1 settings surface — WITHOUT the
+    // `needed` key, so main.tsx keeps rendering the console (not the wizard).
+    if ($isAdmin) {
+      $settings['onboarding'] = ['canReenter' => TRUE];
+    }
+    return;
+  }
+
+  /** @var \Drupal\aincient_onboarding\ProviderCatalog $catalog */
+  $catalog = \Drupal::service('aincient_onboarding.provider_catalog');
+
+  $settings['onboarding'] = [
+    'needed' => TRUE,
+    // A re-run (vs genuine first-run) is skippable + pre-filled, and its finalize
+    // must never clobber what an earlier run earned (Law 14).
+    'forced' => $forced,
+    'canReenter' => $isAdmin,
+    // The existing role bindings as `{role: "provider:model"}` — the wizard opens
+    // the models step on these instead of blank, so a no-op re-run re-binds the
+    // same models rather than wiping them.
+    'current' => _aincient_onboarding_current_bindings(),
+    // The multi-connect handshake: connect one provider (or key group) at a
+    // time, then finalise role bindings across all of them.
+    'connectProviderUrl' => Url::fromRoute('aincient_onboarding.connect_provider')->toString(),
+    'finalizeUrl' => Url::fromRoute('aincient_onboarding.finalize')->toString(),
+    // Legacy single-provider endpoints, kept for the in-chat onboarding panel.
+    'validateUrl' => Url::fromRoute('aincient_onboarding.validate')->toString(),
+    'saveUrl' => Url::fromRoute('aincient_onboarding.save')->toString(),
+    // Each provider carries its auth shape (api_key vs host URL) and its
+    // capabilities (chat / image) so the connect step renders the right field
+    // and badges. Key groups (e.g. Google's gemini + nanobanana) appear as ONE
+    // row. Models are fetched per provider by the connect step — they can't be
+    // known before a credential validates.
+    'providers' => $catalog->providers(),
+    'recommended' => $catalog->recommendedProviderId(),
+    // The AIncient model roles (id/label/description/pool), in display order —
+    // the taxonomy behind the per-role model pickers the wizard shows once
+    // providers are connected. Chat tiers + Vision draw from the chat pool;
+    // Image draws from the image pool.
+    'roles' => _aincient_onboarding_role_taxonomy(),
+    // Connecting AI is a site-wide admin action; non-admins see guidance only.
+    'canConfigure' => \Drupal::currentUser()->hasPermission('administer site configuration'),
+  ];
+}
+
+/**
+ * The site's current role bindings as a `{role: "provider:model"}` map.
+ *
+ * Reads the raw `aincient_core.model_roles:roles` config (all roles — chat tiers,
+ * vision, image — not just the three definitions ModelRoleResolver::roles()
+ * returns), and emits the wizard's `roleModels` value format ("provider:model")
+ * for every role that has BOTH a provider and a model bound. Roles bound to
+ * nothing are omitted, so the wizard leaves them for the suggestion-seeding to
+ * fill. This is what makes a re-run pre-filled + idempotent (Law 14).
+ *
+ * @return array<string, string>
+ */
+function _aincient_onboarding_current_bindings(): array {
+  $roles = \Drupal::config('aincient_core.model_roles')->get('roles') ?? [];
+  $out = [];
+  foreach ($roles as $role => $binding) {
+    $provider = trim((string) ($binding['provider_id'] ?? ''));
+    $model = trim((string) ($binding['model_id'] ?? ''));
+    if ($provider !== '' && $model !== '') {
+      $out[$role] = $provider . ':' . $model;
+    }
+  }
+  return $out;
+}
+
+/**
+ * The model-role taxonomy as a display-ordered list for the wizard.
+ *
+ * The three chat tiers ({@see ModelRoles::definitions()}) plus the two
+ * capability roles that live outside that set — Vision (image→text, chat pool)
+ * and Image (image generation, image pool). Each row is tagged with the `pool`
+ * its models come from and whether it's `optional` (skippable), so the models
+ * step can group the pickers correctly and never block finishing on an image
+ * provider the operator chose not to connect.
+ *
+ * @return list<array{id: string, label: string, description: string, pool: string, optional: bool}>
+ */
+function _aincient_onboarding_role_taxonomy(): array {
+  $roles = [];
+  foreach (ModelRoles::definitions() as $id => $def) {
+    $roles[] = [
+      'id' => $id,
+      'label' => $def['label'],
+      'description' => $def['description'],
+      'pool' => 'chat',
+      'optional' => FALSE,
+    ];
+  }
+  $roles[] = [
+    'id' => ModelRoles::VISION,
+    'label' => 'Image description',
+    'description' => 'Reads an image to write alt text and captions. Pick a vision-capable chat model (Gemini, GPT-4o, Claude). Optional — falls back to your task model.',
+    'pool' => 'chat',
+    'optional' => TRUE,
+  ];
+  $roles[] = [
+    'id' => ModelRoles::IMAGE,
+    'label' => 'Image generation',
+    'description' => 'Generates and edits images in the Media studio (text→image, image→image). Needs an image provider such as Google Gemini / Nano Banana.',
+    'pool' => 'image',
+    'optional' => TRUE,
+  ];
+  return $roles;
+}

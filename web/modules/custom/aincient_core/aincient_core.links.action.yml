@@ -1,0 +1,8 @@
+# "Add user" on the Studio Backend's People listing (/admin/users — the
+# aincient_users view that replaced core's /admin/people). Core's own action
+# only appears_on entity.user.collection, which now redirects here.
+aincient_core.user_add:
+  route_name: user.admin_create
+  title: 'Add user'
+  appears_on:
+    - view.aincient_users.page_1

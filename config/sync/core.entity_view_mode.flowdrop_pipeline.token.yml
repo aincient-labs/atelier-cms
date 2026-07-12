@@ -1,0 +1,11 @@
+uuid: 6350af5f-024c-438b-9085-5868ac84c9c1
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_pipeline
+id: flowdrop_pipeline.token
+label: Token
+description: null
+targetEntityType: flowdrop_pipeline
+cache: true

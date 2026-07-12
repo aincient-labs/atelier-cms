@@ -1,0 +1,41 @@
+uuid: 836738f3-bcda-414f-89c5-928970fb178a
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+_core:
+  default_config_hash: vkVpS-K7KABMYtChKmuODjRSNVRyVB_NyG2jZnehDlo
+id: note
+label: Note
+description: 'Add notes and comments'
+category: helpers
+icon: 'mdi:note-text-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  content:
+    configurable: true
+    connectable: false
+    required: false
+    default: "# Workflow Notes\r\n\r\nAdd your documentation here using **Markdown** formatting.\r\n\r\n## Features\r\n- Supports **bold** and *italic* text\r\n- Create lists and code blocks\r\n- Add links and more!"
+  noteType:
+    configurable: true
+    connectable: false
+    required: false
+    default: info
+outputs:
+  content:
+    exposed: false
+  message:
+    exposed: false
+  noteType:
+    exposed: false
+tags: {  }
+executor_plugin: 'flowdrop_node_processor:note'
+visual_type: note
+supported_visual_types:
+  - note
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

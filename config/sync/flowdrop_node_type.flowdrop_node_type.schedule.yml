@@ -1,0 +1,41 @@
+uuid: d2cc181b-a7f6-4a7f-86f0-eda72a682b35
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_interrupt
+id: schedule
+label: Schedule
+description: 'Pauses the workflow until a specific date and time'
+category: timing
+icon: 'mdi:calendar-clock'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  when:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  drift_seconds:
+    exposed: true
+  resolved_by_timer:
+    exposed: true
+  resumed_at:
+    exposed: true
+  scheduled_at:
+    exposed: true
+  user_id:
+    exposed: true
+tags:
+  - timing
+  - schedule
+  - interrupt
+executor_plugin: 'flowdrop_interrupt:schedule'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

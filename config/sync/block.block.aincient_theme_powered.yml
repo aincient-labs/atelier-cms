@@ -1,0 +1,22 @@
+uuid: ad7e41eb-745d-4afc-bc8c-f1d31faba0d0
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - aincient_theme
+_core:
+  default_config_hash: eYL19CLDyinGTWYQfBD1DswWzglEotE_kHnHx3AxTXM
+id: aincient_theme_powered
+theme: aincient_theme
+region: footer_bottom
+weight: 0
+provider: null
+plugin: system_powered_by_block
+settings:
+  id: system_powered_by_block
+  label: 'Powered by Drupal'
+  label_display: '0'
+  provider: system
+visibility: {  }

@@ -1,0 +1,19 @@
+uuid: 05a9d891-70ce-416a-8f1e-5b5eb28bfe0f
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_teaser_image
+    - node.type.aincient_page
+id: node.aincient_page.field_teaser_image
+field_name: field_teaser_image
+entity_type: node
+bundle: aincient_page
+label: 'Teaser image'
+description: 'A media:<id> token for the teaser card image, resolved through EntityEmbedResolver like every other image in the page schema.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

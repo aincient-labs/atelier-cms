@@ -1,0 +1,38 @@
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('default')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
+{% set btn_primary = on_dark ? 'bg-background text-foreground hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90' %}
+{% set btn_ghost = 'opacity-80 hover:opacity-100' %}
+
+<section class="{{ tone_class }} relative overflow-hidden">
+  {% if variant == 'split' %}
+    <div class="mx-auto max-w-7xl px-6 py-20 lg:py-28 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div>
+        {% if eyebrow %}<p class="inline-block rounded-[var(--button-radius)] border border-border px-3 py-1 text-xs font-medium uppercase tracking-wider opacity-70">{{ eyebrow }}</p>{% endif %}
+        <h1 class="mt-6 font-display text-4xl sm:text-5xl [font-weight:var(--hero-heading-weight)] tracking-[var(--hero-heading-tracking)] leading-[1.05]">{{ heading }}</h1>
+        {% if subheading %}<p class="mt-6 text-lg opacity-75 max-w-xl">{{ subheading|inline_md }}</p>{% endif %}
+        <div class="mt-8 flex flex-wrap gap-3">
+          {% if cta_label %}<a href="{{ cta_url|default('#') }}" class="inline-flex items-center rounded-[var(--button-radius)] px-6 py-3 text-sm [font-weight:var(--button-weight)] shadow-[var(--button-shadow)] border-solid border-[length:var(--button-border-width)] border-[color:var(--button-border)] transition {{ btn_primary }}">{{ cta_label }}</a>{% endif %}
+          {% if secondary_label %}<a href="{{ secondary_url|default('#') }}" class="inline-flex items-center px-5 py-3 text-sm [font-weight:var(--button-weight)] transition {{ btn_ghost }}">{{ secondary_label }} &rarr;</a>{% endif %}
+        </div>
+      </div>
+      <div class="relative">
+        {% if image %}<div class="ain-img rounded-[var(--card-radius)] shadow-[var(--shadow-2xl)] ring-1 ring-border w-full overflow-hidden aspect-[4/3]">{% block image %}{{ image }}{% endblock %}</div>{% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="relative mx-auto max-w-3xl px-6 py-24 lg:py-32 text-center">
+      {% if eyebrow %}<p class="inline-block rounded-[var(--button-radius)] border border-border px-3 py-1 text-xs font-medium uppercase tracking-wider opacity-70">{{ eyebrow }}</p>{% endif %}
+      <h1 class="mt-6 font-display text-5xl sm:text-6xl [font-weight:var(--hero-heading-weight)] tracking-[var(--hero-heading-tracking)] leading-[1.03]">{{ heading }}</h1>
+      {% if subheading %}<p class="mt-6 text-lg sm:text-xl opacity-75">{{ subheading|inline_md }}</p>{% endif %}
+      <div class="mt-9 flex flex-wrap gap-3 justify-center">
+        {% if cta_label %}<a href="{{ cta_url|default('#') }}" class="inline-flex items-center rounded-[var(--button-radius)] px-7 py-3.5 text-sm [font-weight:var(--button-weight)] shadow-[var(--button-shadow)] border-solid border-[length:var(--button-border-width)] border-[color:var(--button-border)] transition {{ btn_primary }}">{{ cta_label }}</a>{% endif %}
+        {% if secondary_label %}<a href="{{ secondary_url|default('#') }}" class="inline-flex items-center px-5 py-3.5 text-sm [font-weight:var(--button-weight)] transition {{ btn_ghost }}">{{ secondary_label }} &rarr;</a>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+</section>

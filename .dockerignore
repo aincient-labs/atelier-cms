@@ -1,0 +1,17 @@
+# Keep the build context small: the image rebuilds core/contrib/vendor via
+# `composer install`, so none of these need to be sent to the daemon.
+.git
+.dev
+.ddev
+vendor
+web/core
+web/modules/contrib
+web/profiles/contrib
+web/themes/contrib
+web/libraries
+**/node_modules
+web/sites/*/files
+web/sites/*/settings.php
+web/sites/*/settings.ddev.php
+*.sql
+*.sql.gz

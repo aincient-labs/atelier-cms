@@ -1,0 +1,27 @@
+_core:
+  default_config_hash: L6nvvoUF0D4sw87rYlCQac7kWABNjxQ-Ta-q2j0M9Zs
+visual_types:
+  default:
+    label: Default
+    description: 'Standard node appearance with full configuration panel'
+  gateway:
+    label: Gateway
+    description: 'Visual indicator for branching/conditional nodes'
+  note:
+    label: Note
+    description: 'Useful for adding notes'
+  idea:
+    label: Idea
+    description: 'Used for placing ideas on the canvas'
+  simple:
+    label: Simple
+    description: 'Minimal appearance for basic operations'
+  square:
+    label: Square
+    description: 'Compact square shape for utility nodes'
+  tool:
+    label: Tool
+    description: 'Special Node type to represent AI Tools'
+  terminal:
+    label: Terminal
+    description: 'Used for start/stop events'

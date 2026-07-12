@@ -1,0 +1,18 @@
+uuid: 677a6645-9dbf-4b29-8690-4d1e2fa2e338
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 1024w576h
+label: 1024w576h
+effects:
+  3d6b362b-5231-43d8-a412-f3e683642945:
+    uuid: 3d6b362b-5231-43d8-a412-f3e683642945
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 1024
+      height: 576
+      crop_type: focal_point
+      upscale: false

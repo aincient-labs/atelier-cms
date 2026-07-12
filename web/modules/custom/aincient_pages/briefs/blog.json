@@ -1,0 +1,11 @@
+{
+  "type": "blog",
+  "category": "Engineering",
+  "title": "How we made AIncient upgrade itself",
+  "lead": "Self-hosted Drupal upgrades are scary and manual — which is exactly why most installs go stale. Here's how we made the site heal itself on a new image.",
+  "author": "Moana Lucy",
+  "author_bio": "Platform engineer at AIncient. Writes about Drupal, containers, and making hard things boring.",
+  "date": "May 31, 2026",
+  "cover": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80",
+  "body_html": "<p>The single biggest reason self-hosted CMS installs don't reach a million happy users isn't features — it's that <strong>upgrades are frightening</strong>. So for AIncient we made one rule: pulling a new image and restarting should be the entire upgrade.</p><h2>The split that makes it work</h2><p>We separate <em>immutable code</em> (baked into the image) from <em>persistent state</em> (the database and files, on volumes). Because the code is frozen in the image, the only way new code arrives is a new image — which means upgrades are atomic and reversible at the code layer.</p><blockquote>Restarting on a new image <em>is</em> the upgrade. There is no separate migrate step to remember.</blockquote><h2>Converge, don't migrate</h2><p>On every start, a converge routine makes the database match the code in the image:</p><ul><li>Empty database → fresh install from the recipe.</li><li>Existing database → snapshot, run <code>drush updatedb</code>, rebuild caches, health-check, and roll back to the snapshot if anything looks wrong.</li></ul><p>Run it on a healthy site and it's a no-op. Run it on a half-broken one and it re-runs whatever was missed. That's the whole trick — <strong>idempotent convergence</strong> instead of fragile, hand-ordered migration steps.</p><h3>What we'd tell our past selves</h3><p>Don't ship a config snapshot and call it a distribution. Ship the code, and let the running site converge to it. The database is the user's; the image is yours.</p>"
+}

@@ -1,0 +1,58 @@
+uuid: 53d7f3ff-e4cc-4ee1-acdf-a2b98a7ce7b4
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_memory
+_core:
+  default_config_hash: pdamUclmjnr1jTgNRLOTwn1qx8cxZZuR5qSgp4QCyVY
+id: conversation_buffer
+label: 'Conversation Buffer'
+description: 'Append a message to the conversation buffer. Scope ID is automatically derived from the execution context.'
+category: memory
+icon: 'mdi:message-plus'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  content:
+    configurable: false
+    connectable: true
+    required: true
+  key:
+    configurable: true
+    connectable: true
+    required: false
+    default: chat_history
+  max_messages:
+    configurable: true
+    connectable: false
+    required: false
+    default: 0
+  role:
+    configurable: true
+    connectable: true
+    required: true
+  scope:
+    configurable: true
+    connectable: false
+    required: false
+    default: session
+outputs:
+  count:
+    exposed: true
+  key:
+    exposed: false
+  messages:
+    exposed: true
+  resolved_scope_id:
+    exposed: false
+  scope:
+    exposed: false
+tags: {  }
+executor_plugin: 'flowdrop_memory:conversation_buffer'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AIncient" viewBox="0 0 1680 288">
+  <defs>
+    <!--
+      Recolours the chip body to the OPPOSITE of currentColor: collapse to
+      luminance, then threshold each channel (>=0.5 -> black, <0.5 -> white).
+      Pairs with the currentColor frame so the border always tracks the text
+      colour and the bands sit on a contrasting backdrop.
+    -->
+    <filter id="aincient-chip-contrast" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%">
+      <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0
+                                           0.2126 0.7152 0.0722 0 0
+                                           0.2126 0.7152 0.0722 0 0
+                                           0      0      0      1 0"/>
+      <feComponentTransfer>
+        <feFuncR type="discrete" tableValues="1 0"/>
+        <feFuncG type="discrete" tableValues="1 0"/>
+        <feFuncB type="discrete" tableValues="1 0"/>
+      </feComponentTransfer>
+    </filter>
+    <style>
+      .aincient-band-red    { fill: var(--aincient-band-red,    #f35045); }
+      .aincient-band-orange { fill: var(--aincient-band-orange, #fba100); }
+      .aincient-band-green  { fill: var(--aincient-band-green,  #01cb8b); }
+      .aincient-band-purple { fill: var(--aincient-band-purple, #8257e9); }
+    </style>
+  </defs>
+  <g>
+    <title>Aincient</title>
+    <g>
+      <title>Chip</title>
+      <path fill="currentColor" filter="url(#aincient-chip-contrast)" d="M 48,16 v 16 h -16 v 16 h -16 v 192 h 16 v 16 h 16 v 16 h 192 v -16 h 16 v -16 h 16 v -192 h -16 v -16 h -16 v -16 z"/>
+      <path class="aincient-band-red" d="M 64,48 v 16 h -16 v 32 h 192 v -32 h -16 v -16 z"/>
+      <rect class="aincient-band-orange" x="48" y="96" width="192" height="48"/>
+      <rect class="aincient-band-green" x="48" y="144" width="192" height="48"/>
+      <path class="aincient-band-purple" d="M 48,192 v 32 h 16 v 16 h 160 v -16 h 16 v -32 z"/>
+      <path style="fill:currentColor" d="M 48,16 v 16 h -16 v 16 h -16 v 192 h 16 v 16 h 16 v 16 h 192 v -16 h 16 v -16 h 16 v -192 h -16 v -16 h -16 v -16 z m 16,16 h 160 v 16 h 16 v 16 h 16 v 160 h -16 v 16 h -16 v 16 h -160 v -16 h -16 v -16 h -16 v -160 h 16 v -16 h 16 z"/>
+    </g>
+    <g style="fill:currentColor;fill-rule:evenodd">
+      <title>Wordmark</title>
+      <path d="M 448,64 V 96 H 464 V 256 H 416 V 192 H 400 V 176 H 368 V 192 H 352 V 256 H 304 V 96 H 320 V 64 H 352 V 32 H 416 V 64 Z M 416,96 H 400 V 64 H 368 V 96 H 352 V 144 H 416 Z"/>
+      <path d="M 528,224 V 64 H 480 V 32 H 624 V 64 H 576 V 224 H 624 V 256 H 480 V 224 Z"/>
+      <path d="M 640,112 H 768 V 144 H 800 V 256 H 752 V 144 H 688 V 256 H 640 Z"/>
+      <path d="M 976,112 V 144 H 864 V 224 H 976 V 256 H 832 V 224 H 816 V 144 H 832 V 112 Z"/>
+      <path d="M 992,224 H 1056 V 144 H 1024 V 112 H 1104 V 224 H 1152 V 256 H 992 Z M 1104,64 V 96 H 1056 V 64 Z"/>
+      <path d="M 1216,144 V 176 H 1280 V 144 Z M 1296,112 V 144 H 1328 V 192 H 1216 V 224 H 1328 V 256 H 1200 V 224 H 1168 V 144 H 1200 V 112 Z"/>
+      <path d="M 1472,112 V 144 H 1504 V 256 H 1456 V 144 H 1392 V 256 H 1344 V 112 Z"/>
+      <path d="M 1616,112 H 1664 V 144 H 1616 V 256 H 1568 V 144 H 1520 V 112 H 1568 V 32 H 1616 Z"/>
+    </g>
+  </g>
+</svg>

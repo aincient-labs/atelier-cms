@@ -1,0 +1,368 @@
+/**
+ * Studio Backend — the AIncient admin theme (base: core Stark).
+ *
+ * Goal: the backend reads as one product with the chat console — the Atelier
+ * "studio craft" language (gesso-paper ground, bistre ink, one cinnabar
+ * pigment, soft hairlines + diffuse shadow, soft corners) — NOT raw Drupal,
+ * without the weight of Gin. Stark ships almost no CSS, so this file styles
+ * from a near-blank slate rather than fighting a base theme.
+ *
+ * Tokens mirror the console's :root (chat-ui/src/styles.css) so a state, a
+ * surface, or the mark reads identically in the app and the admin.
+ *
+ * This file owns the tokens + the shell (sidebar, brand, account) and the
+ * theme's bespoke components; everything that styles CORE's markup (tabs,
+ * forms, tables, messages, …) lives in css/admin-kit.css.
+ */
+
+:root {
+  /* Gesso paper (light) — the app default: a warm, mineral off-white ground,
+     bistre near-black ink, the colour budget spent on one cinnabar pigment. */
+  --ain-bg: oklch(0.923 0.009 82);          /* gesso ground — page canvas */
+  --ain-surface: oklch(0.986 0.004 82);     /* raised cards — brightest paper */
+  --ain-surface-2: oklch(0.951 0.007 82);   /* chrome / recessed panels */
+  --ain-border: oklch(0.86 0.007 88);
+  --ain-border-strong: oklch(0.58 0.010 85);
+  --ain-text: oklch(0.24 0.008 70);         /* bistre ink */
+  --ain-text-dim: oklch(0.47 0.010 78);
+  --ain-text-faint: oklch(0.62 0.010 80);
+  --ain-accent: oklch(0.545 0.155 32);      /* CINNABAR — the one pigment */
+  --ain-accent-2: oklch(0.60 0.100 66);     /* warm ochre — quiet secondary */
+  --ain-jade: oklch(0.52 0.090 163);        /* verdigris — positive / links */
+  --ain-on-accent: oklch(0.985 0.005 90);   /* paper ink on a cinnabar fill */
+  --ain-danger: oklch(0.52 0.160 28);
+  --ain-shadow: oklch(0.30 0.010 60);       /* soft warm ink — diffuse lift */
+  --ain-mark-ring: oklch(0.24 0.010 70);
+
+  /* Four-band spectrum — lives ONLY in the brand mark, never on chrome. */
+  --ain-band-1: oklch(0.66 0.21 27);
+  --ain-band-2: oklch(0.78 0.17 70);
+  --ain-band-3: oklch(0.74 0.17 163);
+  --ain-band-4: oklch(0.58 0.21 292);
+
+  --ain-radius: 7px;
+  --ain-sidebar-w: 264px;
+  --ain-font: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --ain-font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --ain-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+
+/* Studio night (dark) — the atelier after hours: warm charcoal grounds, gesso
+   ink, cinnabar lifted for the dark. Follows the OS unless something else has
+   an opinion; the console uses the same values. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ain-bg: oklch(0.205 0.006 72);
+    --ain-surface: oklch(0.245 0.007 72);
+    --ain-surface-2: oklch(0.285 0.008 72);
+    --ain-border: oklch(0.34 0.008 72);
+    --ain-border-strong: oklch(0.46 0.010 72);
+    --ain-text: oklch(0.93 0.008 85);
+    --ain-text-dim: oklch(0.70 0.010 85);
+    --ain-text-faint: oklch(0.55 0.010 82);
+    --ain-accent: oklch(0.66 0.155 34);
+    --ain-accent-2: oklch(0.72 0.095 66);
+    --ain-jade: oklch(0.72 0.085 165);
+    --ain-danger: oklch(0.62 0.150 25);
+    --ain-shadow: oklch(0.12 0.010 60);
+    --ain-mark-ring: oklch(0.97 0.005 290);
+  }
+}
+
+/* ============================================================= base reset === */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body.sb-backend {
+  margin: 0;
+  background: var(--ain-bg);
+  color: var(--ain-text);
+  font-family: var(--ain-font);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sb-backend a { color: var(--ain-jade); text-decoration: none; }
+.sb-backend a:hover { text-decoration: underline; }
+
+.sb-backend h1, .sb-backend h2, .sb-backend h3,
+.sb-backend h4, .sb-backend h5 {
+  font-family: var(--ain-font-display);
+  font-weight: 600;
+  color: var(--ain-text);
+  line-height: 1.2;
+  margin: 0 0 0.5em;
+}
+.sb-backend h1 { font-size: 1.9rem; letter-spacing: -0.01em; }
+.sb-backend h2 { font-size: 1.4rem; }
+.sb-backend h3 { font-size: 1.15rem; }
+
+.sb-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  padding: 0.5rem 0.875rem;
+  background: var(--ain-text);
+  color: var(--ain-surface);
+  border-radius: 0 0 var(--ain-radius) 0;
+}
+.sb-skip-link:focus { left: 0; }
+
+/* ================================================================== shell === */
+
+.sb-shell {
+  display: flex;
+  min-height: 100vh;
+  align-items: stretch;
+}
+
+/* The painted column stretches the full document height (align-self:
+   stretch); the sticky viewport-pinned part is the inner wrapper — so the
+   paper never ends mid-page on long forms. */
+.sb-sidebar {
+  flex: 0 0 var(--ain-sidebar-w);
+  width: var(--ain-sidebar-w);
+  align-self: stretch;
+  background: var(--ain-surface);
+  border-right: 1px solid var(--ain-border);
+}
+.sb-sidebar__inner {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 0.75rem;
+  overflow-y: auto;
+}
+
+/* --- brand lockup: mark + wordmark, links back to the console --- */
+.sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.375rem 0.5rem 0.875rem;
+  color: var(--ain-text) !important;
+  border-bottom: 1px solid var(--ain-border);
+  margin-bottom: 0.5rem;
+}
+.sb-brand:hover { text-decoration: none; }
+.sb-brand__mark { display: inline-flex; width: 30px; height: 30px; }
+.sb-brand__mark svg { width: 100%; height: 100%; display: block; }
+.sb-brand__label {
+  font-family: var(--ain-font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* --- console switch-back: leave the backend, return to the chat console.
+   A quiet text link, not a raised pill — navigation is links (Law 07), and the
+   pigment is spent on the primary + active state, never on a back arrow
+   (Law 01). The bordered-pill + cinnabar-icon treatment is retired. --- */
+.sb-console {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  margin-bottom: 0.5rem;
+  border-radius: var(--ain-radius);
+  color: var(--ain-text-dim) !important;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.sb-console:hover {
+  background: var(--ain-surface-2);
+  color: var(--ain-text) !important;
+  text-decoration: none;
+}
+.sb-console__icon { display: inline-flex; flex: 0 0 auto; color: currentColor; }
+.sb-console__icon svg { width: 16px; height: 16px; display: block; }
+
+/* --- section nav --- */
+.sb-nav { display: flex; flex-direction: column; gap: 2px; }
+.sb-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--ain-radius);
+  color: var(--ain-text-dim) !important;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.sb-nav__link:hover {
+  background: var(--ain-surface-2);
+  color: var(--ain-text) !important;
+  text-decoration: none;
+}
+/* Active = the accent TINT, the same selection grammar as the console thread
+   list (chat-ui: .ain-tli[data-active]) — a flat cinnabar wash + bold label,
+   never a surface fill-box with an inset bar (that rounded-bracket treatment
+   is the retired pre-Atelier idiom). */
+.sb-nav__link.is-active {
+  background: color-mix(in oklch, var(--ain-accent) 10%, transparent);
+  color: var(--ain-text) !important;
+  font-weight: 600;
+}
+.sb-nav__link.is-active .sb-nav__icon { color: var(--ain-accent); }
+.sb-nav__icon { display: inline-flex; flex: 0 0 auto; }
+.sb-nav__icon svg { width: 18px; height: 18px; display: block; }
+
+/* --- account footer --- */
+.sb-account {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ain-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+.sb-account__name {
+  font-weight: 600;
+  color: var(--ain-text) !important;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--ain-radius);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb-account__name:hover { background: var(--ain-surface-2); text-decoration: none; }
+.sb-account__logout {
+  font-size: 0.8125rem;
+  color: var(--ain-text-faint) !important;
+  padding: 0.125rem 0.5rem;
+}
+
+/* ================================================================== main === */
+
+.sb-main { flex: 1 1 auto; min-width: 0; }
+.sb-messages,
+.sb-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-inline: 2.5rem;
+}
+.sb-messages { padding-top: 1.5rem; }
+.sb-content { padding-block: 1.5rem 4rem; }
+
+/* ============================== /admin landing (aincient-studio-landing) === */
+/* Link-cards, not buttons (Law 07). Ink on paper throughout; the console
+   card's icon is the screen's single cinnabar appearance. */
+
+.sb-landing__intro {
+  font-family: var(--ain-font-display);
+  font-size: 1.05rem;
+  color: var(--ain-text-dim);
+  max-width: 40rem;
+  margin: 0 0 1.75rem;
+}
+.sb-landing__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.sb-landing__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 1.125rem 1.25rem 1.25rem;
+  background: var(--ain-surface);
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+  color: var(--ain-text) !important;
+  transition: border-color 0.12s, box-shadow 0.12s, transform 0.08s;
+}
+.sb-landing__card:hover {
+  text-decoration: none;
+  border-color: var(--ain-border-strong);
+  box-shadow: 0 4px 14px -8px var(--ain-shadow);
+}
+.sb-landing__card:focus-visible {
+  outline: 3px solid color-mix(in oklch, var(--ain-accent) 30%, transparent);
+  outline-offset: 1px;
+}
+.sb-landing__icon { display: inline-flex; color: var(--ain-text-dim); margin-bottom: 0.25rem; }
+.sb-landing__icon svg { width: 22px; height: 22px; display: block; }
+.sb-landing__icon--console { color: var(--ain-accent); }
+.sb-landing__label { font-weight: 600; font-size: 1rem; }
+.sb-landing__desc { font-size: 0.8425rem; line-height: 1.45; color: var(--ain-text-dim); }
+
+/* ====================================== profile hero (/user/N — People) ==== */
+/* Built in aincient_core_preprocess_user() and template
+   aincient-profile-hero.html.twig. Plain paper with a hairline — at this size
+   the mark alone carries the brand (Law 03); the spectrum stripe is retired
+   with the pre-Atelier treatment. State is a whisper chip (Law 02). */
+
+.ain-profile-hero {
+  margin-block-end: 1.5rem;
+  background: var(--ain-surface);
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+  overflow: hidden;
+}
+.ain-profile-hero__body { display: flex; align-items: center; gap: 1.25rem; padding: 1.5rem; }
+.ain-profile-hero__avatar {
+  flex: 0 0 auto;
+  width: 4.5rem; height: 4.5rem;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--ain-font-display);
+  font-size: 1.75rem; font-weight: 600; line-height: 1; letter-spacing: 0.02em;
+  color: var(--ain-text-dim);
+  border: 1px solid var(--ain-border);
+  background: var(--ain-surface-2);
+}
+.ain-profile-hero__avatar--photo { object-fit: cover; }
+.ain-profile-hero__meta { min-width: 0; flex: 1 1 auto; }
+.ain-profile-hero__nameline { display: flex; align-items: center; flex-wrap: wrap; gap: 0.625rem; }
+.ain-profile-hero__name { font-family: var(--ain-font-display); font-size: 1.5rem; font-weight: 700; line-height: 1.2; color: var(--ain-text); }
+/* State is a whisper — mono tint chip, never a fill. */
+.ain-profile-hero__status {
+  font-family: var(--ain-mono);
+  font-size: 11px; font-weight: 600; line-height: 1;
+  padding: 4px 7px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.ain-profile-hero__status--active {
+  color: var(--ain-jade);
+  background: color-mix(in oklch, var(--ain-jade) 10%, transparent);
+}
+.ain-profile-hero__status--blocked {
+  color: var(--ain-danger);
+  background: color-mix(in oklch, var(--ain-danger) 12%, transparent);
+}
+.ain-profile-hero__handle { margin-block-start: 0.25rem; font-size: 0.875rem; color: var(--ain-text-dim); }
+.ain-profile-hero__roles { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-block-start: 0.75rem; }
+/* A role is a category, not a state — brand-neutral surface fill. */
+.ain-profile-hero__role { font-size: 0.75rem; font-weight: 600; line-height: 1; padding: 0.3125rem 0.5rem; border-radius: 4px; background: var(--ain-surface-2); color: var(--ain-text); }
+.ain-profile-hero__facts { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; margin: 1rem 0 0; }
+.ain-profile-hero__fact { margin: 0; }
+.ain-profile-hero__fact dt { font-family: var(--ain-mono); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ain-text-dim); }
+.ain-profile-hero__fact dd { margin: 0.1875rem 0 0; font-size: 0.9375rem; color: var(--ain-text); }
+.ain-profile-hero__fact a { color: var(--ain-jade); }
+
+/* ============================================================= responsive === */
+@media (max-width: 800px) {
+  .sb-shell { flex-direction: column; }
+  .sb-sidebar {
+    flex-basis: auto; width: 100%;
+    border-right: none; border-bottom: 1px solid var(--ain-border);
+  }
+  .sb-sidebar__inner {
+    position: static; height: auto;
+    flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+  }
+  .sb-brand { border-bottom: none; margin: 0 auto 0 0; padding-bottom: 0.375rem; }
+  .sb-console { margin-bottom: 0; }
+  .sb-nav { flex-direction: row; flex-wrap: wrap; }
+  .sb-account { margin: 0 0 0 auto; flex-direction: row; align-items: center; gap: 0.75rem; padding-top: 0; border-top: none; }
+  .sb-messages, .sb-content { padding-inline: 1.25rem; }
+}

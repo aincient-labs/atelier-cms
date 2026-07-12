@@ -1,0 +1,23 @@
+# ── Checks studio API (chat console) ─────────────────────────────────────────
+# The audit parallel of the page/brand studio API. UNLIKE those, there is no
+# preview and no save: the Checks studio is a READ-ONLY surface. The agent's
+# run_page_audit capability and this endpoint both call AuditEngine, so the chat
+# narration and the panel always show the same findings.
+
+# Run the read-only audit for an existing page → a JSON findings report. The
+# studio panel fetches/refreshes this directly (no chat needed).
+aincient_audit.report:
+  path: '/aincient/audit/{node}/report'
+  defaults:
+    _controller: '\Drupal\aincient_audit\Controller\AuditController::report'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio checks'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these (a 301 would drop the call).
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      node:
+        type: 'entity:node'

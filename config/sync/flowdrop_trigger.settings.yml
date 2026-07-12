@@ -1,0 +1,4 @@
+_core:
+  default_config_hash: P_belfSDYHUQt-5U_8--bkmMsFGoRHi71AM3eTiWXGk
+default_orchestrator: 'flowdrop_runtime:asynchronous'
+log_level: info

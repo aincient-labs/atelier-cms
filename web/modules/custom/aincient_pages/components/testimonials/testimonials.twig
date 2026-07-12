@@ -1,0 +1,34 @@
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('default')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
+{% set cols = columns|default(3) == 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3' %}
+
+<section class="{{ tone_class }}">
+  <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
+    {% if eyebrow or heading or subheading %}
+      <div class="mb-12 max-w-2xl">
+        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? 'opacity-90' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
+        {% if heading %}<h2 class="mt-3 font-display text-3xl sm:text-4xl [font-weight:var(--heading-weight)] tracking-tight">{{ heading }}</h2>{% endif %}
+        {% if subheading %}<p class="mt-4 text-lg opacity-70">{{ subheading|inline_md }}</p>{% endif %}
+      </div>
+    {% endif %}
+    <div class="grid gap-6 {{ cols }}">
+      {% for t in quotes %}
+        <figure class="flex flex-col rounded-[var(--card-radius)] border border-[color:var(--card-border)] {{ on_dark ? 'bg-background/5' : 'bg-card text-card-foreground' }} p-7 shadow-[var(--card-shadow)]">
+          <blockquote class="flex-1 text-base leading-relaxed">&ldquo;{{ t.quote|inline_md }}&rdquo;</blockquote>
+          <figcaption class="mt-5 flex items-center gap-3">
+            {% if t.avatar %}<img src="{{ t.avatar }}" alt="{{ t.author }}" class="h-10 w-10 rounded-full object-cover">{% endif %}
+            <div>
+              <div class="text-sm font-semibold">{{ t.author }}</div>
+              {% if t.role %}<div class="text-xs opacity-60">{{ t.role }}</div>{% endif %}
+            </div>
+          </figcaption>
+        </figure>
+      {% endfor %}
+    </div>
+  </div>
+</section>

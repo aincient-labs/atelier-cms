@@ -1,0 +1,50 @@
+uuid: 5ee81bad-a0d6-4785-b4fd-5c5c0891c46a
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_ai_provider
+_core:
+  default_config_hash: 4UQ8RidG4YR6dWk6yoYTckFno4U_4dCCWpzEKpZhUK0
+id: flowdrop_ai_provider_embeddings
+label: Embeddings
+description: 'Generate vector embeddings from text using AI models'
+category: ai
+icon: 'mdi:vector-polyline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  model:
+    configurable: true
+    connectable: false
+    required: false
+    default: ''
+  text:
+    configurable: false
+    connectable: true
+    required: true
+  texts:
+    configurable: false
+    connectable: true
+    required: false
+    default: {  }
+outputs:
+  embeddings:
+    exposed: true
+  model:
+    exposed: false
+  provider:
+    exposed: false
+tags:
+  - model
+  - ai
+  - embeddings
+  - vectors
+  - rag
+executor_plugin: 'flowdrop_ai_provider:embeddings'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

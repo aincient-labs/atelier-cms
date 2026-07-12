@@ -1,0 +1,149 @@
+services:
+  # The editorial-workflow seam over core content_moderation (forward revisions,
+  # state + legal transitions, the optimistic-concurrency head check). Shared by
+  # the page and block stores so moderation lives in one place.
+  aincient_pages.moderation:
+    class: Drupal\aincient_pages\NodeModeration
+    arguments: ['@content_moderation.moderation_information', '@content_moderation.state_transition_validation', '@entity_type.manager', '@current_user']
+  # The single-writer editor lock (one live editor per node+language) — the
+  # concurrency control content_moderation lacks. DB-backed fencing token; every
+  # studio DB write is gated on it in PageController. See EditLock.
+  aincient_pages.edit_lock:
+    class: Drupal\aincient_pages\EditLock
+    arguments: ['@database', '@current_user', '@entity_type.manager', '@datetime.time']
+  aincient_pages.store:
+    class: Drupal\aincient_pages\PageStore
+    arguments: ['@entity_type.manager', '@current_user', '@uuid', '@language_manager', '@config.factory', '@aincient_pages.moderation']
+  aincient_pages.block_store:
+    class: Drupal\aincient_pages\BlockStore
+    arguments: ['@entity_type.manager', '@current_user', '@language_manager', '@aincient_pages.store', '@aincient_pages.moderation']
+  aincient_pages.route_subscriber:
+    class: Drupal\aincient_pages\Routing\PageRouteSubscriber
+    tags:
+      - { name: event_subscriber }
+  # Self-hosts the site's chosen brand web fonts (the privacy-first delivery
+  # option) — fetches Google's subset woff2 to our origin so the public pages
+  # need no third-party request and no consent banner for fonts.
+  aincient_pages.brand_font_vendor:
+    class: Drupal\aincient_pages\BrandFontVendor
+    arguments: ['@http_client', '@file_system', '@file_url_generator', '@logger.channel.aincient_pages']
+  # Foundations: the design-token layer (abstract visual language).
+  aincient_pages.brand:
+    class: Drupal\aincient_pages\BrandRepository
+    arguments: ['@config.factory', '@aincient_pages.design_tokens', '@aincient_pages.brand_font_vendor']
+  # Brand identity (a Globals item): name/tagline/voice/logo/footer note.
+  aincient_pages.site_identity:
+    class: Drupal\aincient_pages\SiteIdentity
+    arguments: ['@config.factory', '@file_url_generator', '@aincient_pages.embed_resolver']
+  aincient_pages.embed_resolver:
+    class: Drupal\aincient_pages\EntityEmbedResolver
+    # rift view-modes manager is OPTIONAL (@?) — null when rift is uninstalled,
+    # in which case picture() no-ops and the renderer falls back to a plain <img>.
+    arguments: ['@entity_type.manager', '@file_url_generator', '@entity.repository', '@?plugin.manager.rift_picture_view_modes', '@config.factory']
+  aincient_pages.media:
+    class: Drupal\aincient_pages\MediaRepository
+    arguments: ['@entity_type.manager', '@aincient_pages.embed_resolver', '@file_system', '@token', '@file_url_generator']
+  # The unified reference layer: a catalog over tagged per-type providers. One
+  # SEARCH + one DESCRIBE for media / nodes / blocks (Users/Brand drop in as new
+  # tagged providers). Backs the studio's ReferenceField and the agent find tool.
+  aincient_pages.reference_catalog:
+    class: Drupal\aincient_pages\Reference\ReferenceCatalog
+    arguments: ['@aincient_pages.embed_resolver', !tagged_iterator aincient_pages.reference_provider]
+  aincient_pages.reference.media:
+    class: Drupal\aincient_pages\Reference\MediaReferenceProvider
+    arguments: ['@aincient_pages.media', '@entity_type.manager']
+    tags:
+      - { name: aincient_pages.reference_provider }
+  aincient_pages.reference.node:
+    class: Drupal\aincient_pages\Reference\NodeReferenceProvider
+    arguments: ['@entity_type.manager', '@aincient_pages.embed_resolver']
+    tags:
+      - { name: aincient_pages.reference_provider }
+  aincient_pages.reference.block:
+    class: Drupal\aincient_pages\Reference\BlockReferenceProvider
+    arguments: ['@aincient_pages.block_store', '@entity_type.manager']
+    tags:
+      - { name: aincient_pages.reference_provider }
+  aincient_pages.reference.user:
+    class: Drupal\aincient_pages\Reference\UserReferenceProvider
+    arguments: ['@entity_type.manager', '@file_url_generator']
+    tags:
+      - { name: aincient_pages.reference_provider }
+  # Discovery-only: brand revisions are searchable/previewable but NOT
+  # page-embeddable (no view builder / canonical URL).
+  aincient_pages.reference.brand_revision:
+    class: Drupal\aincient_pages\Reference\BrandRevisionReferenceProvider
+    arguments: ['@entity_type.manager', '@date.formatter']
+    tags:
+      - { name: aincient_pages.reference_provider }
+  # Chrome layout (header/footer arrangement) — variant settings the chrome
+  # SDCs read; distinct from identity (name/logo) and nav (core menus).
+  aincient_pages.chrome_repository:
+    class: Drupal\aincient_pages\ChromeRepository
+    arguments: ['@config.factory']
+  # The editable links of the chrome menus (main/footer) — read + reconcile for
+  # the studios' inline menu editor (writes menu_link_content).
+  aincient_pages.menu_repository:
+    class: Drupal\aincient_pages\MenuRepository
+    arguments: ['@entity_type.manager']
+  aincient_pages.chrome:
+    class: Drupal\aincient_pages\SiteChrome
+    arguments: ['@menu.link_tree', '@aincient_pages.brand', '@aincient_pages.site_identity', '@aincient_pages.chrome_repository']
+  # Markdown -> sanitised HTML for the `markdown` placeable section (CommonMark
+  # + Xss::filterAdmin). A plain library wrapper — no Drupal deps to inject.
+  aincient_pages.markdown:
+    class: Drupal\aincient_pages\MarkdownRenderer
+  # The `inline_md` Twig filter: inline-Markdown (links/bold/italic/code) → safe
+  # HTML, for the long-form text props rendered in the section SDCs.
+  aincient_pages.twig.inline_markdown:
+    class: Drupal\aincient_pages\Twig\InlineMarkdownExtension
+    arguments: ['@aincient_pages.markdown']
+    tags:
+      - { name: twig.extension }
+  # The `component_catalog()` Twig function: inlines the live page-composition
+  # palette into the page agent's system prompt (Prompt Template node), the seam
+  # that used to live inside the retired aincient_flows:reason node.
+  aincient_pages.twig.component_catalog:
+    class: Drupal\aincient_pages\Twig\ComponentCatalogExtension
+    tags:
+      - { name: twig.extension }
+  aincient_pages.design_tokens:
+    class: Drupal\aincient_pages\DesignTokens
+    arguments: ['@extension.list.module']
+  aincient_pages.color_contrast:
+    class: Drupal\aincient_pages\ColorContrast
+    arguments: ['@aincient_pages.design_tokens']
+  # GDPR consent model for the public site (categories + whether the banner is
+  # needed, given the brand's font-delivery mode).
+  aincient_pages.consent:
+    class: Drupal\aincient_pages\ConsentSettings
+    arguments: ['@aincient_pages.brand']
+  aincient_pages.font_pairings:
+    class: Drupal\aincient_pages\FontPairings
+  aincient_pages.preset_catalog:
+    class: Drupal\aincient_pages\PresetCatalog
+    arguments: ['@aincient_pages.font_pairings']
+  # Shared brand-preview applier: turns a preview_brand-shaped slice
+  # (presets/tokens/fonts/reset) into the validated, contrast-checked
+  # brand_preview widget envelope. One implementation for the legacy
+  # PreviewBrand tool, the deterministic merge node, and the live slice
+  # streamer.
+  aincient_pages.preview_applier:
+    class: Drupal\aincient_pages\BrandPreviewApplier
+    arguments: ['@aincient_pages.design_tokens', '@aincient_pages.color_contrast', '@aincient_pages.brand', '@aincient_pages.preset_catalog']
+  # Shared chrome-preview applier: turns a preview_chrome-shaped slice
+  # (identity/layout/reset) into the validated chrome_preview widget envelope
+  # the Globals studio applies. The chrome parallel of the brand applier.
+  aincient_pages.chrome_preview_applier:
+    class: Drupal\aincient_pages\ChromePreviewApplier
+  aincient_pages.brand_revisioner:
+    class: Drupal\aincient_pages\BrandRevisioner
+    arguments: ['@entity_type.manager', '@config.factory', '@current_user']
+  aincient_pages.brand_config_subscriber:
+    class: Drupal\aincient_pages\EventSubscriber\BrandConfigSubscriber
+    arguments: ['@aincient_pages.brand_revisioner', '@database', '@logger.channel.aincient_pages', '@aincient_pages.brand_font_vendor']
+    tags:
+      - { name: event_subscriber }
+  logger.channel.aincient_pages:
+    parent: logger.channel_base
+    arguments: ['aincient_pages']

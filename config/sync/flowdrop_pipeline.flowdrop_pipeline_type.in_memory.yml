@@ -1,0 +1,18 @@
+uuid: c19611e0-9ee7-4f24-bde5-80ea3a8387e9
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - flowdrop_runtime
+_core:
+  default_config_hash: 9fWEn4LJZYYpKulpLrE_rA6YHUVdhVHsFl2dwmFZ2v0
+id: in_memory
+label: In-Memory
+description: 'Synchronous in-memory execution. No DB persistence.'
+default_max_concurrent_jobs: 1
+default_job_priority_strategy: dependency_order
+default_retry_strategy: individual
+execution_timeout: 300
+memory_limit: 256
+allowed_workflow_types: {  }

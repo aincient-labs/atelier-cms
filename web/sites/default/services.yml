@@ -1,0 +1,10 @@
+# AIncient distribution service overrides (committed; loaded in every environment
+# via settings.php and docker/settings.appliance.php).
+#
+# Ship hardened: the super-user (uid 1) no longer bypasses the permission system.
+# Access is governed purely by roles/permissions — uid 1 gets full access only
+# through the `administrator` role (is_admin: true), which core's installer assigns
+# to user 1 at install time (SiteConfigureForm). Local DDEV re-enables the legacy
+# bypass for developer convenience via services.dev.yml (see settings.php).
+parameters:
+  security.enable_super_user: false

@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * @file
+ * Backend route denial — hook layer.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_local_tasks_alter().
+ *
+ * Belt and braces for the route denial: the People tabs (Permissions / Roles
+ * / Role settings) point at routes the RouteSubscriber forbids, but a cached
+ * or short-circuited per-link access check can still paint them — links that
+ * dry-fire a 403. Remove exactly those STATIC definitions.
+ *
+ * Deliberately NOT a generic "sweep every task whose route is denied": other
+ * modules' alters run after this one and re-create their derivative keys by
+ * assignment (e.g. field_ui writes $local_tasks[$id]['base_route'] = …),
+ * which would resurrect swept entries as corrupt route_name-less stubs.
+ */
+function aincient_deny_local_tasks_alter(array &$definitions): void {
+  unset(
+    $definitions['user.admin_permissions'],
+    $definitions['entity.user_role.collection'],
+    $definitions['user.role.settings'],
+  );
+}

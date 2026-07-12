@@ -1,0 +1,25 @@
+Tolerate an unset API key on a keyless boot.
+
+NanoBanana::__construct guards on the *config* value (`api_key`), which on the
+AIncient distribution is the Key ENTITY id (`nanobanana_default_key`) shipped in
+config/sync — so it is always truthy. On a fresh, keyless install the entity's
+backing Drupal State value is unset, so KeyInterface::getKeyValue() returns NULL,
+and assigning NULL to the typed `string $apiKey` property throws a TypeError at
+service construction. That takes down any request that merely enumerates the
+image provider (the onboarding wizard on first run, the Media studio) — e.g. the
+whole /aincient console 500s until an operator manually seeds the State key.
+
+Coalesce a missing key to '' so the client constructs cleanly and simply stays
+unconfigured until onboarding stores a real key (the sole key path on AIncient).
+
+--- a/src/NanoBanana.php
++++ b/src/NanoBanana.php
+@@ -46,7 +46,7 @@ class NanoBanana {
+     $this->client = $client;
+     $key = $configFactory->get(NanoBananaConfigForm::CONFIG_NAME)->get('api_key') ?? '';
+     if ($key) {
+-      $this->apiKey = $keyRepository->getKey($key)->getKeyValue();
++      $this->apiKey = $keyRepository->getKey($key)?->getKeyValue() ?? '';
+     }
+   }
+

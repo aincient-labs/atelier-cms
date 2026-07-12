@@ -1,0 +1,163 @@
+/**
+ * GDPR consent banner — PUBLIC site.
+ *
+ * Styled entirely from the END-USER's brand tokens (the same semantic CSS vars
+ * the rest of their site uses), so the banner reads as part of THEIR site, never
+ * AIncient's own brand. Falls back to sane neutrals if a token is unset. Built +
+ * shown by js/consent.js (DOM is created there so it works in both the themed
+ * render path and the raw-HTML page shell).
+ */
+
+.aincient-consent {
+  --acc-bg: var(--card, var(--background, #fff));
+  --acc-fg: var(--card-foreground, var(--foreground, #1a1916));
+  --acc-muted: var(--muted-foreground, #6b675f);
+  --acc-border: var(--border, rgba(26, 25, 22, 0.14));
+  --acc-primary: var(--primary, #8257e9);
+  --acc-on-primary: var(--primary-foreground, #fff);
+  /* The brand never emits a bare `--radius`; it ships a graded scale plus
+   * per-component radii. Track the component tokens so the banner follows the
+   * brand's radius dial (e.g. the Sharp-corners preset → square panel/buttons).
+   * Panel = overlay chrome → popover radius (fall back to card, then a neutral). */
+  --acc-radius: var(--popover-radius, var(--card-radius, 8px));
+  --acc-btn-radius: var(--button-radius, 8px);
+
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 2147483000; /* above site chrome, below nothing of ours */
+  font-family: inherit;
+  color: var(--acc-fg);
+}
+
+.aincient-consent[hidden] { display: none; }
+
+.aincient-consent__panel {
+  max-width: 64rem;
+  margin: 0 auto;
+  background: var(--acc-bg);
+  border: 1px solid var(--acc-border);
+  border-block-end: none;
+  border-start-start-radius: var(--acc-radius);
+  border-start-end-radius: var(--acc-radius);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.12);
+  padding: 1.1rem 1.25rem 1.2rem;
+}
+
+@media (min-width: 40rem) {
+  .aincient-consent__panel { padding: 1.25rem 1.75rem 1.4rem; }
+}
+
+.aincient-consent__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.01em;
+}
+
+.aincient-consent__text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--acc-muted);
+  margin: 0 0 0.9rem;
+  max-width: 52rem;
+}
+
+.aincient-consent__text a { color: var(--acc-primary); }
+
+.aincient-consent__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.aincient-consent__btn {
+  appearance: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.6rem 1.05rem;
+  border-radius: var(--acc-btn-radius);
+  border: 1px solid var(--acc-border);
+  background: transparent;
+  color: var(--acc-fg);
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+}
+
+.aincient-consent__btn:hover { background: color-mix(in oklab, var(--acc-fg) 6%, transparent); }
+.aincient-consent__btn:focus-visible { outline: 2px solid var(--acc-primary); outline-offset: 2px; }
+
+.aincient-consent__btn--primary {
+  background: var(--acc-primary);
+  color: var(--acc-on-primary);
+  border-color: var(--acc-primary);
+}
+.aincient-consent__btn--primary:hover {
+  background: color-mix(in oklab, var(--acc-primary) 88%, #000);
+}
+
+.aincient-consent__btn--ghost {
+  border-color: transparent;
+  color: var(--acc-muted);
+  padding-inline: 0.5rem;
+}
+.aincient-consent__btn--ghost:hover { background: transparent; color: var(--acc-fg); text-decoration: underline; }
+
+/* Preferences (category toggles) — hidden until "Customize". */
+.aincient-consent__prefs {
+  margin: 0.25rem 0 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.aincient-consent__prefs[hidden] { display: none; }
+
+.aincient-consent__cat {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem 0.85rem;
+  align-items: start;
+  padding: 0.65rem 0.1rem;
+  border-block-start: 1px solid var(--acc-border);
+}
+.aincient-consent__cat:first-child { border-block-start: none; }
+
+.aincient-consent__cat-toggle { margin-block-start: 0.15rem; }
+.aincient-consent__cat-toggle input { width: 1.1rem; height: 1.1rem; accent-color: var(--acc-primary); cursor: pointer; }
+.aincient-consent__cat-toggle input:disabled { cursor: not-allowed; opacity: 0.55; }
+
+.aincient-consent__cat-name { font-size: 0.9rem; font-weight: 600; }
+.aincient-consent__cat-name small { font-weight: 500; color: var(--acc-muted); margin-inline-start: 0.4rem; }
+.aincient-consent__cat-desc { grid-column: 2; font-size: 0.8125rem; line-height: 1.45; color: var(--acc-muted); margin: 0.15rem 0 0; }
+
+/* The persistent re-open affordance, shown after a choice is made. */
+.aincient-consent-reopen {
+  position: fixed;
+  inset-block-end: 1rem;
+  inset-inline-start: 1rem;
+  z-index: 2147482000;
+  appearance: none;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--button-radius, 8px);
+  border: 1px solid var(--border, rgba(26, 25, 22, 0.14));
+  background: var(--card, #fff);
+  color: var(--muted-foreground, #6b675f);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.12s ease;
+}
+.aincient-consent-reopen:hover { opacity: 1; }
+.aincient-consent-reopen[hidden] { display: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .aincient-consent__panel { animation: aincient-consent-in 0.2s ease-out; }
+  @keyframes aincient-consent-in {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}

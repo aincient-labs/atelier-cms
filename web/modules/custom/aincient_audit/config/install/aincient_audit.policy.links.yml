@@ -1,0 +1,20 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_workflow.flowdrop_workflow.aincient_policy_links
+  enforced:
+    module:
+      - aincient_audit
+id: links
+label: 'Internal links'
+weight: -10
+workflow: aincient_policy_links
+kind: deterministic
+enforcement: advisory
+selector:
+  bundles:
+    - aincient_page
+  moderation_states: {  }
+  langcodes: {  }
+parameters: {  }

@@ -1,0 +1,202 @@
+<?php
+
+/**
+ * @file
+ * Core glue for the AIncient distribution.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Access\AccessResultInterface;
+use Drupal\file\FileInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_theme().
+ *
+ * Registers the profile hero — the branded header card that fronts the user
+ * canonical page (see aincient_core_preprocess_user()).
+ */
+function aincient_core_theme(): array {
+  return [
+    'aincient_profile_hero' => [
+      'variables' => [
+        'display_name' => '',
+        'initials' => '',
+        'picture_url' => NULL,
+        'account_name' => '',
+        'is_active' => TRUE,
+        'roles' => [],
+        'member_since' => '',
+        'member_for' => '',
+        'email' => NULL,
+      ],
+    ],
+    // The curated /admin landing (StudioLandingController) — link-cards for
+    // the StudioSections registry + the way back to the console.
+    'aincient_studio_landing' => [
+      'variables' => [
+        'sections' => [],
+        'console_url' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ *
+ * /admin is the curated Studio landing (StudioLandingController) — core's
+ * "Tasks" / "Index" tabs belong to the retired overview sitemap and would
+ * dry-fire against aincient_deny (Law 12: no silent controls).
+ */
+function aincient_core_menu_local_tasks_alter(array &$data, string $route_name, \Drupal\Core\Cache\RefinableCacheableDependencyInterface $cacheability): void {
+  if ($route_name === 'system.admin') {
+    $data['tabs'] = [];
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for user.
+ *
+ * Core's user canonical page (/user/N) renders as a near-empty stub — just a
+ * bare "Member for 34 minutes" line — which reads as unfinished next to the
+ * branded console around it. Prepend a proper profile hero: an initials
+ * avatar, the display name, an active/blocked whisper chip, role labels, and
+ * the join date. Scoped to the Studio Backend theme so the front-end is
+ * untouched; the folded-in "Member for" and picture then let us drop core's
+ * redundant stubs.
+ *
+ * @see aincient_studio_backend/css/studio-backend.css
+ */
+function aincient_core_preprocess_user(array &$variables): void {
+  if (\Drupal::theme()->getActiveTheme()->getName() !== 'aincient_studio_backend') {
+    return;
+  }
+  $account = $variables['user'] ?? NULL;
+  if (!$account instanceof UserInterface) {
+    return;
+  }
+
+  // Fold core's plain "Member for" stub into the hero (avoids a duplicate),
+  // and drop the default-rendered picture — the hero's avatar already shows it.
+  unset($variables['content']['member_for'], $variables['content']['user_picture']);
+
+  $display_name = (string) $account->getDisplayName();
+  $created = $account->getCreatedTime();
+  $date_formatter = \Drupal::service('date.formatter');
+
+  // Two-letter monogram from the display name (or one, if it's a single word).
+  $words = preg_split('/\s+/', trim($display_name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+  if (count($words) >= 2) {
+    $initials = mb_substr($words[0], 0, 1) . mb_substr($words[count($words) - 1], 0, 1);
+  }
+  else {
+    $initials = mb_substr($display_name, 0, 2);
+  }
+
+  // Non-locked role labels (skips anonymous/authenticated) as display chips.
+  $role_labels = [];
+  if ($role_ids = $account->getRoles(TRUE)) {
+    $roles = \Drupal::entityTypeManager()->getStorage('user_role')->loadMultiple($role_ids);
+    foreach ($roles as $role) {
+      $role_labels[] = $role->label();
+    }
+  }
+
+  // Real avatar when one is uploaded; otherwise the template falls back to the
+  // gradient initials chip.
+  $picture_url = NULL;
+  if ($account->hasField('user_picture') && !$account->get('user_picture')->isEmpty()) {
+    $file = $account->get('user_picture')->entity;
+    if ($file instanceof FileInterface) {
+      $uri = $file->getFileUri();
+      $style = \Drupal::entityTypeManager()->getStorage('image_style')->load('medium');
+      $picture_url = $style
+        ? $style->buildUrl($uri)
+        : \Drupal::service('file_url_generator')->generateAbsoluteString($uri);
+    }
+  }
+
+  // Email only where the viewer may see it (own profile or user admins).
+  $current_user = \Drupal::currentUser();
+  $email = NULL;
+  if ((int) $current_user->id() === (int) $account->id() || $current_user->hasPermission('administer users')) {
+    $email = $account->getEmail();
+  }
+
+  $variables['content']['aincient_profile_hero'] = [
+    '#theme' => 'aincient_profile_hero',
+    '#display_name' => $display_name,
+    '#initials' => mb_strtoupper($initials),
+    '#picture_url' => $picture_url,
+    '#account_name' => $account->getAccountName(),
+    '#is_active' => $account->isActive(),
+    '#roles' => $role_labels,
+    '#member_since' => $created ? $date_formatter->format($created, 'custom', 'F j, Y') : '',
+    '#member_for' => $created ? $date_formatter->formatTimeDiffSince($created) : '',
+    '#email' => $email,
+    '#weight' => -100,
+  ];
+}
+
+/**
+ * Implements hook_library_info_alter().
+ *
+ * Binds two AIncient brand layers to the contrib libraries they re-skin, so
+ * each rides along wherever its target renders — and only there:
+ *
+ * - FlowDrop editor / playground: a fullscreen takeover page outside the
+ *   Studio Backend theme's reach. Bind `flowdrop_brand` to the FlowDrop
+ *   Svelte bundle so it loads wherever the editor UI does, remapping
+ *   FlowDrop's `--fd-*` tokens to the app-tier palette.
+ * - AI Metering dashboard: its bespoke `.ai-dashboard__*` widgets + Chart.js
+ *   canvases ship Bootstrap colours no theme CSS can reach. Bind
+ *   `ai_metering_brand` to the dashboard library so it loads on exactly the
+ *   metering report pages.
+ *
+ * It also repairs a contrib gap: the dashboard's "Save monthly budget" control
+ * posts via HTMX (`hx-post`), but `ai_metering_dashboard` never depends on the
+ * module's own `ai_metering_htmx` library — so `window.htmx` is absent and the
+ * button is inert. Add the dependency so the one enforcing control we keep
+ * (see the dashboard template override in aincient_studio_backend) actually
+ * works.
+ *
+ * @see aincient_core/css/flowdrop-brand.css
+ * @see aincient_core/css/ai-metering-brand.css
+ */
+function aincient_core_library_info_alter(array &$libraries, string $extension): void {
+  if ($extension === 'flowdrop_ui_components' && isset($libraries['flowdrop'])) {
+    $libraries['flowdrop']['dependencies'][] = 'aincient_core/flowdrop_brand';
+  }
+  if ($extension === 'ai_metering' && isset($libraries['ai_metering_dashboard'])) {
+    $libraries['ai_metering_dashboard']['dependencies'][] = 'aincient_core/ai_metering_brand';
+    $libraries['ai_metering_dashboard']['dependencies'][] = 'ai_metering/ai_metering_htmx';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for top_bar_page_actions.
+ *
+ * Core's top-bar-page-actions template shows the "More actions" (⋮) dropdown
+ * trigger whenever the `page_actions` array is non-empty — a raw count that
+ * ignores each action's `#access`. When the only remaining action is one the
+ * current user can't reach (e.g. Layout Builder's "Layout" tab on the user
+ * canonical route), the trigger renders but the flyout is empty. Drop
+ * access-denied actions here so the template's emptiness check suppresses the
+ * trigger when nothing is actually clickable.
+ *
+ * @see \Drupal\navigation\Plugin\TopBarItem\PageActions::build()
+ */
+function aincient_core_preprocess_top_bar_page_actions(array &$variables): void {
+  if (empty($variables['page_actions'])) {
+    return;
+  }
+  $variables['page_actions'] = array_filter(
+    $variables['page_actions'],
+    static function (array $action): bool {
+      $access = $action['#access'] ?? TRUE;
+      return $access instanceof AccessResultInterface ? $access->isAllowed() : $access !== FALSE;
+    },
+  );
+}

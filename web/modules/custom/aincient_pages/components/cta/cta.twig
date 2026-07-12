@@ -1,0 +1,20 @@
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('brand')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
+{% set btn = on_dark ? 'bg-background text-foreground hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90' %}
+
+<section class="{{ tone_class }}">
+  <div class="mx-auto max-w-5xl px-6 py-20 text-center">
+    <h2 class="font-display text-3xl sm:text-4xl [font-weight:var(--cta-heading-weight)] tracking-[var(--cta-heading-tracking)]">{{ heading }}</h2>
+    {% if subheading %}<p class="mt-4 text-lg opacity-80 max-w-2xl mx-auto">{{ subheading|inline_md }}</p>{% endif %}
+    {% if cta_label %}
+      <div class="mt-8">
+        <a href="{{ cta_url|default('#') }}" class="inline-flex items-center rounded-[var(--button-radius)] px-8 py-4 text-sm [font-weight:var(--button-weight)] shadow-[var(--button-shadow)] border-solid border-[length:var(--button-border-width)] border-[color:var(--button-border)] transition {{ btn }}">{{ cta_label }}</a>
+      </div>
+    {% endif %}
+  </div>
+</section>

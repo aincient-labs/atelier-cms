@@ -1,0 +1,19 @@
+uuid: 58654db1-a195-4225-9922-f8747e63bd96
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.field_page_structure
+    - media.type.block
+id: media.block.field_page_structure
+field_name: field_page_structure
+entity_type: media
+bundle: block
+label: 'Block structure'
+description: 'The language-neutral layout (section list + component/prop shape) produced by PageStore. Shared across translations; a block owns its structure (symmetric translations inherit it).'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

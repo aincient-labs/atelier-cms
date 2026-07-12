@@ -1,0 +1,15 @@
+uuid: 75acab79-70d1-4b52-b877-715d2a6b2565
+langcode: en
+status: true
+dependencies: {  }
+name: 320w
+label: 320w
+effects:
+  4998fd46-5fdb-464e-ac14-7a51cc5fb71e:
+    uuid: 4998fd46-5fdb-464e-ac14-7a51cc5fb71e
+    id: image_scale
+    weight: 1
+    data:
+      width: 320
+      height: null
+      upscale: false

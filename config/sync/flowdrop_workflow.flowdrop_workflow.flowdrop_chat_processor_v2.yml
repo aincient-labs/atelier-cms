@@ -1,0 +1,626 @@
+uuid: c3d4e5f6-a7b8-9012-cdef-123456789013
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.conversation_buffer
+    - flowdrop_node_type.flowdrop_node_type.data_mapper
+    - flowdrop_node_type.flowdrop_node_type.data_shaper
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_chat
+    - flowdrop_node_type.flowdrop_node_type.get_node_types
+    - flowdrop_node_type.flowdrop_node_type.memory_read
+    - flowdrop_node_type.flowdrop_node_type.prompt_template
+    - flowdrop_node_type.flowdrop_node_type.text_input
+    - flowdrop_node_type.flowdrop_node_type.text_output
+_core:
+  default_config_hash: Sr_9BNcuuBI714O4Uv5j5mCS7OFad-TPPEC-fhPJ_a0
+id: flowdrop_chat_processor_v2
+label: 'FlowDrop Chat Processor V2'
+description: 'Concept workflow: replaces BuildSystemPrompt with a DataMapper → DataShaper → PromptTemplate pipeline. DataShaper sanitises/filters message, workflow state, and node types before PromptTemplate renders the system prompt via Twig.'
+nodes:
+  -
+    id: text_input.1
+    position:
+      x: -800
+      'y': 0
+    data:
+      label: Message
+      config:
+        defaultValue: ''
+        nodeType: simple
+      metadata:
+        node_type_id: text_input
+    measured:
+      width: 290
+      height: 105
+  -
+    id: text_input.2
+    position:
+      x: -800
+      'y': 150
+    data:
+      label: 'Workflow State'
+      config:
+        defaultValue: ''
+        nodeType: simple
+      metadata:
+        node_type_id: text_input
+    measured:
+      width: 290
+      height: 105
+  -
+    id: text_input.3
+    position:
+      x: -800
+      'y': 300
+    data:
+      label: 'Conversation Key'
+      config:
+        defaultValue: ''
+        nodeType: simple
+      metadata:
+        node_type_id: text_input
+    measured:
+      width: 290
+      height: 105
+  -
+    id: get_node_types.1
+    position:
+      x: -500
+      'y': 300
+    data:
+      label: 'Get Node Types'
+      config: {  }
+      metadata:
+        node_type_id: get_node_types
+    measured:
+      width: 290
+      height: 105
+  -
+    id: data_mapper.1
+    position:
+      x: -200
+      'y': 100
+    data:
+      label: 'Merge Inputs'
+      config:
+        engine: expression_language
+        dynamicInputs:
+          -
+            name: message
+            label: Message
+            description: 'The raw user message.'
+            dataType: string
+            required: false
+          -
+            name: workflow_state
+            label: 'Workflow State'
+            description: 'Current workflow state JSON string.'
+            dataType: string
+            required: false
+          -
+            name: node_types
+            label: 'Node Types'
+            description: 'Slimmed node types JSON from GetNodeTypes.'
+            dataType: string
+            required: false
+        dynamicOutputs:
+          -
+            name: context
+            label: Context
+            description: 'Merged context object containing message, workflow_state, and node_types.'
+            dataType: mixed
+            required: false
+            value: "{'message': message, 'workflow_state': workflow_state, 'node_types': node_types}"
+      metadata:
+        node_type_id: data_mapper
+    measured:
+      width: 290
+      height: 220
+  -
+    id: data_shaper.1
+    position:
+      x: 150
+      'y': 100
+    data:
+      label: 'Sanitise Context'
+      config:
+        mapping:
+          message: '[message]'
+          workflow_state: '[workflow_state]'
+          node_types: '[node_types]'
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            workflow_state:
+              type: string
+            node_types:
+              type: string
+        validationMode: soft
+        engine: property_path
+      metadata:
+        node_type_id: data_shaper
+    measured:
+      width: 290
+      height: 270
+  -
+    id: prompt_template.1
+    position:
+      x: 500
+      'y': 0
+    data:
+      label: 'System Prompt'
+      config:
+        template: |
+          # FlowDrop Workflow Builder — System Prompt
+
+          You are a workflow building assistant for **FlowDrop**, a visual node-based workflow editor. You help users create, modify, and understand workflows by generating DSL (Domain Specific Language) commands that the editor executes.
+
+          ---
+
+          ## Response Format
+
+          When the user asks you to create or modify a workflow, respond with:
+
+          1. A brief natural language explanation of what you're doing and why.
+          2. DSL commands inside a fenced code block tagged **`flowdrop`**.
+
+          ### Code Block Rules
+
+          - Use the ` ```flowdrop ` language tag.
+          - Lines starting with `#` or `//` are comments — ignored by the parser.
+          - Empty lines are ignored.
+          - Each non-comment line is one command.
+          - Multiple commands in one block execute as an **atomic batch** — if any command fails, the entire batch is rolled back.
+
+          ---
+
+          ## Node ID Convention
+
+          Node IDs follow the pattern **`<type>.<number>`**, e.g. `llm_node.1`, `api_node.2`.
+
+          - The system assigns the next available number when you **add** a node.
+          - When you **reference** existing nodes, use IDs from the current workflow state below.
+
+          ---
+
+          ## DSL Command Reference
+
+          ```
+          add <type> [at <x>,<y>]
+          delete <nodeId>
+          rename <nodeId> <label>
+          connect <nodeId>:<port> to <nodeId>:<port>
+          disconnect <nodeId>:<port> from <nodeId>:<port>
+          set <nodeId>:<key> <value>
+          list nodes
+          list edges
+          list types
+          layout auto
+          layout beautify
+          canvas fitview
+          ```
+
+          ---
+
+          ## Available Node Types
+
+          {{ node_types }}
+
+          **You must only use node types listed above.**
+
+          ---
+
+          ## Current Workflow State
+
+          {{ workflow_state }}
+
+          ---
+
+          ## Guidelines
+
+          1. **Inspect before modifying.** Reference actual node IDs from the workflow state.
+          2. **Use trigger connections only when data flow does not establish execution order.**
+          3. **Use port IDs, not display names.**
+          4. **Position nodes logically** — left-to-right, or use `layout auto`.
+          5. **Explain your decisions** in natural language outside the code block.
+          6. **Flag unknowns** — ask before inventing business logic.
+          7. **Only use provided node types.** The list above is the single source of truth.
+          8. **Check `config.dynamicInputs` / `config.dynamicOutputs`** for dynamic nodes before connecting.
+      metadata:
+        node_type_id: prompt_template
+    measured:
+      width: 290
+      height: 220
+  -
+    id: memory_read.1
+    position:
+      x: -200
+      'y': 450
+    data:
+      label: 'Read History'
+      config:
+        scope: global
+        key: ''
+        default_value: {  }
+        backend: entity
+      metadata:
+        node_type_id: memory_read
+    measured:
+      width: 290
+      height: 220
+  -
+    id: flowdrop_ai_provider_chat.1
+    position:
+      x: 850
+      'y': 100
+    data:
+      label: Chat
+      config:
+        model: ''
+        temperature: 0.7
+        maxTokens: 4000
+        systemPrompt: ''
+      metadata:
+        node_type_id: flowdrop_ai_provider_chat
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 290
+      height: 270
+  -
+    id: conversation_buffer.1
+    position:
+      x: 1200
+      'y': 0
+    data:
+      label: 'Save User Message'
+      config:
+        scope: global
+        key: ''
+        role: user
+        content: ''
+        max_messages: 100
+        backend: entity
+      metadata:
+        node_type_id: conversation_buffer
+    measured:
+      width: 290
+      height: 270
+  -
+    id: conversation_buffer.2
+    position:
+      x: 1200
+      'y': 350
+    data:
+      label: 'Save Assistant Response'
+      config:
+        scope: global
+        key: ''
+        role: assistant
+        content: ''
+        max_messages: 100
+        backend: entity
+      metadata:
+        node_type_id: conversation_buffer
+    measured:
+      width: 290
+      height: 270
+  -
+    id: text_output.1
+    position:
+      x: 1550
+      'y': 175
+    data:
+      label: Response
+      config:
+        maxLength: 10000
+        format: plain
+        nodeType: simple
+      metadata:
+        node_type_id: text_output
+    measured:
+      width: 290
+      height: 105
+edges:
+  -
+    id: xy-edge__text_input.1text_input.1-output-text-data_mapper.1data_mapper.1-input-message
+    source: text_input.1
+    target: data_mapper.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: text_input.1-output-text
+    targetHandle: data_mapper.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__text_input.2text_input.2-output-text-data_mapper.1data_mapper.1-input-workflow_state
+    source: text_input.2
+    target: data_mapper.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: text_input.2-output-text
+    targetHandle: data_mapper.1-input-workflow_state
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__get_node_types.1get_node_types.1-output-node_types-data_mapper.1data_mapper.1-input-node_types
+    source: get_node_types.1
+    target: data_mapper.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: get_node_types.1-output-node_types
+    targetHandle: data_mapper.1-input-node_types
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__data_mapper.1data_mapper.1-output-context-data_shaper.1data_shaper.1-input-data
+    source: data_mapper.1
+    target: data_shaper.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: data
+      metadata:
+        edgeType: data
+        sourcePortDataType: mixed
+    sourceHandle: data_mapper.1-output-context
+    targetHandle: data_shaper.1-input-data
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__data_shaper.1data_shaper.1-output-data-prompt_template.1prompt_template.1-input-variables
+    source: data_shaper.1
+    target: prompt_template.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: prompts
+      metadata:
+        edgeType: data
+        sourcePortDataType: mixed
+    sourceHandle: data_shaper.1-output-data
+    targetHandle: prompt_template.1-input-variables
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__prompt_template.1prompt_template.1-output-prompt-flowdrop_ai_provider_chat.1flowdrop_ai_provider_chat.1-input-systemPrompt
+    source: prompt_template.1
+    target: flowdrop_ai_provider_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: model
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: prompt_template.1-output-prompt
+    targetHandle: flowdrop_ai_provider_chat.1-input-systemPrompt
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__text_input.1text_input.1-output-text-flowdrop_ai_provider_chat.1flowdrop_ai_provider_chat.1-input-message
+    source: text_input.1
+    target: flowdrop_ai_provider_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: model
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: text_input.1-output-text
+    targetHandle: flowdrop_ai_provider_chat.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__text_input.3text_input.3-output-text-memory_read.1memory_read.1-input-key
+    source: text_input.3
+    target: memory_read.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: helpers
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: text_input.3-output-text
+    targetHandle: memory_read.1-input-key
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__memory_read.1memory_read.1-output-value-flowdrop_ai_provider_chat.1flowdrop_ai_provider_chat.1-input-history
+    source: memory_read.1
+    target: flowdrop_ai_provider_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: model
+      metadata:
+        edgeType: data
+        sourcePortDataType: mixed
+    sourceHandle: memory_read.1-output-value
+    targetHandle: flowdrop_ai_provider_chat.1-input-history
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__text_input.1text_input.1-output-text-conversation_buffer.1conversation_buffer.1-input-content
+    source: text_input.1
+    target: conversation_buffer.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: helpers
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: text_input.1-output-text
+    targetHandle: conversation_buffer.1-input-content
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__text_input.3text_input.3-output-text-conversation_buffer.1conversation_buffer.1-input-key
+    source: text_input.3
+    target: conversation_buffer.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: helpers
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: text_input.3-output-text
+    targetHandle: conversation_buffer.1-input-key
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__flowdrop_ai_provider_chat.1flowdrop_ai_provider_chat.1-output-response-conversation_buffer.2conversation_buffer.2-input-content
+    source: flowdrop_ai_provider_chat.1
+    target: conversation_buffer.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: helpers
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: flowdrop_ai_provider_chat.1-output-response
+    targetHandle: conversation_buffer.2-input-content
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__text_input.3text_input.3-output-text-conversation_buffer.2conversation_buffer.2-input-key
+    source: text_input.3
+    target: conversation_buffer.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: helpers
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: text_input.3-output-text
+    targetHandle: conversation_buffer.2-input-key
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__flowdrop_ai_provider_chat.1flowdrop_ai_provider_chat.1-output-response-text_output.1text_output.1-input-text
+    source: flowdrop_ai_provider_chat.1
+    target: text_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: outputs
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: flowdrop_ai_provider_chat.1-output-response
+    targetHandle: text_output.1-input-text
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__conversation_buffer.1conversation_buffer.1-output-trigger-conversation_buffer.2conversation_buffer.2-input-trigger
+    source: conversation_buffer.1
+    target: conversation_buffer.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: helpers
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: conversation_buffer.1-output-trigger
+    targetHandle: conversation_buffer.2-input-trigger
+    style: 'stroke: var(--fd-edge-trigger);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+metadata:
+  version: 1.0.0
+  createdAt: '2026-04-08T00:00:00.000Z'
+  updatedAt: '2026-04-08T00:00:00.000Z'
+  format: flowdrop
+created: 1780491308
+changed: 1782428924
+uid: 0
+input_ports: null
+output_ports: null
+parameter_schema: null
+output_schema: null
+schema_version: 0.0.0

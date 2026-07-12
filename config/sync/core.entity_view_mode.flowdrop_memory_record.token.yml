@@ -1,0 +1,11 @@
+uuid: 5c2f1cf0-0654-464b-8676-9787b2e7417f
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_memory
+id: flowdrop_memory_record.token
+label: Token
+description: null
+targetEntityType: flowdrop_memory_record
+cache: true

@@ -1,0 +1,17 @@
+uuid: 49d0c1aa-5759-4b82-8feb-1142c041f3b2
+langcode: en
+status: false
+dependencies: {  }
+id: dev
+label: Development
+description: 'Dev-only config: the dev brand (complete) lives in ../config/dev. Aggregation is handled via settings.local.php. Ships INACTIVE; activate per-env in settings.local.php.'
+weight: 0
+stackable: false
+no_patching: false
+storage: folder
+folder: ../config/dev
+module: {  }
+theme: {  }
+complete_list:
+  - aincient_pages.brand
+partial_list: {  }

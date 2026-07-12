@@ -1,0 +1,17 @@
+uuid: 7f8fa844-8ae7-4951-9568-935b6bf4c422
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - flowdrop_job
+_core:
+  default_config_hash: NlELYkZcXvfqOk4FO3RUfvwztfIfUEbCjPyN63qgrB4
+id: default
+label: default
+description: ''
+default_priority: 0
+default_max_retries: 3
+node_executor_plugin: ''
+execution_timeout: 300
+memory_limit: 128

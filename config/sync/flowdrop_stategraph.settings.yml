@@ -1,0 +1,6 @@
+_core:
+  default_config_hash: oVqT5GNadKPPIAtHx4Xolpi7wEJGwqoSRhAXwOQqOlk
+max_iterations: 100
+checkpoint_retention: all
+checkpoint_retention_days: 30
+debug_mode: false

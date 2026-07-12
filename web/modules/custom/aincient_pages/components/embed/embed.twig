@@ -1,0 +1,20 @@
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('default')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
+
+<section class="{{ tone_class }}">
+  <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
+    {% if eyebrow or heading or subheading %}
+      <div class="mx-auto mb-12 max-w-3xl text-center">
+        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? 'opacity-90' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
+        {% if heading %}<h2 class="mt-3 font-display text-3xl sm:text-4xl [font-weight:var(--heading-weight)] tracking-tight">{{ heading }}</h2>{% endif %}
+        {% if subheading %}<p class="mt-4 text-lg opacity-70">{{ subheading|inline_md }}</p>{% endif %}
+      </div>
+    {% endif %}
+    {% block body %}{{ body }}{% endblock %}
+  </div>
+</section>

@@ -1,0 +1,88 @@
+{
+  "type": "landing",
+  "title": "Your brand, rendered live",
+  "sections": [
+    {
+      "component": "hero",
+      "props": {
+        "variant": "centered",
+        "tone": "default",
+        "eyebrow": "Design system",
+        "heading": "This is your brand, top to bottom.",
+        "subheading": "Every colour, font, corner and shadow on this page is a design token. Change one in chat and the whole site repaints — no rebuild, no code.",
+        "cta_label": "Open the brand editor",
+        "cta_url": "/admin/config/content/aincient-brand",
+        "secondary_label": "Tell the assistant",
+        "secondary_url": "#"
+      }
+    },
+    {
+      "component": "stats",
+      "props": {
+        "tone": "brand",
+        "items": [
+          { "value": "30+", "label": "tokens you control" },
+          { "value": "3", "label": "tiers, one cascade" },
+          { "value": "0", "label": "rebuilds to reskin" },
+          { "value": "1", "label": "source of truth" }
+        ]
+      }
+    },
+    {
+      "component": "features",
+      "props": {
+        "tone": "default",
+        "eyebrow": "What you can shape",
+        "heading": "Six knobs that change everything",
+        "subheading": "Each card below is styled by the very tokens it describes — so this grid is both the menu and the proof.",
+        "columns": 3,
+        "features": [
+          { "icon": "◐", "title": "Colour", "body": "Background, text, primary, accent, muted and borders. Tune the palette and every button, link and surface follows." },
+          { "icon": "Aa", "title": "Typography", "body": "Body and display fonts, the full size scale, weights and letter-spacing. Headings and prose re-flow to match." },
+          { "icon": "▢", "title": "Corners", "body": "A radius scale from sharp to fully round. Buttons, cards, inputs and tabs each pick where they sit on it." },
+          { "icon": "❏", "title": "Elevation", "body": "A shadow scale from flat to lifted. Cards and buttons borrow from it to feel grounded or floating." },
+          { "icon": "⇿", "title": "Density", "body": "One dial scales component padding from compact to roomy — the whole layout breathes tighter or looser." },
+          { "icon": "│", "title": "Borders", "body": "Hairline to bold. Set the width and colour once; dividers and outlines stay consistent everywhere." }
+        ]
+      }
+    },
+    {
+      "component": "hero",
+      "props": {
+        "variant": "split",
+        "tone": "muted",
+        "eyebrow": "Live preview",
+        "heading": "Edit in chat. Feel it instantly.",
+        "subheading": "Ask for “a warmer accent and rounder buttons” and this page reskins as you describe it — built from the exact components your real site ships with.",
+        "cta_label": "Start a brand chat",
+        "cta_url": "#",
+        "secondary_label": "How it works",
+        "secondary_url": "#",
+        "image": "https://images.unsplash.com/photo-1558655146-9f40138edfeb?auto=format&fit=crop&w=1200&q=80"
+      }
+    },
+    {
+      "component": "features",
+      "props": {
+        "tone": "inverted",
+        "eyebrow": "Under the hood",
+        "heading": "Primitives → semantic → component",
+        "columns": 2,
+        "features": [
+          { "icon": "①", "title": "Primitives feed semantics", "body": "Raw scales — colour ramps, radii, shadows — are referenced by purpose tokens like “primary” and “background”. Change a primitive and every semantic that points at it updates." },
+          { "icon": "②", "title": "Semantics feed components", "body": "Per-component knobs like button-radius and card-shadow point at the semantic layer. The cascade does the work, so the system never falls out of sync." }
+        ]
+      }
+    },
+    {
+      "component": "cta",
+      "props": {
+        "tone": "brand",
+        "heading": "Make it unmistakably yours.",
+        "subheading": "Open the editor for fine control, or just tell the assistant what you want it to feel like.",
+        "cta_label": "Open the brand editor",
+        "cta_url": "/admin/config/content/aincient-brand"
+      }
+    }
+  ]
+}

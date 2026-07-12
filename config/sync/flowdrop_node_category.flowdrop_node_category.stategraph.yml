@@ -1,0 +1,19 @@
+uuid: ec4ba633-68d1-404f-8725-7060e5db07d0
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - flowdrop_stategraph
+_core:
+  default_config_hash: uK1bpJe9ZHZj7oXJyv2FExng5_5w8A4YmG5_VjK2rm0
+id: stategraph
+enabled: null
+label: StateGraph
+description: 'Nodes for stateful graph execution including iteration, state storage, and loop control.'
+icon: |-
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v3m6.36.64-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 18v3M5.64 18.36l2.12-2.12M6 12H3M7.76 7.76 5.64 5.64"/>
+    <circle cx="12" cy="12" r="4"/>
+  </svg>
+color: '#9333EA'

@@ -1,0 +1,11 @@
+roles:
+  reasoning:
+    provider_id: ''
+    model_id: ''
+  task:
+    provider_id: ''
+    model_id: ''
+  fast:
+    provider_id: ''
+    model_id: ''
+default_role: task

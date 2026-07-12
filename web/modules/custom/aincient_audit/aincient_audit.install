@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * @file
+ * Install/update hooks for AIncient Audit.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Component\Serialization\Yaml;
+
+/**
+ * Phase 3 (DECISIONS 0134): seed the shipped default policies on existing sites.
+ *
+ * Fresh installs get `seo`/`links` from `config/install`; existing sites (where
+ * the module is already installed, so `config/install` never re-runs) get them
+ * here. Idempotent — a policy that already exists is left untouched, so a partial
+ * re-run or a hand-created policy is safe.
+ */
+function aincient_audit_update_11301(): string {
+  $storage = \Drupal::entityTypeManager()->getStorage('aincient_policy');
+  $module_path = \Drupal::service('extension.list.module')->getPath('aincient_audit');
+  $created = [];
+  foreach (['seo', 'links'] as $id) {
+    if ($storage->load($id) !== NULL) {
+      continue;
+    }
+    $file = $module_path . '/config/install/aincient_audit.policy.' . $id . '.yml';
+    $data = Yaml::decode((string) file_get_contents($file));
+    $storage->create($data)->save();
+    $created[] = $id;
+  }
+  return $created === []
+    ? 'Default policies already present — nothing to do.'
+    : 'Created default policies: ' . implode(', ', $created) . '.';
+}
+
+/**
+ * Phase 4: install the aincient_policy_revision entity type on existing sites.
+ *
+ * The per-policy history table backs the Policy studio's draft→Publish version
+ * loop (the Brand-studio parallel). Fresh installs get it when the module is
+ * enabled; existing sites need it installed explicitly. Idempotent — skips if the
+ * entity type is already defined.
+ */
+function aincient_audit_update_11302(): string {
+  $definition_update = \Drupal::entityDefinitionUpdateManager();
+  if ($definition_update->getEntityType('aincient_policy_revision') === NULL) {
+    $entity_type = \Drupal::entityTypeManager()->getDefinition('aincient_policy_revision');
+    $definition_update->installEntityType($entity_type);
+  }
+
+  // Backfill a baseline snapshot for policies that predate the history table
+  // (existing sites seeded in Phase 3 before this entity existed), so a restore
+  // point to the current state is available immediately. Fresh installs capture
+  // this automatically as each policy config is created. Idempotent — the
+  // revisioner dedupes against a policy's latest snapshot.
+  $revisioner = \Drupal::service('aincient_audit.policy_revisioner');
+  $config_factory = \Drupal::configFactory();
+  $prefix = \Drupal\aincient_audit\PolicyRevisioner::CONFIG_PREFIX;
+  $seeded = 0;
+  foreach ($config_factory->listAll($prefix) as $name) {
+    $policy_id = substr($name, strlen($prefix));
+    $data = $config_factory->get($name)->getRawData();
+    $before = count($revisioner->recent($policy_id, 1));
+    $revisioner->snapshot($policy_id, $data, 'baseline (Phase 4)');
+    $seeded += count($revisioner->recent($policy_id, 1)) - $before;
+  }
+
+  return $seeded > 0
+    ? sprintf('Installed policy revision history and backfilled %d baseline(s).', $seeded)
+    : 'Installed policy revision history — baselines already present.';
+}

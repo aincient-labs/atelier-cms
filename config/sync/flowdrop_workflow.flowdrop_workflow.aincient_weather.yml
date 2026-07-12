@@ -1,0 +1,825 @@
+uuid: 9a5f426c-041b-4f5a-8e32-aa536364e118
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.data_extractor
+    - flowdrop_node_type.flowdrop_node_type.data_mapper
+    - flowdrop_node_type.flowdrop_node_type.http_request
+    - flowdrop_node_type.flowdrop_node_type.if_else
+    - flowdrop_node_type.flowdrop_node_type.note
+id: aincient_weather
+label: 'Weather (demo tool)'
+description: "A weather lookup. Take the user's chat message as a location. GET the Open-Meteo geocoding API to resolve it to latitude/longitude/name. Then GET the Open-Meteo forecast API for that lat/lon. Reshape the response into a JSON envelope and return it as the chat output."
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: -20
+      'y': 74
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+      metadata:
+        node_type_id: chat_input
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 202
+  -
+    id: data_mapper.1
+    position:
+      x: 380
+      'y': 24
+    data:
+      label: 'Data Mapper'
+      config:
+        engine: twig
+        dynamicInputs:
+          -
+            name: q
+            label: Query
+            description: ''
+            dataType: string
+            required: false
+        dynamicOutputs:
+          -
+            name: url_full
+            label: 'URL Full'
+            description: ''
+            dataType: string
+            required: false
+            value: "https://geocoding-api.open-meteo.com/v1/search?name={{ (q|split(',')|first|trim)|url_encode }}&count=1&language=en&format=json"
+          -
+            name: url_first
+            label: 'URL First'
+            description: ''
+            dataType: string
+            required: false
+            value: "https://geocoding-api.open-meteo.com/v1/search?name={{ (q|split(',')|first|trim|split(' ')|first)|url_encode }}&count=1&language=en&format=json"
+        instanceTitle: geo_url
+        instanceDescription: 'builds the geocoding URL'
+      metadata:
+        node_type_id: data_mapper
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+          portOrder:
+            inputs:
+              - q
+              - trigger
+            outputs:
+              - url
+              - trigger
+    measured:
+      width: 280
+      height: 302
+  -
+    id: http_request.1
+    position:
+      x: 1980
+      'y': 24
+    data:
+      label: 'HTTP Request'
+      config:
+        method: GET
+        headers: {  }
+        body: ''
+        timeout: 30
+        follow_redirects: true
+        instanceTitle: 'Geocode Second Try'
+      metadata:
+        node_type_id: http_request
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 722
+  -
+    id: data_mapper.2
+    position:
+      x: 2380
+      'y': -36
+    data:
+      label: 'Data Mapper'
+      config:
+        engine: twig
+        dynamicInputs:
+          -
+            name: g
+            label: 'Geo Data'
+            description: ''
+            dataType: json
+            required: false
+        dynamicOutputs:
+          -
+            name: name
+            label: Name
+            description: ''
+            dataType: string
+            required: false
+            value: '{% autoescape false %}{{ g.results[0].name }}{% endautoescape %}'
+          -
+            name: fcurl
+            label: 'Forecast URL'
+            description: ''
+            dataType: string
+            required: false
+            value: '{% autoescape false %}https://api.open-meteo.com/v1/forecast?latitude={{ g.results[0].latitude }}&longitude={{ g.results[0].longitude }}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=auto{% endautoescape %}'
+        instanceTitle: post_geo
+        instanceDescription: 'pulls the name + builds the forecast URL'
+      metadata:
+        node_type_id: data_mapper
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+          portOrder:
+            inputs:
+              - g
+              - trigger
+            outputs:
+              - name
+              - fcurl
+              - trigger
+    measured:
+      width: 280
+      height: 422
+  -
+    id: http_request.2
+    position:
+      x: 2780
+      'y': 149
+    data:
+      label: 'HTTP Request'
+      config:
+        method: GET
+        headers: {  }
+        body: ''
+        timeout: 30
+        follow_redirects: true
+        instanceTitle: forecast
+      metadata:
+        node_type_id: http_request
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 242
+  -
+    id: data_mapper.3
+    position:
+      x: 3180
+      'y': 24
+    data:
+      label: 'Data Mapper'
+      config:
+        engine: twig
+        dynamicInputs:
+          -
+            name: name
+            label: Name
+            description: ''
+            dataType: mixed
+            required: false
+          -
+            name: wx
+            label: wx
+            description: ''
+            dataType: json
+            required: false
+        dynamicOutputs:
+          -
+            name: envelop
+            label: Envelop
+            description: ''
+            dataType: string
+            required: false
+            value: "{% autoescape false %} {% set codes = {0:'clear',1:'partly-cloudy',2:'partly-cloudy',3:'overcast',45:'fog',48:'fog',51:'drizzle',53:'drizzle',55:'drizzle',56:'drizzle',57:'drizzle',61:'rain',63:'rain',65:'heavy-rain',66:'sleet',67:'sleet',71:'snow',73:'snow',75:'snow',77:'snow',80:'rain',81:'heavy-rain',82:'heavy-rain',85:'snow',86:'snow',95:'thunderstorm',96:'thunderstorm',99:'thunderstorm'} %} {   \"__widget__\": \"weather_card\",   \"payload\": {     \"id\": {{ ('weather-' ~ name)|lower|replace({' ': '-'})|json_encode }},     \"location\": { \"name\": {{ name|json_encode }} },     \"units\": { \"temperature\": \"celsius\" },     \"current\": {       \"temperature\": {{ wx.current.temperature_2m }},       \"tempMin\": {{ wx.daily.temperature_2m_min[0] }},       \"tempMax\": {{ wx.daily.temperature_2m_max[0] }},       \"conditionCode\": {{ (codes[wx.current.weather_code]|default('cloudy'))|json_encode }},       \"windSpeed\": {{ wx.current.wind_speed_10m }}     },     \"forecast\": [       {% for i in 0..(wx.daily.time|length - 1) %}       {         \"label\": {{ (wx.daily.time[i]|date('D'))|json_encode }},         \"tempMin\": {{ wx.daily.temperature_2m_min[i] }},         \"tempMax\": {{ wx.daily.temperature_2m_max[i] }},         \"conditionCode\": {{ (codes[wx.daily.weather_code[i]]|default('cloudy'))|json_encode }}       }{{ loop.last ? '' : ',' }}       {% endfor %}     ]   } } {% endautoescape %}"
+        instanceTitle: envelope
+        instanceDescription: 'the whole widget payload'
+      metadata:
+        node_type_id: data_mapper
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 302
+  -
+    id: chat_output.1
+    position:
+      x: 3580
+      'y': 179
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+      metadata:
+        node_type_id: chat_output
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 182
+  -
+    id: http_request.3
+    position:
+      x: 780
+      'y': 54
+    data:
+      label: 'HTTP Request'
+      config:
+        method: GET
+        headers: {  }
+        body: ''
+        timeout: 30
+        follow_redirects: true
+        instanceTitle: 'Geocode First Try'
+      metadata:
+        node_type_id: http_request
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 242
+  -
+    id: if_else.1
+    position:
+      x: 1580
+      'y': 79
+    data:
+      label: If/Else
+      config:
+        matchText: ''
+        operator: not_equals
+        caseSensitive: false
+        branches:
+          -
+            name: 'True'
+            value: true
+          -
+            name: 'False'
+            value: false
+        instanceTitle: 'Validate geocode result'
+        instanceDescription: 'Detect if geocode returned some data based.'
+      metadata:
+        node_type_id: if_else
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 382
+  -
+    id: data_extractor.1
+    position:
+      x: 1180
+      'y': 44
+    data:
+      label: 'Data Extractor'
+      config:
+        path: '$.results[0].name'
+        default: null
+        extract_all: false
+        engine: jsonpath
+      metadata:
+        node_type_id: data_extractor
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 262
+  -
+    id: note.1
+    position:
+      x: -160
+      'y': 300
+    data:
+      label: Note
+      config:
+        content: |-
+          ## Weather Lookup Workflow
+
+          Takes a location string from chat, resolves it to coordinates via the Open-Meteo Geocoding API, fetches a 5-day forecast, and returns a structured weather_card JSON envelope.
+
+          **Flow:** Chat Input → Geocode URL → Geocode API → Validate result → (retry if needed) → Forecast URL → Forecast API → Shape envelope → Chat Output
+        noteType: info
+      metadata:
+        node_type_id: note
+    measured:
+      width: 500
+      height: 284
+  -
+    id: note.2
+    position:
+      x: 360
+      'y': 560
+    data:
+      label: Note
+      config:
+        content: |-
+          ## Step 1 — Build Geocode URL
+
+          The Data Mapper (geo_url) takes the raw chat message and constructs two geocoding URL variants:
+          - **url_full** — uses the full location string (e.g. "New York, NY")
+          - **url_first** — uses only the first word/token, as a fallback
+
+          Both are sent to separate HTTP requests in parallel.
+        noteType: info
+      metadata:
+        node_type_id: note
+    measured:
+      width: 500
+      height: 304
+  -
+    id: note.3
+    position:
+      x: 920
+      'y': 720
+    data:
+      label: Note
+      config:
+        content: |-
+          ## Step 2 — Geocode API (First Try)
+
+          Calls the Open-Meteo Geocoding API with the full location string.
+
+          Endpoint: https://geocoding-api.open-meteo.com/v1/search
+
+          The JSON response is passed to the Data Extractor to check whether results[0].name exists.
+        noteType: info
+      metadata:
+        node_type_id: note
+    measured:
+      width: 500
+      height: 284
+  -
+    id: note.4
+    position:
+      x: 1860
+      'y': 820
+    data:
+      label: Note
+      config:
+        content: |-
+          ## Step 2b — Geocode API (Second Try)
+
+          Only triggered if the first geocode attempt returned no results (If/Else → False branch).
+
+          Uses the simplified first-token URL from the geo_url mapper as a fallback query.
+        noteType: warning
+      metadata:
+        node_type_id: note
+    measured:
+      width: 500
+      height: 244
+  -
+    id: note.5
+    position:
+      x: 1180
+      'y': -320
+    data:
+      label: Note
+      config:
+        content: |-
+          ## Step 3 — Validate Geocode Result
+
+          The Data Extractor reads $.results[0].name via JSONPath from the first geocode response.
+
+          The If/Else gateway checks whether the extracted value is not empty:
+          - **True** → location found, proceed to forecast
+          - **False** → fallback to Second Try geocode request
+        noteType: warning
+      metadata:
+        node_type_id: note
+    measured:
+      width: 500
+      height: 304
+  -
+    id: note.6
+    position:
+      x: 2400
+      'y': 660
+    data:
+      label: Note
+      config:
+        content: |-
+          ## Step 4 — Build Forecast URL &amp; Fetch
+
+          The post_geo Data Mapper extracts latitude, longitude, and name from the geocode result, then constructs the forecast API URL.
+
+          Endpoint: https://api.open-meteo.com/v1/forecast
+
+          Parameters: current temperature, weather code, wind speed + 5-day daily forecast.
+        noteType: info
+      metadata:
+        node_type_id: note
+    measured:
+      width: 500
+      height: 304
+  -
+    id: note.7
+    position:
+      x: 3180
+      'y': 366
+    data:
+      label: Note
+      config:
+        content: |-
+          ## Step 5 — Shape Weather Envelope
+
+          The envelope Data Mapper renders the final JSON payload using a Twig template.
+
+          Output structure:
+          - __widget__: "weather_card"
+          - location.name (geocoded place name)
+          - current: temperature, tempMin/Max, conditionCode, windSpeed
+          - forecast[]: 5-day array with label, tempMin, tempMax, conditionCode
+
+          WMO weather codes are mapped to human-readable condition strings (clear, rain, snow, thunderstorm, etc.) via an inline Twig dictionary.
+        noteType: success
+      metadata:
+        node_type_id: note
+    measured:
+      width: 500
+      height: 444
+edges:
+  -
+    id: xy-edge__chat_input.1chat_input.1-output-message-data_mapper.1data_mapper.1-input-q
+    source: chat_input.1
+    target: data_mapper.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: data_mapper.1-input-q
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__data_mapper.1data_mapper.1-output-url-http_request.1http_request.1-input-url
+    source: data_mapper.1
+    target: http_request.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+    sourceHandle: data_mapper.1-output-url
+    targetHandle: http_request.1-input-url
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__data_mapper.2data_mapper.2-output-fcurl-http_request.2http_request.2-input-url
+    source: data_mapper.2
+    target: http_request.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: data_mapper.2-output-fcurl
+    targetHandle: http_request.2-input-url
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__data_mapper.3data_mapper.3-output-envelop-chat_output.1chat_output.1-input-message
+    source: data_mapper.3
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: data_mapper.3-output-envelop
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__http_request.2http_request.2-output-json-data_mapper.3data_mapper.3-input-wx
+    source: http_request.2
+    target: data_mapper.3
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: http_request.2-output-json
+    targetHandle: data_mapper.3-input-wx
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__data_mapper.2data_mapper.2-output-name-data_mapper.3data_mapper.3-input-name
+    source: data_mapper.2
+    target: data_mapper.3
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: data_mapper.2-output-name
+    targetHandle: data_mapper.3-input-name
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__data_mapper.1data_mapper.1-output-url_full-http_request.3http_request.3-input-url
+    source: data_mapper.1
+    target: http_request.3
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: data_mapper.1-output-url_full
+    targetHandle: http_request.3-input-url
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__data_mapper.1data_mapper.1-output-url_first-http_request.1http_request.1-input-url
+    source: data_mapper.1
+    target: http_request.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: data_mapper.1-output-url_first
+    targetHandle: http_request.1-input-url
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__http_request.3http_request.3-output-json-data_mapper.2data_mapper.2-input-g
+    source: http_request.3
+    target: data_mapper.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: http_request.3-output-json
+    targetHandle: data_mapper.2-input-g
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__http_request.3http_request.3-output-json-data_mapper.2data_mapper.2-input-gf
+    source: http_request.3
+    target: data_mapper.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: http_request.3-output-json
+    targetHandle: data_mapper.2-input-gf
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__http_request.1http_request.1-output-json-data_mapper.2data_mapper.2-input-gn
+    source: http_request.1
+    target: data_mapper.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: http_request.1-output-json
+    targetHandle: data_mapper.2-input-gn
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__http_request.1http_request.1-output-json-data_mapper.2data_mapper.2-input-g
+    source: http_request.1
+    target: data_mapper.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: http_request.1-output-json
+    targetHandle: data_mapper.2-input-g
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__http_request.3http_request.3-output-json-data_extractor.1data_extractor.1-input-data
+    source: http_request.3
+    target: data_extractor.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: data
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
+    sourceHandle: http_request.3-output-json
+    targetHandle: data_extractor.1-input-data
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__data_extractor.1data_extractor.1-output-data-if_else.1if_else.1-input-data
+    source: data_extractor.1
+    target: if_else.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: logic
+      metadata:
+        edgeType: data
+        sourcePortDataType: mixed
+    sourceHandle: data_extractor.1-output-data
+    targetHandle: if_else.1-input-data
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__if_else.1if_else.1-output-True-data_mapper.2data_mapper.2-input-trigger
+    source: if_else.1
+    target: data_mapper.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: if_else.1-output-True
+    targetHandle: data_mapper.2-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+  -
+    id: xy-edge__if_else.1if_else.1-output-False-http_request.1http_request.1-input-trigger
+    source: if_else.1
+    target: http_request.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: if_else.1-output-False
+    targetHandle: http_request.1-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+  -
+    id: xy-edge__http_request.1http_request.1-output-trigger-data_mapper.2data_mapper.2-input-trigger
+    source: http_request.1
+    target: data_mapper.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: http_request.1-output-trigger
+    targetHandle: data_mapper.2-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+metadata:
+  createdAt: '2026-06-13T13:23:57.552Z'
+  updatedAt: '2026-06-14T01:14:45.594Z'
+  schemaVersion: 1.0.0
+  versionId: 1781399677362-xqruqmwno
+  updateNumber: 162
+  format: flowdrop
+created: 1781356133
+changed: 1782428924
+uid: 0
+input_ports:
+  -
+    name: location
+    node_id: chat_input.1
+    port: message
+output_ports:
+  -
+    name: message
+    node_id: chat_output.1
+    port: message
+parameter_schema:
+  type: object
+  required:
+    - location
+  properties:
+    location:
+      type: string
+      default: ''
+      required: true
+      description: 'The place to look up the weather for — a city, optionally with region or country, e.g. "Hamburg, Germany" or "Tokyo". Extract the location from the user''s request and pass ONLY the place name, with no surrounding words.'
+output_schema:
+  type: object
+  properties:
+    message:
+      type: string
+schema_version: 1.0.0

@@ -1,0 +1,19 @@
+uuid: cb37a730-f1ea-4a5c-b280-e22e8bac44d8
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+id: node.field_teaser_description
+field_name: field_teaser_description
+entity_type: node
+type: string_long
+settings:
+  case_sensitive: false
+module: core
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

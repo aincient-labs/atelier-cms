@@ -1,0 +1,107 @@
+{
+  "type": "landing",
+  "title": "AIncient CMS",
+  "sections": [
+    {
+      "component": "hero",
+      "props": {
+        "variant": "split",
+        "tone": "default",
+        "eyebrow": "AI-first Drupal",
+        "heading": "Build your website by talking to it.",
+        "subheading": "AIncient is a chat-driven Drupal distribution. Describe what you want — a brand, a landing page, a blog post — and an AI operator composes it live, on a foundation you fully own.",
+        "cta_label": "Log in to try it",
+        "cta_url": "/user/login",
+        "secondary_label": "Read the docs",
+        "secondary_url": "https://aincient-labs.github.io",
+        "image": "https://picsum.photos/seed/aincient-build/880/660"
+      }
+    },
+    {
+      "component": "stats",
+      "props": {
+        "tone": "muted",
+        "items": [
+          { "value": "3 min", "label": "from install to first page" },
+          { "value": "14+", "label": "branded section components" },
+          { "value": "1 brand", "label": "reskins your whole site" },
+          { "value": "100%", "label": "open source, yours to own" }
+        ]
+      }
+    },
+    {
+      "component": "features",
+      "props": {
+        "tone": "default",
+        "eyebrow": "How it works",
+        "heading": "An operator console, not an admin maze",
+        "subheading": "Three studios, one conversation. The AI proposes; you approve and publish.",
+        "columns": 3,
+        "features": [
+          { "icon": "✦", "title": "Chat-driven", "body": "Create, find, and edit content by talking to an AI operator — no admin forms to hunt through." },
+          { "icon": "◑", "title": "Brand studio", "body": "Set your colours, type, and tone once. Every component reskins from your design tokens, live." },
+          { "icon": "▦", "title": "Component library", "body": "Heroes, features, pricing, FAQs, galleries and more — composed into pages that always respect your brand." }
+        ]
+      }
+    },
+    {
+      "component": "content",
+      "props": {
+        "variant": "image-right",
+        "tone": "default",
+        "eyebrow": "Pages",
+        "heading": "Describe it. Watch it build.",
+        "body": "Open the page studio, say what the page is for, and the agent composes it section by section in a live preview. Reorder, refine, and publish when it looks right — the structure is yours, the brand is applied automatically.",
+        "image": "https://picsum.photos/seed/aincient-pages/760/560",
+        "cta_label": "Log in to try it",
+        "cta_url": "/user/login"
+      }
+    },
+    {
+      "component": "content",
+      "props": {
+        "variant": "image-left",
+        "tone": "muted",
+        "eyebrow": "Brand",
+        "heading": "One brand, every component.",
+        "body": "Your design tokens flow through every page, the chrome, and even this site. Change a colour in the brand studio and the whole experience follows — with built-in WCAG contrast checks so it stays accessible.",
+        "image": "https://picsum.photos/seed/aincient-brand/760/560",
+        "cta_label": "See the brand studio",
+        "cta_url": "/user/login"
+      }
+    },
+    {
+      "component": "banner",
+      "props": {
+        "tone": "inverted",
+        "heading": "Designed once, branded everywhere.",
+        "subheading": "Own your stack. No lock-in, no per-seat pricing — just Drupal with an AI operator on top.",
+        "cta_label": "Get started",
+        "cta_url": "/user/login"
+      }
+    },
+    {
+      "component": "faq",
+      "props": {
+        "tone": "default",
+        "eyebrow": "FAQ",
+        "heading": "Questions, answered",
+        "questions": [
+          { "question": "Do I need to know Drupal?", "answer": "No. You talk to the operator console in plain language. Everything underneath is still standard Drupal, so a developer can take over any time." },
+          { "question": "Is my site locked into AIncient?", "answer": "Never. It's a GPL-licensed Drupal distribution — your content, config, and theme are all standard and portable." },
+          { "question": "Can I bring my own brand?", "answer": "Yes. Set your colours, fonts, and tone in the brand studio and every page and component reskins from your tokens." }
+        ]
+      }
+    },
+    {
+      "component": "cta",
+      "props": {
+        "tone": "brand",
+        "heading": "Ready to build your site?",
+        "subheading": "Log in and compose your first branded page in minutes.",
+        "cta_label": "Log in to start",
+        "cta_url": "/user/login"
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+uuid: 16d59f67-19a6-47c4-87c9-1417580cff21
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.aincient_page
+    - taxonomy.vocabulary.tags
+    - workflows.workflow.aincient_editorial
+  module:
+    - aincient_chat
+    - aincient_core
+    - content_moderation
+    - contextual
+    - file
+    - node
+    - path
+    - system
+    - taxonomy
+id: content_reviewer
+label: 'Content reviewer'
+weight: 3
+is_admin: false
+permissions:
+  - 'access administration pages'
+  - 'access content overview'
+  - 'access contextual links'
+  - 'access files overview'
+  - 'administer url aliases'
+  - 'create aincient_page content'
+  - 'create terms in tags'
+  - 'create url aliases'
+  - 'delete any aincient_page content'
+  - 'delete own files'
+  - 'edit any aincient_page content'
+  - 'edit terms in tags'
+  - 'revert all revisions'
+  - 'use aincient operator console'
+  - 'use aincient studio checks'
+  - 'use aincient studio content'
+  - 'use aincient studio library'
+  - 'use aincient studio media'
+  - 'use aincient_editorial transition approve'
+  - 'use aincient_editorial transition archive'
+  - 'use aincient_editorial transition create_new_draft'
+  - 'use aincient_editorial transition publish'
+  - 'use aincient_editorial transition reject'
+  - 'use aincient_editorial transition restore'
+  - 'use aincient_editorial transition submit_for_review'
+  - 'view all revisions'
+  - 'view any unpublished content'
+  - 'view latest version'
+  - 'view own unpublished content'
+  - 'view the administration theme'

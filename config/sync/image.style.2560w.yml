@@ -1,0 +1,15 @@
+uuid: 7f2b2397-d7ec-4a4d-a637-53aa73f21b44
+langcode: en
+status: true
+dependencies: {  }
+name: 2560w
+label: 2560w
+effects:
+  8185c606-9293-42b0-abfb-930cfb196d01:
+    uuid: 8185c606-9293-42b0-abfb-930cfb196d01
+    id: image_scale
+    weight: 1
+    data:
+      width: 2560
+      height: null
+      upscale: false

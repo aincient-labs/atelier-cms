@@ -1,0 +1,14 @@
+{
+  "name": "aincient-theme",
+  "private": true,
+  "description": "Tailwind v4 build for the AIncient front-end theme.",
+  "scripts": {
+    "tokens": "php ../../../modules/custom/aincient_pages/scripts/build-tokens.php",
+    "build": "php ../../../modules/custom/aincient_pages/scripts/build-tokens.php && tailwindcss -i build/input.css -o css/aincient-theme.css --minify",
+    "watch": "tailwindcss -i build/input.css -o css/aincient-theme.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  }
+}

@@ -1,0 +1,32 @@
+{#
+/**
+ * @file
+ * Studio Backend override: core's status-messages markup with the
+ * .messages / .messages--{type} classes added (the base template carries no
+ * classes at all under Stark, so the kit's whisper cards could never match).
+ */
+#}
+{% for type, messages in message_list %}
+  <div role="contentinfo" aria-label="{{ status_headings[type] }}"{{ attributes.addClass('messages', 'messages--' ~ type)|without('role', 'aria-label') }}>
+    {% if type == 'error' %}
+      <div role="alert">
+    {% endif %}
+    {% if status_headings[type] %}
+      <h2 class="visually-hidden">{{ status_headings[type] }}</h2>
+    {% endif %}
+    {% if messages|length > 1 %}
+      <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      {{ messages|first }}
+    {% endif %}
+    {% if type == 'error' %}
+      </div>
+    {% endif %}
+  </div>
+  {# Remove the classes so the next loop iteration starts clean. #}
+  {% set attributes = attributes.removeClass('messages', 'messages--' ~ type) %}
+{% endfor %}

@@ -1,0 +1,54 @@
+uuid: 30b80545-181b-4c7f-b995-504144116862
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_ai_provider
+_core:
+  default_config_hash: K9IecnHOX2pvESWr7SzzJplsY7vCpbCd8ce2jCXbzcc
+id: flowdrop_ai_provider_rerank
+label: Rerank
+description: 'Rerank a list of documents by relevance to a query using AI models'
+category: ai
+icon: 'mdi:sort-descending'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  documents:
+    configurable: false
+    connectable: true
+    required: true
+  model:
+    configurable: true
+    connectable: false
+    required: false
+    default: ''
+  query:
+    configurable: true
+    connectable: true
+    required: true
+  top_n:
+    configurable: true
+    connectable: false
+    required: false
+    default: 0
+outputs:
+  model:
+    exposed: false
+  provider:
+    exposed: false
+  results:
+    exposed: true
+tags:
+  - model
+  - ai
+  - rerank
+  - search
+  - relevance
+executor_plugin: 'flowdrop_ai_provider:rerank'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false

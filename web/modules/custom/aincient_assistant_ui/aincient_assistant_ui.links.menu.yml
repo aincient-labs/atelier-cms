@@ -1,0 +1,5 @@
+aincient_assistant_ui.settings:
+  title: 'AIncient assistant-ui'
+  description: 'Configure the AIncient operator console (theme, …).'
+  route_name: aincient_assistant_ui.settings
+  parent: system.admin_config_ui

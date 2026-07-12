@@ -1,0 +1,23 @@
+name: 'Site footer'
+status: experimental
+group: 'AIncient Chrome'
+description: 'Brand footer shown on every page: name/tagline + navigation + note.'
+props:
+  type: object
+  properties:
+    name: { type: string }
+    tagline: { type: string }
+    note: { type: string }
+    logo_url: { type: string }
+    nav:
+      type: array
+      description: 'Array of { label, url }.'
+    layout:
+      type: string
+      enum: [inline, stacked]
+      default: inline
+      description: 'inline = logo + nav in one row; stacked = centred logo with nav beneath.'
+    show_tagline:
+      type: boolean
+      default: true
+      description: 'Show the tagline under the footer name.'

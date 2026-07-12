@@ -1,0 +1,4 @@
+'administer aincient assistant ui':
+  title: 'Administer AIncient assistant-ui'
+  description: 'Configure the AIncient operator console (theme, …).'
+  restrict access: true

@@ -1,0 +1,18 @@
+uuid: 33cb216f-99d5-4f6a-98e3-d7ae6cf4f2b6
+langcode: en
+status: true
+dependencies:
+  module:
+    - focal_point
+name: 640w320h
+label: 640w320h
+effects:
+  e07e4def-ff85-4410-bada-16e39fe0a916:
+    uuid: e07e4def-ff85-4410-bada-16e39fe0a916
+    id: focal_point_scale_and_crop
+    weight: 1
+    data:
+      width: 640
+      height: 320
+      crop_type: focal_point
+      upscale: false
