@@ -1,5 +1,5 @@
-name: 'AIncient CMS'
-description: 'An AI-first, chat-driven Drupal distribution. Log in and create, find, update, and delete content by talking to an AI operator console — no admin forms required.'
+name: 'Atelier'
+description: 'An AI-first, chat-driven site builder built on Drupal. Log in and create, find, update, and delete content by talking to an AI operator console — no admin forms required.'
 type: 'Distribution'
 recipes:
   # Stand on Drupal's Standard site as the base: content types (article/page),
@@ -50,7 +50,7 @@ config:
         - 'use aincient operator console'
     system.site:
       simpleConfigUpdate:
-        name: 'AIncient CMS'
+        name: 'Atelier'
     # Make AIncient the front-end default (the base recipe set Olivero).
     system.theme:
       simpleConfigUpdate:

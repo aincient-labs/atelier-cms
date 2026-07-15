@@ -1,106 +1,111 @@
 /**
- * AIncient brand layer over the FlowDrop workflow editor / playground.
+ * Atelier brand layer over the FlowDrop workflow editor / playground.
  *
- * The third backend surface to switch to AIncient chrome (after the React
- * console and the Studio Backend admin). The FlowDrop editor is a fullscreen takeover
+ * The third backend surface to wear Atelier chrome (after the React console
+ * and the Studio Backend admin). The FlowDrop editor is a fullscreen takeover
  * page (`body.fd-fullscreen-page`) that SUPPRESSES the Drupal admin toolbar,
- * outside the Studio Backend theme — this surface ships
- * its own brand layer.
+ * outside the Studio Backend theme — so this surface ships its own brand layer.
  *
  * Mechanism: FlowDrop is driven by a clean `--fd-*` semantic token system
- * (design-tokens.css -> theme-layer.css). We remap those tokens to the
- * AIncient palette, the override point the FlowDrop docs intend for themes.
- * Loaded in the `theme` CSS bucket (via hook_library_info_alter attaching us
- * to `flowdrop_ui_components/flowdrop`), so we cascade after the Svelte
- * bundle's `component`-bucket flowdrop.css and win.
+ * (design-tokens.css -> theme-layer.css). We remap those tokens onto the
+ * Atelier console palette (the `--ain-*` tokens canonical in the chat-ui
+ * `styles.css` `:root`), the override point the FlowDrop docs intend for
+ * themes. Loaded in the `theme` CSS bucket (via hook_library_info_alter
+ * attaching us to `flowdrop_ui_components/flowdrop`), so we cascade after the
+ * Svelte bundle's `component`-bucket flowdrop.css and win.
  *
- * BOTH modes are supported — the operator can switch the editor theme from
- * FlowDrop's Settings -> Theme UI panel, so we brand the LIGHT palette (the
- * default, matching the console + admin) AND the DARK "CRT-night" palette
- * (matching the console's dark theme). The brand signals that are mode-
- * agnostic (violet accent, Schibsted, sharp 2px corners, spectrum stripe)
- * apply to both; only the surface neutrals + shadow ink differ per mode.
+ * Identity: the warm-paper craftsman look (docs/brand.md) — gesso grounds, a
+ * single CINNABAR pigment, soft craft corners, soft diffuse shadows. The old
+ * neo-brutalist skin this file used to carry (signature violet, the four-band
+ * spectrum stripe, sharp 2px corners, hard ink-offset shadows) is RETIRED
+ * (DECISIONS 0190/0191) — history lives in the archive; none of it survives
+ * here.
  *
- * Specificity note: design-tokens.css defines `:root {light}` then
- * `[data-theme="dark"] {dark}` (equal specificity, dark wins by order when
- * the attribute is set). We mirror that exact shape and, loading later, win
- * in each mode — light resolves to our `:root`, dark to our `[data-theme]`.
+ * Polarity: FlowDrop's own tokens are LIGHT-default — design-tokens.css sets
+ * `:root {light}` then `[data-theme="dark"] {dark}` (dark wins by order when
+ * the attribute is set). We mirror that exact shape, and loading later we win
+ * in each mode: light resolves to our `:root`, dark to our `[data-theme]`.
+ * Both are branded because the operator can flip the editor theme from
+ * FlowDrop's Settings -> Theme panel. Only the surface neutrals + shadow ink
+ * differ per mode; cinnabar, the Schibsted body font and the soft corners are
+ * mode-agnostic.
  *
- * @see docs/brand.md (§2.3 violet, §2.4 Schibsted, §3.1/3.2 palettes, §3.3 mechanics)
+ * @see docs/brand.md (§2.2 cinnabar, §2.4 type, §3 palettes, §10 laws)
  */
 
 /* =========================================================================
-   MODE-AGNOSTIC BRAND — font, sharp corners, spectrum bands. These live on
-   `:root` (always matches) and are NOT redefined per mode, so they hold in
-   both light and dark.
+   MODE-AGNOSTIC BRAND — body font + soft craft corners. These live on `:root`
+   (always matches) and are NOT redefined per mode, so they hold in both light
+   and dark.
    ========================================================================= */
 :root {
-  /* Font — Schibsted Grotesk replaces Inter (§2.4). Delivered by the library
-     (external font entry). */
+  /* Body / UI font — Schibsted Grotesk replaces Inter (§2.4). Delivered by the
+     library's self-hosted external font entry (never Google). */
   --fd-font-family-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* Four-band spectrum — the single most consistent brand signal (logo hexes,
-     same in both modes, matching the Manager top stripe). */
-  --ain-band-1: #f35045; /* coral             */
-  --ain-band-2: #fba100; /* amber             */
-  --ain-band-3: #01cb8b; /* mint              */
-  --ain-band-4: #8257e9; /* violet — signature */
-
-  /* Sharp sprite corner everywhere — pin the whole radius scale to 2px (§3.3). */
-  --fd-radius-sm: 2px;
-  --fd-radius-md: 2px;
-  --fd-radius-lg: 2px;
-  --fd-radius-xl: 2px;
-  --fd-radius-2xl: 2px;
+  /* Soft craft corners — the sharp 2px arcade edge is retired (§10). The
+     console commits to a single soft radius (--ain-radius: 7px); we let the
+     scale rise gently around it rather than pinning everything flat. */
+  --fd-radius-sm: 5px;
+  --fd-radius-md: 7px;
+  --fd-radius-lg: 9px;
+  --fd-radius-xl: 12px;
+  --fd-radius-2xl: 16px;
 
   /* Status badges/pills stay intentionally pill-shaped (round chips). */
   --fd-badge-radius: var(--fd-radius-full);
 }
 
 /* =========================================================================
-   LIGHT MODE (default) — AIncient app-tier light palette (mirrors the console
-   light theme). Signature violet at the app-light chroma.
+   LIGHT MODE (FlowDrop default) — Atelier gesso paper. Values copied from the
+   console light theme (chat-ui styles.css `[data-ain-theme="light"]`): a warm
+   mineral off-white ground, bistre ink, one cinnabar pigment.
    ========================================================================= */
 :root {
-  --ain-bg: oklch(0.978 0.005 90);        /* page canvas — light neutral grey  */
-  --ain-surface: oklch(0.997 0.002 90);   /* near-white cards / header          */
-  --ain-surface-2: oklch(0.95 0.006 90);  /* hover / selected fill              */
-  --ain-border: oklch(0.88 0.006 90);     /* hairline                           */
-  --ain-border-strong: oklch(0.30 0.010 90);
-  --ain-text: oklch(0.20 0.009 90);       /* ink                                */
-  --ain-text-dim: oklch(0.46 0.012 90);
-  --ain-accent: oklch(0.55 0.22 292);     /* signature violet — app light       */
-  --ain-accent-hover: oklch(0.48 0.22 292);
-  --ain-accent-muted: oklch(0.55 0.22 292 / 10%);
-  --ain-shadow: oklch(0.30 0.010 90);     /* ink — hard offset                  */
-  --ain-canvas: linear-gradient(135deg, #fafafc 0%, #f3f0fb 50%, #ece7f7 100%);
+  --ain-bg: oklch(0.923 0.009 82);         /* gesso ground — the app canvas     */
+  --ain-surface: oklch(0.986 0.004 82);    /* raised cards — brightest paper     */
+  --ain-surface-2: oklch(0.951 0.007 82);  /* panel / chrome — recessed a touch  */
+  --ain-border: oklch(0.86 0.007 88);      /* hairline                           */
+  --ain-border-strong: oklch(0.58 0.010 85);
+  --ain-text: oklch(0.24 0.008 70);        /* bistre — warm near-black ink       */
+  --ain-text-dim: oklch(0.47 0.010 78);
+  --ain-accent: oklch(0.545 0.155 32);     /* CINNABAR — the one pigment         */
+  --ain-accent-hover: oklch(0.49 0.155 32);
+  --ain-accent-muted: oklch(0.545 0.155 32 / 10%);
+  --ain-shadow: oklch(0.30 0.010 60);      /* soft warm ink — diffuse lift       */
+  --ain-canvas: linear-gradient(135deg, oklch(0.94 0.008 82) 0%, oklch(0.92 0.010 82) 100%);
 }
 
 /* =========================================================================
-   DARK MODE — AIncient app-tier "CRT-night" palette (mirrors the console dark
-   default). Violet at the higher app-dark chroma; shadow is NEON LAVENDER
-   (§3.1), not ink.
+   DARK MODE — Atelier "studio night". Values copied from the console dark
+   default (chat-ui styles.css `#aincient-chat-root`): warm charcoal grounds,
+   paper ink, cinnabar lifted for the dark ground. The shadow is a deep warm
+   near-black (soft + diffuse) — NOT the retired neon-lavender hard offset.
    ========================================================================= */
 [data-theme="dark"] {
-  --ain-bg: oklch(0.17 0.02 285);         /* deep night canvas                  */
-  --ain-surface: oklch(0.21 0.022 285);   /* cards / header                     */
-  --ain-surface-2: oklch(0.26 0.028 288); /* hover / selected fill              */
-  --ain-border: oklch(0.33 0.03 288);
-  --ain-border-strong: oklch(0.45 0.04 290);
-  --ain-text: oklch(0.93 0.012 285);      /* near-white ink                     */
-  --ain-text-dim: oklch(0.67 0.03 288);
-  --ain-accent: oklch(0.72 0.20 292);     /* signature violet — app dark        */
-  --ain-accent-hover: oklch(0.80 0.18 292);
-  --ain-accent-muted: oklch(0.72 0.20 292 / 16%);
-  --ain-shadow: oklch(0.38 0.08 295);     /* neon lavender — hard offset        */
-  --ain-canvas: linear-gradient(135deg, oklch(0.15 0.02 285) 0%, oklch(0.18 0.03 290) 50%, oklch(0.20 0.04 292) 100%);
+  --ain-bg: oklch(0.205 0.006 72);         /* charcoal canvas                    */
+  --ain-surface: oklch(0.245 0.007 72);    /* panel / chrome                     */
+  --ain-surface-2: oklch(0.285 0.008 72);  /* raised cards / hover               */
+  --ain-border: oklch(0.34 0.008 72);
+  --ain-border-strong: oklch(0.46 0.010 72);
+  --ain-text: oklch(0.93 0.008 85);        /* warm paper ink                     */
+  --ain-text-dim: oklch(0.70 0.010 85);
+  --ain-accent: oklch(0.66 0.155 34);      /* cinnabar, lifted for the dark ground */
+  --ain-accent-hover: oklch(0.72 0.155 34);
+  --ain-accent-muted: oklch(0.66 0.155 34 / 16%);
+  --ain-shadow: oklch(0.12 0.010 60);      /* deep warm ink — soft diffuse lift  */
+  --ain-canvas: linear-gradient(135deg, oklch(0.19 0.006 72) 0%, oklch(0.22 0.007 72) 100%);
 }
 
 /* =========================================================================
    TOKEN REMAP — map the per-mode `--ain-*` palette onto FlowDrop's `--fd-*`.
-   Written once on `:root` (and `[data-theme="dark"]` for the few tokens the
-   FlowDrop dark block also sets, so we out-order it). The `--ain-*` vars
+   Written once on `:root` (and `[data-theme="dark"]`, so we out-order the
+   FlowDrop dark block for the few tokens it also sets). The `--ain-*` vars
    resolve to whichever mode is active, so this single map serves both.
+
+   Status semantics (success/warning/danger) are LEFT at FlowDrop's mode-correct
+   defaults — meaning colours are deliberately distinct from the cinnabar brand
+   accent (§10). We only recolour the brand accent family + neutrals + shadows.
    ========================================================================= */
 :root,
 [data-theme="dark"] {
@@ -124,9 +129,9 @@
   --fd-node-border: var(--ain-border);
   --fd-node-border-hover: var(--ain-border-strong);
 
-  /* Signature violet — the interface commits to violet (§2.3); the spectrum
-     stays in the mark, not splattered across the UI. Primary + accent + ring
-     all resolve to violet; mint/green is kept as the success semantic only. */
+  /* Single cinnabar accent — the interface commits to one pigment (§2.2), on
+     at most a couple of elements per screen. Primary + accent + ring + info all
+     resolve to cinnabar; success/warning/danger keep their own meaning colours. */
   --fd-primary: var(--ain-accent);
   --fd-primary-hover: var(--ain-accent-hover);
   --fd-primary-foreground: #fff;
@@ -153,21 +158,20 @@
   --fd-scrollbar-thumb-hover: var(--ain-border-strong);
   --fd-scrollbar-track: var(--ain-bg);
 
-  /* Edges — selected snaps to violet in both modes. */
+  /* Edges — selected snaps to cinnabar in both modes. */
   --fd-edge-trigger-selected: var(--ain-accent);
   --fd-edge-data-selected: var(--ain-accent);
   --fd-edge-loopback-selected: var(--ain-accent);
 
-  /* Shadows are FLAT + hard-angled — the brand's neobrutalist lift (§3.3),
-     no soft blur. Replace FlowDrop's blurred elevation scale with a stepped
-     hard OFFSET (ink in light, neon-lavender in dark, via --ain-shadow). This
-     single token swap flattens nearly everything that lifts — nodes, tool /
+  /* Shadows are SOFT + diffuse — the warm-paper lift (§3, Law 08): a blurred,
+     low-offset shadow so surfaces read as caught light, never a hard ink block.
+     This single scale swap re-softens everything that lifts — nodes, tool /
      gateway nodes, cards, inputs, the component sidebar, canvas FABs and the
-     settings modal all resolve their box-shadow from this scale. */
-  --fd-shadow-sm: 1px 1px 0 var(--ain-shadow);
-  --fd-shadow-md: 2px 2px 0 var(--ain-shadow);
-  --fd-shadow-lg: 3px 3px 0 var(--ain-shadow);
-  --fd-shadow-xl: 4px 4px 0 var(--ain-shadow);
+     settings modal. Recipe mirrors the console (0 Ny Bpx color-mix ain-shadow). */
+  --fd-shadow-sm: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+  --fd-shadow-md: 0 2px 8px -2px color-mix(in oklch, var(--ain-shadow) 22%, transparent);
+  --fd-shadow-lg: 0 6px 16px -4px color-mix(in oklch, var(--ain-shadow) 26%, transparent);
+  --fd-shadow-xl: 0 12px 28px -6px color-mix(in oklch, var(--ain-shadow) 30%, transparent);
 
   /* Header lift = a clean flat hairline (no drop shadow). */
   --fd-header-shadow: 0 1px 0 var(--ain-border);
@@ -178,27 +182,3 @@
 .flowdrop-main-layout__sidebar--left {
   box-shadow: 1px 0 0 var(--fd-border) !important;
 }
-
-/* =========================================================================
-   SPECTRUM STRIPE — the four-band signal across the very top of the editor,
-   mirroring the Manager top stripe and the logo's four bands.
-   A FIXED overlay: it sits on top of the first 3px of the sticky header
-   without taking layout space, so the header (and FlowDrop wordmark) stay
-   exactly where they are.
-   ========================================================================= */
-body.fd-fullscreen-page::before {
-  content: "";
-  position: fixed;
-  inset: 0 0 auto 0;
-  height: 3px;
-  z-index: 2000; /* above the sticky FlowDrop header */
-  background: linear-gradient(
-    90deg,
-    var(--ain-band-1) 0 25%,
-    var(--ain-band-2) 25% 50%,
-    var(--ain-band-3) 50% 75%,
-    var(--ain-band-4) 75% 100%
-  );
-  pointer-events: none;
-}
-

@@ -739,7 +739,11 @@
   box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
   transition: border-color .12s, background .12s, box-shadow .08s, transform .08s;
 }
-.ain-suggestion:hover { border-color: var(--ain-border-strong); background: var(--ain-surface-2); }
+/* Hover = a quiet fill, matching the rest of the console's hover language
+   (.ain-newchat/.ain-tli/.ain-menu__item). The border shifts only a hair
+   toward the accent — no jump to --ain-border-strong, whose crisp hairline
+   read too sharp against the calm chrome (user feedback 2026-07-13). */
+.ain-suggestion:hover { border-color: color-mix(in oklch, var(--ain-accent) 22%, var(--ain-border)); background: var(--ain-surface-2); }
 .ain-suggestion:active { transform: translateY(1px); box-shadow: 0 1px 4px -1px color-mix(in oklch, var(--ain-shadow) 30%, transparent); }
 
 /* messages */
@@ -2071,6 +2075,11 @@
 .ain-menued__move { width: 22px; height: 18px; font-size: 12px; }
 .ain-menued__fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .ain-menued__fields .ain-field__input { flex: none; width: 100%; }
+/* URL｜Page target: the mode switch (reusing the .ain-facet segmented grammar)
+   over either a raw-url input or the page ReferenceField. */
+.ain-menued__target { display: flex; flex-direction: column; gap: 5px; }
+.ain-menued__mode { align-self: flex-start; }
+.ain-menued__target .ain-field { margin: 0; }
 .ain-menued__rowactions {
   display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: none;
 }
@@ -2646,6 +2655,8 @@ button.ain-menued__crumb:hover { color: var(--ain-text); text-decoration: underl
 /* The `font` shorthand resets size to the inherited ~15px shell — re-pin the kit's
    12px after it so a textarea matches its sibling <input> (Plate 15 / 9a). */
 textarea.ain-field__input { resize: vertical; min-height: 3.2em; font: inherit; font-size: 12px; }
+/* Markdown body editor: monospace for legible source (headings, lists, fences). */
+textarea.ain-field__input--mono { font-family: var(--ain-font-mono, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace); line-height: 1.55; }
 
 /* --- page studio: structured section editor --- */
 /* A native select reuses the text-input chrome; just flag it interactive. */

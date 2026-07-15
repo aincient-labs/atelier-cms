@@ -28,7 +28,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * the `chrome_preview` widget merges the partial into the SAME unsaved-draft the
  * Globals rail edits, so the header/footer preview re-renders instantly and the
  * change shows as an unsaved edit. The deliberate write stays the studio's
- * Publish (/aincient/chrome/save) — so the agent can iterate freely ("center the
+ * Publish (/atelier/chrome/save) — so the agent can iterate freely ("center the
  * logo" → "now make the footer stacked") without touching the running site.
  *
  * MENUS are deliberately out of scope: the inline menu editor owns add/rename/

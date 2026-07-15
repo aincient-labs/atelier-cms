@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
-use Drupal\Component\Utility\Xss;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
@@ -84,6 +83,16 @@ final class PageStore {
    */
   public const TEASER_KEYS = ['title', 'description', 'image'];
 
+  /**
+   * The blog post's flat body fields — the whole content payload of the locked
+   * blog recipe, besides the type-orthogonal title/meta/teaser blocks. `body_md`
+   * is Markdown SOURCE (compiled to sanitised HTML at render via
+   * {@see MarkdownRenderer::toSafeHtml}); the rest are plain-text metadata the
+   * `article-header`/`byline` render. Staged by the `set_content` op and by a full
+   * schema write; {@see validate} re-clamps them (and drops them on a landing page).
+   */
+  public const BLOG_CONTENT_KEYS = ['category', 'lead', 'author', 'author_bio', 'date', 'cover', 'body_md'];
+
   // The component vocabulary (allow-list + enums) is sourced from ComponentCatalog
   // so the validator, renderer and agent prompt can never drift. Pages carry NO
   // colour/font scheme of their own — they always render with the live brand
@@ -123,18 +132,19 @@ final class PageStore {
     }
 
     if ($type === 'blog') {
-      foreach (['category', 'lead', 'author', 'author_bio', 'date', 'cover', 'body_html'] as $k) {
-        if (isset($schema[$k])) {
-          // body_html is rendered raw in the prose component, so sanitise it
-          // here (covers BOTH the agent and the no-AI editor). filterAdmin
-          // keeps the rich tags the prose styling expects (h2/h3/p/ul/blockquote/…).
-          // Every OTHER field is plain text Twig escapes on output, so normalise
-          // any over-encoded entity to raw text first (see {@see decodeEntities}) —
-          // body_html is excluded (it is real HTML; its entities are intentional).
-          $out[$k] = $k === 'body_html'
-            ? Xss::filterAdmin((string) $schema[$k])
-            : $this->decodeEntities((string) $schema[$k]);
+      foreach (self::BLOG_CONTENT_KEYS as $k) {
+        if (!isset($schema[$k])) {
+          continue;
         }
+        // body_md is Markdown SOURCE — store it VERBATIM: it is compiled to
+        // sanitised HTML at render time via {@see MarkdownRenderer::toSafeHtml}
+        // (CommonMark html_input=escape + Xss::filterAdmin), so pre-filtering here
+        // would corrupt the source (mangle list markers, headings, code fences).
+        // Every OTHER field is plain text Twig escapes on output, so normalise any
+        // over-encoded entity to raw text first (see {@see decodeEntities}).
+        $out[$k] = $k === 'body_md'
+          ? (string) $schema[$k]
+          : $this->decodeEntities((string) $schema[$k]);
       }
       return $out;
     }
@@ -414,13 +424,17 @@ final class PageStore {
    *   - set_teaser     {title?, description?, image?} teaser card fields (image =
    *                                                   a media:<id> token; null/
    *                                                   blank a key clears it)
+   *   - set_content    {category?, lead?, author?,   BLOG body fields (body_md is
+   *                     author_bio?, date?, cover?,   Markdown source; null/blank a
+   *                     body_md?}                     key clears it) — blog-only
    *   - add_section    {component, props?, after?}   insert (after = id|index; append if absent)
    *   - update_section {id|index, props}             shallow prop-merge (null=unset)
    *   - remove_section {id|index}                    drop a section
    *   - reorder        {order: [id|int,…]}           permutation of all slots
    *
-   * Landing-only: ops target the section list. (Blog is a locked content recipe;
-   * set_meta can still flip type, after which section ops are inert.)
+   * The section ops target the landing section list; set_content targets the blog
+   * body. set_meta flips type between the two regimes, after which the other
+   * regime's ops are inert (validate() drops off-regime fields).
    *
    * @param array $schema
    *   The current working schema (may be empty for a fresh page).
@@ -444,6 +458,14 @@ final class PageStore {
     // Likewise carry the teaser block forward so set_teaser ops merge onto it.
     if (isset($schema['teaser']) && is_array($schema['teaser'])) {
       $work['teaser'] = $schema['teaser'];
+    }
+    // Carry the blog body fields forward so set_content ops merge onto the current
+    // post (partial edits) instead of replacing it each turn. Inert while the page
+    // is a landing (validate() drops them unless type === 'blog').
+    foreach (self::BLOG_CONTENT_KEYS as $key) {
+      if (array_key_exists($key, $schema)) {
+        $work[$key] = $schema[$key];
+      }
     }
     // Carry forward only well-formed, allow-listed sections (reindexed 0..n),
     // preserving each slot id so id-addressed ops in this batch resolve. $used
@@ -519,6 +541,26 @@ final class PageStore {
             }
             else {
               $work['teaser'] = $teaser;
+            }
+            break;
+
+          case 'set_content':
+            // The blog recipe's body fields (title lives on set_meta; category,
+            // lead, author, author_bio, date, cover, and the Markdown body_md).
+            // Stages like set_meta: each allow-listed key rides flat on the op, a
+            // present value sets it, an explicit null / blank clears it. Only
+            // meaningful for a blog page — validate() drops these on a landing.
+            foreach (self::BLOG_CONTENT_KEYS as $key) {
+              if (!array_key_exists($key, $op)) {
+                continue;
+              }
+              $value = $op[$key];
+              if ($value === NULL || (is_string($value) && trim($value) === '')) {
+                unset($work[$key]);
+              }
+              elseif (is_scalar($value)) {
+                $work[$key] = (string) $value;
+              }
             }
             break;
 

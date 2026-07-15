@@ -1,0 +1,5 @@
+aincient_mail.settings:
+  title: 'Mail delivery'
+  description: 'Choose how Atelier sends transactional email (SMTP, an API provider, or log-only).'
+  route_name: aincient_mail.settings
+  parent: system.admin_config_ui

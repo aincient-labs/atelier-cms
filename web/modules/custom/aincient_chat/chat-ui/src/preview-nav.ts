@@ -169,3 +169,35 @@ export function injectPreviewScrollbar(doc: Document | null | undefined): void {
     }
   `;
 }
+
+/** Natively-focusable elements that land in the sequential tab order. */
+const PREVIEW_FOCUSABLE =
+  'a[href],button,input,select,textarea,[contenteditable="true"],[tabindex]:not([tabindex="-1"]),audio[controls],video[controls],area[href],summary,iframe';
+
+/**
+ * Pull every focusable element inside a preview iframe out of keyboard tab order.
+ *
+ * The live previews are same-origin, MOUSE-interactive display surfaces — you
+ * click a section to select it (see {@link interceptPreviewClicks}), hover
+ * states and accordions work — but they are NOT meant to be driven by the
+ * keyboard. Left alone, a `Tab` from the studio walks *into* the iframe and
+ * through every link and control of the embedded page; and because the preview
+ * is DOUBLE-BUFFERED (a second iframe kept mounted at `opacity: 0` during the
+ * crossfade), through an invisible copy of them too. Focus visually "vanishes"
+ * into the frame and takes many tabs to escape — the reported a11y bug.
+ *
+ * So each preview neutralises its document's tab stops: `tabindex="-1"` on every
+ * natively-focusable element leaves them clickable (mouse selection is
+ * untouched) while removing them from sequential focus navigation. Idempotent +
+ * re-baked on each (re)load like {@link injectPreviewScrollbar}, so it also
+ * covers the hidden double-buffer layer (its `onLoad` fires too). Applied to the
+ * same-origin previews only — the studio-tour YouTube embed is a real,
+ * intentionally keyboard-operable, cross-origin frame we can't (and shouldn't)
+ * reach into.
+ */
+export function neutralizePreviewTabbing(doc: Document | null | undefined): void {
+  if (!doc) return;
+  for (const el of doc.querySelectorAll<HTMLElement>(PREVIEW_FOCUSABLE)) {
+    el.setAttribute("tabindex", "-1");
+  }
+}

@@ -5,15 +5,16 @@ import {
   getChromeDraft,
   type ChromeDraft,
 } from "./globals-state";
-import { interceptPreviewLinks, injectPreviewScrollbar } from "./preview-nav";
+import { interceptPreviewLinks, injectPreviewScrollbar, neutralizePreviewTabbing } from "./preview-nav";
 import { PanelBar } from "./panel-bar";
+import { apiUrl } from "./console-config";
 
 /**
  * The live Globals preview: an iframe whose `srcdoc` is the HTML the server
  * renders for the site header + footer (around a placeholder body) from the
  * current chrome draft. Chrome layout is markup/class changes, not pure CSS
  * vars, so — like the page preview, unlike the brand preview — every draft change
- * re-POSTs the whole draft to the stateless /aincient/chrome/preview endpoint and
+ * re-POSTs the whole draft to the stateless /atelier/chrome/preview endpoint and
  * renders the returned document.
  *
  * Re-rendering is DOUBLE-BUFFERED (the page-preview pattern): the new HTML mounts
@@ -23,7 +24,7 @@ import { PanelBar } from "./panel-bar";
  * carry-over is allowed); links would still navigate, so interceptPreviewLinks
  * cancels them. The render is debounced so a slider/keystroke run coalesces.
  */
-const PREVIEW_URL = "/aincient/chrome/preview";
+const PREVIEW_URL = apiUrl("/chrome/preview");
 const DEBOUNCE_MS = 220;
 /** Crossfade duration — keep in sync with `.ain-preview__frame` transition. */
 const FADE_MS = 260;
@@ -154,6 +155,7 @@ export function GlobalsPreview() {
               onLoad={(e) => {
                 interceptPreviewLinks(e.currentTarget.contentDocument);
                 injectPreviewScrollbar(e.currentTarget.contentDocument);
+                neutralizePreviewTabbing(e.currentTarget.contentDocument);
                 reveal.current(layer.key);
               }}
             />

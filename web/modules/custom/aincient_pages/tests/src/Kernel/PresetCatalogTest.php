@@ -75,7 +75,7 @@ final class PresetCatalogTest extends KernelTestBase {
       'direction' => 'bottom',
       'density' => 'comfortable',
       'text_size' => 'default',
-      'heading_weight' => 'bold',
+      'heading_weight' => 'regular',
     ];
     foreach ($expectations as $group => $optionId) {
       $expanded = $this->presets()->expand($group, $optionId);

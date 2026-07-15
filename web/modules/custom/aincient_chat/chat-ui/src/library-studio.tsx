@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type { ReferenceDescriptor } from "./reference-field";
-import { openBlockTab } from "./block-nav";
+import { openBlock } from "./block-nav";
 import { consoleNav } from "./console-nav";
 import { CheckIcon, DocumentIcon, ImageIcon, PlusIcon, SpinnerIcon, UploadIcon } from "./icons";
+import { apiUrl } from "./console-config";
 
 /**
  * The Library shelf browser — the media family's browse canvas (DECISIONS 0168).
@@ -13,7 +14,7 @@ import { CheckIcon, DocumentIcon, ImageIcon, PlusIcon, SpinnerIcon, UploadIcon }
  * list room's canvas. One catalog over every reusable ingredient a page composes
  * FROM: media (images) and global blocks, one substrate (a `block` media bundle,
  * DECISIONS 0138–0139). It reuses the SAME backend the inline picker does —
- * `GET /aincient/reference/search` over {@see ReferenceCatalog} — so the shelf
+ * `GET /atelier/reference/search` over {@see ReferenceCatalog} — so the shelf
  * and the in-field picker are two views of one catalog through a keyhole.
  *
  * Plate 10 ledger anatomy: ONE toolbar row (recessed search · segmented type
@@ -26,8 +27,8 @@ import { CheckIcon, DocumentIcon, ImageIcon, PlusIcon, SpinnerIcon, UploadIcon }
  * non-AI way in) and the quiet New block.
  */
 
-const SEARCH_URL = "/aincient/reference/search";
-const UPLOAD_URL = "/aincient/media/upload";
+const SEARCH_URL = apiUrl("/reference/search");
+const UPLOAD_URL = apiUrl("/media/upload");
 
 /** The shelf's type facets → the `types` CSV the search endpoint takes. */
 type Filter = "all" | "media" | "block";
@@ -111,9 +112,9 @@ export function LibraryBrowse() {
   }, []);
 
   // The whole row opens the item: an image enters its media room in place; a
-  // block opens its editor in a new tab (it owns the lock + moderation machinery).
+  // block enters its editor in place (it owns the lock + moderation machinery).
   const open = (item: ReferenceDescriptor) => {
-    if (item.type === "block") openBlockTab({ id: idOf(item.token) });
+    if (item.type === "block") openBlock({ id: idOf(item.token) });
     else consoleNav.enterRoom({ kind: "media", id: Number(idOf(item.token)) });
   };
 
@@ -155,8 +156,8 @@ export function LibraryBrowse() {
         <button
           type="button"
           className="ain-btn ain-topbtn"
-          onClick={() => openBlockTab("new")}
-          title="Create a new global block (opens in a new tab)"
+          onClick={() => openBlock("new")}
+          title="Create a new global block"
         >
           <PlusIcon />
           <span>New block</span>

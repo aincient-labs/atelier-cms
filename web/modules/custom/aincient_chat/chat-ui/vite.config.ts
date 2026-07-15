@@ -11,6 +11,10 @@ export default defineConfig({
     outDir: resolve(__dirname, "../js/dist"),
     emptyOutDir: true,
     cssCodeSplit: false,
+    // public/ (the dev-harness favicon) is for `npm run dev` only — keep it out
+    // of the shipped library bundle. Production serves the module's own
+    // images/favicon.svg, wired by ConsoleController.
+    copyPublicDir: false,
     lib: {
       entry: resolve(__dirname, "src/main.tsx"),
       formats: ["iife"],

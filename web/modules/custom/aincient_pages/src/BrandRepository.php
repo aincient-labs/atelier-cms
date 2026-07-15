@@ -282,21 +282,27 @@ final class BrandRepository {
   }
 
   /**
-   * Google-Font family names to load, e.g. ['Inter', 'Playfair Display'].
+   * The operator's OWN chosen web-font families to DYNAMICALLY load, e.g.
+   * ['Inter', 'Playfair Display'].
    *
-   * Defaults to the built-in pairing. Names are strictly validated, and the
-   * stylesheet URL is constructed by us (isFontName + fontLinkHref) — user
-   * input never becomes a raw URL, so this can't be an injection vector.
+   * Empty by default: the out-of-box default typefaces (Fraunces + Schibsted
+   * Grotesk) are BUNDLED and self-hosted via the always-on aincient_pages/
+   * brand-fonts library, so nothing needs dynamic loading on a fresh site (and
+   * so no Google request is made and no consent banner shows). This list only
+   * fills once the operator picks/adds fonts in the brand studio — those layer
+   * on top via the Google/self-host loader ({@see webFont}). Names are strictly
+   * validated, and the stylesheet URL is constructed by us (isFontName +
+   * fontLinkHref) — user input never becomes a raw URL, so this can't be an
+   * injection vector.
    *
    * @return string[]
    */
   public function fontFamilies(): array {
     $list = $this->configFactory->get(self::CONFIG)->get('font_families');
     if (!is_array($list) || !$list) {
-      return ['Inter', 'Inter Tight'];
+      return [];
     }
-    $valid = array_values(array_filter($list, [self::class, 'isFontName']));
-    return $valid ?: ['Inter', 'Inter Tight'];
+    return array_values(array_filter($list, [self::class, 'isFontName']));
   }
 
   /**

@@ -19,8 +19,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * the tool result and the console renders a `DataTable` widget inline. Each row
  * carries a studio-agnostic `open_page` action — just the node id — and the
  * console deep-links it to the room that fits the CURRENT workspace: the Content
- * page node (/aincient/content/node/<nid>) when editing, the Checks audit room
- * (/aincient/checks/node/<nid>) when auditing. One capability, shared by the
+ * page node (/atelier/content/node/<nid>) when editing, the Checks audit room
+ * (/atelier/checks/node/<nid>) when auditing. One capability, shared by the
  * page, operator and audit agents, lands correctly in each — the user picks a
  * page in plain language instead of hunting for a node id, without losing the
  * current conversation (it opens in a new tab).

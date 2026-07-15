@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Reference;
 
+use Drupal\aincient_pages\ConsoleDeepLink;
 use Drupal\aincient_pages\MediaRepository;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
@@ -39,6 +40,11 @@ final class MediaReferenceProvider implements ReferenceProviderInterface {
    */
   private function toDescriptor(array $row): array {
     $media = $this->entityTypeManager->getStorage('media')->load($row['id']);
+    // Edit in the Media studio (/atelier/media/image/<id>), not the raw media
+    // form. Only an entity a studio owns gets a deep link; anything else falls
+    // back to its backend edit form (defensive — a `media:` token is an image).
+    $editUrl = $media !== NULL ? (ConsoleDeepLink::editUrl($media)?->toString()
+      ?? ($media->hasLinkTemplate('edit-form') ? $media->toUrl('edit-form')->toString() : NULL)) : NULL;
     return ReferenceDescriptor::create(
       token: $row['token'],
       type: 'media',
@@ -46,9 +52,7 @@ final class MediaReferenceProvider implements ReferenceProviderInterface {
       description: $row['alt'],
       thumb: $row['thumb'],
       published: $media?->isPublished(),
-      editUrl: $media && $media->hasLinkTemplate('edit-form')
-        ? $media->toUrl('edit-form')->toString()
-        : NULL,
+      editUrl: $editUrl,
     );
   }
 

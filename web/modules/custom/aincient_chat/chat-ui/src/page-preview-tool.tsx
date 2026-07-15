@@ -3,6 +3,7 @@ import { makeSafeAssistantToolUI } from "./error-boundary";
 import { getPageDraft, setPageDraft, EMPTY_PAGE, type PageSchema } from "./page-state";
 import { activeStudioKey, ensureStudio } from "./flow";
 import { consoleNav, deriveRoomFromStores } from "./console-nav";
+import { apiUrl } from "./console-config";
 
 /**
  * Live page preview tool — the page agent's only edit surface.
@@ -12,7 +13,7 @@ import { consoleNav, deriveRoomFromStores } from "./console-nav";
  * dispatcher harvests it and renders this card inline. A capability tool can't
  * read the turn's draft (no `__data__` access), so it ships the OPS, not a final
  * schema — the browser holds the authoritative draft and applies the ops here by
- * POSTing { schema, ops } to /aincient/page/apply (which runs
+ * POSTing { schema, ops } to /atelier/page/apply (which runs
  * PageStore::applyOps + validate, the same guardrail Publish uses). The returned
  * validated schema becomes the new draft, so the preview recomposes instantly
  * and shows as an unsaved edit in the studio. Nothing persists — the one
@@ -33,7 +34,7 @@ import { consoleNav, deriveRoomFromStores } from "./console-nav";
  *     from the empty draft deterministically reconstructs the cumulative draft
  *     regardless of per-request latency (the POSTs can't race out of order).
  */
-const APPLY_URL = "/aincient/page/apply";
+const APPLY_URL = apiUrl("/page/apply");
 
 export type PageOp = Record<string, unknown>;
 

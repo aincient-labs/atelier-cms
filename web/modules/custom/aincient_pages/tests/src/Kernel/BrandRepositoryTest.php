@@ -94,11 +94,11 @@ final class BrandRepositoryTest extends KernelTestBase {
   }
 
   public function testVisualBriefDescribesRoundedAndHairlineDefaults(): void {
-    // The shipped defaults (no overrides): the Inter pairing, rounded card
-    // corners, and a 1px hairline.
+    // The shipped defaults (no overrides): the Atelier pairing (Fraunces display
+    // + Schibsted Grotesk body), rounded card corners, and a 1px hairline.
     $brief = $this->brand()->visualBrief();
-    $this->assertStringContainsString('Heading font: Inter Tight', $brief);
-    $this->assertStringContainsString('Body font: Inter', $brief);
+    $this->assertStringContainsString('Heading font: Fraunces', $brief);
+    $this->assertStringContainsString('Body font: Schibsted Grotesk', $brief);
     $this->assertStringContainsString('Corners: rounded corners (1rem)', $brief);
     $this->assertStringContainsString('Borders: thin hairline borders (1px)', $brief);
   }

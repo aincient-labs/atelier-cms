@@ -397,6 +397,11 @@ nodes:
 
           OPS (pass as a JSON array in `ops`; applied against the CURRENT draft, in order):
             - set_meta {type?, title?}                page type (landing | blog) + title
+            - set_content {category?, lead?, author?,  BLOG post body — only for a `blog` page.
+                author_bio?, date?, cover?, body_md?}  `body_md` is the article body as MARKDOWN
+                                                       (## headings, **bold**, lists, > quotes,
+                                                       `code`, links) — NOT HTML. `cover` = a
+                                                       media:<id> token. A key set to null clears it.
             - add_section {component, props?, after?}  insert a section (append if no `after`;
                                                        `after` = the id of the section to insert behind)
             - update_section {id, props}               merge props into the section with `id`
@@ -407,7 +412,14 @@ nodes:
           Target sections by the stable `id` shown for each in LIVE PAGE STATE — it survives
           reordering. (A numeric `index`/`after` still works as a fallback.)
 
-          A fresh page = ONE preview_page call carrying set_meta + several add_section ops.
+          TWO PAGE REGIMES. A `landing` page is composed from the section list (add_section /
+          update_section / …). A `blog` page is a LOCKED recipe — a fixed article layout
+          (header → prose → byline); it has NO sections. To write a post: set_meta {type:"blog",
+          title} then set_content with the body fields (author the body in `body_md` as Markdown —
+          the reader-optimised prose styling is applied for you). Section ops are inert on a blog.
+
+          A fresh landing page = ONE preview_page call carrying set_meta + several add_section ops.
+          A fresh blog post = ONE preview_page call carrying set_meta {type:"blog", …} + set_content.
           To change one thing, send just that op — never rebuild the whole page.
 
           Use ONLY the components below, and ONLY the props listed for each. Prop NAMES

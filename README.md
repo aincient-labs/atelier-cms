@@ -42,7 +42,7 @@ docker compose up -d
 ```
 
 First boot installs and configures the site by itself. Open **http://localhost:41221/**,
-log in, and you land in the operator console at **`/aincient`**.
+log in, and you land in the operator console at **`/atelier`**.
 
 Upgrading is the same motion:
 
@@ -63,7 +63,7 @@ works.
 
 ## The 30-second activation
 
-1. Log in. Atelier sends you straight to the operator console at **`/aincient`**.
+1. Log in. Atelier sends you straight to the operator console at **`/atelier`**.
 2. Connect an AI provider in the first-run onboarding wizard — an Anthropic or OpenAI key,
    or a local Ollama server. Keys are stored in the site's state storage, never in code or
    configuration.
@@ -119,9 +119,9 @@ internal namespace — AIncient Labs is the company behind Atelier.)
 ## About this repository
 
 This is the public source home of Atelier. Each release lands as a single snapshot commit
-(`Deploy from cms <sha>`) produced by our deployment pipeline, so the history here tracks
-shipped states rather than day-to-day development. Bug reports and feature requests are
-welcome in the issue queue.
+produced by our deployment pipeline, with a plain-language changelog as its message, so the
+history here tracks shipped states rather than day-to-day development. Bug reports and
+feature requests are welcome in the issue queue.
 
 ## License
 
@@ -129,8 +129,8 @@ welcome in the issue queue.
   it is built on Drupal and distributed under the same license.
 - The operator console's React app,
   [`web/modules/custom/aincient_chat/chat-ui/`](web/modules/custom/aincient_chat/chat-ui/),
-  is licensed separately under **AGPL-3.0-only** — it is browser-side code, not a Drupal
-  derivative; see [its LICENSE](web/modules/custom/aincient_chat/chat-ui/LICENSE).
+  is licensed separately under the permissive **MIT license** — it is browser-side code, not
+  a Drupal derivative; see [its LICENSE](web/modules/custom/aincient_chat/chat-ui/LICENSE).
 - Custom Atelier modules and themes are © AIncient Labs.
 
 Third-party credits: [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).

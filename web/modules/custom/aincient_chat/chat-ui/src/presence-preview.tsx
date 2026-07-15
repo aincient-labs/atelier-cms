@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getPageDraft, getPageUrl, subscribePageDraft, subscribePreviewReload, subscribePageLoad, type PageMeta, type PageTeaser } from "./page-state";
 import { PanelBar } from "./panel-bar";
+import { apiUrl } from "./console-config";
 
 /**
  * The Presence facet's centre canvas: how the page shows up everywhere it's
@@ -98,7 +99,7 @@ export function PresencePreview() {
       return;
     }
     let live = true;
-    fetch(`/aincient/media/url?token=${encodeURIComponent(token)}&style=960w540h`, { credentials: "same-origin" })
+    fetch(apiUrl(`/media/url?token=${encodeURIComponent(token)}&style=960w540h`), { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (live) setTeaserImg(typeof d?.url === "string" ? d.url : "");
@@ -127,7 +128,7 @@ export function PresencePreview() {
       return;
     }
     let live = true;
-    fetch(`/aincient/media/url?token=${encodeURIComponent(v)}&style=960w480h`, { credentials: "same-origin" })
+    fetch(apiUrl(`/media/url?token=${encodeURIComponent(v)}&style=960w480h`), { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (live) setOgImg(typeof d?.url === "string" ? d.url : "");

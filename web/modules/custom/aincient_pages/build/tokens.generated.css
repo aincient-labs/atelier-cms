@@ -40,17 +40,18 @@
 
 :root {
   /* palette */
-  --brand-primary: var(--color-indigo-600);
-  --brand-primary-foreground: var(--color-white);
-  --brand-accent: var(--color-amber-500);
-  --brand-accent-foreground: var(--color-slate-900);
-  --neutral-surface: var(--color-white);
-  --neutral-subtle: var(--color-slate-50);
-  --neutral-border: var(--color-slate-200);
-  --neutral-muted-foreground: var(--color-slate-500);
-  --neutral-ink: var(--color-slate-900);
-  --font-family-base: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-family-display: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --brand-primary: #B94430;
+  --brand-primary-foreground: #FCFAF7;
+  --brand-accent: #B94430;
+  --brand-accent-foreground: #FCFAF7;
+  --neutral-surface: #F0EDE7;
+  --neutral-card: #FCFAF7;
+  --neutral-subtle: #E8E5DF;
+  --neutral-border: #E7E4DD;
+  --neutral-muted-foreground: #63605A;
+  --neutral-ink: #221F1B;
+  --font-family-base: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-family-display: "Fraunces", Georgia, "Times New Roman", serif;
   --radius-none: 0;
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
@@ -104,16 +105,16 @@
   --selection: var(--brand-accent);
   --focus-ring: var(--brand-accent);
   --border: var(--neutral-border);
-  --card: var(--neutral-surface);
+  --card: var(--neutral-card);
   --card-foreground: var(--neutral-ink);
   --shadow-color: var(--neutral-ink);
   --font-sans: var(--font-family-base), "Noto Emoji";
   --font-display: var(--font-family-display), "Noto Emoji";
   --body-size: var(--size-base);
   --body-leading: var(--leading-normal);
-  --display-weight: var(--weight-extrabold);
-  --heading-weight: var(--weight-bold);
-  --subheading-weight: var(--weight-semibold);
+  --display-weight: var(--weight-semibold);
+  --heading-weight: var(--weight-medium);
+  --subheading-weight: var(--weight-medium);
   --heading-tracking: var(--tracking-tight);
   --density: 1;
   --border-width: 1px;

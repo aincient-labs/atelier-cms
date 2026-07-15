@@ -23,6 +23,7 @@ import { isMock, sealThread, settings } from "./adapter";
 import {
   flowVersion,
   selectAgent,
+  setActiveStudio,
   subscribe as subscribeFlows,
   useActiveStudio,
   useActiveThreadWorkflow,
@@ -60,6 +61,8 @@ import { syncPendingInterrupt } from "./thread-sync";
 import { useActiveThreadRunStatus } from "./run-status";
 import { useAincientRuntime } from "./runtime";
 import { subscribeBlockedLink } from "./preview-nav";
+import { isConsoleHref, openSurface } from "./surface-nav";
+import { parseUrl } from "./console-url";
 import { useConsoleUrl } from "./url-sync";
 import { FlowDropChoiceToolUI } from "./interrupt-widget";
 import { NodeProgressToolUI } from "./progress-widget";
@@ -82,6 +85,7 @@ import {
   SparkleIcon,
   SunIcon,
   MoonIcon,
+  GlobeIcon,
   PlusIcon,
   MoreHorizontalIcon,
   ArchiveIcon,
@@ -116,6 +120,7 @@ import {
 } from "./thread-seal";
 import { subscribeLock } from "./page-lock";
 import { composerMode } from "./console-machine";
+import { consoleBase } from "./console-config";
 
 /* -------------------------------------------------------------- switch guard */
 /**
@@ -131,9 +136,12 @@ const useGuardedSwitch = () => useContext(SwitchGuardContext);
 
 /* ------------------------------------------------------------------ markdown */
 /**
- * Chat links are real links. Internal ones (relative paths or same-origin —
- * "view the page at /node/5") open in a new tab so the conversation never
- * navigates away mid-stream; external ones do the same plus noreferrer.
+ * Chat links are real links. A link INTO the console (`/atelier/*`) is a
+ * within-workspace move — it opens in the SAME tab (surface-nav policy), so the
+ * agent can hand you to another room without spawning tabs. Everything else is
+ * output: a live-site link ("view the page at /node/5") or an external URL opens
+ * in a NEW tab so the conversation never navigates away mid-stream (external
+ * also gets noreferrer).
  */
 function ChatLink({ href, children, ...rest }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
   if (!href) return <span {...rest}>{children}</span>;
@@ -144,11 +152,12 @@ function ChatLink({ href, children, ...rest }: React.AnchorHTMLAttributes<HTMLAn
     /* unparsable → treat as external, be strict */
     internal = false;
   }
+  const workspace = isConsoleHref(href);
   return (
     <a
       {...rest}
       href={href}
-      target="_blank"
+      target={workspace ? undefined : "_blank"}
       rel={internal ? "noopener" : "noopener noreferrer"}
     >
       {children}
@@ -1796,12 +1805,15 @@ function UserMenu() {
               Manage account
             </button>
           )}
-          {/* The Studio backend (/admin — the curated Atelier landing). Server-gated
-              on canAdmin (the admin-overview permission), so a non-admin never sees a
-              door they can't open. */}
+          {/* System (/admin — the curated Atelier landing, the basement). Named
+              "System" so it never collides with the studios that live INSIDE the
+              console (Content/Globals/…). A plain same-tab anchor is the
+              declarative workspace form (surface-nav: within-workspace = same
+              tab). Server-gated on canAdmin (the admin-overview permission), so a
+              non-admin never sees a door they can't open. */}
           {settings().canAdmin && (
             <a className="ain-menu__item" role="menuitem" href="/admin">
-              Studio backend
+              System
             </a>
           )}
           {/* Re-entry into the onboarding wizard — the v1 settings surface (Law 14).
@@ -1812,7 +1824,7 @@ function UserMenu() {
               type="button"
               className="ain-menu__item"
               role="menuitem"
-              onClick={() => window.location.assign("/aincient?onboarding=1")}
+              onClick={() => openSurface(`${consoleBase()}?onboarding=1`, "workspace")}
             >
               Set up AI providers
             </button>
@@ -1906,7 +1918,7 @@ function PreviewLinkBlockedModal() {
           <button
             className="ain-btn ain-topbtn ain-topbtn--primary"
             onClick={() => {
-              window.open(href, "_blank", "noopener,noreferrer");
+              openSurface(href, "output");
               setHref(null);
             }}
           >
@@ -1969,6 +1981,16 @@ function TopBar({
             {theme === "dark" ? <SunIcon /> : <MoonIcon />}
           </button>
         )}
+        {/* View the live site — the console's output. New tab, always (the
+            surface-nav rule: protect the open draft + thread behind it). */}
+        <button
+          className="ain-btn ain-iconbtn"
+          onClick={() => openSurface("/", "output")}
+          aria-label="View site"
+          title="View site"
+        >
+          <GlobeIcon />
+        </button>
         <UserMenu />
       </div>
     </header>
@@ -1977,21 +1999,34 @@ function TopBar({
 
 /* ---------------------------------------------------------------------- app */
 export function App() {
+  // Seed the active studio from the URL synchronously, on the very first render,
+  // BEFORE `useActiveStudio()` (and thus `paneStudio`) is read below. A deep link
+  // into an editor studio (Content, Library) otherwise paints once in the default
+  // chat-only studio and only flips to `--studio` when `useConsoleUrl` resolves
+  // the URL in a post-mount effect — and on that flip the sidebar's `transform`
+  // animates from on-screen to `translateX(-100%)`, flashing the listing across
+  // the screen before it slides away. Seeding here makes the shell paint in the
+  // right studio with the sidebar already off-screen (no transition on mount).
+  // Idempotent: `setActiveStudio` no-ops once set, and the lazy initializer runs
+  // exactly once per mount.
+  useState(() => {
+    setActiveStudio(roomStudio(parseUrl().room));
+    return null;
+  });
   const runtime = useAincientRuntime();
   // Bind the runtime the console statechart drives thread switches through
   // (console-nav.ts). Runs before any user-driven ENTER_ROOM / SWITCH_THREAD.
   useEffect(() => bindRuntime(runtime), [runtime]);
   // URL ⇄ console machine (Phase 2, D3): the room owns the path
-  // (/aincient/<studio>[/…/<nid>]) and the active thread rides as ?thr=. This one
+  // (/atelier/<studio>[/…/<nid>]) and the active thread rides as ?thr=. This one
   // hook projects the machine's room/thread into the address bar and resolves
   // deep links / back-forward back into the machine (console-url is the codec).
   useConsoleUrl(runtime);
-  // The sidebar starts closed on phone-width screens, where it overlays the
-  // conversation (see the responsive section in styles.css) instead of
-  // squeezing it.
-  const [sidebarOpen, setSidebarOpen] = useState(
-    () => window.matchMedia("(min-width: 769px)").matches,
-  );
+  // The sidebar (chat/thread listing) starts closed on every fresh load, on
+  // all viewports — the conversation gets the room and the listing is one
+  // toggle away. On phones it already overlays the conversation (see the
+  // responsive section in styles.css); on desktop we now keep it collapsed too.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeOnMobile = () => {
     if (window.matchMedia("(max-width: 768px)").matches) setSidebarOpen(false);
   };
@@ -2051,11 +2086,12 @@ export function App() {
   // end-state pane so there's always a clear next action.
   const docEnd = useSyncExternalStore(subscribeDocEnd, getDocEnd);
   // Entering an editor studio collapses the sidebar so the split-pane gets the
-  // room (it overlays like the mobile drawer); leaving restores it on desktop.
-  // Runs only when the editor presence flips, so manual sidebar toggles within a
-  // studio still hold.
+  // room (it overlays like the mobile drawer). We no longer auto-restore it on
+  // leave — the listing defaults to closed everywhere, so a studio exit keeps
+  // whatever state the user last chose. Runs only when the editor presence
+  // flips, so manual sidebar toggles within a studio still hold.
   useEffect(() => {
-    setSidebarOpen(paneStudio ? false : window.matchMedia("(min-width: 769px)").matches);
+    if (paneStudio) setSidebarOpen(false);
   }, [paneStudio]);
 
   // Transient studio layout state: the editor rail and the conversation become
@@ -2137,7 +2173,20 @@ export function App() {
         data-studio-edit={paneStudio && editOpen ? "open" : undefined}
         data-studio-convo={paneStudio && convoOpen ? "open" : undefined}
       >
-        <Sidebar open={sidebarOpen} onNavigate={closeOnMobile} onEnterRoom={navigateToRoom} />
+        {/* Remount the sidebar when the layout MODE flips (chat-only ⇄ editor
+            studio) so it reappears in its new closed representation WITHOUT a CSS
+            transition. A persisted element would animate `transform` from the
+            non-studio value (in-flow, width-collapsed → effectively 0) to the
+            studio drawer's translateX(-100%), sliding the closed listing across
+            the screen on the first general→pages switch. A fresh mount has no
+            prior style to transition from. Toggles WITHIN a mode keep the same
+            key, so the open/close drawer slide is preserved. */}
+        <Sidebar
+          key={paneStudio ? "studio" : "chat"}
+          open={sidebarOpen}
+          onNavigate={closeOnMobile}
+          onEnterRoom={navigateToRoom}
+        />
         {/* Mobile-only backdrop behind the overlaying sidebar (display: none
             on wider screens); a tap outside the drawer dismisses it. */}
         {sidebarOpen && <div className="ain-shell__scrim" onClick={() => setSidebarOpen(false)} aria-hidden />}

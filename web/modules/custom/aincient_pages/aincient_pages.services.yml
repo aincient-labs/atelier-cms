@@ -35,6 +35,14 @@ services:
   aincient_pages.site_identity:
     class: Drupal\aincient_pages\SiteIdentity
     arguments: ['@config.factory', '@file_url_generator', '@aincient_pages.embed_resolver']
+  # Layers the identity's site information over core's system.site at config-
+  # read time (name/slogan/mail + the front/403/404 page slots). Identity is
+  # the single write target; system.site stays a pristine shipped file.
+  aincient_pages.site_information_overrider:
+    class: Drupal\aincient_pages\Config\SiteInformationOverrider
+    arguments: ['@config.storage']
+    tags:
+      - { name: config.factory.override }
   aincient_pages.embed_resolver:
     class: Drupal\aincient_pages\EntityEmbedResolver
     # rift view-modes manager is OPTIONAL (@?) — null when rift is uninstalled,

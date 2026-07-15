@@ -9,6 +9,9 @@ props:
     tagline: { type: string }
     note: { type: string }
     logo_url: { type: string }
+    credit:
+      type: object
+      description: 'Product attribution { label, href } — "Made with ♥ using …". Rendered when show_credit is true.'
     nav:
       type: array
       description: 'Array of { label, url }.'
@@ -21,3 +24,7 @@ props:
       type: boolean
       default: true
       description: 'Show the tagline under the footer name.'
+    show_credit:
+      type: boolean
+      default: true
+      description: 'Show the "Made with ♥ using Atelier by AIncient Labs" attribution credit in the note bar.'

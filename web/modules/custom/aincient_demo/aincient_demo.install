@@ -8,9 +8,39 @@
  * page at it. This is one-shot showcase content — created on install, removed on
  * uninstall — so it never pollutes config or the kernel-test fixture (the product
  * modules don't depend on this one).
+ *
+ * Homepage images ship as real files under images/ and are minted into MEDIA
+ * entities on install (so they carry alt text, work fully offline, and land in
+ * the operator's Media library to reuse). The brief references each with an
+ * `@<slug>` placeholder token that install swaps for the fresh `media:<id>`.
  */
 
 declare(strict_types=1);
+
+/**
+ * The homepage images shipped under images/, keyed by the `@<slug>` token the
+ * brief uses. Each: the source file, the alt text (accessibility — these become
+ * the media entity's alt), and the media library display name. A slug whose file
+ * is absent is simply dropped from the composed page (the section renders without
+ * it) so the demo still installs before the art is dropped in.
+ */
+const AINCIENT_DEMO_IMAGES = [
+  'hero' => [
+    'file' => 'hero.webp',
+    'alt' => 'Hands arrange colorful paper swatches and wooden type blocks on a gesso workbench in soft natural light.',
+    'name' => 'Hands arranging design materials',
+  ],
+  'pages' => [
+    'file' => 'pages.webp',
+    'alt' => 'Hands carefully arrange beige and cream paper rectangles into a grid on a warm worktable, with one cinnabar red accent piece.',
+    'name' => 'Arranging cut paper in grid layout',
+  ],
+  'brand' => [
+    'file' => 'brand.webp',
+    'alt' => 'Overhead view of hands laying out terracotta-toned paper rectangles in a grid on a wooden table with natural window light.',
+    'name' => 'Hands arranging paper rectangles carefully',
+  ],
+];
 
 /**
  * Implements hook_install().
@@ -30,6 +60,14 @@ function aincient_demo_install(): void {
   if (!is_array($schema)) {
     \Drupal::logger('aincient_demo')->warning('Demo homepage brief missing or invalid; skipped seeding.');
     return;
+  }
+
+  // Mint a media entity for each shipped image and swap its `@<slug>` token for
+  // the fresh `media:<id>` throughout the schema. Remember the media ids so
+  // uninstall can reclaim them.
+  [$schema, $media_ids] = _aincient_demo_bind_images($schema);
+  if ($media_ids) {
+    $state->set('aincient_demo.media_ids', $media_ids);
   }
 
   // Persist as a PUBLISHED aincient_page authored to the site owner (uid 1) —
@@ -57,6 +95,67 @@ function aincient_demo_install(): void {
 }
 
 /**
+ * Mint media entities for the shipped homepage images and resolve the brief's
+ * `@<slug>` placeholder tokens to the fresh `media:<id>` tokens.
+ *
+ * Keeps image sourcing out of the brief (JSON can't reference a not-yet-created
+ * entity): the brief carries stable `@<slug>` placeholders, and this maps them to
+ * real media at install time. A missing source file drops the placeholder (the
+ * section renders imageless) rather than leaking a literal `@slug` into the page.
+ *
+ * @param array $schema
+ *   The decoded page brief.
+ *
+ * @return array{0: array, 1: int[]}
+ *   The schema with image tokens resolved, and the ids of the media created.
+ */
+function _aincient_demo_bind_images(array $schema): array {
+  $media = \Drupal::service('aincient_pages.media');
+  $map = [];
+  $ids = [];
+  foreach (AINCIENT_DEMO_IMAGES as $slug => $img) {
+    $path = __DIR__ . '/images/' . $img['file'];
+    if (!is_file($path)) {
+      \Drupal::logger('aincient_demo')->warning('Demo image @file missing; homepage will render without it.', ['@file' => $img['file']]);
+      continue;
+    }
+    $bytes = (string) file_get_contents($path);
+    try {
+      $row = $media->createFromBytes($bytes, $img['file'], $img['alt'], $img['name']);
+    }
+    catch (\Throwable $e) {
+      \Drupal::logger('aincient_demo')->warning('Could not create demo media for @file: @msg', ['@file' => $img['file'], '@msg' => $e->getMessage()]);
+      continue;
+    }
+    $map['@' . $slug] = $row['token'];
+    $ids[] = (int) $row['id'];
+  }
+
+  $schema = _aincient_demo_replace_tokens($schema, $map);
+  return [$schema, $ids];
+}
+
+/**
+ * Recursively replace `@<slug>` image placeholders in the schema.
+ *
+ * A string leaf that exactly matches a mapped placeholder becomes its
+ * `media:<id>` token; a placeholder with no media (source file absent) is set to
+ * '' so the clamp/renderer drops it instead of showing a literal `@slug`.
+ */
+function _aincient_demo_replace_tokens(mixed $value, array $map): mixed {
+  if (is_array($value)) {
+    foreach ($value as $k => $v) {
+      $value[$k] = _aincient_demo_replace_tokens($v, $map);
+    }
+    return $value;
+  }
+  if (is_string($value) && str_starts_with($value, '@') && preg_match('/^@[a-z0-9_-]+$/', $value)) {
+    return $map[$value] ?? '';
+  }
+  return $value;
+}
+
+/**
  * Implements hook_uninstall().
  *
  * Remove the demo homepage and restore the previous front-page setting.
@@ -72,6 +171,13 @@ function aincient_demo_uninstall(): void {
     }
   }
 
+  // Reclaim the media entities we minted for the homepage images.
+  $media_ids = $state->get('aincient_demo.media_ids') ?: [];
+  if ($media_ids) {
+    $storage = \Drupal::entityTypeManager()->getStorage('media');
+    $storage->delete($storage->loadMultiple($media_ids));
+  }
+
   $site = \Drupal::configFactory()->getEditable('system.site');
   $previous = $state->get('aincient_demo.previous_front');
   // Only reclaim the front page if it still points at our (now-deleted) node.
@@ -81,4 +187,5 @@ function aincient_demo_uninstall(): void {
 
   $state->delete('aincient_demo.home_nid');
   $state->delete('aincient_demo.previous_front');
+  $state->delete('aincient_demo.media_ids');
 }

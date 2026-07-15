@@ -33,8 +33,9 @@ $coreModule = dirname(__DIR__);
 $customDir = dirname($coreModule);
 $coreFonts = $coreModule . '/fonts';
 $chatFonts = $customDir . '/aincient_chat/fonts';
+$pagesFonts = $customDir . '/aincient_pages/fonts';
 
-foreach ([$coreFonts, $chatFonts] as $dir) {
+foreach ([$coreFonts, $chatFonts, $pagesFonts] as $dir) {
   if (!is_dir($dir) && !mkdir($dir, 0755, TRUE) && !is_dir($dir)) {
     fwrite(STDERR, "Cannot create $dir\n");
     exit(1);
@@ -119,5 +120,16 @@ $chatCss = $header('Schibsted Grotesk (UI) + Fraunces (display serif) for the At
   . $vendor($schibstedUrl, 'Schibsted Grotesk', 'schibsted-grotesk', $chatFonts)
   . $vendor($frauncesUrl, 'Fraunces', 'fraunces', $chatFonts);
 file_put_contents("$chatFonts/console-fonts.css", $chatCss);
+
+// aincient_pages: Schibsted (body) + Fraunces (display serif) — the out-of-box
+// DEFAULT fonts for the PUBLIC site, always self-hosted (offline-first, no
+// consent gate). Attached like the emoji font; operators may still swap via the
+// brand studio (dynamic loader). Same families as the console, so the bridge
+// from website → console keeps one typographic voice.
+fwrite(STDERR, "aincient_pages/fonts:\n");
+$pagesCss = $header('Schibsted Grotesk (body) + Fraunces (display serif) — the public site default fonts.')
+  . $vendor($schibstedUrl, 'Schibsted Grotesk', 'schibsted-grotesk', $pagesFonts)
+  . $vendor($frauncesUrl, 'Fraunces', 'fraunces', $pagesFonts);
+file_put_contents("$pagesFonts/brand-fonts.css", $pagesCss);
 
 fwrite(STDERR, "Done. Rebuild the console bundle (chat-ui: npm run build) after removing the Google @import.\n");

@@ -5,3 +5,4 @@ header:
 footer:
   layout: inline
   show_tagline: true
+  show_credit: true

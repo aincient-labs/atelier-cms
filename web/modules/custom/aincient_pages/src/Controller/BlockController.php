@@ -42,7 +42,7 @@ final class BlockController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/block/{media}/schema — the stored fragment for a block.
+   * GET /atelier/block/{media}/schema — the stored fragment for a block.
    *
    * A global block is a `block` media entity (DECISIONS 0138). `?langcode=`
    * resolves a specific translation. Loads the LATEST revision (the editable
@@ -71,7 +71,7 @@ final class BlockController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/block/save — SAVE the working block fragment as a DRAFT.
+   * POST /atelier/block/save — SAVE the working block fragment as a DRAFT.
    *
    * No longer publishes (editorial workflow): persists a forward draft revision;
    * the live block is untouched. With a `node_id` it updates that block; else a
@@ -98,7 +98,7 @@ final class BlockController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/block/publish — write the latest fragment then PUBLISH it.
+   * POST /atelier/block/publish — write the latest fragment then PUBLISH it.
    * Body: `{ schema?, node_id, langcode?, base_vid? }`.
    */
   public function publish(Request $request): JsonResponse {
@@ -123,35 +123,35 @@ final class BlockController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/block/submit-review — Draft → Needs review.
+   * POST /atelier/block/submit-review — Draft → Needs review.
    */
   public function submitReview(Request $request): JsonResponse {
     return $this->transition($request, 'submit_for_review', requireUpdate: TRUE);
   }
 
   /**
-   * POST /aincient/block/approve — Needs review → Published (reviewer-gated).
+   * POST /atelier/block/approve — Needs review → Published (reviewer-gated).
    */
   public function approve(Request $request): JsonResponse {
     return $this->transition($request, 'approve', requireUpdate: FALSE);
   }
 
   /**
-   * POST /aincient/block/reject — Needs review → Draft.
+   * POST /atelier/block/reject — Needs review → Draft.
    */
   public function reject(Request $request): JsonResponse {
     return $this->transition($request, 'reject', requireUpdate: FALSE);
   }
 
   /**
-   * POST /aincient/block/archive — Published → Archived.
+   * POST /atelier/block/archive — Published → Archived.
    */
   public function archive(Request $request): JsonResponse {
     return $this->transition($request, 'archive', requireUpdate: FALSE);
   }
 
   /**
-   * POST /aincient/block/restore — Archived → Draft.
+   * POST /atelier/block/restore — Archived → Draft.
    */
   public function restore(Request $request): JsonResponse {
     return $this->transition($request, 'restore', requireUpdate: FALSE);

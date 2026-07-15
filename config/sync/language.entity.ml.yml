@@ -1,9 +1,0 @@
-uuid: 598939b6-6cdf-42b6-9071-681e62b430a1
-langcode: en
-status: true
-dependencies: {  }
-id: ml
-label: Malayalam
-direction: ltr
-weight: 0
-locked: false

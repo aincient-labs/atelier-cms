@@ -104,7 +104,7 @@ fresh_install() {
   $DRUSH site:install "$INSTALL_PROFILE" --existing-config -y \
     --account-name="$ADMIN_USER" \
     --account-pass="$ADMIN_PASS" \
-    --site-name="AIncient CMS"
+    --site-name="Atelier"
 
   if [ "$generated" = "1" ]; then
     mkdir -p "$PRIVATE_DIR"

@@ -22,7 +22,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * same seam brand tokens go through). This tool does NOT persist: it emits a
  * `{"__widget__": "brand_status_proposal", "payload": …}` envelope the dispatcher
  * harvests into a confirm/decline card. Only the human's Confirm click POSTs to
- * /aincient/brand/status — the identical endpoint the studio's manual control
+ * /atelier/brand/status — the identical endpoint the studio's manual control
  * uses — so status changes always route through one human-gated write path.
  *
  * When to propose (heuristics also stated in the orchestrator prompt): an intent
@@ -83,7 +83,7 @@ final class ProposeBrandStatus extends FunctionCallBase implements ExecutableFun
     // Gate on the same permission the sibling brand tools use (aincient_brand
     // stays within its own dependency cone — it must not reach for the
     // aincient_chat-minted per-studio permission). The real security boundary is
-    // the confirm POST to /aincient/brand/status, which enforces
+    // the confirm POST to /atelier/brand/status, which enforces
     // `use aincient studio design_system`; a user without it would see the card
     // but the write would 403.
     if (!$this->currentUser->hasPermission('administer aincient pages')) {

@@ -3,9 +3,8 @@ _core:
 default_settings: |
   {
     "theme": {
-      "preference": "dark"
+      "preference": "light"
     }
   }
 exposed_categories:
-  - theme
   - ui

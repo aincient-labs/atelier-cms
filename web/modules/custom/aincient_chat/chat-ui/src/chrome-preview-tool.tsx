@@ -60,6 +60,9 @@ function emptyDraft(): ChromeDraft {
       footer_note: "",
       logo: "",
       favicon: "",
+      // Site information is editor-only (like menus) — the agent never sets it,
+      // but the skeleton must carry the full ChromeIdentity shape.
+      site: { mail: "", front: "", page_403: "", page_404: "" },
     },
     privacy: { font_delivery: "google" },
     menus: { main: [], footer: [] },

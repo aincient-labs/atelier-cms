@@ -73,6 +73,20 @@ final class PreviewPageTest extends KernelTestBase {
     $this->assertArrayNotHasKey('saveUrl', $envelope['payload']);
   }
 
+  public function testAcceptsBlogSetContentOp(): void {
+    // A blog post: flip type, then stage the body fields via set_content
+    // (body_md is Markdown). Both ops pass the structural guardrail clean.
+    $out = $this->runPreview(json_encode([
+      ['op' => 'set_meta', 'type' => 'blog', 'title' => 'How we ship'],
+      ['op' => 'set_content', 'author' => 'Ada', 'body_md' => "## Intro\n\nHello."],
+    ]));
+    $envelope = json_decode($out, TRUE);
+    $this->assertSame('page_preview', $envelope['__widget__']);
+    $this->assertCount(2, $envelope['payload']['ops']);
+    $this->assertSame([], $envelope['payload']['rejected']);
+    $this->assertSame('set_content', $envelope['payload']['ops'][1]['op']);
+  }
+
   public function testSurfacesStructuralWarningsToTheAgent(): void {
     // The reported bug: quote rows under the wrong prop name. The op still
     // applies (ops non-empty), but the agent is told to fix it.

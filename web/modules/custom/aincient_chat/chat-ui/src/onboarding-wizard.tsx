@@ -19,6 +19,7 @@ import {
   XIcon,
 } from "./icons";
 import { STAGED_ASK_KEY, SUGGESTIONS } from "./App";
+import { apiUrl, consoleBase } from "./console-config";
 
 /**
  * First-run onboarding wizard — the product's handshake.
@@ -35,12 +36,12 @@ import { STAGED_ASK_KEY, SUGGESTIONS } from "./App";
  *
  * The connect step is MULTI-provider: the operator connects one or more
  * providers (Anthropic for chat, Google Gemini for images, …), each with its own
- * key, validated + stored independently against `/aincient/onboarding/connect-provider`.
+ * key, validated + stored independently against `/atelier/onboarding/connect-provider`.
  * A "key group" like Google (gemini + nanobanana share one Google key) shows as
  * ONE row and lights up both chat and image at once. The models step then binds
  * each Atelier role to a model from ANY connected provider — so chat can run on
  * Anthropic while image generation runs on Nano Banana. Finishing POSTs the
- * role → provider:model map to `/aincient/onboarding/finalize`, which binds and
+ * role → provider:model map to `/atelier/onboarding/finalize`, which binds and
  * projects them; on success we reload into the now-configured console.
  *
  * Principle (see the onboarding proposal): the user's experience comes first —
@@ -235,8 +236,8 @@ export function OnboardingWizard() {
     };
     return [...(cfg.providers ?? [])].sort((a, b) => rank(a.id) - rank(b.id));
   }, [cfg.providers]);
-  const connectUrl = cfg.connectProviderUrl ?? "/aincient/onboarding/connect-provider";
-  const finalizeUrl = cfg.finalizeUrl ?? "/aincient/onboarding/finalize";
+  const connectUrl = cfg.connectProviderUrl ?? apiUrl("/onboarding/connect-provider");
+  const finalizeUrl = cfg.finalizeUrl ?? apiUrl("/onboarding/finalize");
   const roles: OnboardingRole[] = cfg.roles ?? [];
   const providerLabel = useMemo(() => {
     const map: Record<string, string> = {};
@@ -276,7 +277,7 @@ export function OnboardingWizard() {
 
   // Return to the console, abandoning a re-run without changes (Law 14). Only the
   // forced/closable path reaches this; first-run has no escape.
-  const skip = () => window.location.assign("/aincient");
+  const skip = () => window.location.assign(consoleBase());
 
   // Honour the configured/saved theme so the wizard matches the console it
   // leads into (App sets this too, but App doesn't run on the wizard path).
@@ -384,7 +385,7 @@ export function OnboardingWizard() {
   const begin = () => {
     const offered = name.trim();
     if (offered) {
-      void fetch("/aincient/account", {
+      void fetch(apiUrl("/account"), {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
@@ -424,7 +425,7 @@ export function OnboardingWizard() {
       } catch {
         /* private mode — land with an empty composer */
       }
-      window.location.assign("/aincient");
+      window.location.assign(consoleBase());
     } catch (e) {
       setStatus("idle");
       setError(e instanceof Error ? e.message : String(e));

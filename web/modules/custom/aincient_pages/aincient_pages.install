@@ -252,3 +252,92 @@ function aincient_pages_update_10010(): void {
     $node_type->delete();
   }
 }
+
+/**
+ * Stop config-ignoring system.site — identity overrides it at runtime now.
+ *
+ * DECISIONS 0183: the operator's site information lives ONLY in
+ * aincient_pages.identity (config-ignored, studio-owned); a config override
+ * (SiteInformationOverrider) layers it over system.site at read time, so
+ * system.site goes back to being a plain shipped file that upgrades converge.
+ * Remove it from the ACTIVE ignore list here (updb runs before config import
+ * in `drush deploy`), so the very same deploy already converges system.site.
+ */
+function aincient_pages_update_10011(): void {
+  $config = \Drupal::configFactory()->getEditable('config_ignore.settings');
+  $ignored = $config->get('ignored_config_entities') ?: [];
+  $filtered = array_values(array_filter($ignored, fn (string $name): bool => $name !== 'system.site'));
+  if ($filtered !== $ignored) {
+    $config->set('ignored_config_entities', $filtered)->save();
+  }
+}
+
+/**
+ * Migrate blog post bodies from HTML (body_html) to Markdown (body_md).
+ *
+ * DECISIONS 0196: the blog post body is now authored as Markdown and compiled
+ * to HTML at render time. Convert any already-stored `body_html` in a page's
+ * `field_page_content` to `body_md` (via league/html-to-markdown), so existing
+ * blog posts keep their content in the new canonical format. Pre-launch there is
+ * no shipped blog content, so this is a best-effort pass over the default + latest
+ * revision of each aincient_page (and every translation) — enough to cover a
+ * published post and its current draft. Idempotent: nodes with no `body_html` are
+ * left untouched.
+ */
+function aincient_pages_update_10012(): void {
+  $converter = new \League\HTMLToMarkdown\HtmlConverter([
+    'strip_tags' => TRUE,
+    'header_style' => 'atx',
+    'hard_break' => FALSE,
+  ]);
+
+  /** @var \Drupal\node\NodeStorageInterface $storage */
+  $storage = \Drupal::entityTypeManager()->getStorage('node');
+  $nids = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'aincient_page')
+    ->execute();
+  if (!$nids) {
+    return;
+  }
+
+  // The default revision plus the latest (possibly-forward) revision, so both a
+  // published post and its unpublished draft convert.
+  $vids = [];
+  foreach ($nids as $nid) {
+    $vids[$storage->getLatestRevisionId((int) $nid)] = TRUE;
+    if ($node = $storage->load($nid)) {
+      $vids[$node->getRevisionId()] = TRUE;
+    }
+  }
+
+  foreach (array_keys($vids) as $vid) {
+    $node = $storage->loadRevision($vid);
+    if (!$node instanceof \Drupal\node\NodeInterface) {
+      continue;
+    }
+    $changed = FALSE;
+    foreach ($node->getTranslationLanguages() as $language) {
+      $translation = $node->getTranslation($language->getId());
+      if (!$translation->hasField('field_page_content')) {
+        continue;
+      }
+      $content = json_decode((string) $translation->get('field_page_content')->value, TRUE);
+      if (!is_array($content) || !isset($content['body_html'])) {
+        continue;
+      }
+      $html = (string) $content['body_html'];
+      unset($content['body_html']);
+      $content['body_md'] = trim($html) === '' ? '' : $converter->convert($html);
+      $translation->set('field_page_content', json_encode($content, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+      $changed = TRUE;
+    }
+    if ($changed) {
+      // Update in place — this is a format migration, not an editorial change, so
+      // keep the same revision id and moderation state.
+      $node->setNewRevision(FALSE);
+      $node->setSyncing(TRUE);
+      $node->save();
+    }
+  }
+}

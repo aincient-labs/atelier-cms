@@ -126,7 +126,7 @@ export function studioFromSlug(slug: string): StudioKey | undefined {
 }
 
 /**
- * The canonical URL slug for an agent id, used in /aincient/<category>/<flow>.
+ * The canonical URL slug for an agent id, used in /atelier/<category>/<flow>.
  * Strips the `aincient_` namespace and any trailing `_agent`/`_loop` role
  * suffixes so the path reads cleanly (aincient_brand_agent → "brand",
  * aincient_pages_agent → "pages", aincient_operator_agent_loop → "operator").
@@ -164,9 +164,9 @@ export function findAgent(agentId: string | undefined): WorkflowRef | undefined 
  * console calls this to turn it into the right deep link for the ACTIVE studio,
  * so the same page table does the right thing in every studio:
  *
- *   checks  → the Checks audit room (/aincient/checks/node/<nid>) — opens that
+ *   checks  → the Checks audit room (/atelier/checks/node/<nid>) — opens that
  *             page's read-only health report.
- *   else    → the Content page node room (/aincient/content/node/<nid>) — the
+ *   else    → the Content page node room (/atelier/content/node/<nid>) — the
  *             "edit this page" entry point the page agent / operator share.
  *
  * Room-primary paths (D3): the open document IS the room, so there is no ?page=/

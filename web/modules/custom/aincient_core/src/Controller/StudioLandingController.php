@@ -46,21 +46,10 @@ final class StudioLandingController extends ControllerBase {
       ];
     }
 
-    $console_url = NULL;
-    try {
-      $console = Url::fromRoute('aincient_chat.console');
-      if ($console->access()) {
-        $console_url = $console->toString();
-      }
-    }
-    catch (\Throwable $e) {
-      // aincient_chat uninstalled — no console card.
-    }
-
     return [
       '#theme' => 'aincient_studio_landing',
       '#sections' => $sections,
-      '#console_url' => $console_url,
+      '#console_url' => StudioSections::consoleLink(),
       // Which cards render varies by what the account may reach.
       '#cache' => ['contexts' => ['user.permissions']],
     ];

@@ -35,7 +35,7 @@ namespace Drupal\aincient_pages;
  * Each scale group ships one option whose token values equal the registry
  * DEFAULTS, so a freshly-installed brand reads as that option rather than
  * "Custom": roundness=pill, direction=bottom, density=comfortable,
- * text_size=default, heading_weight=bold. If a default in design-tokens.yml
+ * text_size=default, heading_weight=regular. If a default in design-tokens.yml
  * changes, move the matching option here so the two stay in lockstep.
  */
 final class PresetCatalog {

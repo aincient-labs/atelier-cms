@@ -1,0 +1,186 @@
+name: Release image
+
+# Publishes the PUBLIC appliance image to GHCR from the public artifact repo.
+#
+#   push to main   → :edge        + :sha-<short>   (rolling build; every deploy)
+#   push tag v*    → :v1.2.3      + :latest        (pinned release)
+#   manual         → workflow_dispatch (publishes whatever ref it's run on)
+#
+# This repo (aincient-labs/atelier) is the deterministic, history-free snapshot
+# of the private aincient-labs/cms produced by the umbrella's bin/deploy-atelier.
+# The image is built and published FROM HERE so the public package's source is
+# exactly the public tree — what you can read is what got built. The private
+# dev repo (cms) keeps its fast PR gate (ci.yml); this workflow re-runs the full
+# gate against the published tree before pushing.
+#
+# The publish is GATED on the smoke test (build → install → upgrade → rollback)
+# on linux/amd64. Once that passes we publish a MULTI-ARCH manifest
+# (linux/amd64 + linux/arm64) via buildx so Apple-Silicon / arm64 hosts pull a
+# native image instead of running amd64 under QEMU emulation. The published
+# image is rebuilt by buildx from the same commit + composer.lock as the smoke
+# build (deterministic), not the literal smoke daemon image — buildx multi-arch
+# can't be loaded into the daemon for testing, so the gate runs on amd64 and the
+# manifest is built for both arches from the validated source.
+#
+# Image: ghcr.io/aincient-labs/atelier  (PUBLIC package — computed from
+# github.repository below, so it always tracks this repo's name).
+#
+# Requires a repo secret FLOWDROP_TOKEN (read access to the private
+# drupal/flowdrop) until FlowDrop 2.0 publishes on drupal.org.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Gate the publish on the same PHP Kernel tests CI runs (agent loop +
+  # Commands). The smoke test only proves the container installs/upgrades/rolls
+  # back; a logic regression that still boots cleanly would otherwise ship to
+  # :edge. These are fast sqlite tests, so the extra lane costs little. Runs on
+  # every push/tag — publish never happens without it green.
+  kernel-tests:
+    name: PHP Kernel tests (agent loop + Commands)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: gd, pdo_sqlite, sqlite3, mbstring, dom, xml, curl, intl, zip, bcmath, opcache
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      # drupal/flowdrop is private; authenticate composer via COMPOSER_AUTH so
+      # its dist zipball resolves.
+      - name: Install dependencies
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.FLOWDROP_TOKEN }}"}}'
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Functional (BrowserTestBase) tests in the sweep need a real HTTP server
+      # serving the docroot (must start FROM the docroot so the router's
+      # DOCUMENT_ROOT resolves index.php).
+      - name: Start PHP server for Functional tests
+        working-directory: web
+        run: php -S 127.0.0.1:8888 .ht.router.php &>/tmp/php-server.log &
+
+      - name: Run Kernel tests
+        env:
+          SIMPLETEST_BASE_URL: http://127.0.0.1:8888
+        run: composer test
+
+  # Guards the appliance's data-safety net: the failure-triggered rollback
+  # branches (failed updatedb / config:import / unhealthy upgrade → snapshot
+  # restore + abort) that smoke.sh's happy-path scenario can't exercise. Fast
+  # (bats + mock drush, no image build), so it fails before the expensive build.
+  converge-unit:
+    name: Converge unit tests (bats)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # run.sh executes the suite in the bats/bats image; Docker is preinstalled.
+      - name: Run converge bats suite
+        run: bash docker/tests/run.sh
+
+  publish:
+    name: Smoke-test + publish to GHCR
+    needs: [kernel-tests, converge-unit]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # arm64 layers are built under emulation on the amd64 runner; QEMU provides
+      # the binfmt handlers and buildx the multi-platform driver. Only the tag
+      # (multi-arch) path actually uses it, but setup is seconds and harmless.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Expose the Actions cache runtime token to plain `run:` steps so smoke.sh's
+      # raw `docker buildx build --cache-to type=gha` can reach the cache backend
+      # (these vars exist in the job but aren't exported to shell steps by default).
+      - name: Expose GHA cache to buildx
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      # Builds aincient/cms:smoke (linux/amd64, gha-cached) and runs
+      # install → upgrade → rollback against a real container. Exits non-zero on
+      # any failure, which fails the job before anything is pushed. The cached
+      # vendor (composer) + apt layers are reused across runs.
+      - name: Smoke-test the appliance
+        env:
+          FLOWDROP_TOKEN: ${{ secrets.FLOWDROP_TOKEN }}
+          AINCIENT_BUILD_CACHE: gha
+        run: bash docker/tests/smoke.sh
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Publish the validated image. github.repository is already owner/repo
+      # (aincient-labs/atelier); lowercase it defensively for GHCR — so this
+      # publishes ghcr.io/aincient-labs/atelier without hardcoding the name.
+      #
+      #   edge / main push → linux/amd64 only. The smoke step already BUILT and
+      #     VALIDATED the exact amd64 image locally, so we just retag + push it —
+      #     no rebuild at all (and the published bytes ARE the tested bytes).
+      #   v* tag           → multi-arch manifest (linux/amd64 + linux/arm64) via
+      #     buildx. amd64 layers cache-hit from the smoke build (scope=appliance);
+      #     only arm64 is built fresh (under QEMU — see backlog for native arm64).
+      #
+      # The private drupal/flowdrop clone authenticates via the same BuildKit
+      # secret the Dockerfile + smoke build use (id=composer_github_token).
+      - name: Publish to GHCR
+        env:
+          FLOWDROP_TOKEN: ${{ secrets.FLOWDROP_TOKEN }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAGS=("${{ github.ref_name }}" "latest")
+            tag_args=(); for t in "${TAGS[@]}"; do tag_args+=(-t "${IMAGE}:${t}"); done
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --secret "id=composer_github_token,env=FLOWDROP_TOKEN" \
+              --cache-from type=gha,scope=appliance \
+              --cache-to type=gha,scope=appliance,mode=max,ignore-error=true \
+              -f docker/Dockerfile \
+              "${tag_args[@]}" \
+              --push \
+              .
+            echo "${IMAGE}:${TAGS[0]} (linux/amd64, linux/arm64)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            TAGS=("edge" "sha-${GITHUB_SHA::7}")
+            for t in "${TAGS[@]}"; do
+              docker tag aincient/cms:smoke "${IMAGE}:${t}"
+              docker push "${IMAGE}:${t}"
+            done
+            echo "${IMAGE}:${TAGS[0]} (linux/amd64 — smoke-validated image, retagged)" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -1,5 +1,10 @@
+import { consoleBase } from "./console-config";
 import { COLLECTION_STUDIO, MEDIA_STUDIO, sectionRoom, type Room } from "./rooms-core";
 import { isStudioAccessible, serverDefaultStudio, studioFromSlug, studioSlug } from "./studios";
+
+// Re-exported so existing importers (`./console-url`) keep resolving — the base
+// now comes from the server-injected `basePath` (see ./console-config).
+export { consoleBase };
 
 /**
  * The URL ↔ Room codec (plans/console-state-machine.md Phase 2, decision D3).
@@ -8,25 +13,25 @@ import { isStudioAccessible, serverDefaultStudio, studioFromSlug, studioSlug } f
  * document is not a separate axis — a Content page/block or a Checks audit IS the
  * room, so its node id lives in the path, not a `?page=/?block=/?audit=` query.
  *
- *   /aincient                          → the server-default studio room (bare
+ *   /atelier                          → the server-default studio room (bare
  *                                        entry point; the projection canonicalises
  *                                        it to the explicit form below on load)
- *   /aincient/general                  → a studio-singleton room
- *   /aincient/design-system            → studio key `design_system`, hyphenated
- *   /aincient/content                  → the Content List room (the directory)
- *   /aincient/content/draft            → the New-page draft room (no node, no
+ *   /atelier/general                  → a studio-singleton room
+ *   /atelier/design-system            → studio key `design_system`, hyphenated
+ *   /atelier/content                  → the Content List room (the directory)
+ *   /atelier/content/draft            → the New-page draft room (no node, no
  *                                        thread id yet)
- *   /aincient/content/draft/thr_x      → …that draft, addressed by its thread
+ *   /atelier/content/draft/thr_x      → …that draft, addressed by its thread
  *                                        (the draft's identity is its thread, so
  *                                        it rides in the path, not ?thr=)
- *   /aincient/content/node/5           → a Content page node (aincient_page)
- *   /aincient/content/node/5/de        → …its `de` translation (source lang omits it)
- *   /aincient/content/block/9          → a Content block node (aincient_block)
- *   /aincient/checks/node/5            → a Checks audit room (read-only report)
- *   /aincient/library                  → the Library shelf (the media family's
+ *   /atelier/content/node/5           → a Content page node (aincient_page)
+ *   /atelier/content/node/5/de        → …its `de` translation (source lang omits it)
+ *   /atelier/content/block/9          → a Content block node (aincient_block)
+ *   /atelier/checks/node/5            → a Checks audit room (read-only report)
+ *   /atelier/library                  → the Library shelf (the media family's
  *                                        browse room; bare /media and the legacy
  *                                        /media/image/new land here too)
- *   /aincient/media/image/7            → a Media studio item (edit one image)
+ *   /atelier/media/image/7            → a Media studio item (edit one image)
  *   …any of the above + ?thr=thr_x    → with a specific thread open in the room
  *
  * This module is pure over `window.location` + the studio catalog — no store or
@@ -41,16 +46,6 @@ import { isStudioAccessible, serverDefaultStudio, studioFromSlug, studioSlug } f
  * a `?thr=` query (the room path alone is their URL).
  */
 const ROUTABLE_ID = /^thr_[A-Za-z0-9_-]+$/;
-
-/**
- * The console's base path (".../aincient"), subdir-install-safe — the prefix up
- * to and including the `aincient` segment, whatever trails it. Deep-link builders
- * anchor URLs here; the parser strips it before reading room segments.
- */
-export function consoleBase(): string {
-  const m = window.location.pathname.match(/^(.*\/aincient)(?:\/|$)/);
-  return m ? m[1] : "/aincient";
-}
 
 /**
  * The href a console deep-link anchor points at, built from a query string
@@ -139,7 +134,7 @@ export function parseUrl(): { room: Room; threadId: string | null } {
   const fallback = studioOrList(serverDefaultStudio());
   if (seg.length === 0) return { room: fallback, threadId };
 
-  // /aincient/library — the media family's browse room (the shelf). Resolved
+  // /atelier/library — the media family's browse room (the shelf). Resolved
   // BEFORE the studio-slug branch: `library` is still a server-side access key
   // (it would resolve to a ghost studio room with no registry entry), but its
   // address belongs to the shelf. Gated on entering the media studio.
@@ -150,10 +145,10 @@ export function parseUrl(): { room: Room; threadId: string | null } {
   const studio = studioFromSlug(seg[0]);
   if (!studio) return { room: fallback, threadId };
 
-  // /aincient/<studio> — a studio-singleton (or the Content List).
+  // /atelier/<studio> — a studio-singleton (or the Content List).
   if (seg.length === 1) return { room: studioOrList(studio), threadId };
 
-  // /aincient/content/draft[/<thread>] — the New-page draft room (no node id).
+  // /atelier/content/draft[/<thread>] — the New-page draft room (no node id).
   // The thread is IN the path (the draft's identity), so it also becomes the
   // active thread; a bare /content/draft is a fresh draft with no thread yet.
   if (studio === COLLECTION_STUDIO && seg[1] === "draft") {
@@ -164,9 +159,9 @@ export function parseUrl(): { room: Room; threadId: string | null } {
     };
   }
 
-  // /aincient/media/image/<id> — a Media studio item. The bundle segment
+  // /atelier/media/image/<id> — a Media studio item. The bundle segment
   // (image, later document) sits between the studio slug and the id, keeping the
-  // path clear of the flat /aincient/media/* JSON API. The legacy sentinel `new`
+  // path clear of the flat /atelier/media/* JSON API. The legacy sentinel `new`
   // (the retired id-less "new image" room) and any missing/!numeric id land on
   // the family's browse room — the Library shelf, whose chat is the generate
   // path now (DECISIONS 0168).
@@ -177,7 +172,7 @@ export function parseUrl(): { room: Room; threadId: string | null } {
       : { room: { kind: "shelf" }, threadId };
   }
 
-  // /aincient/<studio>/(node|block)/<nid>[/<lang>] — a document room.
+  // /atelier/<studio>/(node|block)/<nid>[/<lang>] — a document room.
   const kind = seg[1]; // "node" | "block"
   const nid = Number(seg[2]);
   if (!Number.isInteger(nid) || nid <= 0) return { room: studioOrList(studio), threadId };

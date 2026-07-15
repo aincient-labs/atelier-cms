@@ -73,16 +73,13 @@ function aincient_studio_backend_preprocess_page(array &$variables): void {
   // The brand mark returns to the admin landing (/admin).
   $variables['sb_home_url'] = Url::fromRoute('system.admin')->toString();
 
-  // A "Console" affordance to switch back to the chat console (/aincient) —
+  // A "Console" affordance to switch back to the chat console (/atelier) —
   // dropped when the current user can't reach it, so it never links to a 403.
-  try {
-    $console = Url::fromRoute('aincient_chat.console');
-    if ($console->access()) {
-      $variables['sb_console_url'] = $console->toString();
-    }
-  }
-  catch (\Throwable $e) {
-    // aincient_chat uninstalled — no console link.
+  // Shares StudioSections::consoleLink() with the /admin landing card so the
+  // way home has ONE implementation; NULL (guarded) when aincient_core is
+  // absent in the fallback backend or the console isn't reachable.
+  if (class_exists(\Drupal\aincient_core\StudioSections::class)) {
+    $variables['sb_console_url'] = \Drupal\aincient_core\StudioSections::consoleLink();
   }
 
   $account = \Drupal::currentUser();

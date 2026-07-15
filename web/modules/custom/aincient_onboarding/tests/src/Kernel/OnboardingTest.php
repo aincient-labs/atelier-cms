@@ -103,7 +103,7 @@ final class OnboardingTest extends KernelTestBase {
     $this->assertSame('onboarding', $envelope['__widget__']);
     $this->assertNotEmpty($envelope['summary']);
     $payload = $envelope['payload'];
-    $this->assertStringContainsString('/aincient/onboarding/save', $payload['saveUrl']);
+    $this->assertStringContainsString('/atelier/onboarding/save', $payload['saveUrl']);
     // Provider-neutral payload: the resolved provider + its auth shape, no
     // hardcoded model catalogue.
     $this->assertSame('anthropic', $payload['provider']);
@@ -270,14 +270,14 @@ final class OnboardingTest extends KernelTestBase {
 
     // Plain request (admin, configured): the wizard is NOT shown (no `needed`),
     // but the re-entry pointer IS emitted so the user menu can offer it (Law 14).
-    $plain = $this->alterConsoleSettings(Request::create('/aincient'));
+    $plain = $this->alterConsoleSettings(Request::create('/atelier'));
     $this->assertArrayHasKey('onboarding', $plain);
     $this->assertArrayNotHasKey('needed', $plain['onboarding']);
     $this->assertTrue($plain['onboarding']['canReenter']);
 
     // `?onboarding=1` as an admin: the wizard is forced back on, marked as a
     // re-run, and pre-filled with the existing bindings (so a no-op finish is safe).
-    $forced = $this->alterConsoleSettings(Request::create('/aincient', 'GET', ['onboarding' => '1']));
+    $forced = $this->alterConsoleSettings(Request::create('/atelier', 'GET', ['onboarding' => '1']));
     $this->assertTrue($forced['onboarding']['needed']);
     $this->assertTrue($forced['onboarding']['forced']);
     $this->assertSame('anthropic:claude-x', $forced['onboarding']['current']['task']);
@@ -285,9 +285,9 @@ final class OnboardingTest extends KernelTestBase {
     // The override is admin-only: a user without the permission can't force it,
     // and gets no re-entry pointer either.
     $this->setCurrentUser($this->createUser());
-    $denied = $this->alterConsoleSettings(Request::create('/aincient', 'GET', ['onboarding' => '1']));
+    $denied = $this->alterConsoleSettings(Request::create('/atelier', 'GET', ['onboarding' => '1']));
     $this->assertArrayNotHasKey('onboarding', $denied);
-    $plainNonAdmin = $this->alterConsoleSettings(Request::create('/aincient'));
+    $plainNonAdmin = $this->alterConsoleSettings(Request::create('/atelier'));
     $this->assertArrayNotHasKey('onboarding', $plainNonAdmin);
   }
 

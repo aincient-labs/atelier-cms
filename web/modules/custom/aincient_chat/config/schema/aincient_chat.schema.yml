@@ -12,6 +12,9 @@ aincient_chat.settings:
     default_studio:
       type: string
       label: 'The studio a fresh console session opens in'
+    api_base:
+      type: string
+      label: 'Override for the console JSON-API prefix (decoupled backend); empty = same base as the SPA'
     studios:
       type: sequence
       label: 'Studio → agents map'

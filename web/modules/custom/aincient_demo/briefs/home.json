@@ -1,20 +1,20 @@
 {
   "type": "landing",
-  "title": "AIncient CMS",
+  "title": "Atelier",
   "sections": [
     {
       "component": "hero",
       "props": {
         "variant": "split",
         "tone": "default",
-        "eyebrow": "AI-first Drupal",
+        "eyebrow": "An atelier for the web",
         "heading": "Build your website by talking to it.",
-        "subheading": "AIncient is a chat-driven Drupal distribution. Describe what you want — a brand, a landing page, a blog post — and an AI operator composes it live, on a foundation you fully own.",
+        "subheading": "Describe what you want — a page, a brand, a whole blog — and Atelier composes it in front of you, section by section. Refine it in plain words. Publish when it feels right. Own every pixel, forever.",
         "cta_label": "Log in to try it",
-        "cta_url": "/user/login",
+        "cta_url": "/user/login?destination=atelier",
         "secondary_label": "Read the docs",
         "secondary_url": "https://aincient-labs.github.io",
-        "image": "https://picsum.photos/seed/aincient-build/880/660"
+        "image": "@hero"
       }
     },
     {
@@ -22,10 +22,10 @@
       "props": {
         "tone": "muted",
         "items": [
-          { "value": "3 min", "label": "from install to first page" },
-          { "value": "14+", "label": "branded section components" },
-          { "value": "1 brand", "label": "reskins your whole site" },
-          { "value": "100%", "label": "open source, yours to own" }
+          { "value": "3 min", "label": "from a fresh install to your first published page" },
+          { "value": "1 sentence", "label": "to reskin your entire site" },
+          { "value": "14+", "label": "on-brand sections to compose from" },
+          { "value": "0", "label": "lock-in — it's open source, and it's yours" }
         ]
       }
     },
@@ -34,13 +34,13 @@
       "props": {
         "tone": "default",
         "eyebrow": "How it works",
-        "heading": "An operator console, not an admin maze",
-        "subheading": "Three studios, one conversation. The AI proposes; you approve and publish.",
+        "heading": "A studio, not an admin panel.",
+        "subheading": "Three ways of working, one conversation. Atelier proposes; you approve and publish. Nothing goes live without your yes.",
         "columns": 3,
         "features": [
-          { "icon": "✦", "title": "Chat-driven", "body": "Create, find, and edit content by talking to an AI operator — no admin forms to hunt through." },
-          { "icon": "◑", "title": "Brand studio", "body": "Set your colours, type, and tone once. Every component reskins from your design tokens, live." },
-          { "icon": "▦", "title": "Component library", "body": "Heroes, features, pricing, FAQs, galleries and more — composed into pages that always respect your brand." }
+          { "icon": "✍", "title": "Talk, don't dig", "body": "Create, find and edit content by asking — no forms to hunt through, no fields to memorise. Brief it like you'd brief a designer, and refine the result line by line." },
+          { "icon": "◑", "title": "One brand, everywhere", "body": "Set your colour, type and tone once. Every section, every page, and the chrome around them reskin to match — with contrast checks so it always stays readable." },
+          { "icon": "▦", "title": "Blocks that behave", "body": "Heroes, features, pricing, galleries, FAQs and more — composed into real pages that respect your brand. No blank canvas, no broken layouts." }
         ]
       }
     },
@@ -51,10 +51,10 @@
         "tone": "default",
         "eyebrow": "Pages",
         "heading": "Describe it. Watch it build.",
-        "body": "Open the page studio, say what the page is for, and the agent composes it section by section in a live preview. Reorder, refine, and publish when it looks right — the structure is yours, the brand is applied automatically.",
-        "image": "https://picsum.photos/seed/aincient-pages/760/560",
+        "body": "Open a page, say what it's for, and Atelier lays it out in a live preview while you watch — opener, story, proof, close. Want it in a different order? Say so. Warmer, shorter, bolder? Just ask. When it looks right, you publish. Underneath it's plain Drupal, so a developer can open the hood any time.",
+        "image": "@pages",
         "cta_label": "Log in to try it",
-        "cta_url": "/user/login"
+        "cta_url": "/user/login?destination=atelier"
       }
     },
     {
@@ -63,21 +63,19 @@
         "variant": "image-left",
         "tone": "muted",
         "eyebrow": "Brand",
-        "heading": "One brand, every component.",
-        "body": "Your design tokens flow through every page, the chrome, and even this site. Change a colour in the brand studio and the whole experience follows — with built-in WCAG contrast checks so it stays accessible.",
-        "image": "https://picsum.photos/seed/aincient-brand/760/560",
-        "cta_label": "See the brand studio",
-        "cta_url": "/user/login"
+        "heading": "Your brand, on every page — from one decision.",
+        "body": "Choose your colours, your type, your tone in the brand studio. It flows through every component, every page, and the site chrome — even this page you're reading now. Change one colour and the whole site follows, with built-in WCAG contrast checks so nothing turns unreadable. One brand, held consistently, without you having to police it.",
+        "image": "@brand",
+        "cta_label": "Log in to open the brand studio",
+        "cta_url": "/user/login?destination=atelier"
       }
     },
     {
       "component": "banner",
       "props": {
         "tone": "inverted",
-        "heading": "Designed once, branded everywhere.",
-        "subheading": "Own your stack. No lock-in, no per-seat pricing — just Drupal with an AI operator on top.",
-        "cta_label": "Get started",
-        "cta_url": "/user/login"
+        "heading": "Made by conversation. Owned by you.",
+        "subheading": "No per-seat pricing. No lock-in. Just Drupal — with a studio on top that speaks your language."
       }
     },
     {
@@ -87,9 +85,10 @@
         "eyebrow": "FAQ",
         "heading": "Questions, answered",
         "questions": [
-          { "question": "Do I need to know Drupal?", "answer": "No. You talk to the operator console in plain language. Everything underneath is still standard Drupal, so a developer can take over any time." },
-          { "question": "Is my site locked into AIncient?", "answer": "Never. It's a GPL-licensed Drupal distribution — your content, config, and theme are all standard and portable." },
-          { "question": "Can I bring my own brand?", "answer": "Yes. Set your colours, fonts, and tone in the brand studio and every page and component reskins from your tokens." }
+          { "question": "Do I need to know Drupal?", "answer": "No. You work by talking to the studio in plain language. Underneath it's standard Drupal, so a developer can take over whenever you like — nothing is hidden or proprietary." },
+          { "question": "Is my site locked into Atelier?", "answer": "Never. Atelier is open source. Your content, configuration and theme are all standard Drupal — export them, host them anywhere, walk away any time. What you build is yours." },
+          { "question": "Can I use my own brand?", "answer": "Yes. Set your colours, fonts and tone in the brand studio and every page reskins to match. Bring a finished brand, or discover one as you go." },
+          { "question": "What does it cost?", "answer": "Atelier itself is free and open source. You connect your own AI provider key, so you pay your provider directly for what you use — no markup, no seats, no surprises." }
         ]
       }
     },
@@ -97,10 +96,10 @@
       "component": "cta",
       "props": {
         "tone": "brand",
-        "heading": "Ready to build your site?",
-        "subheading": "Log in and compose your first branded page in minutes.",
-        "cta_label": "Log in to start",
-        "cta_url": "/user/login"
+        "heading": "Build something that's yours.",
+        "subheading": "Log in and compose your first page in about the time it takes to describe it.",
+        "cta_label": "Log in to start building",
+        "cta_url": "/user/login?destination=atelier"
       }
     }
   ]

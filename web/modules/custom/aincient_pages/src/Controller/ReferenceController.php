@@ -31,7 +31,7 @@ final class ReferenceController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/reference/search — pickable references across types.
+   * GET /atelier/reference/search — pickable references across types.
    *
    * `?types=media,node,block` (CSV; default all) and `?q=<text>`. Returns
    * `{ items: [ descriptor ] }` — see {@see \Drupal\aincient_pages\Reference\ReferenceDescriptor}.
@@ -47,7 +47,7 @@ final class ReferenceController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/reference/resolve — one stored token → a descriptor (preview).
+   * GET /atelier/reference/resolve — one stored token → a descriptor (preview).
    *
    * `?token=<token>`. Returns `{ item: descriptor|null }` (null for a malformed,
    * unknown-type or dangling reference, so the field can show a "missing" state).

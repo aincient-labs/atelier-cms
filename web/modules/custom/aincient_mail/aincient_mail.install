@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * @file
+ * Install/upgrade hooks for aincient_mail.
+ *
+ * The one job here is to make our @Mail plugin the system-wide default so that
+ * EVERY email Drupal already sends (password resets, account activation, update
+ * notices) flows through the configured transport with zero caller changes.
+ * We write `system.mail:interface.default` from code rather than shipping a
+ * `system.mail.yml` in config/install: that object is owned by the `system`
+ * module and already exists at install time, so a config/install copy would
+ * collide. Fresh installs run hook_install(); already-installed appliances get
+ * hook_update_N() on the next converge.
+ */
+
+declare(strict_types=1);
+
+/**
+ * The mail plugin id we register as the system default.
+ */
+const AINCIENT_MAIL_PLUGIN = 'atelier_mail';
+
+/**
+ * Point system.mail at our plugin (idempotent).
+ */
+function _aincient_mail_set_default(string $interface): void {
+  \Drupal::configFactory()->getEditable('system.mail')
+    ->set('interface.default', $interface)
+    ->save();
+}
+
+/**
+ * Implements hook_install().
+ */
+function aincient_mail_install(): void {
+  _aincient_mail_set_default(AINCIENT_MAIL_PLUGIN);
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Restore core's PHP mail backend so an uninstall never leaves mail pointing at
+ * a plugin that no longer exists.
+ */
+function aincient_mail_uninstall(): void {
+  _aincient_mail_set_default('php_mail');
+}
+
+/**
+ * Route all mail through the Atelier Symfony mailer plugin.
+ */
+function aincient_mail_update_11001(): void {
+  _aincient_mail_set_default(AINCIENT_MAIL_PLUGIN);
+}

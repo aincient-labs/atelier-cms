@@ -7,7 +7,7 @@
 # Run the read-only audit for an existing page → a JSON findings report. The
 # studio panel fetches/refreshes this directly (no chat needed).
 aincient_audit.report:
-  path: '/aincient/audit/{node}/report'
+  path: '/atelier/audit/{node}/report'
   defaults:
     _controller: '\Drupal\aincient_audit\Controller\AuditController::report'
   methods: [GET]

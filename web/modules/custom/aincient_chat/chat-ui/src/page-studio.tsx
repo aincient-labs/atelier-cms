@@ -41,17 +41,19 @@ import { setPageDirty } from "./page-dirty";
 import { useFacet, setFacet, resetFacet } from "./page-facet";
 import { SeoMetaGroup } from "./seo-meta-group";
 import { TeaserGroup } from "./teaser-group";
+import { BlogGroup } from "./blog-group";
 import { consoleBase } from "./console-url";
+import { apiUrl } from "./console-config";
 import { pageDeepLink, isStudioAccessible } from "./studios";
 import { activeStudioKey } from "./flow";
 import { CheckIcon, XIcon, PlusIcon, ChevronDownIcon, GripIcon, MoreHorizontalIcon, ShieldCheckIcon } from "./icons";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { ReferenceField } from "./reference-field";
-import { openBlockTab } from "./block-nav";
+import { openBlock } from "./block-nav";
 import { PanelBar } from "./panel-bar";
 import { FieldRevert } from "./field-revert";
 
-/** One site language (GET /aincient/page/manifest → translation.languages). */
+/** One site language (GET /atelier/page/manifest → translation.languages). */
 type Lang = { id: string; label: string; default: boolean };
 
 /** The structural prop names that travel with the slot (shared across languages).
@@ -59,7 +61,7 @@ type Lang = { id: string; label: string; default: boolean };
  *  these from the source, so the studio locks them when editing one. */
 const STRUCTURAL_PROPS = new Set(["tone", "variant", "columns"]);
 
-/** One prop of a section, as returned by /aincient/page/manifest. */
+/** One prop of a section, as returned by /atelier/page/manifest. */
 type PropDef = {
   name: string;
   meaning: string;
@@ -102,7 +104,7 @@ type Manifest = {
   translation: { languages: Lang[]; multilingual: boolean; allow_divergence: boolean };
 };
 
-const MANIFEST_URL = "/aincient/page/manifest";
+const MANIFEST_URL = apiUrl("/page/manifest");
 
 /** Transitions handled by dedicated primary buttons / the Save-draft button, so
  *  they're not rendered again as generic secondary transition buttons. */
@@ -207,7 +209,7 @@ function summarize(section: PageSection, props: PropDef[]): string {
  * source of truth — the agent's `preview_page` ops and the controls here both
  * write to it, and the live preview iframe re-renders from it. Everything is a
  * DRAFT: edits only repaint the preview. The one deliberate write is Publish,
- * which POSTs the whole schema to /aincient/page/save (create a new page node,
+ * which POSTs the whole schema to /atelier/page/save (create a new page node,
  * or a new revision of the one already published this session). Discard reverts
  * to the last saved baseline.
  */
@@ -1290,7 +1292,11 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
             </label>
           </section>
 
-          {/* Sections. */}
+          {/* Body: the blog post editor (a locked article recipe — no sections),
+              or the landing section stack. */}
+          {draft.type === "blog" ? (
+            <BlogGroup baseline={baselineSchema} />
+          ) : (
           <section className="ain-studio__group">
             <div className="ain-studio__grouphead">
               <h3 className="ain-studio__grouptitle ain-studio__grouptitle--static">
@@ -1313,11 +1319,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                 </button>
               )}
             </div>
-            {draft.type === "blog" ? (
-              <p className="ain-studio__groupnote">
-                This page uses the blog recipe — its layout is fixed. Switch the agent to a landing page to compose sections.
-              </p>
-            ) : (
+            {(
               <>
                 {sections.length === 0 && (
                   <p className="ain-studio__groupnote">
@@ -1407,6 +1409,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
               </>
             )}
           </section>
+          )}
         </fieldset>
       )}
       </>
@@ -1892,14 +1895,14 @@ function PropControl({
         onChange={onChange}
         disabled={disabled}
         types={["block"]}
-        // Editing (or creating) a block opens it in its OWN browser tab — a
-        // block is global/reusable, so a standalone editor is the right model,
-        // and the page you're composing stays intact in this tab.
+        // Editing (or creating) a block enters the block editor in place (same
+        // tab) — a within-workspace move (surface-nav.ts). The dirty guard
+        // protects the page you're composing before it switches rooms.
         onEdit={(token) => {
           const id = token.split(":")[1];
-          if (id) openBlockTab({ id });
+          if (id) openBlock({ id });
         }}
-        onCreate={() => openBlockTab("new")}
+        onCreate={() => openBlock("new")}
         createLabel="New block"
         dirty={dirty}
         revert={revert}

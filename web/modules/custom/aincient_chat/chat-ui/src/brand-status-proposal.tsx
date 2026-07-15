@@ -2,6 +2,7 @@ import { useState } from "react";
 import { makeSafeAssistantToolUI } from "./error-boundary";
 import { CheckIcon, LockIcon, LockOpenIcon } from "./icons";
 import { emitBrandStatus } from "./brand-status-state";
+import { apiUrl } from "./console-config";
 
 /**
  * Brand status proposal — the branding agent's HITL confirm card.
@@ -11,7 +12,7 @@ import { emitBrandStatus } from "./brand-status-state";
  * dispatcher harvests it out of the agent's tool results and renders this card
  * inline. The agent NEVER writes the status itself (the product invariant: "AI
  * proposes, you approve") — this card is the one seam. Confirm POSTs to
- * /aincient/brand/status, the IDENTICAL endpoint the studio's manual status
+ * /atelier/brand/status, the IDENTICAL endpoint the studio's manual status
  * control uses, so the next turn's `brand_state` node reads the new value;
  * Decline is a pure no-op. Once the user acts, the card locks into a terminal
  * state so it can't be double-applied on a re-render.
@@ -25,7 +26,7 @@ type BrandStatusPayload = {
   current?: { stage: string; locked: boolean };
 };
 
-const STATUS_URL = "/aincient/brand/status";
+const STATUS_URL = apiUrl("/brand/status");
 
 /** Human labels for the three stages (mirrors BrandRepository::STAGES). */
 const STAGE_LABEL: Record<string, string> = {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Reference;
 
+use Drupal\aincient_pages\ConsoleDeepLink;
 use Drupal\aincient_pages\EntityEmbedResolver;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -62,6 +63,11 @@ final class NodeReferenceProvider implements ReferenceProviderInterface {
   }
 
   private function toDescriptor(NodeInterface $node): array {
+    // An aincient_page edits in the Content studio (/atelier/content/node/<nid>),
+    // not the raw node form. A node no studio owns (e.g. a plain article) keeps
+    // its backend edit form — there is no studio equivalent to send it to.
+    $editUrl = ConsoleDeepLink::editUrl($node)?->toString()
+      ?? ($node->hasLinkTemplate('edit-form') ? $node->toUrl('edit-form')->toString() : NULL);
     return ReferenceDescriptor::create(
       token: 'entity:node:' . $node->id(),
       type: 'node',
@@ -69,9 +75,7 @@ final class NodeReferenceProvider implements ReferenceProviderInterface {
       description: $this->summary($node),
       thumb: $this->thumb($node),
       published: $node->isPublished(),
-      editUrl: $node->hasLinkTemplate('edit-form')
-        ? $node->toUrl('edit-form')->toString()
-        : NULL,
+      editUrl: $editUrl,
       meta: ['bundle' => $node->bundle()],
     );
   }

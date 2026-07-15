@@ -40,7 +40,7 @@ final class ChromeRepositoryTest extends KernelTestBase {
       ['logo_position' => 'left', 'sticky' => TRUE, 'nav_alignment' => 'end'],
       $this->repo()->header(),
     );
-    $this->assertSame(['layout' => 'inline', 'show_tagline' => TRUE], $this->repo()->footer());
+    $this->assertSame(['layout' => 'inline', 'show_tagline' => TRUE, 'show_credit' => TRUE], $this->repo()->footer());
   }
 
   public function testUpdateValidatesAndDropsUnknown(): void {

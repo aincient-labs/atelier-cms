@@ -28,10 +28,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * It emits a generative-UI widget envelope (`{"__widget__": "page_preview",
  * "payload": {"ops": …}}`). The dispatcher harvests it out of the agent's tool
  * results; the `page_preview` widget applies the ops to the SAME unsaved-draft
- * store the studio's controls write (server-side via /aincient/page/apply, which
+ * store the studio's controls write (server-side via /atelier/page/apply, which
  * runs {@see \Drupal\aincient_pages\PageStore::applyOps}), so the preview
  * recomposes instantly and shows as an unsaved edit. The deliberate write stays
- * the studio's Publish (/aincient/page/save) — so the agent can iterate freely
+ * the studio's Publish (/atelier/page/save) — so the agent can iterate freely
  * ("add a stats band" → "make the hero split") without touching the live site.
  *
  * The current draft (with each section's index) is shown to the agent in the
@@ -47,7 +47,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   id: 'aincient_pages:preview_page',
   function_name: 'aincient_preview_page',
   name: 'Preview page',
-  description: 'Edit the page the user is composing in the LIVE page studio by emitting a list of section OPS. This recomposes the preview INSTANTLY and stages it as an unsaved draft — it does NOT publish (the user does that with the Publish button). Use it for every change so the user sees it happen. Ops (JSON array): set_meta {type?,title?,description?,canonical_url?,og_title?,og_description?,og_image?}; set_teaser {title?,description?,image?}; add_section {component, props?, after?}; update_section {id, props}; remove_section {id}; reorder {order:[…]}. set_meta also sets the page\'s SEO/meta tags — description (~50–160 chars), canonical_url, and Open Graph og_title/og_description/og_image — as per-page overrides; pass an empty string to clear one back to the site default. og_image is an image: give it a media:<id> token (preferred, like the teaser image) or a full URL. set_teaser sets how the page shows up when REFERENCED as a card (in-site listings/teasers) — its teaser title, a short teaser description, and a teaser image given as a media:<id> token (NOT a URL); this is distinct from both the page body and the SEO/meta tags. Pass an empty string to clear a teaser field. set_teaser\'s fields ride FLAT on the op, e.g. {"op":"set_teaser","title":"…","description":"…"} — NEVER nest them under a "teaser" key, and NEVER put teaser fields on set_meta (they will be dropped). Target sections by their stable "id" from LIVE PAGE STATE (preferred — survives reordering); a numeric "index"/"after" still works as a fallback. The current draft — sections (with ids) and any "meta" overrides — is shown in the system prompt as LIVE PAGE STATE; component names + props are listed there too.',
+  description: 'Edit the page the user is composing in the LIVE page studio by emitting a list of section OPS. This recomposes the preview INSTANTLY and stages it as an unsaved draft — it does NOT publish (the user does that with the Publish button). Use it for every change so the user sees it happen. Ops (JSON array): set_meta {type?,title?,description?,canonical_url?,og_title?,og_description?,og_image?}; set_teaser {title?,description?,image?}; set_content {category?,lead?,author?,author_bio?,date?,cover?,body_md?}; add_section {component, props?, after?}; update_section {id, props}; remove_section {id}; reorder {order:[…]}. set_content writes a BLOG post (only when the page type is "blog"): the article body goes in body_md as MARKDOWN (## headings, **bold**, lists, > quotes, `code`, links — NOT HTML), cover is a media:<id> token, and lead/author/author_bio/date/category are plain text; a field set to empty string clears it. To create a post: set_meta {type:"blog",title:…} then set_content. set_meta also sets the page\'s SEO/meta tags — description (~50–160 chars), canonical_url, and Open Graph og_title/og_description/og_image — as per-page overrides; pass an empty string to clear one back to the site default. og_image is an image: give it a media:<id> token (preferred, like the teaser image) or a full URL. set_teaser sets how the page shows up when REFERENCED as a card (in-site listings/teasers) — its teaser title, a short teaser description, and a teaser image given as a media:<id> token (NOT a URL); this is distinct from both the page body and the SEO/meta tags. Pass an empty string to clear a teaser field. set_teaser\'s fields ride FLAT on the op, e.g. {"op":"set_teaser","title":"…","description":"…"} — NEVER nest them under a "teaser" key, and NEVER put teaser fields on set_meta (they will be dropped). Target sections by their stable "id" from LIVE PAGE STATE (preferred — survives reordering); a numeric "index"/"after" still works as a fallback. The current draft — sections (with ids) and any "meta" overrides — is shown in the system prompt as LIVE PAGE STATE; component names + props are listed there too.',
   context_definitions: [
     'ops' => new ContextDefinition(
       data_type: 'string',
@@ -112,7 +112,7 @@ final class PreviewPage extends FunctionCallBase implements ExecutableFunctionCa
 
     if ($valid === []) {
       $this->result = 'Error: no usable ops. ' . implode(' ', $rejected)
-        . ' Valid ops: set_meta, set_teaser, add_section, update_section, remove_section, reorder. Components: '
+        . ' Valid ops: set_meta, set_teaser, set_content, add_section, update_section, remove_section, reorder. Components: '
         . implode(', ', ComponentCatalog::placeableNames()) . '.';
       return;
     }
@@ -172,6 +172,7 @@ final class PreviewPage extends FunctionCallBase implements ExecutableFunctionCa
     return [
       'set_meta' => ['fields' => array_merge(['type', 'title'], PageStore::META_KEYS), 'optional' => []],
       'set_teaser' => ['fields' => PageStore::TEASER_KEYS, 'optional' => []],
+      'set_content' => ['fields' => PageStore::BLOG_CONTENT_KEYS, 'optional' => []],
       'add_section' => ['fields' => ['component'], 'optional' => ['props', 'after']],
       'update_section' => ['fields' => ['id', 'index'], 'optional' => ['props']],
       'remove_section' => ['fields' => ['id', 'index'], 'optional' => []],
@@ -241,7 +242,7 @@ final class PreviewPage extends FunctionCallBase implements ExecutableFunctionCa
     // Effectiveness: a set_meta / set_teaser must carry at least one field, else
     // it is a no-op that would report a false success. (The other ops already
     // require a field above, so this only bites the fieldless metadata ops.)
-    if (in_array($type, ['set_meta', 'set_teaser'], TRUE)
+    if (in_array($type, ['set_meta', 'set_teaser', 'set_content'], TRUE)
       && !array_intersect($spec['fields'], array_keys($op))) {
       return sprintf('%s needs at least one field to set (%s).', $type, implode(', ', $spec['fields']));
     }

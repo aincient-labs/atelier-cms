@@ -64,7 +64,7 @@ final class AccountController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/account — the editable snapshot + option lists for the pane.
+   * GET /atelier/account — the editable snapshot + option lists for the pane.
    */
   public function get(): JsonResponse {
     $account = $this->loadAccount();
@@ -87,7 +87,7 @@ final class AccountController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/account — save name / email / password / timezone.
+   * POST /atelier/account — save name / email / password / timezone.
    *
    * Body: { name?, mail?, timezone?, currentPass?, newPass? }. Returns
    * { ok: true, name, mail, timezone, viewer } on success, or
@@ -168,7 +168,7 @@ final class AccountController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/account/avatar — set the user picture from a multipart upload.
+   * POST /atelier/account/avatar — set the user picture from a multipart upload.
    *
    * Validated against the `user_picture` field's own extension/size limits, so
    * the pane inherits the same constraints as Drupal's profile form.
@@ -204,7 +204,7 @@ final class AccountController implements ContainerInjectionInterface {
   }
 
   /**
-   * DELETE /aincient/account/avatar — clear the user picture.
+   * DELETE /atelier/account/avatar — clear the user picture.
    */
   public function deleteAvatar(): JsonResponse {
     $account = $this->loadAccount();

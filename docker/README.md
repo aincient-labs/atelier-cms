@@ -106,28 +106,24 @@ sidecar.
 > sidecar kept minimal. Don't expose the updater to the network; it only watches a
 > shared volume.
 
-## Distribution image (private, invite-based testing)
+## Distribution image (public GHCR package)
 
-The image is published to a **private GHCR package**: `ghcr.io/aincient-labs/cms`.
-The [`Release image`](../.github/workflows/release.yml) workflow smoke-tests and pushes
-it — `:edge` + `:sha-<short>` on every push to `main`, and `:v1.2.3` + `:latest` on a
-`v*` git tag. Nothing is pushed unless `smoke.sh` (build → install → upgrade → rollback)
-passes, and the pushed image is the exact one smoke validated.
+The image is published to a **public GHCR package**: `ghcr.io/aincient-labs/atelier`.
+It is **built and published from the public artifact repo** (`aincient-labs/atelier`), not
+from the private dev repo — so the package's source is exactly the public tree. The
+[`Release image`](../.github/workflows/release.yml) workflow smoke-tests and pushes it —
+`:edge` + `:sha-<short>` on every push to `main`, and `:v1.2.3` + `:latest` on a `v*` git
+tag. Nothing is pushed unless `smoke.sh` (build → install → upgrade → rollback) passes, and
+the pushed image is the exact one smoke validated.
 
-**Inviting a tester** (one-time, per person): on GitHub → the `cms` package →
-*Package settings* → *Manage access* → add their account/team with **Read**. Keep the
-package **private**.
-
-**Pulling as a tester:** GHCR needs auth even for read. Create a classic PAT with
-`read:packages`, then:
+**Pulling:** the package is public, so no auth is needed:
 
 ```bash
-echo "$GHCR_PAT" | docker login ghcr.io -u <github-username> --password-stdin
-docker pull ghcr.io/aincient-labs/cms:latest   # or :v1.2.3 / :edge
+docker pull ghcr.io/aincient-labs/atelier:latest   # or :v1.2.3 / :edge
 ```
 
 `docker/compose.yaml` already defaults `AINCIENT_IMAGE` to
-`ghcr.io/aincient-labs/cms:latest`, so once logged in a plain `up` pulls the right image.
+`ghcr.io/aincient-labs/atelier:latest`, so a plain `up` pulls the right image.
 Override `AINCIENT_IMAGE` to pin a specific tag.
 
 > The published image is currently **linux/amd64 only** (what the CI runner builds and
@@ -141,7 +137,7 @@ cp .env.example .env   # set HASH_SALT (connect an AI provider later in the cons
 # Authenticate to GHCR first (see above) so the default image can be pulled,
 # or build locally with --build.
 docker compose -f docker/compose.yaml up -d --build
-# → http://localhost:41221/  (log in → /aincient)
+# → http://localhost:41221/  (log in → /atelier)
 ```
 
 Simulate an upgrade after pushing a new image tag:
@@ -160,7 +156,7 @@ rollback); the appliance install gate is closed (see `.dev` DECISIONS 2026-06-16
 - ✅ Fresh install: empty DB → `drush site:install minimal --existing-config` (from the
   baked-in `config/sync`) → `cache:rebuild` → seed branded homepage (`aincient_demo`) →
   health OK. The branded `aincient_theme` is the default front end out of the box.
-- ✅ Serving: front page and `/user/login` return 200; `/aincient` returns 403 to
+- ✅ Serving: front page and `/user/login` return 200; `/atelier` returns 403 to
   anonymous (correct — the console is authenticated-only).
 - ✅ Upgrade branch: recreating the container on the existing DB takes the upgrade
   path → snapshot → `drush updatedb` → cache rebuild → health check (under the

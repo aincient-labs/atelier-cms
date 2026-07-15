@@ -7,44 +7,44 @@
 
 declare(strict_types=1);
 
+use Drupal\aincient_pages\ConsoleDeepLink;
+use Drupal\aincient_pages\SiteIdentity;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Url;
 
-// aincient_page / aincient_block nodes are authored and edited through the chat
-// console's studio (the AI + the studio's structured controls), not the backend
-// node form. The only backend affordance is the "Edit in studio" operation
-// below — it deep-links the content list's operations menu to the studio.
+// Studio-authored content — an `aincient_page` node, a `block` media, an `image`
+// media — is authored and edited through the chat console's studios (the AI +
+// the studio's structured controls), not the backend entity form. The only
+// backend affordance is the "Edit in studio" operation below — it deep-links the
+// admin content/media list's operations menu straight into the right studio.
 
 /**
  * Implements hook_entity_operation().
  *
- * Adds an "Edit in studio" link to the operations menu (e.g. on /admin/content)
- * for the studio-authored bundles. The studio opens the draft from a query-param
- * deep link on the console SPA — `?page=<nid>` / `?block=<nid>` — the contract
- * documented in chat-ui/src/url-sync.ts (useUrlPageSync). The default node
- * "Edit" still goes to the raw field form; this routes the operator to the
- * structured editor that actually understands the page/block schema.
+ * Adds an "Edit in studio" link to the operations menu (e.g. on /admin/content
+ * and the media admin) for the studio-authored entities. It points at the
+ * console's room-primary deep link — /atelier/content/node/<nid>,
+ * /atelier/content/block/<id> or /atelier/media/image/<id> — via
+ * {@see \Drupal\aincient_pages\ConsoleDeepLink} (the shared entity→studio map),
+ * the route contract in aincient_chat.routing.yml. This replaces the retired
+ * `?page=`/`?block=` query the SPA no longer reads (the room now owns the path;
+ * see chat-ui/src/console-url.ts). The default entity "Edit" still goes to the
+ * raw field form; this routes the operator to the structured studio editor.
  */
 function aincient_pages_entity_operation(EntityInterface $entity): array {
-  // Map each studio-authored bundle to the deep-link query param the SPA reads.
-  // A global block is now a `block` MEDIA entity (DECISIONS 0138), so the op is
-  // offered on the media admin too, still deep-linking `?block=<id>`.
-  $param = match (TRUE) {
-    $entity->getEntityTypeId() === 'node' && $entity->bundle() === 'aincient_page' => 'page',
-    $entity->getEntityTypeId() === 'media' && $entity->bundle() === 'block' => 'block',
-    default => NULL,
-  };
-  if ($param === NULL) {
+  $url = ConsoleDeepLink::editUrl($entity);
+  $permission = ConsoleDeepLink::studioPermission($entity);
+  if ($url === NULL || $permission === NULL) {
     return [];
   }
 
-  // Only offer the link to users who can actually open the console AND edit
-  // pages — otherwise the deep link lands on a console that 403s the load.
+  // Only offer the link to users who can open the console AND enter the studio
+  // it targets — otherwise the deep link lands on a console that falls back to
+  // the default studio (and the studio's load endpoint would 403 anyway).
   $account = \Drupal::currentUser();
   if (!$account->hasPermission('use aincient operator console')
-    || !$account->hasPermission('administer aincient pages')) {
+    || !$account->hasPermission($permission)) {
     return [];
   }
 
@@ -52,9 +52,7 @@ function aincient_pages_entity_operation(EntityInterface $entity): array {
     'edit_in_studio' => [
       'title' => t('Edit in studio'),
       'weight' => -10,
-      'url' => Url::fromRoute('aincient_chat.console', [], [
-        'query' => [$param => $entity->id()],
-      ]),
+      'url' => $url,
     ],
   ];
 }
@@ -182,4 +180,43 @@ function aincient_pages_page_attachments_alter(array &$attachments): void {
     'href' => $favicon['href'],
     'type' => $favicon['type'],
   ];
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete() for node.
+ *
+ * The identity's site-information page slots (front/403/404) hold
+ * `entity:node:<id>` tokens that SiteInformationOverrider resolves to
+ * system.site paths on every request — a token left pointing at a deleted node
+ * would send the front page to a 404. Clear any slot that referenced the
+ * deleted node so the shipped system.site default shows through again.
+ */
+function aincient_pages_node_delete(EntityInterface $node): void {
+  $config = \Drupal::configFactory()->getEditable(SiteIdentity::CONFIG);
+  $site = $config->get('site') ?: [];
+  $token = 'entity:node:' . $node->id();
+  $changed = FALSE;
+  foreach (['front', 'page_403', 'page_404'] as $key) {
+    if (($site[$key] ?? '') === $token) {
+      $site[$key] = '';
+      $changed = TRUE;
+    }
+  }
+  if ($changed) {
+    $config->set('site', $site)->save();
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for system_site_information_settings.
+ *
+ * Core's raw form edits (and displays) the UNOVERRIDDEN system.site, but on
+ * this site the effective values come from the brand identity via
+ * SiteInformationOverrider — so anything saved here is shadowed the moment the
+ * identity sets the same key. The form stays functional (it edits the shipped
+ * defaults, the fallback for empty identity fields); this just says so, for
+ * anyone who jailbreaks into the Drupal admin.
+ */
+function aincient_pages_form_system_site_information_settings_alter(array &$form): void {
+  \Drupal::messenger()->addWarning(t('Site details, the front page and the error pages are managed in the console (Site → Globals). Values saved on this form are only the fallback defaults — a value set in the console overrides them at runtime.'));
 }

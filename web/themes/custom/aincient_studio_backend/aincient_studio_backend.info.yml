@@ -5,6 +5,30 @@ core_version_requirement: ^11
 base theme: stark
 libraries:
   - aincient_studio_backend/global
+# Core's drupal.vertical-tabs ships misc/vertical-tabs.css — a float + negative
+# `-15em` gutter layout with #ccc/#eee/#fff chrome and dotted focus outlines that
+# fights the admin kit's flexbox rail at every property (and pinned the crop
+# aspect-ratio bar to 15em, leaving a dead strip). Drop it wholesale — like Claro
+# does — and let css/admin-kit.css own vertical tabs from a blank slate. The JS
+# (menu build, is-selected, pane show/hide) is untouched; only the stylesheet goes.
+#
+# Core's drupal.dropbutton ships misc/dropbutton/dropbutton.css, which absolutely
+# positions the OPEN flyout inside the row (`td .dropbutton-multiple .dropbutton-
+# widget { position: absolute }`). That overlay is clipped by any ancestor with
+# `overflow: hidden` — so the operations flyout on the last table rows is sheared
+# off at the table's rounded-corner clip (its second action simply vanishes). It
+# also bloats the operations column with `padding-right: 10em` / `margin-right:
+# 2em` width hacks. Drop it wholesale and let css/admin-kit.css own the dropbutton
+# anatomy from a blank slate; the JS (markup build + `.open` toggle) is untouched.
+libraries-override:
+  core/drupal.vertical-tabs:
+    css:
+      component:
+        misc/vertical-tabs.css: false
+  core/drupal.dropbutton:
+    css:
+      component:
+        misc/dropbutton/dropbutton.css: false
 # The chrome is a fixed left sidebar (brand + section nav + account) beside a
 # scrolling main column — the toolbar/Navigation is deliberately suppressed
 # (html.html.twig never prints page_top), so this sidebar IS the nav.

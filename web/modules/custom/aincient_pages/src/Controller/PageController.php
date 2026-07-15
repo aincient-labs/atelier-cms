@@ -45,7 +45,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/apply — apply the agent's ops to the working draft.
+   * POST /atelier/page/apply — apply the agent's ops to the working draft.
    *
    * Body: `{ "schema": {…current draft…}, "ops": [ {op:…}, … ] }`. Runs the ops
    * through {@see PageStore::applyOps} (the single source of ops + clamp logic)
@@ -68,7 +68,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/preview — render a draft page-schema, WITHOUT persisting.
+   * POST /atelier/page/preview — render a draft page-schema, WITHOUT persisting.
    *
    * Body: `{ "schema": { …page-schema… } }`. The schema is clamped through the
    * same guardrail Publish uses, then rendered to the chrome-less HTML the
@@ -82,7 +82,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/save — SAVE the studio's working schema as a DRAFT.
+   * POST /atelier/page/save — SAVE the studio's working schema as a DRAFT.
    *
    * Semantics changed with the editorial workflow: this no longer publishes. It
    * persists the schema as a forward (pending) draft revision — the live page is
@@ -123,7 +123,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/publish — write the latest schema then PUBLISH (go live).
+   * POST /atelier/page/publish — write the latest schema then PUBLISH (go live).
    *
    * The one-click save+go-live: persists the schema (if sent) and makes that
    * revision the published default. Requires update access; the publish/approve
@@ -157,14 +157,14 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/submit-review — move a draft to Needs review.
+   * POST /atelier/page/submit-review — move a draft to Needs review.
    */
   public function submitReview(Request $request): JsonResponse {
     return $this->transition($request, 'submit_for_review', requireUpdate: TRUE);
   }
 
   /**
-   * POST /aincient/page/approve — Needs review → Published (reviewer-gated).
+   * POST /atelier/page/approve — Needs review → Published (reviewer-gated).
    * A reviewer needs the approve transition, NOT update access (they review,
    * they don't edit), so this does not gate on update.
    */
@@ -173,21 +173,21 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/reject — Needs review → Draft (reviewer sends it back).
+   * POST /atelier/page/reject — Needs review → Draft (reviewer sends it back).
    */
   public function reject(Request $request): JsonResponse {
     return $this->transition($request, 'reject', requireUpdate: FALSE);
   }
 
   /**
-   * POST /aincient/page/archive — Published → Archived (take the page down).
+   * POST /atelier/page/archive — Published → Archived (take the page down).
    */
   public function archive(Request $request): JsonResponse {
     return $this->transition($request, 'archive', requireUpdate: FALSE);
   }
 
   /**
-   * POST /aincient/page/restore — Archived → Draft (bring it back to edit).
+   * POST /atelier/page/restore — Archived → Draft (bring it back to edit).
    */
   public function restore(Request $request): JsonResponse {
     return $this->transition($request, 'restore', requireUpdate: FALSE);
@@ -317,7 +317,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/page/manifest — the component catalog for the studio editor.
+   * GET /atelier/page/manifest — the component catalog for the studio editor.
    *
    * The single source the studio's structured section editor renders from: the
    * placeable sections, each prop (with its enum values where it's enumerated or
@@ -399,7 +399,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/page/list — existing pages for the studio's page picker /
+   * GET /atelier/page/list — existing pages for the studio's page picker /
    * content browser.
    *
    * Two shapes from one route. With no query params it returns the legacy
@@ -431,7 +431,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/page/{node}/schema — the stored schema for an existing page.
+   * GET /atelier/page/{node}/schema — the stored schema for an existing page.
    *
    * The "edit this page" entry point: the studio seeds its initial draft from
    * here, then drives the agent/preview loop against it. An optional `?langcode=`
@@ -469,7 +469,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/{node}/diverge — flip a translation to asymmetric layout.
+   * POST /atelier/page/{node}/diverge — flip a translation to asymmetric layout.
    *
    * Body: `{ "langcode": "<lc>" }`. Copy-on-write: snapshots the source skeleton
    * into the translation and detaches it from source layout edits. Permission-
@@ -481,7 +481,7 @@ final class PageController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/{node}/converge — re-inherit the source layout.
+   * POST /atelier/page/{node}/converge — re-inherit the source layout.
    *
    * Body: `{ "langcode": "<lc>" }`. Discards the translation's own structure and
    * flips it back to symmetric (keeps localised content). Always permitted.

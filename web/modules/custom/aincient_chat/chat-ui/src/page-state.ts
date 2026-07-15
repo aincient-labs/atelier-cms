@@ -8,13 +8,13 @@
  * stable "base page" to overlay on. The browser holds the authoritative draft
  * here; the studio rail and the agent both mutate it:
  *   - the studio's section controls call setPageDraft() on every edit;
- *   - the `page_preview` tool POSTs the agent's ops to /aincient/page/apply and
+ *   - the `page_preview` tool POSTs the agent's ops to /atelier/page/apply and
  *     writes the returned (validated) schema back with setPageDraft().
  * The preview iframe subscribes and re-renders by POSTing the schema to the
- * stateless /aincient/page/preview endpoint.
+ * stateless /atelier/page/preview endpoint.
  *
  * Nothing here is persisted — this is preview only. The one deliberate write is
- * the studio's Publish button (POST /aincient/page/save), exactly as brand's is.
+ * the studio's Publish button (POST /atelier/page/save), exactly as brand's is.
  */
 
 /** One placed section in a landing page-schema. `id` is the stable slot
@@ -58,9 +58,37 @@ export type PageSchema = {
   meta?: PageMeta;
   /** Teaser/presence block (absent when the page carries no teaser). */
   teaser?: PageTeaser;
-  /** Blog recipes carry their own fields (lead, body_html, …); pass-through. */
+  /** Blog recipes carry their own flat body fields (see PageBlog); pass-through
+   *  alongside the typed keys above. */
   [key: string]: unknown;
 };
+
+/** A blog post's flat body fields (the locked blog recipe's content). `body_md`
+ *  is the article body as Markdown SOURCE — compiled to sanitised HTML and
+ *  rendered through the branded `prose` component. `cover` is a `media:<id>`
+ *  token. These live directly on the PageSchema (not nested) and are staged by
+ *  the studio's blog editor and the agent's `set_content` op alike; they map to
+ *  PageStore::BLOG_CONTENT_KEYS. */
+export type PageBlog = {
+  category?: string;
+  lead?: string;
+  author?: string;
+  author_bio?: string;
+  date?: string;
+  cover?: string;
+  body_md?: string;
+};
+
+/** The blog body keys, in editor display order (mirrors PageStore::BLOG_CONTENT_KEYS). */
+export const BLOG_FIELDS: (keyof PageBlog)[] = [
+  "category",
+  "lead",
+  "author",
+  "author_bio",
+  "date",
+  "cover",
+  "body_md",
+];
 
 /** The empty landing draft a fresh studio session starts from. Matches the
  *  shape PageStore::validate() normalises to, so a blank draft round-trips. */
@@ -92,6 +120,7 @@ import {
   markLockLost,
   type LockHolder,
 } from "./page-lock";
+import { apiUrl } from "./console-config";
 
 /**
  * Thrown by the deep-link loaders when the schema endpoint refuses the node, so
@@ -396,7 +425,7 @@ export function closeDocToListing(): void {
  * block updates every page that references it.
  */
 export async function loadBlockIntoStudio(node: string): Promise<void> {
-  const res = await fetch(`/aincient/block/${encodeURIComponent(node)}/schema`, {
+  const res = await fetch(apiUrl(`/block/${encodeURIComponent(node)}/schema`), {
     credentials: "same-origin",
   });
   const data = await res.json().catch(() => null);
@@ -505,7 +534,7 @@ export function subscribePageNode(cb: () => void): () => void {
  */
 export async function loadPageIntoStudio(node: string, langcode?: string | null, studio: StudioKey = "content"): Promise<void> {
   const qs = langcode ? `?langcode=${encodeURIComponent(langcode)}` : "";
-  const res = await fetch(`/aincient/page/${encodeURIComponent(node)}/schema${qs}`, {
+  const res = await fetch(apiUrl(`/page/${encodeURIComponent(node)}/schema${qs}`), {
     credentials: "same-origin",
   });
   const data = await res.json().catch(() => null);
@@ -546,7 +575,7 @@ export async function setTranslationMode(
   mode: "asymmetric" | "symmetric",
 ): Promise<void> {
   const verb = mode === "asymmetric" ? "diverge" : "converge";
-  const res = await fetch(`/aincient/page/${encodeURIComponent(node)}/${verb}`, {
+  const res = await fetch(apiUrl(`/page/${encodeURIComponent(node)}/${verb}`), {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
@@ -563,7 +592,7 @@ export async function setTranslationMode(
 
 /** The studio's API base for the current kind (page vs reusable global block). */
 function apiBase(kind: StudioKind): string {
-  return kind === "block" ? "/aincient/block" : "/aincient/page";
+  return kind === "block" ? apiUrl("/block") : apiUrl("/page");
 }
 
 /**

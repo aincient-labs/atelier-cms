@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useThreadRuntime } from "@assistant-ui/react";
 import { makeSafeAssistantToolUI } from "./error-boundary";
+import { apiUrl } from "./console-config";
 
 /**
  * Onboarding panel — the first-run "connect AI" generative-UI widget.
@@ -11,7 +12,7 @@ import { makeSafeAssistantToolUI } from "./error-boundary";
  * agent can't run). The dispatcher harvests it and renders this card inline.
  *
  * The card collects the credential for one provider (the recommended one, or
- * the first installed) and POSTs it to `/aincient/onboarding/save`, which
+ * the first installed) and POSTs it to `/atelier/onboarding/save`, which
  * validates it BEFORE persisting, stores it via the Key module's state provider
  * (the secret lives in Drupal State, never in config/git), and binds a model to
  * each AIncient role automatically. On success the console drops back to its
@@ -38,7 +39,7 @@ const KEY_HELP: Record<string, { href: string; label: string }> = {
 };
 
 function Onboarding(payload: OnboardingPayload) {
-  const saveUrl = payload.saveUrl ?? "/aincient/onboarding/save";
+  const saveUrl = payload.saveUrl ?? apiUrl("/onboarding/save");
   const provider = payload.provider ?? "";
   const providerLabel = payload.providerLabel ?? "your AI provider";
   const isHost = payload.auth === "host";

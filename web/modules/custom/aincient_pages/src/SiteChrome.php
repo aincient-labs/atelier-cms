@@ -26,6 +26,23 @@ final class SiteChrome {
    */
   private const MAX_DEPTH = 3;
 
+  /**
+   * The default-on product attribution shown in the footer note bar.
+   *
+   * Uses the canonical PRODUCT name — "Atelier by AIncient Labs" — not the
+   * distribution/"CMS" phrasing. This is AIncient's OWN brand (never the
+   * operator's), so it lives here as a constant, not in the operator-editable
+   * identity/chrome config; operators toggle only its VISIBILITY via the footer
+   * `show_credit` setting ({@see ChromeRepository}).
+   */
+  public const CREDIT_LABEL = 'Atelier by AIncient Labs';
+  public const CREDIT_URL = 'https://aincient-labs.com/product/atelier';
+
+  /** The footer attribution credit as an SDC prop `{label, href}`. */
+  public static function credit(): array {
+    return ['label' => self::CREDIT_LABEL, 'href' => self::CREDIT_URL];
+  }
+
   public function __construct(
     private readonly MenuLinkTreeInterface $menuTree,
     private readonly BrandRepository $brand,
@@ -54,6 +71,7 @@ final class SiteChrome {
       'logo_url' => $this->identity->logoUrl(),
       'nav' => $this->nav('footer'),
       'note' => $note,
+      'credit' => self::credit(),
     ] + $this->chrome->footer();
   }
 

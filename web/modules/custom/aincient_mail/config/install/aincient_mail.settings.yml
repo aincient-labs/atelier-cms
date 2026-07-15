@@ -1,0 +1,9 @@
+transport_type: local
+api_provider: sendgrid
+api_key: mail_default_key
+host: ''
+port: 587
+username: ''
+encryption: tls
+smtp_password: mail_smtp_password
+from_override: ''

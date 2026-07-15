@@ -6,6 +6,7 @@ import { PanelBar } from "./panel-bar";
 import { XIcon, CheckIcon, ShieldCheckIcon } from "./icons";
 import { MenuEditor } from "./menu-editor";
 import { ReferenceField } from "./reference-field";
+import { apiUrl } from "./console-config";
 import {
   setChromeDraft,
   getChromeDraft,
@@ -29,7 +30,7 @@ import {
  *
  * One rail, one draft: every edit writes the whole draft into globals-state, which
  * the live preview (a server re-render — chrome is markup, not CSS vars) subscribes
- * to. Nothing is live until Publish (POST /aincient/chrome/save), exactly like the
+ * to. Nothing is live until Publish (POST /atelier/chrome/save), exactly like the
  * other studios.
  *
  * The chrome AGENT (step 2b) writes the same draft via the `chrome_preview` widget,
@@ -39,8 +40,8 @@ import {
  * ignore notifications for the very draft this rail just pushed.
  */
 
-const MANIFEST_URL = "/aincient/chrome/manifest";
-const SAVE_URL = "/aincient/chrome/save";
+const MANIFEST_URL = apiUrl("/chrome/manifest");
+const SAVE_URL = apiUrl("/chrome/save");
 
 /** One header/footer layout setting as the manifest describes it for the rail. */
 type RegistrySetting = {
@@ -69,6 +70,9 @@ type ChromeManifest = {
     /** `media:<id>` tokens (or '' for none) — the unified picker's value. */
     logo: string;
     favicon: string;
+    /** Site information (mail + front/403/404 `entity:node:<id>` tokens; '' =
+     *  the shipped system.site default). Overrides system.site at runtime. */
+    site: { mail: string; front: string; page_403: string; page_404: string };
   };
   privacy: {
     font_delivery: string;
@@ -80,14 +84,18 @@ type ChromeManifest = {
   menus: { main: ChromeMenuLink[]; footer: ChromeMenuLink[] };
 };
 
-type Tab = "identity" | "header" | "footer" | "privacy";
+type Tab = "identity" | "site" | "header" | "footer" | "privacy";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "identity", label: "Brand identity" },
+  { id: "site", label: "Site" },
   { id: "header", label: "Header" },
   { id: "footer", label: "Footer" },
   { id: "privacy", label: "Privacy" },
 ];
+
+/** The site-information keys (mirrors SiteIdentity::SITE_KEYS). */
+const SITE_KEYS = ["mail", "front", "page_403", "page_404"] as const;
 
 /** The two font-delivery modes (must match BrandRepository::DELIVERY_*). */
 const DELIVERY_SELFHOST = "selfhost";
@@ -131,6 +139,12 @@ function seedFrom(data: Pick<ChromeManifest, "chrome" | "identity" | "privacy" |
       footer_note: String(data.identity?.footer_note ?? ""),
       logo: String(data.identity?.logo ?? ""),
       favicon: String(data.identity?.favicon ?? ""),
+      site: {
+        mail: String(data.identity?.site?.mail ?? ""),
+        front: String(data.identity?.site?.front ?? ""),
+        page_403: String(data.identity?.site?.page_403 ?? ""),
+        page_404: String(data.identity?.site?.page_404 ?? ""),
+      },
     },
     privacy: {
       font_delivery: String(data.privacy?.font_delivery ?? DELIVERY_GOOGLE),
@@ -155,6 +169,9 @@ function countDirty(base: ChromeDraft, draft: ChromeDraft): number {
   // one changed field, compared against the saved baseline like the text fields.
   if ((draft.identity.logo ?? "") !== (base.identity.logo ?? "")) n++;
   if ((draft.identity.favicon ?? "") !== (base.identity.favicon ?? "")) n++;
+  for (const k of SITE_KEYS) {
+    if ((draft.identity.site?.[k] ?? "") !== (base.identity.site?.[k] ?? "")) n++;
+  }
   for (const sec of ["header", "footer"] as const) {
     const a = draft.chrome[sec] ?? {};
     const b = base.chrome[sec] ?? {};
@@ -365,6 +382,15 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
     update(next);
   };
 
+  // Site information: mail is plain text; the three page slots are
+  // `entity:node:<id>` tokens from the unified picker ('' = shipped default).
+  const setSiteField = (key: (typeof SITE_KEYS)[number], value: string) => {
+    if (!draft) return;
+    const next = clone(draft);
+    next.identity.site = { ...next.identity.site, [key]: value };
+    update(next);
+  };
+
   const publish = useCallback(async () => {
     if (!draft) return;
     setPublishing(true);
@@ -378,6 +404,7 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
           footer_note: draft.identity.footer_note,
           logo: draft.identity.logo,
           favicon: draft.identity.favicon,
+          site: draft.identity.site,
         },
         privacy: { font_delivery: draft.privacy.font_delivery },
         menus: draft.menus,
@@ -591,6 +618,42 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
                   value={draft.identity.footer_note}
                   onChange={setFooterNote}
                   placeholder="© 2026 Atelier (defaults to © year + name)"
+                />
+              </div>
+            )}
+
+            {tab === "site" && (
+              <div className="ain-globals__panel">
+                <p className="ain-studio__groupnote">
+                  Core site details. Anything left empty falls back to the shipped
+                  default — set only what you want to own.
+                </p>
+                <TextField
+                  label="Site email"
+                  value={draft.identity.site.mail}
+                  onChange={(v) => setSiteField("mail", v)}
+                  placeholder="Where system mail (password resets, notifications) comes from"
+                />
+                <ReferenceField
+                  label="Front page"
+                  meaning="The page shown at your site’s root URL. Empty = the default front page."
+                  value={draft.identity.site.front}
+                  onChange={(v) => setSiteField("front", typeof v === "string" ? v : "")}
+                  types={["node"]}
+                />
+                <ReferenceField
+                  label="Not-found page (404)"
+                  meaning="Shown when a visitor hits a URL that doesn’t exist."
+                  value={draft.identity.site.page_404}
+                  onChange={(v) => setSiteField("page_404", typeof v === "string" ? v : "")}
+                  types={["node"]}
+                />
+                <ReferenceField
+                  label="Access-denied page (403)"
+                  meaning="Shown when a visitor isn’t allowed to see a page."
+                  value={draft.identity.site.page_403}
+                  onChange={(v) => setSiteField("page_403", typeof v === "string" ? v : "")}
+                  types={["node"]}
                 />
               </div>
             )}

@@ -33,7 +33,7 @@ final class MediaController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/media/url — a media token → a file URL at a named image style.
+   * GET /atelier/media/url — a media token → a file URL at a named image style.
    *
    * `?token=media:<id>&style=<image_style>`. Returns `{ url: string|null }` — the
    * derivative URL for that style, or null for a non-media / dangling token. The
@@ -48,7 +48,7 @@ final class MediaController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/media/upload — create an image-media item from an upload.
+   * POST /atelier/media/upload — create an image-media item from an upload.
    *
    * Multipart body: `file` (the image) + optional `alt` (alt text / name). The
    * upload is validated against the media type's own source-field limits. Returns
@@ -70,7 +70,7 @@ final class MediaController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/media/{media}/schema — the editable detail of one image item.
+   * GET /atelier/media/{media}/schema — the editable detail of one image item.
    *
    * The "open this media item" read behind the media studio's editor rail — the
    * name, alt, display-sized preview, and read-only facts (mime + dimensions +
@@ -93,7 +93,7 @@ final class MediaController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/media/{media} — update an image item's name and/or alt text.
+   * POST /atelier/media/{media} — update an image item's name and/or alt text.
    *
    * JSON body `{ name?: string, alt?: string }` — only the keys present are
    * written, so the two editor controls save independently. Returns the fresh
@@ -121,7 +121,7 @@ final class MediaController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/media/{media}/file — swap the image file, keeping the token.
+   * POST /atelier/media/{media}/file — swap the image file, keeping the token.
    *
    * Multipart body: `file` (the replacement image). The `media:<id>` token is
    * unchanged, so every page/block/chrome that embeds it now serves the new
@@ -148,7 +148,7 @@ final class MediaController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/media/{media}/replace-from — overwrite {media} with another
+   * POST /atelier/media/{media}/replace-from — overwrite {media} with another
    * item's bytes, keeping {media}'s token.
    *
    * JSON body `{ from: 'media:<id>' }`. The "commit this edit onto the original"
@@ -178,7 +178,7 @@ final class MediaController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/media/{media}/delete — delete an image-media item.
+   * POST /atelier/media/{media}/delete — delete an image-media item.
    *
    * The human's explicit discard for an unwanted (e.g. just-generated) image.
    * Returns `{ deleted: true }`. Gated on delete access (403), wrong bundle (404).

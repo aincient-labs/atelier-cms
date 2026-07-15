@@ -2,6 +2,7 @@ import { ensureStudio } from "./flow";
 import { DocLoadError } from "./page-state";
 import { clearDocEnd } from "./doc-end-state";
 import { MEDIA_STUDIO } from "./rooms-core";
+import { apiUrl } from "./console-config";
 
 /**
  * The Media studio store — the loaded image-media item being edited, and the two
@@ -11,7 +12,7 @@ import { MEDIA_STUDIO } from "./rooms-core";
  * item has no page schema, no live preview iframe, and no editor lock (it's not a
  * composed document — just an asset with metadata). One item is "open" at a time;
  * {@link loadMediaIntoStudio} is the single "edit this media item" entry point
- * (the Library card's Edit action + a `/aincient/media/<id>` deep link both reach
+ * (the Library card's Edit action + a `/atelier/media/<id>` deep link both reach
  * it through the console machine's doc-load path). Backed by the endpoints on
  * {@see \Drupal\aincient_pages\Controller\MediaController}.
  */
@@ -142,7 +143,7 @@ export function subscribeMedia(cb: () => void): () => void {
  * dead-end pane — the same contract as loadPageIntoStudio / loadBlockIntoStudio.
  */
 export async function loadMediaIntoStudio(id: string | number): Promise<void> {
-  const res = await fetch(`/aincient/media/${encodeURIComponent(String(id))}/schema`, {
+  const res = await fetch(apiUrl(`/media/${encodeURIComponent(String(id))}/schema`), {
     credentials: "same-origin",
   });
   const data = await res.json().catch(() => null);
@@ -177,7 +178,7 @@ export function closeMedia(): void {
  */
 export async function saveMediaMetadata(fields: { name?: string; alt?: string }): Promise<MediaDetail> {
   if (!current) throw new Error("No media item is open.");
-  const res = await fetch(`/aincient/media/${encodeURIComponent(current.id)}`, {
+  const res = await fetch(apiUrl(`/media/${encodeURIComponent(current.id)}`), {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
@@ -201,7 +202,7 @@ export async function replaceMediaFile(file: File): Promise<MediaDetail> {
   if (!current) throw new Error("No media item is open.");
   const body = new FormData();
   body.append("file", file);
-  const res = await fetch(`/aincient/media/${encodeURIComponent(current.id)}/file`, {
+  const res = await fetch(apiUrl(`/media/${encodeURIComponent(current.id)}/file`), {
     method: "POST",
     credentials: "same-origin",
     body,
@@ -224,7 +225,7 @@ export async function replaceMediaFile(file: File): Promise<MediaDetail> {
  */
 export async function deleteMedia(): Promise<void> {
   if (!current) throw new Error("No media item is open.");
-  const res = await fetch(`/aincient/media/${encodeURIComponent(current.id)}/delete`, {
+  const res = await fetch(apiUrl(`/media/${encodeURIComponent(current.id)}/delete`), {
     method: "POST",
     credentials: "same-origin",
   });
@@ -248,7 +249,7 @@ export async function replaceOriginalWithCurrent(): Promise<MediaDetail> {
     throw new Error("This image wasn’t edited from another, so there’s no original to replace.");
   }
   const originalId = editSource.sourceToken.split(":").pop() ?? "";
-  const res = await fetch(`/aincient/media/${encodeURIComponent(originalId)}/replace-from`, {
+  const res = await fetch(apiUrl(`/media/${encodeURIComponent(originalId)}/replace-from`), {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },

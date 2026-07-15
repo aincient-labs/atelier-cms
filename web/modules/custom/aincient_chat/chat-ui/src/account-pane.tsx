@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { settings } from "./adapter";
 import type { AincientSettings } from "./adapter";
 import { CheckIcon, ChevronDownIcon, SpinnerIcon, XIcon } from "./icons";
+import { apiUrl } from "./console-config";
 
 /**
  * The in-console self-service "My Account" pane (DECISIONS 0157, Tier 2).
@@ -276,7 +277,7 @@ export function AccountPane({
   // Load the current values when the pane opens.
   useEffect(() => {
     let live = true;
-    fetch("/aincient/account", { credentials: "same-origin" })
+    fetch(apiUrl("/account"), { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: AccountData) => {
         if (!live) return;
@@ -336,7 +337,7 @@ export function AccountPane({
     if (needsCurrentPass) body.currentPass = currentPass;
 
     try {
-      const res = await fetch("/aincient/account", {
+      const res = await fetch(apiUrl("/account"), {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
@@ -379,7 +380,7 @@ export function AccountPane({
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/aincient/account/avatar", {
+      const res = await fetch(apiUrl("/account/avatar"), {
         method: "POST",
         credentials: "same-origin",
         body: form,
@@ -407,7 +408,7 @@ export function AccountPane({
     setAvatarBusy(true);
     setErrors((x) => ({ ...x, avatar: "" }));
     try {
-      const res = await fetch("/aincient/account/avatar", { method: "DELETE", credentials: "same-origin" });
+      const res = await fetch(apiUrl("/account/avatar"), { method: "DELETE", credentials: "same-origin" });
       const payload = (await res.json().catch(() => null)) as
         | { ok?: boolean; viewer?: AccountData["viewer"] }
         | null;

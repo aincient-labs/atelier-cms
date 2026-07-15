@@ -6,7 +6,7 @@ import {
   getPendingFonts,
   type BrandOverrides,
 } from "./brand-state";
-import { interceptPreviewLinks, injectPreviewScrollbar } from "./preview-nav";
+import { interceptPreviewLinks, injectPreviewScrollbar, neutralizePreviewTabbing } from "./preview-nav";
 import { PanelBar } from "./panel-bar";
 
 /**
@@ -178,6 +178,7 @@ export function BrandPreview() {
     // frame off /demo/brand and lose the live override overlay. Block it.
     interceptPreviewLinks(frameRef.current?.contentDocument);
     injectPreviewScrollbar(frameRef.current?.contentDocument);
+    neutralizePreviewTabbing(frameRef.current?.contentDocument);
     const win = frameRef.current?.contentWindow;
     if (win) win.addEventListener("scroll", () => mirrorScroll("draft"), { passive: true });
   }, [apply, syncFonts, mirrorScroll]);
@@ -188,6 +189,7 @@ export function BrandPreview() {
     const doc = savedRef.current?.contentDocument;
     interceptPreviewLinks(doc);
     injectPreviewScrollbar(doc);
+    neutralizePreviewTabbing(doc);
     const win = savedRef.current?.contentWindow;
     const draft = frameRef.current?.contentWindow;
     if (win && draft) {

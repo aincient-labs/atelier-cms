@@ -28,3 +28,12 @@ toolbar:
   css:
     theme:
       css/toolbar.css: {}
+
+editor-pill:
+  # The live-site editor pill (hook_page_bottom in the .module). Operator-only
+  # chrome; attached only to a render that actually shows the pill, so an
+  # anonymous visitor loads none of it.
+  version: 0.1.0
+  css:
+    theme:
+      css/editor-pill.css: {}

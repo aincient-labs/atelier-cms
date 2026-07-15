@@ -27,6 +27,13 @@ final class SiteIdentity {
   public const GUIDELINE_KEYS = ['name', 'tagline', 'description', 'tone', 'imagery_style', 'imagery_avoid'];
 
   /**
+   * The site-information keys (the operator-owned slice of core's system.site).
+   * `mail` is a plain address; the three page slots hold `entity:node:<id>`
+   * reference tokens ('' = no opinion → the shipped system.site default wins).
+   */
+  public const SITE_KEYS = ['mail', 'front', 'page_403', 'page_404'];
+
+  /**
    * Image style for rendering the logo at display size. Core's `large` is a
    * no-crop `image_scale` to 480×480 (no upscale) → any logo aspect ratio is
    * preserved, and even a huge upload decodes as a ≤480px webp rather than its
@@ -130,6 +137,7 @@ final class SiteIdentity {
     }
 
     $config->save();
+    $this->resetOverriddenSiteConfig();
     return $applied;
   }
 
@@ -169,6 +177,81 @@ final class SiteIdentity {
   /** Persist the favicon as a `media:<id>` token ('' clears it). */
   public function setFavicon(string $token): void {
     $this->configFactory->getEditable(self::CONFIG)->set('favicon', trim($token))->save();
+  }
+
+  /**
+   * The site-information map ({@see self::SITE_KEYS}, each '' when unset).
+   *
+   * These feed {@see \Drupal\aincient_pages\Config\SiteInformationOverrider},
+   * which layers them over core's `system.site` at config-read time — identity
+   * stays the single write target; system.site is never written.
+   */
+  public function site(): array {
+    $site = $this->configFactory->get(self::CONFIG)->get('site') ?: [];
+    $out = [];
+    foreach (self::SITE_KEYS as $key) {
+      $out[$key] = trim((string) ($site[$key] ?? ''));
+    }
+    return $out;
+  }
+
+  /**
+   * Merge + persist site-information changes. Keys are whitelisted; an invalid
+   * value (a malformed email, a non-node token) is skipped, and '' clears a slot
+   * back to the shipped system.site default. Returns what changed.
+   *
+   * @return string[]
+   */
+  public function updateSite(array $values): array {
+    $labels = [
+      'mail' => 'site email',
+      'front' => 'front page',
+      'page_403' => '403 page',
+      'page_404' => '404 page',
+    ];
+    $site = $this->site();
+    $applied = [];
+    foreach ($values as $key => $value) {
+      if (!in_array($key, self::SITE_KEYS, TRUE) || !is_string($value)) {
+        continue;
+      }
+      $value = trim($value);
+      if ($value !== '') {
+        if ($key === 'mail' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+          continue;
+        }
+        if ($key !== 'mail' && self::tokenToPath($value) === '') {
+          continue;
+        }
+      }
+      $site[$key] = $value;
+      $applied[] = $labels[$key];
+    }
+    if ($applied !== []) {
+      $this->configFactory->getEditable(self::CONFIG)->set('site', $site)->save();
+      $this->resetOverriddenSiteConfig();
+    }
+    return $applied;
+  }
+
+  /**
+   * Drop the factory's cached system.site so SAME-REQUEST readers re-run the
+   * override chain with the identity that was just saved. (Core only resets the
+   * config that was written — it can't know identity feeds system.site through
+   * {@see \Drupal\aincient_pages\Config\SiteInformationOverrider}.)
+   */
+  private function resetOverriddenSiteConfig(): void {
+    $this->configFactory->reset('system.site');
+  }
+
+  /**
+   * An `entity:node:<id>` reference token as the internal path core's
+   * system.site page slots expect (`/node/<id>`), or '' for anything else.
+   * Pure string work — no entity load — because this runs inside the config
+   * override on essentially every request (the front-page matcher).
+   */
+  public static function tokenToPath(string $token): string {
+    return preg_match('/^entity:node:(\d+)$/', trim($token), $m) ? '/node/' . $m[1] : '';
   }
 
 }

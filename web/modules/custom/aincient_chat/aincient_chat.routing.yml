@@ -1,57 +1,57 @@
 aincient_chat.console:
-  path: '/aincient'
+  path: '/atelier'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ConsoleController::app'
-    _title: 'AIncient'
+    _title: 'Atelier'
   requirements:
     _permission: 'use aincient operator console'
 
 # Bookmarkable console deep links (room-primary URLs, decision D3). All serve the
 # same chrome-less SPA shell — the bundle reads the ROOM from the path client-side
 # (chat-ui/src/console-url.ts). The room owns the path; the active thread rides as
-# a ?thr= query (no thread path segment). Three shapes beyond the bare /aincient:
+# a ?thr= query (no thread path segment). Three shapes beyond the bare /atelier:
 #
-#   /aincient/<studio>                          a studio landing / the Content list
-#   /aincient/<studio>/<node|block>/<nid>       a Content page/block, or a Checks
-#                                               audit (/aincient/checks/node/<nid>)
-#   /aincient/<studio>/node/<nid>/<langcode>    a page translation
+#   /atelier/<studio>                          a studio landing / the Content list
+#   /atelier/<studio>/<node|block>/<nid>       a Content page/block, or a Checks
+#                                               audit (/atelier/checks/node/<nid>)
+#   /atelier/<studio>/node/<nid>/<langcode>    a page translation
 #
 # The (?!chat$) lookahead on <studio> keeps these dynamic wildcards from shadowing
-# the all-literal /aincient/chat* API routes. Drupal already orders static routes
+# the all-literal /atelier/chat* API routes. Drupal already orders static routes
 # ahead of dynamic ones, and the API paths are all longer / method-scoped, so this
 # is belt-and-braces (plus doc_type=node|block and nid=\d+ narrow it further).
 aincient_chat.console_studio:
-  path: '/aincient/{studio}'
+  path: '/atelier/{studio}'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ConsoleController::app'
-    _title: 'AIncient'
+    _title: 'Atelier'
   requirements:
     _permission: 'use aincient operator console'
     studio: '(?!chat$)[a-z][a-z0-9_-]*'
 
 aincient_chat.console_doc:
-  path: '/aincient/{studio}/{doc_type}/{nid}'
+  path: '/atelier/{studio}/{doc_type}/{nid}'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ConsoleController::app'
-    _title: 'AIncient'
+    _title: 'Atelier'
   requirements:
     _permission: 'use aincient operator console'
     studio: '(?!chat$)[a-z][a-z0-9_-]*'
     doc_type: 'node|block'
     nid: '\d+'
 
-# The Media studio's single-item deep link — /aincient/media/<bundle>/<id> (v1:
+# The Media studio's single-item deep link — /atelier/media/<bundle>/<id> (v1:
 # image). Its own route rather than the generic {studio}/{doc_type}/{nid} above
 # because a media item's URL is /media/<bundle>/<id> (no separate studio+doc_type
-# split), and the three segments keep it clear of the flat `/aincient/media/*`
+# split), and the three segments keep it clear of the flat `/atelier/media/*`
 # JSON API (media/{media}/schema · media/{media} · media/{media}/file), whose
 # routes all have a different 3rd segment / method. The bundle segment carries the
 # planned image|document dispatch (DECISIONS 0144).
 aincient_chat.console_media:
-  path: '/aincient/media/{bundle}/{nid}'
+  path: '/atelier/media/{bundle}/{nid}'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ConsoleController::app'
-    _title: 'AIncient'
+    _title: 'Atelier'
   requirements:
     _permission: 'use aincient operator console'
     bundle: 'image'
@@ -62,10 +62,10 @@ aincient_chat.console_media:
     nid: '\d+|new'
 
 aincient_chat.console_doc_translation:
-  path: '/aincient/{studio}/{doc_type}/{nid}/{langcode}'
+  path: '/atelier/{studio}/{doc_type}/{nid}/{langcode}'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ConsoleController::app'
-    _title: 'AIncient'
+    _title: 'Atelier'
   requirements:
     _permission: 'use aincient operator console'
     studio: '(?!chat$)[a-z][a-z0-9_-]*'
@@ -80,7 +80,7 @@ aincient_chat.console_doc_translation:
 # not the client. _disable_route_normalizer keeps a redirect module from 301-ing
 # a POST and dropping its body (same reasoning as page_save).
 aincient_chat.account:
-  path: '/aincient/account'
+  path: '/atelier/account'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\AccountController::get'
   methods: [GET]
@@ -90,7 +90,7 @@ aincient_chat.account:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.account_save:
-  path: '/aincient/account'
+  path: '/atelier/account'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\AccountController::save'
   methods: [POST]
@@ -101,7 +101,7 @@ aincient_chat.account_save:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.account_avatar:
-  path: '/aincient/account/avatar'
+  path: '/atelier/account/avatar'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\AccountController::uploadAvatar'
   methods: [POST]
@@ -112,7 +112,7 @@ aincient_chat.account_avatar:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.account_avatar_delete:
-  path: '/aincient/account/avatar'
+  path: '/atelier/account/avatar'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\AccountController::deleteAvatar'
   methods: [DELETE]
@@ -122,7 +122,7 @@ aincient_chat.account_avatar_delete:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.chat:
-  path: '/aincient/chat'
+  path: '/atelier/chat'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ChatController::chat'
   methods: [POST]
@@ -133,7 +133,7 @@ aincient_chat.chat:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.interrupt_resolve:
-  path: '/aincient/chat/interrupt/{uuid}'
+  path: '/atelier/chat/interrupt/{uuid}'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ChatController::resolveInterrupt'
   methods: [POST]
@@ -143,7 +143,7 @@ aincient_chat.interrupt_resolve:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.threads:
-  path: '/aincient/chat/threads'
+  path: '/atelier/chat/threads'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ChatController::threads'
   methods: [GET]
@@ -153,7 +153,7 @@ aincient_chat.threads:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.thread_events:
-  path: '/aincient/chat/thread/{thread_id}/events'
+  path: '/atelier/chat/thread/{thread_id}/events'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ChatController::threadEvents'
   methods: [GET]
@@ -163,7 +163,7 @@ aincient_chat.thread_events:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.thread_archive:
-  path: '/aincient/chat/thread/{thread_id}/archive'
+  path: '/atelier/chat/thread/{thread_id}/archive'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ChatController::archiveThread'
   methods: [POST]
@@ -173,7 +173,7 @@ aincient_chat.thread_archive:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.thread_lock:
-  path: '/aincient/chat/thread/{thread_id}/lock'
+  path: '/atelier/chat/thread/{thread_id}/lock'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ChatController::lockThread'
   methods: [POST]
@@ -183,7 +183,7 @@ aincient_chat.thread_lock:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.thread_clear:
-  path: '/aincient/chat/thread/{thread_id}/clear'
+  path: '/atelier/chat/thread/{thread_id}/clear'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ChatController::clearThread'
   methods: [POST]
@@ -193,7 +193,7 @@ aincient_chat.thread_clear:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.thread_delete:
-  path: '/aincient/chat/thread/{thread_id}'
+  path: '/atelier/chat/thread/{thread_id}'
   defaults:
     _controller: 'Drupal\aincient_chat\Controller\ChatController::deleteThread'
   methods: [DELETE]
@@ -203,9 +203,9 @@ aincient_chat.thread_delete:
     _auth: ['cookie', 'basic_auth']
 
 aincient_chat.settings:
-  path: '/admin/config/aincient-chat'
+  path: '/admin/config/atelier-chat'
   defaults:
     _form: 'Drupal\aincient_chat\Form\SettingsForm'
-    _title: 'AIncient chat'
+    _title: 'Atelier chat'
   requirements:
     _permission: 'administer aincient chat'

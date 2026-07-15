@@ -4,6 +4,7 @@ import { makeSafeAssistantToolUI } from "./error-boundary";
 import { activeStudioKey } from "./flow";
 import { pageDeepLink } from "./studios";
 import { consoleBase, opensNewTab } from "./console-url";
+import { openSurface } from "./surface-nav";
 import { openPageInPlace } from "./url-sync";
 
 /**
@@ -19,8 +20,8 @@ import { openPageInPlace } from "./url-sync";
  * A row's `action` is a small declarative descriptor the widget maps to a
  * handler, so the table stays generic while specific actions stay snappy:
  *   - `open_page`  → open the page `node` in whichever studio fits the CURRENT
- *                    workspace: the Content editor (/aincient?page=<nid>) when
- *                    editing, the Checks audit (/aincient/checks/<flow>?audit=)
+ *                    workspace: the Content editor (/atelier?page=<nid>) when
+ *                    editing, the Checks audit (/atelier/checks/<flow>?audit=)
  *                    when auditing. The producer (e.g. `list_pages`) stays
  *                    studio-agnostic — it emits a node id and the console
  *                    resolves the destination from the active studio
@@ -122,15 +123,16 @@ function DataTableCard({ payload }: { payload: DataTablePayload }) {
     // natively by the cell anchor; the row handler honours it too).
     if (e && opensNewTab(e)) {
       const href = hrefFor(action);
-      if (href) window.open(href, "_blank", "noopener,noreferrer");
+      if (href) openSurface(href, "output");
       return;
     }
     if (action.kind === "open_page") {
-      // Load beside the chat — one tab, conversation intact.
+      // A page row is a within-workspace move: load the doc beside the chat in
+      // the same tab, conversation intact (surface-nav policy).
       openPageInPlace(studio, action.node);
     } else if (action.kind === "link") {
       // A fixed external URL → a new tab (it leaves the console).
-      window.open(action.href, "_blank", "noopener,noreferrer");
+      openSurface(action.href, "output");
     } else if (action.kind === "send") {
       thread.append({ role: "user", content: [{ type: "text", text: action.message }] });
     }

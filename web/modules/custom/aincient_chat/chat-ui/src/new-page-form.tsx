@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createPage } from "./page-state";
 import { XIcon } from "./icons";
+import { apiUrl } from "./console-config";
 
 /**
  * The `+` birth form (studio-navigation.md §3.2 — Phase C).
@@ -51,7 +52,7 @@ export function NewPageForm({
   // the page studio's language switcher reads.
   useEffect(() => {
     let live = true;
-    fetch("/aincient/page/manifest", { credentials: "same-origin" })
+    fetch(apiUrl("/page/manifest"), { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : null))
       .then((m: Manifest | null) => {
         if (!live || !m) return;

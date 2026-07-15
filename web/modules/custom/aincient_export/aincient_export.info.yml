@@ -1,0 +1,9 @@
+name: 'AIncient Export'
+type: module
+description: 'Static-site export — inventory → render → package. Produces a deployable static snapshot of the public site, with optional config/users extras in one zip ("own your data"). Replaces Tome (DECISIONS 0181).'
+package: AIncient
+core_version_requirement: ^11
+dependencies:
+  - drupal:node
+  - drupal:file
+  - drupal:image

@@ -149,7 +149,9 @@ function aincient_core_preprocess_user(array &$variables): void {
  * - FlowDrop editor / playground: a fullscreen takeover page outside the
  *   Studio Backend theme's reach. Bind `flowdrop_brand` to the FlowDrop
  *   Svelte bundle so it loads wherever the editor UI does, remapping
- *   FlowDrop's `--fd-*` tokens to the app-tier palette.
+ *   FlowDrop's `--fd-*` tokens to the app-tier palette. `flowdrop_theme_sync`
+ *   rides the same bundle so the surface follows the console's light/dark
+ *   choice instead of FlowDrop's own separate theme setting.
  * - AI Metering dashboard: its bespoke `.ai-dashboard__*` widgets + Chart.js
  *   canvases ship Bootstrap colours no theme CSS can reach. Bind
  *   `ai_metering_brand` to the dashboard library so it loads on exactly the
@@ -163,16 +165,78 @@ function aincient_core_preprocess_user(array &$variables): void {
  * works.
  *
  * @see aincient_core/css/flowdrop-brand.css
+ * @see aincient_core/js/flowdrop-theme-sync.js
  * @see aincient_core/css/ai-metering-brand.css
  */
 function aincient_core_library_info_alter(array &$libraries, string $extension): void {
   if ($extension === 'flowdrop_ui_components' && isset($libraries['flowdrop'])) {
     $libraries['flowdrop']['dependencies'][] = 'aincient_core/flowdrop_brand';
+    // Ride along on every fullscreen FlowDrop surface (editor / playground /
+    // execution) to make it follow the console's light/dark choice.
+    $libraries['flowdrop']['dependencies'][] = 'aincient_core/flowdrop_theme_sync';
   }
   if ($extension === 'ai_metering' && isset($libraries['ai_metering_dashboard'])) {
     $libraries['ai_metering_dashboard']['dependencies'][] = 'aincient_core/ai_metering_brand';
     $libraries['ai_metering_dashboard']['dependencies'][] = 'ai_metering/ai_metering_htmx';
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for ai_metering_settings.
+ *
+ * The contrib AI Metering settings form is a long single column of full-width
+ * controls with several homogeneous number-field stacks (per-token pricing,
+ * per-role quotas, per-currency fallback rates). Attach the Atelier layer that
+ * compacts control widths + grids those stacks, and tag the form and the three
+ * grid panels with the classes it hangs on. Pure presentation — no field or
+ * submit changes.
+ *
+ * @see aincient_core/css/ai-metering-settings.css
+ */
+function aincient_core_form_ai_metering_settings_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void {
+  $form['#attached']['library'][] = 'aincient_core/ai_metering_settings';
+  $form['#attributes']['class'][] = 'aim-settings';
+
+  // Flow the pure number-field panels into a responsive multi-column grid. A
+  // <details> can't be the grid container directly — the browser renders its
+  // body in a single content slot, so gridding the <details> only lays out
+  // [summary, slot], leaving the fields stacked inside the slot. Instead wrap
+  // each panel's field children in a plain container and grid THAT. The
+  // container is #tree-agnostic (default FALSE), so the moved fields keep the
+  // same flat #parents they had under the panel — the submit handler's
+  // getValue() lookups are unaffected.
+  if (isset($form['pricing'])) {
+    _aincient_core_metering_gridify($form['pricing']);
+  }
+  if (isset($form['quota_roles'])) {
+    _aincient_core_metering_gridify($form['quota_roles']);
+  }
+  if (isset($form['currency']['manual_rates'])) {
+    _aincient_core_metering_gridify($form['currency']['manual_rates']);
+  }
+}
+
+/**
+ * Wraps a details panel's field children in a `.aim-grid` container.
+ *
+ * Preserves child order and every `#` property on the panel (title,
+ * description, open) — only the renderable children move.
+ *
+ * @param array $panel
+ *   The details render array, altered in place.
+ */
+function _aincient_core_metering_gridify(array &$panel): void {
+  $children = \Drupal\Core\Render\Element::children($panel, TRUE);
+  $grid = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['aim-grid']],
+    '#weight' => 100,
+  ];
+  foreach ($children as $key) {
+    $grid[$key] = $panel[$key];
+    unset($panel[$key]);
+  }
+  $panel['grid'] = $grid;
 }
 
 /**

@@ -61,7 +61,7 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * POST /aincient/chat — run a turn, stream typed events as SSE.
+   * POST /atelier/chat — run a turn, stream typed events as SSE.
    */
   public function chat(Request $request): StreamedResponse {
     $payload = json_decode($request->getContent() ?: '{}', TRUE) ?: [];
@@ -563,7 +563,7 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * POST /aincient/chat/interrupt/{uuid} — answer a paused HITL turn.
+   * POST /atelier/chat/interrupt/{uuid} — answer a paused HITL turn.
    *
    * Body: {"response": <choice>, "thread_id": <thread>}. Streams the resumed
    * flow's continuation (a further interrupt, or the final result) as SSE.
@@ -632,7 +632,7 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * GET /aincient/chat/threads — the current user's conversations (newest first).
+   * GET /atelier/chat/threads — the current user's conversations (newest first).
    *
    * Lightweight list for the console sidebar: one row per thread with a title
    * derived from the first user message and the last-activity timestamp. Message
@@ -646,7 +646,7 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * GET /aincient/chat/thread/{thread_id}/events — persisted turns for a thread.
+   * GET /atelier/chat/thread/{thread_id}/events — persisted turns for a thread.
    *
    * Returns the thread's turns read from its FlowDrop session, scoped to the
    * current user so a thread id can't be used to read another account's
@@ -688,7 +688,7 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * POST /aincient/chat/thread/{thread_id}/archive — (un)archive a thread.
+   * POST /atelier/chat/thread/{thread_id}/archive — (un)archive a thread.
    *
    * Body: {"archived": true|false} (defaults to true). Flips the flag on every
    * turn of the thread, scoped to the current user.
@@ -703,7 +703,7 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * POST /aincient/chat/thread/{thread_id}/lock — (un)lock (wrap up) a thread.
+   * POST /atelier/chat/thread/{thread_id}/lock — (un)lock (wrap up) a thread.
    *
    * Body: {"locked": true|false (default true), "page_url"?, "page_node"?}.
    * Locking wraps the thread read-only (still listed) and remembers the
@@ -737,7 +737,7 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * POST /aincient/chat/thread/{thread_id}/clear — seal for a fresh start.
+   * POST /atelier/chat/thread/{thread_id}/clear — seal for a fresh start.
    *
    * The plain-clear face of the one seal primitive (studio-navigation.md §4):
    * it wraps the current thread read-only (no publish milestone) and returns the
@@ -758,7 +758,7 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * DELETE /aincient/chat/thread/{thread_id} — delete a thread's session.
+   * DELETE /atelier/chat/thread/{thread_id} — delete a thread's session.
    */
   public function deleteThread(string $thread_id): JsonResponse {
     $deleted = $this->threadStore->delete($thread_id, (int) $this->currentUser()->id());

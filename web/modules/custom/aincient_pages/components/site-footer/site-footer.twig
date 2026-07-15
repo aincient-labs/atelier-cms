@@ -16,6 +16,13 @@
     {% endif %}
   </div>
   <div class="border-t border-background/15">
-    <div class="mx-auto max-w-7xl px-6 py-4 text-xs opacity-60">{{ note|default('AIncient') }}</div>
+    <div class="mx-auto max-w-7xl px-6 py-4 text-xs opacity-60 flex flex-col gap-1 {{ stacked ? 'items-center text-center' : 'sm:flex-row sm:items-center sm:justify-between' }}">
+      <span>{{ note|default('AIncient') }}</span>
+      {% if (show_credit ?? true) and credit and credit.label %}
+        <span>Made with <span aria-hidden="true">♥</span> using
+          <a href="{{ credit.href|default('#') }}" class="underline underline-offset-2 hover:opacity-100" target="_blank" rel="noopener noreferrer">{{ credit.label }}</a>
+        </span>
+      {% endif %}
+    </div>
   </div>
 </footer>

@@ -14,6 +14,18 @@ flowdrop_brand:
   dependencies:
     - flowdrop_ui_components/theme-layer
 
+# Makes the FlowDrop fullscreen surfaces follow the console's light/dark choice
+# (localStorage `aincient-theme`) instead of FlowDrop's own separate theme
+# setting. Rides `flowdrop_ui_components/flowdrop` via hook_library_info_alter,
+# same as flowdrop_brand. Order-independent (a short-lived MutationObserver
+# re-asserts the console theme through FlowDrop's async mount writes).
+flowdrop_theme_sync:
+  js:
+    js/flowdrop-theme-sync.js: {}
+  dependencies:
+    - core/drupal
+    - core/once
+
 # Atelier layer over the contrib AI Metering dashboard (its bespoke
 # `.ai-dashboard__*` widgets + the Chart.js canvases). Attached to
 # `ai_metering/ai_metering_dashboard` via hook_library_info_alter so it loads
@@ -29,3 +41,17 @@ ai_metering_brand:
   dependencies:
     - core/drupal
     - core/once
+
+# Atelier layer over the contrib AI Metering SETTINGS form
+# (/admin/config/ai/ai-metering/settings). The Studio Backend theme styles the
+# form generically, but this contrib form is a long single column of
+# full-width controls and homogeneous number-field stacks (per-token pricing,
+# per-role quotas, per-currency rates) that read as crowded next to the calm
+# gesso chrome. This layer compacts control widths and flows the pure
+# number-field panels into a responsive grid. Attached via
+# hook_form_ai_metering_settings_alter(), which also tags the form + the grid
+# panels with the classes these rules hang on.
+ai_metering_settings:
+  css:
+    theme:
+      css/ai-metering-settings.css: {}

@@ -93,9 +93,11 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     // settings WIN over the workflow/site default, so without this key the
     // loop would run unbudgeted. On breach the pipeline pauses with a
     // resumable system Pause signal (paused_reason=time_budget). The web
-    // stack leaves headroom: PHP-FPM max_execution_time 600s, nginx
-    // fastcgi_read_timeout 10m (see .ddev/php/timeouts.ini).
-    'timeout' => 300,
+    // stack leaves ~60s headroom above this budget: DDEV PHP-FPM
+    // max_execution_time 600s + nginx fastcgi_read_timeout 10m (see
+    // .ddev/php/timeouts.ini); the appliance PHP max_execution_time 600s +
+    // Apache Timeout 600s (see docker/Dockerfile).
+    'timeout' => 540,
   ];
 
   /**

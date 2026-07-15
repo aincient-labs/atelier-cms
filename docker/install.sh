@@ -24,7 +24,7 @@
 #     a database + storage — that floor can't be hidden behind a binary fetch.
 #
 # Overridable via env:
-#   AINCIENT_IMAGE   image tag to run         (default: ghcr.io/aincient-labs/cms:edge)
+#   AINCIENT_IMAGE   image tag to run         (default: ghcr.io/aincient-labs/atelier:edge)
 #   HTTP_PORT        host port for the console (default: 41221 — "AINCI" in leet)
 #   AINCIENT_HOME    install dir              (default: ~/.aincient)
 #
@@ -33,7 +33,7 @@
 
 set -euo pipefail
 
-AINCIENT_IMAGE="${AINCIENT_IMAGE:-ghcr.io/aincient-labs/cms:edge}"
+AINCIENT_IMAGE="${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier:edge}"
 HTTP_PORT="${HTTP_PORT:-41221}"   # "AINCI" in leet (4=A,1=I,2=N,2=C,1=I)
 INSTALL_DIR="${AINCIENT_HOME:-$HOME/.aincient}"
 
@@ -76,7 +76,7 @@ services:
       interval: 10s
       retries: 10
   app:
-    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/cms:edge}
+    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier:edge}
     depends_on:
       db:
         condition: service_healthy

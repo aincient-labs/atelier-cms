@@ -47,6 +47,10 @@ final class ChromeRepository {
       'layout' => ['enum' => ['inline', 'stacked'], 'default' => 'inline'],
       // Whether the tagline shows under the footer name.
       'show_tagline' => ['default' => TRUE],
+      // The default-on "Made with ♥ using Atelier by AIncient Labs" attribution
+      // in the footer note bar ({@see SiteChrome::credit()}); operators may hide
+      // it from the Footer tab.
+      'show_credit' => ['default' => TRUE],
     ],
   ];
 

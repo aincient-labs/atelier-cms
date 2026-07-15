@@ -1,0 +1,25 @@
+services:
+  aincient_export.path_inventory:
+    class: Drupal\aincient_export\PathInventory
+    arguments: ['@entity_type.manager', '@config.factory']
+  aincient_export.derivative_warmer:
+    class: Drupal\aincient_export\DerivativeWarmer
+    arguments: ['@entity_type.manager', '@image.factory']
+  aincient_export.static_renderer:
+    class: Drupal\aincient_export\StaticRenderer
+    arguments: ['@http_kernel', '@request_stack', '@account_switcher', '@?http_middleware.page_cache']
+  aincient_export.link_checker:
+    class: Drupal\aincient_export\LinkChecker
+  aincient_export.packager:
+    class: Drupal\aincient_export\Packager
+    arguments: ['@entity_type.manager']
+  aincient_export.exporter:
+    class: Drupal\aincient_export\Exporter
+    arguments:
+      - '@aincient_export.path_inventory'
+      - '@aincient_export.derivative_warmer'
+      - '@aincient_export.static_renderer'
+      - '@aincient_export.link_checker'
+      - '@aincient_export.packager'
+      - '@entity_type.manager'
+      - '@module_handler'

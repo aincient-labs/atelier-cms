@@ -13,3 +13,13 @@ guidelines:
 logo: ''
 favicon: ''
 footer_note: ''
+# Site information (DECISIONS 0183): the operator-owned slice of core's
+# system.site. Empty values mean "no opinion" — the shipped system.site default
+# shows through (SiteInformationOverrider only overrides non-empty values). The
+# page slots are `entity:node:<id>` reference tokens (the unified picker's
+# value), resolved to internal paths at config-read time.
+site:
+  mail: ''
+  front: ''
+  page_403: ''
+  page_404: ''

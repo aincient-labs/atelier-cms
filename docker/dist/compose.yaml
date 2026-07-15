@@ -1,4 +1,4 @@
-# AIncient CMS — tester topology (image-only).
+# Atelier — tester topology (image-only).
 #
 # This is the compose file handed to evaluators. Unlike the dev compose
 # (docker/compose.yaml) it does NOT build from source and has NO privileged
@@ -29,7 +29,7 @@ services:
 
   app:
     # The published appliance image. Override the tag via AINCIENT_IMAGE in .env.
-    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/cms:edge}
+    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier:edge}
     depends_on:
       db:
         condition: service_healthy

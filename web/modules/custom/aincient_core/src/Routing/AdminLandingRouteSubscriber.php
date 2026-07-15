@@ -27,7 +27,9 @@ final class AdminLandingRouteSubscriber extends RouteSubscriberBase {
     if ($route = $collection->get('system.admin')) {
       $defaults = $route->getDefaults();
       $defaults['_controller'] = StudioLandingController::class . '::landing';
-      $defaults['_title'] = 'Studio';
+      // "System" — the basement door. Deliberately NOT "Studio(s)", which is the
+      // console's own workspace vocabulary (surface-switching rename).
+      $defaults['_title'] = 'System';
       $route->setDefaults($defaults);
     }
 

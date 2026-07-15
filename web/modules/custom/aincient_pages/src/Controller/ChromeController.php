@@ -7,6 +7,7 @@ namespace Drupal\aincient_pages\Controller;
 use Drupal\aincient_pages\BrandRepository;
 use Drupal\aincient_pages\ChromeRepository;
 use Drupal\aincient_pages\ConsentSettings;
+use Drupal\aincient_pages\EntityEmbedResolver;
 use Drupal\aincient_pages\MenuRepository;
 use Drupal\aincient_pages\SiteChrome;
 use Drupal\aincient_pages\SiteIdentity;
@@ -40,6 +41,7 @@ final class ChromeController implements ContainerInjectionInterface {
     'footer' => [
       'layout' => 'Footer layout',
       'show_tagline' => 'Show tagline',
+      'show_credit' => 'Show "Made with Atelier" credit',
     ],
   ];
 
@@ -50,6 +52,7 @@ final class ChromeController implements ContainerInjectionInterface {
     private readonly SiteChrome $siteChrome,
     private readonly BrandRepository $brand,
     private readonly ConsentSettings $consent,
+    private readonly EntityEmbedResolver $embed,
     private readonly ClassResolverInterface $classResolver,
   ) {}
 
@@ -61,12 +64,13 @@ final class ChromeController implements ContainerInjectionInterface {
       $container->get('aincient_pages.chrome'),
       $container->get('aincient_pages.brand'),
       $container->get('aincient_pages.consent'),
+      $container->get('aincient_pages.embed_resolver'),
       $container->get('class_resolver'),
     );
   }
 
   /**
-   * GET /aincient/chrome/manifest — the current chrome state + the editing vocab.
+   * GET /atelier/chrome/manifest — the current chrome state + the editing vocab.
    *
    * The single source the Globals studio renders from: current layout settings,
    * the enum/bool options per setting (so the rail builds selects/toggles), the
@@ -86,7 +90,7 @@ final class ChromeController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/chrome/preview — render the chrome around a placeholder body,
+   * POST /atelier/chrome/preview — render the chrome around a placeholder body,
    * from the studio DRAFT, WITHOUT persisting.
    *
    * Body: `{ chrome?: {header,footer}, identity?: {…, logo (media token)}, menus?: {main,footer} }`.
@@ -125,19 +129,23 @@ final class ChromeController implements ContainerInjectionInterface {
       'logo_url' => $logoUrl,
       'nav' => $this->draftNav($menus['footer'] ?? NULL, 'footer'),
       'note' => $note,
+      'credit' => SiteChrome::credit(),
     ] + $layout['footer'];
 
     return $this->spike()->renderChrome($headerProps, $footerProps);
   }
 
   /**
-   * POST /aincient/chrome/save — publish the studio's working chrome draft.
+   * POST /atelier/chrome/save — publish the studio's working chrome draft.
    *
    * Body: `{ chrome?: {header,footer}, identity?: {guidelines, footer_note, logo,
-   * favicon}, menus?: {main:[…], footer:[…]} }` — `logo`/`favicon` are `media:<id>`
-   * tokens (or '' to clear). Persists layout (ChromeRepository), identity
-   * (SiteIdentity) and reconciles the two menus (MenuRepository). Returns the saved
-   * state so the studio re-seeds its baseline (incl. server-assigned menu-link ids).
+   * favicon, site}, menus?: {main:[…], footer:[…]} }` — `logo`/`favicon` are
+   * `media:<id>` tokens (or '' to clear); `site` is `{mail, front, page_403,
+   * page_404}` where the page slots are `entity:node:<id>` tokens ('' = shipped
+   * system.site default). Persists layout (ChromeRepository), identity + site
+   * information (SiteIdentity) and reconciles the two menus (MenuRepository).
+   * Returns the saved state so the studio re-seeds its baseline (incl.
+   * server-assigned menu-link ids).
    */
   public function save(Request $request): JsonResponse {
     $data = json_decode((string) $request->getContent(), TRUE);
@@ -165,6 +173,13 @@ final class ChromeController implements ContainerInjectionInterface {
       if (array_key_exists('favicon', $identity)) {
         $this->identity->setFavicon((string) $identity['favicon']);
         $applied[] = 'favicon';
+      }
+      // Site information (mail + the front/403/404 page slots): stored on the
+      // identity, layered over core's system.site at read time by
+      // SiteInformationOverrider — system.site itself is never written. The
+      // page slots are `entity:node:<id>` tokens ('' = shipped default).
+      if (is_array($identity['site'] ?? NULL)) {
+        $applied = array_merge($applied, $this->identity->updateSite($identity['site']));
       }
     }
 
@@ -219,6 +234,7 @@ final class ChromeController implements ContainerInjectionInterface {
       'footer_note' => $this->identity->footerNote(),
       'logo' => $this->identity->logo(),
       'favicon' => $this->identity->favicon(),
+      'site' => $this->identity->site(),
     ];
   }
 
@@ -288,11 +304,30 @@ final class ChromeController implements ContainerInjectionInterface {
       $children = is_array($link['children'] ?? NULL) ? $link['children'] : [];
       $nav[] = [
         'label' => $title,
-        'url' => (string) ($link['url'] ?? '#'),
+        'url' => $this->navUrl((string) ($link['url'] ?? '')),
         'below' => $this->draftNav($children, $menu),
       ];
     }
     return $nav;
+  }
+
+  /**
+   * A draft link's `url` as a browser-followable href for the preview iframe.
+   *
+   * A page-reference link carries a console TOKEN (`entity:node:5`) — resolve it
+   * to the node's canonical URL so the previewed link points somewhere real
+   * (mirrors what the live nav does via core's menu-link resolution). A dangling
+   * / not-yet-picked reference falls back to `#`; a plain path/URL passes through.
+   */
+  private function navUrl(string $url): string {
+    $url = trim($url);
+    if ($url === '') {
+      return '#';
+    }
+    if (EntityEmbedResolver::isWellFormed($url)) {
+      return $this->embed->url($url) ?? '#';
+    }
+    return $url;
   }
 
   /** The page renderer, resolved lazily (it's a controller, not a service). */

@@ -12,32 +12,38 @@ pricing:
     input_per_token: 2.5E-7
     output_per_token: 1.25E-6
     cache_read_per_token: 2.5E-8
+    source: manual
   'anthropic:claude-sonnet-4-5-20250929':
     input_per_token: 3.0E-6
     output_per_token: 1.5E-5
     cache_read_per_token: 3.0E-7
+    source: manual
   'anthropic:claude-opus-4-5-20250929':
     input_per_token: 1.5E-5
     output_per_token: 7.5E-5
     cache_read_per_token: 1.5E-6
+    source: manual
   'openai:gpt-4o':
     input_per_token: 2.5E-6
     output_per_token: 1.0E-5
     cache_read_per_token: 1.25E-6
+    source: manual
   'openai:gpt-4o-mini':
     input_per_token: 1.5E-7
     output_per_token: 6.0E-7
     cache_read_per_token: 7.5E-8
+    source: manual
   'ollama:_default':
     input_per_token: 0.0
     output_per_token: 0.0
     cache_read_per_token: 0.0
 quota:
-  default_monthly_tokens: 100000
+  default_monthly_tokens: 1000000
   output_ratio: 0.2
   fallback_provider: ''
   fallback_model: ''
   translate_output_ratio: 1.1
+  role_defaults: {  }
 alerts:
   threshold_pct: 75
   emails: {  }

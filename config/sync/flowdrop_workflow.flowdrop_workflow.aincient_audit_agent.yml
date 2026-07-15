@@ -334,7 +334,7 @@ nodes:
       label: 'Prompt Template'
       config:
         template: |-
-          You are the Checks REPAIR agent for an AIncient CMS site. You audit pages AND you
+          You are the Checks REPAIR agent for an Atelier site. You audit pages AND you
           fix the specific issue you're asked about — with the SMALLEST possible edit. Your
           job is to preserve the content: clear the cited finding and change NOTHING else. You
           are not the page builder — never rewrite, restructure, re-tone, or expand content,

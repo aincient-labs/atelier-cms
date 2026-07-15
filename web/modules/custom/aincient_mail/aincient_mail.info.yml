@@ -1,0 +1,11 @@
+name: 'AIncient Mail'
+type: module
+description: 'Transactional mail for Atelier — the raw Symfony mailer (shipped by core), a thin owned @Mail plugin, and secrets in Key/State. No mail contrib.'
+package: AIncient
+core_version_requirement: ^11
+dependencies:
+  # Secret storage: transport credentials live in a Key entity backed by State.
+  - key:key
+# Leaf utility: nothing else in the distribution depends on aincient_mail. Other
+# code sends via the `aincient_mail.mailer` service or, transparently, through
+# Drupal's own mail pipeline (our @Mail plugin is the system.mail default).

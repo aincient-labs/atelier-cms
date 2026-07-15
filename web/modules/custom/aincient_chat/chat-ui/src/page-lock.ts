@@ -14,6 +14,8 @@
  * everything as arguments, imports nothing from page-state, so there's no cycle.
  */
 
+import { apiUrl } from "./console-config";
+
 /** The holder envelope the server returns (who currently holds the lock). */
 export type LockHolder = {
   uid: number;
@@ -137,7 +139,7 @@ export async function acquireLock(
   // different page starts fresh (never present a stale token for it).
   const carry =
     state.node === node && state.langcode === lc ? state.token : recallToken(node, lc);
-  const data = await post("/aincient/page/lock/acquire", {
+  const data = await post(apiUrl("/page/lock/acquire"), {
     node_id: node,
     ...(lc ? { langcode: lc } : {}),
     studio,
@@ -167,7 +169,7 @@ export async function acquireLock(
 export async function releaseLock(): Promise<void> {
   const { node, langcode, token } = state;
   if (node && token) {
-    await post("/aincient/page/lock/release", {
+    await post(apiUrl("/page/lock/release"), {
       node_id: node,
       ...(langcode ? { langcode } : {}),
       token,

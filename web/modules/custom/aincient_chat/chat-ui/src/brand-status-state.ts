@@ -1,7 +1,7 @@
 /**
  * Shared brand design-intent status — a tiny pub/sub so the Brand Studio rail's
  * status control and the agent's HITL proposal card (two separate React trees)
- * stay in sync. Both write status through the same POST /aincient/brand/status
+ * stay in sync. Both write status through the same POST /atelier/brand/status
  * endpoint; whichever writes broadcasts the new value here so the other adopts
  * it without a page reload (e.g. applying an agent proposal updates the rail
  * badge live). This holds only the last-known value for reflection — the

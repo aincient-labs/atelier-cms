@@ -73,21 +73,22 @@ tokens:
   # an exact match). Everything below references these, never Tier 0 directly.
 
   # ── Brand colours (surface + its on-colour; `on:` names the paired token) ────
-  brand_primary:            { tier: palette, category: color, type: color, on: brand_primary_foreground, default: 'var(--color-indigo-600)', label: 'Brand primary', description: 'The lead brand colour. Pick a swatch or set an exact value.' }
-  brand_primary_foreground: { tier: palette, category: color, type: color, default: 'var(--color-white)',   label: 'On brand primary', description: 'Text/icons that sit on the primary fill.' }
-  brand_accent:             { tier: palette, category: color, type: color, on: brand_accent_foreground, default: 'var(--color-amber-500)',  label: 'Brand accent', description: 'Secondary highlight colour.' }
-  brand_accent_foreground:  { tier: palette, category: color, type: color, default: 'var(--color-slate-900)', label: 'On brand accent', description: 'Text/icons that sit on the accent fill.' }
+  brand_primary:            { tier: palette, category: color, type: color, on: brand_primary_foreground, default: '#B94430', label: 'Brand primary', description: 'The lead brand colour — Atelier cinnabar, a warm earth-red. Pick a swatch or set an exact value.' }
+  brand_primary_foreground: { tier: palette, category: color, type: color, default: '#FCFAF7',   label: 'On brand primary', description: 'Text/icons that sit on the primary fill.' }
+  brand_accent:             { tier: palette, category: color, type: color, on: brand_accent_foreground, default: '#B94430',  label: 'Brand accent', description: 'Secondary highlight colour. Defaults to the same cinnabar pigment — Atelier is a single-accent brand.' }
+  brand_accent_foreground:  { tier: palette, category: color, type: color, default: '#FCFAF7', label: 'On brand accent', description: 'Text/icons that sit on the accent fill.' }
 
   # ── Neutral ramp ─────────────────────────────────────────────────────────--
-  neutral_surface:           { tier: palette, category: color, type: color, default: 'var(--color-white)',     label: 'Surface', description: 'Page/card background.' }
-  neutral_subtle:            { tier: palette, category: color, type: color, default: 'var(--color-slate-50)',  label: 'Subtle surface', description: 'The muted surface (muted fills, hovers, secondary panels). Pairs with neutral_muted_foreground for text.' }
-  neutral_border:            { tier: palette, category: color, type: color, default: 'var(--color-slate-200)', label: 'Border', description: 'Hairlines, dividers.' }
-  neutral_muted_foreground:  { tier: palette, category: color, type: color, default: 'var(--color-slate-500)', label: 'Muted text', description: 'Text/on-colour for the muted (subtle) surface. Secondary/disabled text.' }
-  neutral_ink:               { tier: palette, category: color, type: color, default: 'var(--color-slate-900)', label: 'Ink', description: 'Primary text, near-black.' }
+  neutral_surface:           { tier: palette, category: color, type: color, default: '#F0EDE7',     label: 'Surface', description: 'Page background — Atelier gesso, a soft warm off-white.' }
+  neutral_card:              { tier: palette, category: color, type: color, default: '#FCFAF7',     label: 'Card surface', description: 'Raised surfaces (cards, panels) — a touch lighter than the gesso page ground so cards lift.' }
+  neutral_subtle:            { tier: palette, category: color, type: color, default: '#E8E5DF',  label: 'Subtle surface', description: 'The muted surface (muted fills, hovers, secondary panels). Pairs with neutral_muted_foreground for text.' }
+  neutral_border:            { tier: palette, category: color, type: color, default: '#E7E4DD', label: 'Border', description: 'Hairlines, dividers.' }
+  neutral_muted_foreground:  { tier: palette, category: color, type: color, default: '#63605A', label: 'Muted text', description: 'Text/on-colour for the muted (subtle) surface. Secondary/disabled text. Slightly deeper than the canonical marketing --muted so it clears WCAG AA (4.5:1) on the darker paper-2 muted surface, not just on the lighter gesso page.' }
+  neutral_ink:               { tier: palette, category: color, type: color, default: '#221F1B', label: 'Ink', description: 'Primary text — warm bistre near-black.' }
 
   # ── Font families ───────────────────────────────────────────────────────────
-  font_family_base:    { tier: palette, category: typography, type: font-family, default: '"Inter", ui-sans-serif, system-ui, sans-serif',                       label: 'Body typeface',    description: 'The body-text typeface stack. THE token to set for the body font. To use a non-system font, load it under Web fonts first, then name it here.' }
-  font_family_display: { tier: palette, category: typography, type: font-family, default: '"Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif',         label: 'Heading typeface', description: 'The heading + brand-name typeface stack. THE token to set for the display/heading font. To use a non-system font, load it under Web fonts first, then name it here.' }
+  font_family_base:    { tier: palette, category: typography, type: font-family, default: '"Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif',            label: 'Body typeface',    description: 'The body-text typeface stack. Defaults to Schibsted Grotesk (bundled, self-hosted). THE token to set for the body font. To use a non-system font, load it under Web fonts first, then name it here.' }
+  font_family_display: { tier: palette, category: typography, type: font-family, default: '"Fraunces", Georgia, "Times New Roman", serif',                        label: 'Heading typeface', description: 'The heading + brand-name typeface stack. Defaults to Fraunces (bundled display serif, self-hosted). THE token to set for the display/heading font. To use a non-system font, load it under Web fonts first, then name it here.' }
 
   # ── Radius scale ─────────────────────────────────────────────────────────--
   radius_none: { tier: palette, category: radius, type: length, default: '0',       label: 'Radius none' }
@@ -193,7 +194,7 @@ tokens:
   selection:          { tier: semantic, category: color, type: color, theme_skip: true, default: 'var(--brand-accent)', label: 'Selection highlight', description: 'Text-selection (::selection) tint. Rendered translucent so selected text keeps its own colour and contrast. Defaults to the accent hue.' }
   focus_ring:         { tier: semantic, category: color, type: color, theme_skip: true, default: 'var(--brand-accent)', label: 'Focus ring', description: 'Keyboard focus-visible outline colour. Kept opaque — a visible focus indicator needs ≥3:1 contrast (WCAG 2.4.11). Defaults to the accent hue.' }
   border:             { tier: semantic, category: color, type: color, default: 'var(--neutral-border)',         label: 'Border' }
-  card:               { tier: semantic, category: color, type: color, on: card_foreground,    default: 'var(--neutral-surface)',        label: 'Card surface' }
+  card:               { tier: semantic, category: color, type: color, on: card_foreground,    default: 'var(--neutral-card)',           label: 'Card surface' }
   card_foreground:    { tier: semantic, category: color, type: color, default: 'var(--neutral-ink)',            label: 'On card' }
   # The shadow colour/tint. Semantic so it can reference a palette colour (ink for
   # a normal drop, the brand primary for a glow). Reference-only (a colour below
@@ -222,9 +223,9 @@ tokens:
   font_display:      { tier: semantic, category: typography, type: font-family, default: 'var(--font-family-display), "Noto Emoji"', label: 'Heading font', description: 'Where headings + the brand name get their font. Inherits the Heading typeface (font_family_display) — override only to point headings at a different family than the palette.' }
   body_size:         { tier: semantic, category: typography, type: length, default: 'var(--size-base)',      label: 'Body text size' }
   body_leading:      { tier: semantic, category: typography, type: number, default: 'var(--leading-normal)', label: 'Body line height' }
-  display_weight:    { tier: semantic, category: typography, type: number, default: 'var(--weight-extrabold)', label: 'Display weight', description: 'The largest marketing headlines (hero/CTA h1-h2) + big stat/price numbers. Heavier than section headings for display punch.' }
-  heading_weight:    { tier: semantic, category: typography, type: number, default: 'var(--weight-bold)',    label: 'Heading weight', description: 'Section headings (h1/h2) + article headings.' }
-  subheading_weight: { tier: semantic, category: typography, type: number, default: 'var(--weight-semibold)', label: 'Subheading weight', description: 'h3-level headings + item/card titles.' }
+  display_weight:    { tier: semantic, category: typography, type: number, default: 'var(--weight-semibold)', label: 'Display weight', description: 'The largest marketing headlines (hero/CTA h1-h2) + big stat/price numbers. Semibold suits the Fraunces display serif — its high stroke contrast reads as display punch without needing a heavier weight (the bundled Fraunces tops out at 600).' }
+  heading_weight:    { tier: semantic, category: typography, type: number, default: 'var(--weight-medium)',    label: 'Heading weight', description: 'Section headings (h1/h2) + article headings. Medium keeps section headings a step lighter than the display weight — a clean hierarchy for the Fraunces serif (which the bundled subset caps at 600, so display sits at semibold).' }
+  subheading_weight: { tier: semantic, category: typography, type: number, default: 'var(--weight-medium)', label: 'Subheading weight', description: 'h3-level headings + item/card titles.' }
   heading_tracking:  { tier: semantic, category: typography, type: length, default: 'var(--tracking-tight)',  label: 'Heading letter-spacing' }
   density:           { tier: semantic, category: space,      type: number, default: '1',                     label: 'Density', description: 'Scales component padding: 0.85 compact … 1.15 roomy.' }
   border_width:      { tier: semantic, category: border,     type: length, default: '1px', theme_key: 'default-border-width', label: 'Border width' }

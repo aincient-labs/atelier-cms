@@ -7,39 +7,10 @@
 
 declare(strict_types=1);
 
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Markup;
 use Drupal\Core\Url;
-
-/**
- * Implements hook_entity_operation().
- *
- * Adds an "Edit in studio" operation to aincient_page nodes (the content list +
- * node operations), the discoverable front door to editing an existing page in
- * the chat console's Page studio. Links to /aincient?page=<nid>, which the SPA's
- * useUrlPageSync deep link loads into the studio. Gated on both console access
- * and the page-studio edit permission so it only shows to operators who can use it.
- */
-function aincient_chat_entity_operation(EntityInterface $entity): array {
-  if ($entity->getEntityTypeId() !== 'node' || $entity->bundle() !== 'aincient_page') {
-    return [];
-  }
-  $account = \Drupal::currentUser();
-  if (!$account->hasPermission('use aincient operator console')
-    || !$account->hasPermission('administer aincient pages')) {
-    return [];
-  }
-  return [
-    'edit_in_studio' => [
-      'title' => t('Edit in studio'),
-      'weight' => -5,
-      'url' => Url::fromRoute('aincient_chat.console', [], [
-        'query' => ['page' => $entity->id()],
-      ]),
-    ],
-  ];
-}
+use Drupal\node\NodeInterface;
 
 /**
  * Implements hook_toolbar().
@@ -147,4 +118,112 @@ function aincient_chat_preprocess_navigation(array &$variables): void {
       . '<template shadowrootmode="open">' . $chip . '</template></span>';
     $variables['aincient_chip'] = Markup::create($chip);
   }
+}
+
+/**
+ * Implements hook_page_bottom().
+ *
+ * Renders the live-site editor pill — the operator's way back INTO the console
+ * from the public site (surface-switching Phase 3). It closes the dead-end the
+ * public theme used to leave: the only recovery was the core Navigation sidebar
+ * leaking through {{ page_top }}, which Phase 4 then retires.
+ *
+ * This THEMED path covers everything that renders through Drupal's page pipeline
+ * — the front page, basic pages, listings — where the pill is the "Open Console"
+ * fallback. AIncient pages (`aincient_page`) do NOT render here: their canonical
+ * view is a bespoke chrome-less Response (aincient_pages PageSpikeController) and
+ * gets the pill — deep-linked to the page — via hook_aincient_pages_shell_bottom()
+ * below instead.
+ *
+ * Only on the LIVE SITE: skip the console's own routes (they render on the front
+ * theme too) and anything not on the default/front theme (/admin runs the admin
+ * theme, the login page its own). Both are deterministic per route, so a route
+ * that never shows the pill simply never builds it. The element ALWAYS carries
+ * `user.permissions` + `route` cache contexts (so the page varies correctly),
+ * but the markup + its library attach ONLY for an operator: `#access` denial
+ * would still bubble `#attached`, leaking the pill's CSS into a visitor's cached
+ * page — so the permission gate lives in PHP, and a visitor's render is a bare
+ * cacheability shell with no markup and no assets.
+ */
+function aincient_chat_page_bottom(array &$page): void {
+  $route_name = (string) \Drupal::routeMatch()->getRouteName();
+  if (str_starts_with($route_name, 'aincient_chat.')) {
+    return;
+  }
+  $active_theme = \Drupal::theme()->getActiveTheme()->getName();
+  if ($active_theme !== (string) \Drupal::config('system.theme')->get('default')) {
+    return;
+  }
+
+  $build = ['#cache' => ['contexts' => ['user.permissions', 'route']]];
+  if (\Drupal::currentUser()->hasPermission('use aincient operator console')) {
+    // A themed page is never an AIncient page (those bypass the theme), so the
+    // pill is always the console-home fallback here.
+    $href = Url::fromRoute('aincient_chat.console')->toString();
+    $build['#markup'] = _aincient_chat_editor_pill_anchor($href, (string) t('Open Console'));
+    $build['#attached'] = ['library' => ['aincient_chat/editor-pill']];
+  }
+  $page['aincient_editor_pill'] = $build;
+}
+
+/**
+ * Implements hook_aincient_pages_shell_bottom().
+ *
+ * The pill for an AIncient page's canonical view — the surface-switching win:
+ * from the live page straight to editing it in the Content studio. The bespoke
+ * page shell can't #attach a library, so the pill links its own CSS directly
+ * (self-contained, per the hook contract). Operator-gated; a visitor gets
+ * nothing — and since only authenticated operators bypass the anonymous page
+ * cache, this per-user markup never leaks into a cached visitor page.
+ */
+function aincient_chat_aincient_pages_shell_bottom(NodeInterface $node): array {
+  if (!\Drupal::currentUser()->hasPermission('use aincient operator console')) {
+    return [];
+  }
+  // Route-name generated (never a hardcoded path): the Content-studio document
+  // room for this node. Translation-aware — the source translation uses the
+  // no-langcode route, a translation the langcode variant — matching the
+  // console's URL codec (chat-ui/src/console-url.ts).
+  $href = $node->isDefaultTranslation()
+    ? Url::fromRoute('aincient_chat.console_doc', [
+      'studio' => 'content',
+      'doc_type' => 'node',
+      'nid' => $node->id(),
+    ])->toString()
+    : Url::fromRoute('aincient_chat.console_doc_translation', [
+      'studio' => 'content',
+      'doc_type' => 'node',
+      'nid' => $node->id(),
+      'langcode' => $node->language()->getId(),
+    ])->toString();
+  $module_path = \Drupal::service('extension.list.module')->getPath('aincient_chat');
+  $css = base_path() . $module_path . '/css/editor-pill.css?v=' . @filemtime($module_path . '/css/editor-pill.css');
+  $link = '<link rel="stylesheet" href="' . htmlspecialchars($css, ENT_QUOTES) . '">';
+  return [
+    '#markup' => Markup::create($link . _aincient_chat_editor_pill_anchor($href, (string) t('Edit in Console'))),
+  ];
+}
+
+/**
+ * Build the editor-pill anchor markup (pencil icon + label). Shared by both the
+ * themed page_bottom path and the bespoke-shell path so the pill is one artefact.
+ * Same tab (surface-nav rule 3: output → workspace is switching modes on the
+ * same object) — no target=_blank. Inputs are trusted (built here); the href is
+ * generator-built and the label a static string, both escaped for safety.
+ */
+function _aincient_chat_editor_pill_anchor(string $href, string $label): Markup {
+  // Lucide "pencil" — inline so the pill needs no icon font; coloured by the
+  // library's currentColor.
+  $icon = '<svg class="aincient-editor-pill__icon" viewBox="0 0 24 24" fill="none" '
+    . 'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+    . 'aria-hidden="true" focusable="false">'
+    . '<path d="M12 20h9"/>'
+    . '<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
+    . '</svg>';
+  return Markup::create(
+    '<a class="aincient-editor-pill" href="' . htmlspecialchars($href, ENT_QUOTES) . '">'
+    . $icon
+    . '<span class="aincient-editor-pill__label">' . htmlspecialchars($label, ENT_QUOTES) . '</span>'
+    . '</a>'
+  );
 }

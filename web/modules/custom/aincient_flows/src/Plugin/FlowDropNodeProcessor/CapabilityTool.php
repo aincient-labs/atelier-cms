@@ -92,11 +92,13 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
       assert($plugin instanceof ExecutableFunctionCallInterface);
 
       // Set only the arguments the capability actually declares; the model's
-      // tool-call args arrive as the node's runtime inputs.
+      // tool-call args arrive as the node's runtime inputs. Entities emitted by
+      // the model are normalised here (see self::normalizeArg) — this is the one
+      // boundary every capability's model args cross, so the decode lives once.
       $definitions = $plugin->getContextDefinitions();
       foreach ($definitions as $name => $context) {
         if ($params->has($name)) {
-          $plugin->setContextValue($name, $params->get($name));
+          $plugin->setContextValue($name, $this->normalizeArg($params->get($name)));
         }
       }
 
@@ -109,6 +111,61 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
     catch (\Throwable $e) {
       return ['ok' => FALSE, 'result' => 'The capability failed: ' . $e->getMessage()];
     }
+  }
+
+  /**
+   * Normalise one model-supplied tool argument.
+   *
+   * LLMs habitually HTML-escape text they think is destined for a web page, so a
+   * value like `Ember & Oak` arrives as `Ember &amp; Oak` (and `O'Brien` as
+   * `O&#39;Brien`). Our capabilities store these as PLAIN TEXT and escape at
+   * OUTPUT (Twig / the SDC templates), so persisting the entity double-encodes
+   * it — surfacing a literal `&amp;` in the studio field and on the rendered
+   * site. This is a cross-cutting LLM behaviour, so we strip it once here, at the
+   * single boundary every capability's model args cross, rather than per field.
+   *
+   * JSON-aware: a `*_json` arg is decoded on its LEAF string values only (parse →
+   * decode → re-encode), so an entity inside a value (e.g. a `&quot;`) can never
+   * corrupt the JSON envelope. Non-JSON strings are decoded directly. Non-strings
+   * pass through untouched. Idempotent + cheap: a bare `&` is not a valid entity,
+   * so entity-free text is returned unchanged (and the `&` fast-path skips the
+   * work entirely).
+   */
+  protected function normalizeArg(mixed $value): mixed {
+    if (!is_string($value) || !str_contains($value, '&')) {
+      return $value;
+    }
+    // A JSON object/array arg: decode the leaves, never the raw envelope.
+    $trimmed = ltrim($value);
+    if ($trimmed !== '' && ($trimmed[0] === '{' || $trimmed[0] === '[')) {
+      $decoded = json_decode($value, TRUE);
+      if (is_array($decoded)) {
+        return (string) json_encode(
+          $this->decodeEntitiesDeep($decoded),
+          JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+        );
+      }
+    }
+    return $this->decodeEntities($value);
+  }
+
+  /**
+   * Recursively decode HTML entities in the leaf string values of a parsed
+   * structure (array keys are left as-is — they are field names, not content).
+   */
+  protected function decodeEntitiesDeep(mixed $value): mixed {
+    if (is_array($value)) {
+      return array_map([$this, 'decodeEntitiesDeep'], $value);
+    }
+    return is_string($value) ? $this->decodeEntities($value) : $value;
+  }
+
+  /**
+   * Decode HTML entities in a single string (named + numeric, single + double
+   * quotes, HTML5 set), UTF-8. A no-op for entity-free text.
+   */
+  protected function decodeEntities(string $value): string {
+    return html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
   }
 
   /**

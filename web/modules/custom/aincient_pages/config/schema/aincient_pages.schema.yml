@@ -63,6 +63,22 @@ aincient_pages.identity:
     footer_note:
       type: label
       label: 'Footer note'
+    site:
+      type: mapping
+      label: 'Site information (overrides system.site at runtime; empty = shipped default)'
+      mapping:
+        mail:
+          type: email
+          label: 'Site email address'
+        front:
+          type: string
+          label: 'Front page (entity:node:<id> token, or empty)'
+        page_403:
+          type: string
+          label: '403 (access denied) page (entity:node:<id> token, or empty)'
+        page_404:
+          type: string
+          label: '404 (not found) page (entity:node:<id> token, or empty)'
 
 aincient_pages.chrome:
   type: config_object

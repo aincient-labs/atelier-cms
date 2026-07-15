@@ -13,7 +13,7 @@ valid composition look good.
   // landing:
   "sections": [ { "component": "...", "props": { ... } } ]
   // blog:
-  "title": "...", "lead": "...", "author": "...", "body_html": "..."
+  "title": "...", "lead": "...", "author": "...", "body_md": "# Markdown source…"
 }
 ```
 
@@ -26,13 +26,18 @@ component schemas are the validation; this file is the taste.
 The agent supplies **content only**. Layout is fixed and not negotiable:
 
 ```
-article-header (eyebrow, title, lead, author, date, cover)
+article-header (eyebrow←category, title, lead, author, date, cover)
 prose          (the body — reading-optimised measure + type scale)
-byline         (author card)
+byline         (author card ← author, author_bio)
 ```
 
 There is no `sections` array for a blog. Every post looks coherent because the
 *template* owns the layout, not the model. The agent's freedom = words + a cover.
+
+Write the body as **Markdown** in `body_md` (headings `##`/`###`, `**bold**`,
+`*italic*`, `` `code` ``, lists, `> quotes`, links). It is compiled to sanitised
+HTML and rendered through the branded `prose` component — so author the *content*,
+never HTML or inline styles. Raw HTML in the source is escaped, not rendered.
 
 ### Landing — a composition GRAMMAR (bounded creativity)
 The agent arranges a `sections` list from the **allow-list** (unknown components

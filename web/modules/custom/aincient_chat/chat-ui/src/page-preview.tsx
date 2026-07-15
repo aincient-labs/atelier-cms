@@ -20,6 +20,7 @@ import {
   interceptPreviewClicks,
   injectPreviewScrollbar,
   injectSelectionStyles,
+  neutralizePreviewTabbing,
   paintSelection,
 } from "./preview-nav";
 import { PanelBar } from "./panel-bar";
@@ -29,13 +30,14 @@ import { useFacet } from "./page-facet";
 import { activeStudioKey } from "./flow";
 import { consoleNav, deriveRoomFromStores } from "./console-nav";
 import { openPageInPlace } from "./url-sync";
+import { apiUrl } from "./console-config";
 
 /**
  * The live page preview: an iframe whose `srcdoc` is the chrome-less HTML the
  * server renders from the current draft schema. Unlike the brand preview (which
  * reskins a fixed demo page live with inline CSS vars), a page is a full
  * re-render — every draft change re-POSTs the schema to the stateless
- * /aincient/page/preview endpoint and renders the returned HTML.
+ * /atelier/page/preview endpoint and renders the returned HTML.
  *
  * Re-rendering is DOUBLE-BUFFERED: instead of swapping `srcdoc` on one iframe
  * (which tears the document down — a white blink, and the scroll jumps to top),
@@ -54,7 +56,7 @@ import { openPageInPlace } from "./url-sync";
  * The render is debounced so dragging a value or the agent emitting several ops
  * doesn't fire a request per keystroke.
  */
-const PREVIEW_URL = "/aincient/page/preview";
+const PREVIEW_URL = apiUrl("/page/preview");
 const DEBOUNCE_MS = 220;
 /** Crossfade duration — keep in sync with `.ain-preview__frame` transition. */
 const FADE_MS = 260;
@@ -319,6 +321,7 @@ export function PagePreview() {
                 injectSelectionStyles(doc);
                 paintSelection(doc, getSelectedSection());
                 injectPreviewScrollbar(doc);
+                neutralizePreviewTabbing(doc);
                 reveal.current(layer.key);
               }}
             />

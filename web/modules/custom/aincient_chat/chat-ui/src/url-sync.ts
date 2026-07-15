@@ -114,7 +114,7 @@ export function useConsoleUrl(runtime: AssistantRuntime) {
     // State → URL. A room change → pushState (navigation, backable); a thread
     // switch (mainThreadId change) → pushState too; everything else in place →
     // replaceState (the first-send claim on a fresh thread keeps its mainThreadId,
-    // so it replaces — no /aincient/content → …?thr=x history pair).
+    // so it replaces — no /atelier/content → …?thr=x history pair).
     const project = () => {
       syncTitle();
       const room = consoleNav.room();

@@ -47,7 +47,7 @@ aincient_pages.brand_demo:
 # JSON token manifest for the chat console's live brand editor (metadata +
 # current value per token). Read-only; the frontend previews edits client-side.
 aincient_pages.brand_manifest:
-  path: '/aincient/brand/manifest'
+  path: '/atelier/brand/manifest'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BrandController::manifest'
   methods: [GET]
@@ -65,7 +65,7 @@ aincient_pages.brand_manifest:
 # thing that persists, through the same BrandRepository path the form/AI tool
 # use, so it records an attributed, reversible revision. Gated like the manifest.
 aincient_pages.brand_save:
-  path: '/aincient/brand/save'
+  path: '/atelier/brand/save'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BrandController::save'
   methods: [POST]
@@ -82,7 +82,7 @@ aincient_pages.brand_save:
 # from brand_save because status is a MODE, not draft content, so it does not
 # ride the token draft→Publish cycle. Gated like the manifest/save.
 aincient_pages.brand_status:
-  path: '/aincient/brand/status'
+  path: '/atelier/brand/status'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BrandController::setStatus'
   methods: [POST]
@@ -103,7 +103,7 @@ aincient_pages.brand_status:
 
 # Current chrome state + the editing vocabulary (layout enums, identity, menus).
 aincient_pages.chrome_manifest:
-  path: '/aincient/chrome/manifest'
+  path: '/atelier/chrome/manifest'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\ChromeController::manifest'
   methods: [GET]
@@ -115,7 +115,7 @@ aincient_pages.chrome_manifest:
 
 # Render the chrome around a placeholder body from the draft (iframe srcdoc). No write.
 aincient_pages.chrome_preview:
-  path: '/aincient/chrome/preview'
+  path: '/atelier/chrome/preview'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\ChromeController::preview'
   methods: [POST]
@@ -127,7 +127,7 @@ aincient_pages.chrome_preview:
 
 # Publish the chrome draft: layout + identity + reconcile the main/footer menus.
 aincient_pages.chrome_save:
-  path: '/aincient/chrome/save'
+  path: '/atelier/chrome/save'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\ChromeController::save'
   methods: [POST]
@@ -138,7 +138,7 @@ aincient_pages.chrome_save:
     _auth: ['cookie', 'basic_auth']
 
 # NOTE: logo/favicon uploads no longer have bespoke endpoints — they go through
-# the unified reference picker (/aincient/media/upload → a `media:<id>` token),
+# the unified reference picker (/atelier/media/upload → a `media:<id>` token),
 # and the token is persisted by chrome_save. (Library IA increment #3c.)
 
 # ── Page studio API (chat console) ──────────────────────────────────────────
@@ -148,7 +148,7 @@ aincient_pages.chrome_save:
 
 # Apply the page agent's ops to the working draft (PageStore::applyOps). No write.
 aincient_pages.page_apply:
-  path: '/aincient/page/apply'
+  path: '/atelier/page/apply'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::apply'
   methods: [POST]
@@ -163,7 +163,7 @@ aincient_pages.page_apply:
 
 # Render a draft page-schema to chrome-less HTML (studio iframe srcdoc). No write.
 aincient_pages.page_preview:
-  path: '/aincient/page/preview'
+  path: '/atelier/page/preview'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::preview'
   methods: [POST]
@@ -179,7 +179,7 @@ aincient_pages.page_preview:
 # Save the studio's working draft (editorial workflow): persists a forward draft
 # revision — does NOT publish. Create a new draft page or update one.
 aincient_pages.page_save:
-  path: '/aincient/page/save'
+  path: '/atelier/page/save'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::save'
   methods: [POST]
@@ -197,7 +197,7 @@ aincient_pages.page_save:
 # permission (publish/approve/…) is enforced in the store against the user's
 # legal transitions. publish = write-latest-then-go-live.
 aincient_pages.page_publish:
-  path: '/aincient/page/publish'
+  path: '/atelier/page/publish'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::publish'
   methods: [POST]
@@ -212,7 +212,7 @@ aincient_pages.page_publish:
 # handover span them; the real floor is per-node update access, checked in the
 # controller.
 aincient_pages.page_lock_acquire:
-  path: '/aincient/page/lock/acquire'
+  path: '/atelier/page/lock/acquire'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\LockController::acquire'
   methods: [POST]
@@ -223,7 +223,7 @@ aincient_pages.page_lock_acquire:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.page_lock_release:
-  path: '/aincient/page/lock/release'
+  path: '/atelier/page/lock/release'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\LockController::release'
   methods: [POST]
@@ -234,7 +234,7 @@ aincient_pages.page_lock_release:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.page_lock_status:
-  path: '/aincient/page/lock/status'
+  path: '/atelier/page/lock/status'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\LockController::status'
   methods: [GET]
@@ -245,7 +245,7 @@ aincient_pages.page_lock_status:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.page_submit_review:
-  path: '/aincient/page/submit-review'
+  path: '/atelier/page/submit-review'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::submitReview'
   methods: [POST]
@@ -256,7 +256,7 @@ aincient_pages.page_submit_review:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.page_approve:
-  path: '/aincient/page/approve'
+  path: '/atelier/page/approve'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::approve'
   methods: [POST]
@@ -267,7 +267,7 @@ aincient_pages.page_approve:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.page_reject:
-  path: '/aincient/page/reject'
+  path: '/atelier/page/reject'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::reject'
   methods: [POST]
@@ -278,7 +278,7 @@ aincient_pages.page_reject:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.page_archive:
-  path: '/aincient/page/archive'
+  path: '/atelier/page/archive'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::archive'
   methods: [POST]
@@ -289,7 +289,7 @@ aincient_pages.page_archive:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.page_restore:
-  path: '/aincient/page/restore'
+  path: '/atelier/page/restore'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::restore'
   methods: [POST]
@@ -308,7 +308,7 @@ aincient_pages.page_restore:
 
 # Search pickable references across types (?types=media,node,block&q=…).
 aincient_pages.reference_search:
-  path: '/aincient/reference/search'
+  path: '/atelier/reference/search'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\ReferenceController::search'
   methods: [GET]
@@ -320,7 +320,7 @@ aincient_pages.reference_search:
 
 # Resolve one stored token to a descriptor for the in-field preview (?token=…).
 aincient_pages.reference_resolve:
-  path: '/aincient/reference/resolve'
+  path: '/atelier/reference/resolve'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\ReferenceController::resolve'
   methods: [GET]
@@ -337,7 +337,7 @@ aincient_pages.reference_resolve:
 
 # Upload a new image into the library (multipart: file + optional alt).
 aincient_pages.media_upload:
-  path: '/aincient/media/upload'
+  path: '/atelier/media/upload'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\MediaController::upload'
   methods: [POST]
@@ -353,7 +353,7 @@ aincient_pages.media_upload:
 # Resolve a media token to a display-sized derivative (?token=…&style=…) — the
 # Presence preview cards render at real card size, where a picker thumb is blurry.
 aincient_pages.media_url:
-  path: '/aincient/media/url'
+  path: '/atelier/media/url'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\MediaController::url'
   methods: [GET]
@@ -366,7 +366,7 @@ aincient_pages.media_url:
 # The editable detail of one image — the "open this media item" entry point for
 # the media studio's non-AI editor rail (mirror of block_schema).
 aincient_pages.media_schema:
-  path: '/aincient/media/{media}/schema'
+  path: '/atelier/media/{media}/schema'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\MediaController::detail'
   methods: [GET]
@@ -381,7 +381,7 @@ aincient_pages.media_schema:
 
 # Update an image's name / alt text (the editor rail's Save).
 aincient_pages.media_save:
-  path: '/aincient/media/{media}'
+  path: '/atelier/media/{media}'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\MediaController::save'
   methods: [POST]
@@ -396,7 +396,7 @@ aincient_pages.media_save:
 
 # Swap an image's underlying file, keeping the same media:<id> token.
 aincient_pages.media_replace:
-  path: '/aincient/media/{media}/file'
+  path: '/atelier/media/{media}/file'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\MediaController::replaceFile'
   methods: [POST]
@@ -412,7 +412,7 @@ aincient_pages.media_replace:
 # Overwrite an image with ANOTHER item's bytes (commit an edit onto the original),
 # keeping the target's media:<id> token.
 aincient_pages.media_replace_from:
-  path: '/aincient/media/{media}/replace-from'
+  path: '/atelier/media/{media}/replace-from'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\MediaController::replaceFrom'
   methods: [POST]
@@ -427,7 +427,7 @@ aincient_pages.media_replace_from:
 
 # Delete an image-media item (the human's explicit discard of an unwanted asset).
 aincient_pages.media_delete:
-  path: '/aincient/media/{media}/delete'
+  path: '/atelier/media/{media}/delete'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\MediaController::delete'
   methods: [POST]
@@ -442,7 +442,7 @@ aincient_pages.media_delete:
 
 # The component catalog the studio's structured section editor renders from.
 aincient_pages.page_manifest:
-  path: '/aincient/page/manifest'
+  path: '/atelier/page/manifest'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::manifest'
   methods: [GET]
@@ -457,7 +457,7 @@ aincient_pages.page_manifest:
 
 # Existing pages for the studio's page picker (id/title/changed/url, newest first).
 aincient_pages.page_list:
-  path: '/aincient/page/list'
+  path: '/atelier/page/list'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::list'
   methods: [GET]
@@ -472,7 +472,7 @@ aincient_pages.page_list:
 
 # The stored schema for an existing page — the "edit this page" entry point.
 aincient_pages.page_schema:
-  path: '/aincient/page/{node}/schema'
+  path: '/atelier/page/{node}/schema'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::pageSchema'
   methods: [GET]
@@ -492,7 +492,7 @@ aincient_pages.page_schema:
 # by the divergence permission (it detaches the translation from source layout
 # edits). Body: { "langcode": "<lc>" }.
 aincient_pages.page_diverge:
-  path: '/aincient/page/{node}/diverge'
+  path: '/atelier/page/{node}/diverge'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::diverge'
   methods: [POST]
@@ -511,7 +511,7 @@ aincient_pages.page_diverge:
 # Re-inherit the source layout for a translation (asymmetric → symmetric). Always
 # allowed (re-inheriting is never a governance risk). Body: { "langcode": "<lc>" }.
 aincient_pages.page_converge:
-  path: '/aincient/page/{node}/converge'
+  path: '/atelier/page/{node}/converge'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\PageController::converge'
   methods: [POST]
@@ -534,7 +534,7 @@ aincient_pages.page_converge:
 # Save the studio's working block fragment as a DRAFT (editorial workflow) —
 # create a new draft block or update one. Does NOT publish.
 aincient_pages.block_save:
-  path: '/aincient/block/save'
+  path: '/atelier/block/save'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BlockController::save'
   methods: [POST]
@@ -546,7 +546,7 @@ aincient_pages.block_save:
 
 # Editorial transitions for a block (mirror of the page transitions above).
 aincient_pages.block_publish:
-  path: '/aincient/block/publish'
+  path: '/atelier/block/publish'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BlockController::publish'
   methods: [POST]
@@ -557,7 +557,7 @@ aincient_pages.block_publish:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.block_submit_review:
-  path: '/aincient/block/submit-review'
+  path: '/atelier/block/submit-review'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BlockController::submitReview'
   methods: [POST]
@@ -568,7 +568,7 @@ aincient_pages.block_submit_review:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.block_approve:
-  path: '/aincient/block/approve'
+  path: '/atelier/block/approve'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BlockController::approve'
   methods: [POST]
@@ -579,7 +579,7 @@ aincient_pages.block_approve:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.block_reject:
-  path: '/aincient/block/reject'
+  path: '/atelier/block/reject'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BlockController::reject'
   methods: [POST]
@@ -590,7 +590,7 @@ aincient_pages.block_reject:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.block_archive:
-  path: '/aincient/block/archive'
+  path: '/atelier/block/archive'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BlockController::archive'
   methods: [POST]
@@ -601,7 +601,7 @@ aincient_pages.block_archive:
     _auth: ['cookie', 'basic_auth']
 
 aincient_pages.block_restore:
-  path: '/aincient/block/restore'
+  path: '/atelier/block/restore'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BlockController::restore'
   methods: [POST]
@@ -613,7 +613,7 @@ aincient_pages.block_restore:
 
 # The stored fragment for an existing block — the "edit this block" entry point.
 aincient_pages.block_schema:
-  path: '/aincient/block/{media}/schema'
+  path: '/atelier/block/{media}/schema'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BlockController::blockSchema'
   methods: [GET]
@@ -628,7 +628,7 @@ aincient_pages.block_schema:
 
 # The no-AI design-system editor.
 aincient_pages.brand_form:
-  path: '/admin/config/content/aincient-brand'
+  path: '/admin/config/content/atelier-brand'
   defaults:
     _form: '\Drupal\aincient_pages\Form\BrandForm'
     _title: 'AIncient brand'
@@ -637,7 +637,7 @@ aincient_pages.brand_form:
 
 # Brand revision history (snapshot-on-save) + one-click restore.
 aincient_pages.brand_history:
-  path: '/admin/config/content/aincient-brand/history'
+  path: '/admin/config/content/atelier-brand/history'
   defaults:
     _controller: '\Drupal\aincient_pages\Controller\BrandHistoryController::list'
     _title: 'Brand history'
@@ -645,7 +645,7 @@ aincient_pages.brand_history:
     _permission: 'administer aincient pages'
 
 aincient_pages.brand_restore:
-  path: '/admin/config/content/aincient-brand/history/{revision}/restore'
+  path: '/admin/config/content/atelier-brand/history/{revision}/restore'
   defaults:
     _form: '\Drupal\aincient_pages\Form\BrandRestoreForm'
     _title: 'Restore brand'

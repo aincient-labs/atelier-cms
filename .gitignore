@@ -33,6 +33,8 @@ web/profiles/contrib/
 web/libraries/
 web/sites/*/files/
 web/sites/*/private/
+# PHPUnit Functional-test artifacts (browser_output, per-run site fixtures)
+web/sites/simpletest/
 web/sites/*/settings.local.php
 web/sites/*/settings.ddev.php
 # Scaffolded docroot files (managed by drupal/core-composer-scaffold)
@@ -71,3 +73,6 @@ ralph/
 # Installer/manager (aincient CLI + Tauri GUI) — its own git repo, not part of
 # the Drupal distribution. See manager/README.md.
 /manager/
+# Static export output (drush aincient:export)
+/aincient-export/
+/aincient-export.zip

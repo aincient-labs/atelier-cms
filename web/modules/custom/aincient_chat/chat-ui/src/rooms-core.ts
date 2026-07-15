@@ -21,7 +21,7 @@ export type Room =
    * exact analogue of the Content `list`: the family's landing with no item
    * open. It drives the `media` studio (chat rail = the image agent; centre =
    * the shelf browser; rail = the media editor's "nothing open" state) and
-   * addresses as `/aincient/library`. Like `list` it holds no document, so it
+   * addresses as `/atelier/library`. Like `list` it holds no document, so it
    * settles straight to idle. There is no separate `library` studio room any
    * more — the shelf IS the section's home.
    */
@@ -29,7 +29,7 @@ export type Room =
   /**
    * The New-page room — an `aincient_page` being composed that has NO node yet
    * (never persisted). Its own kind, distinct from `list`, so an unsaved draft
-   * gets its own address (`/aincient/content/draft/<thread>`) instead of
+   * gets its own address (`/atelier/content/draft/<thread>`) instead of
    * squatting on the listing's URL — which is what let a draft shadow the
    * directory. The first Save/Publish mints the node and the room becomes a
    * `node` room (adoptRoom). Drives the Content studio. Its IDENTITY is its

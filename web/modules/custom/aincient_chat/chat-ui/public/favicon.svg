@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Atelier mark, self-contained for use as a favicon (browser tab / bookmark).
+
+  Geometry is the console chrome monogram (chat-ui/src/icons.tsx `ChipArt`),
+  itself the shipped export of the handcrafted master at
+  docs/brand-assets/atelier/logo.svg: a serif "A" (pre-outlined here so it
+  renders identically off-macOS — no font dependency) over the diagonal
+  cinnabar palette-knife swipe, a second gesso pass cutting through the letter,
+  inside a hairline frame.
+
+  Unlike the in-app copy, this file carries CONCRETE colours (not the themed
+  ain-* CSS tokens): a warm gesso panel so the mark reads on both light and dark
+  browser tab strips, the one cinnabar pigment, and a warm-ink frame.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110.722 110.722" role="img" aria-label="Atelier">
+  <g transform="translate(-82.020833,-82.020833)">
+    <clipPath id="ain-favicon-clip">
+      <path transform="translate(14.194849,-18.623259)" d="m 137.58332,119.47935 -7.88927,20.60168 q 0.65456,0 1.8948,0.0344 3.89296,0.10336 5.30545,0.10336 1.72255,0 6.23563,-0.10336 0.99908,-0.0344 1.51584,-0.0344 z m -1.55029,-6.47679 h 5.92556 q 4.47863,13.67704 8.47494,24.97696 4.03077,11.29992 6.33898,16.98433 1.37804,3.27285 2.37712,4.03077 0.99908,0.75792 2.85943,0.75792 h 0.68902 v 2.41157 q -2.68717,-0.13781 -4.92649,-0.20671 -2.20486,-0.0689 -3.7207,-0.0689 -1.92926,0 -4.23747,0.0689 -2.30822,0.0689 -4.89204,0.20671 v -2.41157 h 0.65457 q 2.44602,0 3.34174,-0.55122 0.89573,-0.58566 0.89573,-2.10151 0,-0.55121 -0.13781,-1.20578 -0.1378,-0.68902 -0.44786,-1.6192 l -3.3762,-10.54199 q -1.30913,0 -3.5829,-0.0345 -4.13411,-0.10335 -5.30545,-0.10335 -2.34266,0 -4.44417,0.0344 -2.06706,0 -4.30638,0.0689 -2.44602,6.16673 -3.34174,8.99171 -0.89573,2.82498 -0.89573,4.03076 0,1.6881 0.89573,2.37712 0.89572,0.65457 3.20394,0.65457 h 0.93018 v 2.41157 q -2.51493,-0.13781 -4.71979,-0.20671 -2.17041,-0.0689 -3.89296,-0.0689 -1.37804,0 -3.4451,0.0689 -2.06705,0.0689 -4.47862,0.20671 v -2.37712 q 2.44602,-0.0689 3.85851,-0.96463 1.44694,-0.93017 2.51492,-3.06613 1.92925,-4.03077 6.82129,-16.12306 4.92649,-12.12675 10.36975,-26.63061 z" />
+    </clipPath>
+    <!-- gessoed panel body -->
+    <path fill="#fbfaf7" d="M 87.582977,87.582977 H 187.31909 V 187.31909 H 87.582977 Z" />
+    <!-- palette-knife swipe — the one pigment -->
+    <path fill="#c2452a" d="m 147.34886,87.685514 -59.76588,99.633596 40.07243,0.0598 59.6637,-99.795976 z" />
+    <!-- the second knife pass — gesso through the letter -->
+    <path fill="#fbfaf7" clip-path="url(#ain-favicon-clip)" transform="translate(-14.194849,18.623259)" d="m 161.67599,69.164683 -59.76587,99.633577 40.07242,0.0598 59.6637,-99.795964 z" />
+    <!-- panel frame — themed to a warm ink, weighted to read at tab sizes -->
+    <path fill="none" stroke="#23201d" stroke-width="4" d="M 87.582977,87.582977 H 187.31909 V 187.31909 H 87.582977 Z" />
+  </g>
+</svg>

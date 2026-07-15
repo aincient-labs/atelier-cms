@@ -61,6 +61,11 @@ function aincient_theme_preprocess_html(array &$variables): void {
   // from our own origin, so the one font the visitor can't opt out of leaks no
   // IP to Google. The font_sans/font_display stacks fall back to it for emoji.
   $variables['#attached']['library'][] = 'aincient_pages/emoji-font';
+  // The out-of-box DEFAULT brand fonts (Schibsted Grotesk body + Fraunces
+  // display) — always self-hosted + always attached, offline-first with no
+  // Google request or consent gate. The dynamic delivery below is only for an
+  // operator's OWN chosen fonts (empty by default), which layer on top.
+  $variables['#attached']['library'][] = 'aincient_pages/brand-fonts';
   // Load the brand's web fonts per the operator's delivery choice:
   //  - self-host → a plain <link> to the woff2 we vendored to our own origin;
   //  - Google    → a CONSENT-GATED <link> (media="not all" so it does NOT fetch

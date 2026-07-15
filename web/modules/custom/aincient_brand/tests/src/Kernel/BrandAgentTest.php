@@ -313,7 +313,7 @@ final class BrandAgentTest extends KernelTestBase {
     $this->assertSame(['stage' => 'ideating', 'locked' => FALSE], $payload['current']);
     $this->assertStringContainsString('polish', $envelope['summary']);
     // Proposing persists NOTHING — the status is unchanged until the human
-    // confirms via POST /aincient/brand/status.
+    // confirms via POST /atelier/brand/status.
     $this->assertSame($before, $this->brand()->status());
   }
 

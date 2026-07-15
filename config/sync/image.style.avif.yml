@@ -1,0 +1,13 @@
+uuid: null
+langcode: en
+status: true
+dependencies: {  }
+name: avif
+label: avif
+effects:
+  2abcaaec-8c6e-4d41-8690-4b08ba28d25b:
+    uuid: 2abcaaec-8c6e-4d41-8690-4b08ba28d25b
+    id: image_convert
+    weight: 1
+    data:
+      extension: avif

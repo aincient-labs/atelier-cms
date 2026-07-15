@@ -35,7 +35,7 @@ final class AuditController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/audit/{node}/report — the read-only findings for a page.
+   * GET /atelier/audit/{node}/report — the read-only findings for a page.
    *
    * Audits the LATEST revision (the editable draft head), not the published
    * default — so the Checks fix loop's re-run reflects a fix that's been staged

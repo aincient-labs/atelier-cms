@@ -59,10 +59,10 @@ final class FontPairings {
     ],
     'warm' => [
       'label' => 'Warm',
-      'blurb' => 'Expressive Fraunces, soft Nunito Sans text.',
+      'blurb' => 'Expressive Fraunces display over a clean Schibsted Grotesk body — Atelier\'s own pairing.',
       'display' => '"Fraunces", ' . self::SERIF_FALLBACK,
-      'base' => '"Nunito Sans", ' . self::SANS_FALLBACK,
-      'fonts' => ['Fraunces', 'Nunito Sans'],
+      'base' => '"Schibsted Grotesk", ' . self::SANS_FALLBACK,
+      'fonts' => ['Fraunces', 'Schibsted Grotesk'],
     ],
     'corporate' => [
       'label' => 'Corporate',

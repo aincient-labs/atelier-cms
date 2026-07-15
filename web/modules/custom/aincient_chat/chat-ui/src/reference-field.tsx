@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckIcon, DocumentIcon, ImageIcon, PlusIcon, SpinnerIcon, UploadIcon, XIcon } from "./icons";
+import { apiUrl } from "./console-config";
 
 /**
  * The studio's ONE reference control — media, embeddable nodes, global blocks.
@@ -10,11 +11,11 @@ import { CheckIcon, DocumentIcon, ImageIcon, PlusIcon, SpinnerIcon, UploadIcon, 
  * the three former pickers into the three decoupled seams the reference layer is
  * built on:
  *
- *   1. a PICKER that searches the unified catalog (GET /aincient/reference/search)
+ *   1. a PICKER that searches the unified catalog (GET /atelier/reference/search)
  *      and writes a token via onChange;
  *   2. MANUAL ENTRY — a text input bound to the same value, so typing/pasting a
  *      token behaves identically to picking one;
- *   3. a PREVIEW derived on the fly from the token (GET /aincient/reference/resolve)
+ *   3. a PREVIEW derived on the fly from the token (GET /atelier/reference/resolve)
  *      — a uniform descriptor card (thumb / label / description / status + edit
  *      link), never stored, always live.
  *
@@ -23,9 +24,9 @@ import { CheckIcon, DocumentIcon, ImageIcon, PlusIcon, SpinnerIcon, UploadIcon, 
  * which edit in-studio rather than at a URL).
  */
 
-const SEARCH_URL = "/aincient/reference/search";
-const RESOLVE_URL = "/aincient/reference/resolve";
-const UPLOAD_URL = "/aincient/media/upload";
+const SEARCH_URL = apiUrl("/reference/search");
+const RESOLVE_URL = apiUrl("/reference/resolve");
+const UPLOAD_URL = apiUrl("/media/upload");
 
 /** The uniform shape every reference resolves to (mirrors ReferenceDescriptor.php). */
 export type ReferenceDescriptor = {
@@ -64,6 +65,7 @@ export function ReferenceField({
   createLabel = "New",
   dirty = false,
   revert,
+  compact = false,
 }: {
   label: string;
   meaning?: string;
@@ -85,6 +87,9 @@ export function ReferenceField({
   dirty?: boolean;
   /** The pre-built per-field revert marker, shown beside the label when dirty. */
   revert?: ReactNode;
+  /** Drop the raw-token chip / manual-entry row — for narrow hosts (e.g. the
+   *  menu-editor rail) where the token is noise and would collapse to "e…". */
+  compact?: boolean;
 }) {
   const current = typeof value === "string" ? value.trim() : "";
   const parsed = parseToken(current);
@@ -205,14 +210,19 @@ export function ReferenceField({
                 </button>
               )
             )}
-            <button
-              type="button"
-              className="ain-btn ain-topbtn ain-topbtn--sm"
-              onClick={() => !disabled && setOpen((o) => !o)}
-              disabled={disabled}
-            >
-              {current ? "Change…" : "Choose…"}
-            </button>
+            {/* In a compact host with a value set, the thumbnail already IS the
+                "Change…" trigger — drop the redundant text button so Edit + the
+                remove ✕ fit on one line in the narrow rail. */}
+            {!(compact && current !== "") && (
+              <button
+                type="button"
+                className="ain-btn ain-topbtn ain-topbtn--sm"
+                onClick={() => !disabled && setOpen((o) => !o)}
+                disabled={disabled}
+              >
+                {current ? "Change…" : "Choose…"}
+              </button>
+            )}
             {current !== "" && (
               <button
                 type="button"
@@ -232,8 +242,9 @@ export function ReferenceField({
           Once the token is valid it collapses into a copyable mono chip (Law 13:
           machine text wears the chip, never bare input text); "Edit token" swaps
           the raw input back. An empty/invalid value keeps the input as-is so
-          paste keeps behaving like picking. */}
-      {parsed && !editingToken ? (
+          paste keeps behaving like picking. Suppressed in `compact` hosts, where
+          the token is noise and would collapse to "e…" in the narrow rail. */}
+      {compact ? null : parsed && !editingToken ? (
         <div className="ain-ref__tokenrow">
           <span className="ain-ref__chip" title={current}>
             {current}

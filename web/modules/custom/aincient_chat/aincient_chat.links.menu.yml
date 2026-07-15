@@ -1,4 +1,4 @@
-# A one-click entry to the console (/aincient) in the admin Navigation sidebar.
+# A one-click entry to the console (/atelier) in the admin Navigation sidebar.
 # The D11 Navigation module's "Administration" block renders the admin menu from
 # level 2, so this must hang off system.admin (the /admin root) to appear as a
 # top-level sidebar item next to Content/Structure — a level-1 (parentless) link

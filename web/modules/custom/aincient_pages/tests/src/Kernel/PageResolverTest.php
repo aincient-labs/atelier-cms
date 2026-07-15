@@ -257,7 +257,7 @@ final class PageResolverTest extends KernelTestBase {
       'category' => 'News',
       'lead' => 'An English lead.',
       'author' => 'Ada',
-      'body_html' => '<p>English body</p>',
+      'body_md' => '## English body',
     ]);
 
     $node = \Drupal::entityTypeManager()->getStorage('node')->load($id);
@@ -267,7 +267,7 @@ final class PageResolverTest extends KernelTestBase {
       'field_page_content' => json_encode([
         'title' => 'Ein Beitrag',
         'lead' => 'Ein deutscher Vorspann.',
-        'body_html' => '<p>Deutscher Text</p>',
+        'body_md' => '## Deutscher Text',
       ]),
     ])->save();
 
@@ -276,7 +276,7 @@ final class PageResolverTest extends KernelTestBase {
     // Localised fields win; untranslated fields fall back to the source copy.
     $this->assertSame('Ein Beitrag', $de['title']);
     $this->assertSame('Ein deutscher Vorspann.', $de['lead']);
-    $this->assertSame('<p>Deutscher Text</p>', $de['body_html']);
+    $this->assertSame('## Deutscher Text', $de['body_md']);
     $this->assertSame('News', $de['category']);
     $this->assertSame('Ada', $de['author']);
   }

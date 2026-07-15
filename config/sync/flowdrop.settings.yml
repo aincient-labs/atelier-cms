@@ -5,7 +5,7 @@ logging:
   log_to_watchdog: true
 execution:
   default_orchestrator: 'flowdrop_runtime:synchronous'
-  max_execution_time: 300
+  max_execution_time: 540
 realtime:
   enabled: true
   polling_interval: 2000

@@ -183,11 +183,13 @@ final class MenuRepository {
   }
 
   /**
-   * A stored menu-link `uri` as a friendly editor path.
+   * A stored menu-link `uri` as a friendly editor path (or reference token).
    *
    * `internal:/about` → `/about`; `internal:/` / `route:<front>` → `/`; an
-   * external URL passes through; anything else (entity:…, etc.) is returned raw
-   * so the editor at least round-trips it.
+   * external URL passes through; a page reference `entity:node/5` → the console's
+   * reference TOKEN `entity:node:5` (colon form — the grammar the studio's
+   * ReferenceField / reference layer speak, {@see EntityEmbedResolver}); anything
+   * else is returned raw so the editor at least round-trips it.
    */
   private function uriToPath(string $uri): string {
     if ($uri === 'internal:/' || $uri === 'route:<front>') {
@@ -196,15 +198,24 @@ final class MenuRepository {
     if (str_starts_with($uri, 'internal:')) {
       return substr($uri, strlen('internal:'));
     }
+    // Core stores an entity link as `entity:<type>/<id>`; the console addresses
+    // the same entity by a colon-delimited reference token — translate so a
+    // page-reference link round-trips into the studio's page picker.
+    if (preg_match('#^entity:([a-z][a-z0-9_]*)/(\d+)$#', $uri, $m)) {
+      return 'entity:' . $m[1] . ':' . $m[2];
+    }
     return $uri;
   }
 
   /**
-   * A friendly editor path as a storable menu-link `uri`.
+   * A friendly editor path (or reference token) as a storable menu-link `uri`.
    *
    * `/about` → `internal:/about`; an http(s) URL passes through; `<front>` and
-   * `` → `internal:/`; a bare `about` → `internal:/about`. Already-schemed
-   * values (internal:/entity:/route:) pass through unchanged.
+   * `` → `internal:/`; a bare `about` → `internal:/about`. A page-reference TOKEN
+   * `entity:node:5` (the studio picker's value) → core's `entity:node/5` uri, so
+   * the live nav resolves it to the node's canonical/aliased URL for free
+   * ({@see SiteChrome::nav()}). Other already-schemed values
+   * (internal:/route:/tel:/mailto:) pass through unchanged.
    */
   private function pathToUri(string $path): string {
     $path = trim($path);
@@ -213,6 +224,10 @@ final class MenuRepository {
     }
     if (preg_match('#^https?://#i', $path)) {
       return $path;
+    }
+    // A console reference token (colon form) → core's entity uri (slash form).
+    if (preg_match('#^entity:([a-z][a-z0-9_]*):(\d+)$#', $path, $m)) {
+      return 'entity:' . $m[1] . '/' . $m[2];
     }
     if (preg_match('#^(internal|entity|route|tel|mailto):#', $path)) {
       return $path;

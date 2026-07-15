@@ -17,7 +17,9 @@ module:
   aincient_chat: 0
   aincient_core: 0
   aincient_deny: 0
+  aincient_export: 0
   aincient_flows: 0
+  aincient_mail: 0
   aincient_onboarding: 0
   aincient_pages: 0
   automated_cron: 0
@@ -39,6 +41,7 @@ module:
   field: 0
   field_ui: 0
   file: 0
+  file_mdm: 0
   filter: 0
   flowdrop: 0
   flowdrop_ai_provider: 0
@@ -65,6 +68,7 @@ module:
   image: 0
   image_style_quality: 0
   image_widget_crop: 0
+  imagemagick: 0
   key: 0
   language: 0
   layout_builder: 0
@@ -77,7 +81,6 @@ module:
   metatag: 0
   metatag_open_graph: 0
   modeler_api: 0
-  navigation: 0
   node: 0
   options: 0
   page_cache: 0
@@ -94,6 +97,7 @@ module:
   search: 0
   serialization: 0
   simple_sitemap: 0
+  sophron: 0
   system: 0
   taxonomy: 0
   text: 0

@@ -86,7 +86,9 @@ body.sb-backend {
 }
 
 .sb-backend a { color: var(--ain-jade); text-decoration: none; }
-.sb-backend a:hover { text-decoration: underline; }
+/* Interactive affordance is a quiet colour shift, never an underline — the
+   console (chat-ui) never underlines on hover, so the backend matches it. */
+.sb-backend a:hover { color: color-mix(in oklch, var(--ain-jade) 78%, var(--ain-text)); }
 
 .sb-backend h1, .sb-backend h2, .sb-backend h3,
 .sb-backend h4, .sb-backend h5 {
@@ -281,7 +283,10 @@ body.sb-backend {
 }
 .sb-landing__card:hover {
   text-decoration: none;
-  border-color: var(--ain-border-strong);
+  /* A hair of pigment tint, not a jump to --ain-border-strong — whose dark stone
+     hairline read too sharp against the paper card. The deepened lift below
+     carries the hover affordance (user feedback 2026-07-13). */
+  border-color: color-mix(in oklch, var(--ain-accent) 22%, var(--ain-border));
   box-shadow: 0 4px 14px -8px var(--ain-shadow);
 }
 .sb-landing__card:focus-visible {

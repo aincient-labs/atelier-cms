@@ -1,6 +1,6 @@
-# Try AIncient CMS
+# Try Atelier
 
-Thanks for testing AIncient CMS — an AI-first, chat-driven Drupal distribution.
+Thanks for testing Atelier — an AI-first, chat-driven site builder built on Drupal.
 This folder is everything you need to run it locally: a Docker Compose file and
 an environment template. The app ships as a single container image; Compose just
 runs it alongside a database.
@@ -46,7 +46,7 @@ First boot takes a minute or two — the container installs and configures itsel
 (watch progress with `docker compose logs -f app`). When it's done:
 
 - Open **http://localhost:41221/**
-- Log in, then go to **/aincient** for the operator console.
+- Log in, then go to **/atelier** for the operator console.
 
 **Admin login:** the username is `admin`. If you left `ADMIN_PASS` blank, a
 random password is generated on first boot and saved to the **persistent**

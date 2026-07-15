@@ -1,0 +1,39 @@
+aincient_mail.settings:
+  type: config_object
+  label: 'Atelier mail delivery'
+  mapping:
+    transport_type:
+      type: string
+      label: 'Transport type'
+      # One of: local | smtp | api.
+    api_provider:
+      type: string
+      label: 'API provider'
+      # One of: sendgrid | postmark (single-key providers wired in v1).
+    api_key:
+      type: string
+      label: 'API key (key entity machine name)'
+      # NOT the secret — the machine name of a `key` entity whose provider is
+      # `state`. The secret lives in Drupal State (aincient.mail_api_key).
+    host:
+      type: string
+      label: 'SMTP host'
+    port:
+      type: integer
+      label: 'SMTP port'
+    username:
+      type: string
+      label: 'SMTP username'
+    encryption:
+      type: string
+      label: 'SMTP encryption'
+      # One of: tls | ssl | none.
+    smtp_password:
+      type: string
+      label: 'SMTP password (key entity machine name)'
+      # NOT the secret — see api_key. Secret in State (aincient.mail_smtp_password).
+    from_override:
+      type: string
+      label: 'From address override'
+      # Empty by default so the mailer inherits system.site mail (which
+      # aincient_pages' SiteInformationOverrider layers from the brand identity).

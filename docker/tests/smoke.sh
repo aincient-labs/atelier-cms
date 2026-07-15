@@ -78,7 +78,7 @@ if drush php:eval 'print \Drupal::entityTypeManager()->getStorage("user_role")->
 echo "== assert: console reachability =="
 [ "$(http http://app/)" = "200" ]           && ok "front page 200"            || bad "front page not 200"
 [ "$(http http://app/user/login)" = "200" ] && ok "/user/login 200"           || bad "/user/login not 200"
-[ "$(http http://app/aincient)" = "403" ]   && ok "/aincient 403 for anon"    || bad "/aincient not 403 for anon"
+[ "$(http http://app/atelier)" = "403" ]    && ok "/atelier 403 for anon"    || bad "/atelier not 403 for anon"
 
 echo "== assert: files tree is www-data-owned after converge (upload/derivative writability) =="
 # Regression guard: converge runs drush AS ROOT (site:install, cache:rebuild,

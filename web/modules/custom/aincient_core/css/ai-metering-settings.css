@@ -1,0 +1,77 @@
+/**
+ * Atelier layer over the AI Metering SETTINGS form (contrib `ai_metering`,
+ * /admin/config/ai/ai-metering/settings).
+ *
+ * The Studio Backend theme (aincient_studio_backend) styles admin forms
+ * generically — but this contrib form is unusually dense: every control
+ * stretches the full card width, and three panels are long single-column
+ * stacks of near-identical number fields (per-token model pricing, per-role
+ * quotas, per-currency fallback rates), so the page reads as crowded and the
+ * measures feel arbitrary. This layer, attached only to this form via
+ * hook_form_ai_metering_settings_alter(), does two things and nothing else:
+ *
+ *   1. Compacts control widths to their content — numbers are short, so they
+ *      sit in a narrow field; text/select/textarea cap at a readable measure
+ *      instead of bleeding to the ~900px card edge.
+ *   2. Flows the `.aim-grid` panels (pricing, quota-by-role, manual rates)
+ *      into a responsive multi-column grid so a 10-row stack becomes ~5,
+ *      halving the page height.
+ *
+ * The `--ain-*` tokens come from the Studio Backend theme's :root. Scoped to
+ * `.aim-settings` (set by the form_alter) so nothing here touches other admin
+ * forms — the media/people forms deliberately want their wider measures.
+ */
+
+/* ===== 1. Compact control widths — a field is as wide as its content. ===== */
+/* The theme's admin-kit.css sets `max-width: 100%` on these controls at equal
+   specificity (`.sb-content input[type=…]`) and, sharing the `theme` CSS
+   bucket, loads AFTER this file — so a plain `.aim-settings input` would lose
+   on source order. The doubled `.aim-settings.aim-settings` bumps specificity
+   one class above the theme rule without coupling to its markup (same problem
+   the sibling ai-metering-brand.css solves with `!important`). */
+
+/* Numbers are short (token rates, percentages, TTLs, budgets) — a narrow
+   field, not a full-width plank. */
+.aim-settings.aim-settings input[type="number"] {
+  width: 100%;
+  max-width: 12rem;
+}
+
+/* Short text: provider/model ids, proxy URL, master key — a readable measure. */
+.aim-settings.aim-settings input[type="text"],
+.aim-settings.aim-settings input[type="url"],
+.aim-settings.aim-settings input[type="email"],
+.aim-settings.aim-settings input[type="password"] {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.aim-settings.aim-settings select {
+  width: auto;
+  min-width: 12rem;
+  max-width: 26rem;
+}
+
+/* The alert-recipient textarea reads as prose lines — a comfortable column. */
+.aim-settings.aim-settings textarea {
+  width: 100%;
+  max-width: 34rem;
+}
+
+/* ===== 2. Responsive grid for the homogeneous number-field panels ===== */
+/* Only the `.aim-grid` containers (pricing / quota-by-role / manual rates,
+   wrapped by the form_alter) — the other panels stay single-column, where
+   mixed control types belong. The container sits as a bare child of its
+   <details>, so it inherits the theme's 1.25rem body inset; its own children
+   (the fields) drop that side margin and let the grid gap own the gutters.
+   `align-items: start` keeps a field with a description from stretching its
+   neighbour's control. */
+.aim-settings .aim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  column-gap: 1.5rem;
+  align-items: start;
+}
+.aim-settings .aim-grid > .form-item {
+  margin-inline: 0;
+}

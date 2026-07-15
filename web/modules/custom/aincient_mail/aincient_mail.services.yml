@@ -1,0 +1,19 @@
+services:
+  # Sends a Symfony Email through the configured transport. Owns the From
+  # default (from system.site, layered by aincient_pages' SiteInformationOverrider)
+  # and the Day-1 "local" log-and-drop behaviour.
+  aincient_mail.mailer:
+    class: Drupal\aincient_mail\Mailer
+    arguments:
+      - '@config.factory'
+      - '@logger.factory'
+      - '@key.repository'
+  # Write side for transport secrets: mirrors aincient_onboarding's
+  # ProviderConnector::storeApiKey() — secret to State behind a `key` entity,
+  # only the entity's machine name into config.
+  aincient_mail.key_store:
+    class: Drupal\aincient_mail\MailKeyStore
+    arguments:
+      - '@state'
+      - '@entity_type.manager'
+      - '@config.factory'

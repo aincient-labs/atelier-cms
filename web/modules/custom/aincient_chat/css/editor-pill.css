@@ -1,0 +1,83 @@
+/**
+ * The live-site editor pill (aincient_chat_page_bottom).
+ *
+ * A WordPress-admin-bar-style affordance, sized down to one pill: the operator's
+ * way back INTO the console from the public site (surface-switching Phase 3). It
+ * closes the "the live site is a dead end" problem — with context, deep-linking
+ * straight to the page being viewed.
+ *
+ * Deliberately PRODUCT-branded (Atelier ink + the one cinnabar), never
+ * USER-branded — brand.md's "the two never mix" rule. The general exception it
+ * relies on: this is operator-only chrome, invisible to visitors, so it wears
+ * the product's identity rather than the site owner's (the mirror case to the
+ * consent banner, which is visitor-facing and so wears the user's brand). The
+ * values are self-contained literals — the live site's theme defines none of our
+ * tokens, and we must not inherit its palette.
+ */
+
+.aincient-editor-pill {
+  position: fixed;
+  bottom: 1rem;
+  /* Bottom-RIGHT, deliberately: the consent re-open affordance
+     (.aincient-consent-reopen, aincient_pages) owns the bottom-LEFT corner, so
+     operator chrome and the visitor's privacy control take opposite corners
+     instead of stacking. */
+  right: 1rem;
+  z-index: 2147483000; /* above almost anything the site theme paints */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem 0.5rem 0.75rem;
+  border-radius: 999px;
+  background: #1a1916; /* bistre ink */
+  color: #fbfaf7; /* paper */
+  font-family: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow: 0 2px 10px rgb(26 25 22 / 25%);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.aincient-editor-pill:hover,
+.aincient-editor-pill:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgb(26 25 22 / 32%);
+}
+
+.aincient-editor-pill:focus-visible {
+  outline: 2px solid oklch(0.545 0.155 32); /* cinnabar focus ring */
+  outline-offset: 2px;
+}
+
+/* The cinnabar dot — the one pigment, standing in for the console's presence. */
+.aincient-editor-pill::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: oklch(0.66 0.155 34); /* cinnabar, lifted for the dark ground */
+}
+
+.aincient-editor-pill__icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.aincient-editor-pill__label {
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aincient-editor-pill {
+    transition: none;
+  }
+
+  .aincient-editor-pill:hover,
+  .aincient-editor-pill:focus-visible {
+    transform: none;
+  }
+}

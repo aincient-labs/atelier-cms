@@ -1,6 +1,6 @@
 name: 'AIncient Core'
 type: module
-description: 'Foundational module for AIncient CMS: shared permissions and base services for the AI operator console. Feature code lives in aincient_chat, aincient_flows, aincient_pages, etc.'
+description: 'Foundational module for Atelier: shared permissions and base services for the AI operator console. Feature code lives in aincient_chat, aincient_flows, aincient_pages, etc.'
 package: AIncient
 core_version_requirement: ^11
 dependencies:

@@ -38,14 +38,24 @@ RUN --mount=type=secret,id=composer_github_token \
 # --- Stage 2: runtime -------------------------------------------------------
 FROM php:8.4-apache AS runtime
 
-# PHP extensions Drupal needs. (Trimmed to the common set; tune per deployment.)
-# `tar`/`gzip` back the manager's portable snapshots (backup/restore of DB +
-# files); Debian ships both, but pin them explicitly so a slimmer base can't
-# silently break snapshotting.
+# PHP extensions Drupal needs plus ImageMagick compiled with explicit AVIF support.
+# We build ImageMagick from source to avoid Debian Bookworm's minimalist stock package,
+# ensuring the libheif-plugin-aomenc encoder is linked to eliminate Error 1.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpng-dev libjpeg-dev libfreetype6-dev libzip-dev libpq-dev postgresql-client unzip \
+        libpng-dev libjpeg-dev libfreetype6-dev libwebp-dev libzip-dev libpq-dev postgresql-client unzip \
         tar gzip \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+        build-essential libheif-dev libavif-dev libheif-plugin-aomenc wget \
+    && cd /tmp \
+    && wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.2-27.tar.gz -O ImageMagick.tar.gz \
+    && tar xzf ImageMagick.tar.gz \
+    && cd ImageMagick-7.1.2-27 \
+    && ./configure --with-heic=yes --with-avif=yes --with-gslib=no \
+    && make -j"$(nproc)" \
+    && make install \
+    && ldconfig /usr/local/lib \
+    && cd /tmp && rm -rf ImageMagick* \
+    && apt-get purge -y --auto-remove build-essential wget \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" gd opcache pdo_pgsql zip \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
@@ -85,6 +95,11 @@ RUN printf '%s\n' \
     && printf 'ServerName localhost\n' > /etc/apache2/conf-available/servername.conf \
     && a2enconf servername
 
+# Apache 2.4 defaults Timeout to 60s, which would sever a long console/AI request
+# before PHP's 600s budget (and the 540s flow loop) elapses. Match the PHP budget.
+RUN printf 'Timeout 600\n' > /etc/apache2/conf-available/aincient-timeout.conf \
+    && a2enconf aincient-timeout
+
 # Converge + health scripts.
 COPY docker/converge.sh docker/healthcheck.sh docker/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/converge.sh /usr/local/bin/healthcheck.sh /usr/local/bin/entrypoint.sh
@@ -95,6 +110,14 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 # Drush (recipe apply, updatedb) needs more than PHP's default 128M.
 RUN printf 'memory_limit = 512M\n' > /usr/local/etc/php/conf.d/aincient-memory.ini
+
+# Long-request budget for the operator console. A console turn runs the FlowDrop
+# agent loop inline within the request; the loop's own wall-clock budget is 540s
+# (flowdrop.settings.yml / FlowDropDispatcher `timeout`). PHP's php.ini-production
+# default max_execution_time is only 30s, which would kill the request long before
+# the flow budget — so pin 600s here to leave ~60s headroom above the loop. Mirrors
+# .ddev/php/timeouts.ini for the local dev stack.
+RUN printf 'max_execution_time = 600\n' > /usr/local/etc/php/conf.d/aincient-timeouts.ini
 
 # OPcache, tuned for an immutable appliance image. Code is frozen at build time,
 # so validate_timestamps=0 skips the per-request stat() entirely — the whole

@@ -14,17 +14,28 @@ class RouteSubscriber extends RouteSubscriberBase {
   /**
    * Paths the backend keeps reachable even when they sit under a denied prefix
    * (e.g. the metering settings form lives under the blanket-denied
-   * '/admin/config'). A whitelist entry always beats the deny list — matched
-   * exact OR as a prefix. Every path MUST start with '/'.
+   * '/admin/config'). Matched exact OR as a prefix. Allow and deny are resolved
+   * by SPECIFICITY: the longest matching entry wins (see isDeniedPath), so a
+   * whitelist entry beats a shorter deny prefix — and a MORE specific deny entry
+   * can in turn carve a hole back out of a whitelisted subtree (e.g. the
+   * language collection is open, but its detection settings below it are not).
+   * An entry may use a '*' glob (core's PathMatcher engine); a plain entry is a
+   * prefix. Every path MUST start with '/'.
    */
   public const ALLOWED_PATHS = [
     '/admin/config/ai/ai-metering/settings',
+    '/admin/config/aincient/mail',
+    '/admin/config/regional/language',
+    '/admin/config/ai/ai-metering/sync-pricing',
   ];
 
   /**
    * Route paths the backend hides — matched exact OR as a prefix. Every path
    * MUST start with '/' (route paths always do; an entry without it never
-   * matches anything).
+   * matches anything). An entry may use a '*' glob; a plain entry is a prefix. A
+   * more specific entry here beats a shorter ALLOWED_PATHS prefix — that's how
+   * language/detection stays hidden while the language collection above it stays
+   * open.
    */
   public const DISALLOWED_PATHS = [
     '/node/add',
@@ -33,6 +44,9 @@ class RouteSubscriber extends RouteSubscriberBase {
     '/admin/people/roles',
     '/admin/people/role-settings',
     '/admin/config',
+    // More specific than the '/admin/config/regional/language' whitelist, so
+    // the multi-step language-detection settings stay hidden.
+    '/admin/config/regional/language/detection',
     '/admin/reports/metatag-plugins',
     '/admin/reports/fields',
     '/admin/reports/updates',
@@ -64,32 +78,73 @@ class RouteSubscriber extends RouteSubscriberBase {
 
   /**
    * Whether a route path is explicitly whitelisted (exact or prefix match).
-   * A whitelist entry beats the deny list, so a reachable room can live under
-   * an otherwise-denied prefix.
+   *
+   * Note this only asks "does any ALLOWED_PATHS entry match" — it does NOT mean
+   * the path is reachable: a more specific DISALLOWED_PATHS entry can still deny
+   * it (see isDeniedPath). Use isDeniedPath for the final verdict.
    */
   public static function isAllowedPath(string $path): bool {
-    foreach (self::ALLOWED_PATHS as $path_prefix) {
-      if ($path === $path_prefix || str_starts_with($path, $path_prefix)) {
-        return TRUE;
-      }
-    }
-    return FALSE;
+    return self::longestMatch($path, self::ALLOWED_PATHS) !== NULL;
   }
 
   /**
-   * Whether a route path is on the deny list (exact or prefix match). An
-   * explicit ALLOWED_PATHS entry always wins.
+   * Whether a route path is denied, by SPECIFICITY: the longest matching entry
+   * from either list wins. A whitelist entry beats a shorter deny prefix (a
+   * reachable room under an otherwise-denied tree); a more specific deny entry
+   * beats a shorter whitelist prefix (a hole carved back out of a whitelisted
+   * subtree). On an exact-length tie the whitelist wins.
    */
   public static function isDeniedPath(string $path): bool {
-    if (self::isAllowedPath($path)) {
+    $deny = self::longestMatch($path, self::DISALLOWED_PATHS);
+    if ($deny === NULL) {
       return FALSE;
     }
-    foreach (self::DISALLOWED_PATHS as $path_prefix) {
-      if ($path === $path_prefix || str_starts_with($path, $path_prefix)) {
-        return TRUE;
+    $allow = self::longestMatch($path, self::ALLOWED_PATHS);
+    return $allow === NULL || $deny > $allow;
+  }
+
+  /**
+   * The specificity of the most specific entry in $paths that matches $path, or
+   * NULL when none match. This is the score the allow/deny resolution compares.
+   *
+   * Specificity = the length of the entry's fixed leading path (its whole length
+   * for a plain entry, or the run of literal characters before its first '*' for
+   * a glob). So '/admin/config/regional/language/detection' (41) outranks the
+   * '/admin/config/regional/language' whitelist (31), and a bare '*' scores 0.
+   */
+  private static function longestMatch(string $path, array $paths): ?int {
+    $best = NULL;
+    foreach ($paths as $pattern) {
+      if (!self::matches($path, $pattern)) {
+        continue;
+      }
+      // A glob is only as specific as the literal path it pins down before the
+      // first wildcard — '/admin/config/*' must not outrank the deeper, exact
+      // '/admin/config/regional/language' just because its string is longer.
+      $star = strpos($pattern, '*');
+      $score = $star === FALSE ? strlen($pattern) : $star;
+      if ($best === NULL || $score > $best) {
+        $best = $score;
       }
     }
-    return FALSE;
+    return $best;
+  }
+
+  /**
+   * Whether $path matches a single ALLOWED/DISALLOWED entry.
+   *
+   * A plain entry matches exact OR as a path prefix (a whole subtree — the
+   * common case). An entry containing '*' is handed to core's PathMatcher (the
+   * same glob engine behind block visibility's "Pages"): '*' spans any run of
+   * characters and the match is anchored, so a trailing '*' is needed to cover a
+   * subtree (e.g. '/admin/reports/*' hits '/admin/reports/status', not the bare
+   * '/admin/reports').
+   */
+  private static function matches(string $path, string $pattern): bool {
+    if (str_contains($pattern, '*')) {
+      return \Drupal::service('path.matcher')->matchPath($path, $pattern);
+    }
+    return $path === $pattern || str_starts_with($path, $pattern);
   }
 
   /**

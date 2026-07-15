@@ -4,6 +4,7 @@ import { setBrandOverride, setPendingFonts } from "./brand-state";
 import { ensureStudio } from "./flow";
 import { consoleNav } from "./console-nav";
 import { XIcon } from "./icons";
+import { apiUrl } from "./console-config";
 
 /**
  * Quick brand picker — the branding agent's generative-UI widget.
@@ -24,7 +25,7 @@ import { XIcon } from "./icons";
  * apply on Publish.
  *
  * The Tailwind swatch palette + the live token values come from the same
- * `/aincient/brand/manifest` endpoint the full studio uses, so the envelope
+ * `/atelier/brand/manifest` endpoint the full studio uses, so the envelope
  * itself stays tiny. Defensive: renders only what's present, bails to a plain
  * note if the manifest can't load.
  */
@@ -68,7 +69,7 @@ function refTarget(value: string): string | null {
 }
 
 function BrandPicker(payload: BrandPickerPayload) {
-  const manifestUrl = payload.manifestUrl ?? "/aincient/brand/manifest";
+  const manifestUrl = payload.manifestUrl ?? apiUrl("/brand/manifest");
   const presets = payload.presets ?? [];
   // A replayed-from-storage card is read-only history — picks apply nothing.
   const historical = payload.__historical === true;

@@ -70,8 +70,12 @@ function ChipArt({ uid }: { uid: string }) {
         transform="translate(-14.194849,18.623259)"
         d="m 161.67599,69.164683 -59.76587,99.633577 40.07242,0.0598 59.6637,-99.795964 z"
       />
-      {/* panel frame — a 1px hairline at any rendered size, themed to ink */}
-      <path fill="none" stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke" d="M 87.582977,87.582977 H 187.31909 V 187.31909 H 87.582977 Z" />
+      {/* panel frame — a 1px hairline at any rendered size. Strokes the
+          dedicated theme-aware ring (--ain-mark-ring): near-white on the dark
+          ground, ink on paper — a "white sticker" edge so the mark stays legible
+          against dark chrome instead of blending in (user feedback 2026-07-13).
+          Falls back to currentColor where the var isn't in scope. */}
+      <path fill="none" stroke="var(--ain-mark-ring, currentColor)" strokeWidth="1" vectorEffect="non-scaling-stroke" d="M 87.582977,87.582977 H 187.31909 V 187.31909 H 87.582977 Z" />
     </g>
   );
 }
@@ -116,6 +120,15 @@ export const SunIcon = (p: IconProps) => (
 
 export const MoonIcon = (p: IconProps) => (
   <Svg {...p}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></Svg>
+);
+
+/** Lucide "globe" — the "View site" affordance (brand.md §2.5 icon set). */
+export const GlobeIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+    <path d="M2 12h20" />
+  </Svg>
 );
 
 export const PlusIcon = (p: IconProps) => (

@@ -4,7 +4,7 @@
 # Step 1: validate a credential against the chosen provider and return its chat
 # models + a suggested model per AIncient role. Persists nothing.
 aincient_onboarding.validate:
-  path: '/aincient/onboarding/validate'
+  path: '/atelier/onboarding/validate'
   defaults:
     _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::validate'
   methods: [POST]
@@ -17,7 +17,7 @@ aincient_onboarding.validate:
 # Key module in Drupal State (DB-backed, never exported to config/git), pin the
 # default chat provider, and bind every model role.
 aincient_onboarding.save:
-  path: '/aincient/onboarding/save'
+  path: '/atelier/onboarding/save'
   defaults:
     _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::save'
   methods: [POST]
@@ -31,7 +31,7 @@ aincient_onboarding.save:
 # chat + image models and a suggested provider:model per role. The wizard calls
 # this once per provider the operator connects.
 aincient_onboarding.connect_provider:
-  path: '/aincient/onboarding/connect-provider'
+  path: '/atelier/onboarding/connect-provider'
   defaults:
     _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::connectProvider'
   methods: [POST]
@@ -43,7 +43,7 @@ aincient_onboarding.connect_provider:
 # Multi-connect finalise: bind each role to a chosen provider:model (across all
 # the providers connected above), project onto the framework, and flag complete.
 aincient_onboarding.finalize:
-  path: '/aincient/onboarding/finalize'
+  path: '/atelier/onboarding/finalize'
   defaults:
     _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::finalize'
   methods: [POST]

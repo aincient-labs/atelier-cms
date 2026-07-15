@@ -155,24 +155,29 @@ final class PageStoreTest extends KernelTestBase {
       'title' => 'T',
       'lead' => 'L',
       'author' => 'A',
-      'body_html' => '<p>hi</p>',
+      'body_md' => '## Hi',
       'sections' => [['component' => 'hero']],
     ]);
     $this->assertSame('blog', $clean['type']);
-    $this->assertSame('<p>hi</p>', $clean['body_html']);
+    $this->assertSame('## Hi', $clean['body_md']);
     // Blogs are a locked recipe — no sections array.
     $this->assertArrayNotHasKey('sections', $clean);
   }
 
-  public function testBlogBodyHtmlIsSanitised(): void {
+  /**
+   * The blog body is Markdown SOURCE, stored VERBATIM on validate — no HTML
+   * filtering here (sanitisation happens at render via MarkdownRenderer, covered
+   * by MarkdownRendererTest). Pre-filtering would corrupt the Markdown, so even
+   * embedded raw HTML must survive untouched in storage.
+   */
+  public function testBlogBodyMdStoredVerbatim(): void {
+    $md = "## Heading\n\n- a\n- b\n\n<script>alert(1)</script>\n\n`code` & <em>raw</em>";
     $clean = $this->store()->validate([
       'type' => 'blog',
       'title' => 'T',
-      'body_html' => '<p>Safe</p><script>alert(1)</script><h2>Heading</h2>',
+      'body_md' => $md,
     ]);
-    $this->assertStringNotContainsString('<script>', $clean['body_html']);
-    $this->assertStringContainsString('<p>Safe</p>', $clean['body_html']);
-    $this->assertStringContainsString('<h2>Heading</h2>', $clean['body_html']);
+    $this->assertSame($md, $clean['body_md']);
   }
 
   /**
@@ -202,20 +207,49 @@ final class PageStoreTest extends KernelTestBase {
   }
 
   /**
-   * Blog body_html is real HTML — its entities are intentional and must survive
-   * validate (only the plain-text blog fields are decoded).
+   * The plain-text blog fields (author, lead, …) are entity-decoded like every
+   * other plain-text prop, while body_md is stored verbatim — a Markdown-authored
+   * ampersand stays literal (the CommonMark renderer escapes it to an entity).
    */
-  public function testBlogBodyHtmlEntitiesPreserved(): void {
+  public function testBlogPlainFieldsDecodedBodyVerbatim(): void {
     $clean = $this->store()->validate([
       'type' => 'blog',
       'title' => 'T',
       'author' => 'Jane &amp; Co',
-      'body_html' => '<p>Tom &amp; Jerry</p>',
+      'body_md' => 'Tom & Jerry',
     ]);
     // Plain-text blog field decoded…
     $this->assertSame('Jane & Co', $clean['author']);
-    // …but the HTML field keeps its entity (it is rendered raw).
-    $this->assertStringContainsString('Tom &amp; Jerry', $clean['body_html']);
+    // …but the Markdown body is stored exactly as authored (no decode/filter).
+    $this->assertSame('Tom & Jerry', $clean['body_md']);
+  }
+
+  /**
+   * The set_content op stages blog body fields (incl. the Markdown body), merging
+   * onto the current post so a partial edit doesn't wipe untouched fields.
+   */
+  public function testSetContentOpStagesBlogFields(): void {
+    $first = $this->store()->applyOps(
+      ['type' => 'blog', 'title' => 'Post'],
+      [['op' => 'set_content', 'author' => 'Ada', 'body_md' => '# Draft']],
+    );
+    $this->assertSame('Ada', $first['schema']['author']);
+    $this->assertSame('# Draft', $first['schema']['body_md']);
+
+    // A second op touching only the body keeps the author.
+    $second = $this->store()->applyOps(
+      $first['schema'],
+      [['op' => 'set_content', 'body_md' => '# Final']],
+    );
+    $this->assertSame('Ada', $second['schema']['author']);
+    $this->assertSame('# Final', $second['schema']['body_md']);
+
+    // A blank value clears the field.
+    $third = $this->store()->applyOps(
+      $second['schema'],
+      [['op' => 'set_content', 'author' => '']],
+    );
+    $this->assertArrayNotHasKey('author', $third['schema']);
   }
 
   public function testAccordionPanelsValidateBoundedChildBlocks(): void {

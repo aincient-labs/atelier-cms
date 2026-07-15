@@ -124,7 +124,7 @@ final class BrandForm extends ConfigFormBase {
     $form['assets']['logo'] = [
       '#type' => 'managed_file',
       '#title' => $this->t('Logo'),
-      '#upload_location' => 'public://aincient/brand',
+      '#upload_location' => 'public://atelier/brand',
       '#default_value' => $logoFid ? [$logoFid] : [],
       '#upload_validators' => ['FileExtension' => ['extensions' => 'png jpg jpeg svg webp']],
       '#description' => $this->t('Shown in the header and footer of every page.'),

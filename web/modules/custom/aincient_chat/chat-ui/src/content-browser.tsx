@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, DocumentIcon, PlusIcon, SpinnerIcon } from "./icons";
+import { apiUrl } from "./console-config";
 
 /**
  * The content browser: a paginated, searchable page directory rendered as the
@@ -9,17 +10,17 @@ import { ChevronLeftIcon, ChevronRightIcon, DocumentIcon, PlusIcon, SpinnerIcon 
  * studio loads it through its normal flow (URL reflection, moderation, access all
  * unchanged).
  *
- * Server-paginated against GET /aincient/page/list?offset&limit&q — the same
+ * Server-paginated against GET /atelier/page/list?offset&limit&q — the same
  * route the legacy dropdown picker uses (which still reads its capped `pages`
  * feed when called with no params). A pick just calls `onPick(id)`; this
  * component owns no studio state of its own.
  */
 
-const LIST_URL = "/aincient/page/list";
+const LIST_URL = apiUrl("/page/list");
 const PAGE_SIZE = 12;
 const SEARCH_DEBOUNCE_MS = 250;
 
-/** One page in the directory (GET /aincient/page/list, paged shape). */
+/** One page in the directory (GET /atelier/page/list, paged shape). */
 export type BrowserItem = {
   id: string;
   title: string;

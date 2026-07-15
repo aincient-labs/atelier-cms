@@ -141,7 +141,7 @@ final class PageSchemaCodecTest extends UnitTestCase {
         'category' => 'News',
         'lead' => 'A lead.',
         'author' => 'Ada',
-        'body_html' => '<p>Body</p>',
+        'body_md' => '## Body',
       ]],
       'empty landing' => [[
         'type' => 'landing',

@@ -24,12 +24,13 @@ import {
 } from "./page-state";
 import { offerWrapup } from "./thread-seal";
 import { consoleNav } from "./console-nav";
+import { apiUrl } from "./console-config";
 
 /**
  * The Checks studio — a page-health FIX LOOP (the findings rail beside the shared
  * live preview). Pick a page and it loads that page's draft into the shared
  * page-state store (so the {@link PagePreview} centre canvas renders it) and
- * fetches the deterministic audit from `/aincient/audit/{node}/report`, grouped
+ * fetches the deterministic audit from `/atelier/audit/{node}/report`, grouped
  * by check with worst-first ordering and passes folded away.
  *
  * Each actionable finding is now a DEAD-END no longer: "Fix with AI" auto-sends a
@@ -92,7 +93,7 @@ type AuditReport = {
   checks: Check[];
 };
 
-const reportUrl = (nid: string) => `/aincient/audit/${encodeURIComponent(nid)}/report`;
+const reportUrl = (nid: string) => apiUrl(`/audit/${encodeURIComponent(nid)}/report`);
 
 /**
  * Whether a finding has an AI write path — the finding's OWN remediation says so

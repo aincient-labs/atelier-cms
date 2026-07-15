@@ -6,12 +6,12 @@
  * footer note), the header/footer LAYOUT variants, and the two chrome MENUS
  * (`main`/`footer`). Unlike the brand draft (a thin CSS-var diff applied live in
  * the iframe) chrome is markup, not custom properties — so the preview is a full
- * server re-render: the iframe POSTs this whole draft to /aincient/chrome/preview
+ * server re-render: the iframe POSTs this whole draft to /atelier/chrome/preview
  * and shows the returned HTML (the page-preview pattern, not the brand one).
  *
  * Globals is EDITOR-ONLY (no chat agent yet), so unlike pages/brand nothing else
  * mutates this store — only the studio rail writes it. Nothing here is persisted;
- * the one deliberate write is the studio's Publish (POST /aincient/chrome/save).
+ * the one deliberate write is the studio's Publish (POST /atelier/chrome/save).
  */
 
 /** One editable link of a chrome menu (id absent ⇒ a new link). `children` holds
@@ -48,6 +48,15 @@ export type ChromeIdentity = {
   logo: string;
   /** The favicon as a `media:<id>` token (or '' for none). */
   favicon: string;
+  /** Site information — layered over core's system.site at runtime by the
+   *  backend override ('' = no opinion, the shipped default shows through).
+   *  The page slots are `entity:node:<id>` tokens from the unified picker. */
+  site: {
+    mail: string;
+    front: string;
+    page_403: string;
+    page_404: string;
+  };
 };
 
 /** Site-wide privacy posture. `font_delivery` is the one operator-set lever that

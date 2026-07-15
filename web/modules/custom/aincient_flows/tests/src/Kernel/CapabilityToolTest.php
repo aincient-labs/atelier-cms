@@ -121,6 +121,34 @@ final class CapabilityToolTest extends KernelTestBase {
 
   /**
    * @covers ::process
+   * @covers ::normalizeArg
+   *
+   * The model habitually HTML-escapes text destined for a page; the node strips
+   * those entities once, at this single boundary, so capabilities receive clean
+   * plain text (not a double-encoded `&amp;`). JSON args are decoded on their
+   * LEAF values only — an entity inside a value (`&quot;`) can't corrupt the
+   * envelope — while bare, non-entity ampersands (a URL query) pass through.
+   */
+  public function testModelEntitiesAreDecodedInArgs(): void {
+    $result = $this->tool('aincient_pages:preview_chrome')->process(new ParameterBag([
+      'identity_json' => json_encode([
+        'name' => 'Ember &amp; Oak',
+        'tagline' => 'O&#39;Brien&#39;s &lt;pick&gt;',
+        'description' => 'Ben &quot;Boss&quot; &amp; Co — see /a?x=1&y=2',
+      ]),
+    ]));
+
+    $this->assertTrue($result['ok']);
+    $g = json_decode($result['result'], TRUE)['payload']['identity']['guidelines'];
+    $this->assertSame('Ember & Oak', $g['name']);
+    $this->assertSame("O'Brien's <pick>", $g['tagline']);
+    // `&quot;` decoded inside the value without breaking the JSON envelope; the
+    // non-entity `&y=2` survives untouched.
+    $this->assertSame('Ben "Boss" & Co — see /a?x=1&y=2', $g['description']);
+  }
+
+  /**
+   * @covers ::process
    *
    * An unbound node fails gracefully rather than throwing.
    */

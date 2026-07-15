@@ -1,0 +1,7 @@
+aincient_mail.settings:
+  path: '/admin/config/aincient/mail'
+  defaults:
+    _form: 'Drupal\aincient_mail\Form\MailSettingsForm'
+    _title: 'Mail delivery'
+  requirements:
+    _permission: 'administer site configuration'

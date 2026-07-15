@@ -39,7 +39,7 @@ final class LockController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/lock/acquire — take (or report) the lock for a page.
+   * POST /atelier/page/lock/acquire — take (or report) the lock for a page.
    *
    * Body: `{ node_id, langcode?, studio, token?, force? }`. Returns the
    * {@see EditLock::acquire} envelope: `{ status, token, holder }` where status ∈
@@ -62,7 +62,7 @@ final class LockController implements ContainerInjectionInterface {
   }
 
   /**
-   * POST /aincient/page/lock/release — drop the lock (clean exit / handover done).
+   * POST /atelier/page/lock/release — drop the lock (clean exit / handover done).
    *
    * Body: `{ node_id, langcode?, token, force? }`. A non-matching token no-ops
    * unless `force:true` (the explicit force-release path). Returns `{ released }`.
@@ -84,7 +84,7 @@ final class LockController implements ContainerInjectionInterface {
   }
 
   /**
-   * GET /aincient/page/lock/status?node_id=&langcode= — the current holder.
+   * GET /atelier/page/lock/status?node_id=&langcode= — the current holder.
    *
    * Returns `{ holder: {…}|null }`. Cheap; the console uses it to refresh the
    * "locked by …" affordance without re-acquiring.

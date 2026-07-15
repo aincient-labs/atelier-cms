@@ -73,12 +73,12 @@ final class AccountControllerTest extends KernelTestBase {
   }
 
   /**
-   * A POST /aincient/account call as the current user, decoded to [status, body].
+   * A POST /atelier/account call as the current user, decoded to [status, body].
    *
    * @return array{0: int, 1: array}
    */
   private function save(array $payload): array {
-    $request = Request::create('/aincient/account', 'POST', [], [], [], [], json_encode($payload));
+    $request = Request::create('/atelier/account', 'POST', [], [], [], [], json_encode($payload));
     $response = $this->controller()->save($request);
     return [$response->getStatusCode(), json_decode($response->getContent(), TRUE)];
   }

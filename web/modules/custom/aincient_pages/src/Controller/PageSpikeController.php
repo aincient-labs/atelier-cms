@@ -99,7 +99,8 @@ final class PageSpikeController implements ContainerInjectionInterface {
     $content = (string) $this->renderer->renderInIsolation($build);
     $path = $this->moduleList->getPath('aincient_pages');
     $css = base_path() . $path . '/assets/aincient-pages.css?v=' . @filemtime("$path/assets/aincient-pages.css");
-    return new Response($this->shell($content, $css, 'Chrome preview', $this->brand->cssVariables()));
+    // Chrome preview is always a studio surface — never show the consent banner.
+    return new Response($this->shell($content, $css, 'Chrome preview', $this->brand->cssVariables(), '', FALSE));
   }
 
   /** A neutral placeholder page body so chrome is previewed in real context. */
@@ -167,6 +168,26 @@ final class PageSpikeController implements ContainerInjectionInterface {
 
     $content = (string) $this->renderer->renderInIsolation($build);
 
+    // Operator chrome (the editor pill) — only on a REAL canonical render, never
+    // the studio's stateless preview / spike briefs ($node === NULL, which live
+    // inside the console already). hook_aincient_pages_shell_bottom() lets
+    // sibling modules (aincient_chat) contribute a render array; because this
+    // bespoke shell hand-builds its <head> and never runs the #attached
+    // pipeline, each contribution must be SELF-CONTAINED (it links its own CSS).
+    if ($node !== NULL) {
+      // invokeAllWith (not invokeAll) so each module's render array stays whole —
+      // invokeAll would array_merge them and collide on shared keys like #markup.
+      \Drupal::moduleHandler()->invokeAllWith(
+        'aincient_pages_shell_bottom',
+        function (callable $hook) use ($node, &$content): void {
+          $bottom = $hook($node);
+          if (is_array($bottom) && $bottom !== []) {
+            $content .= (string) $this->renderer->renderInIsolation($bottom);
+          }
+        },
+      );
+    }
+
     $path = $this->moduleList->getPath('aincient_pages');
     $css = base_path() . $path . '/assets/aincient-pages.css?v=' . @filemtime("$path/assets/aincient-pages.css");
     // The site brand: a :root override injected after the stylesheet, so the
@@ -175,7 +196,9 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // SEO: the bespoke shell bypasses Drupal's <head> pipeline, so render the
     // node's metatag tags (title/description/canonical/OG) into it directly.
     $metaHtml = $node ? $this->metatagHead($node) : '';
-    return new Response($this->shell($content, $css, $data['title'] ?? 'AIncient', $brandCss, $metaHtml));
+    // Consent banner only on a REAL canonical render; the stateless studio
+    // preview ($node === NULL) suppresses it (see shell()).
+    return new Response($this->shell($content, $css, $data['title'] ?? 'AIncient', $brandCss, $metaHtml, $node !== NULL));
   }
 
   /**
@@ -393,7 +416,10 @@ final class PageSpikeController implements ContainerInjectionInterface {
       'date' => $data['date'] ?? NULL,
       'cover' => $data['cover'] ?? NULL,
     ]));
-    $build[] = $this->component('prose', ['html' => $data['body_html'] ?? '']);
+    // The blog body is authored as Markdown (body_md); compile it to sanitised
+    // HTML here (CommonMark + Xss::filterAdmin) for the prose SDC. Render-cached
+    // with the page, so the conversion is paid once per revision.
+    $build[] = $this->component('prose', ['html' => $this->markdown->toSafeHtml((string) ($data['body_md'] ?? ''))]);
     if (!empty($data['author'])) {
       $build[] = $this->component('byline', $this->clean([
         'author' => $data['author'],
@@ -645,7 +671,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
     return array_filter($props, static fn($v) => $v !== NULL);
   }
 
-  private function shell(string $content, string $cssUrl, string $title, string $brandCss = '', string $metaHtml = ''): string {
+  private function shell(string $content, string $cssUrl, string $title, string $brandCss = '', string $metaHtml = '', bool $showConsent = TRUE): string {
     $title = htmlspecialchars($title, ENT_QUOTES);
     // cssVariables() only ever emits ":root{--token:#hex;…}" — safe to inline.
     $brandStyle = $brandCss !== '' ? "\n  <style>$brandCss</style>" : '';
@@ -676,6 +702,12 @@ final class PageSpikeController implements ContainerInjectionInterface {
     $modulePath = base_path() . $this->moduleList->getPath('aincient_pages');
     $emojiHref = htmlspecialchars("$modulePath/fonts/noto-emoji.css", ENT_QUOTES);
     $emojiLink = "\n  <link rel=\"stylesheet\" href=\"$emojiHref\">";
+    // The out-of-box DEFAULT brand fonts (Schibsted Grotesk body + Fraunces
+    // display), always self-hosted + always linked — offline-first, no Google
+    // request, no consent gate. Mirrors the emoji-font posture; $fontLink above
+    // remains for an operator's OWN chosen fonts (empty by default).
+    $brandFontHref = htmlspecialchars("$modulePath/fonts/brand-fonts.css", ENT_QUOTES);
+    $brandFontLink = "\n  <link rel=\"stylesheet\" href=\"$brandFontHref\">";
     // The operator-uploaded favicon (Globals studio). This bespoke shell bypasses
     // Drupal's <head> pipeline (so hook_page_attachments_alter never runs here),
     // so emit the <link rel="icon"> directly, mirroring the themed render path.
@@ -690,8 +722,12 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // directly (raw HTML can't #attach a library). Emitted only when something
     // third-party is active (today: Google-delivered fonts); the config rides in
     // a JSON <script> that consent.js reads (no drupalSettings here).
+    // The banner is a LIVE-SITE GDPR affordance; the studio preview iframes
+    // (chrome preview + the stateless page preview) suppress it — the Globals
+    // Privacy tab already shows the live consequence of the draft, and a banner
+    // computed from the SAVED config would misrepresent an unsaved draft toggle.
     $consentBlock = '';
-    if ($this->consent->isActive()) {
+    if ($showConsent && $this->consent->isActive()) {
       $consentCss = htmlspecialchars("$modulePath/css/consent.css", ENT_QUOTES);
       $consentJs = htmlspecialchars("$modulePath/js/consent.js", ENT_QUOTES);
       // configJson() is server-built JSON (no user HTML); safe between <script>.
@@ -709,7 +745,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
 <html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">$faviconLink$fontLink$emojiLink
+  <meta name="viewport" content="width=device-width, initial-scale=1">$faviconLink$brandFontLink$fontLink$emojiLink
   <link rel="stylesheet" href="$cssUrl">$brandStyle$consentBlock$metaBlock$titleTag
 </head>
 <body class="min-h-screen bg-background text-foreground antialiased font-sans">

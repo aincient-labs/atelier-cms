@@ -11,6 +11,20 @@ emoji-font:
     theme:
       fonts/noto-emoji.css: {}
 
+# The out-of-box DEFAULT brand fonts for the PUBLIC site — Schibsted Grotesk
+# (body) + Fraunces (display serif), the same families the console uses so the
+# website→console bridge keeps one typographic voice. Always self-hosted and
+# always attached (offline-first, no Google request, no consent gate), the same
+# always-on posture as the emoji font. Operators may still swap fonts via the
+# brand studio — that path uses the dynamic Google/self-host loader
+# (BrandRepository::webFont()); these bundled faces just carry the default.
+# Vendored under fonts/ by aincient_core/scripts/fetch-brand-fonts.php.
+brand-fonts:
+  version: 1.x
+  css:
+    theme:
+      fonts/brand-fonts.css: {}
+
 # GDPR consent banner (public site). Vanilla JS/CSS — no Drupal.behaviors
 # dependency — so the same files drive both the themed render path (attached as
 # this library) and the raw-HTML page shell (PageSpikeController links them

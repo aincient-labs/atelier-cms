@@ -123,9 +123,15 @@
   box-shadow: none;
 }
 
-/* Primary — the one filled cinnabar control per view. */
+/* Primary — the one filled cinnabar control per view. `.button-action` is
+   Drupal core's class for local "Add …" actions (e.g. People's "Add user"),
+   which also carries `.button`; it must be styled here as a cinnabar primary,
+   or the generic `.button:hover` (below, specificity 0,4,0) wins over the
+   container's `.action-links a:hover` (0,3,1) and repaints the fill to pale
+   surface while the text stays near-white — an unreadable hover. */
 .sb-content .button--primary,
 .sb-content input[type="submit"].button--primary,
+.sb-content .button-action,
 .sb-content .action-links a {
   background: var(--ain-accent);
   border-color: var(--ain-accent);
@@ -133,6 +139,7 @@
 }
 .sb-content .button--primary:not(:disabled):hover,
 .sb-content input[type="submit"].button--primary:not(:disabled):hover,
+.sb-content .button-action:not(:disabled):hover,
 .sb-content .action-links a:hover {
   background: color-mix(in oklch, var(--ain-accent) 90%, var(--ain-text));
   border-color: color-mix(in oklch, var(--ain-accent) 90%, var(--ain-text));
@@ -296,8 +303,20 @@
 .sb-content .form-type-radio {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 0 8px;
   margin-block: 0 0.5rem;
+}
+/* A checkbox/radio with a #description: core drops the description div in as a
+   third child, which the flex row would otherwise strand to the RIGHT of the
+   option (vertically centred, misaligned). Break it onto its own full-width
+   line and indent it under the label (15px control + 8px gap) so it reads as a
+   caption of the option, not a second column. */
+.sb-content .form-type-checkbox > .description,
+.sb-content .form-type-radio > .description {
+  flex-basis: 100%;
+  margin-top: 0.25rem;
+  margin-left: 23px;
 }
 .sb-content .form-radios,
 .sb-content .form-checkboxes { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -376,6 +395,314 @@
 .sb-content input[type="file"]::file-selector-button:hover { background: var(--ain-surface-2); }
 .sb-content .form-managed-file { display: flex; align-items: center; flex-wrap: wrap; gap: 0.625rem; }
 
+/* =========================================================== image widget === */
+/* Core's image widget is a bare flex bag — a big preview, the alt field, the
+   filename, the byte count and a Remove button all tumbling together as wrapped
+   flex items (filename floating off to one side, Remove orphaned mid-air). Recast
+   it as a composed ASSET CARD: a matted preview on the left with the file facts
+   AND the alt field set in the column beside it (so the space next to the picture
+   carries weight instead of reading as a void), then the crop tool sectioned off
+   below and a quiet Remove at the card's foot. Pure placement — cropper.js /
+   vertical-tabs behaviours read element IDs, never the box model, so nothing here
+   disturbs them. */
+
+.sb-content .image-widget {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 1.375rem;
+  row-gap: 0.125rem;
+  align-items: start;
+  background: var(--ain-surface);
+  border: 1px solid var(--ain-border);
+  border-radius: 12px;
+  padding: 1.125rem 1.25rem 1.25rem;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+}
+/* Matted preview — the picture framed on recessed paper, spanning the file
+   facts + alt column beside it. */
+.sb-content .image-widget > img {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 168px;
+  height: auto;
+  padding: 10px;
+  background: var(--ain-surface-2);
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+}
+.sb-content .image-widget > span.file {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  display: block;
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.sb-content .image-widget > span.file a { color: var(--ain-text) !important; }
+/* The byte-count is a mono fact, not prose. */
+.sb-content .image-widget > span:not(.file) {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  margin-top: 0.125rem;
+  font-family: var(--ain-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--ain-text-faint);
+}
+/* Alt text lives beside the preview — metadata belongs with the file facts;
+   its own label + description stack under the input, filling the column. */
+.sb-content .image-widget > .form-type-textfield { grid-column: 2; grid-row: 3; margin: 0.875rem 0 0; }
+/* The "affects more usages" note is a quiet inline caption tied to the crop,
+   never a full-width warning card shouting over the asset. */
+.sb-content .image-widget > .messages {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  margin: 1rem 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 0.8125rem;
+  color: var(--ain-accent-2);
+}
+/* The crop tool is sectioned off by a hairline — it drops its own card chrome so
+   the asset card owns the frame; its summary reads as a section header. */
+.sb-content .image-widget > .image-data__crop-wrapper {
+  grid-column: 1 / -1;
+  grid-row: 5;
+  margin: 1rem -1.25rem 0;
+  border: 0;
+  border-top: 1px solid var(--ain-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.sb-content .image-widget > .image-data__crop-wrapper > summary { padding-inline: 1.25rem; }
+.sb-content .image-widget > .image-data__crop-wrapper .form-type-vertical-tabs { margin-inline: 1.25rem; }
+/* Remove — a quiet secondary at the card's foot, right-aligned, not an orphan
+   floating mid-form. */
+.sb-content .image-widget > input.button {
+  grid-column: 1 / -1;
+  grid-row: 6;
+  justify-self: end;
+  margin: 1rem 0 0;
+}
+
+/* ========================================================= vertical tabs === */
+/* Core's misc/vertical-tabs.css is dropped for this theme (libraries-override in
+   the .info.yml), so the widget is ours to style from a blank slate — no float,
+   no `-15em` gutter, no #ccc chrome to fight. Recast as one hairline card. Two
+   places lean on it and each gets the layout that fits its labels:
+   entity-form field-groups (Revision / URL alias / Authoring — long, descriptive)
+   keep the LEFT RAIL; the image_widget_crop aspect-ratio picker (16x9 / 1x1 / …
+   — short) becomes a TOP SEGMENTED BAR (see the crop block below), which is why
+   the rail rules are the shared default and the crop block overrides them. The
+   selected tab takes the product's one selection grammar — a flat cinnabar tint
+   wash + ink label (as .sb-nav__link.is-active), never a fill-box + bar. */
+
+.sb-content .form-type-vertical-tabs { margin-block: 0 1.25rem; }
+.sb-content .vertical-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  /* image_widget_crop's own CSS indents the rail (margin-left) to line it up
+     with a form label — reset it; the card owns its edges here. */
+  margin: 0;
+  border: 1px solid var(--ain-border);
+  border-radius: 10px;
+  background: var(--ain-surface);
+  overflow: hidden;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+}
+.sb-content .vertical-tabs__menu {
+  flex: 0 0 12rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.625rem 0.5rem;
+  background: var(--ain-surface-2);
+  border-right: 1px solid var(--ain-border);
+}
+.sb-content .vertical-tabs__menu-item { margin: 0 0 2px; }
+.sb-content .vertical-tabs__menu-item a {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--ain-radius);
+  color: var(--ain-text-dim) !important;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+}
+.sb-content .vertical-tabs__menu-item a:hover {
+  background: color-mix(in oklch, var(--ain-text) 4%, transparent);
+  color: var(--ain-text) !important;
+}
+/* Selected = a flat cinnabar TINT wash + ink label — the one selection grammar
+   the product uses everywhere (.sb-nav__link.is-active, the console thread list,
+   the crop pills). NOT a raised surface fill-box with an inset bar; that
+   rounded-bracket treatment is the retired pre-Atelier idiom (docs/brand.md
+   §10). Hover is a neutral grey tint, so the accent hue alone reads as "chosen". */
+.sb-content .vertical-tabs__menu-item.is-selected a {
+  background: color-mix(in oklch, var(--ain-accent) 10%, transparent);
+  color: var(--ain-text) !important;
+}
+.sb-content .vertical-tabs__menu-item-title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: inherit;
+}
+.sb-content .vertical-tabs__menu-item.is-selected .vertical-tabs__menu-item-title { color: var(--ain-text); }
+.sb-content .vertical-tabs__menu-item-summary {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.8125rem;
+  color: var(--ain-text-faint);
+}
+.sb-content .vertical-tabs__menu-item-summary:empty { display: none; }
+.sb-content .vertical-tabs__panes { flex: 1 1 20rem; min-width: 0; }
+/* A pane is a <details>, but inside the card it must NOT carry its own card
+   chrome (the .sb-content details recipe above) — the vertical-tabs card owns
+   the border/radius. The tab in the rail IS the door; the pane's own summary is
+   redundant (JS forces the active pane open), so hide it. */
+.sb-content .vertical-tabs__pane {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+}
+.sb-content .vertical-tabs__pane > summary { display: none; }
+.sb-content .vertical-tabs__pane > *:not(summary) { margin-inline: 0; }
+.sb-content .vertical-tabs__pane > *:last-child { margin-bottom: 0; }
+
+/* ========================================================== image crop === */
+/* image_widget_crop's "Crop image" expander: the outer collapsible takes the
+   .sb-content details card + chevron for free. Inside, the aspect-ratio picker
+   is a vertical-tabs set — but its labels are tiny (16x9, 1x1, …), so a full
+   left rail leaves a tall dead column beside the tall crop canvas. Flip it to a
+   TOP SEGMENTED BAR of pills over the canvas (an "Aspect ratio" mono eyebrow
+   labels the row); a jade dot on a pill marks a ratio that already has a saved
+   crop. The canvas then sits centered on a faintly recessed stage. */
+
+.sb-content .image-data__crop-wrapper { margin-top: 0.5rem; }
+.sb-content .image-data__crop-wrapper .vertical-tabs { flex-direction: column; }
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding: 0.75rem 0.875rem;
+  border-right: none;
+  border-bottom: 1px solid var(--ain-border);
+}
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu::before {
+  content: "Aspect ratio";
+  flex: 0 0 100%;
+  padding: 0 0 0.125rem;
+  font-family: var(--ain-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ain-text-faint);
+}
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item { margin: 0; }
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--ain-border);
+  border-radius: 999px;
+  background: var(--ain-surface);
+  box-shadow: none;
+}
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item a:hover { background: var(--ain-surface-2); }
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item.is-selected a {
+  background: color-mix(in oklch, var(--ain-accent) 10%, transparent);
+  border-color: color-mix(in oklch, var(--ain-accent) 35%, var(--ain-border));
+  box-shadow: none;
+}
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item-title { display: inline; font-size: 0.8125rem; }
+/* The pane's summary ("Cropping applied.") collapses to a jade status dot ahead
+   of the label; ratios with no saved crop show nothing. */
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item-summary {
+  order: -1;
+  width: 6px;
+  height: 6px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--ain-jade);
+  font-size: 0;
+  color: transparent;
+}
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item-summary:empty { display: none; }
+/* The crop stage — canvas centered on faintly recessed paper. */
+.sb-content .image-data__crop-wrapper .vertical-tabs__pane {
+  background: color-mix(in oklch, var(--ain-text) 3%, var(--ain-surface));
+}
+/* With the aspect picker moved to a TOP bar, the canvas pane spans the whole
+   card — cropper.js then sizes the canvas to that full width, so it balloons
+   (and overflows on narrow screens). Cap the stage to an editor-sized column
+   and centre it on the recessed pane; cropper reads this capped width on open. */
+.sb-content .image-data__crop-wrapper .crop-preview-wrapper {
+  align-items: center;
+  max-width: 460px;
+  margin-inline: auto;
+}
+.sb-content .crop-preview-wrapper {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.sb-content .crop-preview-wrapper .cropper-container {
+  border-radius: var(--ain-radius);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--ain-shadow) 12%, transparent);
+}
+.sb-content .crop-preview-wrapper__crop-reset { margin-top: 1rem; }
+
+/* ======================================================= media edit form === */
+/* The media add/edit form (image, audio, document, …) reads as one composed
+   column, not a ragged stack of full-width furniture. One measure binds every
+   control to a shared left + right edge; the advanced meta collapses its empty
+   pane; publishing + save/delete read as one deliberate footer zone. */
+
+.sb-content .media-form { max-width: 820px; }
+
+/* The advanced meta (revision / URL alias / authoring): core packs a tall rail
+   beside a near-empty pane, which balloons into a bright void. Compact the rail
+   and centre the pane content so the whitespace reads as intent, not omission.
+   Scoped to the top-level tabs so the crop picker (its own vertical-tabs) is
+   untouched. */
+.sb-content .media-form > .form-type-vertical-tabs .vertical-tabs__menu-item a { padding: 0.4375rem 0.75rem; }
+.sb-content .media-form > .form-type-vertical-tabs .vertical-tabs__menu-item-summary {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sb-content .media-form > .form-type-vertical-tabs .vertical-tabs__pane {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Publishing + actions — one footer zone fenced off by a single hairline, so
+   the status toggle and the save/delete row read as a deliberate commit area,
+   not a stray checkbox above two buttons hanging off the page floor. Save keeps
+   the one cinnabar primary; Delete stays the quiet brick link. */
+.sb-content .media-form > #edit-status-wrapper {
+  margin-top: 1.75rem;
+  padding-top: 1.375rem;
+  border-top: 1px solid var(--ain-border);
+}
+.sb-content .media-form > .form-actions { margin-top: 1.25rem; align-items: center; }
+
 /* Password meter — a meter may fill (it measures, it doesn't shout); the
    scale reads in the earth set: brick → ochre → verdigris. */
 .sb-content .password-strength { margin-top: 0.5rem; max-width: 20rem; }
@@ -425,13 +752,25 @@
 
 .sb-content table {
   width: 100%;
-  border-collapse: collapse;
+  /* `separate` (not `collapse`) so the table's own `border-radius` rounds
+     natively — a collapsed-border table needs `overflow: hidden` to fake round
+     corners, and that clip would shear off the open operations flyout on the
+     last rows (an absolute overlay that reaches past the table's bottom edge).
+     `border-spacing: 0` keeps the cells flush, so it still reads as one grid. */
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--ain-surface);
   border: 1px solid var(--ain-border);
   border-radius: 10px;
-  overflow: hidden;
   margin-block: 0 1.5rem;
 }
+/* Round the four table corners on the corner cells (the table itself no longer
+   clips), so the border-radius survives without trapping the flyout. */
+.sb-content thead th:first-child { border-top-left-radius: 10px; }
+.sb-content thead th:last-child { border-top-right-radius: 10px; }
+.sb-content tbody tr:last-child td:first-child,
+.sb-content tbody tr:last-child th:first-child { border-bottom-left-radius: 10px; }
+.sb-content tbody tr:last-child td:last-child { border-bottom-right-radius: 10px; }
 .sb-content thead th {
   text-align: left;
   font-family: var(--ain-mono);
@@ -486,12 +825,63 @@
 .sb-content td[class*="views-field-roles"] li,
 .sb-content td .item-list li {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   padding: 0.3125rem 0.5rem;
   border-radius: 4px;
   background: var(--ain-surface-2);
   color: var(--ain-text);
+}
+
+/* ============================================================= tabledrag === */
+/* Draggable rows (e.g. /admin/config/regional/language). Core's
+   tabledrag.module.css sizes the grab handle for its own box model — a 14px box
+   with an OFFSET background-position (`6px 7px`) and `overflow: hidden` on the
+   anchor — which, against admin-kit's cell metrics, clips the move.svg down to a
+   broken sliver floated above the row's text. Repaint the handle from a blank
+   slate: a centred move glyph in a square hit target that sits on the row middle
+   (float dropped so it no longer rides up into the cell padding). The JS
+   (core/drupal.tabledrag) is untouched; we only own the icon. */
+
+.sb-content a.tabledrag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  float: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0 0.25rem 0 -0.35rem;
+  overflow: visible;
+  vertical-align: middle;
+  border-radius: 6px;
+  cursor: move;
+}
+.sb-content a.tabledrag-handle .handle {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: url("/core/misc/icons/787878/move.svg") center / 16px 16px no-repeat;
+}
+.sb-content a.tabledrag-handle:hover { background: var(--ain-surface-2); }
+.sb-content a.tabledrag-handle:hover .handle,
+.sb-content a.tabledrag-handle:focus .handle {
+  background-image: url("/core/misc/icons/000000/move.svg");
+}
+/* Studio night: black-on-charcoal is invisible, so lighten the glyph on hover
+   instead of darkening it (move.svg only ships in 787878/bebebe/000000). */
+@media (prefers-color-scheme: dark) {
+  .sb-content a.tabledrag-handle:hover .handle,
+  .sb-content a.tabledrag-handle:focus .handle {
+    background-image: url("/core/misc/icons/bebebe/move.svg");
+  }
+}
+
+/* "Show row weights" — core's toggle sits in a right-aligned wrapper with no
+   bottom margin, so the button slams flush against the table's top edge. Give
+   it a breath of air. */
+.sb-content .tabledrag-toggle-weight-wrapper {
+  margin-block: 0 0.625rem;
 }
 
 /* ========================================================== whisper chips === */
@@ -505,7 +895,7 @@
   gap: 4px;
   font-family: var(--ain-mono);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -519,36 +909,119 @@
 .sb-chip--brick { color: var(--ain-danger); background: color-mix(in oklch, var(--ain-danger) 10%, transparent); }
 
 /* ============================================================= dropbutton === */
-/* Row operations — compact hairline widget, quiet actions (core's
-   drupal.dropbutton library supplies the mechanics). */
+/* Row operations. Core's drupal.dropbutton CSS is dropped in .info.yml — it
+   absolutely-positioned the OPEN flyout inside the row, so the menus on the
+   last table rows were sheared off by the table's corner clip (their second
+   action simply vanished), and it padded the column with `10em`/`2em` width
+   hacks. admin-kit owns the whole anatomy from a blank slate here; the core JS
+   still builds the <ul> markup and toggles `.open` — we only paint it.
 
+   Anatomy: a compact bordered pill (primary action + a hairline-divided arrow).
+   The toggle is pulled to the pill's top-right corner (absolute), so it lands
+   correctly wherever the JS injects its <li> in source order. Opening drops the
+   secondary actions into a vertical flyout rendered as an ABSOLUTE OVERLAY, so
+   the table never reflows and — now the table no longer clips — the last row's
+   menu shows in full. */
+
+.sb-content .dropbutton-wrapper { position: relative; box-sizing: border-box; }
+.sb-content .dropbutton-wrapper *,
+.sb-content .dropbutton-wrapper *::before,
+.sb-content .dropbutton-wrapper *::after { box-sizing: border-box; }
+
+/* Reserve the closed pill's height so the overlaid open flyout (absolute, out
+   of flow) doesn't collapse the cell behind it. */
+.sb-content .dropbutton-wrapper { min-height: 1.9rem; }
+
+/* The bordered pill. */
 .sb-content .dropbutton-widget {
+  display: inline-block;
+  position: relative;
   border: 1px solid var(--ain-border);
-  border-radius: 4px;
+  border-radius: 6px;
   background: var(--ain-surface);
   box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
 }
-.sb-content ul.dropbutton { list-style: none; margin: 0; padding: 0; }
-.sb-content .dropbutton li { margin: 0; }
-.sb-content .dropbutton a {
+/* Open: lift the pill into an overlay so the flyout floats over the rows below
+   rather than shoving the whole table down. */
+.sb-content .dropbutton-multiple.open { z-index: 100; }
+.sb-content .dropbutton-multiple.open .dropbutton-widget {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-shadow: 0 6px 16px color-mix(in oklch, var(--ain-shadow) 22%, transparent);
+}
+
+.sb-content ul.dropbutton {
+  list-style: none;
+  margin: 0;
+  padding: 0 1.75rem 0 0; /* room on the right for the absolute toggle */
+  min-width: max-content;
+  overflow: hidden;       /* keep action fills inside the rounded pill */
+  border-radius: inherit;
+}
+/* A single-action dropbutton has no toggle, so it needs no arrow gutter. */
+.sb-content .dropbutton-single ul.dropbutton { padding-right: 0; }
+.sb-content .dropbutton li { display: block; margin: 0; }
+
+/* Action links — quiet, full-width hit targets; hairline separators when the
+   flyout is stacked open. */
+.sb-content .dropbutton li a {
   display: block;
   padding: 0.375rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
   color: var(--ain-text) !important;
 }
-.sb-content .dropbutton a:hover { background: var(--ain-surface-2); text-decoration: none; }
-.sb-content .dropbutton .dropbutton-toggle button {
+.sb-content .dropbutton li a:hover { background: var(--ain-surface-2); text-decoration: none; }
+.sb-content .dropbutton .secondary-action a { border-top: 1px solid var(--ain-border); }
+
+/* Secondary actions stay hidden until the menu is open (core JS flips `.open`). */
+.sb-content .dropbutton .secondary-action { display: none; }
+.sb-content .dropbutton-multiple.open .secondary-action { display: block; }
+
+/* Toggle — a hairline-divided arrow column pinned to the pill's right edge. */
+.sb-content .dropbutton-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1.75rem;
+}
+.sb-content .dropbutton-toggle button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   padding: 0;
-  width: 1.5rem;
-  align-self: stretch;
-  border: none;
+  border: 0;
   border-left: 1px solid var(--ain-border);
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 5px 5px 0;
   background: transparent;
   box-shadow: none;
+  cursor: pointer;
 }
-.sb-content .dropbutton .dropbutton-arrow { border-top-color: var(--ain-text-dim); }
+.sb-content .dropbutton-toggle button:hover { background: var(--ain-surface-2); }
+
+/* Arrow — a CSS triangle centered on the primary (first) row, pointing down;
+   it flips up when the flyout is open. */
+.sb-content .dropbutton-arrow {
+  position: absolute;
+  top: 0.85rem;
+  right: 50%;
+  width: 0;
+  height: 0;
+  margin: -0.15em -0.3333em 0 0;
+  border: 0.3333em solid transparent;
+  border-bottom: 0;
+  border-top-color: var(--ain-text-dim);
+  line-height: 0;
+}
+.sb-content .dropbutton-multiple.open .dropbutton-arrow {
+  border-top: 0;
+  border-bottom: 0.3333em solid var(--ain-text-dim);
+}
 
 /* ======================================================== exposed filters === */
 

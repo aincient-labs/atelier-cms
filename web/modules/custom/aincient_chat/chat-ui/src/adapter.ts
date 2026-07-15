@@ -10,13 +10,14 @@ import { rememberThreadActivity, rememberThreadTitle } from "./thread-meta";
 import { rememberThreadWorkingNode, threadWorkingNode } from "./thread-working-node";
 import { clearRunStatus, setRunStatus } from "./run-status";
 import { addSessionUsage, addUsage, EMPTY_USAGE, type UsageTotal } from "./usage-state";
+import { apiUrl } from "./console-config";
 
 /**
  * Adapters connect the assistant-ui runtime to a backend.
  *
  * Two adapters live here:
  *  - `mockAdapter`  — client-side canned reply, no network (frontend-first dev).
- *  - `httpAdapter`  — POSTs to Drupal's `/aincient/chat` and parses the typed SSE
+ *  - `httpAdapter`  — POSTs to Drupal's `/atelier/chat` and parses the typed SSE
  *                     event protocol (status/token/tool_call/tool_result/result/
  *                     error/done) into cumulative assistant-ui content.
  *
@@ -25,6 +26,18 @@ import { addSessionUsage, addUsage, EMPTY_USAGE, type UsageTotal } from "./usage
 
 export type AincientSettings = {
   endpoint?: string;
+  /**
+   * The SPA client-route base the console is mounted at (e.g. "/atelier"),
+   * server-injected from the console route. Read via {@link consoleBase}; the
+   * URL codec anchors every deep link and same-surface check here.
+   */
+  basePath?: string;
+  /**
+   * The JSON-API prefix every console fetch is built against — decoupled from
+   * {@link basePath} so the backend can be relocated. Read via {@link apiBase}
+   * / {@link apiUrl}; defaults to basePath when unset.
+   */
+  apiBase?: string;
   mock?: boolean;
   /** Legacy bare display name (pre-`viewer` shell). Prefer {@link viewer}. */
   user?: string;
@@ -326,7 +339,7 @@ function toFrame(raw: string): SseFrame | null {
 
 /* ----------------------------------------------------- backend thread listing */
 
-export const base = (): string => settings().endpoint ?? "/aincient/chat";
+export const base = (): string => settings().endpoint ?? apiUrl("/chat");
 
 export type ThreadSummary = {
   remoteId: string;
@@ -695,7 +708,7 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
     const res = await fetch(
       stagedAnswer
         ? `${base()}/interrupt/${encodeURIComponent(stagedAnswer.uuid)}`
-        : endpoint ?? "/aincient/chat",
+        : endpoint ?? apiUrl("/chat"),
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "text/event-stream" },

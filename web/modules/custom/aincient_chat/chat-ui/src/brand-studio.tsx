@@ -17,8 +17,9 @@ import { emitBrandStatus, subscribeBrandStatus } from "./brand-status-state";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { PanelBar } from "./panel-bar";
 import { FieldRevert } from "./field-revert";
+import { apiUrl } from "./console-config";
 
-/** One token, as returned by /aincient/brand/manifest. */
+/** One token, as returned by /atelier/brand/manifest. */
 type TokenDef = {
   name: string;
   css_var: string;
@@ -99,7 +100,7 @@ type Manifest = {
 /** The durable, shared design-intent status both the studio and the brand agent
  *  read (distinct from the editor write-lock). `stage` widens the agent's
  *  freedom; `locked` pins the brand to minimal, single-axis changes. Persisted
- *  IMMEDIATELY via POST /aincient/brand/status — it does NOT ride Publish. */
+ *  IMMEDIATELY via POST /atelier/brand/status — it does NOT ride Publish. */
 type BrandStatus = { stage: string; locked: boolean };
 
 /** The three stages in rail order, each with the plain-language intent it sets
@@ -111,7 +112,7 @@ const STAGE_META: Record<string, { label: string; blurb: string }> = {
   polish: { label: "Polish", blurb: "Minimal, surgical changes — no cross-axis drift." },
 };
 
-const STATUS_URL = "/aincient/brand/status";
+const STATUS_URL = apiUrl("/brand/status");
 
 /** One prefilled font offered next to a font-family input. */
 type FontOption = { family: string; stack: string; blurb: string };
@@ -305,12 +306,12 @@ function labelList(rejected: unknown, tokens: TokenDef[] | null): string {
  * Everything here is a DRAFT: edits (and anything the quick picker staged before
  * opening the studio) only repaint the preview. The single deliberate global
  * write is Publish, which POSTs the changed tokens (+ any pending web fonts) to
- * /aincient/brand/save — the same persist path the no-AI form uses, so it
+ * /atelier/brand/save — the same persist path the no-AI form uses, so it
  * records an attributed, reversible revision. It is the ONLY way brand changes
  * reach the live site: the agent only ever previews (there is no server-side
  * "set brand" tool). Discard drops the draft and reverts to the saved brand.
  */
-const SAVE_URL = "/aincient/brand/save";
+const SAVE_URL = apiUrl("/brand/save");
 
 export function BrandStudio({ onClose }: { onClose: () => void }) {
   const { closeSheets } = useStudioUI();
@@ -351,7 +352,7 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
   // draft is the baseline with the current preview overrides layered on (so a
   // colour the quick picker staged before the studio opened shows up here too).
   const load = useCallback(() => {
-    return fetch("/aincient/brand/manifest", { credentials: "same-origin" })
+    return fetch(apiUrl("/brand/manifest"), { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data: Manifest) => {
         const saved = Object.fromEntries(data.tokens.map((t) => [t.css_var, t.current]));
@@ -945,7 +946,7 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
  * The design-intent status control: a flat neobrutalist badge (current stage +
  * a lock glyph when locked), the three stages as a segmented radiogroup, and a
  * lock toggle. Each toggle writes IMMEDIATELY via {@see onChange} (POST
- * /aincient/brand/status) — this is a MODE, not draft content, so it never rides
+ * /atelier/brand/status) — this is a MODE, not draft content, so it never rides
  * the token Publish cycle. The badge is the shared `.ain-studio__statebadge`
  * idiom keyed by `data-state={stage}` (+ `data-locked` when locked).
  */
