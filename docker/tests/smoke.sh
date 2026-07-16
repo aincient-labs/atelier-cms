@@ -26,16 +26,18 @@ cleanup() { echo "== teardown =="; "${COMPOSE[@]}" down -v >/dev/null 2>&1 || tr
 trap cleanup EXIT
 
 echo "== build image =="
-# drupal/flowdrop is a private repo; the Dockerfile vendor stage clones it using
-# a BuildKit secret (composer github-oauth token). Pass it through only when
-# FLOWDROP_TOKEN is set in the environment (CI: from secrets; local: your PAT).
-# Diagnostic: report the token LENGTH (never the value) so a missing/empty
-# secret is visible in the log instead of failing silently downstream.
-_tok="${FLOWDROP_TOKEN:-}"
-echo "   FLOWDROP_TOKEN present in job env: length=${#_tok}"
+# The Dockerfile vendor stage authenticates composer to the GitHub API with a
+# BuildKit secret (github-oauth token) to dodge the 60/hr anonymous rate limit.
+# All deps (incl. flowdrop, from public drupal.org) are public, so any
+# GITHUB_TOKEN works; locally it falls back to `gh auth token` if present, and
+# an empty token just means anonymous. Diagnostic: report the token LENGTH
+# (never the value) so a missing/empty secret is visible in the log.
+_tok="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null || true)}"
+export GITHUB_TOKEN="$_tok"
+echo "   GITHUB_TOKEN present in build env: length=${#_tok}"
 build_secret=()
 if [ -n "$_tok" ]; then
-  build_secret=(--secret "id=composer_github_token,env=FLOWDROP_TOKEN")
+  build_secret=(--secret "id=composer_github_token,env=GITHUB_TOKEN")
 fi
 # CI opts into BuildKit layer caching by setting AINCIENT_BUILD_CACHE (e.g. "gha"
 # in GitHub Actions, with buildx + the cache runtime token exposed). The vendor

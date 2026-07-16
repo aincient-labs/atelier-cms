@@ -25,8 +25,9 @@ name: Release image
 # Image: ghcr.io/aincient-labs/atelier  (PUBLIC package — computed from
 # github.repository below, so it always tracks this repo's name).
 #
-# Requires a repo secret FLOWDROP_TOKEN (read access to the private
-# drupal/flowdrop) until FlowDrop 2.0 publishes on drupal.org.
+# No repo secrets required: composer authenticates to the GitHub API with the
+# built-in GITHUB_TOKEN (rate-limit avoidance only). FlowDrop resolves from
+# public drupal.org — the old private FLOWDROP_TOKEN PAT is no longer needed.
 
 on:
   push:
@@ -65,11 +66,12 @@ jobs:
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
-      # drupal/flowdrop is private; authenticate composer via COMPOSER_AUTH so
-      # its dist zipball resolves.
+      # Authenticate composer to the GitHub API via the built-in GITHUB_TOKEN so
+      # Packagist dist zipballs (served from api.github.com) don't hit the 60/hr
+      # anonymous rate limit. FlowDrop resolves from public drupal.org — no PAT.
       - name: Install dependencies
         env:
-          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.FLOWDROP_TOKEN }}"}}'
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GITHUB_TOKEN }}"}}'
         run: composer install --no-interaction --no-progress --prefer-dist
 
       # Functional (BrowserTestBase) tests in the sweep need a real HTTP server
@@ -133,7 +135,7 @@ jobs:
       # vendor (composer) + apt layers are reused across runs.
       - name: Smoke-test the appliance
         env:
-          FLOWDROP_TOKEN: ${{ secrets.FLOWDROP_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AINCIENT_BUILD_CACHE: gha
         run: bash docker/tests/smoke.sh
 
@@ -155,11 +157,12 @@ jobs:
       #     buildx. amd64 layers cache-hit from the smoke build (scope=appliance);
       #     only arm64 is built fresh (under QEMU — see backlog for native arm64).
       #
-      # The private drupal/flowdrop clone authenticates via the same BuildKit
-      # secret the Dockerfile + smoke build use (id=composer_github_token).
+      # composer install inside the Docker build authenticates to the GitHub API
+      # via the same BuildKit secret the Dockerfile + smoke build use
+      # (id=composer_github_token), fed the built-in GITHUB_TOKEN.
       - name: Publish to GHCR
         env:
-          FLOWDROP_TOKEN: ${{ secrets.FLOWDROP_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
@@ -168,7 +171,7 @@ jobs:
             tag_args=(); for t in "${TAGS[@]}"; do tag_args+=(-t "${IMAGE}:${t}"); done
             docker buildx build \
               --platform linux/amd64,linux/arm64 \
-              --secret "id=composer_github_token,env=FLOWDROP_TOKEN" \
+              --secret "id=composer_github_token,env=GITHUB_TOKEN" \
               --cache-from type=gha,scope=appliance \
               --cache-to type=gha,scope=appliance,mode=max,ignore-error=true \
               -f docker/Dockerfile \

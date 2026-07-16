@@ -21,16 +21,18 @@ COPY patches ./patches
 # --ignore-platform-reqs: this stage only fetches packages; the runtime image
 # below has the real PHP extensions (gd, pdo_pgsql, …).
 #
-# drupal/flowdrop lives in a PRIVATE repo (aincient-labs/drupal-flowdrop). The
-# token is provided as a BuildKit secret (id=composer_github_token) and wired
-# into composer's github-oauth so the clone authenticates. Using --mount=secret
-# (not a build-arg) keeps the token OUT of every image layer and the history.
+# All deps are public (flowdrop resolves from drupal.org), so composer needs no
+# private credentials — but the many Packagist dist zipballs served from
+# api.github.com hit a 60/hr anonymous rate limit. A GitHub token (the caller's
+# GITHUB_TOKEN) wired into github-oauth avoids that. It's provided as a BuildKit
+# secret (id=composer_github_token); --mount=secret (not a build-arg) keeps it
+# OUT of every image layer and the history. Optional: no secret → anonymous.
 RUN --mount=type=secret,id=composer_github_token \
     if [ -s /run/secrets/composer_github_token ]; then \
-      echo "[flowdrop] token secret received: $(wc -c < /run/secrets/composer_github_token) bytes"; \
+      echo "[composer] github token secret received: $(wc -c < /run/secrets/composer_github_token) bytes"; \
       composer config --global --auth github-oauth.github.com "$(cat /run/secrets/composer_github_token)"; \
     else \
-      echo "[flowdrop] WARNING: composer_github_token secret missing or empty — composer will hit the GitHub API anonymously and likely fail to authenticate"; \
+      echo "[composer] no github token secret — using anonymous GitHub API (subject to the 60/hr rate limit)"; \
     fi && \
     composer install --no-dev --no-interaction --no-progress --prefer-dist --ignore-platform-reqs \
       --optimize-autoloader
