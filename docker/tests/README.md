@@ -16,7 +16,7 @@ is a regression guard for the 2026-05-31 bug where health failures didn't roll b
 
 ## Integration — `smoke.sh` (real container, real Drupal)
 
-Builds the image, brings up an **isolated** compose project (`aincient_smoke`, port
+Builds the image, brings up an **isolated** compose project (`atelier_smoke`, port
 8099 — won't touch a running dev stack), and asserts the real UX: install-from-config
 brings up the stack, the console permission is granted, the front page + login serve (200),
 `/atelier` is 403 for anonymous, the upgrade branch snapshots + converges healthy, and

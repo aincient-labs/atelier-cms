@@ -13,7 +13,7 @@
 #   3. app restarts on the new image        → entrypoint runs converge.sh
 #   4. converge snapshots, runs updatedb, health-checks (rolls back on failure)
 
-name: aincient
+name: atelier
 
 services:
   db:
@@ -67,11 +67,11 @@ services:
       COMPOSE_PROJECT_DIR: /project
       # Recreate `app` in the SAME compose project that launched the stack, not a
       # second one. `docker compose` honors COMPOSE_PROJECT_NAME automatically;
-      # without it the sidecar falls back to this file's `name: aincient` and, if
+      # without it the sidecar falls back to this file's `name: atelier` and, if
       # the operator (or the e2e harness) ran under a custom project, recreates a
       # rival `app` that collides on the published host port. Defaults to the
       # file's own name so production (no override) is unaffected.
-      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-aincient}
+      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-atelier}
       APP_SERVICE: app
       # The sidecar re-materialises the `app` service via `docker compose up`,
       # which re-parses this file — so it needs the SAME variables the app

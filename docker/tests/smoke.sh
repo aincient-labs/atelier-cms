@@ -10,8 +10,8 @@
 set -euo pipefail
 
 DOCKER_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-COMPOSE=(docker compose -p aincient_smoke -f "$DOCKER_DIR/compose.yaml")
-NET=aincient_smoke_default
+COMPOSE=(docker compose -p atelier_smoke -f "$DOCKER_DIR/compose.yaml")
+NET=atelier_smoke_default
 export AINCIENT_IMAGE=aincient/cms:smoke
 export HASH_SALT="smoke-$(openssl rand -hex 16)"
 export HTTP_PORT=8099

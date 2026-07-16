@@ -25,7 +25,7 @@
 # Overridable via env:
 #   AINCIENT_IMAGE   image tag to run         (default: ghcr.io/aincient-labs/atelier:edge)
 #   HTTP_PORT        host port for the console (default: 41221 — "AINCI" in leet)
-#   AINCIENT_HOME    install dir              (default: ~/.aincient)
+#   ATELIER_HOME     install dir              (default: ~/.atelier)
 #
 # No AI key is set here: a fresh install boots keyless and prompts you to connect
 # a provider in the console's first-run onboarding wizard.
@@ -34,7 +34,7 @@ set -euo pipefail
 
 AINCIENT_IMAGE="${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier:edge}"
 HTTP_PORT="${HTTP_PORT:-41221}"   # "AINCI" in leet (4=A,1=I,2=N,2=C,1=I)
-INSTALL_DIR="${AINCIENT_HOME:-$HOME/.aincient}"
+INSTALL_DIR="${ATELIER_HOME:-$HOME/.atelier}"
 
 # --- pretty output ----------------------------------------------------------
 if [ -t 1 ]; then
@@ -60,7 +60,7 @@ mkdir -p "$INSTALL_DIR"
 
 # The slim runtime topology: app + db only (no build context, no updater).
 cat > "$INSTALL_DIR/compose.yaml" <<'YAML'
-name: aincient
+name: atelier
 services:
   db:
     image: pgvector/pgvector:pg16

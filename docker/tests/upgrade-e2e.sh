@@ -33,8 +33,8 @@ set -euo pipefail
 DOCKER_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 REPO_ROOT="$(cd "$DOCKER_DIR/.." && pwd)"
 
-PROJECT=aincient_e2e
-REG_NAME=aincient_e2e_registry
+PROJECT=atelier_e2e
+REG_NAME=atelier_e2e_registry
 REG_PORT="${E2E_REGISTRY_PORT:-36254}"
 REG="localhost:${REG_PORT}"
 IMAGE="${REG}/aincient/cms"

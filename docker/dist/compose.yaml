@@ -8,7 +8,7 @@
 # itself on every start (snapshot → updatedb → health-check → roll back on
 # failure), so pulling a newer image tag IS the upgrade — no extra step.
 
-name: aincient
+name: atelier
 
 services:
   db:
