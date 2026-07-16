@@ -33,6 +33,22 @@ SHARED_DIR="${AINCIENT_SHARED_DIR:-/shared}"
 log() { printf '[converge] %s\n' "$*"; }
 die() { printf '[converge] FATAL: %s\n' "$*" >&2; exit 1; }
 
+# Printed whenever the site ends up unhealthy, so the operator gets an honest
+# signal + a recovery path instead of a container that reports "healthy" while
+# serving a 404. The web server is still started (see entrypoint.sh) so the
+# broken state can be inspected, but the health check has already failed, so the
+# container is marked unhealthy rather than silently OK.
+recovery_hint() {
+  log "----------------------------------------------------------------"
+  log "  The site did not converge to a healthy state."
+  log "  If this was a first install that was interrupted, the database"
+  log "  may be half-populated. To reinstall from a clean slate, remove"
+  log "  the data volumes and start again (THIS DELETES SITE DATA):"
+  log "      docker compose down -v && docker compose up -d"
+  log "  If you have data you need, take a backup of the db volume first."
+  log "----------------------------------------------------------------"
+}
+
 # Record the convergence outcome (ok|rolledback|install-failed) on the shared
 # volume, if one is mounted. No-op otherwise (e.g. the slim curl topology).
 write_result() {
@@ -159,8 +175,11 @@ upgrade() {
   take_snapshot
 
   # From here, any failure rolls the database back to the snapshot AND records
-  # the rollback so the updater can re-pin the previous image.
-  trap 'log "upgrade failed"; restore_snapshot; write_result rolledback; die "rolled back to pre-upgrade snapshot"' ERR
+  # the rollback so the updater can re-pin the previous image. The health check
+  # (which now includes a front-door render, see healthcheck.sh) runs under this
+  # trap too, so an upgrade that leaves the site serving a 404 rolls back and
+  # reports failure instead of being declared healthy.
+  trap 'log "upgrade failed — the converged site is not healthy"; restore_snapshot; write_result rolledback; recovery_hint; die "rolled back to pre-upgrade snapshot"' ERR
 
   # The migration engine: runs every pending hook_update_N / hook_post_update
   # (schema changes, data migrations, anything config:import can't express).
@@ -201,9 +220,13 @@ main() {
     upgrade
   else
     fresh_install
-    # No snapshot on a fresh DB — nothing to roll back to, so just gate.
+    # No snapshot on a fresh DB — nothing to roll back to, so just gate. The
+    # health check renders the front page, so an install that finished without a
+    # working front door (e.g. the demo homepage seed failed and page.front was
+    # never repointed off the empty /node) fails HERE rather than booting a site
+    # that greets its first visitor with a 404.
     log "running health check"
-    "$HEALTHCHECK_CMD" || { write_result install-failed; die "post-install health check failed"; }
+    "$HEALTHCHECK_CMD" || { write_result install-failed; recovery_hint; die "post-install health check failed"; }
   fi
   write_result ok
   log "converge OK — site is on $($DRUSH status --field=drupal-version 2>/dev/null || echo '?')"

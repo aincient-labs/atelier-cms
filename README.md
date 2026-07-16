@@ -31,9 +31,20 @@ queue are all participation, and so is asking for help.
 
 ## Running Atelier
 
-Atelier is distributed as a **versioned container image** — the image is the product and
-the unit of versioning, the way Discourse, GitLab Omnibus, or Ghost are delivered. You run
-it with Docker Compose; everything you need is in [`docker/dist/`](docker/dist/):
+Atelier is distributed as a **versioned public container image** — the image is the product
+and the unit of versioning, the way Discourse, GitLab Omnibus, or Ghost are delivered. The
+image is published to GHCR at
+[`ghcr.io/aincient-labs/atelier`](https://github.com/aincient-labs/atelier/pkgs/container/atelier)
+and is **public — no login or token required.**
+
+The fastest way in is the one-line installer, which lays down a Docker Compose stack and
+starts it:
+
+```bash
+curl -fsSL https://aincient-labs.com/install.sh | bash
+```
+
+Prefer to run it yourself? Everything you need is in [`docker/dist/`](docker/dist/):
 
 ```bash
 cd docker/dist
@@ -41,10 +52,10 @@ cp .env.example .env    # set HASH_SALT — openssl rand -hex 32
 docker compose up -d
 ```
 
-First boot installs and configures the site by itself. Open **http://localhost:41221/**,
-log in, and you land in the operator console at **`/atelier`**.
+Either way, first boot installs and configures the site by itself. Open
+**http://localhost:41221/**, log in, and you land in the operator console at **`/atelier`**.
 
-Upgrading is the same motion:
+Upgrading is the same motion — re-run the installer, or from the repo:
 
 ```bash
 docker compose pull && docker compose up -d
@@ -57,8 +68,7 @@ upgrade. See [`docker/dist/README.md`](docker/dist/README.md) for the full walkt
 (admin login, ports, reset) and [`docker/README.md`](docker/README.md) for how convergence
 works.
 
-> **Early access:** prebuilt images are currently published to a private registry — ask us
-> for evaluation credentials. You can also build the image yourself from this repository
+> You can also build the image yourself from this repository
 > ([`docker/Dockerfile`](docker/Dockerfile)).
 
 ## The 30-second activation
