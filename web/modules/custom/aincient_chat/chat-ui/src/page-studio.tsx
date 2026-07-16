@@ -17,7 +17,7 @@ import {
   getPageTranslations,
   loadPageIntoStudio,
   loadBlockIntoStudio,
-  getAuthoringNew,
+  isComposingDraft,
   setTranslationMode,
   reloadPreview,
   getPageKind,
@@ -406,9 +406,11 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const isBlock = kind === "block";
   // A never-saved draft (no node yet) — the first Publish/Save creates the node.
   const isNew = nodeId === null;
-  // Showing the content browser (nothing open, no deliberate New) — the state the
-  // X leaves the studio from; otherwise X steps back to this listing.
-  const atListing = isNew && !getAuthoringNew();
+  // Showing the content browser (nothing open, nothing being composed) — the
+  // state the X leaves the studio from; otherwise X steps back to this listing.
+  // An agent-built draft (sections, no node, authoringNew=false) is NOT at the
+  // listing: it's composing, so the editor rail + the "Back to list" X apply.
+  const atListing = isNew && !isComposingDraft();
 
   // ── Editorial state (DECISIONS 0094) ──────────────────────────────────────
   // The studio is read-only when the server says we can't update this revision
@@ -786,7 +788,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   // content browser); already on the listing, it leaves the studio. A dirty doc
   // confirms first so unsaved edits aren't dropped silently.
   const backOrClose = useCallback(() => {
-    if (getPageNode() === null && !getAuthoringNew()) {
+    if (getPageNode() === null && !isComposingDraft()) {
       onClose();
       return;
     }

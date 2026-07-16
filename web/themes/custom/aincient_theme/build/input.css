@@ -43,7 +43,25 @@
     box-shadow: var(--button-shadow);
     font-weight: var(--button-weight);
   }
-  .messages { @apply rounded-lg border border-border bg-muted px-4 py-3 text-sm; }
+  /* Status messages — a whisper card whose tint names the mood, ink stays ink.
+     The .messages--{type} classes come from the theme's status-messages
+     override; without a per-type tint an error reads the same as a neutral
+     notice (e.g. a failed login on /user/login). */
+  .messages { @apply mb-6 rounded-lg border border-border bg-muted px-4 py-3 text-sm; }
+  .messages--status {
+    border-color: color-mix(in oklch, #2f855a 35%, var(--border));
+    background: color-mix(in oklch, #2f855a 8%, var(--muted));
+  }
+  .messages--warning {
+    border-color: color-mix(in oklch, #b7791f 40%, var(--border));
+    background: color-mix(in oklch, #b7791f 10%, var(--muted));
+  }
+  .messages--error {
+    border-color: color-mix(in oklch, #c53030 38%, var(--border));
+    background: color-mix(in oklch, #c53030 9%, var(--muted));
+  }
+  .messages ul { margin: 0; padding-left: 1.1rem; }
+  .messages a { font-weight: 600; }
   .tabs { @apply mb-6 flex gap-2 text-sm; }
 }
 

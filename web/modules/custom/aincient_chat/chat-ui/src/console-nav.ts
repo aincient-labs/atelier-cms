@@ -4,8 +4,8 @@ import { activeStudioKey, setActiveStudio } from "./flow";
 import {
   closeDocToListing,
   DocLoadError,
-  getAuthoringNew,
   getPageDraft,
+  isComposingDraft,
   getPageKind,
   getPageLang,
   getPageNode,
@@ -96,8 +96,7 @@ export function deriveRoomFromStores(): Room {
   // node yet — it doesn't set authoringNew, so we detect content). Either way it
   // gets /content/new and stays off the listing's URL.
   if (!node) {
-    const composing = getAuthoringNew() || (getPageDraft()?.sections?.length ?? 0) > 0;
-    if (!composing) return { kind: "list" };
+    if (!isComposingDraft()) return { kind: "list" };
     const thread = currentThreadId();
     return thread ? { kind: "draft", thread } : { kind: "draft" };
   }

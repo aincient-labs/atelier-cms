@@ -398,11 +398,14 @@ export function startNewBlock(): void {
  * the node clears.
  */
 export function closeDocToListing(): void {
-  // Nothing open (idle studio, no node, not deliberately authoring) → no-op. The
+  // Nothing open (idle studio, no node, no draft being composed) → no-op. The
   // console machine's close-on-leave (commitSwitch) may call this on any switch
   // that isn't a node/audit room; without this guard it would reset state + fire
   // every subscriber + releaseLock on studio→studio hops that never had a doc.
-  if (currentNode === null && !authoringNew) return;
+  // Uses the shared composing test, not a bare authoringNew check: an
+  // agent-built draft (sections, no node, authoringNew=false) MUST clear here,
+  // else it lingers in memory and the next New builds on top of its sections.
+  if (currentNode === null && !isComposingDraft()) return;
   authoringNew = false;
   currentNode = null;
   currentUrl = null;
@@ -475,6 +478,21 @@ export function getPageNode(): string | null {
  *  the "build it" placeholder over the content browser. */
 export function getAuthoringNew(): boolean {
   return authoringNew;
+}
+
+/**
+ * Whether the studio holds an in-flight, node-less draft — a deliberate New
+ * ({@link authoringNew}) OR an agent-built page that already has composed
+ * sections but no node yet (the agent's `page_preview` tool stages content
+ * without ever setting `authoringNew`). This is the SINGLE definition of "a
+ * draft is being composed", shared by the draft-room derivation
+ * (`deriveRoomFromStores`), the studio's back/close affordance (`backOrClose`),
+ * and {@link closeDocToListing}'s no-op guard — so all three agree on when
+ * something is open. When they disagreed, an agent-built draft was treated as
+ * "nothing open": the X left the studio to General instead of the listing, and
+ * the close left the stale draft in memory to corrupt the next New. */
+export function isComposingDraft(): boolean {
+  return authoringNew || (current?.sections?.length ?? 0) > 0;
 }
 
 /**
