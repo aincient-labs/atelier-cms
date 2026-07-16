@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 #
-# AIncient CMS — one-line installer.
+# Atelier — one-line installer.
 #
-# The image is a PRIVATE GHCR package during the pre-launch invite round, so
-# log in once first (token from the maintainer, sent out-of-band), then run
-# the installer:
+# Install (or upgrade) the Atelier appliance with a single command:
 #
-#   echo "<TOKEN>" | docker login ghcr.io -u aincient-labs --password-stdin
-#   curl -fsSL https://www.d34dman.com/aincient-cms/install.sh | bash
+#   curl -fsSL https://aincient-labs.com/install.sh | bash
 #
-# This is NOT a binary downloader (AIncient is a Drupal app, not a static
+# The image is public — no login or token required.
+#
+# This is NOT a binary downloader (Atelier is a Drupal app, not a static
 # binary). It is a thin *appliance bootstrapper*: it lays down a docker-compose
 # stack (app + db) and starts it. The image's own entrypoint (converge.sh) does
 # the real install on first boot — see docker/README.md.
@@ -132,13 +131,8 @@ fi
 cd "$INSTALL_DIR"
 say "Pulling ${bold}${AINCIENT_IMAGE}${rst}"
 if ! docker compose pull --quiet; then
-  case "$AINCIENT_IMAGE" in
-    ghcr.io/*)
-      die "Couldn't pull ${AINCIENT_IMAGE} — it's a private image. Log in first with the token from the maintainer, then re-run:
-    echo \"<TOKEN>\" | docker login ghcr.io -u aincient-labs --password-stdin" ;;
-    *)
-      warn "pull failed — using local image if present" ;;
-  esac
+  warn "Couldn't pull ${AINCIENT_IMAGE} — check your network and that the tag exists."
+  warn "Falling back to a local image if one is present."
 fi
 say "Starting the appliance"
 docker compose up -d
@@ -157,7 +151,7 @@ if [ "${ok:-}" = "1" ]; then
   # converge minted a random admin password on first boot; read it back so the
   # operator can log in. (Empty on a re-run/upgrade — the password already exists.)
   admin_pw="$(docker compose exec -T app sh -c 'cat /opt/drupal/private/INITIAL_ADMIN_PASSWORD 2>/dev/null' 2>/dev/null | tr -d '\r\n' || true)"
-  printf '%s✓ AIncient is running%s\n' "$grn" "$rst"
+  printf '%s✓ Atelier is running%s\n' "$grn" "$rst"
   printf '  Console:  %s%s%s\n' "$bold" "$url" "$rst"
   if [ -n "$admin_pw" ]; then
     printf '  Login:    %sadmin / %s%s  %s(change this after first login!)%s\n' "$bold" "$admin_pw" "$rst" "$dim" "$rst"
