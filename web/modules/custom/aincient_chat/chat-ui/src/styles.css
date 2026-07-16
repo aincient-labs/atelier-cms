@@ -784,7 +784,11 @@
   padding: 0 2px; opacity: 0; transition: opacity .15s;
 }
 .ain-msg--user:hover .ain-msg__hovertime { opacity: 1; }
-.ain-bubble { padding: 11px 15px; border-radius: var(--ain-radius); white-space: pre-wrap; word-wrap: break-word; }
+/* max-width:100% + min-width:0 keep the bubble inside its (flex-end) column so
+   an unbreakable run — e.g. a pasted/echoed ──── rule or a long URL — can't
+   shrink-wrap the bubble wider than the column and overflow off-screen;
+   overflow-wrap:anywhere lets that run break so the box can actually narrow. */
+.ain-bubble { padding: 11px 15px; border-radius: var(--ain-radius); white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; min-width: 0; }
 /* Player one speaks in the ONE cinnabar surface on screen (study 02,
    Plate 9): a solid accent fill, paper ink on it, no border — the pigment
    IS the attribution. Each voice tucks the corner nearest its speaker. */
