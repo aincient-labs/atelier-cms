@@ -42,18 +42,22 @@ fi
 # CI opts into BuildKit layer caching by setting AINCIENT_BUILD_CACHE (e.g. "gha"
 # in GitHub Actions, with buildx + the cache runtime token exposed). The vendor
 # (composer) + apt layers then cache-hit whenever composer.lock is unchanged,
-# shaving minutes off every run. scope=appliance is shared with the release
-# workflow's publish build so they reuse each other's amd64 layers. Left unset
-# locally → a plain single-arch build, exactly as before.
+# shaving minutes off every run. The cache scope defaults to "appliance" but is
+# overridable via AINCIENT_BUILD_CACHE_SCOPE — the release workflow's multi-arch
+# matrix sets it per-arch (appliance-amd64 / appliance-arm64) so the two native
+# runners don't clobber each other's layers, and so its by-digest push step
+# cache-hits this build. Left unset locally → a plain single-arch build, exactly
+# as before.
 #
 # ignore-error=true: the cache export is a pure optimization. When the GHA cache
 # backend has an outage (HTTP 400 "services aren't available"), a fatal export
 # error would otherwise kill an otherwise-green build. Treat a failed write as a
 # cache miss, not a build failure.
 if [ -n "${AINCIENT_BUILD_CACHE:-}" ]; then
+  build_scope="${AINCIENT_BUILD_CACHE_SCOPE:-appliance}"
   docker buildx build --load \
-    --cache-from "type=${AINCIENT_BUILD_CACHE},scope=appliance" \
-    --cache-to "type=${AINCIENT_BUILD_CACHE},scope=appliance,mode=max,ignore-error=true" \
+    --cache-from "type=${AINCIENT_BUILD_CACHE},scope=${build_scope}" \
+    --cache-to "type=${AINCIENT_BUILD_CACHE},scope=${build_scope},mode=max,ignore-error=true" \
     "${build_secret[@]}" \
     -f "$DOCKER_DIR/Dockerfile" -t "$AINCIENT_IMAGE" "$DOCKER_DIR/.." >/dev/null
 else

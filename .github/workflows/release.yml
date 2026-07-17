@@ -6,6 +6,8 @@ name: Release image
 #   push tag v*    → :v1.2.3      + :latest        (pinned release)
 #   manual         → workflow_dispatch (publishes whatever ref it's run on)
 #
+# All three paths produce a native multi-arch (amd64+arm64) manifest.
+#
 # This repo (aincient-labs/atelier) is the deterministic, history-free snapshot
 # of the private aincient-labs/cms produced by the umbrella's bin/deploy-atelier.
 # The image is built and published FROM HERE so the public package's source is
@@ -13,14 +15,16 @@ name: Release image
 # dev repo (cms) keeps its fast PR gate (ci.yml); this workflow re-runs the full
 # gate against the published tree before pushing.
 #
-# The publish is GATED on the smoke test (build → install → upgrade → rollback)
-# on linux/amd64. Once that passes we publish a MULTI-ARCH manifest
-# (linux/amd64 + linux/arm64) via buildx so Apple-Silicon / arm64 hosts pull a
-# native image instead of running amd64 under QEMU emulation. The published
-# image is rebuilt by buildx from the same commit + composer.lock as the smoke
-# build (deterministic), not the literal smoke daemon image — buildx multi-arch
-# can't be loaded into the daemon for testing, so the gate runs on amd64 and the
-# manifest is built for both arches from the validated source.
+# The publish is GATED on the smoke test (build → install → upgrade → rollback),
+# which now runs on BOTH arches natively: a matrix fans the build/smoke job out
+# to a native amd64 runner (ubuntu-latest) and a native arm64 runner
+# (ubuntu-24.04-arm — free for public repos). Each runner builds + smoke-tests
+# its own arch on real silicon (no QEMU emulation anywhere), then pushes its
+# layers to GHCR BY DIGEST. A final `merge` job stitches the two digests into one
+# multi-arch manifest and applies the tags. Both :edge and :vX.Y.Z are therefore
+# native multi-arch (linux/amd64 + linux/arm64) via the same code path — the tag
+# set is the only difference — so Apple-Silicon / arm64 hosts always pull a
+# native image, on every build, not just tagged releases.
 #
 # Image: ghcr.io/aincient-labs/atelier  (PUBLIC package — computed from
 # github.repository below, so it always tracks this repo's name).
@@ -100,22 +104,29 @@ jobs:
       - name: Run converge bats suite
         run: bash docker/tests/run.sh
 
-  publish:
-    name: Smoke-test + publish to GHCR
+  # Build + smoke-test each arch on its OWN native runner (no QEMU), then push
+  # that arch's layers to GHCR by digest. The two arches run in parallel; the
+  # `merge` job below assembles them into one manifest. fail-fast:false so a
+  # flake on one arch still lets the other finish and surfaces its own failure.
+  build:
+    name: Build + smoke (${{ matrix.arch }})
     needs: [kernel-tests, converge-unit]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: amd64, platform: linux/amd64, runner: ubuntu-latest }
+          # Native arm64 — free for public repos. Replaces the old QEMU emulation
+          # path, so arm64 builds at native speed and is smoke-tested for real.
+          - { arch: arm64, platform: linux/arm64, runner: ubuntu-24.04-arm }
     steps:
       - uses: actions/checkout@v4
 
-      # arm64 layers are built under emulation on the amd64 runner; QEMU provides
-      # the binfmt handlers and buildx the multi-platform driver. Only the tag
-      # (multi-arch) path actually uses it, but setup is seconds and harmless.
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
+      # No setup-qemu-action: each arch builds on its own native silicon.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -129,14 +140,17 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      # Builds aincient/cms:smoke (linux/amd64, gha-cached) and runs
-      # install → upgrade → rollback against a real container. Exits non-zero on
-      # any failure, which fails the job before anything is pushed. The cached
-      # vendor (composer) + apt layers are reused across runs.
+      # Builds aincient/cms:smoke for THIS arch (gha-cached, per-arch scope) and
+      # runs install → upgrade → rollback against a real container on native
+      # silicon. Exits non-zero on any failure, which fails the job before
+      # anything is pushed. The cached vendor (composer) + apt layers are reused
+      # across runs. Per-arch cache scope keeps the two arches from clobbering
+      # each other's layers.
       - name: Smoke-test the appliance
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AINCIENT_BUILD_CACHE: gha
+          AINCIENT_BUILD_CACHE_SCOPE: appliance-${{ matrix.arch }}
         run: bash docker/tests/smoke.sh
 
       - name: Log in to GHCR
@@ -146,44 +160,90 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Publish the validated image. github.repository is already owner/repo
-      # (aincient-labs/atelier); lowercase it defensively for GHCR — so this
-      # publishes ghcr.io/aincient-labs/atelier without hardcoding the name.
-      #
-      #   edge / main push → linux/amd64 only. The smoke step already BUILT and
-      #     VALIDATED the exact amd64 image locally, so we just retag + push it —
-      #     no rebuild at all (and the published bytes ARE the tested bytes).
-      #   v* tag           → multi-arch manifest (linux/amd64 + linux/arm64) via
-      #     buildx. amd64 layers cache-hit from the smoke build (scope=appliance);
-      #     only arm64 is built fresh (under QEMU — see backlog for native arm64).
+      # Push THIS arch to GHCR by digest (no tag yet — tags are applied by the
+      # merge job). Every layer cache-hits from the smoke build above (same
+      # per-arch scope), so this is a push-only step, not a rebuild — the
+      # published bytes are the smoke-validated bytes. push-by-digest lets the
+      # merge job assemble a manifest list from the two arches' digests.
       #
       # composer install inside the Docker build authenticates to the GitHub API
       # via the same BuildKit secret the Dockerfile + smoke build use
       # (id=composer_github_token), fed the built-in GITHUB_TOKEN.
-      - name: Publish to GHCR
+      - name: Push by digest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          docker buildx build \
+            --secret "id=composer_github_token,env=GITHUB_TOKEN" \
+            --cache-from "type=gha,scope=appliance-${{ matrix.arch }}" \
+            -f docker/Dockerfile \
+            --output "type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true" \
+            --metadata-file /tmp/meta.json \
+            .
+          mkdir -p /tmp/digests
+          digest="$(jq -r '."containerimage.digest"' /tmp/meta.json)"
+          touch "/tmp/digests/${digest#sha256:}"
+          echo "pushed ${IMAGE}@${digest} (${{ matrix.platform }})" >> "$GITHUB_STEP_SUMMARY"
+
+      # Each arch uploads a marker file named for its image digest; the merge job
+      # downloads both to reconstruct the digest list.
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Assemble the two per-arch digests into one multi-arch manifest and apply the
+  # tags. This is the only place tags are set, so :edge and :vX.Y.Z share one
+  # code path — the ref decides the tag set, nothing else.
+  merge:
+    name: Merge manifest + tag
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # github.repository is already owner/repo (aincient-labs/atelier); lowercase
+      # it defensively for GHCR so this publishes ghcr.io/aincient-labs/atelier
+      # without hardcoding the name. imagetools create builds the manifest list
+      # from the per-arch digests (no rebuild — pure registry-side assembly).
+      #
+      #   v* tag         → :vX.Y.Z + :latest
+      #   main / dispatch → :edge   + :sha-<short>
+      - name: Create + push multi-arch manifest
+        working-directory: /tmp/digests
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAGS=("${{ github.ref_name }}" "latest")
-            tag_args=(); for t in "${TAGS[@]}"; do tag_args+=(-t "${IMAGE}:${t}"); done
-            docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              --secret "id=composer_github_token,env=GITHUB_TOKEN" \
-              --cache-from type=gha,scope=appliance \
-              --cache-to type=gha,scope=appliance,mode=max,ignore-error=true \
-              -f docker/Dockerfile \
-              "${tag_args[@]}" \
-              --push \
-              .
-            echo "${IMAGE}:${TAGS[0]} (linux/amd64, linux/arm64)" >> "$GITHUB_STEP_SUMMARY"
           else
             TAGS=("edge" "sha-${GITHUB_SHA::7}")
-            for t in "${TAGS[@]}"; do
-              docker tag aincient/cms:smoke "${IMAGE}:${t}"
-              docker push "${IMAGE}:${t}"
-            done
-            echo "${IMAGE}:${TAGS[0]} (linux/amd64 — smoke-validated image, retagged)" >> "$GITHUB_STEP_SUMMARY"
           fi
+          tag_args=(); for t in "${TAGS[@]}"; do tag_args+=(-t "${IMAGE}:${t}"); done
+          docker buildx imagetools create "${tag_args[@]}" \
+            $(printf "${IMAGE}@sha256:%s " *)
+          docker buildx imagetools inspect "${IMAGE}:${TAGS[0]}"
+          echo "${IMAGE}:${TAGS[0]} (linux/amd64, linux/arm64 — native, smoke-validated)" >> "$GITHUB_STEP_SUMMARY"
