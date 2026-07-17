@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Export'
 type: module
 description: 'Static-site export — inventory → render → package. Produces a deployable static snapshot of the public site, with optional config/users extras in one zip ("own your data"). Replaces Tome (DECISIONS 0181).'

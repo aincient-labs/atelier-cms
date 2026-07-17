@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Deny'
 type: module
 description: "Denies certain operations that doesn't align with AIncient's architecture"

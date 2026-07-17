@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Chat'
 type: module
 description: 'The AIncient chat layer: a streaming chat adapter/processor, the hybrid router, Thread/Turn persistence, and the typed event protocol the assistant-ui console consumes.'

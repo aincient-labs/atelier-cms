@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'Studio Backend'
 type: theme
 description: 'The AIncient admin surface — a stark, brand-aligned backend (GitHub-style sidebar + main) for the few operations that live outside the chat console: People and AI metering. Base: core Stark, so there is almost nothing to un-style.'

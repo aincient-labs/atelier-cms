@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Audit'
 type: module
 description: 'Read-only page health checks (SEO, meta tags, internal-link integrity) surfaced in the Checks studio. Audits ONLY — it never writes; findings are computed deterministically (metatag.manager + Drupal''s router) so the agent narrates facts, not hallucinations.'

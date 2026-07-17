@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Mail'
 type: module
 description: 'Transactional mail for Atelier — the raw Symfony mailer (shipped by core), a thin owned @Mail plugin, and secrets in Key/State. No mail contrib.'

@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: AIncient
 type: theme
 description: 'Brand-aligned front-end theme. Reuses the AIncient page-generation stack — SDC chrome + Tailwind v4 + the brand design tokens — so every anonymous page is branded and consistent.'

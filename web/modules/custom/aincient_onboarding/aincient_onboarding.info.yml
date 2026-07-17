@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Onboarding'
 type: module
 description: 'Deterministic first-run wizard to connect AI: pick any provider and validate its credential before the agent is usable, then bind a model to each AIncient model role. Surfaced as a full-screen wizard (and an in-chat gen-UI widget) driven by a deterministic FlowDrop workflow; secrets are stored via the Key module in Drupal State (never in config/git).'

@@ -8,9 +8,11 @@
 declare(strict_types=1);
 
 use Drupal\aincient_pages\ConsoleDeepLink;
+use Drupal\aincient_pages\ReservedAliases;
 use Drupal\aincient_pages\SiteIdentity;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Session\AccountInterface;
 
 // Studio-authored content — an `aincient_page` node, a `block` media, an `image`
@@ -219,4 +221,39 @@ function aincient_pages_node_delete(EntityInterface $node): void {
  */
 function aincient_pages_form_system_site_information_settings_alter(array &$form): void {
   \Drupal::messenger()->addWarning(t('Site details, the front page and the error pages are managed in the console (Site → Globals). Values saved on this form are only the fallback defaults — a value set in the console overrides them at runtime.'));
+}
+
+/**
+ * Implements hook_pathauto_is_alias_reserved().
+ *
+ * Keeps the flat page namespace off the reserved words in {@see ReservedAliases}.
+ * With the '/pages/' prefix dropped, a page alias is a single root segment (e.g.
+ * '/about'), one word away from shadowing a reserved namespace — Drupal's
+ * inbound alias processor rewrites the request path before the router runs, so
+ * an alias equal to a real path wins. Returning TRUE makes pathauto suffix the
+ * alias ('aincient' → 'aincient-0') instead. Route and file/dir collisions are
+ * already handled upstream by pathauto itself (AliasUniquifier::isRoute); this
+ * only adds the un-routed machine namespaces. Manually-entered aliases are
+ * caught separately by the ReservedAlias validation constraint below.
+ */
+function aincient_pages_pathauto_is_alias_reserved(string $alias, string $source, string $langcode): bool {
+  return ReservedAliases::match($alias) !== NULL;
+}
+
+/**
+ * Implements hook_entity_base_field_info_alter().
+ *
+ * The pathauto hook only guards auto-generated aliases; a manually-entered one
+ * (the node form's URL-alias field, or a REST write) never runs through it. Add
+ * the ReservedAlias constraint to the node 'path' field so a hand-typed
+ * '/aincient/…' is rejected with a clear message instead of silently shadowing
+ * the namespace. Entity-wide (every node bundle): no content of any type should
+ * squat a reserved namespace, and altering the base field is the only place the
+ * shared 'path' field is reachable (bundle alters see base-field overrides, not
+ * the base field itself).
+ */
+function aincient_pages_entity_base_field_info_alter(array &$fields, EntityTypeInterface $entity_type): void {
+  if ($entity_type->id() === 'node' && isset($fields['path'])) {
+    $fields['path']->addConstraint('AincientReservedAlias');
+  }
 }

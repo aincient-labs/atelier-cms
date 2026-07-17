@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Demo'
 type: module
 description: 'Ships the demo homepage (a branded aincient_page) and points the front page at it. Enabled by the distribution recipe; a one-shot showcase, never a hard dependency of the product modules.'

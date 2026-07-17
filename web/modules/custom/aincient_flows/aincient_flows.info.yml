@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Flows'
 type: module
 description: 'Integration layer: exposes AIncient capabilities (aincient_pages/aincient_brand/aincient_onboarding) as FlowDrop nodes so owner-authored flows can orchestrate them under an allow-list.'

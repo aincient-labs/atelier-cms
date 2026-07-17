@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient assistant-ui'
 type: module
 description: 'Exposes assistant-ui operator-console configuration (theme, …) to the frontend.'

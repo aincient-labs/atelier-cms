@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Pages (spike)'
 type: module
 description: 'SPIKE: agent-composed pages. A page-schema → SDC renderer over a token-first component palette, with two regimes — blog (locked recipe) and landing (expressive composition grammar).'

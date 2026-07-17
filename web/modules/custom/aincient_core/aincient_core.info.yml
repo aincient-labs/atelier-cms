@@ -1,3 +1,4 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
 name: 'AIncient Core'
 type: module
 description: 'Foundational module for Atelier: shared permissions and base services for the AI operator console. Feature code lives in aincient_chat, aincient_flows, aincient_pages, etc.'

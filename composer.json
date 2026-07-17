@@ -3,6 +3,13 @@
     "description": "Atelier — an AI-first, chat-driven site builder built on Drupal. North star: 1M Drupal installs.",
     "type": "project",
     "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "AIncient Labs",
+            "homepage": "https://aincient-labs.com",
+            "role": "Maintainer"
+        }
+    ],
     "homepage": "https://www.drupal.org/project/aincient",
     "support": {
         "docs": "https://www.drupal.org/docs/user_guide/en/index.html",
