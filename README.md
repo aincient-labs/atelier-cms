@@ -23,20 +23,26 @@ no admin forms, no jargon, no SaaS login.
 
 ## Quick start
 
-One command lays down a Docker Compose stack and starts it:
+**On macOS or Linux, the smoothest path is the [`atelier` CLI](https://github.com/aincient-labs/manager)** —
+one Homebrew install gives you a managed appliance you can update, back up, and restore with a
+single command:
 
 ```bash
-curl -fsSL https://aincient-labs.com/install.sh | bash
+brew install aincient-labs/tap/atelier
+atelier install     # pulls the image and starts your site
+atelier open        # opens the operator console in your browser
 ```
 
-First boot installs and configures the site by itself. When it settles, open
-**http://localhost:41221/**, log in, and you land in the operator console at **`/atelier`**.
+`atelier install` is idempotent and keeps everything under `~/.atelier`. First boot configures
+the site by itself; when it settles you land in the operator console at **`/atelier`** (or open
+**http://localhost:41221/** directly).
 
-That's the whole setup. No account to create, no key to paste in a config file, nothing held
-back for a paid tier — you're now running the real product.
+No account to create, no key to paste in a config file, nothing held back for a paid tier —
+you're now running the real product. Later, `atelier update` upgrades in place with automatic
+rollback, and `atelier backup` / `restore` snapshot your whole site.
 
-> **Prefer to drive it yourself?** See [Running Atelier](#running-atelier) for the manual
-> Docker Compose path and how upgrades work.
+> **No Homebrew, or a headless Docker host?** The one-line installer does the same first-run in
+> a single command — see [Running Atelier](#running-atelier) for that and the manual path.
 
 ## See it work in 30 seconds
 
@@ -84,15 +90,40 @@ Atelier is distributed as a **versioned public container image** — the image *
 and the unit of versioning, the way Discourse, GitLab Omnibus, and Ghost are delivered. It's
 published to GHCR at
 [`ghcr.io/aincient-labs/atelier`](https://github.com/aincient-labs/atelier/pkgs/container/atelier)
-and is **public — no login or token required.**
+and is **public — no login or token required.** All three paths below run that same image; the
+only prerequisite is [Docker](https://docs.docker.com/get-docker/).
 
-**The fastest way in** is the one-line installer:
+### Option A — the `atelier` CLI *(recommended · macOS & Linux)*
+
+A small [Rust CLI](https://github.com/aincient-labs/manager) that manages the appliance's whole
+lifecycle over Docker — install once, then operate with one-word commands:
+
+```bash
+brew install aincient-labs/tap/atelier
+atelier install
+```
+
+| Command | What it does |
+| --- | --- |
+| `atelier install` | Lay down `~/.atelier`, pull the image, start the stack. Idempotent. |
+| `atelier update` | Pull + converge in place, with automatic rollback on failure. |
+| `atelier backup` / `restore` | Portable `.tar.gz` snapshots (database + uploaded files). |
+| `atelier status` / `doctor` | Health and Docker-readiness checks. |
+| `atelier start` / `stop` / `open` / `password` | Everyday stack management. |
+
+Run `atelier --help` for the full list.
+
+### Option B — one-line installer *(any Docker host)*
+
+Lays down a Docker Compose stack and starts it, no CLI to install first:
 
 ```bash
 curl -fsSL https://aincient-labs.com/install.sh | bash
 ```
 
-**Prefer to run it yourself?** Everything you need is in [`docker/dist/`](docker/dist/):
+### Option C — manual Docker Compose
+
+Everything you need is in [`docker/dist/`](docker/dist/):
 
 ```bash
 cd docker/dist
@@ -100,16 +131,13 @@ cp .env.example .env    # set HASH_SALT — openssl rand -hex 32
 docker compose up -d
 ```
 
-Either way, first boot installs and configures the site on its own. Open
+Whichever you pick, first boot installs and configures the site on its own. Open
 **http://localhost:41221/** and log in.
 
 ### Upgrading
 
-Same motion as install — re-run the installer, or from the repo:
-
-```bash
-docker compose pull && docker compose up -d
-```
+- **CLI:** `atelier update`
+- **Installer / Compose:** re-run the installer, or `docker compose pull && docker compose up -d`
 
 On every start the appliance **converges**: it snapshots the database, applies any pending
 updates and configuration, health-checks itself, and rolls back automatically if anything
@@ -122,10 +150,12 @@ also build the image yourself from [`docker/Dockerfile`](docker/Dockerfile).
 
 ## Requirements
 
-- **[Docker](https://docs.docker.com/get-docker/)** with the Compose plugin — that's it for
-  the supported path.
+- **[Docker](https://docs.docker.com/get-docker/)** with the Compose plugin — the one hard
+  prerequisite for every path.
 - An **API key** for an AI provider (Anthropic, OpenAI, …) or a local **Ollama** server,
   connected through the in-app onboarding wizard.
+- *Optional but recommended:* the **`atelier` CLI** (Homebrew, macOS & Linux) for managed
+  install, updates, and backups.
 
 The appliance bundles **PostgreSQL 16** (with pgvector) — the only supported database.
 
