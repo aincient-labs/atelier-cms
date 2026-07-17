@@ -12,3 +12,5 @@ services:
     arguments:
       - '@ai.provider'
       - '@config.factory'
+      - '@aincient_core.model_recommendations'
+      - '@aincient_onboarding.provider_connector'

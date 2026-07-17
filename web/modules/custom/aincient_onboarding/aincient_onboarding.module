@@ -7,6 +7,7 @@
 
 declare(strict_types=1);
 
+use Drupal\aincient_core\ModelRecommendations;
 use Drupal\aincient_core\ModelRoles;
 use Drupal\Core\Url;
 
@@ -62,6 +63,11 @@ function aincient_onboarding_aincient_console_settings_alter(array &$settings): 
   /** @var \Drupal\aincient_onboarding\ProviderCatalog $catalog */
   $catalog = \Drupal::service('aincient_onboarding.provider_catalog');
 
+  // Enumerate the model catalogue from stored keys ONCE, then derive labels from
+  // it (avoids probing every provider twice).
+  $providers = $catalog->providers();
+  $storedCatalog = _aincient_onboarding_stored_catalog($connector, $providers);
+
   $settings['onboarding'] = [
     'needed' => TRUE,
     // A re-run (vs genuine first-run) is skippable + pre-filled, and its finalize
@@ -76,6 +82,8 @@ function aincient_onboarding_aincient_console_settings_alter(array &$settings): 
     // time, then finalise role bindings across all of them.
     'connectProviderUrl' => Url::fromRoute('aincient_onboarding.connect_provider')->toString(),
     'finalizeUrl' => Url::fromRoute('aincient_onboarding.finalize')->toString(),
+    // Remove a provider's stored credential (the Connect step's Disconnect action).
+    'disconnectUrl' => Url::fromRoute('aincient_onboarding.disconnect_provider')->toString(),
     // Legacy single-provider endpoints, kept for the in-chat onboarding panel.
     'validateUrl' => Url::fromRoute('aincient_onboarding.validate')->toString(),
     'saveUrl' => Url::fromRoute('aincient_onboarding.save')->toString(),
@@ -84,8 +92,17 @@ function aincient_onboarding_aincient_console_settings_alter(array &$settings): 
     // and badges. Key groups (e.g. Google's gemini + nanobanana) appear as ONE
     // row. Models are fetched per provider by the connect step — they can't be
     // known before a credential validates.
-    'providers' => $catalog->providers(),
+    'providers' => $providers,
     'recommended' => $catalog->recommendedProviderId(),
+    // The model catalogue enumerated from STORED keys (chat + image, each
+    // "provider:model" => label), so the models step opens fully populated on
+    // load — independent of which providers were (re)connected this session.
+    // This is what decouples "Choose your models" from "Connect your AI".
+    'catalog' => $storedCatalog,
+    // Curated quality label per available model ("provider:model" =>
+    // recommended|tested|not-recommended). Untested models are omitted — the
+    // picker defaults anything absent to "untested".
+    'modelLabels' => _aincient_onboarding_model_labels($storedCatalog),
     // The AIncient model roles (id/label/description/pool), in display order —
     // the taxonomy behind the per-role model pickers the wizard shows once
     // providers are connected. Chat tiers + Vision draw from the chat pool;
@@ -159,4 +176,67 @@ function _aincient_onboarding_role_taxonomy(): array {
     'optional' => TRUE,
   ];
   return $roles;
+}
+
+/**
+ * The merged model catalogue enumerated from every connected provider's key.
+ *
+ * Walks the provider rows, and for each one already usable (a key is present)
+ * asks the connector to list its models from the STORED credential — no key
+ * re-entry. The per-provider chat/image maps are merged into one, matching the
+ * `{chat, image}` shape {@see \Drupal\aincient_onboarding\ProviderConnector::connectAndStore()}
+ * returns, so the wizard treats a page-load catalogue and a fresh connect
+ * identically.
+ *
+ * @param \Drupal\aincient_onboarding\ProviderConnector $connector
+ *   The connector.
+ * @param list<array<string, mixed>> $providers
+ *   The provider rows from ProviderCatalog::providers().
+ *
+ * @return array{chat: array<string, string>, image: array<string, string>}
+ */
+function _aincient_onboarding_stored_catalog(object $connector, array $providers): array {
+  $chat = [];
+  $image = [];
+  foreach ($providers as $row) {
+    // Only enumerate providers that already have a key — a keyless provider
+    // would otherwise trigger a pointless (and slow) failing API round-trip.
+    if (empty($row['usable'])) {
+      continue;
+    }
+    $models = $connector->modelsForStored((string) $row['id']);
+    $chat += $models['chat'];
+    $image += $models['image'];
+  }
+  return ['chat' => $chat, 'image' => $image];
+}
+
+/**
+ * A curated quality label per available "provider:model" (untested omitted).
+ *
+ * Joins the stored catalogue against the recommendation registry so the picker
+ * can chip + rank each option. Only non-"untested" models are emitted — the
+ * frontend defaults anything absent to "untested", keeping the payload small.
+ *
+ * @param array{chat: array<string, string>, image: array<string, string>} $catalog
+ *   The merged stored catalogue.
+ *
+ * @return array<string, string>
+ *   "provider:model" => recommended|tested|not-recommended.
+ */
+function _aincient_onboarding_model_labels(array $catalog): array {
+  /** @var \Drupal\aincient_core\ModelRecommendations $recommendations */
+  $recommendations = \Drupal::service('aincient_core.model_recommendations');
+  $out = [];
+  foreach ([...array_keys($catalog['chat']), ...array_keys($catalog['image'])] as $value) {
+    if (isset($out[$value]) || !str_contains((string) $value, ':')) {
+      continue;
+    }
+    [$provider, $model] = explode(':', (string) $value, 2);
+    $label = $recommendations->labelForModel($provider, $model);
+    if ($label !== ModelRecommendations::UNTESTED) {
+      $out[$value] = $label;
+    }
+  }
+  return $out;
 }

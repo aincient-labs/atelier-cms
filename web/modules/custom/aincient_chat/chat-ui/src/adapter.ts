@@ -106,8 +106,14 @@ export type OnboardingProvider = {
   recommended?: boolean;
   /** Reserved for the promotion layer — render a "Sponsored" label when true. */
   sponsored?: boolean;
-  /** Already configured and ready to use. */
+  /** Already configured and ready to use (a key is stored). */
   usable?: boolean;
+  /**
+   * Our curated guidance label — "recommended" | "tested" | "not-recommended",
+   * or "" when we've said nothing. Distinct from `recommended` (the single
+   * promoted highlight slot).
+   */
+  recommendation?: string;
 };
 
 /** An Atelier model role — a semantic capability tier the user binds a model to. */
@@ -148,6 +154,20 @@ export type OnboardingSettings = {
   canReenter?: boolean;
   /** Existing role bindings as `{role: "provider:model"}` — seeds the models step. */
   current?: Record<string, string>;
+  /**
+   * The model catalogue enumerated from STORED keys (chat + image, each
+   * "provider:model" => label). Seeds the models step on load so it lists every
+   * connected provider's models independent of in-session connects — the seam
+   * that decouples "Choose your models" from "Connect your AI".
+   */
+  catalog?: { chat?: Record<string, string>; image?: Record<string, string> };
+  /**
+   * Curated quality label per available model ("provider:model" =>
+   * "recommended" | "tested" | "not-recommended"). Anything absent is "untested".
+   */
+  modelLabels?: Record<string, string>;
+  /** Remove a provider's stored credential (the Connect step's Disconnect action). */
+  disconnectUrl?: string;
 };
 
 export function settings(): AincientSettings {

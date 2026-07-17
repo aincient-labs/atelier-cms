@@ -14,10 +14,13 @@ import {
   OllamaIcon,
   OpenAiIcon,
   ShieldCheckIcon,
+  SparkleIcon,
   SpinnerIcon,
+  TrashIcon,
   Wordmark,
   XIcon,
 } from "./icons";
+import { ModelPicker, type ModelPickerOption } from "./model-picker";
 import { STAGED_ASK_KEY, SUGGESTIONS } from "./App";
 import { apiUrl, consoleBase } from "./console-config";
 
@@ -79,6 +82,9 @@ const PROVIDER_BRAND: Record<string, { Icon: ComponentType<SVGProps<SVGSVGElemen
   anthropic: { Icon: AnthropicIcon },
   openai: { Icon: OpenAiIcon },
   gemini: { Icon: GeminiIcon },
+  // Nano Banana is Google's Gemini 2.5 Flash image model — wears the Gemini mark,
+  // not the generic Atelier chip fallback.
+  nanobanana: { Icon: GeminiIcon },
   ollama: { Icon: OllamaIcon },
 };
 
@@ -127,30 +133,49 @@ function CapabilityChips({ provider }: { provider: OnboardingProvider }) {
  * One connectable provider row: logo, label, capability badges, and either a
  * "Connected" state or an inline key/URL field + Connect button.
  */
+/** The curated provider label shown as a small chip (or null when neutral). */
+function providerChip(recommendation?: string): { text: string; tone: string } | null {
+  switch (recommendation) {
+    case "recommended":
+      return { text: "Recommended", tone: "rec" };
+    case "tested":
+      return { text: "Tested", tone: "tested" };
+    case "not-recommended":
+      return { text: "Not recommended", tone: "warn" };
+    default:
+      return null;
+  }
+}
+
 function ProviderRow({
   provider,
   connected,
   open,
   credential,
   status,
+  disconnecting,
   error,
   onToggle,
   onCredentialChange,
   onConnect,
+  onDisconnect,
 }: {
   provider: OnboardingProvider;
   connected: boolean;
   open: boolean;
   credential: string;
   status: "idle" | "connecting";
+  disconnecting: boolean;
   error: string | null;
   onToggle: () => void;
   onCredentialChange: (value: string) => void;
   onConnect: () => void;
+  onDisconnect: () => void;
 }) {
   const Icon = PROVIDER_BRAND[provider.id]?.Icon ?? Chip;
   const isHost = provider.auth === "host";
   const keyHelp = isHost ? undefined : KEY_HELP[provider.id];
+  const chip = providerChip(provider.recommendation);
   return (
     <div
       className={`ain-wiz__provider${open ? " ain-wiz__provider--selected" : ""}${
@@ -158,23 +183,49 @@ function ProviderRow({
       }`}
       data-provider={provider.id}
     >
-      <button type="button" className="ain-btn ain-wiz__provider-hit" onClick={onToggle} aria-expanded={open}>
-        <span className="ain-wiz__provider-badge" style={{ color: PROVIDER_INK }} aria-hidden>
-          <Icon className="ain-wiz__provider-mark" />
-        </span>
-        <span className="ain-wiz__provider-body">
-          <span className="ain-wiz__provider-head">
-            <span className="ain-wiz__provider-name">{provider.label}</span>
-            <CapabilityChips provider={provider} />
-            {connected && (
-              <span className="ain-wiz__chip ain-wiz__chip--ok">
-                <CheckIcon className="ain-wiz__chip-icon" /> Connected
-              </span>
-            )}
+      <div className="ain-wiz__provider-top">
+        <button type="button" className="ain-btn ain-wiz__provider-hit" onClick={onToggle} aria-expanded={open}>
+          <span className="ain-wiz__provider-badge" style={{ color: PROVIDER_INK }} aria-hidden>
+            <Icon className="ain-wiz__provider-mark" />
           </span>
-          {provider.description && <span className="ain-wiz__provider-desc">{provider.description}</span>}
-        </span>
-      </button>
+          <span className="ain-wiz__provider-body">
+            <span className="ain-wiz__provider-head">
+              <span className="ain-wiz__provider-name">{provider.label}</span>
+              {chip && (
+                <span className={`ain-wiz__chip ain-wiz__chip--${chip.tone}`}>
+                  {chip.tone === "rec" && <SparkleIcon className="ain-wiz__chip-icon" />}
+                  {chip.text}
+                </span>
+              )}
+              <CapabilityChips provider={provider} />
+              {connected && (
+                <span className="ain-wiz__chip ain-wiz__chip--ok">
+                  <CheckIcon className="ain-wiz__chip-icon" /> Connected
+                </span>
+              )}
+            </span>
+            {provider.description && <span className="ain-wiz__provider-desc">{provider.description}</span>}
+          </span>
+        </button>
+
+        {connected && (
+          <button
+            type="button"
+            className="ain-btn ain-wiz__provider-disconnect"
+            onClick={onDisconnect}
+            disabled={disconnecting}
+            aria-label={`Disconnect ${provider.label} — removes the stored key`}
+            title={`Disconnect ${provider.label} — removes the stored key`}
+          >
+            {disconnecting ? (
+              <SpinnerIcon className="ain-wiz__spin" />
+            ) : (
+              <TrashIcon className="ain-wiz__provider-disconnect-icon" />
+            )}
+            <span className="ain-wiz__provider-disconnect-label">Disconnect</span>
+          </button>
+        )}
+      </div>
 
       {open && (
         <div className="ain-wiz__connect">
@@ -238,6 +289,9 @@ export function OnboardingWizard() {
   }, [cfg.providers]);
   const connectUrl = cfg.connectProviderUrl ?? apiUrl("/onboarding/connect-provider");
   const finalizeUrl = cfg.finalizeUrl ?? apiUrl("/onboarding/finalize");
+  const disconnectUrl = cfg.disconnectUrl ?? apiUrl("/onboarding/disconnect-provider");
+  // Curated quality label per available "provider:model" (absent ⇒ "untested").
+  const modelLabels = cfg.modelLabels ?? {};
   const roles: OnboardingRole[] = cfg.roles ?? [];
   const providerLabel = useMemo(() => {
     const map: Record<string, string> = {};
@@ -258,6 +312,8 @@ export function OnboardingWizard() {
   const [credential, setCredential] = useState("");
   const [status, setStatus] = useState<"idle" | "connecting" | "saving">("idle");
   const [error, setError] = useState<string | null>(null);
+  // The provider row currently being disconnected (its button shows a spinner).
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   // Everything the operator has connected so far (provider id → probed models).
   const [connected, setConnected] = useState<Record<string, Connected>>({});
   // The per-role model chosen on the models step (role id → "provider:model").
@@ -266,10 +322,19 @@ export function OnboardingWizard() {
   const [roleModels, setRoleModels] = useState<Record<string, string>>(cfg.current ?? {});
 
   // Merged model pools across every connected provider, keyed by "provider:model".
-  // On a re-run, existing role bindings are surfaced as options even before a
-  // reconnect, so the models step opens ON them instead of on blank selects.
-  const chatPool = useMemo(() => augmentPoolWithCurrent(mergePools(connected, "chat"), roles, cfg.current, "chat"), [connected, roles, cfg.current]);
-  const imagePool = useMemo(() => augmentPoolWithCurrent(mergePools(connected, "image"), roles, cfg.current, "image"), [connected, roles, cfg.current]);
+  // The base is the server-enumerated `catalog` (every provider with a STORED
+  // key — so the step lists all connected providers on load, even a re-run or a
+  // headlessly-set key), with this session's fresh connects layered on top and
+  // existing role bindings surfaced as options. This is what decouples the models
+  // step from in-session connects.
+  const chatPool = useMemo(
+    () => augmentPoolWithCurrent({ ...(cfg.catalog?.chat ?? {}), ...mergePools(connected, "chat") }, roles, cfg.current, "chat"),
+    [connected, roles, cfg.current, cfg.catalog],
+  );
+  const imagePool = useMemo(
+    () => augmentPoolWithCurrent({ ...(cfg.catalog?.image ?? {}), ...mergePools(connected, "image") }, roles, cfg.current, "image"),
+    [connected, roles, cfg.current, cfg.catalog],
+  );
   // Continue isn't blocked on a re-run: a usable chat provider (or an existing chat
   // binding surfaced above) counts, even before the operator reconnects anything.
   const hasChat = Object.keys(chatPool).length > 0
@@ -367,6 +432,32 @@ export function OnboardingWizard() {
       setOpenId(null);
     } catch (e) {
       setStatus("idle");
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  // Remove a provider's stored credential. On success we reload the wizard so the
+  // catalogue, connected badges, and role pre-fills are all re-derived from the
+  // server — correct by construction (connected keys are already persisted, so a
+  // reload never loses this session's connects), and simpler than pruning the
+  // pools, bindings, and badges by hand.
+  const disconnectProvider = async (id: string) => {
+    setDisconnectingId(id);
+    setError(null);
+    try {
+      const res = await fetch(disconnectUrl, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: id }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || `Request failed (HTTP ${res.status})`);
+      }
+      window.location.reload();
+    } catch (e) {
+      setDisconnectingId(null);
       setError(e instanceof Error ? e.message : String(e));
     }
   };
@@ -518,10 +609,12 @@ export function OnboardingWizard() {
                   open={openId === p.id}
                   credential={openId === p.id ? credential : ""}
                   status={status === "connecting" && openId === p.id ? "connecting" : "idle"}
+                  disconnecting={disconnectingId === p.id}
                   error={openId === p.id ? error : null}
                   onToggle={() => toggleProvider(p.id)}
                   onCredentialChange={setCredential}
                   onConnect={() => connectProvider(p.id)}
+                  onDisconnect={() => disconnectProvider(p.id)}
                 />
               ))}
             </div>
@@ -583,28 +676,21 @@ export function OnboardingWizard() {
                   );
                 }
                 return (
-                  <label key={role.id} className="ain-wiz__role">
+                  <div key={role.id} className="ain-wiz__role">
                     <span className="ain-wiz__role-head">
                       <span className="ain-wiz__role-name">{role.label}</span>
                     </span>
                     <span className="ain-wiz__role-desc">{role.description}</span>
-                    <select
-                      className="ain-wiz__select"
+                    <ModelPicker
+                      ariaLabel={role.label}
                       value={roleModels[role.id] ?? ""}
-                      onChange={(e) => setRoleModels((prev) => ({ ...prev, [role.id]: e.target.value }))}
-                    >
-                      {role.optional && <option value="">- Not set -</option>}
-                      {groupByProvider(pool, providerLabel).map((group) => (
-                        <optgroup key={group.label} label={group.label}>
-                          {group.options.map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </label>
+                      options={poolToOptions(pool, providerLabel, modelLabels)}
+                      allowNone={role.optional}
+                      noneLabel="Not set"
+                      onChange={(value) => setRoleModels((prev) => ({ ...prev, [role.id]: value }))}
+                      renderMark={(id) => <ProviderMark id={id} />}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -674,19 +760,34 @@ function augmentPoolWithCurrent(
 }
 
 /**
- * Group a "provider:model" → label pool into optgroups by provider label, so the
- * selects read as "Anthropic ▸ Claude…", "Google Gemini ▸ Nano Banana…".
+ * Turn a "provider:model" → label pool into the picker's option list, stamping
+ * each with its provider (for grouping + the mark) and our curated quality label
+ * (from `modelLabels`; anything absent is "untested"). The picker handles the
+ * ordering — recommended pinned to the top of its provider group.
  */
-function groupByProvider(
+function poolToOptions(
   pool: Record<string, string>,
   providerLabel: Record<string, string>,
-): { label: string; options: [string, string][] }[] {
-  const groups = new Map<string, [string, string][]>();
-  for (const [value, label] of Object.entries(pool)) {
+  modelLabels: Record<string, string>,
+): ModelPickerOption[] {
+  return Object.entries(pool).map(([value, label]) => {
     const providerId = value.split(":", 1)[0];
-    const group = providerLabel[providerId] ?? providerId;
-    if (!groups.has(group)) groups.set(group, []);
-    groups.get(group)!.push([value, label]);
-  }
-  return [...groups.entries()].map(([label, options]) => ({ label, options }));
+    return {
+      value,
+      label,
+      providerId,
+      providerLabel: providerLabel[providerId] ?? providerId,
+      recommendation: modelLabels[value] ?? "untested",
+    };
+  });
+}
+
+/** A provider's brand mark on the always-white badge, for the picker rows. */
+function ProviderMark({ id }: { id: string }) {
+  const Icon = PROVIDER_BRAND[id]?.Icon ?? Chip;
+  return (
+    <span className="ain-picker__mark" style={{ color: PROVIDER_INK }} aria-hidden>
+      <Icon className="ain-picker__mark-svg" />
+    </span>
+  );
 }

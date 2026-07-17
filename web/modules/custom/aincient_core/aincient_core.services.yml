@@ -9,3 +9,7 @@ services:
       - '@config.factory'
       - '@ai.provider'
       - '@module_handler'
+  aincient_core.model_recommendations:
+    class: Drupal\aincient_core\ModelRecommendations
+    arguments:
+      - '@extension.list.module'

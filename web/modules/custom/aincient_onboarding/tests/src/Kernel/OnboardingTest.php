@@ -239,6 +239,68 @@ final class OnboardingTest extends KernelTestBase {
   }
 
   /**
+   * Disconnecting removes the stored key, key entity, and unbinds its roles.
+   *
+   * The inverse of connecting: after a provider is stored + bound, disconnect()
+   * must leave no trace — no State secret, no key entity, no `api_key` pointer,
+   * and no role (or framework default) still resolving against it.
+   */
+  public function testDisconnectRemovesKeyAndUnbindsRoles(): void {
+    // Connect anthropic and bind two roles to it (task drives the chat default).
+    $this->store()->persist('anthropic', 'sk-ant-test-key');
+    $resolver = $this->container->get('aincient_core.model_role_resolver');
+    $resolver->bind('task', 'anthropic', 'claude-task');
+    $resolver->bind('reasoning', 'anthropic', 'claude-reasoning');
+    $resolver->project();
+
+    $state = $this->container->get('state');
+    $this->assertSame('sk-ant-test-key', $state->get('aincient.anthropic_api_key'));
+
+    // Disconnect.
+    $this->store()->disconnect('anthropic');
+
+    // The secret, key entity, and provider pointer are all gone.
+    $this->assertNull($state->get('aincient.anthropic_api_key'));
+    $this->assertNull(
+      $this->container->get('entity_type.manager')->getStorage('key')->load('anthropic_default_key')
+    );
+    $this->assertEmpty(
+      $this->container->get('config.factory')->get('ai_provider_anthropic.settings')->get('api_key')
+    );
+
+    // Every role that pointed at anthropic is unbound.
+    $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
+    $this->assertSame('', (string) ($roles['task']['provider_id'] ?? ''));
+    $this->assertSame('', (string) ($roles['reasoning']['provider_id'] ?? ''));
+
+    // The framework chat default no longer names the removed provider.
+    $providers = $this->container->get('config.factory')->get('ai.settings')->get('default_providers') ?? [];
+    $this->assertNotSame('anthropic', (string) ($providers['chat']['provider_id'] ?? ''));
+  }
+
+  /**
+   * The wizard payload carries the decoupled catalogue + disconnect affordances.
+   *
+   * The three fields the redesigned steps consume: `disconnectUrl`, the
+   * page-load `catalog` (chat/image maps — empty here, no live key), and
+   * `modelLabels`. Their PRESENCE + shape is the contract; the catalogue's
+   * contents need a live provider round-trip and are exercised in-browser.
+   */
+  public function testWizardPayloadCarriesCatalogAndDisconnect(): void {
+    $forced = $this->alterConsoleSettings(Request::create('/atelier', 'GET', ['onboarding' => '1']));
+    $onboarding = $forced['onboarding'];
+    $this->assertStringContainsString('/atelier/onboarding/disconnect-provider', $onboarding['disconnectUrl']);
+    $this->assertArrayHasKey('catalog', $onboarding);
+    $this->assertArrayHasKey('chat', $onboarding['catalog']);
+    $this->assertArrayHasKey('image', $onboarding['catalog']);
+    $this->assertIsArray($onboarding['modelLabels']);
+    // Provider rows carry our curated recommendation label alongside the row.
+    $byId = array_column($onboarding['providers'], NULL, 'id');
+    $this->assertArrayHasKey('recommendation', $byId['anthropic']);
+    $this->assertSame('recommended', $byId['anthropic']['recommendation']);
+  }
+
+  /**
    * Run the console settings-alter hook with the given request on the stack.
    *
    * @return array

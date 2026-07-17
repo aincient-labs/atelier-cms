@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_onboarding;
 
+use Drupal\aincient_core\ModelRecommendations;
 use Drupal\ai\AiProviderPluginManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
@@ -77,6 +78,8 @@ final class ProviderCatalog {
   public function __construct(
     private readonly AiProviderPluginManager $providerManager,
     private readonly ConfigFactoryInterface $configFactory,
+    private readonly ModelRecommendations $recommendations,
+    private readonly ProviderConnector $connector,
   ) {}
 
   /**
@@ -129,7 +132,7 @@ final class ProviderCatalog {
    * the wizard can badge "Chat"/"Image", and whether it's already usable. Hidden
    * providers ({@see self::HIDDEN_PROVIDERS}) are excluded.
    *
-   * @return list<array{id: string, label: string, description: string, auth: string, capabilities: array{chat: bool, image: bool}, recommended: bool, sponsored: bool, usable: bool}>
+   * @return list<array{id: string, label: string, description: string, auth: string, capabilities: array{chat: bool, image: bool}, recommended: bool, recommendation: string, sponsored: bool, usable: bool}>
    */
   public function providers(): array {
     $chatIds = array_keys($this->providerManager->getProvidersForOperationType(self::OPERATION_TYPE, FALSE));
@@ -161,6 +164,10 @@ final class ProviderCatalog {
           'auth' => in_array($primary, self::HOST_PROVIDERS, TRUE) ? 'host' : 'api_key',
           'capabilities' => ['chat' => FALSE, 'image' => FALSE],
           'recommended' => $primary === $recommended,
+          // Our curated guidance label (recommended | tested | not-recommended,
+          // or '' when we've said nothing) — distinct from the `recommended`
+          // highlight seam, which is the single promoted slot.
+          'recommendation' => $this->recommendations->providerRecommendation($primary),
           'sponsored' => FALSE,
           'usable' => FALSE,
         ];
@@ -171,7 +178,10 @@ final class ProviderCatalog {
       if (in_array($id, $imageIds, TRUE)) {
         $rows[$primary]['capabilities']['image'] = TRUE;
       }
-      if ($this->isUsable($id, self::OPERATION_TYPE) || $this->isUsable($id, self::IMAGE_OPERATION_TYPE)) {
+      // "Connected" means a credential is actually stored — NOT the provider's
+      // own isUsable() (which lies for some plugins). Checked per member so a
+      // key-group row lights up when any member is keyed.
+      if ($this->connector->hasStoredCredential($id)) {
         $rows[$primary]['usable'] = TRUE;
       }
     }

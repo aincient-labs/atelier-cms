@@ -40,6 +40,18 @@ aincient_onboarding.connect_provider:
   options:
     _auth: ['cookie', 'basic_auth']
 
+# Disconnect: remove a provider's (or key group's) stored credential and unbind
+# any role that pointed at it. Returns the refreshed provider rows.
+aincient_onboarding.disconnect_provider:
+  path: '/atelier/onboarding/disconnect-provider'
+  defaults:
+    _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::disconnectProvider'
+  methods: [POST]
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
 # Multi-connect finalise: bind each role to a chosen provider:model (across all
 # the providers connected above), project onto the framework, and flag complete.
 aincient_onboarding.finalize:

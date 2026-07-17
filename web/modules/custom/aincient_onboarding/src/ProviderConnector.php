@@ -113,6 +113,33 @@ final class ProviderConnector {
   }
 
   /**
+   * Whether a provider actually has a stored, non-empty credential.
+   *
+   * The honest "connected?" signal for the Connect step — unlike the provider's
+   * own `isUsable()`, which some plugins (e.g. Anthropic) return TRUE from even
+   * with no key, so it can't tell connected from empty. Host providers count as
+   * connected once a URL is saved; key providers when their configured Key
+   * entity resolves to a non-empty value (covers a key set via onboarding OR
+   * headlessly, as long as it's wired to the provider's `api_key`). No network.
+   */
+  public function hasStoredCredential(string $providerId): bool {
+    if ($this->authType($providerId) === 'host') {
+      return (string) $this->configFactory->get($this->settingsNameFor($providerId))->get('host_name') !== '';
+    }
+    $keyId = (string) $this->configFactory->get($this->settingsNameFor($providerId))->get('api_key');
+    if ($keyId === '') {
+      return FALSE;
+    }
+    try {
+      $entity = $this->entityTypeManager->getStorage('key')->load($keyId);
+      return $entity !== NULL && (string) $entity->getKeyValue() !== '';
+    }
+    catch (\Throwable) {
+      return FALSE;
+    }
+  }
+
+  /**
    * Whether onboarding has been completed (a provider was connected).
    */
   public function isComplete(): bool {
@@ -357,6 +384,172 @@ final class ProviderConnector {
     $this->state->set(self::STATE_COMPLETED, TRUE);
 
     return ['ok' => TRUE, 'message' => 'AI connected.'];
+  }
+
+  /**
+   * Enumerate a provider's (or key group's) models from its STORED credential.
+   *
+   * The decoupled counterpart to {@see self::connectAndStore()}: it lists the
+   * chat + image models a provider offers WITHOUT a credential being passed in,
+   * resolving the stored Key entity → State the provider is already wired to. So
+   * the "Choose your models" step can show the full catalogue on load — including
+   * on a re-run, or for a key set headlessly (`drush state:set`) — instead of
+   * only what was (re)connected in the current session.
+   *
+   * A keyless or unreachable provider simply yields empty maps (never fatal).
+   * Results are `provider:model`-qualified to match the value shape the models
+   * step and {@see self::finalizeRoles()} consume; key-group members are merged.
+   *
+   * @param string $providerId
+   *   The provider (or key-group primary) plugin id.
+   *
+   * @return array{chat: array<string, string>, image: array<string, string>}
+   *   Chat + image models, each "provider:model" => label.
+   */
+  public function modelsForStored(string $providerId): array {
+    $chat = [];
+    $image = [];
+    foreach (self::KEY_GROUPS[$providerId] ?? [$providerId] as $member) {
+      // Gate by the op the provider actually supports — some providers (e.g.
+      // Anthropic) return their chat list for ANY op type, which would otherwise
+      // pollute the image pool with models that can't generate images.
+      if ($this->supportsOperation($member, self::OPERATION_TYPE)) {
+        $chat += $this->qualify($member, $this->configuredModels($member, self::OPERATION_TYPE));
+      }
+      if ($this->supportsOperation($member, self::IMAGE_OPERATION_TYPE)) {
+        $image += $this->qualify($member, $this->configuredModels($member, self::IMAGE_OPERATION_TYPE));
+      }
+    }
+    return ['chat' => $chat, 'image' => $image];
+  }
+
+  /**
+   * Whether a provider plugin declares support for an operation type.
+   */
+  private function supportsOperation(string $providerId, string $operationType): bool {
+    return array_key_exists(
+      $providerId,
+      $this->providerManager->getProvidersForOperationType($operationType, FALSE),
+    );
+  }
+
+  /**
+   * Remove a provider's (or key group's) stored credential and unbind its roles.
+   *
+   * The inverse of connecting: deletes the secret (State value + the
+   * `<provider>_default_key` Key entity + the provider's `api_key` pointer, or
+   * the host URL for host providers), for every member of a key group. Any model
+   * role bound to a removed provider is unbound, the bindings are re-projected,
+   * and any framework default still pointing at a removed provider is swept — so
+   * the site is never left resolving against a deleted key. The completion flag
+   * is deliberately left untouched (an admin disconnecting in the wizard is mid-
+   * reconfiguration, not resetting first-run).
+   */
+  public function disconnect(string $providerId): void {
+    $removed = [];
+    foreach (self::KEY_GROUPS[$providerId] ?? [$providerId] as $member) {
+      $this->removeCredential($member);
+      $removed[$member] = TRUE;
+    }
+    $this->unbindProviders($removed);
+    // The removed provider's model list is gone; drop the cache that
+    // flowdrop_ai_provider keeps under this tag (see persist()).
+    Cache::invalidateTags(['ai_provider_models']);
+  }
+
+  /**
+   * A provider's models for an op type, resolved from its STORED credential.
+   *
+   * No {@see AiProviderInterface::setAuthentication()} — the provider loads its
+   * configured Key entity → State on its own. Any failure (no key, network
+   * error) collapses to an empty list, so a keyless provider is cheap and quiet.
+   *
+   * @return array<string, string>
+   *   Raw model map (id => label), or [] when nothing is resolvable.
+   */
+  private function configuredModels(string $providerId, string $operationType): array {
+    try {
+      $models = $this->providerManager->createInstance($providerId)->getConfiguredModels($operationType);
+      return is_array($models) ? $models : [];
+    }
+    catch (\Throwable) {
+      return [];
+    }
+  }
+
+  /**
+   * Delete a single provider's stored credential (key store or host config).
+   *
+   * The inverse of {@see self::persistCredential()}. Key providers lose their
+   * State value, Key entity, and `api_key` pointer; host providers lose their
+   * saved URL.
+   */
+  private function removeCredential(string $providerId): void {
+    if ($this->authType($providerId) === 'host') {
+      $this->configFactory->getEditable($this->settingsNameFor($providerId))
+        ->clear('host_name')
+        ->clear('port')
+        ->save();
+      return;
+    }
+    // Clear the provider's pointer first, then the Key entity, then the secret.
+    $this->configFactory->getEditable($this->settingsNameFor($providerId))
+      ->clear('api_key')
+      ->save();
+    $entity = $this->entityTypeManager->getStorage('key')->load($this->keyIdFor($providerId));
+    if ($entity !== NULL) {
+      $entity->delete();
+    }
+    $this->state->delete($this->stateKeyFor($providerId));
+  }
+
+  /**
+   * Unbind every model role pointing at a removed provider, then re-route.
+   *
+   * @param array<string, true> $removed
+   *   Set of removed provider ids (key group members).
+   */
+  private function unbindProviders(array $removed): void {
+    $roles = $this->configFactory->get('aincient_core.model_roles')->get('roles') ?? [];
+    foreach ($roles as $role => $binding) {
+      if (isset($removed[(string) ($binding['provider_id'] ?? '')])) {
+        // Empty strings unbind the role (bindingFrom() treats them as unset).
+        $this->resolver->bind((string) $role, '', '');
+      }
+    }
+    // Re-project the SURVIVING bindings, then clear any framework default that
+    // still names a removed provider — project() only writes bound roles, so a
+    // role that just became unbound would otherwise leave its old default behind.
+    $this->resolver->project();
+    $this->sweepDefaults($removed);
+  }
+
+  /**
+   * Drop any ai.settings / flowdrop_chat default that names a removed provider.
+   *
+   * @param array<string, true> $removed
+   *   Set of removed provider ids.
+   */
+  private function sweepDefaults(array $removed): void {
+    $settings = $this->configFactory->getEditable('ai.settings');
+    $providers = $settings->get('default_providers') ?? [];
+    $changed = FALSE;
+    foreach ($providers as $operationType => $binding) {
+      if (isset($removed[(string) ($binding['provider_id'] ?? '')])) {
+        unset($providers[$operationType]);
+        $changed = TRUE;
+      }
+    }
+    if ($changed) {
+      $settings->set('default_providers', $providers)->save();
+    }
+
+    // flowdrop_chat stores a colon-joined "provider:model". Read-only get() never
+    // creates the object, so an absent module/config is simply skipped.
+    $llm = (string) $this->configFactory->get('flowdrop_chat.settings')->get('llm_provider');
+    if ($llm !== '' && isset($removed[explode(':', $llm, 2)[0]])) {
+      $this->configFactory->getEditable('flowdrop_chat.settings')->set('llm_provider', '')->save();
+    }
   }
 
   /**

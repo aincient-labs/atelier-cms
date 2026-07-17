@@ -109,6 +109,33 @@ final class OnboardingController extends ControllerBase {
   }
 
   /**
+   * Disconnect a provider (or key group): remove its stored credential.
+   *
+   * The inverse of {@see self::connectProvider()}. Deletes the secret and unbinds
+   * any role that pointed at it (see {@see ProviderConnector::disconnect()}), then
+   * returns the refreshed provider rows so the Connect step can update its
+   * connected badges without a reload.
+   */
+  public function disconnectProvider(Request $request): JsonResponse {
+    $data = json_decode((string) $request->getContent(), TRUE);
+    if (!is_array($data)) {
+      return new JsonResponse(['ok' => FALSE, 'error' => 'Expected a JSON object.'], 400);
+    }
+
+    $provider = trim((string) ($data['provider'] ?? ''));
+    if ($provider === '') {
+      return new JsonResponse(['ok' => FALSE, 'error' => 'Choose a provider.'], 400);
+    }
+
+    $this->connector->disconnect($provider);
+
+    return new JsonResponse([
+      'ok' => TRUE,
+      'providers' => $this->catalog->providers(),
+    ]);
+  }
+
+  /**
    * Finalise onboarding: bind each role to a chosen provider:model, then finish.
    *
    * The wizard's last step. `roles` maps each AIncient role to a `provider:model`
