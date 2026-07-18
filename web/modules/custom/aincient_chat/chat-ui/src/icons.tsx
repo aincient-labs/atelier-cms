@@ -327,7 +327,7 @@ export const WrenchIcon = (p: IconProps) => (
    by its logo far faster than its name, so each picker row leads with its mark.
    These are single-path, fill-based glyphs (not the stroked `Svg` family) and
    paint in `currentColor`, so the wizard tints each to its brand colour.
-   Sources: simple-icons (anthropic / openai / ollama / openrouter), viewBox 0 0 24 24. */
+   Sources: simple-icons (anthropic / openai / ollama / openrouter / mistralai), viewBox 0 0 24 24. */
 
 export const AnthropicIcon = (p: IconProps) => (
   <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" {...p}>
@@ -350,6 +350,12 @@ export const OpenRouterIcon = (p: IconProps) => (
 export const GeminiIcon = (p: IconProps) => (
   <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" {...p}>
     <path d="M12 24A14.304 14.304 0 0 0 0 12 14.304 14.304 0 0 0 12 0a14.305 14.305 0 0 0 12 12 14.305 14.305 0 0 0-12 12" />
+  </svg>
+);
+
+export const MistralIcon = (p: IconProps) => (
+  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" {...p}>
+    <path d="M17.143 3.429v3.428h-3.429v3.429h-3.428V6.857H6.857V3.43H3.43v13.714H0v3.428h10.286v-3.428H6.857v-3.429h3.429v3.429h3.429v-3.429h3.428v3.429h-3.428v3.428H24v-3.428h-3.43V3.429z" />
   </svg>
 );
 

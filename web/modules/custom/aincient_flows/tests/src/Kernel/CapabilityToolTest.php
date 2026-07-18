@@ -90,9 +90,12 @@ final class CapabilityToolTest extends KernelTestBase {
 
     $this->assertSame('object', $schema['type']);
     $props = $schema['properties'];
-    // Typed from the primitive's real signature: preview_page takes one
-    // required string `ops` (a JSON array of section ops).
-    $this->assertSame('string', $props['ops']['type']);
+    // Typed from the primitive's real signature: preview_page takes one required
+    // `ops` array of op objects (a `list` context with a SimpleToolItems object
+    // item shape), so a schema-respecting provider emits a native array — not a
+    // string it must remember to JSON-encode.
+    $this->assertSame('array', $props['ops']['type']);
+    $this->assertSame('object', $props['ops']['items']['type']);
     $this->assertNotEmpty($props['ops']['description']);
     // Required is a standard JSON-schema top-level array; ops is required.
     $this->assertContains('ops', $schema['required']);
@@ -114,6 +117,28 @@ final class CapabilityToolTest extends KernelTestBase {
 
     $this->assertTrue($result['ok']);
     $this->assertStringContainsString('page_preview', $result['result']);
+    $envelope = json_decode($result['result'], TRUE);
+    $this->assertSame('page_preview', $envelope['__widget__']);
+    $this->assertCount(2, $envelope['payload']['ops']);
+  }
+
+  /**
+   * @covers ::process
+   *
+   * A schema-respecting provider (Mistral, Gemini, …) sends `ops` as a NATIVE
+   * JSON array, not a stringified one. The node must run it just the same — this
+   * is the regression that surfaced as "Parameter 'ops' expects type 'string',
+   * got 'array'" once the reasoning role moved off Claude.
+   */
+  public function testProcessAcceptsNativeArrayOps(): void {
+    $result = $this->tool('aincient_pages:preview_page')->process(new ParameterBag([
+      'ops' => [
+        ['op' => 'set_meta', 'title' => 'Lumen'],
+        ['op' => 'add_section', 'component' => 'hero', 'props' => ['heading' => 'Hi']],
+      ],
+    ]));
+
+    $this->assertTrue($result['ok']);
     $envelope = json_decode($result['result'], TRUE);
     $this->assertSame('page_preview', $envelope['__widget__']);
     $this->assertCount(2, $envelope['payload']['ops']);

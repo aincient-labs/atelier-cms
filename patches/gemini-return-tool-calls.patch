@@ -1,0 +1,300 @@
+Support caller-driven tool calling (return calls; replay tool history + Gemini 3
+thought signatures).
+
+drupal/gemini_provider 1.0.1's GeminiProvider is incompatible with any caller
+that owns its own tool loop (FlowDrop's reason node, ai_agents). Three problems:
+
+1. chat() EXECUTED every function call in-provider: handleFunctionCall() resolved
+   the tool NAME against the AI FunctionCall registry
+   (getFunctionCallFromFunctionName(), keyed by function_name) and ran it, folding
+   the output into the reply text. FlowDrop names a tool from its node LABEL
+   ("Capability: Studio tour" -> "capability_studio_tour"), which is not a
+   registered function_name, so the lookup threw "Function with name
+   capability_studio_tour not found." and the reason node / StateGraph run failed.
+   Even on a hit it bypassed the caller's invoker/allow-list/audit and never put
+   the call on the ChatMessage. Fix: extractFunctionCall() returns each call as a
+   ToolsFunctionOutput on the message (setTools()), like the other providers.
+   Gemini emits no tool-call id, so synthesize a unique non-empty one (FlowDrop's
+   ToolPairing drops id-less calls).
+
+2. The payload builder only handled text/images and threw "The role tool, is not
+   supported by Gemini Provider." on the tool-result turn the caller appends after
+   running a tool -- so the NEXT reason turn died. Fix: replay history as Gemini's
+   function-calling graph -- an assistant turn with tool calls becomes a model
+   Content of functionCall parts, and the tool-result turns become one user
+   Content of functionResponse parts (paired back to the call name via the
+   id->name map, since a tool-result turn carries only the id). Also resets the
+   per-message parts buffer (it previously accumulated across messages).
+
+3. Gemini 3 rejects a replayed functionCall that is missing the model's
+   thought_signature ("Function call is missing a thought_signature..."), but the
+   only tool-call data that survives a caller's round-trip is {name, args,
+   tool_call_id} -- the signature is dropped. Fix: stash the signature in an
+   expirable keyvalue store keyed by the synthesized tool id when the call is
+   returned, and restore it onto the Part when the call is replayed.
+
+--- a/src/Plugin/AiProvider/GeminiProvider.php
++++ b/src/Plugin/AiProvider/GeminiProvider.php
+@@ -12,6 +12,7 @@
+ use Drupal\ai\OperationType\Chat\ChatInterface;
+ use Drupal\ai\OperationType\Chat\ChatMessage;
+ use Drupal\ai\OperationType\Chat\ChatOutput;
++use Drupal\ai\OperationType\Chat\Tools\ToolsFunctionOutput;
+ use Drupal\ai\OperationType\Embeddings\EmbeddingsInput;
+ use Drupal\ai\OperationType\Embeddings\EmbeddingsInterface;
+ use Drupal\ai\OperationType\Embeddings\EmbeddingsOutput;
+@@ -29,17 +30,17 @@
+ use Gemini\Data\PrebuiltVoiceConfig;
+ use Gemini\Data\SpeechConfig;
+ use Gemini\Data\VoiceConfig;
+-use Drupal\ai\Service\FunctionCalling\ExecutableFunctionCallInterface;
+ use Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager;
+ use Drupal\Core\Config\ImmutableConfig;
+-use Drupal\Core\Executable\ExecutableInterface;
+ use Drupal\Core\StringTranslation\TranslatableMarkup;
+ use Drupal\gemini_provider\GeminiChatMessageIterator;
+ use Gemini\Contracts\Arrayable;
+ use Gemini\Data\Blob;
+ use Gemini\Data\Content;
+ use Gemini\Data\DataFormat;
++use Gemini\Data\FunctionCall;
+ use Gemini\Data\FunctionDeclaration;
++use Gemini\Data\FunctionResponse;
+ use Gemini\Data\GenerationConfig;
+ use Gemini\Data\ImageConfig;
+ use Gemini\Data\SafetySetting;
+@@ -321,22 +322,96 @@
+         $chat_input[] = Content::parse($this->systemMessage, $role);
+       }
+ 
+-      /** @var \Drupal\ai\OperationType\Chat\ChatMessage $message */
++      // Map every tool-call id to the function name that requested it. A
++      // tool-result turn carries only the id, but Gemini pairs a
++      // functionResponse to a functionCall by NAME, so we need the name to
++      // replay the result. Built from the assistant turns' tool calls.
++      $tool_names = [];
+       foreach ($input->getMessages() as $message) {
+-        if ($message->getRole() == 'system') {
+-          $message->setRole('model');
++        foreach ($message->getTools() ?? [] as $call) {
++          if ($call instanceof ToolsFunctionOutput && $call->getToolId() !== '') {
++            $tool_names[$call->getToolId()] = $call->getName();
++          }
+         }
++      }
+ 
+-        if ($message->getRole() == 'assistant') {
+-          $message->setRole('user');
++      $messages = array_values($input->getMessages());
++      $count = count($messages);
++      $i = 0;
++      while ($i < $count) {
++        /** @var \Drupal\ai\OperationType\Chat\ChatMessage $message */
++        $message = $messages[$i];
++        $role = $message->getRole();
++
++        // A run of tool-result turns becomes ONE user Content of
++        // functionResponse parts (Gemini expects the responses that answer a
++        // model's functionCall turn grouped in the single following turn).
++        if ($role === 'tool') {
++          $parts = [];
++          while ($i < $count && $messages[$i]->getRole() === 'tool') {
++            $tool_message = $messages[$i];
++            $id = $tool_message->getToolsId() ?? '';
++            $parts[] = new Part(functionResponse: new FunctionResponse(
++              $tool_names[$id] ?? ($id !== '' ? $id : 'tool'),
++              ['result' => $tool_message->getText()],
++              $id !== '' ? $id : NULL,
++            ));
++            $i++;
++          }
++          $chat_input[] = new Content(parts: $parts, role: Role::USER);
++          continue;
+         }
+ 
+-        if (!in_array($message->getRole(), ['model', 'user'])) {
+-          $error_message = sprintf('The role %s, is not supported by Gemini Provider.', $message->getRole());
++        // An assistant turn that requested tools becomes a model Content with
++        // functionCall parts (a function call originates from the model role),
++        // keeping any assistant text as a leading part.
++        $tool_calls = $message->getTools() ?? [];
++        if ($role === 'assistant' && $tool_calls !== []) {
++          $parts = [];
++          if ($message->getText() !== '') {
++            $parts[] = new Part(text: $message->getText());
++          }
++          foreach ($tool_calls as $call) {
++            if (!$call instanceof ToolsFunctionOutput) {
++              continue;
++            }
++            $args = [];
++            foreach ($call->getArguments() as $argument) {
++              $args[$argument->getName()] = $argument->getValue();
++            }
++            $id = $call->getToolId();
++            // Restore the thought_signature Gemini 3 requires on a replayed
++            // functionCall (stashed by extractFunctionCall, keyed by tool id).
++            $signature = $id !== '' ? $this->thoughtSignatureStore()->get($id) : NULL;
++            $parts[] = new Part(
++              functionCall: new FunctionCall(
++                $call->getName(),
++                $args,
++                $id !== '' ? $id : NULL,
++              ),
++              thoughtSignature: $signature,
++            );
++          }
++          $chat_input[] = new Content(parts: $parts, role: Role::MODEL);
++          $i++;
++          continue;
++        }
++
++        // A plain text/image turn. Preserve the existing role mapping
++        // (system + assistant collapse onto the two roles Gemini accepts).
++        if ($role === 'system') {
++          $role = 'model';
++        }
++        elseif ($role === 'assistant') {
++          $role = 'user';
++        }
++        if (!in_array($role, ['model', 'user'], TRUE)) {
++          $error_message = sprintf('The role %s, is not supported by Gemini Provider.', $role);
+           throw new AiResponseErrorException($error_message);
+         }
+ 
+         // Build the content data.
++        $content_parts = [];
+         $content_parts[] = $message->getText();
+         // Check for images and added in the content data.
+         if (count($message->getImages())) {
+@@ -349,8 +424,8 @@
+         }
+ 
+         // Format the chat content data.
+-        $role = Role::from($message->getRole());
+-        $chat_input[] = Content::parse($content_parts, $role);
++        $chat_input[] = Content::parse($content_parts, Role::from($role));
++        $i++;
+       }
+     }
+ 
+@@ -402,6 +477,7 @@
+     else {
+       $response = $response->generateContent(...$chat_input);
+       $text = '';
++      $tool_calls = [];
+ 
+       foreach ($response->parts() as $part) {
+         // Get text response part.
+@@ -409,13 +485,22 @@
+           $text .= $part->text;
+         }
+ 
+-        $functionResponse = $this->handleFunctionCall($part);
+-        if ($functionResponse) {
+-          $text .= $functionResponse;
++        // Surface a function call as a tool output for the caller to execute,
++        // rather than running it inside the provider. Callers (e.g. FlowDrop's
++        // reason node) name tools by their own convention and route the call
++        // through their own invoker/allow-list, so the tool name is NOT
++        // guaranteed to be a registered AI FunctionCall function_name — the
++        // provider must not try to resolve or run it.
++        $tool_call = $this->extractFunctionCall($part);
++        if ($tool_call !== NULL) {
++          $tool_calls[] = $tool_call;
+         }
+       }
+ 
+       $message = new ChatMessage('', $text);
++      if ($tool_calls !== []) {
++        $message->setTools($tool_calls);
++      }
+     }
+     $chat_output = new ChatOutput($message, $response, []);
+     // We only set the token usage if its not streamed or in a fiber.
+@@ -864,41 +949,58 @@
+   }
+ 
+   /**
+-   * Handles function call.
++   * Extracts a function call as a tool output the caller can execute.
+    *
++   * The provider deliberately does NOT resolve or run the function itself:
++   * Gemini returns the tool NAME chosen by the model, which — for callers that
++   * expose tools under their own naming (FlowDrop node labels, agent tools) —
++   * need not match any registered AI FunctionCall `function_name`. Resolving it
++   * here via getFunctionCallFromFunctionName() would throw "Function with name
++   * … not found" and bypass the caller's own invoker/allow-list/audit path.
++   * Instead we mirror the other providers' contract: hand the tool call back on
++   * the ChatMessage and let the caller decide whether and how to run it.
++   *
++   * Gemini does not emit a tool-call id, but downstream pairing (assistant
++   * request ↔ tool result) requires a stable, non-empty id, so we synthesize a
++   * unique one per call.
++   *
+    * @param \Gemini\Data\Part $part
+    *   Data part.
+    *
+-   * @return string|bool
+-   *   Functional call output as string or FALSE if there is no output.
+-   *
+-   * @throws \Drupal\Component\Plugin\Exception\ContextException
+-   *    If the value does not pass validation.
+-   */
+-  private function handleFunctionCall(Part $part): string|bool {
+-    // Handle function call.
+-    if ($part->functionCall !== NULL) {
+-      $function_call_instance = $this->functionCallPluginManager->getFunctionCallFromFunctionName($part->functionCall->name);
+-
+-      // Set context.
+-      foreach ($part->functionCall->args as $argument => $value) {
+-        $function_call_instance->setContextValue($argument, $value);
+-      }
+-
+-      // Execute function.
+-      if ($function_call_instance instanceof ExecutableInterface) {
+-        $function_call_instance->execute();
+-      }
+-
+-      // Return function response.
+-      if ($function_call_instance instanceof ExecutableFunctionCallInterface) {
+-        return $function_call_instance->getReadableOutput();
+-      }
++   * @return \Drupal\ai\OperationType\Chat\Tools\ToolsFunctionOutput|null
++   *   The tool call, or NULL if this part carries no function call.
++   */
++  private function extractFunctionCall(Part $part): ?ToolsFunctionOutput {
++    if ($part->functionCall === NULL) {
++      return NULL;
+     }
+-    return FALSE;
++    $tool_id = str_replace('.', '', uniqid('gemini_tool_', TRUE));
++    $arguments = (array) ($part->functionCall->args ?? []);
++    // Gemini 3 requires the model's thought_signature to be replayed on the
++    // functionCall part in later turns, but the only tool-call data that
++    // survives a caller's round-trip is {name, args, tool_call_id}. Stash the
++    // signature in an expirable keyvalue store keyed by the (unique) tool id so
++    // the replay in buildContentFromMessages() can restore it. See
++    // https://ai.google.dev/gemini-api/docs/thought-signatures.
++    if ($part->thoughtSignature !== NULL && $part->thoughtSignature !== '') {
++      $this->thoughtSignatureStore()->setWithExpire($tool_id, $part->thoughtSignature, 86400);
++    }
++    $tool_output = new ToolsFunctionOutput(NULL, $tool_id, $arguments);
++    $tool_output->setName($part->functionCall->name);
++    return $tool_output;
+   }
+ 
+   /**
++   * The expirable keyvalue store for Gemini thought signatures.
++   *
++   * Keyed by the synthesized tool-call id; entries expire after a day, long
++   * enough to outlive an agent's tool loop without accumulating.
++   */
++  private function thoughtSignatureStore(): \Drupal\Core\KeyValueStore\KeyValueStoreExpirableInterface {
++    return \Drupal::service('keyvalue.expirable')->get('gemini_provider_thought_signature');
++  }
++
++  /**
+    * Checks if a model supports a given generation method.
+    *
+    * @param array $model

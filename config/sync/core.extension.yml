@@ -7,6 +7,7 @@ module:
   ai_metering: 0
   ai_observability: 0
   ai_provider_anthropic: 0
+  ai_provider_mistral: 0
   ai_provider_nanobanana: 0
   ai_provider_ollama: 0
   ai_provider_openai: 0
@@ -16,7 +17,6 @@ module:
   aincient_brand: 0
   aincient_chat: 0
   aincient_core: 0
-  aincient_deny: 0
   aincient_export: 0
   aincient_flows: 0
   aincient_mail: 0

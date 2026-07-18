@@ -1,6 +1,6 @@
 _core:
   default_config_hash: v4T0STbDo5KS_0hP9uU7J5jNwrybQouwbr_RqEjuQtE
-llm_provider: 'anthropic:claude-sonnet-5'
+llm_provider: 'mistral:mistral-medium-latest'
 system_prompt_template: ''
 max_history_length: 50
 memory_backend: entity

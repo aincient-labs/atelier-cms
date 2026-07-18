@@ -132,6 +132,12 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
    * work entirely).
    */
   protected function normalizeArg(mixed $value): mixed {
+    // A structured (array/object) arg — the model sent native JSON for an array
+    // param. Decode HTML entities in its leaf strings, exactly as the JSON-string
+    // path below does; keys are field names and are left as-is.
+    if (is_array($value)) {
+      return $this->decodeEntitiesDeep($value);
+    }
     if (!is_string($value) || !str_contains($value, '&')) {
       return $value;
     }
@@ -204,10 +210,20 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
       if ($detail !== '') {
         $description .= ' — ' . $detail;
       }
-      $properties[$name] = [
-        'type' => $this->toJsonType((string) $context->getDataType()),
+      $jsonType = $this->toJsonType((string) $context->getDataType());
+      $property = [
+        'type' => $jsonType,
         'description' => $description,
       ];
+      // An array param needs an `items` schema — several providers reject a bare
+      // `array` type outright. Source the element shape from the capability's
+      // SimpleToolItems constraint (the AI module's declared item shape),
+      // defaulting to string items for a plain list.
+      if ($jsonType === 'array') {
+        $items = $context->getConstraints()['SimpleToolItems'] ?? NULL;
+        $property['items'] = is_array($items) ? $items : ['type' => 'string'];
+      }
+      $properties[$name] = $property;
       if ($context->isRequired()) {
         $required[] = $name;
       }
@@ -252,6 +268,7 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
       'boolean' => 'boolean',
       'integer' => 'integer',
       'float', 'decimal' => 'number',
+      'list' => 'array',
       default => 'string',
     };
   }

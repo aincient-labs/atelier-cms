@@ -11,6 +11,7 @@ import {
   Chip,
   CheckIcon,
   GeminiIcon,
+  MistralIcon,
   OllamaIcon,
   OpenAiIcon,
   ShieldCheckIcon,
@@ -65,6 +66,7 @@ const KEY_HELP: Record<string, { href: string; label: string }> = {
   anthropic: { href: "https://console.anthropic.com/settings/keys", label: "console.anthropic.com" },
   openai: { href: "https://platform.openai.com/api-keys", label: "platform.openai.com" },
   gemini: { href: "https://aistudio.google.com/apikey", label: "aistudio.google.com" },
+  mistral: { href: "https://console.mistral.ai/api-keys", label: "console.mistral.ai" },
 };
 
 /**
@@ -86,14 +88,15 @@ const PROVIDER_BRAND: Record<string, { Icon: ComponentType<SVGProps<SVGSVGElemen
   // not the generic Atelier chip fallback.
   nanobanana: { Icon: GeminiIcon },
   ollama: { Icon: OllamaIcon },
+  mistral: { Icon: MistralIcon },
 };
 
 /**
- * Display order for the picker — Ollama first (local-first, no key needed),
- * then Anthropic, OpenAI, and Google Gemini. Providers not listed keep their
- * server order, sorted after the known ones.
+ * Display order for the picker — Mistral and Anthropic lead (both recommended),
+ * then Ollama (local-first, no key needed), OpenAI, and Google Gemini. Providers
+ * not listed keep their server order, sorted after the known ones.
  */
-const PROVIDER_ORDER = ["ollama", "anthropic", "openai", "gemini"];
+const PROVIDER_ORDER = ["mistral", "anthropic", "ollama", "openai", "gemini"];
 
 function progressFor(step: Step): { index: number; total: number } {
   const order: Step[] = ["welcome", "connect", "models"];

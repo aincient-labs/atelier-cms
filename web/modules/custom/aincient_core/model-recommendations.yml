@@ -5,8 +5,8 @@
 # this file needs only a cache clear, never a config import.
 #
 # Keys are drupal/ai provider PLUGIN ids (the INDIVIDUAL plugin, not the collapsed
-# UI group): anthropic, openai, openrouter, gemini, nanobanana, ollama — the same
-# ids used in aincient_core.model_roles bindings and ModelRoles::tierHints().
+# UI group): anthropic, openai, openrouter, gemini, nanobanana, ollama, mistral —
+# the same ids used in aincient_core.model_roles bindings and ModelRoles::tierHints().
 #
 #   providers:  <provider id> => recommended | tested | not-recommended
 #   models:     <provider id> => { <label>: [ordered substring needles] }
@@ -15,6 +15,11 @@
 # the LONGEST match (so "gpt-4o-mini" beats the shorter "gpt-4o"), ties breaking
 # toward the better label. A model matching no needle is "untested". Labels used:
 # recommended | tested | not-recommended.
+#
+# A provider (or model) we haven't assessed is simply LEFT OUT — absence means
+# "untested", the neutral default (providerRecommendation() returns ''). It still
+# auto-appears in onboarding via the drupal/ai plugin manager; it just carries no
+# curated badge.
 
 providers:
   anthropic: recommended
@@ -22,6 +27,7 @@ providers:
   gemini: tested
   nanobanana: tested
   ollama: tested
+  mistral: recommended
 
 # Recommended set is deliberately narrow — the models we actively back per role:
 #   High thinking → Sonnet   Task executor / Fast → Haiku
@@ -37,11 +43,13 @@ models:
     tested: [gpt-4o, gpt-4.1, gpt-4o-mini, o3, o1]
     not-recommended: [gpt-3.5]
   # Gemini chat models carry no label (untested) — the only backed Gemini is the
-  # nanobanana image model below (Gemini 2.5 Flash, image generation).
+  # nanobanana image model below (Gemini 2.5 Flash, image generation). The Flash
+  # chat series is explicitly not-recommended: tested and found too weak for the
+  # reasoning/tool-loop roles (image generation via nanobanana is unaffected).
   gemini:
     recommended: []
     tested: []
-    not-recommended: []
+    not-recommended: [flash]
   nanobanana:
     recommended: [gemini-2.5-flash-image]
     tested: []
@@ -49,4 +57,13 @@ models:
   openrouter:
     recommended: [sonnet, haiku]
     tested: [gpt-4o, gemini-2.5]
+    # Longer needle than "gemini-2.5" so it wins the longest-match for Flash.
+    not-recommended: [gemini-2.5-flash]
+  # Mistral: medium-latest is the backed model (handles the reasoning/tool loop
+  # cleanly); the others work but aren't actively backed, so they stay "tested".
+  # "magistral" is Mistral's reasoning family — a distinct id, not a mistral-*
+  # match, so it needs its own needle.
+  mistral:
+    recommended: [mistral-medium]
+    tested: [mistral-small, mistral-large, magistral-small]
     not-recommended: []

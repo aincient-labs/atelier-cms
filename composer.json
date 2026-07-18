@@ -29,6 +29,7 @@
         "drupal/ai_agents": "^1.3.2",
         "drupal/ai_metering": "^1.0@beta",
         "drupal/ai_provider_anthropic": "^1.2.2",
+        "drupal/ai_provider_mistral": "^1.1@RC",
         "drupal/ai_provider_nanobanana": "^1.0@beta",
         "drupal/ai_provider_ollama": "^1.2@rc",
         "drupal/ai_provider_openai": "^1.2.2",
@@ -94,6 +95,9 @@
         "patches": {
             "drupal/ai_provider_nanobanana": {
                 "Tolerate an unset API key on a keyless boot (no NULL into typed string)": "patches/nanobanana-null-key.patch"
+            },
+            "drupal/gemini_provider": {
+                "Support caller-driven tool calling: return tool calls (don't execute in-provider) and replay tool-call/result history (FlowDrop tool routing)": "patches/gemini-return-tool-calls.patch"
             },
             "drupal/admin_theme": {
                 "PHP 8.4: use explicit nullable type on isAdminRoute() param": "patches/admin-theme-nullable-route.patch"
