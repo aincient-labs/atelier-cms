@@ -8,7 +8,7 @@ name: Release image
 #
 # All three paths produce a native multi-arch (amd64+arm64) manifest.
 #
-# This repo (aincient-labs/atelier) is the deterministic, history-free snapshot
+# This repo (aincient-labs/atelier-cms) is the deterministic, history-free snapshot
 # of the private aincient-labs/cms produced by the umbrella's bin/deploy-atelier.
 # The image is built and published FROM HERE so the public package's source is
 # exactly the public tree — what you can read is what got built. The private
@@ -26,7 +26,7 @@ name: Release image
 # set is the only difference — so Apple-Silicon / arm64 hosts always pull a
 # native image, on every build, not just tagged releases.
 #
-# Image: ghcr.io/aincient-labs/atelier  (PUBLIC package — computed from
+# Image: ghcr.io/aincient-labs/atelier-cms  (PUBLIC package — computed from
 # github.repository below, so it always tracks this repo's name).
 #
 # No repo secrets required: composer authenticates to the GitHub API with the
@@ -225,8 +225,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # github.repository is already owner/repo (aincient-labs/atelier); lowercase
-      # it defensively for GHCR so this publishes ghcr.io/aincient-labs/atelier
+      # github.repository is already owner/repo (aincient-labs/atelier-cms); lowercase
+      # it defensively for GHCR so this publishes ghcr.io/aincient-labs/atelier-cms
       # without hardcoding the name. imagetools create builds the manifest list
       # from the per-arch digests (no rebuild — pure registry-side assembly).
       #

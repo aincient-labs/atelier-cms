@@ -11,11 +11,11 @@ Create, find, update, and publish content through an AI operator console —
 no admin forms, no jargon, no SaaS login.
 
 [![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)](LICENSE)
-[![Container image](https://img.shields.io/badge/image-ghcr.io%2Faincient--labs%2Fatelier-000?logo=docker&logoColor=white)](https://github.com/aincient-labs/atelier/pkgs/container/atelier)
+[![Container image](https://img.shields.io/badge/image-ghcr.io%2Faincient--labs%2Fatelier--cms-000?logo=docker&logoColor=white)](https://github.com/aincient-labs/atelier-cms/pkgs/container/atelier-cms)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-no%20account%20required-c0392b.svg)](#running-atelier)
 [![Built on Drupal](https://img.shields.io/badge/built%20on-Drupal-0678BE.svg)](https://www.drupal.org)
 
-[**Quick start**](#quick-start) · [**See it work**](#see-it-work-in-30-seconds) · [**Why Atelier**](#why-we-build-this) · [**Whats inside**](#whats-inside) · [**License**](#license)
+[**Quick start**](#quick-start) · [**See it work**](#see-it-work-in-30-seconds) · [**Publish anywhere**](#publish-your-site-anywhere) · [**Why Atelier**](#why-we-build-this) · [**Whats inside**](#whats-inside) · [**License**](#license)
 
 </div>
 
@@ -29,17 +29,17 @@ single command:
 
 ```bash
 brew install aincient-labs/tap/atelier
-atelier install     # pulls the image and starts your site
-atelier open        # opens the operator console in your browser
+atelier app install     # pulls the image and starts your site
+atelier app open        # opens the operator console in your browser
 ```
 
-`atelier install` is idempotent and keeps everything under `~/.atelier`. First boot configures
+`atelier app install` is idempotent and keeps everything under `~/.atelier`. First boot configures
 the site by itself; when it settles you land in the operator console at **`/atelier`** (or open
 **http://localhost:41221/** directly).
 
 No account to create, no key to paste in a config file, nothing held back for a paid tier —
-you're now running the real product. Later, `atelier update` upgrades in place with automatic
-rollback, and `atelier backup` / `restore` snapshot your whole site.
+you're now running the real product. Later, `atelier app update` upgrades in place with automatic
+rollback, and `atelier data backup` / `restore` snapshot your whole site.
 
 > **No Homebrew, or a headless Docker host?** The one-line installer does the same first-run in
 > a single command — see [Running Atelier](#running-atelier) for that and the manual path.
@@ -65,6 +65,23 @@ From there it's a conversation:
 Full content management, by chat. Everything happens under **your** account and permissions —
 the assistant can't do anything you couldn't do yourself.
 
+## Publish your site anywhere
+
+Atelier isn't a walled garden. Any site you build can be exported as a **plain static snapshot** and
+hosted wherever you like — no lock-in, no running server required:
+
+```bash
+atelier site export --base-url https://your-domain.com
+```
+
+`atelier site export` renders your pages to ordinary HTML, CSS, and assets with a built-in link
+check, and drops the result in `./aincient-export` ready to deploy. (Inside the container or a dev
+checkout, the same thing is `drush aincient:export`, `aex` for short.) The
+**[atelier-deploy-template](https://github.com/aincient-labs/atelier-deploy-template)**
+repo is pre-wired to publish that export to **Netlify, Cloudflare Pages, Vercel, or GitHub Pages** —
+one-click deploy buttons included. Full walkthrough:
+**[Host your exported site](https://aincient-labs.com/docs/deploy)**.
+
 ## Why we build this
 
 **Working with a serious website should be as simple as saying what you want.** You shouldn't
@@ -89,27 +106,29 @@ everything happening in AI genuinely approachable.
 Atelier is distributed as a **versioned public container image** — the image *is* the product
 and the unit of versioning, the way Discourse, GitLab Omnibus, and Ghost are delivered. It's
 published to GHCR at
-[`ghcr.io/aincient-labs/atelier`](https://github.com/aincient-labs/atelier/pkgs/container/atelier)
+[`ghcr.io/aincient-labs/atelier-cms`](https://github.com/aincient-labs/atelier-cms/pkgs/container/atelier-cms)
 and is **public — no login or token required.** All three paths below run that same image; the
 only prerequisite is [Docker](https://docs.docker.com/get-docker/).
 
 ### Option A — the `atelier` CLI *(recommended · macOS & Linux)*
 
 A small [Rust CLI](https://github.com/aincient-labs/manager) that manages the appliance's whole
-lifecycle over Docker — install once, then operate with one-word commands:
+lifecycle over Docker — install once, then operate with grouped, memorable commands:
 
 ```bash
 brew install aincient-labs/tap/atelier
-atelier install
+atelier app install
 ```
 
 | Command | What it does |
 | --- | --- |
-| `atelier install` | Lay down `~/.atelier`, pull the image, start the stack. Idempotent. |
-| `atelier update` | Pull + converge in place, with automatic rollback on failure. |
-| `atelier backup` / `restore` | Portable `.tar.gz` snapshots (database + uploaded files). |
-| `atelier status` / `doctor` | Health and Docker-readiness checks. |
-| `atelier start` / `stop` / `open` / `password` | Everyday stack management. |
+| `atelier app install` | Lay down `~/.atelier`, pull the image, start the stack. Idempotent. |
+| `atelier app update` | Pull + converge in place, with automatic rollback on failure. |
+| `atelier app status` / `doctor` | Health and Docker-readiness checks. |
+| `atelier app start` / `stop` / `open` / `password` | Everyday stack management. |
+| `atelier site export` | Export your site to static HTML — deploy it anywhere. |
+| `atelier data backup` / `restore` | Portable `.tar.gz` snapshots (database + uploaded files). |
+| `atelier ai model list` / `set` | Inspect or bind the AI model per role. |
 
 Run `atelier --help` for the full list.
 
@@ -197,7 +216,7 @@ design.
 brings us closer to our north star of a million running sites. You don't need to write code to
 help:
 
-- 🐛 **Try it and break it.** Bug reports in the [issue queue](https://github.com/aincient-labs/atelier/issues)
+- 🐛 **Try it and break it.** Bug reports in the [issue queue](https://github.com/aincient-labs/atelier-cms/issues)
   are real participation.
 - 💡 **Tell us what's missing.** Feature requests and shared experiences shape what ships next.
 - 🙋 **Ask for help.** Questions are welcome — if something confused you, it'll confuse the next
@@ -227,6 +246,6 @@ Third-party credits: [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md).
 
 Drupal is a registered trademark of [Dries Buytaert](https://dri.es/).
 
-**[aincient-labs.com](https://aincient-labs.com)** · [Documentation](https://aincient-labs.com/docs) · [Issues](https://github.com/aincient-labs/atelier/issues)
+**[aincient-labs.com](https://aincient-labs.com)** · [Documentation](https://aincient-labs.com/docs) · [Issues](https://github.com/aincient-labs/atelier-cms/issues)
 
 </div>

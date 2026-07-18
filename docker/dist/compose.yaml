@@ -29,7 +29,7 @@ services:
 
   app:
     # The published appliance image. Override the tag via AINCIENT_IMAGE in .env.
-    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier:edge}
+    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier-cms:edge}
     depends_on:
       db:
         condition: service_healthy

@@ -108,8 +108,8 @@ sidecar.
 
 ## Distribution image (public GHCR package)
 
-The image is published to a **public GHCR package**: `ghcr.io/aincient-labs/atelier`.
-It is **built and published from the public artifact repo** (`aincient-labs/atelier`), not
+The image is published to a **public GHCR package**: `ghcr.io/aincient-labs/atelier-cms`.
+It is **built and published from the public artifact repo** (`aincient-labs/atelier-cms`), not
 from the private dev repo — so the package's source is exactly the public tree. The
 [`Release image`](../.github/workflows/release.yml) workflow smoke-tests and pushes it —
 `:edge` + `:sha-<short>` on every push to `main`, and `:v1.2.3` + `:latest` on a `v*` git
@@ -119,11 +119,11 @@ the pushed image is the exact one smoke validated.
 **Pulling:** the package is public, so no auth is needed:
 
 ```bash
-docker pull ghcr.io/aincient-labs/atelier:latest   # or :v1.2.3 / :edge
+docker pull ghcr.io/aincient-labs/atelier-cms:latest   # or :v1.2.3 / :edge
 ```
 
 `docker/compose.yaml` already defaults `AINCIENT_IMAGE` to
-`ghcr.io/aincient-labs/atelier:latest`, so a plain `up` pulls the right image.
+`ghcr.io/aincient-labs/atelier-cms:latest`, so a plain `up` pulls the right image.
 Override `AINCIENT_IMAGE` to pin a specific tag.
 
 > The published image is currently **linux/amd64 only** (what the CI runner builds and

@@ -34,7 +34,7 @@ services:
 
   app:
     # Pin a tag in production; `latest` here is what the updater pulls.
-    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier:latest}
+    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier-cms:latest}
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -78,7 +78,7 @@ services:
       # service interpolates, or compose can't resolve them (and would fall back
       # to the wrong default image). The Docker socket already makes this
       # container root-equivalent, so carrying the secrets here adds no new risk.
-      AINCIENT_IMAGE: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier:latest}
+      AINCIENT_IMAGE: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier-cms:latest}
       HASH_SALT: ${HASH_SALT:?set HASH_SALT in .env}
       DB_PASSWORD: ${DB_PASSWORD:-aincient}
       AINCIENT_TRUSTED_HOSTS: ${AINCIENT_TRUSTED_HOSTS:-}
