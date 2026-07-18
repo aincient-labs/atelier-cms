@@ -29,9 +29,16 @@ name: Release image
 # Image: ghcr.io/aincient-labs/atelier-cms  (PUBLIC package — computed from
 # github.repository below, so it always tracks this repo's name).
 #
-# No repo secrets required: composer authenticates to the GitHub API with the
-# built-in GITHUB_TOKEN (rate-limit avoidance only). FlowDrop resolves from
-# public drupal.org — the old private FLOWDROP_TOKEN PAT is no longer needed.
+# The published manifest is signed with cosign in the merge job (our key pair;
+# private key + password in the COSIGN_PRIVATE_KEY / COSIGN_PASSWORD secrets,
+# public key committed as cosign.pub). The signature is stored in GHCR next to
+# the image. Verification is opt-in for consumers (see the sign step for the
+# exact `cosign verify` invocation).
+#
+# Secrets: COSIGN_PRIVATE_KEY + COSIGN_PASSWORD (image signing). Composer
+# authenticates to the GitHub API with the built-in GITHUB_TOKEN (rate-limit
+# avoidance only). FlowDrop resolves from public drupal.org — the old private
+# FLOWDROP_TOKEN PAT is no longer needed.
 
 on:
   push:
@@ -225,6 +232,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Keyless signing (below) needs the cosign binary; the signature is minted
+      # against the GHCR login above.
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
       # github.repository is already owner/repo (aincient-labs/atelier-cms); lowercase
       # it defensively for GHCR so this publishes ghcr.io/aincient-labs/atelier-cms
       # without hardcoding the name. imagetools create builds the manifest list
@@ -233,6 +245,7 @@ jobs:
       #   v* tag         → :vX.Y.Z + :latest
       #   main / dispatch → :edge   + :sha-<short>
       - name: Create + push multi-arch manifest
+        id: manifest
         working-directory: /tmp/digests
         run: |
           set -euo pipefail
@@ -246,4 +259,27 @@ jobs:
           docker buildx imagetools create "${tag_args[@]}" \
             $(printf "${IMAGE}@sha256:%s " *)
           docker buildx imagetools inspect "${IMAGE}:${TAGS[0]}"
+          # The manifest-list digest is what we sign — one signature covers every
+          # tag pointing at it (all tags above share this digest). Hand it to the
+          # sign step below.
+          DIGEST="$(docker buildx imagetools inspect "${IMAGE}:${TAGS[0]}" --format '{{.Manifest.Digest}}')"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
           echo "${IMAGE}:${TAGS[0]} (linux/amd64, linux/arm64 — native, smoke-validated)" >> "$GITHUB_STEP_SUMMARY"
+
+      # Cosign signature with our own key pair. The private key + its password
+      # are repo/org secrets (COSIGN_PRIVATE_KEY, COSIGN_PASSWORD); the matching
+      # public key ships in this repo as cosign.pub. The signature is stored
+      # alongside the image in GHCR, so pulling needs nothing extra. Verification
+      # is opt-in for consumers:
+      #   cosign verify --key cosign.pub ghcr.io/aincient-labs/atelier-cms:latest
+      - name: Sign the manifest
+        env:
+          IMAGE: ${{ steps.manifest.outputs.image }}
+          DIGEST: ${{ steps.manifest.outputs.digest }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY "${IMAGE}@${DIGEST}"
+          echo "Signed ${IMAGE}@${DIGEST} (cosign key)" >> "$GITHUB_STEP_SUMMARY"

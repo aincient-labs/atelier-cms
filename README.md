@@ -110,6 +110,14 @@ published to GHCR at
 and is **public — no login or token required.** All three paths below run that same image; the
 only prerequisite is [Docker](https://docs.docker.com/get-docker/).
 
+Every published image is **signed with [cosign](https://docs.sigstore.dev/)**. The install paths
+don't require verification, but if you want it, the public key ships in this repo as
+[`cosign.pub`](cosign.pub):
+
+```bash
+cosign verify --key cosign.pub ghcr.io/aincient-labs/atelier-cms:latest
+```
+
 ### Option A — the `atelier` CLI *(recommended · macOS & Linux)*
 
 A small [Rust CLI](https://github.com/aincient-labs/manager) that manages the appliance's whole
