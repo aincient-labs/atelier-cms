@@ -1,5 +1,5 @@
 {
-    "name": "drupal/aincient",
+    "name": "drupal/atelier",
     "description": "Atelier — an AI-first, chat-driven site builder built on Drupal. North star: 1M Drupal installs.",
     "type": "project",
     "license": "GPL-2.0-or-later",
@@ -10,7 +10,7 @@
             "role": "Maintainer"
         }
     ],
-    "homepage": "https://www.drupal.org/project/aincient",
+    "homepage": "https://aincient-labs.com",
     "support": {
         "docs": "https://www.drupal.org/docs/user_guide/en/index.html",
         "chat": "https://www.drupal.org/node/314178"

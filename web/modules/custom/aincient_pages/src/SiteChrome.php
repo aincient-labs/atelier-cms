@@ -38,9 +38,15 @@ final class SiteChrome {
    * operator's), so it lives here as a constant, not in the operator-editable
    * identity/chrome config; operators toggle only its VISIBILITY via the footer
    * `show_credit` setting ({@see ChromeRepository}).
+   *
+   * The `?ref=built-with` tag makes the attribution loop measurable: this credit
+   * ships on every exported/self-hosted site, so referral visits back to the
+   * marketing site are self-identifying regardless of the host domain (Umami
+   * reads the query param). The path currently 302s to the homepage, forwarding
+   * the query string, until a real product page exists.
    */
   public const CREDIT_LABEL = 'Atelier by AIncient Labs';
-  public const CREDIT_URL = 'https://aincient-labs.com/product/atelier';
+  public const CREDIT_URL = 'https://aincient-labs.com/product/atelier?ref=built-with';
 
   /** The footer attribution credit as an SDC prop `{label, href}`. */
   public static function credit(): array {
