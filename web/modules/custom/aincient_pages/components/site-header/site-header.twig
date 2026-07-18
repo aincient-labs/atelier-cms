@@ -17,5 +17,16 @@
         {{ include('aincient_pages:menu', { items: nav, name: 'main', variant: 'header', align: nav_alignment|default('end') }, with_context = false) }}
       </nav>
     {% endif %}
+    {% if language_links|default([])|length > 1 %}
+      {# Only render with 2+ languages. `ml-auto` pins it to the far end when
+         there is no nav to take the flex-1 space. #}
+      <nav aria-label="{{ 'Language'|t }}" class="flex items-center gap-3 text-sm font-medium {{ is_centered ? '' : 'ml-auto' }}">
+        {% for l in language_links %}
+          <a href="{{ l.url }}" hreflang="{{ l.langcode }}" title="{{ l.label }}"
+             class="uppercase tracking-wide {{ l.active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground' }}"
+             {{ l.active ? 'aria-current="true"' : '' }}>{{ l.langcode }}</a>
+        {% endfor %}
+      </nav>
+    {% endif %}
   </div>
 </header>

@@ -10,6 +10,9 @@ props:
     nav:
       type: array
       description: 'Array of { label, url }.'
+    language_links:
+      type: array
+      description: 'Array of { langcode, label, url, active } language-switch links. Rendered only when the site has 2+ languages; empty otherwise.'
     logo_position:
       type: string
       enum: [left, center]

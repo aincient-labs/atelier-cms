@@ -96,7 +96,7 @@ services:
     arguments: ['@entity_type.manager']
   aincient_pages.chrome:
     class: Drupal\aincient_pages\SiteChrome
-    arguments: ['@menu.link_tree', '@aincient_pages.brand', '@aincient_pages.site_identity', '@aincient_pages.chrome_repository']
+    arguments: ['@menu.link_tree', '@aincient_pages.brand', '@aincient_pages.site_identity', '@aincient_pages.chrome_repository', '@language_manager', '@path.matcher']
   # Markdown -> sanitised HTML for the `markdown` placeable section (CommonMark
   # + Xss::filterAdmin). A plain library wrapper — no Drupal deps to inject.
   aincient_pages.markdown:

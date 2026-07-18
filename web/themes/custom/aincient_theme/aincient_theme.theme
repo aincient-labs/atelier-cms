@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\node\NodeInterface;
 
 /**
@@ -143,6 +144,13 @@ function aincient_theme_preprocess_page(array &$variables): void {
     '#component' => 'aincient_pages:site-footer',
     '#props' => $chrome->footerProps(),
   ];
+
+  // The header's language switcher varies by the current URL language and must
+  // rebuild when the configured-language set changes (a language added/removed).
+  CacheableMetadata::createFromRenderArray($variables)
+    ->addCacheContexts(['languages:' . LanguageInterface::TYPE_URL, 'url.path'])
+    ->addCacheTags(['config:configurable_language_list'])
+    ->applyTo($variables);
 
   // Auth pages (login/register/reset) render through a chrome-less, centered
   // page template (page--auth.html.twig) — give it the brand wordmark and an

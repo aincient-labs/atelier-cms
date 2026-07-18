@@ -54,6 +54,9 @@ final class SiteChromeTest extends KernelTestBase {
     $footer = $this->chrome()->footerProps();
     $this->assertArrayHasKey('nav', $header);
     $this->assertArrayHasKey('name', $header);
+    // The language switcher rides along; empty on a single-language site.
+    $this->assertArrayHasKey('language_links', $header);
+    $this->assertSame([], $header['language_links']);
     // Empty brand note falls back to an auto © line.
     $this->assertStringStartsWith('©', $footer['note']);
     // The chrome layout variants ride along into the SDC props (defaults).

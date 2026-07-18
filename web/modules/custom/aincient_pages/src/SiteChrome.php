@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Menu\MenuLinkTreeInterface;
 use Drupal\Core\Menu\MenuTreeParameters;
+use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Path\PathMatcherInterface;
+use Drupal\Core\Url;
 
 /**
  * The site chrome: the brand header + footer that wrap EVERY anonymous page.
@@ -48,6 +52,8 @@ final class SiteChrome {
     private readonly BrandRepository $brand,
     private readonly SiteIdentity $identity,
     private readonly ChromeRepository $chrome,
+    private readonly LanguageManagerInterface $languageManager,
+    private readonly PathMatcherInterface $pathMatcher,
   ) {}
 
   /** Props for the `aincient_pages:site-header` SDC. */
@@ -56,7 +62,44 @@ final class SiteChrome {
       'name' => $this->identity->name(),
       'logo_url' => $this->identity->logoUrl(),
       'nav' => $this->nav('main'),
+      'language_links' => $this->languageLinks(),
     ] + $this->chrome->header();
+  }
+
+  /**
+   * Visitor-facing language-switch links for the current page, as a flat list of
+   * `{langcode, label, url, active}`.
+   *
+   * Empty on a single-language site (the common case) — the header hides the
+   * switcher when this is empty. When an operator adds a second language and
+   * translates a page, this lights up automatically: each link points at the
+   * same page under that language's URL (path-prefix negotiation), and `active`
+   * marks the language the visitor is currently viewing. Mirrors what core's
+   * language_block does, flattened for the SDC.
+   */
+  public function languageLinks(): array {
+    $languages = $this->languageManager->getLanguages();
+    if (count($languages) < 2) {
+      return [];
+    }
+    $current = $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_URL)->getId();
+    // The current page as a route URL, re-emitted once per language: setting the
+    // `language` option runs the URL path processor so each href carries that
+    // language's path prefix (e.g. `/de/…`). More predictable than
+    // getLanguageSwitchLinks(), which returns nothing in the full-bleed page
+    // controller's route context.
+    $route = $this->pathMatcher->isFrontPage() ? '<front>' : '<current>';
+    $links = [];
+    foreach ($languages as $langcode => $language) {
+      $url = Url::fromRoute($route)->setOption('language', $language);
+      $links[] = [
+        'langcode' => $langcode,
+        'label' => $language->getName(),
+        'url' => $url->toString(),
+        'active' => $langcode === $current,
+      ];
+    }
+    return $links;
   }
 
   /** Props for the `aincient_pages:site-footer` SDC. */
