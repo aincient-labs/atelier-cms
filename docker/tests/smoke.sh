@@ -86,6 +86,16 @@ echo "== assert: console reachability =="
 [ "$(http http://app/user/login)" = "200" ] && ok "/user/login 200"           || bad "/user/login not 200"
 [ "$(http http://app/atelier)" = "403" ]    && ok "/atelier 403 for anon"    || bad "/atelier not 403 for anon"
 
+echo "== assert: default brand seeded (config/install is skipped by --existing-config) =="
+# Regression guard: aincient_pages.brand is config-ignored, so it must ship in
+# config/sync to survive a fresh install-from-config — a module config/install
+# default alone is NEVER read on this path, leaving the site with no brand.
+if drush config:get aincient_pages.brand tokens.neutral_surface --format=string 2>/dev/null | grep -q "#fcfaf7"; then
+  ok "default warm off-white brand present"
+else
+  bad "aincient_pages.brand missing on fresh install (warm surface not seeded)"
+fi
+
 echo "== assert: files tree is www-data-owned after converge (upload/derivative writability) =="
 # Regression guard: converge runs drush AS ROOT (site:install, cache:rebuild,
 # demo seed), creating root-owned subdirs inside sites/default/files. If the

@@ -341,3 +341,31 @@ function aincient_pages_update_10012(): void {
     }
   }
 }
+
+/**
+ * Seed the default brand on installs that never had one.
+ *
+ * The appliance installs with `site:install --existing-config`, which builds the
+ * site from config/sync and NEVER processes a module's config/install. Since
+ * aincient_pages.brand is config-ignored it isn't exported to sync either, so
+ * fresh appliances booted with NO brand config at all and fell back to the raw
+ * design-token defaults — the shipped warm off-white palette never applied. The
+ * config now ships in config/sync for future fresh installs; this heals the
+ * already-installed ones on converge.
+ *
+ * Create-only: if the config already exists (a real user brand, or a prior
+ * seed), it is left untouched — this never clobbers brand edits.
+ */
+function aincient_pages_update_10013(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_pages.brand');
+  if (!$config->isNew()) {
+    return;
+  }
+  $config->set('tokens', [
+    'neutral_surface' => '#fcfaf7',
+    'neutral_subtle' => 'oklch(1 0 0)',
+    'neutral_muted_foreground' => 'oklch(0.45 0 0)',
+    'neutral_ink' => 'oklch(0.20 0.02 270)',
+    'card' => 'var(--neutral-subtle)',
+  ])->save();
+}
