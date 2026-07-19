@@ -159,9 +159,9 @@ if [ "${ok:-}" = "1" ]; then
     printf '  Login:    %sadmin%s  %s(set on your first install — recover it below)%s\n' "$bold" "$rst" "$dim" "$rst"
   fi
   printf '  Manage:   %sdocker compose -f %s/compose.yaml [logs|down|pull]%s\n' "$dim" "$INSTALL_DIR" "$rst"
-  printf '  Lost pw?  %sread it back, or reset it — your data lives in the volume either way:%s\n' "$dim" "$rst"
+  printf '  Lost pw?  %sread it back — your data lives in the volume either way:%s\n' "$dim" "$rst"
   printf '            %sdocker compose -f %s/compose.yaml exec app cat /opt/drupal/private/INITIAL_ADMIN_PASSWORD%s\n' "$dim" "$INSTALL_DIR" "$rst"
-  printf '            %sdocker compose -f %s/compose.yaml exec app /opt/drupal/vendor/bin/drush --root=/opt/drupal/web user:password admin <newpass>%s\n' "$dim" "$INSTALL_DIR" "$rst"
+  printf '            %sto set a new one, use the atelier CLI: atelier app password --set <newpass>%s\n' "$dim" "$rst"
 else
   warn "Console didn't answer on ${url} within ~5 min."
   warn "Check logs:  docker compose -f ${INSTALL_DIR}/compose.yaml logs -f app"

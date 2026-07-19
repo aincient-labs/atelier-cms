@@ -75,8 +75,7 @@ atelier site export --base-url https://your-domain.com
 ```
 
 `atelier site export` renders your pages to ordinary HTML, CSS, and assets with a built-in link
-check, and drops the result in `./aincient-export` ready to deploy. (Inside the container or a dev
-checkout, the same thing is `drush aincient:export`, `aex` for short.) The
+check, and drops the result in `./aincient-export` ready to deploy. The
 **[atelier-deploy-template](https://github.com/aincient-labs/atelier-deploy-template)**
 repo is pre-wired to publish that export to **Netlify, Cloudflare Pages, Vercel, or GitHub Pages** —
 one-click deploy buttons included. Full walkthrough:
