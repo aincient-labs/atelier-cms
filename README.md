@@ -17,6 +17,14 @@ no admin forms, no jargon, no SaaS login.
 
 [**Quick start**](#quick-start) · [**See it work**](#see-it-work-in-30-seconds) · [**Publish anywhere**](#publish-your-site-anywhere) · [**Why Atelier**](#why-we-build-this) · [**Whats inside**](#whats-inside) · [**License**](#license)
 
+<br />
+
+<a href="https://aincient-labs.com/#demo" title="Watch the full demo">
+  <img src="https://aincient-labs.com/assets/video/hero.gif" alt="Type one sentence; Atelier builds a real page live" width="720" />
+</a>
+
+<sub><em>One sentence → a real page. <a href="https://aincient-labs.com/#demo">Watch the full ~2-minute demo →</a></em></sub>
+
 </div>
 
 ---
@@ -45,6 +53,11 @@ rollback, and `atelier data backup` / `restore` snapshot your whole site.
 > a single command — see [Running Atelier](#running-atelier) for that and the manual path.
 
 ## See it work in 30 seconds
+
+> ▶ **Watch the full demo** — one sentence builds a coffee-roaster site, then
+> `atelier site export` ships it to Cloudflare Pages:
+> **[aincient-labs.com/#demo](https://aincient-labs.com/#demo)**
+> ([direct MP4](https://aincient-labs.com/assets/video/demo.mp4)).
 
 1. **Log in.** Atelier drops you straight into the operator console at **`/atelier`**.
 2. **Connect an AI provider** in the first-run wizard — an Anthropic or OpenAI key, or a
