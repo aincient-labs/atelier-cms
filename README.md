@@ -56,8 +56,9 @@ rollback, and `atelier data backup` / `restore` snapshot your whole site.
 
 > ▶ **Watch the full demo** — one sentence builds a coffee-roaster site, then
 > `atelier site export` ships it to Cloudflare Pages:
-> **[aincient-labs.com/#demo](https://aincient-labs.com/#demo)**
-> ([direct MP4](https://aincient-labs.com/assets/video/demo.mp4)).
+> **[Watch on YouTube](https://youtu.be/AJqLBHqNTcM)** ·
+> [on the site](https://aincient-labs.com/#demo) ·
+> [direct MP4](https://aincient-labs.com/assets/video/demo.mp4).
 
 1. **Log in.** Atelier drops you straight into the operator console at **`/atelier`**.
 2. **Connect an AI provider** in the first-run wizard — an Anthropic or OpenAI key, or a

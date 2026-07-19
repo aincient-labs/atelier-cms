@@ -8,6 +8,8 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-19
+- Add a product demo to the README — watch a site get built from one sentence, then
+  exported to static HTML and deployed, as a short video and looping preview.
 - Fix: the warm off-white default theme now applies on appliance installs too. New
   appliances boot with it, and existing appliances pick it up on update — without
   overwriting any brand changes you've made.
