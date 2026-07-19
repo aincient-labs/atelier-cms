@@ -1,10 +1,14 @@
 # Foundations: the design-token layer. Brand IDENTITY (name/logo/tagline/footer
 # note) lives in aincient_pages.identity, not here.
 #
-# No seeded overrides: the brand is defined by the design-token registry
-# defaults (design-tokens.yml), which resolve through the Tier 1 palette to the
-# immutable Tailwind base. Overrides land here only when a user edits the brand.
-tokens: {  }
-font_families:
-  - Inter
-  - Inter Tight
+# Seeded default: a warm off-white surface with a subtle white card, cooled ink,
+# and neutral muted foreground. Everything else resolves from the design-token
+# registry defaults (design-tokens.yml) — including the bundled, self-hosted
+# typefaces (Fraunces display + Schibsted Grotesk body), so no font_families
+# override is needed. Overrides land here only when a user edits the brand.
+tokens:
+  neutral_surface: '#fcfaf7'
+  neutral_subtle: 'oklch(1 0 0)'
+  neutral_muted_foreground: 'oklch(0.45 0 0)'
+  neutral_ink: 'oklch(0.20 0.02 270)'
+  card: var(--neutral-subtle)
