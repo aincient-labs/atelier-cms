@@ -7,6 +7,10 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-19
+- Fix the one-line installer command shown in the README and `install.sh` — it now
+  points at the working `https://aincient-labs.com/atelier/install.sh`.
+
 ## 2026-07-18
 - Sign published images with cosign.
 - Appliance image moved to `ghcr.io/aincient-labs/atelier-cms`.

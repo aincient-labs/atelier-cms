@@ -144,7 +144,7 @@ Run `atelier --help` for the full list.
 Lays down a Docker Compose stack and starts it, no CLI to install first:
 
 ```bash
-curl -fsSL https://aincient-labs.com/install.sh | bash
+curl -fsSL https://aincient-labs.com/atelier/install.sh | bash
 ```
 
 ### Option C — manual Docker Compose

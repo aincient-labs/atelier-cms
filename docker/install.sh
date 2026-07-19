@@ -4,7 +4,7 @@
 #
 # Install (or upgrade) the Atelier appliance with a single command:
 #
-#   curl -fsSL https://aincient-labs.com/install.sh | bash
+#   curl -fsSL https://aincient-labs.com/atelier/install.sh | bash
 #
 # The image is public — no login or token required.
 #
