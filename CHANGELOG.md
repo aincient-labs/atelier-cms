@@ -7,6 +7,13 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-20
+- Add a security policy (SECURITY.md) — report vulnerabilities privately through GitHub's
+  security advisories, with clear response times and a coordinated-disclosure process.
+- Add a contribution guide and issue templates for bug reports and feature requests.
+- One-click "Deploy to Netlify / Cloudflare / Vercel" buttons in the README, for hosting
+  your exported site.
+
 ## 2026-07-19
 - Add a product demo to the README — watch a site get built from one sentence, then
   exported to static HTML and deployed, as a short video and looping preview.
