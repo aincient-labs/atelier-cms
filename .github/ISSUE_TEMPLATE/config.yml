@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/aincient-labs/atelier-cms/security/advisories/new
+    about: Please report vulnerabilities privately, not as public issues. See SECURITY.md.
+  - name: 📖 Documentation
+    url: https://aincient-labs.com/docs
+    about: Guides for installing, running, building with, and deploying Atelier.
+  - name: 💬 Questions & help
+    url: https://github.com/aincient-labs/atelier-cms/discussions
+    about: Ask a question or get help from the community.

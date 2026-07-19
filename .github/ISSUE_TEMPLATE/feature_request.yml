@@ -1,0 +1,38 @@
+name: 💡 Feature request
+description: Suggest an idea or an improvement for Atelier.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping shape what Atelier becomes. Feature requests and shared
+        experiences directly influence what ships next.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation or frustration behind the request — the "why" matters more than the "how".
+      placeholder: When I try to …, I have to … because Atelier doesn't …
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Atelier to do?
+      description: Your idea for a solution. It's fine if it's rough.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Other ways you've worked around this, or approaches you thought about.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Screenshots, examples from other tools, or context about how you use Atelier.
+    validations:
+      required: false

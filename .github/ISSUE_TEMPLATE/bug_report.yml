@@ -1,0 +1,72 @@
+name: 🐛 Bug report
+description: Something in Atelier didn't work the way you expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! A clear reproduction is genuinely
+        valuable — it's often the difference between a fix this week and one that never lands.
+
+        ⚠️ **Found a security vulnerability?** Please don't file it here — report it privately
+        via the [Security tab](https://github.com/aincient-labs/atelier-cms/security). See
+        [SECURITY.md](https://github.com/aincient-labs/atelier-cms/blob/main/SECURITY.md).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, and what went wrong?
+      placeholder: I asked the assistant to publish a page and…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact steps that trigger the problem. Include the prompt you gave the assistant, if relevant.
+      placeholder: |
+        1. Open the console at /atelier
+        2. Say "…"
+        3. See …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The image tag you're running, or `atelier --version` for the CLI.
+      placeholder: "e.g. :latest, a specific tag, or atelier 0.2.7"
+    validations:
+      required: true
+  - type: dropdown
+    id: install-path
+    attributes:
+      label: How are you running Atelier?
+      options:
+        - The atelier CLI (Homebrew)
+        - The one-line installer
+        - Manual Docker Compose
+        - Other / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Docker/OrbStack version, architecture (arm64/amd64), browser — whatever's relevant.
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Relevant output from `atelier app status` / container logs, or a screenshot. Paste text in a code block.
+      render: shell
+    validations:
+      required: false

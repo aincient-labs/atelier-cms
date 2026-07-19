@@ -92,7 +92,17 @@ atelier site export --base-url https://your-domain.com
 check, and drops the result in `./aincient-export` ready to deploy. The
 **[atelier-deploy-template](https://github.com/aincient-labs/atelier-deploy-template)**
 repo is pre-wired to publish that export to **Netlify, Cloudflare Pages, Vercel, or GitHub Pages** —
-one-click deploy buttons included. Full walkthrough:
+grab a host in one click, then drop your export in:
+
+<p>
+  <a href="https://app.netlify.com/start/deploy?repository=https://github.com/aincient-labs/atelier-deploy-template"><img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" height="32" /></a>
+  &nbsp;
+  <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/aincient-labs/atelier-deploy-template"><img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare" height="32" /></a>
+  &nbsp;
+  <a href="https://vercel.com/new/clone?repository-url=https://github.com/aincient-labs/atelier-deploy-template"><img src="https://vercel.com/button" alt="Deploy with Vercel" height="32" /></a>
+</p>
+
+Full walkthrough (including drag-and-drop and GitHub Pages):
 **[Host your exported site](https://aincient-labs.com/docs/deploy)**.
 
 ## Why we build this
