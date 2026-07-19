@@ -8,6 +8,9 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-19
+- New default look: fresh installs open on a warm off-white background with clean
+  white cards and softened ink — a calmer, paper-like default. Existing sites keep
+  their own brand.
 - Fix the one-line installer command shown in the README and `install.sh` — it now
   points at the working `https://aincient-labs.com/atelier/install.sh`.
 

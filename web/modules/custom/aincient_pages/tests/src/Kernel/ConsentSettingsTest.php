@@ -37,8 +37,20 @@ final class ConsentSettingsTest extends KernelTestBase {
     return $this->container->get('aincient_pages.brand');
   }
 
+  public function testBannerSilentOnFreshInstall(): void {
+    // Out of the box the default typefaces (Fraunces + Schibsted Grotesk) are
+    // BUNDLED and self-hosted via the always-on brand-fonts library — nothing
+    // leaves the origin, so no non-essential category is active and no banner
+    // shows. The honest default is silence, not consent theatre.
+    $this->assertFalse($this->consent()->isActive());
+    $this->assertFalse($this->categoryById('fonts')['active']);
+  }
+
   public function testBannerActiveUnderGoogleDelivery(): void {
-    // Default delivery is Google → the fonts category is live → banner needed.
+    // The banner is honest: it appears only once a live third-party request
+    // exists. The bundled defaults make none, so the operator must actually add
+    // a Google-delivered web font → the fonts category goes live → banner shown.
+    $this->brand()->update([], ['Inter'], BrandRepository::DELIVERY_GOOGLE);
     $this->assertTrue($this->consent()->isActive());
 
     $fonts = $this->categoryById('fonts');

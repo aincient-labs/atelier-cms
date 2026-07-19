@@ -132,8 +132,11 @@ final class BrandStateTest extends KernelTestBase {
    * The brief summarises the saved brand (palette tokens + fonts).
    */
   public function testBriefSummarisesSavedBrand(): void {
-    // A fresh kernel install carries no saved tokens, so seed the palette the
-    // brief reads (the live site always has these).
+    // A fresh kernel install carries no saved overrides, so seed the palette
+    // the brief reads. `font_families` is the operator's OWN chosen web fonts
+    // (empty by default — the bundled Fraunces/Schibsted defaults load via the
+    // brand-fonts library, not as overrides); seed it too so the brief's fonts
+    // branch is exercised.
     $this->config('aincient_pages.brand')
       ->set('tokens', [
         'brand_primary' => 'oklch(0.5 0.2 260)',
@@ -141,6 +144,7 @@ final class BrandStateTest extends KernelTestBase {
         'neutral_surface' => 'oklch(0.98 0 0)',
         'neutral_ink' => 'oklch(0.2 0 0)',
       ])
+      ->set('font_families', ['Inter', 'Inter Tight'])
       ->save();
 
     $out = $this->emit();
