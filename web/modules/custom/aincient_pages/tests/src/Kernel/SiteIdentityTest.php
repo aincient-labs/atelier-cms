@@ -141,4 +141,50 @@ final class SiteIdentityTest extends KernelTestBase {
     $this->assertSame('', $this->identity()->favicon());
   }
 
+  /**
+   * Changing a page slot (front/403/404) rebuilds the router; a non-routing
+   * change (or a re-save of the same value) does not.
+   *
+   * The front page is served over the `system.site` override, so its target
+   * drives route resolution. Without a router rebuild the redirect module's
+   * route normalizer keeps 301ing `/` to the OLD front node until the next
+   * `drush cr` — the homepage-switch bug this guards against (DECISIONS 0232).
+   */
+  public function testFrontPageChangeRebuildsRouter(): void {
+    $spy = new class implements \Drupal\Core\Routing\RouteBuilderInterface {
+      public int $rebuilds = 0;
+
+      public function rebuild(): bool {
+        $this->rebuilds++;
+        return TRUE;
+      }
+
+      public function rebuildIfNeeded(): bool {
+        return FALSE;
+      }
+
+      public function setRebuildNeeded(): void {}
+
+    };
+    // Replace router.builder before SiteIdentity is first instantiated so the
+    // spy is the injected collaborator.
+    $this->container->set('router.builder', $spy);
+
+    // Switching the front page rebuilds the router.
+    $this->identity()->updateSite(['front' => 'entity:node:1']);
+    $this->assertSame(1, $spy->rebuilds, 'A front-page change rebuilds the router.');
+
+    // Re-saving the identical value is a no-op — no rebuild.
+    $this->identity()->updateSite(['front' => 'entity:node:1']);
+    $this->assertSame(1, $spy->rebuilds, 'Re-saving the same front page does not rebuild.');
+
+    // A different front node rebuilds again.
+    $this->identity()->updateSite(['front' => 'entity:node:2']);
+    $this->assertSame(2, $spy->rebuilds, 'A new front node rebuilds the router.');
+
+    // A non-routing change (site email) never touches the router.
+    $this->identity()->updateSite(['mail' => 'hello@example.com']);
+    $this->assertSame(2, $spy->rebuilds, 'A mail-only change does not rebuild the router.');
+  }
+
 }

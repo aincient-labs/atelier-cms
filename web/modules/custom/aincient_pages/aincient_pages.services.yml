@@ -34,7 +34,7 @@ services:
   # Brand identity (a Globals item): name/tagline/voice/logo/footer note.
   aincient_pages.site_identity:
     class: Drupal\aincient_pages\SiteIdentity
-    arguments: ['@config.factory', '@file_url_generator', '@aincient_pages.embed_resolver']
+    arguments: ['@config.factory', '@file_url_generator', '@aincient_pages.embed_resolver', '@router.builder']
   # Layers the identity's site information over core's system.site at config-
   # read time (name/slogan/mail + the front/403/404 page slots). Identity is
   # the single write target; system.site stays a pristine shipped file.

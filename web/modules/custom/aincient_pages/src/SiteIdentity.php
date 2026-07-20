@@ -6,6 +6,7 @@ namespace Drupal\aincient_pages;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
+use Drupal\Core\Routing\RouteBuilderInterface;
 
 /**
  * The site's BRAND IDENTITY — name, tagline, voice, logo, footer note.
@@ -46,6 +47,7 @@ final class SiteIdentity {
     private readonly ConfigFactoryInterface $configFactory,
     private readonly FileUrlGeneratorInterface $fileUrlGenerator,
     private readonly EntityEmbedResolver $embed,
+    private readonly RouteBuilderInterface $routeBuilder,
   ) {}
 
   /** The brand-voice guidelines map (name/tagline/description/tone + imagery_style/imagery_avoid). */
@@ -211,6 +213,7 @@ final class SiteIdentity {
     ];
     $site = $this->site();
     $applied = [];
+    $routingChanged = FALSE;
     foreach ($values as $key => $value) {
       if (!in_array($key, self::SITE_KEYS, TRUE) || !is_string($value)) {
         continue;
@@ -224,12 +227,24 @@ final class SiteIdentity {
           continue;
         }
       }
+      // A page slot (front/403/404) whose target actually changed drives route
+      // resolution via the system.site override, so the router's cached
+      // path→route map has to be rebuilt below — otherwise stale redirects
+      // persist (with the redirect module's route normalizer on, `/` keeps
+      // 301ing to the OLD front node's alias until a router rebuild). See
+      // DECISIONS 0232.
+      if ($key !== 'mail' && $value !== ($site[$key] ?? '')) {
+        $routingChanged = TRUE;
+      }
       $site[$key] = $value;
       $applied[] = $labels[$key];
     }
     if ($applied !== []) {
       $this->configFactory->getEditable(self::CONFIG)->set('site', $site)->save();
       $this->resetOverriddenSiteConfig();
+      if ($routingChanged) {
+        $this->routeBuilder->rebuild();
+      }
     }
     return $applied;
   }
