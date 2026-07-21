@@ -8,6 +8,10 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-21
+- Update to Drupal 11.4.
+- Slimmer appliance image: updates now build reproducible, content-addressed layers and
+  no longer bundle non-runtime build sources, so each update downloads far less data.
+- Security: refresh Composer and the chat build toolchain to clear known advisories.
 - Fix: changing your site's homepage now takes effect immediately. Switching the front
   page in the Globals studio used to need a manual cache clear before visitors saw it.
 

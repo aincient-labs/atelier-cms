@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0e289a28fa18669a6c993927abe9f0fb",
+    "content-hash": "00f4d510e304f89ad9456705ba4ebdf5",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -2790,17 +2790,17 @@
         },
         {
             "name": "drupal/flowdrop",
-            "version": "2.0.0-alpha6",
+            "version": "2.0.0-alpha7",
             "source": {
                 "type": "git",
                 "url": "https://git.drupalcode.org/project/flowdrop.git",
-                "reference": "2.0.0-alpha6"
+                "reference": "2.0.0-alpha7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha6.zip",
-                "reference": "2.0.0-alpha6",
-                "shasum": "aa0ee6ef025f7b4c392ce800d9c683f41294ead6"
+                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha7.zip",
+                "reference": "2.0.0-alpha7",
+                "shasum": "9a2eaf875a4f5067f5e66a508206956a12f9ad7d"
             },
             "require": {
                 "d34dman/vanilla-icon-picker": "^1.4",
@@ -2855,8 +2855,8 @@
             "type": "drupal-module",
             "extra": {
                 "drupal": {
-                    "version": "2.0.0-alpha6",
-                    "datestamp": "1783718060",
+                    "version": "2.0.0-alpha7",
+                    "datestamp": "1784657153",
                     "security-coverage": {
                         "status": "not-covered",
                         "message": "Alpha releases are not covered by Drupal security advisories."
@@ -3388,7 +3388,7 @@
         },
         {
             "name": "drupal/flowdrop_ui_components",
-            "version": "2.0.0-alpha6",
+            "version": "2.0.0-alpha7",
             "require": {
                 "drupal/core": "^11.3",
                 "drupal/flowdrop": "^2"
@@ -3396,8 +3396,8 @@
             "type": "metapackage",
             "extra": {
                 "drupal": {
-                    "version": "2.0.0-alpha6",
-                    "datestamp": "1783718060",
+                    "version": "2.0.0-alpha7",
+                    "datestamp": "1784657153",
                     "security-coverage": {
                         "status": "not-covered",
                         "message": "Alpha releases are not covered by Drupal security advisories."
@@ -6605,16 +6605,16 @@
         },
         {
             "name": "mck89/peast",
-            "version": "v1.17.6",
+            "version": "v1.17.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mck89/peast.git",
-                "reference": "b8b4184b1e6912669f9af155caef9050509d9f18"
+                "reference": "89ee39f81e82cb7ed36cc5abaf2edd43cef71770"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mck89/peast/zipball/b8b4184b1e6912669f9af155caef9050509d9f18",
-                "reference": "b8b4184b1e6912669f9af155caef9050509d9f18",
+                "url": "https://api.github.com/repos/mck89/peast/zipball/89ee39f81e82cb7ed36cc5abaf2edd43cef71770",
+                "reference": "89ee39f81e82cb7ed36cc5abaf2edd43cef71770",
                 "shasum": ""
             },
             "require": {
@@ -6627,7 +6627,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.17.6-dev"
+                    "dev-master": "1.17.7-dev"
                 }
             },
             "autoload": {
@@ -6648,9 +6648,9 @@
             "description": "Peast is PHP library that generates AST for JavaScript code",
             "support": {
                 "issues": "https://github.com/mck89/peast/issues",
-                "source": "https://github.com/mck89/peast/tree/v1.17.6"
+                "source": "https://github.com/mck89/peast/tree/v1.17.7"
             },
-            "time": "2026-04-24T08:04:05+00:00"
+            "time": "2026-07-21T11:56:06+00:00"
         },
         {
             "name": "monolog/monolog",

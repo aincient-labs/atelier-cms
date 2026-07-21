@@ -52,6 +52,11 @@ services:
       AINCIENT_ADMIN_PASS: ${ADMIN_PASS:-}
     ports:
       - "${HTTP_PORT:-41221}:80"   # 41221 = "AINCI" in leet
+    # Let the console reach services on the host machine (e.g. a locally-run
+    # Ollama at host.docker.internal:11434). Docker Desktop provides this name
+    # automatically; on Linux it only resolves with this explicit mapping.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - files:/opt/drupal/web/sites/default/files
       - private:/opt/drupal/private          # snapshots live here

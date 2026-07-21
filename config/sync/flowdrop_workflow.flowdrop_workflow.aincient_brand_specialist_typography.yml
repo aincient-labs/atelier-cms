@@ -7,6 +7,7 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
     - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+    - flowdrop_node_type.flowdrop_node_type.prompt_template
 id: aincient_brand_specialist_typography
 label: 'Brand specialist: Typography'
 description: 'Single-pass typography specialist. Takes a typography instruction (+ optional current state), decides the typeface PAIRING and type-scale presets, and returns a brand-preview slice (presets_json/tokens_json/fonts) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
@@ -29,22 +30,20 @@ nodes:
       width: 280
       height: 202
   -
-    id: simple_chat.1
+    id: prompt_template.1
     position:
-      x: 360
-      'y': 0
+      x: -40
+      'y': 260
     data:
-      label: 'Typography reasoning'
+      label: 'Typography system prompt'
       config:
-        operation_type: 'aincient_role:task'
-        model: null
-        temperature: 0
-        maxTokens: 900
-        systemPrompt: |-
+        template: |-
+          {% verbatim %}
           You are the TYPOGRAPHY specialist for AIncient's brand studio. You receive a
-          single instruction describing a desired typography change (it may also restate
-          the current look). Decide the best typeface PAIRING and type-scale presets, and
-          return them. You APPLY NOTHING — you only return a slice for the orchestrator.
+          single instruction describing a desired typography change. The AUTHORITATIVE
+          current look is given below under CURRENT LOOK. Decide the best typeface PAIRING
+          and type-scale presets, and return them. You APPLY NOTHING — you only return a
+          slice for the orchestrator.
 
           Return ONLY a single JSON object (no prose, no markdown fence). Use any of these
           keys; omit a key you are not setting:
@@ -63,12 +62,46 @@ nodes:
           - ALWAYS prefer a pairing preset over hand-picking font families. If the user
             names a pairing id (Inter, Editorial, Warm, …), use that exact id; never
             substitute your own fonts.
+          - RELATIVE CHANGES ("bigger", "heavier", "one step up") are relative to the
+            CURRENT LOOK values below — never to a value named in the instruction text.
           - Touch ONLY typography. Do NOT emit colour, radius, shadow, density, or spacing
             tokens — other specialists own those.
           - If the instruction implies no typography change, return {}.
 
           Example — instruction "use the Warm pairing with heavier headings":
           {"presets_json": {"pairing": "warm", "heading_weight": "heavy"}}
+          {% endverbatim %}
+          {% if brand_brief is defined and brand_brief %}
+
+          CURRENT LOOK — saved brand baseline:
+          {{ brand_brief }}
+          {% endif %}
+          {% if live_preview_state is defined and live_preview_state %}
+          CURRENT LOOK — unsaved preview edits layered on top (this is what is on screen NOW; it wins over the saved baseline):
+          {{ live_preview_state }}
+          {% endif %}
+        nodeType: default
+      metadata:
+        node_type_id: prompt_template
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 502
+  -
+    id: simple_chat.1
+    position:
+      x: 360
+      'y': 0
+    data:
+      label: 'Typography reasoning'
+      config:
+        operation_type: 'aincient_role:task'
+        model: null
+        temperature: 0
+        maxTokens: 900
+        systemPrompt: ''
       metadata:
         node_type_id: flowdrop_ai_provider_simple_chat
       extensions:
@@ -131,6 +164,26 @@ edges:
     class: flowdrop--edge--data
     selected: false
   -
+    id: xy-edge__prompt_template.1prompt_template.1-output-prompt-simple_chat.1simple_chat.1-input-systemPrompt
+    source: prompt_template.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: prompt_template.1-output-prompt
+    targetHandle: simple_chat.1-input-systemPrompt
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
     id: xy-edge__simple_chat.1simple_chat.1-output-response-brand_validate_slice.1brand_validate_slice.1-input-slice
     source: simple_chat.1
     target: brand_validate_slice.1
@@ -181,6 +234,10 @@ input_ports:
     name: ask
     node_id: chat_input.1
     port: message
+  -
+    name: current_state
+    node_id: prompt_template.1
+    port: variables
 output_ports:
   -
     name: slice
@@ -195,7 +252,11 @@ parameter_schema:
       type: string
       default: ''
       required: true
-      description: 'The typography instruction to act on — what the user wants for typefaces / type scale, optionally including the current look to build on. Pass the typography-relevant part of the request only.'
+      description: 'The typography instruction to act on — what the user wants for typefaces / type scale. Pass the typography-relevant part of the request only; do NOT restate current values (the authoritative current look is supplied separately via current_state).'
+    current_state:
+      type: object
+      required: false
+      description: 'The authoritative current look (saved-brand brief + live preview draft), injected from the brand_state node — NOT model-authored. Wire a data edge into this port; it is withheld from the model and supplied deterministically from run state.'
 output_schema:
   type: object
   properties:

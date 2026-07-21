@@ -7,9 +7,10 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
     - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+    - flowdrop_node_type.flowdrop_node_type.prompt_template
 id: aincient_brand_specialist_shape
 label: 'Brand specialist: Shape & density'
-description: 'Single-pass shape & density specialist. Takes a shape/depth/density instruction (+ optional current state), decides roundness/depth/density presets and any fine component knobs, and returns a brand-preview slice (presets_json/tokens_json) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
+description: 'Single-pass shape & density specialist. Takes a shape/depth/density instruction plus the authoritative current look (injected deterministically, not model-authored), decides roundness/depth/density presets and any fine component knobs, and returns a brand-preview slice (presets_json/tokens_json) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
 nodes:
   -
     id: chat_input.1
@@ -29,21 +30,19 @@ nodes:
       width: 280
       height: 202
   -
-    id: simple_chat.1
+    id: prompt_template.1
     position:
-      x: 360
-      'y': 0
+      x: -40
+      'y': 260
     data:
-      label: 'Shape reasoning'
+      label: 'Shape system prompt'
       config:
-        operation_type: 'aincient_role:task'
-        model: null
-        temperature: 0
-        maxTokens: 900
-        systemPrompt: |-
+        template: |-
+          {% verbatim %}
           You are the SHAPE & DENSITY specialist for AIncient's brand studio. You receive a
           single instruction about corner roundness, shadow style/depth, spacing density, or
-          per-component shape. Decide the presets and any fine shadow axes, and return them.
+          per-component shape. The AUTHORITATIVE current look is given below under CURRENT
+          LOOK. Decide the presets and any fine shadow axes, and return them.
           You APPLY NOTHING — return a slice only.
 
           Return ONLY a single JSON object (no prose, no markdown fence). Use any of these
@@ -102,7 +101,9 @@ nodes:
             sole token that also accepts a raw colour.
           - For an ADJUSTMENT to the current shadow ("make it bigger", "softer",
             "darker", "light from the left"), change ONLY the one axis (or direction)
-            involved — never restate the whole look, so the rest is preserved.
+            involved — never restate the whole look, so the rest is preserved. The current
+            values to adjust from are in CURRENT LOOK below, never a value named in the
+            instruction text.
           - Touch ONLY shape/depth/density. Do NOT emit typography or palette/semantic
             colour tokens — the one exception is the shadow TINT (shadow_color), which is
             yours, and the component border colours above.
@@ -115,6 +116,38 @@ nodes:
           - "softer shadow, light from top-left" ⇒ {"tokens_json": {"shadow_blur": "14px"}, "presets_json": {"direction": "bottom_right"}}
           - "a neon glow in the brand colour" ⇒ {"tokens_json": {"shadow_distance": "0", "shadow_blur": "18px", "shadow_color": "var(--brand-primary)", "shadow_strength": "0.5"}, "presets_json": {"direction": "center"}}
           - "outlined buttons with a thin border" ⇒ {"tokens_json": {"button_border_width": "1px", "button_border_color": "var(--border)"}}
+          {% endverbatim %}
+          {% if brand_brief is defined and brand_brief %}
+
+          CURRENT LOOK — saved brand baseline:
+          {{ brand_brief }}
+          {% endif %}
+          {% if live_preview_state is defined and live_preview_state %}
+          CURRENT LOOK — unsaved preview edits layered on top (this is what is on screen NOW; it wins over the saved baseline):
+          {{ live_preview_state }}
+          {% endif %}
+        nodeType: default
+      metadata:
+        node_type_id: prompt_template
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 502
+  -
+    id: simple_chat.1
+    position:
+      x: 360
+      'y': 0
+    data:
+      label: 'Shape reasoning'
+      config:
+        operation_type: 'aincient_role:task'
+        model: null
+        temperature: 0
+        maxTokens: 900
+        systemPrompt: ''
       metadata:
         node_type_id: flowdrop_ai_provider_simple_chat
       extensions:
@@ -177,6 +210,26 @@ edges:
     class: flowdrop--edge--data
     selected: false
   -
+    id: xy-edge__prompt_template.1prompt_template.1-output-prompt-simple_chat.1simple_chat.1-input-systemPrompt
+    source: prompt_template.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: prompt_template.1-output-prompt
+    targetHandle: simple_chat.1-input-systemPrompt
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
     id: xy-edge__simple_chat.1simple_chat.1-output-response-brand_validate_slice.1brand_validate_slice.1-input-slice
     source: simple_chat.1
     target: brand_validate_slice.1
@@ -227,6 +280,10 @@ input_ports:
     name: ask
     node_id: chat_input.1
     port: message
+  -
+    name: current_state
+    node_id: prompt_template.1
+    port: variables
 output_ports:
   -
     name: slice
@@ -241,7 +298,11 @@ parameter_schema:
       type: string
       default: ''
       required: true
-      description: 'The shape instruction to act on — what the user wants for corner roundness, shadow depth, spacing density, or per-component shape, optionally including the current look. Pass the shape-relevant part of the request only.'
+      description: 'The shape instruction to act on — what the user wants for corner roundness, shadow depth, spacing density, or per-component shape. Pass the shape-relevant part of the request only; do NOT restate current values (the authoritative current look is supplied separately via current_state).'
+    current_state:
+      type: object
+      required: false
+      description: 'The authoritative current look (saved-brand brief + live preview draft), injected from the brand_state node — NOT model-authored. Wire a data edge into this port; it is withheld from the model and supplied deterministically from run state.'
 output_schema:
   type: object
   properties:

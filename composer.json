@@ -41,7 +41,7 @@
         "drupal/core-composer-scaffold": "^11.4.4",
         "drupal/core-project-message": "^11.4.4",
         "drupal/core-recipe-unpack": "^11.4.4",
-        "drupal/flowdrop": "^2",
+        "drupal/flowdrop": "^2.0.0-alpha7",
         "drupal/flowdrop_ai_provider": "2.x-dev",
         "drupal/gemini_provider": "^1.0.1",
         "drupal/imagemagick": "^5.0.1",

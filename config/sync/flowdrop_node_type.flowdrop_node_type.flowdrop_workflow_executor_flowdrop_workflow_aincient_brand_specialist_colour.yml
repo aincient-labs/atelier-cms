@@ -16,6 +16,10 @@ parameters:
     configurable: true
     connectable: true
     required: true
+  current_state:
+    configurable: false
+    connectable: true
+    required: false
 outputs:
   slice:
     exposed: true

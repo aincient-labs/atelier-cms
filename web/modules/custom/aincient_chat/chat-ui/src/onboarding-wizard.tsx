@@ -241,7 +241,7 @@ function ProviderRow({
                 value={credential}
                 onChange={(e) => onCredentialChange(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && onConnect()}
-                placeholder={isHost ? "http://localhost:11434" : "sk-…"}
+                placeholder={isHost ? "http://host.docker.internal:11434" : "sk-…"}
                 autoComplete="off"
                 spellCheck={false}
                 autoFocus
@@ -265,6 +265,13 @@ function ProviderRow({
             </div>
           </label>
           {error && <p className="ain-wiz__error">{error}</p>}
+          {isHost && (
+            <p className="ain-wiz__foot">
+              Atelier runs in a container, so <code>localhost</code> points at the container itself — not the
+              machine where your server runs. Reach a server on the host with{" "}
+              <code>http://host.docker.internal:11434</code>.
+            </p>
+          )}
           {keyHelp && (
             <p className="ain-wiz__foot">
               Get a key at{" "}

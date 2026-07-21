@@ -221,7 +221,7 @@ nodes:
     id: aincient_flows_aincient_capability_brand_picker.1
     position:
       x: -1480
-      'y': -420
+      'y': -200
     data:
       label: 'Capability: Quick brand picker'
       config:
@@ -241,6 +241,7 @@ nodes:
       label: 'Capability: Reset brand preview'
       config:
         nodeType: tool
+        maxRetries: 0
       metadata:
         node_type_id: aincient_flows_aincient_capability_reset_preview
     measured:
@@ -250,11 +251,12 @@ nodes:
     id: aincient_flows_aincient_capability_preview_brand.1
     position:
       x: -1480
-      'y': -180
+      'y': -80
     data:
       label: 'Capability: Preview brand'
       config:
         nodeType: tool
+        maxRetries: 0
       metadata:
         node_type_id: aincient_flows_aincient_capability_preview_brand
     measured:
@@ -265,11 +267,12 @@ nodes:
     id: aincient_flows_aincient_capability_propose_brand_status.1
     position:
       x: -1480
-      'y': 300
+      'y': 200
     data:
       label: 'Capability: Propose brand status'
       config:
         nodeType: tool
+        maxRetries: 0
       metadata:
         node_type_id: aincient_flows_aincient_capability_propose_brand_status
     measured:
@@ -302,7 +305,12 @@ nodes:
           - brand_specialist_shape — corner roundness, shadow depth/elevation, spacing
             density, per-component shape.
           A request can touch several dimensions — call EACH relevant specialist exactly ONCE
-          (one tool call at a time) with just its slice of the ask. Call a specialist once and
+          (one tool call at a time) with just its slice of the ask. Describe only the CHANGE the
+          user wants — do NOT restate the current colour/font/shape values in the `ask`. Each
+          specialist is given the authoritative current look automatically, so a value you recall
+          from earlier in the chat may be stale; for a relative change ("darker", "bigger",
+          "rounder") just say the change and let the specialist read the current value.
+          Call a specialist once and
           move on; do NOT call the same specialist twice in a turn (the only exception is one
           corrective re-call to fix a reported rejection — see REJECTIONS). The studio collects every
           slice you delegated and applies the COMPLETE look in one step when you're done — so
@@ -373,13 +381,15 @@ nodes:
   -
     id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1
     position:
-      x: -1480
-      'y': -300
+      x: -2420
+      'y': -1300
     data:
       label: 'Run workflow: Brand typography specialist'
       config:
-        nodeType: tool
+        nodeType: default
         instanceTitle: 'Typography specialist'
+        ask: ''
+        maxRetries: 0
       metadata:
         node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography
       extensions:
@@ -387,17 +397,19 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 100
+      height: 522
   -
     id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1
     position:
-      x: -1480
-      'y': -60
+      x: -2060
+      'y': -920
     data:
       label: 'Run workflow: Brand colour & contrast specialist'
       config:
-        nodeType: tool
+        nodeType: default
         instanceTitle: 'Colour specialist'
+        ask: ''
+        maxRetries: 0
       metadata:
         node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour
       extensions:
@@ -405,17 +417,19 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 100
+      height: 522
   -
     id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1
     position:
-      x: -1480
-      'y': 180
+      x: -2420
+      'y': -460
     data:
       label: 'Run workflow: Brand shape & density specialist'
       config:
-        nodeType: tool
+        nodeType: default
         instanceTitle: 'Shape specialist'
+        ask: ''
+        maxRetries: 0
       metadata:
         node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape
       extensions:
@@ -423,7 +437,7 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 100
+      height: 522
   -
     id: brand_apply_slices.1
     position:
@@ -440,8 +454,8 @@ nodes:
   -
     id: brand_state.1
     position:
-      x: -1240
-      'y': -640
+      x: -3160
+      'y': -660
     data:
       label: 'Brand state'
       config: {  }
@@ -452,7 +466,7 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 360
+      height: 582
 edges:
   -
     id: xy-edge__flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
@@ -842,9 +856,69 @@ edges:
       targetCategory: prompts
       metadata:
         edgeType: data
-        sourcePortDataType: object
+        sourcePortDataType: json
     sourceHandle: brand_state.1-output-variables
     targetHandle: prompt_template.3-input-variables
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__brand_state.1brand_state.1-output-variables-flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1-input-current_state
+    source: brand_state.1
+    target: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: brand_state.1-output-variables
+    targetHandle: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour.1-input-current_state
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__brand_state.1brand_state.1-output-variables-flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1-input-current_state
+    source: brand_state.1
+    target: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: brand_state.1-output-variables
+    targetHandle: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1-input-current_state
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
+    id: xy-edge__brand_state.1brand_state.1-output-variables-flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1-input-current_state
+    source: brand_state.1
+    target: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: brand_state.1-output-variables
+    targetHandle: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape.1-input-current_state
     style: 'stroke: var(--fd-edge-data);'
     markerEnd:
       type: arrowclosed
@@ -935,13 +1009,13 @@ edges:
     selected: false
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-06-27T12:48:09.710Z'
+  updatedAt: '2026-07-21T17:18:01.769Z'
   schemaVersion: 1.0.0
-  versionId: 1782564374479-lxuv867t9
-  updateNumber: 363
+  versionId: 1784654278700-i56ao0ee4
+  updateNumber: 385
   format: flowdrop
 created: 1782316908
-changed: 1782564490
+changed: 1784654282
 uid: 1
 input_ports:
   -

@@ -115,7 +115,7 @@ function Onboarding(payload: OnboardingPayload) {
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && connect()}
-          placeholder={isHost ? "http://localhost:11434" : "sk-…"}
+          placeholder={isHost ? "http://host.docker.internal:11434" : "sk-…"}
           autoComplete="off"
           spellCheck={false}
         />
@@ -133,6 +133,12 @@ function Onboarding(payload: OnboardingPayload) {
       </button>
 
       <p className="ain-onboard__foot">
+        {isHost && (
+          <>
+            Atelier runs in a container, so <code>localhost</code> points at the container itself. Reach a
+            server on the host with <code>http://host.docker.internal:11434</code>.{" "}
+          </>
+        )}
         {keyHelp && (
           <>
             Get a key at{" "}

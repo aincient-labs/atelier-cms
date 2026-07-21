@@ -7,9 +7,10 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
     - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+    - flowdrop_node_type.flowdrop_node_type.prompt_template
 id: aincient_brand_specialist_colour
 label: 'Brand specialist: Colour & contrast'
-description: 'Single-pass colour & contrast specialist. Takes a colour instruction (+ optional current state and WCAG warnings), decides a complete contrast-safe palette, and returns a brand-preview slice (tokens_json) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
+description: 'Single-pass colour & contrast specialist. Takes a colour instruction plus the authoritative current look (injected deterministically, not model-authored), decides a complete contrast-safe palette, and returns a brand-preview slice (tokens_json) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
 nodes:
   -
     id: chat_input.1
@@ -29,22 +30,20 @@ nodes:
       width: 280
       height: 202
   -
-    id: simple_chat.1
+    id: prompt_template.1
     position:
-      x: 360
-      'y': 0
+      x: -40
+      'y': 260
     data:
-      label: 'Colour reasoning'
+      label: 'Colour system prompt'
       config:
-        operation_type: 'aincient_role:task'
-        model: null
-        temperature: 0
-        maxTokens: 900
-        systemPrompt: |-
+        template: |-
+          {% verbatim %}
           You are the COLOUR & CONTRAST specialist for AIncient's brand studio. You receive
-          a single instruction about a colour/palette change (it may include the current
-          look and any WCAG contrast warnings to fix). Decide a COMPLETE, coherent,
-          contrast-safe palette and return it. You APPLY NOTHING — return a slice only.
+          a single instruction about a colour/palette change. The AUTHORITATIVE current look
+          is given below under CURRENT LOOK — it is the real, on-screen state. Decide a
+          COMPLETE, coherent, contrast-safe palette and return it. You APPLY NOTHING — return
+          a slice only.
 
           Return ONLY a single JSON object (no prose, no markdown fence) with:
           - "tokens_json": an object mapping colour token names to values.
@@ -93,6 +92,13 @@ nodes:
             When unsure whether a phrase is a mood or a single-axis tweak, treat it as (b) and
             change the least — a scoped edit is always safe to widen next turn; an unwanted
             palette sweep is the bug we're avoiding.
+          - RELATIVE CHANGES ("darker", "lighter", "warmer", "more muted", "less saturated")
+            are always relative to the CURRENT LOOK values below — NEVER to a colour named in
+            the instruction text (the orchestrator may restate a stale value). Read the
+            current value of the token being changed from CURRENT LOOK, then adjust IT. If the
+            current value is a Tailwind palette reference (e.g. var(--color-yellow-400)),
+            resolve it to that hue/lightness and adjust from there — keep the same hue unless
+            asked otherwise.
           - COLOUR PAIRS: every surface has a paired on-colour. Set a surface and its
             on-colour TOGETHER and keep them ≥4.5:1 (WCAG AA). Pairs: background/foreground,
             primary/primary_foreground, accent/accent_foreground, muted/muted_foreground,
@@ -121,6 +127,38 @@ nodes:
 
           Example — instruction "make it neon":
           {"tokens_json": {"neutral_surface":"oklch(0.15 0.02 270)","neutral_ink":"oklch(0.97 0 0)","brand_primary":"oklch(0.78 0.26 195)","brand_primary_foreground":"oklch(0.15 0.02 270)","brand_accent":"oklch(0.75 0.27 330)","brand_accent_foreground":"oklch(0.15 0.02 270)"}}
+          {% endverbatim %}
+          {% if brand_brief is defined and brand_brief %}
+
+          CURRENT LOOK — saved brand baseline:
+          {{ brand_brief }}
+          {% endif %}
+          {% if live_preview_state is defined and live_preview_state %}
+          CURRENT LOOK — unsaved preview edits layered on top (this is what is on screen NOW; it wins over the saved baseline):
+          {{ live_preview_state }}
+          {% endif %}
+        nodeType: default
+      metadata:
+        node_type_id: prompt_template
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 502
+  -
+    id: simple_chat.1
+    position:
+      x: 360
+      'y': 0
+    data:
+      label: 'Colour reasoning'
+      config:
+        operation_type: 'aincient_role:task'
+        model: null
+        temperature: 0
+        maxTokens: 900
+        systemPrompt: ''
       metadata:
         node_type_id: flowdrop_ai_provider_simple_chat
       extensions:
@@ -183,6 +221,26 @@ edges:
     class: flowdrop--edge--data
     selected: false
   -
+    id: xy-edge__prompt_template.1prompt_template.1-output-prompt-simple_chat.1simple_chat.1-input-systemPrompt
+    source: prompt_template.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: prompt_template.1-output-prompt
+    targetHandle: simple_chat.1-input-systemPrompt
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+    selected: false
+  -
     id: xy-edge__simple_chat.1simple_chat.1-output-response-brand_validate_slice.1brand_validate_slice.1-input-slice
     source: simple_chat.1
     target: brand_validate_slice.1
@@ -233,6 +291,10 @@ input_ports:
     name: ask
     node_id: chat_input.1
     port: message
+  -
+    name: current_state
+    node_id: prompt_template.1
+    port: variables
 output_ports:
   -
     name: slice
@@ -247,7 +309,11 @@ parameter_schema:
       type: string
       default: ''
       required: true
-      description: 'The colour instruction to act on — what the user wants for the palette/mood, optionally including the current look to build on and any WCAG contrast warnings to fix. Pass the colour-relevant part of the request only.'
+      description: 'The colour instruction to act on — what the user wants for the palette/mood. Pass the colour-relevant part of the request only; do NOT restate current colour values (the authoritative current look is supplied separately via current_state).'
+    current_state:
+      type: object
+      required: false
+      description: 'The authoritative current look (saved-brand brief + live preview draft), injected from the brand_state node — NOT model-authored. Wire a data edge into this port; it is withheld from the model and supplied deterministically from run state.'
 output_schema:
   type: object
   properties:
