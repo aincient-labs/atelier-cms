@@ -79,6 +79,13 @@ export const AUDIT_STUDIO: StudioKey = "checks";
 /** The studio a Media item room drives. */
 export const MEDIA_STUDIO: StudioKey = "media";
 
+/**
+ * The (singleton) Brand / Design-System studio — always lands on a fresh thread
+ * (DECISIONS 0234). NOTE the key is `design_system` (the studio key in
+ * studio-registry.tsx), NOT `brand` (which is only the brand agent's flow slug).
+ */
+export const DESIGN_SYSTEM_STUDIO: StudioKey = "design_system";
+
 /** A stable string key for a room (React key + active-room comparison). */
 export function roomId(room: Room): string {
   if (room.kind === "studio") return `studio:${room.studio}`;

@@ -1,7 +1,7 @@
 import type { ComponentType, SVGProps } from "react";
 import { studioOfThread } from "./flow";
 import { activeRoom } from "./console-nav";
-import { COLLECTION_STUDIO, MEDIA_STUDIO, isBrowseRoom, roomBadge, roomId, roomStudio, sameRoom, sectionRoom, type Room } from "./rooms-core";
+import { COLLECTION_STUDIO, DESIGN_SYSTEM_STUDIO, MEDIA_STUDIO, isBrowseRoom, roomBadge, roomId, roomStudio, sameRoom, sectionRoom, type Room } from "./rooms-core";
 import { studioDef } from "./studio-registry";
 import { agentsForStudio } from "./studios";
 import { threadActivity } from "./thread-meta";
@@ -104,9 +104,19 @@ export function threadsInRoom(room: Room, rows: ThreadRow[]): ThreadRow[] {
  * there (every media thread lives on the shelf), but picking the section must
  * land on the directory, not resume yesterday's conversation — resuming is the
  * sidebar WIP row's job, and it passes its thread explicitly.
+ *
+ * The BRAND studio is likewise always-fresh (DECISIONS 0234). Its live preview is
+ * held in an in-memory client store that does NOT survive a page reload, while a
+ * brand thread's proposals ("primary → navy") persist server-side — so resuming a
+ * live brand thread can put the agent's conversation memory OUT OF SYNC with the
+ * preview on screen, making relative requests ("make it lighter") anchor on an
+ * un-applied proposal. Entering Brand via section-nav therefore starts a clean
+ * thread anchored on the SAVED brand. Explicit resume still works: the sidebar WIP
+ * row and `?thr=` deep links pass their thread id directly (bypassing this policy).
  */
 export function roomActiveThread(room: Room, rows: ThreadRow[]): string | undefined {
   if (isBrowseRoom(room)) return undefined;
+  if (room.kind === "studio" && room.studio === DESIGN_SYSTEM_STUDIO) return undefined;
   const live = threadsInRoom(room, rows).filter((r) => !r.sealed && !r.archived);
   return live[0]?.remoteId;
 }

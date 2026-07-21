@@ -8,6 +8,14 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-21
+- Fix: relative brand tweaks like "make the primary colour darker" now build on your
+  current look — including edits you just made by hand in the studio — instead of an
+  older remembered value.
+- Fix: connecting a local Ollama during setup now works. The first-run wizard and the
+  in-chat Connect AI panel point at the correct address for reaching Ollama on your
+  machine.
+
+## 2026-07-21
 - Update to Drupal 11.4.
 - Slimmer appliance image: updates now build reproducible, content-addressed layers and
   no longer bundle non-runtime build sources, so each update downloads far less data.

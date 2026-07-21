@@ -18,6 +18,7 @@ import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { PanelBar } from "./panel-bar";
 import { FieldRevert } from "./field-revert";
 import { apiUrl } from "./console-config";
+import { consoleNav } from "./console-nav";
 
 /** One token, as returned by /atelier/brand/manifest. */
 type TokenDef = {
@@ -574,12 +575,24 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
   }, [baseline]);
 
   // Drop the whole draft: clear preview overrides + pending fonts and snap the
-  // working values back to the saved baseline.
+  // working values back to the saved baseline — then START A FRESH THREAD.
+  //
+  // The client override store is only *half* the draft. The conversation itself
+  // holds the other half: the proposed change (e.g. "primary → navy") lives on
+  // in the persisted thread buffer and is replayed into the orchestrator every
+  // turn, so a later relative request ("make primary lighter") still anchors on
+  // the discarded navy from memory — even though the preview + per-turn
+  // live_preview_state have snapped back to the saved brand. Clearing only the
+  // client store leaves that stale anchor in place (DECISIONS 0234). Starting a
+  // fresh thread in the same room drops the replayed memory, so the next turn
+  // anchors cleanly on the SAVED brand (`brand_state` brief). Mirrors what a
+  // clean Publish already does (seal → fresh thread), minus the seal.
   const discard = () => {
     resetBrandOverrides();
     setValues({ ...baseline });
     setNotice(null);
     setError(null);
+    consoleNav.newThread();
   };
 
   // Toggle the design-intent status. Writes IMMEDIATELY (a MODE, not draft
@@ -717,7 +730,7 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
           className="ain-btn ain-topbtn"
           onClick={discard}
           disabled={dirty === 0 || publishing}
-          title="Discard draft — revert the preview to the saved brand"
+          title="Discard draft — revert the preview to the saved brand and start a fresh chat"
         >
           Discard
         </button>
