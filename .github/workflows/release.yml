@@ -176,9 +176,21 @@ jobs:
       # composer install inside the Docker build authenticates to the GitHub API
       # via the same BuildKit secret the Dockerfile + smoke build use
       # (id=composer_github_token), fed the built-in GITHUB_TOKEN.
+      # Reproducible layer digests. Without this, every built layer records its
+      # files' build-time mtimes, so a build-cache MISS (GHA's 10 GB LRU evicts
+      # the vendor/apt layers, or a cancel-in-progress aborts the cache export)
+      # republishes the big core+contrib+vendor (~75 MB) and ImageMagick (~54 MB)
+      # layers under NEW digests even though their contents are byte-identical —
+      # and every appliance re-pulls ~130 MB it already has. rewrite-timestamp
+      # caps all file mtimes in the exported layers at SOURCE_DATE_EPOCH, so
+      # identical content always yields an identical digest regardless of when or
+      # whether it was cached. SOURCE_DATE_EPOCH is a FIXED constant on purpose:
+      # tie it to the build time and the whole image would re-digest every deploy,
+      # defeating the point. Only change it to force a global re-layer.
       - name: Push by digest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_DATE_EPOCH: '1704067200'  # 2024-01-01T00:00:00Z — keep constant
         run: |
           set -euo pipefail
           IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
@@ -186,7 +198,7 @@ jobs:
             --secret "id=composer_github_token,env=GITHUB_TOKEN" \
             --cache-from "type=gha,scope=appliance-${{ matrix.arch }}" \
             -f docker/Dockerfile \
-            --output "type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true" \
+            --output "type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true,rewrite-timestamp=true" \
             --metadata-file /tmp/meta.json \
             .
           mkdir -p /tmp/digests

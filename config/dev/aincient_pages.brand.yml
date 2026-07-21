@@ -1,44 +1,6 @@
 tokens:
-  brand_primary: 'oklch(0.52 0.22 15)'
-  brand_primary_foreground: 'oklch(0.98 0.001 0)'
-  brand_accent: 'oklch(0.18 0.05 260)'
-  brand_accent_foreground: 'oklch(0.98 0.001 0)'
-  neutral_surface: 'oklch(0.98 0.001 0)'
-  neutral_subtle: 'oklch(0.94 0.003 0)'
-  neutral_border: 'oklch(0.88 0.002 0)'
-  neutral_muted_foreground: 'oklch(0.45 0.015 270)'
-  neutral_ink: 'oklch(0.15 0.01 270)'
-  radius_sm: 0px
-  radius_md: 0px
-  radius_lg: 0px
-  radius_xl: 0px
-  radius_2xl: 0px
-  shadow_distance: 6px
-  shadow_blur: 0px
-  shadow_strength: '1'
-  shadow_dir_x: '0.71'
-  shadow_dir_y: '0.71'
-  shadow_color: var(--neutral-ink)
-  border_width: 1px
-  button_radius: var(--radius-none)
-  tabs_radius: var(--radius-none)
-  font_family_display: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif'
-  heading_weight: var(--weight-extrabold)
-  subheading_weight: var(--weight-bold)
-  density: '0.85'
-  button_bg: var(--brand-accent)
-  button_fg: var(--brand-accent-foreground)
-  card_radius: 0px
-  card_border_color: var(--border)
-  popover_radius: 0px
-  popover_border_color: var(--border)
-  input_radius: 0px
-  button_border_color: var(--neutral-ink)
-  button_border_width: 1px
-font_families:
-  - 'Space Grotesk'
-  - Inter
-font_delivery: google
-status:
-  stage: polish
-  locked: false
+  neutral_surface: '#fcfaf7'
+  neutral_subtle: 'oklch(1 0 0)'
+  neutral_muted_foreground: 'oklch(0.45 0 0)'
+  neutral_ink: 'oklch(0.20 0.02 270)'
+  card: var(--neutral-subtle)

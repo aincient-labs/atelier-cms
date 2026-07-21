@@ -37,6 +37,17 @@ RUN --mount=type=secret,id=composer_github_token \
     composer install --no-dev --no-interaction --no-progress --prefer-dist --ignore-platform-reqs \
       --optimize-autoloader
 
+# Normalise mtimes across the resolved tree so the COPY --from=vendor layer below
+# is byte-stable across rebuilds. composer stamps every file with the build time;
+# BuildKit's layer digest hashes those mtimes, so a cache MISS on this stage (GHA
+# cache eviction, a cancelled cache export, …) would otherwise hand the unchanged
+# core+contrib+vendor layer a brand-new digest and force every appliance to
+# re-download ~75 MB it already has. Pinning to a fixed epoch makes identical
+# content → identical layer, independent of when it was built. (-h so symlinks are
+# stamped in place; -t <YYYYMMDDhhmm> is busybox-portable — this is Alpine.) The
+# runtime image's opcache runs validate_timestamps=0, so these mtimes are inert.
+RUN find /app -exec touch -h -t 202401010000 {} +
+
 # --- Stage 2: runtime -------------------------------------------------------
 FROM php:8.4-apache AS runtime
 

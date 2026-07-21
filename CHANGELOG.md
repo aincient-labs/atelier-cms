@@ -7,6 +7,10 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-21
+- Fix: changing your site's homepage now takes effect immediately. Switching the front
+  page in the Globals studio used to need a manual cache clear before visitors saw it.
+
 ## 2026-07-20
 - Add a security policy (SECURITY.md) — report vulnerabilities privately through GitHub's
   security advisories, with clear response times and a coordinated-disclosure process.

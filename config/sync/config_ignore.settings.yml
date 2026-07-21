@@ -2,7 +2,6 @@ _core:
   default_config_hash: IgOVnECx6lbVt6JVFnadoEEugneDf3UblPZnOzov43Q
 mode: simple
 ignored_config_entities:
-  - system.site
   - ai.settings
   - ai_metering.settings
   - ai_provider_anthropic.settings
@@ -15,3 +14,4 @@ ignored_config_entities:
   - aincient_pages.identity
   - 'language.entity.*'
   - language.negotiation
+  - system.site

@@ -15,3 +15,11 @@ web/sites/*/settings.php
 web/sites/*/settings.ddev.php
 *.sql
 *.sql.gz
+# The custom modules' front-end SOURCE trees never run in the appliance — the
+# runtime loads only the pre-built bundles under js/dist/ (aincient_chat.libraries.yml
+# references js/dist/*, not chat-ui/). Keeping the React source out shrinks the
+# volatile custom-modules layer by ~80% (~2.2 MB → ~0.5 MB), so a code-only pull is
+# smaller. (js/dist/THIRD-PARTY-NOTICES.txt still ships for attribution.)
+web/modules/custom/*/chat-ui
+# macOS finder cruft — 50+ of these otherwise ride into the image.
+**/.DS_Store

@@ -32,15 +32,15 @@
         "drupal/ai_provider_mistral": "^1.1@RC",
         "drupal/ai_provider_nanobanana": "^1.0@beta",
         "drupal/ai_provider_ollama": "^1.2@rc",
-        "drupal/ai_provider_openai": "^1.2.2",
+        "drupal/ai_provider_openai": "^1.2.3",
         "drupal/ai_provider_openrouter": "^1.1.6",
         "drupal/coffee": "^2.0.1",
         "drupal/config_ignore": "^3.4",
         "drupal/config_split": "^2.0.2",
-        "drupal/core": "^11.4.2",
-        "drupal/core-composer-scaffold": "^11.4.2",
-        "drupal/core-project-message": "^11.3.13",
-        "drupal/core-recipe-unpack": "^11.3.13",
+        "drupal/core": "^11.4.4",
+        "drupal/core-composer-scaffold": "^11.4.4",
+        "drupal/core-project-message": "^11.4.4",
+        "drupal/core-recipe-unpack": "^11.4.4",
         "drupal/flowdrop": "^2",
         "drupal/flowdrop_ai_provider": "2.x-dev",
         "drupal/gemini_provider": "^1.0.1",
@@ -53,9 +53,9 @@
         "drupal/rift": "^2.0.0-rc1",
         "drupal/schema_metatag": "^3.0.4",
         "drupal/simple_sitemap": "^4.2.3",
-        "drupal/tome": "^1.14",
-        "drush/drush": "^13.7.4",
-        "league/commonmark": "^2.8.2"
+        "drupal/tome": "^1.16",
+        "drush/drush": "^13.7.6",
+        "league/commonmark": "^2.8.3"
     },
     "conflict": {
         "drupal/drupal": "*"
@@ -142,6 +142,6 @@
         }
     },
     "require-dev": {
-        "drupal/core-dev": "^11.3.13"
+        "drupal/core-dev": "^11.4.4"
     }
 }

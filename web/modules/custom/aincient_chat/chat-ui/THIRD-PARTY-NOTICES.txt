@@ -8378,7 +8378,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
 
-vite@6.4.2  —  MIT
+vite@6.4.3  —  MIT
 
 # Vite core license
 Vite is released under the MIT license:
@@ -9727,7 +9727,7 @@ Repository: lydell/js-tokens
 ## launch-editor, launch-editor-middleware
 License: MIT
 By: Evan You
-Repositories: git+https://github.com/yyx990803/launch-editor.git, git+https://github.com/yyx990803/launch-editor.git
+Repositories: git+https://github.com/vitejs/launch-editor.git, git+https://github.com/vitejs/launch-editor.git
 
 > The MIT License (MIT)
 > 

@@ -64,7 +64,6 @@ module:
   flowdrop_workflow_executor: 0
   focal_point: 0
   gemini_provider: 0
-  history: 0
   image: 0
   image_style_quality: 0
   image_widget_crop: 0
@@ -102,8 +101,6 @@ module:
   taxonomy: 0
   text: 0
   token: 0
-  tome_base: 0
-  tome_static: 0
   update: 0
   user: 0
   views_data_export: 0
