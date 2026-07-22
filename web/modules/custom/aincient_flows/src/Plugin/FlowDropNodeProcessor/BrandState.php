@@ -142,10 +142,16 @@ class BrandState extends AbstractFlowDropNodeProcessor {
       $parts[] = $identity;
     }
 
-    $tokens = $this->brand->tokens();
     $palette = [];
     foreach (['brand_primary' => 'primary', 'brand_accent' => 'accent', 'neutral_surface' => 'surface', 'neutral_ink' => 'ink'] as $key => $label) {
-      $value = trim((string) ($tokens[$key] ?? ''));
+      // Effective value = saved override if set, else the registry default — the
+      // same resolution the studio swatch (BrandController) and the visual brief
+      // already use. Reading raw tokens() here omitted primary/accent whenever
+      // they sat at their default (the shipped config overrides only neutral_*),
+      // so a relative request like "make primary lighter" had NO current primary
+      // to anchor on and the model fabricated one — a lighter blue off the only
+      // hue in the brief (neutral_ink) instead of a lighter Cinnabar (0236).
+      $value = $this->brand->effectiveValue($key);
       if ($value !== '') {
         $palette[] = "$label $value";
       }

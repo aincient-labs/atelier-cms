@@ -447,6 +447,20 @@ export async function clearThread(
   return { workingNode: data?.workingNode ?? null };
 }
 
+/**
+ * Clear a thread's agent memory in place — the explicit "reset this chat"
+ * primitive (DECISIONS 0234). Empties the orchestrator's replayed conversation
+ * buffer server-side so the next turn forgets a discarded proposal, WITHOUT
+ * sealing the thread or touching its transcript. The thread id is unchanged.
+ */
+export async function resetThreadMemory(threadId: string): Promise<void> {
+  await fetch(`${base()}/thread/${encodeURIComponent(threadId)}/reset`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
 /** Permanently delete a thread and all its turns. */
 export async function deleteThread(threadId: string): Promise<void> {
   await fetch(`${base()}/thread/${encodeURIComponent(threadId)}`, {

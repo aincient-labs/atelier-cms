@@ -140,7 +140,7 @@ final class BrandRepository {
    * The effective stored value for a token: the user override if set, else the
    * registry default.
    */
-  private function effectiveValue(string $name): string {
+  public function effectiveValue(string $name): string {
     $stored = $this->tokens();
     if (array_key_exists($name, $stored)) {
       return trim((string) $stored[$name]);

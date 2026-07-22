@@ -7,6 +7,18 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-22
+- Fix: relative colour requests like "make the primary lighter" now adjust your actual
+  brand colour, instead of occasionally drifting to an unrelated hue.
+- Fix: discarding a brand draft now fully clears the conversation, so a discarded idea
+  can't resurface in a later request.
+
+## 2026-07-21
+- Fix: discarded brand changes no longer affect later requests. When you discard a
+  proposed change — or leave and return to the Design System studio — the assistant
+  starts a fresh chat, so a follow-up like "make the primary lighter" adjusts your
+  saved brand instead of an abandoned idea.
+
 ## 2026-07-21
 - Fix: relative brand tweaks like "make the primary colour darker" now build on your
   current look — including edits you just made by hand in the studio — instead of an

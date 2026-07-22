@@ -441,6 +441,13 @@ final class SessionThreadStore {
       unset($meta[self::PUBLISHED_KEY]);
     }
     $session->setMetadata($meta)->save();
+    // A sealed thread is read-only history — it never replays into the agent
+    // again, so free its conversation buffer (the "memory") in the same gesture.
+    // This is what makes publish / "Finish & wrap up" / clear structurally drop
+    // any discarded-proposal anchor, not just a client-side fresh-thread gesture.
+    if ($locked) {
+      $this->clearConversation($session);
+    }
     return 1;
   }
 
@@ -520,6 +527,25 @@ final class SessionThreadStore {
   }
 
   /**
+   * Clear a thread's agent memory (the replayed conversation buffer) in place.
+   *
+   * The explicit "reset this chat" primitive: the thread, its transcript and its
+   * room homing all survive, but the orchestrator's replayed buffer is emptied,
+   * so the next turn anchors on durable state (e.g. the SAVED brand) instead of a
+   * proposal the operator has discarded. This is the structured backend
+   * counterpart to abandoning a draft client-side — the console no longer has to
+   * mint a fresh thread just to escape a stale memory anchor (DECISIONS 0234).
+   *
+   * @return bool
+   *   TRUE when a buffer was cleared; FALSE when the thread has no session yet or
+   *   FlowDrop's memory service is absent (e.g. the aincient_chat kernel test).
+   */
+  public function clearMemory(string $threadId, int $uid): bool {
+    $session = $this->loadSession($threadId, $uid);
+    return $session !== NULL && $this->clearConversation($session);
+  }
+
+  /**
    * Delete a thread's session (and its messages). Returns 0/1.
    */
   public function delete(string $threadId, int $uid): int {
@@ -527,6 +553,10 @@ final class SessionThreadStore {
     if ($session === NULL) {
       return 0;
     }
+    // Free the replayed conversation buffer first: deleteSession() cascades the
+    // session + its messages but NOT the flowdrop_memory record, which would
+    // otherwise be orphaned (scope=session, key=conversation, entity backend).
+    $this->clearConversation($session);
     $service = $this->sessionService();
     if ($service !== NULL) {
       // Cascades to messages (and any session-scoped state).
@@ -774,6 +804,33 @@ final class SessionThreadStore {
     return \Drupal::hasService('flowdrop_session.service')
       ? \Drupal::service('flowdrop_session.service')
       : NULL;
+  }
+
+  /**
+   * The FlowDrop memory manager, or NULL when FlowDrop isn't enabled.
+   */
+  private function memoryManager(): ?object {
+    return \Drupal::hasService('flowdrop_memory.manager')
+      ? \Drupal::service('flowdrop_memory.manager')
+      : NULL;
+  }
+
+  /**
+   * Wipe a session's replayed conversation buffer — the agent's "memory".
+   *
+   * The operator's conversation is replayed into the orchestrator every turn
+   * from a flowdrop_memory record (scope=session, key=conversation, entity
+   * backend — written by ConversationAppend, read by ConversationRead in
+   * aincient_flows). Deleting it makes the agent genuinely forget the thread's
+   * history. No-op (FALSE) when FlowDrop's memory service is absent.
+   */
+  private function clearConversation(object $session): bool {
+    $manager = $this->memoryManager();
+    if ($manager === NULL) {
+      return FALSE;
+    }
+    $manager->delete('session', (string) $session->id(), 'conversation', 'entity');
+    return TRUE;
   }
 
 }

@@ -192,6 +192,16 @@ aincient_chat.thread_clear:
   options:
     _auth: ['cookie', 'basic_auth']
 
+aincient_chat.thread_reset:
+  path: '/atelier/chat/thread/{thread_id}/reset'
+  defaults:
+    _controller: 'Drupal\aincient_chat\Controller\ChatController::resetThread'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient operator console'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
 aincient_chat.thread_delete:
   path: '/atelier/chat/thread/{thread_id}'
   defaults:

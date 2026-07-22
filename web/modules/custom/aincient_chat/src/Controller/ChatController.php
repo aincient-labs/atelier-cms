@@ -748,13 +748,34 @@ final class ChatController extends ControllerBase {
    */
   public function clearThread(string $thread_id): JsonResponse {
     $uid = (int) $this->currentUser()->id();
+    // Sealing also frees the thread's replayed conversation buffer (see
+    // SessionThreadStore::lock), so a fresh thread on the same resource can never
+    // inherit a stale, discarded anchor from the sealed one.
     $touched = $this->threadStore->lock($thread_id, $uid, TRUE);
 
     return new JsonResponse([
       'thread_id' => $thread_id,
       'sealed' => (bool) $touched,
+      'memoryCleared' => (bool) $touched,
       'workingNode' => $this->threadStore->workingNode($thread_id, $uid),
     ]);
+  }
+
+  /**
+   * POST /atelier/chat/thread/{thread_id}/reset — clear the agent memory only.
+   *
+   * The explicit "reset this chat" primitive: it empties the orchestrator's
+   * replayed conversation buffer so the next turn forgets a discarded proposal,
+   * WITHOUT sealing the thread or touching its transcript / room homing. The
+   * structured backend counterpart to abandoning a draft client-side — a reset
+   * path (Brand Discard) can now wipe the live thread's memory directly instead
+   * of relying on minting a fresh thread as an implicit clear (DECISIONS 0234).
+   * Scoped to the current user.
+   */
+  public function resetThread(string $thread_id): JsonResponse {
+    $cleared = $this->threadStore->clearMemory($thread_id, (int) $this->currentUser()->id());
+
+    return new JsonResponse(['thread_id' => $thread_id, 'memoryCleared' => $cleared]);
   }
 
   /**

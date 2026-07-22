@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode, RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useAssistantRuntime } from "@assistant-ui/react";
 import { rememberThreadSeal } from "./thread-seal";
-import { sealThread } from "./adapter";
+import { resetThreadMemory, sealThread } from "./adapter";
 import {
   setBrandOverride,
   resetBrandOverrides,
@@ -574,8 +574,9 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
     setError(null);
   }, [baseline]);
 
-  // Drop the whole draft: clear preview overrides + pending fonts and snap the
-  // working values back to the saved baseline — then START A FRESH THREAD.
+  // Drop the whole draft: clear preview overrides + pending fonts, snap the
+  // working values back to the saved baseline, then EXPLICITLY CLEAR the thread's
+  // agent memory and start a fresh thread.
   //
   // The client override store is only *half* the draft. The conversation itself
   // holds the other half: the proposed change (e.g. "primary → navy") lives on
@@ -583,15 +584,25 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
   // turn, so a later relative request ("make primary lighter") still anchors on
   // the discarded navy from memory — even though the preview + per-turn
   // live_preview_state have snapped back to the saved brand. Clearing only the
-  // client store leaves that stale anchor in place (DECISIONS 0234). Starting a
-  // fresh thread in the same room drops the replayed memory, so the next turn
-  // anchors cleanly on the SAVED brand (`brand_state` brief). Mirrors what a
-  // clean Publish already does (seal → fresh thread), minus the seal.
+  // client store leaves that stale anchor in place (DECISIONS 0234).
+  //
+  // We now wipe that buffer structurally through the backend (`resetThreadMemory`
+  // → POST /thread/{id}/reset) rather than relying on a fresh thread as an
+  // implicit clear: the reset is the mechanism, the fresh thread is just the
+  // clean slate the operator sees. So the next turn anchors on the SAVED brand
+  // (`brand_state` brief) regardless of how the room resolves its active thread.
   const discard = () => {
     resetBrandOverrides();
     setValues({ ...baseline });
     setNotice(null);
     setError(null);
+    // The live thread's backend id comes from the assistant-ui runtime (the same
+    // source the URL `?thr=` and the seal path read) — NOT the nav machine, which
+    // treats the browse-like brand room as unhomed (context.threadId is null here).
+    const threadId = runtime.threads.mainItem.getState().remoteId;
+    if (threadId) {
+      void resetThreadMemory(threadId);
+    }
     consoleNav.newThread();
   };
 
