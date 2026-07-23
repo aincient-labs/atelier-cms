@@ -7,6 +7,11 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-24
+- New: after you publish a page, the celebration now shows a single, quiet invitation to
+  star the project on GitHub — a plain link, shown once and never again after you act on
+  it. No tracking.
+
 ## 2026-07-22
 - Fix: relative colour requests like "make the primary lighter" now adjust your actual
   brand colour, instead of occasionally drifting to an unrelated hue.
