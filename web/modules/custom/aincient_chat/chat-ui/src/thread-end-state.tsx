@@ -1,5 +1,58 @@
+import { useState } from "react";
 import type { ComponentType, SVGProps } from "react";
-import { SparkleIcon, ShieldCheckIcon, CircleQuestionIcon } from "./icons";
+import { SparkleIcon, ShieldCheckIcon, CircleQuestionIcon, StarIcon } from "./icons";
+
+/** Public source repo the star nudge links to. */
+const GITHUB_REPO_URL = "https://github.com/aincient-labs/atelier-cms";
+/** localStorage flag: the star nudge is a one-time ask, never a recurring nag. */
+const STAR_NUDGE_KEY = "aincient-star-nudge-seen";
+
+/**
+ * A single, gentle "star us" ask, shown once on the FIRST publish celebration
+ * and never again once the user acts on it (star or dismiss). No telemetry: it's
+ * a plain link — the appliance phones nothing home (proxy-only measurement,
+ * DECISIONS 0239). Renders nothing on subsequent celebrations.
+ */
+function StarNudge() {
+  const [seen, setSeen] = useState(() => {
+    try {
+      return localStorage.getItem(STAR_NUDGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  if (seen) return null;
+  const seal = () => {
+    try {
+      localStorage.setItem(STAR_NUDGE_KEY, "1");
+    } catch {
+      /* private mode / storage disabled — still dismiss for this session */
+    }
+    setSeen(true);
+  };
+  return (
+    <div className="ain-starnudge" role="note">
+      <p className="ain-starnudge__text">
+        Enjoying Atelier? A quick star helps other builders find it.
+      </p>
+      <div className="ain-starnudge__actions">
+        <a
+          className="ain-btn ain-topbtn ain-starnudge__cta"
+          href={GITHUB_REPO_URL}
+          target="_blank"
+          rel="noreferrer"
+          onClick={seal}
+        >
+          <StarIcon aria-hidden />
+          Star on GitHub ↗
+        </a>
+        <button type="button" className="ain-starnudge__dismiss" onClick={seal}>
+          Not now
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * The shared "this context is a dead-end — here's what to do next" pane. One
@@ -97,6 +150,7 @@ export function ThreadEndState({
           ),
         )}
       </div>
+      {variant === "published" && <StarNudge />}
     </div>
   );
 }

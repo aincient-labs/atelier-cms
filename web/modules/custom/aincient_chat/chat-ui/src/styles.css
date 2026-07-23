@@ -3202,6 +3202,28 @@ select.ain-field__input { cursor: pointer; appearance: auto; }
   border-radius: var(--ain-radius); box-shadow: 0 8px 22px -6px color-mix(in oklch, var(--ain-shadow) 42%, transparent);
   max-width: 440px; width: calc(100% - 32px); padding: 28px 24px;
 }
+/* One-time "star us" ask under the publish celebration — a quiet strip below the
+   actions, hairline-divided, single cinnabar accent on the star. Never a nag
+   (shown once, then dismissed for good; see StarNudge). */
+.ain-starnudge {
+  margin-top: 16px; padding-top: 16px; width: 100%;
+  border-top: 1px solid var(--ain-border);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.ain-starnudge__text {
+  margin: 0; max-width: 40ch; font-size: 12.5px; line-height: 1.45; color: var(--ain-text-dim);
+}
+.ain-starnudge__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
+/* Star CTA is a SECONDARY control (raised paper) — the celebration's one filled
+   cinnabar control is "View page" (Law 01, one fill per view); the star ask
+   carries the pigment only on its icon. */
+.ain-starnudge__cta svg { width: 14px; height: 14px; color: var(--ain-accent); }
+.ain-starnudge__dismiss {
+  background: none; border: none; cursor: pointer; padding: 6px 10px; font: inherit;
+  font-size: 12px; color: var(--ain-text-faint); border-radius: var(--ain-radius);
+}
+.ain-starnudge__dismiss:hover { color: var(--ain-text-dim); }
+.ain-starnudge__dismiss:focus-visible { outline: 2px solid var(--ain-accent); outline-offset: 2px; }
 
 /* ── Presence facet ─────────────────────────────────────────────────────────
    The Content studio's "how this page appears elsewhere" facet: a Body ｜ Presence
