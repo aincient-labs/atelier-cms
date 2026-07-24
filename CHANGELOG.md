@@ -8,6 +8,13 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-24
+- New: run Atelier as a hosted demo on Drupal Forge. A `.devpanel/` build config installs
+  Atelier there and wires an AI trial key in automatically, so you can try the full
+  chat-driven experience without setting up your own key.
+- New: LiteLLM is now an available AI provider — point Atelier at any LiteLLM-compatible
+  endpoint (optional, disabled by default).
+
+## 2026-07-24
 - New: after you publish a page, the celebration now shows a single, quiet invitation to
   star the project on GitHub — a plain link, shown once and never again after you act on
   it. No tracking.

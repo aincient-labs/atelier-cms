@@ -29,6 +29,7 @@
         "drupal/ai_agents": "^1.3.2",
         "drupal/ai_metering": "^1.0@beta",
         "drupal/ai_provider_anthropic": "^1.2.2",
+        "drupal/ai_provider_litellm": "^1.2",
         "drupal/ai_provider_mistral": "^1.1@RC",
         "drupal/ai_provider_nanobanana": "^1.0@beta",
         "drupal/ai_provider_ollama": "^1.2@rc",
