@@ -1,8 +1,0 @@
-hooks:
-  # Runs when DevPanel's git integration is configured to auto-update the app
-  # ($DP_TOKEN set in the git provider). Rebuilds dependencies on a push to main.
-  git_hooks:
-    push:
-      - branch: "main"
-        cmd: |-
-          composer -n install --no-dev >> /tmp/composer_main.txt

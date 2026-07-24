@@ -94,6 +94,9 @@
         "enable-patching": true,
         "composer-exit-on-patch-failure": true,
         "patches": {
+            "drupal/ai": {
+                "Render a valid JSON Schema for no-argument tools (never \"parameters\": null, which breaks LiteLLM->Anthropic)": "patches/ai-tools-null-parameters.patch"
+            },
             "drupal/ai_provider_nanobanana": {
                 "Tolerate an unset API key on a keyless boot (no NULL into typed string)": "patches/nanobanana-null-key.patch"
             },

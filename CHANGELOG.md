@@ -7,6 +7,15 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-25
+- Fix: the assistant now works when your AI provider is a **LiteLLM proxy in front of
+  Claude**. Every chat turn failed with a provider error, because a tool that takes no
+  arguments was sent with an empty schema the proxy rejected — which failed the whole
+  request, not just that one tool. Other providers were unaffected.
+- Changed: the Drupal Forge hosted demo is now built and maintained as its own image, so
+  the `.devpanel/` build config no longer ships here. Trying Atelier on Drupal Forge is
+  unaffected.
+
 ## 2026-07-24
 - New: run Atelier as a hosted demo on Drupal Forge. A `.devpanel/` build config installs
   Atelier there and wires an AI trial key in automatically, so you can try the full
