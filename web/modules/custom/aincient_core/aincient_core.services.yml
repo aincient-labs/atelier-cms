@@ -9,7 +9,21 @@ services:
       - '@config.factory'
       - '@ai.provider'
       - '@module_handler'
+  # Where the curated recommendation document comes from: the bundled snapshot,
+  # or a document an operator explicitly fetched from aincient-labs.com.
+  aincient_core.recommendation_source:
+    class: Drupal\aincient_core\RecommendationSource
+    arguments:
+      - '@extension.list.module'
+      - '@state'
+      - '@http_client'
+      - '@logger.factory'
+      - '@datetime.time'
   aincient_core.model_recommendations:
     class: Drupal\aincient_core\ModelRecommendations
     arguments:
-      - '@extension.list.module'
+      - '@aincient_core.recommendation_source'
+  aincient_core.model_preset_resolver:
+    class: Drupal\aincient_core\ModelPresetResolver
+    arguments:
+      - '@aincient_core.recommendation_source'

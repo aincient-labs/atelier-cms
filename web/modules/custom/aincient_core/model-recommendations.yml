@@ -1,25 +1,52 @@
-# Curated provider + model recommendations that guide the onboarding pickers.
+# Atelier — curated provider + model recommendations.
 #
-# Backend-owned REFERENCE DATA (not config) — a plain file we hand-maintain as we
-# test more models. Loaded by \Drupal\aincient_core\ModelRecommendations. Editing
-# this file needs only a cache clear, never a config import.
+#   Served at:  https://aincient-labs.com/atelier/models.yml
+#   Source of truth for this file is THIS repo (apps/website). A snapshot is
+#   bundled into the product by `bin/sync-recommendations`, which copies it to
+#   apps/cms/web/modules/custom/aincient_core/model-recommendations.yml — so a
+#   fresh or offline install always has usable guidance without asking us for it.
 #
-# Keys are drupal/ai provider PLUGIN ids (the INDIVIDUAL plugin, not the collapsed
-# UI group): anthropic, openai, openrouter, gemini, nanobanana, ollama, mistral —
-# the same ids used in aincient_core.model_roles bindings and ModelRoles::tierHints().
+# WHY THIS IS SERVED RATHER THAN SHIPPED
+# The right model changes on roughly a weekly cadence: models get retired, prices
+# move, a provider's flash tier overtakes another's mid tier. Guidance baked into
+# a release goes stale the moment it ships. An Atelier install fetches this file
+# ONLY when an operator clicks "Check for updates" in the onboarding wizard or the
+# models settings page — never automatically, never on a schedule. Nothing about
+# the install is sent; it is a plain GET.
+#
+# HOW TO MAINTAIN IT
+# Edit here, `bin/build-site.sh`, deploy the website. Live installs pick it up on
+# their next explicit refresh; new installs pick it up at their next cms release
+# via the sync script. Both halves are plain text and diffable on purpose — this
+# is an artifact a suspicious operator should be able to read, like install.sh.
+#
+# RULE: every model id is IMMUTABLE — never a floating `-latest` alias. A floating
+# alias lets a vendor change what a site runs (cost and quality) with no trace on
+# our side. Same argument as pinning an image tag. (DECISIONS 0247.)
+
+# Bumped only on a BREAKING shape change. A client that doesn't understand the
+# value ignores the whole document and keeps its bundled copy.
+schema: 1
+updated: '2026-07-25'
+
+# ---------------------------------------------------------------------------
+# Quality labels — which providers and models we back.
+# ---------------------------------------------------------------------------
+# Consumed by \Drupal\aincient_core\ModelRecommendations to badge and order rows
+# in the pickers. Keys are drupal/ai provider PLUGIN ids (the INDIVIDUAL plugin,
+# not the collapsed UI group): anthropic, openai, openrouter, gemini, nanobanana,
+# ollama, mistral.
 #
 #   providers:  <provider id> => recommended | tested | not-recommended
 #   models:     <provider id> => { <label>: [ordered substring needles] }
 #
 # A model id is matched case-insensitively; its label is the one whose needle is
 # the LONGEST match (so "gpt-4o-mini" beats the shorter "gpt-4o"), ties breaking
-# toward the better label. A model matching no needle is "untested". Labels used:
-# recommended | tested | not-recommended.
+# toward the better label. A model matching no needle is "untested".
 #
 # A provider (or model) we haven't assessed is simply LEFT OUT — absence means
-# "untested", the neutral default (providerRecommendation() returns ''). It still
-# auto-appears in onboarding via the drupal/ai plugin manager; it just carries no
-# curated badge.
+# "untested", the neutral default. It still auto-appears in onboarding via the
+# drupal/ai plugin manager; it just carries no curated badge.
 
 providers:
   anthropic: recommended
@@ -33,37 +60,205 @@ providers:
 #   High thinking → Sonnet   Task executor / Fast → Haiku
 #   Image description (vision) → Sonnet   Image generation → Gemini 2.5 Flash (image)
 # Everything else stays connectable but sits at "tested", not "recommended".
+#
+# A LABEL IS A CLAIM ABOUT OUR OWN TESTING, and only we can add one — so a model
+# nobody here has exercised stays unlabelled ("untested") even when the profiles
+# below suggest it. The two are answering different questions: a profile says
+# "our best current pick given what you connected", a label says "we put this
+# through its paces". Vendor DEPRECATION is a fact rather than a taste judgement,
+# so retired families are moved to not-recommended without a testing round.
 models:
   anthropic:
     recommended: [sonnet, haiku]
     tested: [opus]
+    # `claude-fable-5` is in the catalogue but we have not exercised it — no label.
     not-recommended: []
+  # 2026-07-25: OpenAI retired the GPT-4/o-series generation. Those needles used to
+  # sit under `tested`; they are moved down because the vendor has deprecated them,
+  # not because we re-tested them. The current gpt-5.x families are unlabelled —
+  # they are what the profiles pick, but nobody here has formally tested them yet.
   openai:
     recommended: []
-    tested: [gpt-4o, gpt-4.1, gpt-4o-mini, o3, o1]
-    not-recommended: [gpt-3.5]
-  # Gemini chat models carry no label (untested) — the only backed Gemini is the
-  # nanobanana image model below (Gemini 2.5 Flash, image generation). The Flash
-  # chat series is explicitly not-recommended: tested and found too weak for the
-  # reasoning/tool-loop roles (image generation via nanobanana is unaffected).
+    tested: []
+    not-recommended: [gpt-3.5, gpt-4, gpt-4o, gpt-4o-mini, gpt-4.1, o1, o3]
+  # The Flash needle used to be a bare `flash`, which blanket-condemned every
+  # current and future Gemini Flash model on the strength of testing done against
+  # the 2.x generation. Narrowed 2026-07-25 to the generations actually tested:
+  # 2.0 and 2.5 Flash were too weak for the reasoning/tool-loop roles, and that
+  # finding stands. Gemini 3.x chat is simply UNTESTED by us — no label either
+  # way — and the profiles below place it after the providers we do back.
+  # (Image generation via nanobanana is a separate provider and unaffected.)
   gemini:
     recommended: []
     tested: []
-    not-recommended: [flash]
+    not-recommended: [gemini-2.0-flash, gemini-2.5-flash]
   nanobanana:
     recommended: [gemini-2.5-flash-image]
     tested: []
     not-recommended: []
   openrouter:
     recommended: [sonnet, haiku]
-    tested: [gpt-4o, gemini-2.5]
+    tested: [gemini-2.5]
     # Longer needle than "gemini-2.5" so it wins the longest-match for Flash.
-    not-recommended: [gemini-2.5-flash]
-  # Mistral: medium-latest is the backed model (handles the reasoning/tool loop
-  # cleanly); the others work but aren't actively backed, so they stay "tested".
-  # "magistral" is Mistral's reasoning family — a distinct id, not a mistral-*
-  # match, so it needs its own needle.
+    not-recommended: [gpt-4o, gemini-2.5-flash]
+  # Mistral: Medium is the backed model (handles the reasoning/tool loop cleanly);
+  # the others work but aren't actively backed, so they stay "tested". "magistral"
+  # is Mistral's reasoning family — a distinct id, not a mistral-* match, so it
+  # needs its own needle. `ministral-3-*` is unlabelled: untested here.
   mistral:
     recommended: [mistral-medium]
     tested: [mistral-small, mistral-large, magistral-small]
     not-recommended: []
+
+# ---------------------------------------------------------------------------
+# Profiles — the whole point of this file.
+# ---------------------------------------------------------------------------
+# A profile answers ONE question for a beginner: what are you optimising for?
+# Each role gets an ORDERED candidate list, best first. The client walks it and
+# binds the first candidate the operator's connected providers can actually
+# serve — see \Drupal\aincient_core\ModelPresetResolver. A candidate whose
+# provider isn't connected, or whose model the provider doesn't list, is skipped
+# silently, so a list can safely name models most operators won't have.
+#
+# Format: `<provider id>:<model id>`. Beyond an exact match, the model half also
+# works as a substring needle against that provider's models, which is what makes
+# a candidate survive a dated version bump (claude-sonnet-5 → claude-sonnet-5-20260401)
+# without an edit here.
+#
+# Roles: reasoning (High thinking) · task (Task executor) · fast · vision
+# (Image description) · image (Image generation). Anything unresolvable is left
+# unbound rather than guessed — `image` in particular is a product gate.
+#
+# CANDIDATE ORDER is deliberate: Anthropic first (the one provider we label
+# `recommended`), then OpenAI, then Mistral, then Gemini chat — which we have not
+# tested past the 2.x generation, so it sits behind the providers we do back.
+# Ollama is absent because there is nothing to name: its catalogue is whatever the
+# operator has pulled locally. It falls through to ModelRoles::tierHints() and
+# then to first-available, which is the pre-existing behaviour.
+#
+# ON IMMUTABILITY (DECISIONS 0247). Every id below is a specific model, never a
+# floating alias: no `-latest`, no `~`-prefixed pointer. Note that Anthropic's
+# Claude 5 family and OpenAI's GPT-5.6 family currently expose UNDATED ids
+# (`claude-sonnet-5`, `gpt-5.6-terra`) — those name one model generation and are
+# what the APIs actually serve, which is categorically different from a `-latest`
+# alias that silently re-points to whatever ships next. Where a vendor publishes a
+# dated snapshot as the canonical id (`claude-haiku-4-5-20251001`), we use it.
+#
+# VERIFIED 2026-07-25 against:
+#   anthropic + nanobanana — the live API catalogues, via a real key
+#   openai   — https://developers.openai.com/api/docs/models/all
+#   gemini   — https://ai.google.dev/gemini-api/docs/models
+#   mistral  — https://docs.mistral.ai/getting-started/models/models_overview/
+# Re-verify on every curation pass; an id that no longer exists is skipped rather
+# than bound, but it silently costs the operator the pick we intended for them.
+
+profiles:
+  value:
+    label: Best value
+    description: The cheapest models that still do the job. Good for high volume and low stakes.
+    roles:
+      # Even "high thinking" runs on a cheap model here — that is the trade this
+      # profile exists to make. Expect weaker structured-JSON and tool-loop turns.
+      reasoning:
+        - openai:gpt-5.6-luna
+        - anthropic:claude-haiku-4-5-20251001
+        - mistral:mistral-small-2603
+        - gemini:gemini-3.5-flash-lite
+      task:
+        - openai:gpt-5.6-luna
+        - anthropic:claude-haiku-4-5-20251001
+        - mistral:mistral-small-2603
+        - gemini:gemini-3.5-flash-lite
+      fast:
+        - openai:gpt-5.4-nano
+        - anthropic:claude-haiku-4-5-20251001
+        - mistral:ministral-3-8b-2512
+        - gemini:gemini-3.5-flash-lite
+      vision:
+        - openai:gpt-5.6-luna
+        - anthropic:claude-haiku-4-5-20251001
+        - gemini:gemini-3.5-flash-lite
+      image:
+        - nanobanana:gemini-2.5-flash-image
+
+  balanced:
+    label: Balanced
+    description: Good results at a sensible price. The right choice for most sites.
+    roles:
+      reasoning:
+        - anthropic:claude-sonnet-5
+        - openai:gpt-5.6-terra
+        - mistral:mistral-medium-2604
+        - gemini:gemini-3.5-flash
+      task:
+        - anthropic:claude-haiku-4-5-20251001
+        - openai:gpt-5.6-luna
+        - mistral:mistral-small-2603
+        - gemini:gemini-3.5-flash
+      fast:
+        - anthropic:claude-haiku-4-5-20251001
+        - openai:gpt-5.4-nano
+        - mistral:ministral-3-8b-2512
+        - gemini:gemini-3.5-flash-lite
+      vision:
+        - anthropic:claude-sonnet-5
+        - openai:gpt-5.6-terra
+        - gemini:gemini-3.5-flash
+      image:
+        - nanobanana:gemini-2.5-flash-image
+
+  quality:
+    label: Best quality
+    description: The most capable models available. Costs more per turn.
+    roles:
+      reasoning:
+        - anthropic:claude-opus-5
+        - openai:gpt-5.6-sol
+        - anthropic:claude-sonnet-5
+        - mistral:mistral-large-2512
+      task:
+        - anthropic:claude-sonnet-5
+        - openai:gpt-5.6-terra
+        - mistral:mistral-medium-2604
+      # Even at "best quality", `fast` stays cheap — the tier exists precisely to
+      # keep trivial classify/extract steps off the expensive models. Choosing this
+      # profile should not quietly multiply the cost of every trivial call.
+      fast:
+        - anthropic:claude-haiku-4-5-20251001
+        - openai:gpt-5.4-nano
+        - mistral:ministral-3-8b-2512
+      # Vision is Sonnet, not Opus: describing an image is not a reasoning task,
+      # and Opus would cost several times as much for no better alt text.
+      vision:
+        - anthropic:claude-sonnet-5
+        - openai:gpt-5.6-sol
+        - gemini:gemini-3.5-flash
+      # Nano Banana Pro — studio-quality output, and the one place in this profile
+      # where paying more genuinely buys a different result. The contrib provider
+      # still lists it under its `-preview` id, which the substring match resolves;
+      # when the module catches up to the stable id this keeps working unchanged.
+      image:
+        - nanobanana:gemini-3-pro-image
+        - nanobanana:gemini-2.5-flash-image
+
+# The profile applied when an operator hasn't chosen one.
+default_profile: balanced
+
+# ---------------------------------------------------------------------------
+# Regions — schema present, no consumer yet.
+# ---------------------------------------------------------------------------
+# Some capabilities have a clear regional winner: Sarvam's speech models beat the
+# global generics for Indian languages. A region's candidates are tried BEFORE the
+# profile's, per role, and it only needs to name the roles it actually improves.
+#
+# Nothing selects a region in the product today, and none of the five current
+# roles (reasoning/task/fast/vision/image) has a regional winner worth encoding.
+# This block exists so the schema doesn't have to change the day we add a speech
+# role — the entry below is illustrative, and `sarvam` is not a provider Atelier
+# ships yet.
+regions: {}
+#   in:
+#     label: India
+#     roles:
+#       speech:
+#         - sarvam:saarika-v2

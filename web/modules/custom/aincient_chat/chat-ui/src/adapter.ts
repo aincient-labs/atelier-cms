@@ -131,6 +131,34 @@ export type OnboardingRole = {
 export type OnboardingConnectResult = {
   models?: { chat?: Record<string, string>; image?: Record<string, string> };
   suggested?: Record<string, string>;
+  /** Presets recomputed across every connected provider (see OnboardingPresets). */
+  presets?: OnboardingPresets;
+};
+
+/**
+ * A curated preset — "what are you optimising for?" — from the published
+ * recommendation document. The wizard offers these instead of making a beginner
+ * answer five independent vendor-model questions.
+ */
+export type OnboardingProfile = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+/** profile id → role id → "provider:model", precomputed server-side. */
+export type OnboardingPresets = Record<string, Record<string, string>>;
+
+/** Where the current suggestions came from, for the "Check for updates" line. */
+export type OnboardingRecommendationsMeta = {
+  /** The document's own date, e.g. "2026-07-25". */
+  updated?: string;
+  /** "bundled" (shipped with this release) or "remote" (explicitly fetched). */
+  source?: "bundled" | "remote";
+  /** Unix seconds of the last successful fetch; null when never fetched. */
+  fetchedAt?: number | null;
+  /** The published document's URL — shown so the fetch is never a surprise. */
+  url?: string;
 };
 
 export type OnboardingSettings = {
@@ -168,6 +196,19 @@ export type OnboardingSettings = {
   modelLabels?: Record<string, string>;
   /** Remove a provider's stored credential (the Connect step's Disconnect action). */
   disconnectUrl?: string;
+  /** The curated cost-vs-quality profiles, in display order. */
+  profiles?: OnboardingProfile[];
+  /** Which profile the models step opens on. */
+  defaultProfile?: string;
+  /**
+   * Every profile pre-resolved against what's actually connected, so switching
+   * profiles is instant. A role absent from a profile's map stays unbound.
+   */
+  presets?: OnboardingPresets;
+  /** Provenance of the suggestions above. */
+  recommendationsMeta?: OnboardingRecommendationsMeta;
+  /** Fetch the latest published recommendations (explicit operator action). */
+  refreshRecommendationsUrl?: string;
 };
 
 export function settings(): AincientSettings {

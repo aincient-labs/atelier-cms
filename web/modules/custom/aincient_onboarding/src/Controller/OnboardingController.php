@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_onboarding\Controller;
 
+use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRoles;
+use Drupal\aincient_core\RecommendationSource;
 use Drupal\aincient_onboarding\ProviderCatalog;
 use Drupal\aincient_onboarding\ProviderConnector;
 use Drupal\Core\Controller\ControllerBase;
@@ -33,6 +35,8 @@ final class OnboardingController extends ControllerBase {
   public function __construct(
     private readonly ProviderConnector $connector,
     private readonly ProviderCatalog $catalog,
+    private readonly ModelPresetResolver $presets,
+    private readonly RecommendationSource $recommendations,
   ) {}
 
   /**
@@ -42,6 +46,8 @@ final class OnboardingController extends ControllerBase {
     return new static(
       $container->get('aincient_onboarding.provider_connector'),
       $container->get('aincient_onboarding.provider_catalog'),
+      $container->get('aincient_core.model_preset_resolver'),
+      $container->get('aincient_core.recommendation_source'),
     );
   }
 
@@ -105,6 +111,40 @@ final class OnboardingController extends ControllerBase {
       'ok' => TRUE,
       'models' => $result['models'],
       'suggested' => $result['suggested'],
+      // Recomputed across EVERY connected provider, not just this one — a preset
+      // is a whole-site answer, and connecting a second provider can legitimately
+      // move a role onto it. Without this the profile summary would go stale the
+      // moment the operator connects anything.
+      'presets' => $this->currentPresets(),
+    ]);
+  }
+
+  /**
+   * Fetch the published recommendations and recompute the presets.
+   *
+   * Wired to the wizard's (and the models form's) "Check for updates" affordance.
+   * A failure is reported inline and changes nothing: the previously held
+   * document — bundled or fetched — stays in force, so the operator is never left
+   * worse off than before they clicked.
+   */
+  public function refreshRecommendations(): JsonResponse {
+    try {
+      $meta = $this->recommendations->refresh();
+    }
+    catch (\RuntimeException $e) {
+      return new JsonResponse([
+        'ok' => FALSE,
+        'error' => $e->getMessage(),
+        'meta' => $this->recommendations->meta(),
+      ], 502);
+    }
+
+    return new JsonResponse([
+      'ok' => TRUE,
+      'meta' => $meta,
+      'profiles' => $this->presets->profiles(),
+      'defaultProfile' => $this->presets->defaultProfile(),
+      'presets' => $this->currentPresets(),
     ]);
   }
 
@@ -201,6 +241,17 @@ final class OnboardingController extends ControllerBase {
       'model' => $result['model'] ?? '',
       'configured' => TRUE,
     ]);
+  }
+
+  /**
+   * Every profile resolved against what the site currently has connected.
+   *
+   * @return array<string, array<string, string>>
+   *   profile id => role id => "provider:model".
+   */
+  private function currentPresets(): array {
+    $catalog = $this->catalog->storedCatalog();
+    return $this->presets->applyAll($catalog['chat'], $catalog['image']);
   }
 
   /**

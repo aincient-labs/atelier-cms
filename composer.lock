@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c77fd8d60906fb7c464e062779cbc939",
+    "content-hash": "ea5179fada4368826d1193c4d4c6142c",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -2868,17 +2868,11 @@
         },
         {
             "name": "drupal/flowdrop",
-            "version": "2.0.0-alpha7",
+            "version": "dev-2.x",
             "source": {
                 "type": "git",
                 "url": "https://git.drupalcode.org/project/flowdrop.git",
-                "reference": "2.0.0-alpha7"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha7.zip",
-                "reference": "2.0.0-alpha7",
-                "shasum": "9a2eaf875a4f5067f5e66a508206956a12f9ad7d"
+                "reference": "c6f32625"
             },
             "require": {
                 "d34dman/vanilla-icon-picker": "^1.4",
@@ -2932,12 +2926,15 @@
             },
             "type": "drupal-module",
             "extra": {
+                "branch-alias": {
+                    "dev-2.x": "2.x-dev"
+                },
                 "drupal": {
-                    "version": "2.0.0-alpha7",
-                    "datestamp": "1784657153",
+                    "version": "2.0.0-alpha10+22-dev",
+                    "datestamp": "1785028335",
                     "security-coverage": {
                         "status": "not-covered",
-                        "message": "Alpha releases are not covered by Drupal security advisories."
+                        "message": "Dev releases are not covered by Drupal security advisories."
                     }
                 }
             },
@@ -3466,7 +3463,7 @@
         },
         {
             "name": "drupal/flowdrop_ui_components",
-            "version": "2.0.0-alpha7",
+            "version": "2.0.0-alpha10",
             "require": {
                 "drupal/core": "^11.3",
                 "drupal/flowdrop": "^2"
@@ -3474,8 +3471,8 @@
             "type": "metapackage",
             "extra": {
                 "drupal": {
-                    "version": "2.0.0-alpha7",
-                    "datestamp": "1784657153",
+                    "version": "2.0.0-alpha10",
+                    "datestamp": "1784820836",
                     "security-coverage": {
                         "status": "not-covered",
                         "message": "Alpha releases are not covered by Drupal security advisories."
@@ -17850,6 +17847,7 @@
         "drupal/ai_provider_mistral": 5,
         "drupal/ai_provider_nanobanana": 10,
         "drupal/ai_provider_ollama": 5,
+        "drupal/flowdrop": 20,
         "drupal/flowdrop_ai_provider": 20
     },
     "prefer-stable": true,

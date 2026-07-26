@@ -1,10 +1,14 @@
 _core:
   default_config_hash: LiM3HZwscnjr59TD6NxLYSk20IChRfhwJl6qHcR5fSc
-default_settings: |
+default_settings: |-
   {
-    "theme": {
-      "preference": "light"
-    }
+      "theme": {
+          "preference": "light"
+      },
+      "ui": {
+          "configPlacement": "sidebar",
+          "consolePlacement": "sidebar"
+      }
   }
 exposed_categories:
   - ui

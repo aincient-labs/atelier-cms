@@ -7,6 +7,22 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-26
+- New: **choosing your models is one question, not five.** Setup now leads with
+  **Best value / Balanced / Best quality** and fills every role from your pick; the
+  five per-role pickers are one click away under "Choose per role", and a re-run on a
+  configured site keeps the choices you already made.
+- New: the curated model recommendations can be **refreshed on request** ("Check for
+  updates"), so guidance keeps pace with models being retired and repriced between
+  releases. Nothing is fetched unless you click it, nothing about your site is sent,
+  and a failure changes nothing — the recommendations you already have keep working.
+- Fix: **pages built in chat came out doubled** — two heroes, two feature bands, two
+  calls to action from a single request. The page-building loop could re-run a step it
+  had already completed and rebuild the page from scratch; a step now runs at most
+  once per request.
+- Fix: **editing a page raised a stray "Approval required" card** for an action that
+  had already run. Approving or declining it changed nothing; the prompt is gone.
+
 ## 2026-07-25
 - Fix: the assistant now works when your AI provider is a **LiteLLM proxy in front of
   Claude**. Every chat turn failed with a provider error, because a tool that takes no

@@ -52,6 +52,20 @@ aincient_onboarding.disconnect_provider:
   options:
     _auth: ['cookie', 'basic_auth']
 
+# Fetch the latest curated model recommendations from aincient-labs.com and
+# recompute the per-profile presets. EXPLICIT operator action only — this is the
+# one outbound call Atelier makes to us, and it happens because someone clicked
+# "Check for updates", never on install, cron, or a background retry.
+aincient_onboarding.refresh_recommendations:
+  path: '/atelier/onboarding/refresh-recommendations'
+  defaults:
+    _controller: '\Drupal\aincient_onboarding\Controller\OnboardingController::refreshRecommendations'
+  methods: [POST]
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
 # Multi-connect finalise: bind each role to a chosen provider:model (across all
 # the providers connected above), project onto the framework, and flag complete.
 aincient_onboarding.finalize:

@@ -60,6 +60,8 @@ parameters:
 outputs:
   appended:
     exposed: true
+  appended_any:
+    exposed: true
   count:
     exposed: true
   messages:
@@ -74,3 +76,4 @@ supported_visual_types:
 unified_input_exposed: false
 unified_output_exposed: false
 tool_exposed: false
+reserved_port_exposure: {  }

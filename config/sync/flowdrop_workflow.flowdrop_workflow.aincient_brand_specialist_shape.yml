@@ -208,7 +208,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__prompt_template.1prompt_template.1-output-prompt-simple_chat.1simple_chat.1-input-systemPrompt
     source: prompt_template.1
@@ -228,7 +227,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__simple_chat.1simple_chat.1-output-response-brand_validate_slice.1brand_validate_slice.1-input-slice
     source: simple_chat.1
@@ -248,7 +246,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__brand_validate_slice.1brand_validate_slice.1-output-slice-chat_output.1chat_output.1-input-message
     source: brand_validate_slice.1
@@ -268,12 +265,9 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
-metadata:
-  format: flowdrop
-  schemaVersion: 1.0.0
+metadata: {  }
 created: 1782300000
-changed: 1782428924
+changed: 1785014086
 uid: 1
 input_ports:
   -
@@ -296,13 +290,13 @@ parameter_schema:
   properties:
     ask:
       type: string
+      description: 'The shape instruction to act on — what the user wants for corner roundness, shadow depth, spacing density, or per-component shape. Pass the shape-relevant part of the request only; do NOT restate current values (the authoritative current look is supplied separately via current_state).'
       default: ''
       required: true
-      description: 'The shape instruction to act on — what the user wants for corner roundness, shadow depth, spacing density, or per-component shape. Pass the shape-relevant part of the request only; do NOT restate current values (the authoritative current look is supplied separately via current_state).'
     current_state:
       type: object
-      required: false
       description: 'The authoritative current look (saved-brand brief + live preview draft), injected from the brand_state node — NOT model-authored. Wire a data edge into this port; it is withheld from the model and supplied deterministically from run state.'
+      required: false
 output_schema:
   type: object
   properties:

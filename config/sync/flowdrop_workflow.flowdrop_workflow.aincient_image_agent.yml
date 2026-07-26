@@ -449,6 +449,46 @@ nodes:
     measured:
       width: 280
       height: 100
+  -
+    id: boolean_gateway.2
+    position:
+      x: 3520
+      'y': -540
+    data:
+      label: 'Loop while appending'
+      config:
+        branches:
+          -
+            name: 'True'
+            value: true
+          -
+            name: 'False'
+            value: false
+      metadata:
+        node_type_id: boolean_gateway
+    measured:
+      width: 280
+      height: 382
+  -
+    id: boolean_gateway.3
+    position:
+      x: 3000
+      'y': -620
+    data:
+      label: 'Loop while appending'
+      config:
+        branches:
+          -
+            name: 'True'
+            value: true
+          -
+            name: 'False'
+            value: false
+      metadata:
+        node_type_id: boolean_gateway
+    measured:
+      width: 280
+      height: 382
 edges:
   -
     id: xy-edge__aincient_reason.1aincient_reason.1-output-has_tool_calls-boolean_gateway.1boolean_gateway.1-input-value
@@ -469,7 +509,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__aincient_reason.1aincient_reason.1-output-text-chat_output.1chat_output.1-input-message
     source: aincient_reason.2
@@ -489,7 +528,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__boolean_gateway.1boolean_gateway.1-output-False-chat_output.1chat_output.1-input-trigger
     source: boolean_gateway.1
@@ -509,7 +547,6 @@ edges:
       height: 16
       color: var(--fd-edge-trigger)
     class: flowdrop--edge--trigger
-    selected: false
   -
     id: xy-edge__aincient_reason.1aincient_reason.1-output-tool_calls-aincient_flows_aincient_invoke.1aincient_flows_aincient_invoke.1-input-tool_calls
     source: aincient_reason.2
@@ -529,7 +566,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__confirmation.1confirmation.1-output-True-aincient_flows_aincient_invoke.1aincient_flows_aincient_invoke.1-input-trigger
     source: confirmation.1
@@ -548,7 +584,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: chat_input.1-chat_input.1-output-message-aincient_flows_aincient_conversation_append.1-aincient_flows_aincient_conversation_append.1-input-content
     source: chat_input.1
@@ -568,7 +603,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-output-messages-aincient_reason.2-aincient_reason.2-input-messages
     source: aincient_flows_aincient_conversation_read.1
@@ -588,7 +622,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: aincient_reason.2-aincient_reason.2-output-assistant_message-aincient_flows_aincient_conversation_append.2-aincient_flows_aincient_conversation_append.2-input-message
     source: aincient_reason.2
@@ -608,7 +641,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: aincient_flows_aincient_invoke.2-aincient_flows_aincient_invoke.2-output-tool_messages-aincient_flows_aincient_conversation_append.3-aincient_flows_aincient_conversation_append.3-input-messages
     source: aincient_flows_aincient_invoke.2
@@ -628,7 +660,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: aincient_reason.2-aincient_reason.2-output-tool_calls-aincient_flows_aincient_conversation_append.4-aincient_flows_aincient_conversation_append.4-input-declined_tool_calls
     source: aincient_reason.2
@@ -648,7 +679,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__confirmation.1confirmation.1-output-False-aincient_flows_aincient_conversation_append.4aincient_flows_aincient_conversation_append.4-input-trigger
     source: confirmation.1
@@ -667,7 +697,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-output-tool-aincient_flows_aincient_invoke.2aincient_flows_aincient_invoke.2-input-tool
     source: flowdrop_node_processor_toolbox.1
@@ -687,7 +716,6 @@ edges:
       height: 16
       color: var(--fd-edge-tool)
     class: flowdrop--edge--tool
-    selected: false
   -
     id: xy-edge__flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-output-tool-aincient_reason.2aincient_reason.2-input-tool
     source: flowdrop_node_processor_toolbox.1
@@ -707,7 +735,6 @@ edges:
       height: 16
       color: var(--fd-edge-tool)
     class: flowdrop--edge--tool
-    selected: false
   -
     id: aincient_flows_aincient_conversation_append.1-aincient_flows_aincient_conversation_append.1-output-trigger-aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-input-trigger
     source: aincient_flows_aincient_conversation_append.1
@@ -727,44 +754,6 @@ edges:
       height: 16
       color: var(--fd-edge-trigger)
     class: flowdrop--edge--trigger
-  -
-    id: aincient_flows_aincient_conversation_append.3-aincient_flows_aincient_conversation_append.3-output-trigger-aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-input-loop_back
-    source: aincient_flows_aincient_conversation_append.3
-    target: aincient_flows_aincient_conversation_read.1
-    data:
-      targetNodeType: universalNode
-      targetCategory: memories
-      metadata:
-        edgeType: loopback
-        sourcePortDataType: trigger
-    sourceHandle: aincient_flows_aincient_conversation_append.3-output-trigger
-    targetHandle: aincient_flows_aincient_conversation_read.1-input-loop_back
-    style: 'stroke: var(--fd-edge-loopback); stroke-dasharray: var(--fd-edge-loopback-dasharray); stroke-width: var(--fd-edge-loopback-width); opacity: var(--fd-edge-loopback-opacity);'
-    markerEnd:
-      type: arrowclosed
-      width: 14
-      height: 14
-      color: var(--fd-edge-loopback)
-    class: flowdrop--edge--loopback
-  -
-    id: aincient_flows_aincient_conversation_append.4-aincient_flows_aincient_conversation_append.4-output-trigger-aincient_flows_aincient_conversation_read.1-aincient_flows_aincient_conversation_read.1-input-loop_back
-    source: aincient_flows_aincient_conversation_append.4
-    target: aincient_flows_aincient_conversation_read.1
-    data:
-      targetNodeType: universalNode
-      targetCategory: memories
-      metadata:
-        edgeType: loopback
-        sourcePortDataType: trigger
-    sourceHandle: aincient_flows_aincient_conversation_append.4-output-trigger
-    targetHandle: aincient_flows_aincient_conversation_read.1-input-loop_back
-    style: 'stroke: var(--fd-edge-loopback); stroke-dasharray: var(--fd-edge-loopback-dasharray); stroke-width: var(--fd-edge-loopback-width); opacity: var(--fd-edge-loopback-opacity);'
-    markerEnd:
-      type: arrowclosed
-      width: 14
-      height: 14
-      color: var(--fd-edge-loopback)
-    class: flowdrop--edge--loopback
   -
     id: xy-edge__aincient_reason.2aincient_reason.2-output-tool_calls-data_extractor.1data_extractor.1-input-data
     source: aincient_reason.2
@@ -796,42 +785,6 @@ edges:
         sourcePortDataType: mixed
     sourceHandle: data_extractor.1-output-data
     targetHandle: switch_gateway.1-input-expression
-    style: 'stroke: var(--fd-edge-data);'
-    markerEnd:
-      type: arrowclosed
-      width: 16
-      height: 16
-      color: var(--fd-edge-data)
-    class: flowdrop--edge--data
-  -
-    id: 'xy-edge__switch_gateway.1switch_gateway.1-output-Set Brand-confirmation.1confirmation.1-input-trigger'
-    source: switch_gateway.1
-    target: confirmation.1
-    data:
-      targetNodeType: universalNode
-      targetCategory: human_in_loop
-      metadata:
-        edgeType: data
-    sourceHandle: 'switch_gateway.1-output-Set Brand'
-    targetHandle: confirmation.1-input-trigger
-    style: 'stroke: var(--fd-edge-data);'
-    markerEnd:
-      type: arrowclosed
-      width: 16
-      height: 16
-      color: var(--fd-edge-data)
-    class: flowdrop--edge--data
-  -
-    id: 'xy-edge__switch_gateway.1switch_gateway.1-output-Restore Brand-confirmation.1confirmation.1-input-trigger'
-    source: switch_gateway.1
-    target: confirmation.1
-    data:
-      targetNodeType: universalNode
-      targetCategory: human_in_loop
-      metadata:
-        edgeType: data
-    sourceHandle: 'switch_gateway.1-output-Restore Brand'
-    targetHandle: confirmation.1-input-trigger
     style: 'stroke: var(--fd-edge-data);'
     markerEnd:
       type: arrowclosed
@@ -991,15 +944,87 @@ edges:
       height: 16
       color: var(--fd-edge-tool)
     class: flowdrop--edge--tool
+  -
+    id: xy-edge__aincient_flows_aincient_conversation_append.3aincient_flows_aincient_conversation_append.3-output-appended_any-boolean_gateway.2boolean_gateway.2-input-value
+    source: aincient_flows_aincient_conversation_append.3
+    target: boolean_gateway.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: logic
+      metadata:
+        edgeType: data
+        sourcePortDataType: boolean
+    sourceHandle: aincient_flows_aincient_conversation_append.3-output-appended_any
+    targetHandle: boolean_gateway.2-input-value
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__boolean_gateway.2boolean_gateway.2-output-True-aincient_flows_aincient_conversation_read.1aincient_flows_aincient_conversation_read.1-input-loop_back
+    source: boolean_gateway.2
+    target: aincient_flows_aincient_conversation_read.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: loopback
+        sourcePortDataType: trigger
+    sourceHandle: boolean_gateway.2-output-True
+    targetHandle: aincient_flows_aincient_conversation_read.1-input-loop_back
+    style: 'stroke: var(--fd-edge-loopback); stroke-dasharray: var(--fd-edge-loopback-dasharray); stroke-width: var(--fd-edge-loopback-width); opacity: var(--fd-edge-loopback-opacity);'
+    markerEnd:
+      type: arrowclosed
+      width: 14
+      height: 14
+      color: var(--fd-edge-loopback)
+    class: flowdrop--edge--loopback
+  -
+    id: xy-edge__aincient_flows_aincient_conversation_append.4aincient_flows_aincient_conversation_append.4-output-appended_any-boolean_gateway.3boolean_gateway.3-input-value
+    source: aincient_flows_aincient_conversation_append.4
+    target: boolean_gateway.3
+    data:
+      targetNodeType: universalNode
+      targetCategory: logic
+      metadata:
+        edgeType: data
+        sourcePortDataType: boolean
+    sourceHandle: aincient_flows_aincient_conversation_append.4-output-appended_any
+    targetHandle: boolean_gateway.3-input-value
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__boolean_gateway.3boolean_gateway.3-output-True-aincient_flows_aincient_conversation_read.1aincient_flows_aincient_conversation_read.1-input-loop_back
+    source: boolean_gateway.3
+    target: aincient_flows_aincient_conversation_read.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: loopback
+        sourcePortDataType: trigger
+    sourceHandle: boolean_gateway.3-output-True
+    targetHandle: aincient_flows_aincient_conversation_read.1-input-loop_back
+    style: 'stroke: var(--fd-edge-loopback); stroke-dasharray: var(--fd-edge-loopback-dasharray); stroke-width: var(--fd-edge-loopback-width); opacity: var(--fd-edge-loopback-opacity);'
+    markerEnd:
+      type: arrowclosed
+      width: 14
+      height: 14
+      color: var(--fd-edge-loopback)
+    class: flowdrop--edge--loopback
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
   updatedAt: '2026-06-24T00:39:52.129Z'
-  schemaVersion: 1.0.0
-  versionId: 1782261569037-ee4ki5c68
-  updateNumber: 348
-  format: flowdrop
 created: 1783269494
-changed: 1783269494
+changed: 1785029728
 uid: 1
 input_ports:
   -

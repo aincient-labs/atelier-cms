@@ -1495,6 +1495,56 @@
 .ain-wiz__field-row .ain-wiz__input { flex: 1; min-width: 0; }
 .ain-wiz__error { margin: 0; font-size: 13px; color: var(--ain-danger); }
 
+/* "How should Atelier pick?" — the one question the models step leads with.
+   A segmented control, not a slider: the in-between positions of a slider would
+   be fiction, since every position snaps to a curated profile anyway. */
+.ain-wiz__profiles { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.ain-wiz__segmented {
+  display: flex; padding: 3px; gap: 3px;
+  background: var(--ain-surface-2);
+  border: 1px solid var(--ain-border); border-radius: var(--ain-radius);
+}
+.ain-wiz__segment {
+  flex: 1; padding: 8px 10px; font: inherit; font-size: 13px; font-weight: 500;
+  color: var(--ain-text-dim); background: transparent;
+  border: 0; border-radius: calc(var(--ain-radius) - 3px); cursor: pointer;
+}
+.ain-wiz__segment:hover { color: var(--ain-text); }
+.ain-wiz__segment--on {
+  color: var(--ain-text); font-weight: 600;
+  background: var(--ain-surface);
+  box-shadow: inset 0 0 0 1px var(--ain-border);
+}
+.ain-wiz__segment:focus-visible {
+  outline: 3px solid color-mix(in oklch, var(--ain-accent) 30%, transparent); outline-offset: 1px;
+}
+.ain-wiz__profile-desc { margin: 0; font-size: 12px; color: var(--ain-text-dim); min-height: 1.4em; }
+
+/* Simple mode: what the profile resolved to, read-only. Deliberately quiet —
+   it is a receipt, not a control. */
+.ain-wiz__summary { display: flex; flex-direction: column; gap: 8px; margin: 0; text-align: left; }
+.ain-wiz__summary-row { display: flex; align-items: center; gap: 12px; }
+.ain-wiz__summary-role { flex: 0 0 auto; min-width: 9.5rem; font-size: 13px; color: var(--ain-text-dim); }
+.ain-wiz__summary-model { display: flex; align-items: center; gap: 8px; margin: 0; min-width: 0; }
+.ain-wiz__summary-name { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.ain-wiz__summary-none { font-size: 13px; color: var(--ain-text-dim); font-style: italic; }
+
+/* "Choose per role →" — the disclosure to the (unchanged) per-role pickers. */
+.ain-wiz__disclosure {
+  align-self: flex-start; padding: 0; font: inherit; font-size: 13px;
+  color: var(--ain-text-dim); background: none; border: 0; cursor: pointer;
+}
+.ain-wiz__disclosure:hover { color: var(--ain-text); }
+
+/* Where the suggestions came from + the explicit refresh. */
+.ain-wiz__provenance { text-align: left; }
+.ain-wiz__linkbtn {
+  padding: 0; font: inherit; font-size: inherit; color: var(--ain-jade);
+  background: none; border: 0; text-decoration: underline; cursor: pointer;
+}
+.ain-wiz__linkbtn:disabled { opacity: .6; cursor: default; text-decoration: none; }
+.ain-wiz__provenance-note { color: var(--ain-text); }
+
 /* Per-role model pickers (the "choose your models" step) */
 .ain-wiz__roles { display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .ain-wiz__role { display: flex; flex-direction: column; gap: 6px; }

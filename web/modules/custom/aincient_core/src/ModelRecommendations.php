@@ -4,21 +4,18 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core;
 
-use Drupal\Core\Extension\ModuleExtensionList;
-use Symfony\Component\Yaml\Yaml;
-
 /**
- * Loads the curated provider/model recommendation registry.
+ * Reads the curated provider/model quality labels.
  *
  * Backend-owned guidance for the onboarding pickers: which providers and models
- * we recommend, have tested, or advise against. The data is a plain reference
- * file shipped in the module root ({@see model-recommendations.yml}) — NOT
- * config — so it can be updated as we test more models with only a cache clear,
- * mirroring how {@see \Drupal\aincient_pages\DesignTokens} loads its registry.
+ * we recommend, have tested, or advise against. The data comes from
+ * {@see RecommendationSource} — the bundled `model-recommendations.yml`, or the
+ * newer published document if an operator has fetched one. Either way it is
+ * reference data, NOT config, so updating it needs no config import.
  *
- * This owns QUALITY LABELS + RANKING only. Which model a role opens ON
- * (pre-selection) is a separate concern still driven by
- * {@see ModelRoles::tierHints()} — a model's quality label is role-agnostic.
+ * This owns QUALITY LABELS + RANKING only, and those are role-agnostic. Which
+ * model a role opens ON is a separate concern: {@see ModelPresetResolver} (the
+ * published profiles) with {@see ModelRoles::tierHints()} underneath it.
  */
 final class ModelRecommendations {
 
@@ -42,14 +39,7 @@ final class ModelRecommendations {
     self::NOT_RECOMMENDED => 3,
   ];
 
-  /**
-   * Parsed registry (['providers' => …, 'models' => …]), lazily loaded.
-   *
-   * @var array<string, mixed>|null
-   */
-  private ?array $data = NULL;
-
-  public function __construct(private readonly ModuleExtensionList $moduleList) {}
+  public function __construct(private readonly RecommendationSource $source) {}
 
   /**
    * The quality label for a provider's model, by longest-needle match.
@@ -106,17 +96,12 @@ final class ModelRecommendations {
   }
 
   /**
-   * The parsed registry, loaded once from the module-root YAML.
+   * The document in force — bundled snapshot or fetched, we don't care which.
    *
    * @return array<string, mixed>
    */
   private function data(): array {
-    if ($this->data === NULL) {
-      $path = $this->moduleList->getPath('aincient_core') . '/model-recommendations.yml';
-      $parsed = is_file($path) ? Yaml::parseFile($path) : [];
-      $this->data = is_array($parsed) ? $parsed : [];
-    }
-    return $this->data;
+    return $this->source->document();
   }
 
 }

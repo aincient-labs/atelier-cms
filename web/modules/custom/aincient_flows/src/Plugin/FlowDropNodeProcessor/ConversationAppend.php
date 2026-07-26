@@ -46,6 +46,23 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * appended twice, so a wave-scheduler re-fire or a pipeline resume on the
  * loop_back cycle cannot duplicate a tool turn (which a provider would reject).
  *
+ * GATING THE LOOP. Idempotency alone only makes the re-fire harmless to the
+ * BUFFER — the re-fired append still triggered the loop_back edge, spawning an
+ * agent step whose conversation read raced the current wave's writes. It read a
+ * buffer that was missing the tool call the agent had just made, concluded
+ * nothing had happened, and re-did the work: a second complete page, sections
+ * and all. So this node publishes `appended_any` (FALSE when it wrote nothing),
+ * and every agent loop wires that port into a Boolean Gateway whose True branch
+ * is the loop_back edge. An append that appended nothing is a dead end: the
+ * loop only advances on real progress.
+ *
+ * The termination rule is a NODE, deliberately. It used to be
+ * `condition: state.data.conversation_stalled != true` on the loop_back edge —
+ * correct, but invisible on the canvas, absent from the editor, and honoured by
+ * exactly one orchestrator. FlowDrop 2.x gates loop re-entry on
+ * `active_branches` (StateGraphOrchestrator::isLoopbackBranchActive), which
+ * lets the rule be a gateway anyone can see and rewire.
+ *
  * The sliding window (`max_messages`) trims only at user-turn boundaries so a
  * tool_use is never split from its tool_result.
  *
@@ -185,6 +202,12 @@ class ConversationAppend extends AbstractFlowDropNodeProcessor implements Execut
       'key' => $key,
       'scope' => $scope,
       'resolved_scope_id' => $resolvedScopeId,
+      // "Did this write anything" as a first-class boolean OUTPUT PORT, so the
+      // loop's termination rule can be a Boolean Gateway on the canvas rather
+      // than an expression hidden in an edge. See the class docblock
+      // ("Gating the loop"). `appended` carries the same signal as a count;
+      // this port exists so the wire into a boolean gateway input is typed.
+      'appended_any' => $append !== [],
     ];
   }
 
@@ -343,6 +366,10 @@ class ConversationAppend extends AbstractFlowDropNodeProcessor implements Execut
         'appended' => [
           'type' => 'integer',
           'description' => 'Messages appended by this execution.',
+        ],
+        'appended_any' => [
+          'type' => 'boolean',
+          'description' => 'Whether this execution wrote anything. Wire it into a Boolean Gateway to terminate an agent loop that stopped making progress.',
         ],
         'key' => [
           'type' => 'string',

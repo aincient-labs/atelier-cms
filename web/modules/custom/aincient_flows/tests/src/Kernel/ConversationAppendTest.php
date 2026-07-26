@@ -140,6 +140,45 @@ final class ConversationAppendTest extends KernelTestBase {
   /**
    * @covers ::process
    *
+   * The loop gate: `appended_any` is TRUE only when this execution actually
+   * wrote. Every agent loop wires that port into a Boolean Gateway whose True
+   * branch is the loop_back edge, so a re-fired append (idempotency dropped
+   * everything) is a dead end instead of spawning an agent step that reads a
+   * half-written buffer and redoes the work.
+   */
+  public function testAppendedAnyTracksWhetherAnythingWasAppended(): void {
+    $node = $this->node();
+    $node->process($this->params(['content' => 'make it neon']));
+    $node->process($this->params([
+      'message' => [
+        'role' => 'assistant',
+        'content' => '',
+        'tool_calls' => [['name' => 'capability_preview_page', 'args' => [], 'tool_call_id' => 'toolu_1']],
+      ],
+    ]));
+
+    $wrote = $node->process($this->params([
+      'messages' => [['role' => 'tool', 'tool_call_id' => 'toolu_1', 'content' => 'Previewing 5 page edits.']],
+    ]));
+    $this->assertSame(1, $wrote['appended']);
+    $this->assertTrue($wrote['appended_any']);
+
+    // The re-fire: same tool result, nothing appended — the loop must stop.
+    $refire = $node->process($this->params([
+      'messages' => [['role' => 'tool', 'tool_call_id' => 'toolu_1', 'content' => 'Previewing 5 page edits.']],
+    ]));
+    $this->assertSame(0, $refire['appended']);
+    $this->assertFalse($refire['appended_any']);
+
+    // An empty batch — what the Invoke node emits once it has dropped a repeat
+    // tool call — is a stall too.
+    $empty = $node->process($this->params(['messages' => []]));
+    $this->assertFalse($empty['appended_any']);
+  }
+
+  /**
+   * @covers ::process
+   *
    * A single batch carrying the same tool_call_id twice (a malformed upstream
    * emission) still collapses to one stored tool turn.
    */
@@ -284,9 +323,11 @@ final class ConversationAppendTest extends KernelTestBase {
   }
 
   /**
-   * Self-heal: a buffer corrupted before the writer guard (a duplicate tool
-   * result) is repaired on READ so Reason never infers over an unpaired tool
-   * turn. Storage is left as-is; the read just returns a well-formed view.
+   * Self-heal on read: a buffer corrupted before the writer guard is repaired.
+   *
+   * A duplicate tool result is dropped on READ so Reason never infers over an
+   * unpaired tool turn. Storage is left as-is; the read just returns a
+   * well-formed view.
    */
   public function testReadHealsDuplicateToolResult(): void {
     // Hand-write a corrupt buffer straight to memory (simulating pre-guard

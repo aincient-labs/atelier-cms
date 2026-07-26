@@ -4,3 +4,6 @@ tokens:
   neutral_muted_foreground: 'oklch(0.45 0 0)'
   neutral_ink: 'oklch(0.20 0.02 270)'
   card: var(--neutral-subtle)
+status:
+  stage: ideating
+  locked: false

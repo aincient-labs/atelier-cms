@@ -95,14 +95,8 @@ edges:
 metadata:
   createdAt: '2026-06-14T20:30:52.307Z'
   updatedAt: '2026-06-22T01:21:44.784Z'
-  schemaVersion: 1.0.0
-  created: 1781469033
-  changed: 1781997496
-  versionId: 1781469186262-tcgw25kxf
-  updateNumber: 5
-  format: flowdrop
 created: 1781469033
-changed: 1782428924
+changed: 1785014086
 uid: 0
 input_ports: null
 output_ports: null

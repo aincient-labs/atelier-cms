@@ -195,6 +195,37 @@ final class ProviderCatalog {
   }
 
   /**
+   * The merged model catalogue enumerated from every connected provider's key.
+   *
+   * Walks {@see self::providers()}, and for each row already usable (a key is
+   * present) asks the connector to list its models from the STORED credential —
+   * no key re-entry. The per-provider chat/image maps are merged into one,
+   * matching the `{chat, image}` shape {@see ProviderConnector::connectAndStore()}
+   * returns, so a page-load catalogue and a fresh connect are interchangeable.
+   *
+   * @param list<array<string, mixed>>|null $providers
+   *   The provider rows, when the caller already has them (they cost API probes);
+   *   NULL to enumerate them here.
+   *
+   * @return array{chat: array<string, string>, image: array<string, string>}
+   */
+  public function storedCatalog(?array $providers = NULL): array {
+    $chat = [];
+    $image = [];
+    foreach ($providers ?? $this->providers() as $row) {
+      // Only enumerate providers that already have a key — a keyless provider
+      // would otherwise trigger a pointless (and slow) failing API round-trip.
+      if (empty($row['usable'])) {
+        continue;
+      }
+      $models = $this->connector->modelsForStored((string) $row['id']);
+      $chat += $models['chat'];
+      $image += $models['image'];
+    }
+    return ['chat' => $chat, 'image' => $image];
+  }
+
+  /**
    * The provider id that gets the highlighted "Recommended" slot, or ''.
    *
    * Empty by default — a neutral distribution highlights no vendor. Only the

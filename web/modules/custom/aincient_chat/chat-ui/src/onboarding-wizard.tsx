@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from 
 import {
   settings,
   type OnboardingConnectResult,
+  type OnboardingPresets,
+  type OnboardingProfile,
   type OnboardingProvider,
+  type OnboardingRecommendationsMeta,
   type OnboardingRole,
   type OnboardingSettings,
 } from "./adapter";
@@ -37,6 +40,14 @@ import { apiUrl, consoleBase } from "./console-config";
  * AI → choose models — then it LANDS in the console with the composer focused
  * and a suggested first ask pre-typed (no "Finish" screen; onboarding ends when
  * the owner has made something).
+ *
+ * The models step leads with ONE question — Best value / Balanced / Best quality
+ * — because asking a beginner to make five independent vendor-model decisions
+ * before they have ever used the product is the wrong first impression. The
+ * profiles come from a curated document we publish (and can refresh on demand,
+ * since the honest answer changes weekly); each resolves to a concrete model per
+ * role against what the operator actually connected. The five per-role pickers
+ * are unchanged and one disclosure away, for the people they were built for.
  *
  * The connect step is MULTI-provider: the operator connects one or more
  * providers (Anthropic for chat, Google Gemini for images, …), each with its own
@@ -300,6 +311,7 @@ export function OnboardingWizard() {
   const connectUrl = cfg.connectProviderUrl ?? apiUrl("/onboarding/connect-provider");
   const finalizeUrl = cfg.finalizeUrl ?? apiUrl("/onboarding/finalize");
   const disconnectUrl = cfg.disconnectUrl ?? apiUrl("/onboarding/disconnect-provider");
+  const refreshUrl = cfg.refreshRecommendationsUrl ?? apiUrl("/onboarding/refresh-recommendations");
   // Curated quality label per available "provider:model" (absent ⇒ "untested").
   const modelLabels = cfg.modelLabels ?? {};
   const roles: OnboardingRole[] = cfg.roles ?? [];
@@ -331,6 +343,27 @@ export function OnboardingWizard() {
   // the same models rather than wiping them (Law 14).
   const [roleModels, setRoleModels] = useState<Record<string, string>>(cfg.current ?? {});
 
+  // ---- the models step's simple mode ---------------------------------------
+  // The curated profiles, their resolved per-role picks, and where they came
+  // from. All three are seeded from the server and REPLACED by a refresh, so the
+  // "Check for updates" click is felt immediately rather than after a reload.
+  const [profiles, setProfiles] = useState<OnboardingProfile[]>(cfg.profiles ?? []);
+  const [presets, setPresets] = useState<OnboardingPresets>(cfg.presets ?? {});
+  const [meta, setMeta] = useState<OnboardingRecommendationsMeta>(cfg.recommendationsMeta ?? {});
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshNote, setRefreshNote] = useState<string | null>(null);
+  // The chosen profile, or NULL for "Custom" — the state you land in the moment
+  // you touch a per-role picker, and the state a RE-RUN opens in: an operator who
+  // already earned their bindings must never have them silently overwritten by a
+  // preset (Law 14).
+  const hasEarnedBindings = Object.keys(cfg.current ?? {}).length > 0;
+  const [profile, setProfile] = useState<string | null>(
+    hasEarnedBindings ? null : (cfg.defaultProfile ?? cfg.profiles?.[0]?.id ?? null),
+  );
+  // Whether the per-role pickers are revealed. Open from the start when there is
+  // no simple mode to offer, or when we're respecting earned bindings.
+  const [advanced, setAdvanced] = useState(hasEarnedBindings || (cfg.profiles ?? []).length === 0);
+
   // Merged model pools across every connected provider, keyed by "provider:model".
   // The base is the server-enumerated `catalog` (every provider with a STORED
   // key — so the step lists all connected providers on load, even a re-run or a
@@ -361,11 +394,42 @@ export function OnboardingWizard() {
     document.getElementById("aincient-chat-root")?.setAttribute("data-ain-theme", theme);
   }, []);
 
-  // Landing on the models step, seed each role from the connected providers'
-  // suggestions (a provider:model), falling back to the first option in the
-  // role's pool. Reseeds whenever the models step is (re-)entered.
+  // Fill every role from a profile's resolved picks. Unlike the seeding below
+  // this REPLACES the whole selection — choosing a profile is precisely the act
+  // of saying "decide all of these for me". A pick the pool doesn't carry (a
+  // stale entry, or a provider connected since) degrades to the pool's first
+  // option so no role is left blank.
+  const applyProfile = (id: string, source: OnboardingPresets = presets) => {
+    const preset = source[id] ?? {};
+    setRoleModels(() => {
+      const next: Record<string, string> = {};
+      for (const role of roles) {
+        const pool = role.pool === "image" ? imagePool : chatPool;
+        const keys = Object.keys(pool);
+        if (keys.length === 0) continue;
+        const pick = preset[role.id];
+        next[role.id] = pick && pool[pick] ? pick : keys[0];
+      }
+      return next;
+    });
+  };
+
+  // A per-role pick is by definition no longer a profile — drop to Custom rather
+  // than leaving a profile highlighted that no longer describes the selection.
+  const chooseRoleModel = (roleId: string, value: string) => {
+    setProfile(null);
+    setRoleModels((prev) => ({ ...prev, [roleId]: value }));
+  };
+
+  // Landing on the models step: apply the chosen profile, or — in Custom mode —
+  // seed each still-empty role from the connected providers' suggestions,
+  // falling back to the first option in the role's pool.
   useEffect(() => {
     if (step !== "models") return;
+    if (profile) {
+      applyProfile(profile);
+      return;
+    }
     const merged: Record<string, string> = {};
     for (const c of Object.values(connected)) Object.assign(merged, c.suggested);
     // Only FILL roles that are still empty — never overwrite a value already set
@@ -384,7 +448,7 @@ export function OnboardingWizard() {
       return seeded;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, [step, profile]);
 
   // Operators without site-config rights can't connect AI — guide, don't trap.
   if (cfg.canConfigure === false) {
@@ -437,12 +501,51 @@ export function OnboardingWizard() {
           suggested: data.suggested ?? {},
         },
       }));
+      // The server recomputes every profile across ALL connected providers, so a
+      // second provider can legitimately move a role onto it. Take the new map;
+      // the models step applies it when entered.
+      if (data.presets) setPresets(data.presets);
       setStatus("idle");
       setCredential("");
       setOpenId(null);
     } catch (e) {
       setStatus("idle");
       setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  // Fetch the latest published recommendations. Explicit, one click, never
+  // automatic — this is the only time Atelier talks to aincient-labs.com, and it
+  // happens because someone asked it to. A failure changes nothing: the
+  // suggestions already in force keep working, and we say so.
+  const refreshRecommendations = async () => {
+    setRefreshing(true);
+    setRefreshNote(null);
+    try {
+      const res = await fetch(refreshUrl, { method: "POST", credentials: "same-origin" });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        meta?: OnboardingRecommendationsMeta;
+        profiles?: OnboardingProfile[];
+        presets?: OnboardingPresets;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || `Couldn’t check for updates (HTTP ${res.status}).`);
+      }
+      if (data.profiles?.length) setProfiles(data.profiles);
+      if (data.meta) setMeta(data.meta);
+      if (data.presets) {
+        setPresets(data.presets);
+        // Re-resolve what's on screen against the new document, or the click
+        // would look like it did nothing.
+        if (profile) applyProfile(profile, data.presets);
+      }
+      setRefreshNote("Suggestions updated.");
+    } catch (e) {
+      setRefreshNote(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -661,49 +764,133 @@ export function OnboardingWizard() {
           <>
             <h1 className="ain-wiz__title">Choose your models</h1>
             <p className="ain-wiz__lede">
-              Atelier works in roles — pick a model for each, from any provider you connected.
-              We’ve suggested good defaults; change any of them now, or come back anytime via
-              <strong> Set up AI providers</strong> in your account menu.
+              {profiles.length > 0
+                ? "Atelier works in roles. Tell us what matters most and we’ll pick a model for each — you can change any of them now, or anytime via "
+                : "Atelier works in roles — pick a model for each, from any provider you connected. We’ve suggested good defaults; change any of them now, or come back anytime via "}
+              <strong>Set up AI providers</strong> in your account menu.
             </p>
 
-            <div className="ain-wiz__roles">
-              {roles.map((role) => {
-                const pool = role.pool === "image" ? imagePool : chatPool;
-                const options = Object.keys(pool);
-                if (options.length === 0) {
-                  // A role whose pool nobody connected. Only surface the (optional)
-                  // image role as a gentle nudge; never block finishing on it.
-                  if (role.pool !== "image") return null;
+            {profiles.length > 0 && (
+              <div className="ain-wiz__profiles">
+                <span className="ain-wiz__label" id="ain-wiz-profile-label">
+                  How should Atelier pick?
+                </span>
+                <div className="ain-wiz__segmented" role="radiogroup" aria-labelledby="ain-wiz-profile-label">
+                  {profiles.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={profile === p.id}
+                      className={`ain-wiz__segment${profile === p.id ? " ain-wiz__segment--on" : ""}`}
+                      onClick={() => setProfile(p.id)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="ain-wiz__profile-desc">
+                  {profile
+                    ? (profiles.find((p) => p.id === profile)?.description ?? "")
+                    : "Your own selection — each role set by hand below."}
+                </p>
+              </div>
+            )}
+
+            {/* Simple mode: what the chosen profile resolved to, as a quiet
+                read-only summary. The pickers are one disclosure away. */}
+            {profiles.length > 0 && !advanced && (
+              <dl className="ain-wiz__summary">
+                {roles.map((role) => {
+                  const pool = role.pool === "image" ? imagePool : chatPool;
+                  const value = roleModels[role.id] ?? "";
+                  const label = value ? (pool[value] ?? value.split(":").slice(1).join(":")) : null;
                   return (
-                    <div key={role.id} className="ain-wiz__role ain-wiz__role--empty">
+                    <div key={role.id} className="ain-wiz__summary-row">
+                      <dt className="ain-wiz__summary-role">{role.label}</dt>
+                      <dd className="ain-wiz__summary-model">
+                        {label ? (
+                          <>
+                            <ProviderMark id={value.split(":", 1)[0]} />
+                            <span className="ain-wiz__summary-name">{label}</span>
+                          </>
+                        ) : (
+                          <span className="ain-wiz__summary-none">
+                            {role.pool === "image" ? "Not set — connect an image provider" : "Not set"}
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            )}
+
+            {advanced && (
+              <div className="ain-wiz__roles">
+                {roles.map((role) => {
+                  const pool = role.pool === "image" ? imagePool : chatPool;
+                  const options = Object.keys(pool);
+                  if (options.length === 0) {
+                    // A role whose pool nobody connected. Only surface the (optional)
+                    // image role as a gentle nudge; never block finishing on it.
+                    if (role.pool !== "image") return null;
+                    return (
+                      <div key={role.id} className="ain-wiz__role ain-wiz__role--empty">
+                        <span className="ain-wiz__role-head">
+                          <span className="ain-wiz__role-name">{role.label}</span>
+                        </span>
+                        <span className="ain-wiz__role-desc">
+                          {role.description} Go back to connect Google Gemini to enable it.
+                        </span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={role.id} className="ain-wiz__role">
                       <span className="ain-wiz__role-head">
                         <span className="ain-wiz__role-name">{role.label}</span>
                       </span>
-                      <span className="ain-wiz__role-desc">
-                        {role.description} Go back to connect Google Gemini to enable it.
-                      </span>
+                      <span className="ain-wiz__role-desc">{role.description}</span>
+                      <ModelPicker
+                        ariaLabel={role.label}
+                        value={roleModels[role.id] ?? ""}
+                        options={poolToOptions(pool, providerLabel, modelLabels)}
+                        allowNone={role.optional}
+                        noneLabel="Not set"
+                        onChange={(value) => chooseRoleModel(role.id, value)}
+                        renderMark={(id) => <ProviderMark id={id} />}
+                      />
                     </div>
                   );
-                }
-                return (
-                  <div key={role.id} className="ain-wiz__role">
-                    <span className="ain-wiz__role-head">
-                      <span className="ain-wiz__role-name">{role.label}</span>
-                    </span>
-                    <span className="ain-wiz__role-desc">{role.description}</span>
-                    <ModelPicker
-                      ariaLabel={role.label}
-                      value={roleModels[role.id] ?? ""}
-                      options={poolToOptions(pool, providerLabel, modelLabels)}
-                      allowNone={role.optional}
-                      noneLabel="Not set"
-                      onChange={(value) => setRoleModels((prev) => ({ ...prev, [role.id]: value }))}
-                      renderMark={(id) => <ProviderMark id={id} />}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+                })}
+              </div>
+            )}
+
+            {profiles.length > 0 && (
+              <button
+                type="button"
+                className="ain-btn ain-wiz__disclosure"
+                aria-expanded={advanced}
+                onClick={() => setAdvanced((v) => !v)}
+              >
+                {advanced ? "Hide per-role choices" : "Choose per role"} {advanced ? "↑" : "→"}
+              </button>
+            )}
+
+            <p className="ain-wiz__foot ain-wiz__provenance">
+              <RecommendationsNote meta={meta} />{" "}
+              <button
+                type="button"
+                className="ain-btn ain-wiz__linkbtn"
+                onClick={refreshRecommendations}
+                disabled={refreshing}
+                title={`Fetches ${meta.url ?? "the latest suggestions"} — nothing is sent from this site.`}
+              >
+                {refreshing ? "Checking…" : "Check for updates"}
+              </button>
+              {refreshNote && <span className="ain-wiz__provenance-note"> {refreshNote}</span>}
+            </p>
 
             {error && <p className="ain-wiz__error">{error}</p>}
 
@@ -736,6 +923,20 @@ export function OnboardingWizard() {
       </div>
     </main>
   );
+}
+
+/**
+ * Where the suggestions came from, in one honest sentence.
+ *
+ * "Bundled" is not an apology — the shipped snapshot is what makes an offline or
+ * air-gapped install work — so it reads as a fact with a date, not a warning.
+ */
+function RecommendationsNote({ meta }: { meta: OnboardingRecommendationsMeta }) {
+  const dated = meta.updated ? ` ${meta.updated}` : "";
+  if (meta.source === "remote") {
+    return <>Suggestions updated{dated} from aincient-labs.com.</>;
+  }
+  return <>Suggestions bundled with this release{dated}.</>;
 }
 
 /** Merge every connected provider's models for a pool into one map. */

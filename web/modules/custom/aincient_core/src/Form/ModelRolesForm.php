@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Form;
 
+use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRoleResolver;
 use Drupal\aincient_core\ModelRoles;
+use Drupal\aincient_core\RecommendationSource;
 use Drupal\ai\AiProviderPluginManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\TypedConfigManagerInterface;
@@ -55,6 +57,8 @@ final class ModelRolesForm extends ConfigFormBase {
     TypedConfigManagerInterface $typed_config_manager,
     private readonly ModelRoleResolver $resolver,
     private readonly AiProviderPluginManager $providerManager,
+    private readonly ModelPresetResolver $presets,
+    private readonly RecommendationSource $recommendations,
   ) {
     parent::__construct($config_factory, $typed_config_manager);
   }
@@ -68,6 +72,8 @@ final class ModelRolesForm extends ConfigFormBase {
       $container->get('config.typed'),
       $container->get('aincient_core.model_role_resolver'),
       $container->get('ai.provider'),
+      $container->get('aincient_core.model_preset_resolver'),
+      $container->get('aincient_core.recommendation_source'),
     );
   }
 
@@ -142,6 +148,7 @@ final class ModelRolesForm extends ConfigFormBase {
     ];
 
     $form['curation_hint'] = $this->curationHint($uncurated);
+    $form['presets'] = $this->presetSection($options, $imageOptions);
 
     if ($this->flatCount($options) > 0) {
       $form['default_role'] = [
@@ -252,6 +259,151 @@ final class ModelRolesForm extends ConfigFormBase {
     $this->resolver->project();
 
     parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * The "apply a curated preset" section — the form's twin of the wizard's
+   * segmented control.
+   *
+   * Binds every role in one action from a published profile, for an operator who
+   * would rather answer "what am I optimising for?" than fill five selects. The
+   * selects below stay authoritative: applying a preset just writes them.
+   *
+   * @param array<string, array<string, string>> $chatOptions
+   *   Grouped chat options.
+   * @param array<string, array<string, string>> $imageOptions
+   *   Grouped image options.
+   *
+   * @return array<string, mixed>
+   *   A render array (empty when the document defines no profiles).
+   */
+  private function presetSection(array $chatOptions, array $imageOptions): array {
+    $profiles = $this->presets->profiles();
+    if ($profiles === []) {
+      return [];
+    }
+    $labels = [];
+    foreach ($profiles as $profile) {
+      $labels[$profile['id']] = $profile['description'] !== ''
+        ? $profile['label'] . ' — ' . $profile['description']
+        : $profile['label'];
+    }
+
+    $meta = $this->recommendations->meta();
+    $provenance = $meta['source'] === 'remote'
+      ? $this->t('Suggestions were updated @date from @url.', ['@date' => $meta['updated'], '@url' => $meta['url']])
+      : $this->t('Suggestions bundled with this release (@date). Checking for updates fetches @url — nothing is sent from this site.', [
+        '@date' => $meta['updated'],
+        '@url' => $meta['url'],
+      ]);
+
+    return [
+      '#type' => 'details',
+      '#title' => $this->t('Suggested presets'),
+      '#open' => FALSE,
+      '#tree' => TRUE,
+      '#description' => $this->t('Bind every role at once from a curated profile, resolved against the providers you have connected. You can still change any individual role below.'),
+      'profile' => [
+        '#type' => 'select',
+        '#title' => $this->t('Optimise for'),
+        '#options' => $labels,
+        '#default_value' => $this->presets->defaultProfile(),
+      ],
+      'actions' => [
+        '#type' => 'actions',
+        'apply' => [
+          '#type' => 'submit',
+          '#value' => $this->t('Apply preset'),
+          '#submit' => ['::applyPreset'],
+          // This button writes bindings on its own; it must not require (or
+          // clobber) the role selects the operator hasn't touched.
+          '#limit_validation_errors' => [['presets', 'profile']],
+        ],
+        'refresh' => [
+          '#type' => 'submit',
+          '#value' => $this->t('Check for updates'),
+          '#submit' => ['::refreshRecommendations'],
+          '#limit_validation_errors' => [],
+        ],
+      ],
+      'provenance' => [
+        '#type' => 'item',
+        '#markup' => $provenance,
+      ],
+      // Stashed so the submit handlers resolve against exactly what this build
+      // offered, rather than re-probing every provider.
+      '#chat_pool' => $this->flatten($chatOptions),
+      '#image_pool' => $this->flatten($imageOptions),
+    ];
+  }
+
+  /**
+   * Bind every role from the chosen profile, then project.
+   */
+  public function applyPreset(array &$form, FormStateInterface $form_state): void {
+    $profileId = (string) $form_state->getValue(['presets', 'profile'], '');
+    if (!$this->presets->hasProfile($profileId)) {
+      $this->messenger()->addError($this->t('That preset is no longer available. Try checking for updates.'));
+      return;
+    }
+
+    $picked = $this->presets->apply(
+      $profileId,
+      $form['presets']['#chat_pool'] ?? [],
+      $form['presets']['#image_pool'] ?? [],
+    );
+    if ($picked === []) {
+      $this->messenger()->addWarning($this->t('Nothing to apply — no connected provider offers a model for these roles.'));
+      return;
+    }
+
+    foreach ($picked as $role => $value) {
+      [$provider, $model] = $this->splitBinding($value);
+      $this->resolver->bind($role, $provider, $model);
+    }
+    $this->resolver->project();
+
+    $this->messenger()->addStatus($this->t('Applied @profile: @bindings', [
+      '@profile' => $profileId,
+      '@bindings' => implode(', ', array_map(
+        static fn (string $role, string $value): string => $role . ' → ' . $value,
+        array_keys($picked),
+        $picked,
+      )),
+    ]));
+    $form_state->setRebuild();
+  }
+
+  /**
+   * Fetch the published recommendations. Explicit operator action only.
+   */
+  public function refreshRecommendations(array &$form, FormStateInterface $form_state): void {
+    try {
+      $meta = $this->recommendations->refresh();
+      $this->messenger()->addStatus($this->t('Suggestions updated (@date).', ['@date' => $meta['updated']]));
+    }
+    catch (\RuntimeException $e) {
+      // Never fatal: the document already in force keeps working, which is the
+      // whole reason a snapshot ships with the release.
+      $this->messenger()->addWarning($e->getMessage());
+    }
+    $form_state->setRebuild();
+  }
+
+  /**
+   * Flatten grouped options into one "provider:model" => label map.
+   *
+   * @param array<string, array<string, string>> $options
+   *   Grouped options.
+   *
+   * @return array<string, string>
+   */
+  private function flatten(array $options): array {
+    $flat = [];
+    foreach ($options as $group) {
+      $flat += $group;
+    }
+    return $flat;
   }
 
   /**

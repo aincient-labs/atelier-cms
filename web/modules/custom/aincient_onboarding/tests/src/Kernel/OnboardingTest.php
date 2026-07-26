@@ -301,6 +301,38 @@ final class OnboardingTest extends KernelTestBase {
   }
 
   /**
+   * The wizard payload carries the curated presets + their provenance.
+   *
+   * The simple mode's contract: the profiles to offer, which one to open on, a
+   * resolved map per profile, where the suggestions came from, and the endpoint
+   * behind "Check for updates". Presets resolve against connected providers, so
+   * with no live key here the maps are legitimately empty — PRESENCE and shape
+   * are what this pins; the resolution itself is unit-tested.
+   */
+  public function testWizardPayloadCarriesPresets(): void {
+    $forced = $this->alterConsoleSettings(Request::create('/atelier', 'GET', ['onboarding' => '1']));
+    $onboarding = $forced['onboarding'];
+
+    $this->assertNotEmpty($onboarding['profiles']);
+    $ids = array_column($onboarding['profiles'], 'id');
+    $this->assertContains($onboarding['defaultProfile'], $ids);
+    foreach ($onboarding['profiles'] as $profile) {
+      $this->assertNotSame('', $profile['label']);
+      $this->assertArrayHasKey($profile['id'], $onboarding['presets']);
+    }
+
+    // A fresh install has never fetched, so it runs on the bundled snapshot —
+    // and says so, with the document's own date.
+    $this->assertSame('bundled', $onboarding['recommendationsMeta']['source']);
+    $this->assertNull($onboarding['recommendationsMeta']['fetchedAt']);
+    $this->assertNotSame('', $onboarding['recommendationsMeta']['updated']);
+    $this->assertStringContainsString(
+      '/atelier/onboarding/refresh-recommendations',
+      $onboarding['refreshRecommendationsUrl'],
+    );
+  }
+
+  /**
    * Run the console settings-alter hook with the given request on the stack.
    *
    * @return array

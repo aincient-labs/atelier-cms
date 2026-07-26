@@ -475,7 +475,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__data_mapper.1data_mapper.1-output-url-http_request.1http_request.1-input-url
     source: data_mapper.1
@@ -494,7 +493,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__data_mapper.2data_mapper.2-output-fcurl-http_request.2http_request.2-input-url
     source: data_mapper.2
@@ -514,7 +512,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__data_mapper.3data_mapper.3-output-envelop-chat_output.1chat_output.1-input-message
     source: data_mapper.3
@@ -534,7 +531,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__http_request.2http_request.2-output-json-data_mapper.3data_mapper.3-input-wx
     source: http_request.2
@@ -554,7 +550,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__data_mapper.2data_mapper.2-output-name-data_mapper.3data_mapper.3-input-name
     source: data_mapper.2
@@ -574,7 +569,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__data_mapper.1data_mapper.1-output-url_full-http_request.3http_request.3-input-url
     source: data_mapper.1
@@ -594,7 +588,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__data_mapper.1data_mapper.1-output-url_first-http_request.1http_request.1-input-url
     source: data_mapper.1
@@ -614,7 +607,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__http_request.3http_request.3-output-json-data_mapper.2data_mapper.2-input-g
     source: http_request.3
@@ -634,7 +626,6 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-    selected: false
   -
     id: xy-edge__http_request.3http_request.3-output-json-data_mapper.2data_mapper.2-input-gf
     source: http_request.3
@@ -790,12 +781,8 @@ edges:
 metadata:
   createdAt: '2026-06-13T13:23:57.552Z'
   updatedAt: '2026-06-14T01:14:45.594Z'
-  schemaVersion: 1.0.0
-  versionId: 1781399677362-xqruqmwno
-  updateNumber: 162
-  format: flowdrop
 created: 1781356133
-changed: 1782428924
+changed: 1785014086
 uid: 0
 input_ports:
   -
@@ -814,9 +801,9 @@ parameter_schema:
   properties:
     location:
       type: string
+      description: 'The place to look up the weather for — a city, optionally with region or country, e.g. "Hamburg, Germany" or "Tokyo". Extract the location from the user''s request and pass ONLY the place name, with no surrounding words.'
       default: ''
       required: true
-      description: 'The place to look up the weather for — a city, optionally with region or country, e.g. "Hamburg, Germany" or "Tokyo". Extract the location from the user''s request and pass ONLY the place name, with no surrounding words.'
 output_schema:
   type: object
   properties:
