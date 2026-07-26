@@ -8,6 +8,11 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-26
+- Changed: **building a page now uses your "High thinking" model.** Composing a page is
+  the most demanding thing the assistant does — it plans a whole layout, then drives its
+  own tools to build it — but it had been running on the everyday tier. Expect stronger
+  layouts at a higher cost per page; rebind the role if you'd rather have the cheaper
+  tier.
 - New: **choosing your models is one question, not five.** Setup now leads with
   **Best value / Balanced / Best quality** and fills every role from your pick; the
   five per-role pickers are one click away under "Choose per role", and a re-run on a

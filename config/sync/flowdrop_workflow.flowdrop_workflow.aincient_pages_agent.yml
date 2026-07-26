@@ -49,6 +49,7 @@ nodes:
       label: 'Reason (agent step)'
       config:
         model: ''
+        operation_type: 'aincient_role:reasoning'
         temperature: 0
         maxTokens: 1024
         systemPrompt: ''
