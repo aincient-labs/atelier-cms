@@ -13,7 +13,7 @@
         "cta_label": "Log in to try it",
         "cta_url": "/user/login?destination=atelier",
         "secondary_label": "Read the docs",
-        "secondary_url": "https://aincient-labs.github.io",
+        "secondary_url": "https://aincient-labs.com/docs/",
         "image": "@hero"
       }
     },

@@ -73,6 +73,33 @@ final class HomeBriefTest extends UnitTestCase {
   }
 
   /**
+   * Outbound links point somewhere we actually publish.
+   *
+   * The "Read the docs" link shipped as `aincient-labs.github.io` for a while — a
+   * 404, because the docs are served from the marketing site under /docs. An
+   * absolute URL in the brief is a promise to a visitor on a throwaway demo, so
+   * pin the host: anything off aincient-labs.com is either a typo or a decision
+   * that belongs in DECISIONS.md, not a silent edit here.
+   */
+  public function testAbsoluteLinksStayOnOurDomain(): void {
+    $absolute = [];
+    $brief = $this->brief();
+    array_walk_recursive($brief, static function ($value, $key) use (&$absolute): void {
+      if (is_string($value) && str_ends_with((string) $key, '_url') && preg_match('#^[a-z]+://#', $value)) {
+        $absolute[] = $value;
+      }
+    });
+
+    foreach ($absolute as $url) {
+      $this->assertStringStartsWith(
+        'https://aincient-labs.com/',
+        $url,
+        sprintf('Demo homepage link "%s" must point at a host we publish.', $url),
+      );
+    }
+  }
+
+  /**
    * Every `@<slug>` image placeholder in the brief has a shipped-image entry in
    * the install manifest — so install can resolve it to a real media token
    * instead of leaking a literal "@slug" onto the page.
@@ -85,7 +112,8 @@ final class HomeBriefTest extends UnitTestCase {
     $declared = array_map(static fn (string $slug): string => '@' . $slug, array_keys(AINCIENT_DEMO_IMAGES));
 
     $placeholders = [];
-    array_walk_recursive($this->brief(), static function ($value) use (&$placeholders): void {
+    $brief = $this->brief();
+    array_walk_recursive($brief, static function ($value) use (&$placeholders): void {
       if (is_string($value) && preg_match('/^@[a-z0-9_-]+$/', $value)) {
         $placeholders[] = $value;
       }
