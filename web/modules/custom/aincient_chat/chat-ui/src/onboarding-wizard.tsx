@@ -11,7 +11,6 @@ import {
 } from "./adapter";
 import {
   AnthropicIcon,
-  Chip,
   CheckIcon,
   GeminiIcon,
   MistralIcon,
@@ -85,8 +84,13 @@ const KEY_HELP: Record<string, { href: string; label: string }> = {
  * mark far quicker than its name, so each row leads with its logo on a white
  * badge. Every mark sits in the same neutral ink so the picker reads as one
  * consistent set. Keyed by drupal/ai's provider plugin id (or key-group primary,
- * e.g. `gemini` for the Google group); unknown providers fall back to the
- * Atelier chip, so the picker never shows a blank tile.
+ * e.g. `gemini` for the Google group).
+ *
+ * A provider we have no mark for renders an EMPTY badge — never the Atelier chip.
+ * The fallback used to be our own mark, which put the Atelier logo beside a third
+ * party's name (a LiteLLM proxy, a local vLLM endpoint, whatever someone installs)
+ * and read as a claim about who made it. An empty logo slot says the honest thing:
+ * we have no mark for this one. The slot itself stays, so rows keep their column.
  */
 // Literal on purpose: provider marks sit on the always-white logo tile
 // (.ain-wiz__provider-badge), so their ink must not follow the theme tokens.
@@ -95,8 +99,8 @@ const PROVIDER_BRAND: Record<string, { Icon: ComponentType<SVGProps<SVGSVGElemen
   anthropic: { Icon: AnthropicIcon },
   openai: { Icon: OpenAiIcon },
   gemini: { Icon: GeminiIcon },
-  // Nano Banana is Google's Gemini 2.5 Flash image model — wears the Gemini mark,
-  // not the generic Atelier chip fallback.
+  // Nano Banana is Google's Gemini 2.5 Flash image model — wears the Gemini mark
+  // rather than falling through to an empty badge.
   nanobanana: { Icon: GeminiIcon },
   ollama: { Icon: OllamaIcon },
   mistral: { Icon: MistralIcon },
@@ -186,7 +190,8 @@ function ProviderRow({
   onConnect: () => void;
   onDisconnect: () => void;
 }) {
-  const Icon = PROVIDER_BRAND[provider.id]?.Icon ?? Chip;
+  // No mark for this provider ⇒ an empty badge, never ours (see PROVIDER_BRAND).
+  const Icon = PROVIDER_BRAND[provider.id]?.Icon;
   const isHost = provider.auth === "host";
   const keyHelp = isHost ? undefined : KEY_HELP[provider.id];
   const chip = providerChip(provider.recommendation);
@@ -199,8 +204,12 @@ function ProviderRow({
     >
       <div className="ain-wiz__provider-top">
         <button type="button" className="ain-btn ain-wiz__provider-hit" onClick={onToggle} aria-expanded={open}>
-          <span className="ain-wiz__provider-badge" style={{ color: PROVIDER_INK }} aria-hidden>
-            <Icon className="ain-wiz__provider-mark" />
+          <span
+            className={`ain-wiz__provider-badge${Icon ? "" : " ain-wiz__provider-badge--empty"}`}
+            style={{ color: PROVIDER_INK }}
+            aria-hidden
+          >
+            {Icon && <Icon className="ain-wiz__provider-mark" />}
           </span>
           <span className="ain-wiz__provider-body">
             <span className="ain-wiz__provider-head">
@@ -993,12 +1002,22 @@ function poolToOptions(
   });
 }
 
-/** A provider's brand mark on the always-white badge, for the picker rows. */
+/**
+ * A provider's brand mark on the always-white badge, for the picker rows.
+ *
+ * Empty for a provider we have no mark for — the model rows are labelled with the
+ * model id and grouped under the provider's name, so the slot can be blank without
+ * anything becoming ambiguous. Borrowing our own mark would imply the model is ours.
+ */
 function ProviderMark({ id }: { id: string }) {
-  const Icon = PROVIDER_BRAND[id]?.Icon ?? Chip;
+  const Icon = PROVIDER_BRAND[id]?.Icon;
   return (
-    <span className="ain-picker__mark" style={{ color: PROVIDER_INK }} aria-hidden>
-      <Icon className="ain-picker__mark-svg" />
+    <span
+      className={`ain-picker__mark${Icon ? "" : " ain-picker__mark--empty"}`}
+      style={{ color: PROVIDER_INK }}
+      aria-hidden
+    >
+      {Icon && <Icon className="ain-picker__mark-svg" />}
     </span>
   );
 }

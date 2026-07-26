@@ -104,6 +104,55 @@ final class ModelRecommendationsTest extends UnitTestCase {
   }
 
   /**
+   * A proxy's models carry the UPSTREAM vendor's label.
+   *
+   * A LiteLLM proxy serves other vendors' models as `vendor/model`, and every
+   * label we publish is written about the vendor. Without looking through the
+   * proxy, `claude-sonnet-5` reads "Recommended" on a direct Anthropic key and
+   * carries no badge at all through a proxy — while a vendor-deprecated model
+   * loses its warning exactly where an operator is least likely to spot it.
+   */
+  public function testLabelForModelLooksThroughAProxy(): void {
+    // The badge follows the model, not the route to it.
+    $this->assertSame('recommended', $this->recommendations->labelForModel('litellm', 'anthropic/claude-sonnet-5'));
+    $this->assertSame('recommended', $this->recommendations->labelForModel('litellm', 'anthropic/claude-haiku-4-5'));
+    $this->assertSame('tested', $this->recommendations->labelForModel('litellm', 'anthropic/claude-opus-5'));
+    $this->assertSame('recommended', $this->recommendations->labelForModel('litellm', 'mistral/mistral-medium-2604'));
+    // Deprecation warnings survive the hop — the important half.
+    $this->assertSame('not-recommended', $this->recommendations->labelForModel('litellm', 'openai/gpt-4o'));
+    $this->assertSame('not-recommended', $this->recommendations->labelForModel('litellm', 'gemini/gemini-2.5-flash'));
+    // Untested stays untested: a proxy doesn't launder a model into a claim.
+    $this->assertSame('untested', $this->recommendations->labelForModel('litellm', 'openai/gpt-5.6-sol'));
+    $this->assertSame('untested', $this->recommendations->labelForModel('litellm', 'gemini/gemini-3.5-flash'));
+    $this->assertSame('untested', $this->recommendations->labelForModel('litellm', 'someone/whatever-1'));
+
+    // A known vendor segment is authoritative: ONLY that vendor's needles apply,
+    // so a model cannot inherit a label from a family name another vendor uses.
+    $this->assertSame('untested', $this->recommendations->labelForModel('litellm', 'gemini/claude-sonnet-5'));
+
+    // Where the segment is not a vendor we curate, the MODEL NAME decides. Both of
+    // these shapes are ordinary on a real proxy: a stripped namespace, and one
+    // namespaced by ROUTE (`vertex_ai/`, `bedrock/`, `azure/` — who serves it, not
+    // who made it). Refusing them would blank most of a proxy's catalogue.
+    $this->assertSame('recommended', $this->recommendations->labelForModel('litellm', 'claude-sonnet-5'));
+    $this->assertSame('not-recommended', $this->recommendations->labelForModel('litellm', 'gpt-4o-mini'));
+    $this->assertSame('untested', $this->recommendations->labelForModel('litellm', 'gpt-5.4-nano'));
+    $this->assertSame('recommended', $this->recommendations->labelForModel('litellm', 'vertex_ai/claude-sonnet-5'));
+    $this->assertSame('not-recommended', $this->recommendations->labelForModel('litellm', 'azure/gpt-4o'));
+
+    // OpenRouter has its OWN entry in the document, and that stays the more
+    // specific statement: its Flash needle out-matches Gemini's own.
+    $this->assertSame('not-recommended', $this->recommendations->labelForModel('openrouter', 'google/gemini-2.5-flash'));
+    // Where its entry says nothing, the vendor's does — no longer a blank.
+    $this->assertSame('not-recommended', $this->recommendations->labelForModel('openrouter', 'openai/gpt-3.5-turbo'));
+
+    // A non-proxy provider is NOT given the vendor sweep: what Anthropic serves
+    // under its own key is Anthropic's, and a `vendor/` id there would be a
+    // catalogue we don't understand rather than a route.
+    $this->assertSame('untested', $this->recommendations->labelForModel('anthropic', 'openai/gpt-4o'));
+  }
+
+  /**
    * Provider recommendation reads the providers map; unknown → ''.
    */
   public function testProviderRecommendation(): void {

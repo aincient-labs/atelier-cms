@@ -122,6 +122,52 @@ final class ModelRoles {
   }
 
   /**
+   * Providers that RE-SERVE other vendors' models under one credential.
+   *
+   * A proxy's catalogue is other people's models, namespaced by vendor
+   * (`anthropic/claude-opus-5`, `openai/gpt-5.6-sol`). Everything we curate is
+   * written about the UPSTREAM vendor, so both halves of that curation have to
+   * look through the proxy to find it: {@see ModelPresetResolver} for which model
+   * a profile picks, {@see ModelRecommendations} for the quality label a model
+   * carries. Neither works on a proxy-only site without this.
+   *
+   * Lives here, in the product vocabulary, precisely so the two cannot drift into
+   * disagreeing about what a proxy is.
+   */
+  public const PROXY_PROVIDERS = ['litellm', 'openrouter'];
+
+  /**
+   * Whether a provider id re-serves other vendors' models.
+   */
+  public static function isProxyProvider(string $providerId): bool {
+    return in_array($providerId, self::PROXY_PROVIDERS, TRUE);
+  }
+
+  /**
+   * The upstream vendor a proxy model id names, and the id without it.
+   *
+   * `anthropic/claude-opus-5` → `['anthropic', 'claude-opus-5']`. A proxy id with
+   * no vendor segment yields an empty vendor and the id unchanged, which callers
+   * read as "the vendor is unknown, match across all of them".
+   *
+   * The vendor is the FIRST segment — LiteLLM namespaces as `<provider>/<model>`,
+   * and a deeper id (`vertex_ai/google/gemini-3`) names its provider first, with
+   * the rest being route detail. What is left keeps any inner segments, which is
+   * harmless: every needle we match with it is a substring test.
+   *
+   * @return array{0: string, 1: string}
+   *   The vendor id (or '') and the model id without the vendor segment.
+   */
+  public static function splitProxyModel(string $modelId): array {
+    $modelId = strtolower(trim($modelId));
+    $slash = strpos($modelId, '/');
+    if ($slash === FALSE) {
+      return ['', $modelId];
+    }
+    return [substr($modelId, 0, $slash), substr($modelId, $slash + 1)];
+  }
+
+  /**
    * Per-provider, per-role model preference (ordered substring needles).
    *
    * When an operator connects a provider, {@see ModelRoleResolver::suggestForProvider()}
@@ -152,6 +198,20 @@ final class ModelRoles {
         self::REASONING => ['opus', 'o3', 'o1', 'gpt-4o', 'gemini-2.5-pro', 'pro'],
         self::TASK => ['sonnet', 'gpt-4o', 'gpt-4.1', 'gemini-2.5-flash'],
         self::FAST => ['haiku', 'gpt-4o-mini', 'mini', 'flash'],
+      ],
+      // A LiteLLM proxy re-serves other vendors' models under vendor-namespaced
+      // ids ("anthropic/claude-opus-5", "openai/gpt-5.4"), and WHICH ids exist is
+      // the proxy operator's choice — a hosted demo may expose three models, a
+      // company proxy fifty. So these needles are families rather than model ids,
+      // and they are only reached when the curated document named nothing the
+      // proxy serves ({@see ModelPresetResolver}, which tries the document's
+      // candidates against proxies first). The point is that a role still lands on
+      // a model of roughly the right cost, instead of whatever the catalogue
+      // happens to list first.
+      'litellm' => [
+        self::REASONING => ['opus', 'gpt-5.6-sol', 'gpt-5.6-terra', 'sonnet', 'gpt-5', 'mistral-large', 'pro'],
+        self::TASK => ['sonnet', 'gpt-5.6-luna', 'haiku', 'gpt-5', 'mistral-medium', 'flash'],
+        self::FAST => ['haiku', 'nano', 'mini', 'flash-lite', 'flash', 'small'],
       ],
     ];
   }

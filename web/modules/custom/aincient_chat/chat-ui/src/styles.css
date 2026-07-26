@@ -1411,6 +1411,10 @@
   width: 38px; height: 38px; font-size: 22px;
   background: #fff; border: 1px solid var(--ain-border); border-radius: 4px;
 }
+/* No mark for this provider: hold the column, show nothing. A white tile with
+   nothing on it reads as a failed image, and our own mark would read as a claim
+   about who made the provider — so the slot goes invisible instead. */
+.ain-wiz__provider-badge--empty { background: transparent; border-color: transparent; }
 .ain-wiz__provider-mark { width: 1em; height: 1em; }
 .ain-wiz__provider-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ain-wiz__provider-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1601,6 +1605,7 @@
   width: 20px; height: 20px; font-size: 12px;
   background: #fff; border: 1px solid var(--ain-border); border-radius: 3px;
 }
+.ain-picker__mark--empty { background: transparent; border-color: transparent; }
 .ain-picker__mark-svg { width: 1em; height: 1em; }
 /* Quality chip beside an option — same whisper vocabulary as the wizard chips. */
 .ain-picker__chip {

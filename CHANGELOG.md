@@ -8,6 +8,17 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-26
+- Fix: **choosing your models now works when they come through an AI proxy.** If the only
+  thing you've connected is an OpenAI-compatible proxy (LiteLLM, OpenRouter), *Best value*,
+  *Balanced* and *Best quality* all resolved to the same arbitrary model: our curated picks
+  are written per vendor, and a proxy serves those same models under names like
+  `anthropic/claude-sonnet-5`. The three answers now genuinely differ. A provider you
+  connected directly always wins over the same model reached through a proxy.
+- Fix: a model served through a proxy keeps its badge — **Recommended**, or the warning on a
+  model its vendor has retired — instead of every one reading "untested". They sort by it
+  again too, so the models we back are back at the top of the list.
+- Fix: a provider we don't ship a logo for no longer borrows Atelier's own mark in the setup
+  screens. An unfamiliar provider now shows no logo rather than one that isn't theirs.
 - Maintenance: the bundled workflow engine now tracks a tagged release (FlowDrop
   `2.0.0-alpha11`) instead of a pinned development snapshot. Same code, no behaviour
   change.

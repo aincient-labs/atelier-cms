@@ -49,14 +49,80 @@ final class ModelRecommendations {
    * broader "gpt-4o"), ties breaking toward the better (lower-rank) label. A
    * model matching nothing — or a provider we've said nothing about — is
    * {@see self::UNTESTED}.
+   *
+   * PROXY PROVIDERS ({@see ModelRoles::PROXY_PROVIDERS}) get a second look. Their
+   * catalogue is other vendors' models under a `vendor/model` id, and everything
+   * we curate is written about the vendor — so without this, `claude-sonnet-5`
+   * reached through a LiteLLM proxy carries no badge at all, while the same model
+   * on a direct Anthropic key reads "Recommended", and a vendor-deprecated model
+   * loses its warning exactly where an operator is least likely to recognise it.
+   * The proxy's OWN entry still wins when the document has one (OpenRouter has),
+   * because that is the more specific statement.
    */
   public function labelForModel(string $providerId, string $modelId): string {
+    $label = $this->matchLabel($providerId, $modelId);
+    if ($label !== self::UNTESTED || !ModelRoles::isProxyProvider($providerId)) {
+      return $label;
+    }
+
+    [$vendor, $bare] = ModelRoles::splitProxyModel($modelId);
+    if ($vendor !== '' && isset($this->data()['models'][$vendor])) {
+      // The segment names a vendor we curate — the precise case: only that
+      // vendor's needles are consulted, so nothing can inherit another's label.
+      return $this->matchLabel($vendor, $bare);
+    }
+
+    // Otherwise the MODEL NAME decides, matched across every vendor, longest hit
+    // wins. Two shapes land here and both are ordinary on a proxy: an id with the
+    // namespace stripped (`claude-sonnet-5`), and one namespaced by ROUTE rather
+    // than vendor (`vertex_ai/claude-sonnet-5`, `bedrock/…`, `azure/…` — where the
+    // segment is who serves it, not who made it). Refusing to label those would
+    // blank the badge on most of a real proxy's catalogue.
+    //
+    // Safe because families are vendor-specific in practice — `sonnet` is only ever
+    // Anthropic's, `gpt-4o` only OpenAI's — and a name matching nothing still lands
+    // on UNTESTED. Worst case is a coincidental family name inheriting a label that
+    // is advisory anyway; the alternative loses real deprecation warnings.
+    $best = self::UNTESTED;
+    $bestLen = -1;
+    foreach (array_keys($this->data()['models'] ?? []) as $candidateVendor) {
+      $match = $this->matchLength((string) $candidateVendor, $bare);
+      if ($match === NULL) {
+        continue;
+      }
+      [$vendorLabel, $len] = $match;
+      if ($len > $bestLen || ($len === $bestLen && self::RANK[$vendorLabel] < self::RANK[$best])) {
+        $best = $vendorLabel;
+        $bestLen = $len;
+      }
+    }
+    return $best;
+  }
+
+  /**
+   * The label from ONE provider's needles ({@see self::labelForModel()}'s core).
+   */
+  private function matchLabel(string $providerId, string $modelId): string {
+    $match = $this->matchLength($providerId, $modelId);
+    return $match === NULL ? self::UNTESTED : $match[0];
+  }
+
+  /**
+   * The winning label for a provider's model AND the needle length that won it.
+   *
+   * The length is what lets a cross-vendor sweep compare hits: a longer needle is
+   * a more specific statement about the model, whichever vendor made it.
+   *
+   * @return array{0: string, 1: int}|null
+   *   The label and its needle length, or NULL when nothing matched.
+   */
+  private function matchLength(string $providerId, string $modelId): ?array {
     $models = $this->data()['models'][$providerId] ?? [];
     if (!is_array($models)) {
-      return self::UNTESTED;
+      return NULL;
     }
     $modelId = strtolower(trim($modelId));
-    $best = self::UNTESTED;
+    $best = NULL;
     $bestLen = -1;
     foreach ($models as $label => $needles) {
       if (!isset(self::RANK[$label]) || !is_array($needles)) {
@@ -68,13 +134,13 @@ final class ModelRecommendations {
           continue;
         }
         $len = strlen($needle);
-        if ($len > $bestLen || ($len === $bestLen && self::RANK[$label] < self::RANK[$best])) {
+        if ($best === NULL || $len > $bestLen || ($len === $bestLen && self::RANK[$label] < self::RANK[$best])) {
           $best = $label;
           $bestLen = $len;
         }
       }
     }
-    return $best;
+    return $best === NULL ? NULL : [$best, $bestLen];
   }
 
   /**

@@ -24,14 +24,17 @@ namespace Drupal\aincient_core;
  *   1. the region's candidates for that role (when a region is given), then the
  *      profile's — a region only overrides the roles it actually improves;
  *   2. a candidate that EXACTLY matches a key in the role's pool;
- *   3. the same candidate's model half as a SUBSTRING needle against that
- *      provider's models in the pool — this is what lets `claude-sonnet-5` keep
- *      resolving after the vendor starts returning `claude-sonnet-5-20260401`,
- *      with no edit to the published document;
- *   4. {@see ModelRoles::tierHints()} — the pre-existing, provider-local
+ *   3. the same candidate's model half as a FAMILY match against that provider's
+ *      models in the pool ({@see self::matches()}) — this is what lets
+ *      `claude-sonnet-5` keep resolving after the vendor starts returning
+ *      `claude-sonnet-5-20260401`, with no edit to the published document;
+ *   4. the same candidates again, this time against the PROXY providers
+ *      ({@see self::PROXY_PROVIDERS}) — a second pass, so a direct key always
+ *      beats the same model reached through a proxy;
+ *   5. {@see ModelRoles::tierHints()} — the pre-existing, provider-local
  *      preference needles, so a provider the document says nothing about (Ollama,
  *      Mistral) behaves exactly as it did before this service existed;
- *   5. the first model in the pool.
+ *   6. the first model in the pool.
  *
  * Every step reads from the POOL — the models we probed with the operator's own
  * credential. A candidate naming a model they can't serve is skipped silently, so
@@ -41,6 +44,34 @@ namespace Drupal\aincient_core;
  * UNBOUND rather than guessed at.
  */
 final class ModelPresetResolver {
+
+  /**
+   * Providers that RE-SERVE other vendors' models under one credential.
+   *
+   * A proxy's catalogue is other people's models, namespaced by vendor
+   * (`anthropic/claude-opus-5`, `openai/gpt-5.6-sol`) — so the curated document's
+   * candidates describe them perfectly well, they just don't carry the proxy's
+   * provider id. Without this, every profile collapses to "the first model in the
+   * pool" for an operator whose only connected provider is a proxy, which is
+   * exactly the case for a hosted demo with a pre-wired LiteLLM key: three
+   * profiles, one arbitrary answer, and a choice that means nothing.
+   *
+   * Tried in a SECOND pass over the candidates ({@see self::pick()}), so a direct
+   * key always wins over the same model reached through a proxy. The list itself is
+   * {@see ModelRoles::PROXY_PROVIDERS} — shared with {@see ModelRecommendations},
+   * which has to look through a proxy for the same reason.
+   */
+  private const PROXY_PROVIDERS = ModelRoles::PROXY_PROVIDERS;
+
+  /**
+   * Shortest pool model id allowed to capture a longer candidate.
+   *
+   * Guards the reverse half of {@see self::matches()}: `claude-haiku-4-5` (16)
+   * may resolve the document's dated `claude-haiku-4-5-20251001`, but a short,
+   * generic id like `gpt-5` must never capture `gpt-5.6-sol` — which is a
+   * different model at a different price.
+   */
+  private const FAMILY_MIN = 8;
 
   public function __construct(private readonly RecommendationSource $source) {}
 
@@ -204,25 +235,46 @@ final class ModelPresetResolver {
    *   Available models for the role, "provider:model" => label.
    */
   private function pick(string $role, array $candidates, array $pool): string {
+    // Parse once: both passes below walk the same candidates.
+    $parsed = [];
     foreach ($candidates as $candidate) {
       $candidate = trim((string) $candidate);
-      if ($candidate === '') {
-        continue;
-      }
-      // Exact match — the common case, and the only one that is unambiguous.
-      if (isset($pool[$candidate])) {
-        return $candidate;
-      }
-      // Substring match, scoped to the SAME provider. Scoping matters: without it
-      // a candidate could resolve to a same-named model on a different vendor,
-      // which is never what the document meant.
       [$providerId, $modelNeedle] = array_pad(explode(':', $candidate, 2), 2, '');
       if ($providerId === '' || $modelNeedle === '') {
         continue;
       }
-      $match = $this->firstContaining($pool, $providerId, $modelNeedle);
+      $parsed[] = [$candidate, $providerId, $modelNeedle];
+    }
+
+    // Pass 1 — each candidate against its OWN provider. Scoping matters: without
+    // it a candidate could resolve to a same-named model on a different vendor,
+    // which is never what the document meant.
+    foreach ($parsed as [$candidate, $providerId, $modelNeedle]) {
+      // Exact match — the common case, and the only one that is unambiguous.
+      if (isset($pool[$candidate])) {
+        return $candidate;
+      }
+      $match = $this->firstMatching($pool, $providerId, $modelNeedle);
       if ($match !== '') {
         return $match;
+      }
+    }
+
+    // Pass 2 — the same candidates against any PROXY provider in the pool, whose
+    // catalogue is these very models under a `vendor/model` id. A separate pass
+    // rather than an inner loop, so the ordering rule is "every direct key first,
+    // then the proxies" instead of "candidate 1 via a proxy beats candidate 2 on a
+    // key the operator actually connected".
+    foreach ($parsed as [, $providerId, $modelNeedle]) {
+      foreach (self::PROXY_PROVIDERS as $proxy) {
+        if ($proxy === $providerId) {
+          // Already covered by pass 1 — the document named the proxy itself.
+          continue;
+        }
+        $match = $this->firstMatching($pool, $proxy, $modelNeedle);
+        if ($match !== '') {
+          return $match;
+        }
       }
     }
 
@@ -233,27 +285,59 @@ final class ModelPresetResolver {
   }
 
   /**
-   * The first pool entry for a provider whose model id contains a needle.
+   * The first pool entry for a provider whose model id matches a needle.
    *
    * @param array<string, string> $pool
    *   Available models, "provider:model" => label.
    * @param string $providerId
    *   The provider the match is scoped to.
    * @param string $needle
-   *   A case-insensitive substring of the model id.
+   *   A case-insensitive model id or family from the document.
    */
-  private function firstContaining(array $pool, string $providerId, string $needle): string {
+  private function firstMatching(array $pool, string $providerId, string $needle): string {
     $prefix = $providerId . ':';
     $needle = strtolower($needle);
     foreach (array_keys($pool) as $key) {
       if (!str_starts_with($key, $prefix)) {
         continue;
       }
-      if (str_contains(strtolower(substr($key, strlen($prefix))), $needle)) {
+      if ($this->matches(strtolower(substr($key, strlen($prefix))), $needle)) {
         return $key;
       }
     }
     return '';
+  }
+
+  /**
+   * Whether a pool model id and a document needle name the same model family.
+   *
+   * Two directions, because the two sides drift the other way round:
+   *
+   *   forward — the POOL is more specific: the document says `claude-sonnet-5`,
+   *     the vendor now returns `claude-sonnet-5-20260401`. A plain substring.
+   *   reverse — the DOCUMENT is more specific: it names the dated snapshot
+   *     `claude-haiku-4-5-20251001` and the catalogue serves the undated family id
+   *     (which is what proxies like LiteLLM do). Guarded by a prefix requirement
+   *     plus {@see self::FAMILY_MIN}, so a match means "the same family, less
+   *     precisely named" and never "a shorter id that happens to share a prefix".
+   *
+   * A proxy id carries its vendor as a path segment (`anthropic/claude-opus-5`);
+   * the reverse direction compares the LAST segment — the model name proper, which
+   * is what the document's needle is written against. (Not the same split as
+   * {@see ModelRoles::splitProxyModel()}, which wants the vendor and so takes the
+   * first segment.)
+   *
+   * @param string $model
+   *   The pool entry's model id, lower-cased.
+   * @param string $needle
+   *   The document's needle, lower-cased.
+   */
+  private function matches(string $model, string $needle): bool {
+    if (str_contains($model, $needle)) {
+      return TRUE;
+    }
+    $bare = str_contains($model, '/') ? substr($model, strrpos($model, '/') + 1) : $model;
+    return strlen($bare) >= self::FAMILY_MIN && str_starts_with($needle, $bare);
   }
 
   /**
@@ -273,7 +357,7 @@ final class ModelPresetResolver {
     foreach (array_keys($pool) as $key) {
       $providerId = explode(':', $key, 2)[0];
       foreach ($hints[$providerId][$role] ?? [] as $needle) {
-        $match = $this->firstContaining($pool, $providerId, (string) $needle);
+        $match = $this->firstMatching($pool, $providerId, (string) $needle);
         if ($match !== '') {
           return $match;
         }

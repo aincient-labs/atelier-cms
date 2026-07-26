@@ -49,6 +49,25 @@ final class ModelPresetResolverTest extends UnitTestCase {
   }
 
   /**
+   * A resolver over the SHIPPED document snapshot (no State override).
+   */
+  private function shippedResolver(): ModelPresetResolver {
+    // tests/src/Unit -> aincient_core.
+    $moduleRoot = dirname(__DIR__, 3);
+    $moduleList = $this->createMock(ModuleExtensionList::class);
+    $moduleList->method('getPath')->with('aincient_core')->willReturn($moduleRoot);
+    $state = $this->createMock(StateInterface::class);
+    $state->method('get')->willReturn(NULL);
+    return new ModelPresetResolver(new RecommendationSource(
+      $moduleList,
+      $state,
+      $this->createMock(ClientInterface::class),
+      $this->createMock(LoggerChannelFactoryInterface::class),
+      $this->createMock(TimeInterface::class),
+    ));
+  }
+
+  /**
    * A minimal but complete two-profile document.
    *
    * @return array<string, mixed>
@@ -181,6 +200,83 @@ final class ModelPresetResolverTest extends UnitTestCase {
   }
 
   /**
+   * A proxy's catalogue resolves the document's candidates for other vendors.
+   *
+   * A LiteLLM/OpenRouter key serves other people's models under a `vendor/model`
+   * id, so the curated candidates describe them — they just don't carry the
+   * proxy's provider id. Without this the profiles collapse to "the pool's first
+   * model" for anyone whose only provider is a proxy (the hosted demo), and the
+   * one question we ask a beginner has three identical answers.
+   */
+  public function testProfileCandidatesResolveThroughProxyProviders(): void {
+    $chat = [
+      'litellm:openai/gpt-5.4-mini' => 'GPT-5.4 mini',
+      'litellm:anthropic/claude-sonnet-5' => 'Claude Sonnet 5',
+      'litellm:anthropic/claude-haiku-4-5' => 'Claude Haiku 4.5',
+    ];
+    $picked = $this->resolver($this->document())->apply('balanced', $chat, []);
+    // `anthropic:claude-sonnet-5` — Anthropic isn't connected, the proxy serves it.
+    $this->assertSame('litellm:anthropic/claude-sonnet-5', $picked[ModelRoles::REASONING]);
+    $this->assertSame('litellm:anthropic/claude-haiku-4-5', $picked[ModelRoles::TASK]);
+  }
+
+  /**
+   * A direct key BEATS the same model reached through a proxy.
+   *
+   * The proxy pass is a second sweep over the candidates, not an inner loop, so a
+   * lower-ranked candidate on a provider the operator actually connected wins over
+   * a higher-ranked one that would have to go through a proxy — an extra hop, an
+   * extra bill, and a credential they didn't choose for this.
+   */
+  public function testDirectProviderWinsOverProxy(): void {
+    $chat = [
+      // The profile's FIRST candidate for `reasoning`, via the proxy...
+      'litellm:anthropic/claude-sonnet-5' => 'Sonnet via LiteLLM',
+      // ...and its second candidate on a direct key.
+      'openai:gpt-5.4' => 'GPT-5.4',
+    ];
+    $picked = $this->resolver($this->document())->apply('balanced', $chat, []);
+    $this->assertSame('openai:gpt-5.4', $picked[ModelRoles::REASONING]);
+  }
+
+  /**
+   * A dated candidate resolves against a catalogue serving the family id.
+   *
+   * The mirror image of testSubstringFallbackSurvivesVersionBump: there the POOL
+   * was more specific than the document, here the document is more specific than
+   * the pool — which is what proxies do (`anthropic/claude-haiku-4-5` for what
+   * Anthropic itself lists as `claude-haiku-4-5-20251001`).
+   */
+  public function testDatedCandidateResolvesAgainstFamilyId(): void {
+    $document = $this->document();
+    $document['profiles']['balanced']['roles']['task'] = ['anthropic:claude-haiku-4-5-20251001'];
+    $chat = ['litellm:anthropic/claude-haiku-4-5' => 'Claude Haiku 4.5'];
+    $picked = $this->resolver($document)->apply('balanced', $chat, []);
+    $this->assertSame('litellm:anthropic/claude-haiku-4-5', $picked[ModelRoles::TASK]);
+  }
+
+  /**
+   * A short, generic pool id must NOT capture a longer candidate.
+   *
+   * The guard on the reverse match ({@see ModelPresetResolver}'s FAMILY_MIN):
+   * `gpt-5` shares a prefix with `gpt-5.6-sol` but is a different model at a
+   * different price, so binding it would be a silent downgrade — and the whole
+   * point of a profile is that its picks are the ones we curated.
+   */
+  public function testShortGenericIdDoesNotCaptureLongerCandidate(): void {
+    $document = $this->document();
+    $document['profiles']['balanced']['roles']['reasoning'] = ['openai:gpt-5.6-sol'];
+    $chat = [
+      'litellm:openai/gpt-5' => 'GPT-5',
+      'litellm:anthropic/claude-sonnet-5' => 'Claude Sonnet 5',
+    ];
+    $picked = $this->resolver($document)->apply('balanced', $chat, []);
+    // Not `litellm:openai/gpt-5` — nothing the document named is available, so the
+    // LiteLLM tier hints decide, and `sonnet` is a reasoning hint ahead of `gpt-5`.
+    $this->assertSame('litellm:anthropic/claude-sonnet-5', $picked[ModelRoles::REASONING]);
+  }
+
+  /**
    * With no image provider connected, `image` stays UNBOUND.
    *
    * It is a product gate ({@see \Drupal\aincient_core\ModelRoleResolver::imageBinding()}):
@@ -302,19 +398,7 @@ final class ModelPresetResolverTest extends UnitTestCase {
    * fails here rather than in someone's onboarding.
    */
   public function testShippedDocumentResolves(): void {
-    // tests/src/Unit -> aincient_core.
-    $moduleRoot = dirname(__DIR__, 3);
-    $moduleList = $this->createMock(ModuleExtensionList::class);
-    $moduleList->method('getPath')->with('aincient_core')->willReturn($moduleRoot);
-    $state = $this->createMock(StateInterface::class);
-    $state->method('get')->willReturn(NULL);
-    $resolver = new ModelPresetResolver(new RecommendationSource(
-      $moduleList,
-      $state,
-      $this->createMock(ClientInterface::class),
-      $this->createMock(LoggerChannelFactoryInterface::class),
-      $this->createMock(TimeInterface::class),
-    ));
+    $resolver = $this->shippedResolver();
 
     $this->assertNotEmpty($resolver->profiles());
     $this->assertTrue($resolver->hasProfile($resolver->defaultProfile()));
@@ -373,6 +457,56 @@ final class ModelPresetResolverTest extends UnitTestCase {
     $value = $resolver->apply('value', $chat, $image);
     foreach ([ModelRoles::REASONING, ModelRoles::TASK, ModelRoles::FAST] as $role) {
       $this->assertSame('anthropic:claude-haiku-4-5-20251001', $value[$role], "value profile put {$role} on an expensive model");
+    }
+  }
+
+  /**
+   * The SHIPPED document gives three DIFFERENT answers on a proxy-only site.
+   *
+   * This is the hosted-demo case: the only connected provider is a LiteLLM proxy
+   * with a handful of models, and the visitor is asked the one question the wizard
+   * leads with. If the three profiles resolved to the same model, that question
+   * would be theatre — so the guard is that the tiers stay ORDERED (value ≤
+   * balanced ≤ quality on capability) and that `reasoning` genuinely differs.
+   *
+   * The pool is the catalogue Drupal Forge's proxy is believed to serve. It is a
+   * belief, not a reading — `/model/info` needs the injected key, so it cannot be
+   * checked from here (see apps/forge-demo/.devpanel/wire-ai.sh, which logs the
+   * real list from inside the container).
+   */
+  public function testShippedDocumentResolvesOnProxyOnlyPool(): void {
+    $resolver = $this->shippedResolver();
+    $chat = [
+      'litellm:openai/gpt-5.4' => 'GPT-5.4',
+      'litellm:openai/gpt-5.4-mini' => 'GPT-5.4 mini',
+      'litellm:gemini/gemini-3.5-flash' => 'Gemini 3.5 Flash',
+      'litellm:anthropic/claude-haiku-4-5' => 'Claude Haiku 4.5',
+    ];
+
+    foreach ($resolver->profiles() as $profile) {
+      $picked = $resolver->apply($profile['id'], $chat, []);
+      // Every role but `image` (no image model on a chat-only proxy) resolves,
+      // and only ever to something in the pool.
+      foreach ([ModelRoles::REASONING, ModelRoles::TASK, ModelRoles::FAST, ModelRoles::VISION] as $role) {
+        $this->assertArrayHasKey($role, $picked, "profile {$profile['id']} left role {$role} unresolved");
+        $this->assertArrayHasKey($picked[$role], $chat);
+      }
+      $this->assertArrayNotHasKey(ModelRoles::IMAGE, $picked);
+    }
+
+    // `reasoning` is the role the money goes on, and the three profiles must
+    // actually differ there: the cheapest model, the mid one, the strongest.
+    $this->assertSame('litellm:anthropic/claude-haiku-4-5', $resolver->apply('value', $chat, [])[ModelRoles::REASONING]);
+    $this->assertSame('litellm:gemini/gemini-3.5-flash', $resolver->apply('balanced', $chat, [])[ModelRoles::REASONING]);
+    $this->assertSame('litellm:openai/gpt-5.4', $resolver->apply('quality', $chat, [])[ModelRoles::REASONING]);
+
+    // And `fast` stays cheap in every profile — including "best quality".
+    foreach (['value', 'balanced', 'quality'] as $id) {
+      $this->assertSame(
+        'litellm:anthropic/claude-haiku-4-5',
+        $resolver->apply($id, $chat, [])[ModelRoles::FAST],
+        "profile {$id} put the fast tier on an expensive model",
+      );
     }
   }
 
