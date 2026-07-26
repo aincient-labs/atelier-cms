@@ -14,3 +14,10 @@ services:
       - '@config.factory'
       - '@aincient_core.model_recommendations'
       - '@aincient_onboarding.provider_connector'
+  aincient_onboarding.profile_applier:
+    class: Drupal\aincient_onboarding\ProfileApplier
+    arguments:
+      - '@aincient_core.model_preset_resolver'
+      - '@aincient_onboarding.provider_catalog'
+      - '@aincient_core.model_role_resolver'
+      - '@aincient_core.recommendation_source'

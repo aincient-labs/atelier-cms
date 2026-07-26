@@ -24,7 +24,6 @@ import {
   XIcon,
 } from "./icons";
 import { ModelPicker, type ModelPickerOption } from "./model-picker";
-import { STAGED_ASK_KEY, SUGGESTIONS } from "./App";
 import { apiUrl, consoleBase } from "./console-config";
 
 /**
@@ -35,18 +34,33 @@ import { apiUrl, consoleBase } from "./console-config";
  * outside the chat conversation so the first run is a polished, can't-miss-it
  * experience rather than a panel hidden behind a chat message.
  *
- * Steps: welcome (with the optional "What should we call you?") → connect your
- * AI → choose models — then it LANDS in the console with the composer focused
- * and a suggested first ask pre-typed (no "Finish" screen; onboarding ends when
- * the owner has made something).
+ * TWO steps: connect your AI → set the pace. Then it LANDS on the console's own
+ * welcome — heading, lede, and three one-click sample asks — with NOTHING typed
+ * in the composer.
  *
- * The models step leads with ONE question — Best value / Balanced / Best quality
+ * That landing is deliberate and it replaced two earlier ideas. There was a
+ * separate "welcome" step in front, whose only work was an optional name field;
+ * asking who you are before the product has done anything for you makes the
+ * first thing Atelier ever shows a form, so the step is gone and the name is now
+ * asked AFTER the first page exists (see NameInvite in App.tsx). And the wizard
+ * used to stage a sample ask into the composer on the way out; a pre-filled
+ * composer turns a choice into a chore — you must read someone else's sentence
+ * and clear it — and it is strictly slower than the console's chips, which send
+ * themselves. Onboarding still ends when the owner has MADE something; the chips
+ * get them there in one click instead of two.
+ *
+ * The pace step leads with ONE question — Best value / Balanced / Best quality
  * — because asking a beginner to make five independent vendor-model decisions
  * before they have ever used the product is the wrong first impression. The
  * profiles come from a curated document we publish (and can refresh on demand,
  * since the honest answer changes weekly); each resolves to a concrete model per
  * role against what the operator actually connected. The five per-role pickers
  * are unchanged and one disclosure away, for the people they were built for.
+ *
+ * In auto mode the resolved models are not shown AT ALL — not even as a summary.
+ * Someone who answered "decide for me" has said they don't want to evaluate
+ * model names, and printing five of them under the answer re-poses the question
+ * they just declined. The disclosure is there for anyone who does want to look.
  *
  * The connect step is MULTI-provider: the operator connects one or more
  * providers (Anthropic for chat, Google Gemini for images, …), each with its own
@@ -62,7 +76,7 @@ import { apiUrl, consoleBase } from "./console-config";
  * smart defaults, zero dead-ends, forgiving errors, free choice always kept.
  */
 
-type Step = "welcome" | "connect" | "models";
+type Step = "connect" | "models";
 
 /** A connected provider's probed models (provider:model → label) + suggestions. */
 type Connected = {
@@ -114,7 +128,7 @@ const PROVIDER_BRAND: Record<string, { Icon: ComponentType<SVGProps<SVGSVGElemen
 const PROVIDER_ORDER = ["mistral", "anthropic", "ollama", "openai", "gemini"];
 
 function progressFor(step: Step): { index: number; total: number } {
-  const order: Step[] = ["welcome", "connect", "models"];
+  const order: Step[] = ["connect", "models"];
   return { index: Math.max(0, order.indexOf(step)), total: order.length };
 }
 
@@ -168,6 +182,7 @@ function providerChip(recommendation?: string): { text: string; tone: string } |
 function ProviderRow({
   provider,
   connected,
+  modelCount,
   open,
   credential,
   status,
@@ -180,6 +195,16 @@ function ProviderRow({
 }: {
   provider: OnboardingProvider;
   connected: boolean;
+  /**
+   * How many models this key just turned out to reach, or 0 when we don't know.
+   *
+   * Only a probe THIS session yields a number — the server hands back the models
+   * it enumerated when it validated the key. A row that is connected because a
+   * key was already stored (a re-run, a headless install) has no fresh probe, so
+   * it says "Connected" and stops rather than inventing or back-deriving a
+   * count. Never guess a number at the one moment we're claiming competence.
+   */
+  modelCount: number;
   open: boolean;
   credential: string;
   status: "idle" | "connecting";
@@ -224,6 +249,15 @@ function ProviderRow({
               {connected && (
                 <span className="ain-wiz__chip ain-wiz__chip--ok">
                   <CheckIcon className="ain-wiz__chip-icon" /> Connected
+                  {modelCount > 0 && (
+                    // The quiet proof that the key WORKS: we didn't just store
+                    // it, we reached the provider and counted what came back. A
+                    // whisper on the chip (Law 02), not a banner — and no
+                    // exclamation (Law 05).
+                    <span className="ain-wiz__chip-count">
+                      · {modelCount} {modelCount === 1 ? "model" : "models"} ready
+                    </span>
+                  )}
                 </span>
               )}
             </span>
@@ -333,11 +367,7 @@ export function OnboardingWizard() {
   // A re-run on a configured site is closable + pre-filled (Law 14). First-run
   // (forced falsy) keeps the no-escape flow.
   const closable = !!cfg.forced;
-  const [step, setStep] = useState<Step>("welcome");
-  // The optional "What should we call you?" answer — the one polite place the
-  // studio ASKS for a name (study 02: names are earned, never scraped). On a
-  // re-run, pre-fill the earned name so re-finishing never wipes it.
-  const [name, setName] = useState(settings().viewer?.name ?? "");
+  const [step, setStep] = useState<Step>("connect");
   // Which provider row is expanded for key entry, and its in-progress credential.
   const [openId, setOpenId] = useState<string | null>(null);
   const [credential, setCredential] = useState("");
@@ -362,16 +392,28 @@ export function OnboardingWizard() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
   // The chosen profile, or NULL for "Custom" — the state you land in the moment
-  // you touch a per-role picker, and the state a RE-RUN opens in: an operator who
-  // already earned their bindings must never have them silently overwritten by a
-  // preset (Law 14).
+  // you touch a per-role picker. On a re-run this is READ, not inferred: the
+  // server stores which tier is in force, so a site set up with Balanced reopens
+  // on Balanced. It used to be derived from "are there bindings?", which reported
+  // Custom for every configured site and buried the tier the operator actually
+  // chose. Bindings are still never silently overwritten (Law 14) — reopening on
+  // a tier re-applies the same models that tier already resolved to.
   const hasEarnedBindings = Object.keys(cfg.current ?? {}).length > 0;
+  const activeProfile = cfg.activeProfile ?? "";
   const [profile, setProfile] = useState<string | null>(
-    hasEarnedBindings ? null : (cfg.defaultProfile ?? cfg.profiles?.[0]?.id ?? null),
+    activeProfile !== ""
+      ? activeProfile
+      : hasEarnedBindings
+        ? null
+        : (cfg.defaultProfile ?? cfg.profiles?.[0]?.id ?? null),
   );
-  // Whether the per-role pickers are revealed. Open from the start when there is
-  // no simple mode to offer, or when we're respecting earned bindings.
-  const [advanced, setAdvanced] = useState(hasEarnedBindings || (cfg.profiles ?? []).length === 0);
+  // Whether the per-role pickers are revealed. Only advanced operators care which
+  // concrete models are in play, so auto mode keeps them collapsed: open from the
+  // start only when there is no simple mode to offer, or when the site is genuinely
+  // Custom (earned bindings with no tier in force).
+  const [advanced, setAdvanced] = useState(
+    (hasEarnedBindings && activeProfile === "") || (cfg.profiles ?? []).length === 0,
+  );
 
   // Merged model pools across every connected provider, keyed by "provider:model".
   // The base is the server-enumerated `catalog` (every provider with a STORED
@@ -591,23 +633,6 @@ export function OnboardingWizard() {
     setOpenId((cur) => (cur === id ? null : id));
   };
 
-  // Leave the welcome step, keeping any offered name. The save is best-effort
-  // and non-blocking: a name must never stand between the owner and the
-  // studio (the server sanitizes maître-d' style; the account pane can always
-  // fix it later).
-  const begin = () => {
-    const offered = name.trim();
-    if (offered) {
-      void fetch(apiUrl("/account"), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: offered }),
-      }).catch(() => {});
-    }
-    setStep("connect");
-  };
-
   // Bind each role to its chosen provider:model and finish.
   const finish = async () => {
     setStatus("saving");
@@ -622,22 +647,25 @@ export function OnboardingWizard() {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roles: chosen }),
+        // The tier travels with the bindings. Sending only the resolved models
+        // would throw away the intent behind them: the site could no longer say
+        // which tier is active, and a later recommendations update would have
+        // nothing to honour. `null` (Custom) is sent as '' — an explicit "these
+        // are mine", which no refresh will overwrite.
+        body: JSON.stringify({ roles: chosen, profile: profile ?? "" }),
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) {
         throw new Error(data.error || `Request failed (HTTP ${res.status})`);
       }
-      // The wizard's last act is not a "Finish" screen — it lands in the
-      // studio with the composer focused and one suggested first ask
-      // pre-typed (study 02: onboarding ends when the owner has MADE
-      // something, not when the form is done). The reload shows the
-      // configured console; the staged ask rides sessionStorage.
-      try {
-        sessionStorage.setItem(STAGED_ASK_KEY, SUGGESTIONS[0]);
-      } catch {
-        /* private mode — land with an empty composer */
-      }
+      // The wizard's last act is not a "Finish" screen — it lands on the
+      // console's own welcome, which already asks the only question that
+      // matters ("What would you like to create?") and offers three asks that
+      // send themselves. We deliberately type NOTHING into the composer: a
+      // pre-filled ask reads as an assignment, has to be cleared before you can
+      // write your own, and still needs a press — the chips are both friendlier
+      // and fewer clicks. Onboarding ends when the owner has made something
+      // (study 02); the chips are the shortest path to that.
       window.location.assign(consoleBase());
     } catch (e) {
       setStatus("idle");
@@ -662,58 +690,23 @@ export function OnboardingWizard() {
         )}
         <ProgressDots step={step} />
 
-        {step === "welcome" && (
+        {step === "connect" && (
           <>
+            {/* The wordmark carries the welcome now that the greeting step is
+                gone — one brand gesture at display size (Law 03), then straight
+                to the only thing standing between the owner and the studio. */}
             <span className="ain-wiz__hero" aria-hidden>
               <Wordmark className="ain-wiz__hero-mark" />
             </span>
-            {/* Complete without a name — never the machine username, never a
-                name mined from the email (study 02, onboarding kit). */}
             <h1 className="ain-wiz__title">Welcome to your studio.</h1>
             <p className="ain-wiz__lede">
-              Two steps and you’re making: connect your AI, then pick the models it works
-              with. Your first page is a plain-words ask away.
+              One thing to set up: the AI that does the making. Connect a provider below and
+              your first page is a plain-words ask away.
             </p>
-            {/* The one polite place to ASK for a name — optional, skippable
-                without guilt. */}
-            <label className="ain-field">
-              <span className="ain-field__label">
-                <span className="ain-field__labeltext">What should we call you? · optional</span>
-              </span>
-              <input
-                className="ain-field__input"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && begin()}
-                autoComplete="name"
-                maxLength={60}
-                autoFocus
-              />
-              <span className="ain-field__hint">
-                Skip it and the studio simply won’t pretend to know you.
-              </span>
-            </label>
-            <div className="ain-wiz__actions">
-              {closable && (
-                <button type="button" className="ain-btn ain-topbtn ain-topbtn--quiet" onClick={skip}>
-                  Skip for now
-                </button>
-              )}
-              <button type="button" className="ain-btn ain-topbtn ain-topbtn--primary" onClick={begin}>
-                Set up — two steps
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === "connect" && (
-          <>
-            <h1 className="ain-wiz__title">Connect your AI</h1>
             <p className="ain-wiz__lede ain-wiz__lede--row">
               <ShieldCheckIcon className="ain-wiz__shield" />
-              Connect one provider or several — chat on one, images on another. Each key is
-              validated before it’s saved, and stored on your own server, never in code or git.
+              Connect one or several — chat on one, images on another. Each key is validated
+              before it’s saved, and stored on your own server, never in code or git.
             </p>
 
             <div className="ain-wiz__providers">
@@ -728,6 +721,7 @@ export function OnboardingWizard() {
                   key={p.id}
                   provider={p}
                   connected={!!connected[p.id] || !!p.usable}
+                  modelCount={countProbedModels(connected[p.id])}
                   open={openId === p.id}
                   credential={openId === p.id ? credential : ""}
                   status={status === "connecting" && openId === p.id ? "connecting" : "idle"}
@@ -748,10 +742,9 @@ export function OnboardingWizard() {
               </p>
             )}
 
+            {/* No Back: connect is the first door now. One primary, one quiet
+                escape on a re-run — two raised shapes at most (Laws 07, 08). */}
             <div className="ain-wiz__actions">
-              <button type="button" className="ain-btn ain-topbtn ain-topbtn--quiet" onClick={() => setStep("welcome")}>
-                ← Back
-              </button>
               {closable && (
                 <button type="button" className="ain-btn ain-topbtn ain-topbtn--quiet" onClick={skip}>
                   Skip for now
@@ -771,10 +764,16 @@ export function OnboardingWizard() {
 
         {step === "models" && (
           <>
-            <h1 className="ain-wiz__title">Choose your models</h1>
+            {/* The headline used to read "Choose your models" — on the screen
+                built so that nobody has to. It now names the question actually
+                being asked; the old title only survives where there is no
+                curated tier to offer and the pickers really are the step. */}
+            <h1 className="ain-wiz__title">
+              {profiles.length > 0 ? "Set the pace" : "Choose your models"}
+            </h1>
             <p className="ain-wiz__lede">
               {profiles.length > 0
-                ? "Atelier works in roles. Tell us what matters most and we’ll pick a model for each — you can change any of them now, or anytime via "
+                ? "Tell us what matters most and Atelier picks the right AI for each job. Change it whenever you like, via "
                 : "Atelier works in roles — pick a model for each, from any provider you connected. We’ve suggested good defaults; change any of them now, or come back anytime via "}
               <strong>Set up AI providers</strong> in your account menu.
             </p>
@@ -782,7 +781,7 @@ export function OnboardingWizard() {
             {profiles.length > 0 && (
               <div className="ain-wiz__profiles">
                 <span className="ain-wiz__label" id="ain-wiz-profile-label">
-                  How should Atelier pick?
+                  What matters most?
                 </span>
                 <div className="ain-wiz__segmented" role="radiogroup" aria-labelledby="ain-wiz-profile-label">
                   {profiles.map((p) => (
@@ -792,7 +791,15 @@ export function OnboardingWizard() {
                       role="radio"
                       aria-checked={profile === p.id}
                       className={`ain-wiz__segment${profile === p.id ? " ain-wiz__segment--on" : ""}`}
-                      onClick={() => setProfile(p.id)}
+                      // Choosing a tier collapses the pickers. A Custom site opens
+                      // this step with them showing; leaving five model dropdowns
+                      // on screen after the operator has just said "you decide"
+                      // would contradict the answer in the act of accepting it.
+                      // Re-openable from the disclosure — this hides, never locks.
+                      onClick={() => {
+                        setProfile(p.id);
+                        setAdvanced(false);
+                      }}
                     >
                       {p.label}
                     </button>
@@ -806,34 +813,13 @@ export function OnboardingWizard() {
               </div>
             )}
 
-            {/* Simple mode: what the chosen profile resolved to, as a quiet
-                read-only summary. The pickers are one disclosure away. */}
-            {profiles.length > 0 && !advanced && (
-              <dl className="ain-wiz__summary">
-                {roles.map((role) => {
-                  const pool = role.pool === "image" ? imagePool : chatPool;
-                  const value = roleModels[role.id] ?? "";
-                  const label = value ? (pool[value] ?? value.split(":").slice(1).join(":")) : null;
-                  return (
-                    <div key={role.id} className="ain-wiz__summary-row">
-                      <dt className="ain-wiz__summary-role">{role.label}</dt>
-                      <dd className="ain-wiz__summary-model">
-                        {label ? (
-                          <>
-                            <ProviderMark id={value.split(":", 1)[0]} />
-                            <span className="ain-wiz__summary-name">{label}</span>
-                          </>
-                        ) : (
-                          <span className="ain-wiz__summary-none">
-                            {role.pool === "image" ? "Not set — connect an image provider" : "Not set"}
-                          </span>
-                        )}
-                      </dd>
-                    </div>
-                  );
-                })}
-              </dl>
-            )}
+            {/* Auto mode shows NOTHING here. This used to print the five roles
+                and the model each resolved to — which re-posed, in technical
+                vocabulary, the exact question the operator had just answered
+                with "you decide". The models are one disclosure away for anyone
+                who wants them; the one thing worth surfacing unprompted is a
+                role that CAN'T be filled, below. */}
+            {profiles.length > 0 && !advanced && <UnfillableRoles roles={roles} imagePool={imagePool} />}
 
             {advanced && (
               <div className="ain-wiz__roles">
@@ -935,6 +921,39 @@ export function OnboardingWizard() {
 }
 
 /**
+ * The one thing auto mode still has to say out loud: a role nothing can fill.
+ *
+ * Hiding the resolved models is right — the operator asked us to decide. Hiding
+ * a *capability gap* would not be: "images are off because no image provider is
+ * connected" is not a model choice, it's a fact about what the studio can do,
+ * and the operator can only learn it here. Same nudge the pickers show, minus
+ * the picker.
+ *
+ * Only image roles reach this: every other role draws on the chat pool, and the
+ * connect step already refuses to advance without one.
+ */
+function UnfillableRoles({
+  roles,
+  imagePool,
+}: {
+  roles: OnboardingRole[];
+  imagePool: Record<string, string>;
+}) {
+  const unfillable = roles.filter((r) => r.pool === "image" && Object.keys(imagePool).length === 0);
+  if (unfillable.length === 0) return null;
+  return (
+    <div className="ain-wiz__gaps">
+      {unfillable.map((role) => (
+        <p key={role.id} className="ain-wiz__gap">
+          <span className="ain-wiz__gap-role">{role.label} is off.</span> {role.description} Go back
+          and connect Google Gemini to enable it.
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/**
  * Where the suggestions came from, in one honest sentence.
  *
  * "Bundled" is not an apology — the shipped snapshot is what makes an offline or
@@ -946,6 +965,23 @@ function RecommendationsNote({ meta }: { meta: OnboardingRecommendationsMeta }) 
     return <>Suggestions updated{dated} from aincient-labs.com.</>;
   }
   return <>Suggestions bundled with this release{dated}.</>;
+}
+
+/**
+ * How many distinct models a just-connected provider turned out to reach.
+ *
+ * Counts the union of its chat and image pools — both are keyed
+ * "provider:model", so a model offering both capabilities is counted once, and a
+ * key group (Google: gemini + nanobanana) correctly counts across both members
+ * because the server returns them under the one row that owns the key.
+ *
+ * Returns 0 for a provider with no entry, which is the "we didn't probe this
+ * session" case, not "zero models" — the caller renders nothing rather than
+ * claiming a count it never measured.
+ */
+function countProbedModels(entry: Connected | undefined): number {
+  if (!entry) return 0;
+  return new Set([...Object.keys(entry.chat ?? {}), ...Object.keys(entry.image ?? {})]).size;
 }
 
 /** Merge every connected provider's models for a pool into one map. */

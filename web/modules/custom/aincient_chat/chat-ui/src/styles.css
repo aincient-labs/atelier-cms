@@ -902,6 +902,53 @@
   padding: 14px 16px; border: 1px solid var(--ain-border); border-radius: 10px;
   background: var(--ain-surface);
 }
+
+/* "That's yours. What should we call you?" — the one time the studio asks for a
+   name, sitting above the composer right after the first live build.
+   A STRIP, never a modal: the owner is looking at the page they just made, and
+   covering it to ask a favour would spend the goodwill that created the moment.
+   No accent anywhere — the primary pigment on this screen belongs to Send
+   (Law 01) — and no shadow, so it reads as part of the dock rather than
+   something that flew in over it (Law 04). */
+.ain-nameinvite {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 16px; margin-bottom: 8px;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid var(--ain-border); border-radius: 10px;
+  background: var(--ain-surface);
+}
+.ain-nameinvite__say { font-size: 13px; line-height: 1.4; }
+.ain-nameinvite__lead { color: var(--ain-text); font-weight: 500; }
+.ain-nameinvite__ask { color: var(--ain-text-dim); }
+.ain-nameinvite__row { display: flex; align-items: center; gap: 6px; }
+/* Inputs recede (Law 08) — pressed into the paper, matching the composer. */
+.ain-nameinvite__input {
+  width: 11rem; min-width: 0; font: inherit; font-size: 13px;
+  color: var(--ain-text); background: var(--ain-bg);
+  border: 1px solid var(--ain-border); border-radius: 7px; padding: 5px 9px;
+  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-shadow) 18%, transparent);
+}
+.ain-nameinvite__input:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklch, var(--ain-accent) 45%, var(--ain-border));
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ain-accent) 14%, transparent);
+}
+.ain-nameinvite__icon { width: 13px; height: 13px; }
+/* Declining is a peer of answering, not a grey afterthought — same quiet voice
+   the console gives every other "no thanks". */
+.ain-nameinvite__dismiss {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 7px;
+  color: var(--ain-text-dim); background: transparent; border: 0; cursor: pointer;
+}
+.ain-nameinvite__dismiss:hover {
+  color: var(--ain-text);
+  background: color-mix(in oklch, var(--ain-text) 6%, transparent);
+}
+@media (max-width: 560px) {
+  .ain-nameinvite__input { width: 100%; }
+  .ain-nameinvite__row { width: 100%; }
+}
 /* Inline text-button (e.g. "Start a new thread" in the archived-thread notice). */
 .ain-linkbtn {
   background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
@@ -1437,6 +1484,10 @@
   color: color-mix(in oklch, var(--ain-jade) 85%, var(--ain-text));
   background: color-mix(in oklch, var(--ain-jade) 12%, transparent);
 }
+/* "· 14 models ready" — the proof the key actually reached the provider, riding
+   inside the Connected chip. Half a step quieter than the word it follows, so
+   the row still reads "Connected" first and the evidence second (Law 02). */
+.ain-wiz__chip-count { opacity: .75; letter-spacing: .08em; }
 /* Capability whispers (chat / image) — facts, not badges. */
 .ain-wiz__chip--cap { background: transparent; padding-inline: 0; }
 /* Curated guidance chips (shared tone vocabulary with the model picker):
@@ -1524,14 +1575,13 @@
 }
 .ain-wiz__profile-desc { margin: 0; font-size: 12px; color: var(--ain-text-dim); min-height: 1.4em; }
 
-/* Simple mode: what the profile resolved to, read-only. Deliberately quiet —
-   it is a receipt, not a control. */
-.ain-wiz__summary { display: flex; flex-direction: column; gap: 8px; margin: 0; text-align: left; }
-.ain-wiz__summary-row { display: flex; align-items: center; gap: 12px; }
-.ain-wiz__summary-role { flex: 0 0 auto; min-width: 9.5rem; font-size: 13px; color: var(--ain-text-dim); }
-.ain-wiz__summary-model { display: flex; align-items: center; gap: 8px; margin: 0; min-width: 0; }
-.ain-wiz__summary-name { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
-.ain-wiz__summary-none { font-size: 13px; color: var(--ain-text-dim); font-style: italic; }
+/* Auto mode prints no models at all (see the wizard docblock) — the read-only
+   role→model receipt that used to live here re-posed the very question the
+   operator had just delegated. The only thing that still speaks up is a role
+   nothing can fill, which is a capability fact rather than a model choice. */
+.ain-wiz__gaps { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.ain-wiz__gap { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ain-text-dim); }
+.ain-wiz__gap-role { color: var(--ain-text); font-weight: 500; }
 
 /* "Choose per role →" — the disclosure to the (unchanged) per-role pickers. */
 .ain-wiz__disclosure {

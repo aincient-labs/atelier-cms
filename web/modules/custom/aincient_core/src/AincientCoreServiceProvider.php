@@ -42,6 +42,14 @@ class AincientCoreServiceProvider extends ServiceProviderBase {
     $definition->addMethodCall('setRoleResolver', [
       new Reference('aincient_core.model_role_resolver'),
     ]);
+    // Lets getModel() tell a provider that cannot authenticate from one that is
+    // keyless by design. Guarded like everything else here, though `key` is a
+    // hard dependency of ai:ai so in practice it is always present.
+    if ($container->hasDefinition('key.repository')) {
+      $definition->addMethodCall('setKeyRepository', [
+        new Reference('key.repository'),
+      ]);
+    }
 
     // Re-point the reasoning backend at the role-aware subclass so the native
     // reason node advertises AIncient roles. Same guard + keep-the-args pattern

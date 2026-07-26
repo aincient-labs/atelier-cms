@@ -29,10 +29,17 @@ final class AincientModelServiceTest extends KernelTestBase {
    */
   protected static $modules = [
     'system',
+    // `ai` hard-depends on it and every provider resolves its key through it;
+    // kernel tests don't install dependencies transitively.
+    'key',
     'ai',
     'flowdrop',
     'flowdrop_ai_provider',
     'aincient_core',
+    // Registers the `echoai` provider, which enumerates `gpt-test`/`gpt-awesome`
+    // and reports itself usable unconditionally — the stand-in for a provider
+    // that claims a model name without the operator having connected it.
+    'ai_test',
   ];
 
   /**
@@ -82,6 +89,69 @@ final class AincientModelServiceTest extends KernelTestBase {
       'reason-model',
       $service->getDefaultModelForOperationType(AincientModelService::ROLE_PREFIX . ModelRoles::REASONING),
     );
+  }
+
+  /**
+   * A bound model stays on its provider even when another one claims the name.
+   *
+   * The regression: the parent resolves a provider by looking a bare model id up
+   * in a map merged from every provider's catalogue, last writer winning. A
+   * provider that enumerates without a key (OpenRouter's model list is public,
+   * Anthropic's is cached) is in that merge on a proxy-only site and takes over
+   * any name it shares with the proxy. The request then goes out with no
+   * Authorization header at all, because the missing-key failure is logged rather
+   * than thrown — the reported "Missing Authentication header", where only a bare
+   * `gpt-4` (a name nothing else enumerates) appeared to work.
+   *
+   * `echoai` plays the claimer here: it serves `gpt-test` and is always usable.
+   * Bind that model to a different provider and the binding must win.
+   *
+   * @covers ::getModel
+   */
+  public function testBoundProviderWinsOverAnotherProvidersCatalogue(): void {
+    $service = $this->container->get('flowdrop_ai_provider.model_service');
+
+    // Precondition: echoai really does claim this model, so the assertion below
+    // is about precedence and not about an empty catalogue.
+    // Precondition: echoai really does claim this model, so the assertion below
+    // is about precedence and not about an empty catalogue.
+    $this->assertSame(
+      'echoai',
+      $service->getModel('gpt-test', 'chat')['provider'] ?? NULL,
+      'Unbound, the model resolves to the provider that enumerates it.',
+    );
+
+    $this->container->get('aincient_core.model_role_resolver')
+      ->bind(ModelRoles::REASONING, 'litellm', 'gpt-test');
+
+    $resolved = $service->getModel('gpt-test', 'chat');
+    $this->assertSame('litellm', $resolved['provider'] ?? NULL);
+    $this->assertSame('gpt-test', $resolved['id'] ?? NULL);
+    $this->assertSame('chat', $resolved['operation_type'] ?? NULL);
+  }
+
+  /**
+   * A model nobody bound still resolves the stock way.
+   *
+   * The override must not become a gate: an unbound model that a connected
+   * provider legitimately serves has to keep resolving through the parent, or
+   * a per-node model pick outside the role system would stop working.
+   *
+   * @covers ::getModel
+   */
+  public function testUnboundModelStillResolvesThroughTheParent(): void {
+    $service = $this->container->get('flowdrop_ai_provider.model_service');
+
+    $this->container->get('aincient_core.model_role_resolver')
+      ->bind(ModelRoles::REASONING, 'echoai', 'gpt-test');
+
+    // A sibling model on the same provider was never bound to any role.
+    $this->assertSame(
+      'echoai',
+      $service->getModel('gpt-awesome', 'chat')['provider'] ?? NULL,
+    );
+    // And a model no provider serves is still absent, not invented.
+    $this->assertNull($service->getModel('no-such-model', 'chat'));
   }
 
   /**

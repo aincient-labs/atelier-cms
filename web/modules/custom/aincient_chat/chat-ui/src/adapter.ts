@@ -186,7 +186,7 @@ export type OnboardingSettings = {
    * The model catalogue enumerated from STORED keys (chat + image, each
    * "provider:model" => label). Seeds the models step on load so it lists every
    * connected provider's models independent of in-session connects — the seam
-   * that decouples "Choose your models" from "Connect your AI".
+   * that decouples the models step from "Connect your AI".
    */
   catalog?: { chat?: Record<string, string>; image?: Record<string, string> };
   /**
@@ -198,8 +198,20 @@ export type OnboardingSettings = {
   disconnectUrl?: string;
   /** The curated cost-vs-quality profiles, in display order. */
   profiles?: OnboardingProfile[];
-  /** Which profile the models step opens on. */
+  /** Which profile the models step opens on when nothing is in force yet. */
   defaultProfile?: string;
+  /**
+   * The profile ACTUALLY in force, or '' for Custom (models picked per role).
+   *
+   * The operator's stored intent, not a guess. Auto mode's whole promise is that
+   * a tier is the only model decision they ever make, so the site has to be able
+   * to say which one it is — and a recommendations refresh has to be able to
+   * honour it. Inferring it from "are there bindings?" made every configured site
+   * report Custom.
+   */
+  activeProfile?: string;
+  /** The recommendations date `activeProfile` last resolved against ('' = Custom). */
+  activeProfileUpdated?: string;
   /**
    * Every profile pre-resolved against what's actually connected, so switching
    * profiles is instant. A role absent from a profile's map stays unbound.

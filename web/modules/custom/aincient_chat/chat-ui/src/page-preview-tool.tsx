@@ -3,6 +3,7 @@ import { makeSafeAssistantToolUI } from "./error-boundary";
 import { getPageDraft, setPageDraft, EMPTY_PAGE, type PageSchema } from "./page-state";
 import { activeStudioKey, ensureStudio } from "./flow";
 import { consoleNav, deriveRoomFromStores } from "./console-nav";
+import { markSomethingMade } from "./name-invite-state";
 import { apiUrl } from "./console-config";
 
 /**
@@ -102,6 +103,13 @@ function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload;
     // where replaying these ops is what rebuilds the draft).
     chain = chain
       .then(() => applyOps(payload.ops ?? []))
+      .then(() => {
+        // The studio just built something, live, in front of the owner — the
+        // moment the name invite waits for (see name-invite.ts). Gated on LIVE
+        // only: a historical card replaying from a reloaded thread would fire
+        // this every time an old conversation is reopened.
+        if (!payload.__historical) markSomethingMade();
+      })
       .then(() => consoleNav.adoptRoom(deriveRoomFromStores()))
       .catch(() => {});
   }, [payload, toolCallId]);

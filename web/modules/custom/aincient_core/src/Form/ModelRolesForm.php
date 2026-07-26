@@ -255,6 +255,12 @@ final class ModelRolesForm extends ConfigFormBase {
       $this->resolver->bind(ModelRoles::VISION, $provider, $model);
     }
 
+    // Saving this form IS the hand-pick: the operator opened the per-role
+    // pickers and chose. Auto mode is all-or-nothing, so the site drops to
+    // Custom and no recommendations refresh will move these bindings again.
+    // Applying a profile goes through applyPreset() instead, which re-arms it.
+    $this->resolver->clearProfile();
+
     // One projection after all bindings are written.
     $this->resolver->project();
 
@@ -361,6 +367,9 @@ final class ModelRolesForm extends ConfigFormBase {
       [$provider, $model] = $this->splitBinding($value);
       $this->resolver->bind($role, $provider, $model);
     }
+    // Back into auto mode: record the tier + the document it resolved against,
+    // so the site can name what it is on and a later refresh can keep it there.
+    $this->resolver->setProfile($profileId, (string) ($this->recommendations->meta()['updated'] ?? ''));
     $this->resolver->project();
 
     $this->messenger()->addStatus($this->t('Applied @profile: @bindings', [

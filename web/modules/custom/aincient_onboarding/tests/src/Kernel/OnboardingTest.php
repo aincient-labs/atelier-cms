@@ -409,4 +409,87 @@ final class OnboardingTest extends KernelTestBase {
     $this->assertSame('claude-reasoning', $roles['reasoning']['model_id']);
   }
 
+  /**
+   * finalizeRoles() records WHICH tier produced the bindings.
+   *
+   * The intent, not just its result. Without it the site can only describe
+   * itself as "Custom" — which is what the wizard used to show for every
+   * configured site, no matter which tier set it up — and a recommendations
+   * refresh has nothing to honour.
+   */
+  public function testFinalizeRolesStoresTheChosenProfile(): void {
+    $result = $this->store()->finalizeRoles(
+      ['task' => ['provider_id' => 'anthropic', 'model_id' => 'claude-task']],
+      'balanced',
+      '2026-07-25',
+    );
+    $this->assertTrue($result['ok']);
+
+    $resolver = $this->container->get('aincient_core.model_role_resolver');
+    $this->assertSame('balanced', $resolver->profile());
+    $this->assertSame('2026-07-25', $resolver->profileUpdated());
+  }
+
+  /**
+   * Finalising without a tier means Custom — an explicit "these are mine".
+   *
+   * Auto mode is all-or-nothing, so a hand-picked selection must not leave a
+   * stale tier on record that a later refresh would act on.
+   */
+  public function testFinalizeRolesWithoutProfileIsCustom(): void {
+    $resolver = $this->container->get('aincient_core.model_role_resolver');
+    // A tier was in force from an earlier run…
+    $resolver->setProfile('best_quality', '2026-07-01');
+
+    // …and the operator now picks models by hand.
+    $this->store()->finalizeRoles(
+      ['task' => ['provider_id' => 'anthropic', 'model_id' => 'claude-hand-picked']],
+    );
+
+    $this->assertSame('', $resolver->profile(), 'A hand-picked selection drops the site to Custom.');
+    $this->assertSame('', $resolver->profileUpdated());
+  }
+
+  /**
+   * A Custom site is never re-resolved by a recommendations refresh.
+   *
+   * The other half of respecting the choice: those bindings are deliberate, so
+   * a new document must not move them.
+   */
+  public function testRefreshLeavesACustomSiteAlone(): void {
+    $resolver = $this->container->get('aincient_core.model_role_resolver');
+    $resolver->bind('task', 'anthropic', 'claude-hand-picked');
+    $resolver->clearProfile();
+
+    $outcome = $this->container->get('aincient_onboarding.profile_applier')->reapplyStored();
+
+    $this->assertFalse($outcome['applied']);
+    $this->assertSame('', $outcome['profile']);
+    $this->assertSame([], $outcome['changed']);
+    $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
+    $this->assertSame('claude-hand-picked', $roles['task']['model_id'], 'Deliberate bindings are untouched.');
+  }
+
+  /**
+   * An unresolvable profile leaves the existing bindings standing.
+   *
+   * A profile that matches nothing connected must never be able to wipe a
+   * working configuration — failing to update is recoverable, being unbound is
+   * not.
+   */
+  public function testUnresolvableProfileDoesNotWipeBindings(): void {
+    $resolver = $this->container->get('aincient_core.model_role_resolver');
+    $resolver->bind('task', 'anthropic', 'claude-task');
+    $resolver->setProfile('balanced', '2026-07-01');
+
+    // Nothing is connected in this kernel site, so the profile resolves to
+    // nothing.
+    $outcome = $this->container->get('aincient_onboarding.profile_applier')->reapplyStored();
+
+    $this->assertFalse($outcome['applied']);
+    $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
+    $this->assertSame('claude-task', $roles['task']['model_id']);
+    $this->assertSame('balanced', $resolver->profile(), 'The tier survives a failed re-resolve.');
+  }
+
 }

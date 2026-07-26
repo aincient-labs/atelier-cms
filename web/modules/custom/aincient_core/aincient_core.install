@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @file
+ * Install/update hooks for AIncient Core.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Add the model-profile keys to `aincient_core.model_roles`.
+ *
+ * The role bindings used to store only what the operator's tier RESOLVED to,
+ * never which tier it was. That made the intent unrecoverable: a configured site
+ * could only describe itself as "Custom", and a refreshed recommendations
+ * document had nothing to re-resolve, so bindings stayed frozen at whatever the
+ * tier meant on the day it was chosen.
+ *
+ * Existing sites get the keys empty, i.e. Custom — the honest answer. We cannot
+ * infer which tier produced bindings after the fact, and guessing would risk a
+ * later refresh moving models the operator chose deliberately. They land back in
+ * auto mode the next time they pick a tier.
+ */
+function aincient_core_update_11001(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_core.model_roles');
+  if ($config->get('profile') === NULL) {
+    $config->set('profile', '');
+  }
+  if ($config->get('profile_updated') === NULL) {
+    $config->set('profile_updated', '');
+  }
+  $config->save();
+}

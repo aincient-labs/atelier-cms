@@ -67,6 +67,8 @@ function aincient_onboarding_aincient_console_settings_alter(array &$settings): 
   $presets = \Drupal::service('aincient_core.model_preset_resolver');
   /** @var \Drupal\aincient_core\RecommendationSource $recommendationSource */
   $recommendationSource = \Drupal::service('aincient_core.recommendation_source');
+  /** @var \Drupal\aincient_core\ModelRoleResolver $roleResolver */
+  $roleResolver = \Drupal::service('aincient_core.model_role_resolver');
 
   // Enumerate the model catalogue from stored keys ONCE, then derive labels and
   // presets from it (avoids probing every provider twice).
@@ -115,6 +117,13 @@ function aincient_onboarding_aincient_console_settings_alter(array &$settings): 
     // means a beginner no longer has to open them.
     'profiles' => $presets->profiles(),
     'defaultProfile' => $presets->defaultProfile(),
+    // The tier ACTUALLY in force, and the recommendations date it resolved
+    // against — '' means Custom (the operator picked per role and owns them).
+    // The wizard used to infer this from "are there bindings?", which made every
+    // configured site report Custom no matter which tier set it up; the intent is
+    // now stored, so it can simply be read.
+    'activeProfile' => $roleResolver->profile(),
+    'activeProfileUpdated' => $roleResolver->profileUpdated(),
     'presets' => $presets->applyAll($storedCatalog['chat'], $storedCatalog['image']),
     // Where the suggestions came from + when, so the wizard can offer "Check for
     // updates" honestly. The fetch is an explicit click, never automatic.

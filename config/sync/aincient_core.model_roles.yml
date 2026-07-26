@@ -9,3 +9,5 @@ roles:
     provider_id: ''
     model_id: ''
 default_role: task
+profile: ''
+profile_updated: ''

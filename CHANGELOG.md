@@ -8,6 +8,30 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-26
+- **First-run setup is two steps.** The screen that only asked your name is gone — its
+  welcome now sits on *Connect your AI*, where the work starts. Setup finishes on the
+  studio's own welcome, with three ideas you can build in one click, instead of putting
+  someone else's sentence in your composer for you to clear.
+- **Setup stops talking about models unless you want it to.** Answer what matters most —
+  *Best value*, *Balanced*, *Best quality* — and that's the whole step. The model chosen for
+  each job is one click away under *Choose per role*, for anyone who wants to look.
+- **Atelier asks what to call you after your first page exists**, not before you've made
+  anything. Asked once, above the composer; skip it and it never comes back.
+- **Connecting a provider now tells you what it reached** — "Connected · 14 models ready" —
+  so you know the key works, not just that it was saved.
+- **Your model tier is remembered.** It used to be a one-shot: setup computed your models
+  and forgot which answer produced them, so every configured site reported *Custom*, and
+  refreshing our curated picks couldn't act on a standing "keep me on Balanced". Setup now
+  reopens on the tier you're actually on, and *Check for updates* keeps it current instead
+  of leaving your models frozen on the day you chose them. Hand-pick any single model and
+  the site becomes *Custom*, where nothing is ever moved for you again.
+- Fix: **models served through a proxy failed with an authentication error.** With an
+  OpenAI-compatible proxy (LiteLLM, OpenRouter) connected, a model bound to one of Atelier's
+  jobs could be sent to a different provider than the one it was bound to — which then had
+  no key for it. In practice only a model named `gpt-4` worked reliably. A bound model now
+  always goes to the provider it was bound to.
+- Fix: **"Read the docs" on the demo homepage led to a page that doesn't exist.** It now
+  opens the Atelier documentation.
 - Fix: **choosing your models now works when they come through an AI proxy.** If the only
   thing you've connected is an OpenAI-compatible proxy (LiteLLM, OpenRouter), *Best value*,
   *Balanced* and *Best quality* all resolved to the same arbitrary model: our curated picks

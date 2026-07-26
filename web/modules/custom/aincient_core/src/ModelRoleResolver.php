@@ -153,6 +153,12 @@ final class ModelRoleResolver {
    * Does not project — callers that want the binding to take effect across the
    * site call {@see self::project()} after binding (usually once, after binding
    * all roles, to avoid redundant config writes).
+   *
+   * Deliberately says NOTHING about the active profile: this is the low-level
+   * primitive both a profile application and a hand pick go through. Which of
+   * those happened is the caller's to declare, via {@see self::setProfile()} or
+   * {@see self::clearProfile()} — see the profile accessors below for why the
+   * distinction has to be explicit.
    */
   public function bind(string $role, string $providerId, string $modelId): void {
     if (!ModelRoles::isRole($role)) {
@@ -165,6 +171,60 @@ final class ModelRoleResolver {
       'model_id' => trim($modelId),
     ];
     $config->set('roles', $roles)->save();
+  }
+
+  /**
+   * The profile (model tier) in force, or '' when the operator picked per role.
+   *
+   * The operator's INTENT, stored next to what it resolved to. Without it the
+   * bindings are an answer with the question thrown away: we cannot show which
+   * tier is active (a configured site can only be described as "Custom"), and a
+   * refreshed recommendations document cannot reach a standing "keep me on
+   * balanced" — the bindings stay frozen at whatever that tier meant on the day
+   * it was chosen. Since page composition runs on the reasoning role, that is
+   * precisely the binding most worth keeping current.
+   */
+  public function profile(): string {
+    return (string) ($this->configFactory->get(self::CONFIG)->get('profile') ?? '');
+  }
+
+  /**
+   * The recommendations date the active profile last resolved against.
+   *
+   * Empty in Custom, or when a profile predates this being recorded. Lets the UI
+   * say "balanced · updated 2026-08-01" and lets a refresh tell a genuine change
+   * from a no-op.
+   */
+  public function profileUpdated(): string {
+    return (string) ($this->configFactory->get(self::CONFIG)->get('profile_updated') ?? '');
+  }
+
+  /**
+   * Record that the bindings now express a profile, as of a document date.
+   *
+   * Call AFTER binding every role the profile resolved to. Auto mode is
+   * all-or-nothing by design: a profile describes the whole site, so there is no
+   * "balanced except one role" — {@see self::clearProfile()} covers that case.
+   */
+  public function setProfile(string $profileId, string $recommendationsUpdated = ''): void {
+    $this->configFactory->getEditable(self::CONFIG)
+      ->set('profile', trim($profileId))
+      ->set('profile_updated', trim($recommendationsUpdated))
+      ->save();
+  }
+
+  /**
+   * Drop to Custom: the operator hand-picked, and owns the models from here.
+   *
+   * Every path that writes a binding the operator chose themselves must call
+   * this, or the site would keep claiming a tier it no longer follows — and the
+   * next recommendations refresh would overwrite a deliberate choice.
+   */
+  public function clearProfile(): void {
+    $this->configFactory->getEditable(self::CONFIG)
+      ->set('profile', '')
+      ->set('profile_updated', '')
+      ->save();
   }
 
   /**

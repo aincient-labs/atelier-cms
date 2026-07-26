@@ -67,6 +67,7 @@ import { useConsoleUrl } from "./url-sync";
 import { FlowDropChoiceToolUI } from "./interrupt-widget";
 import { NodeProgressToolUI } from "./progress-widget";
 import { SessionUsageChip, UsageFooterToolUI } from "./usage-footer";
+import { NameInvite } from "./name-invite";
 import { WeatherCardToolUI } from "./weather-widget";
 import { BrandPickerToolUI } from "./brand-picker";
 import { BrandStatusProposalToolUI } from "./brand-status-proposal";
@@ -330,12 +331,6 @@ export const SUGGESTIONS = [
   "Create a landing page for a SaaS analytics tool — bold and modern",
 ];
 
-/** sessionStorage key the onboarding wizard uses to hand the console a staged
- *  first ask: the wizard ends by LANDING here with the composer focused and a
- *  suggested ask pre-typed (study 02 — onboarding ends when the owner has
- *  made something, not when the form is done). */
-export const STAGED_ASK_KEY = "ain-staged-first-ask";
-
 /**
  * The "did something settle elsewhere?" hook. An interrupt answered outside
  * this console (a pending-interrupts inbox, another tab) has no push channel,
@@ -385,24 +380,13 @@ const DICTATION_MAX_LOCK = 200;
 function Composer() {
   const checkExternal = useInteractionSync();
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const composerRuntime = useComposerRuntime();
 
-  // The onboarding wizard's landing act: if it staged a first ask, pre-type it
-  // into the focused composer (never auto-send — the first make is the owner's
-  // gesture). One-shot: the key is consumed on read.
-  useEffect(() => {
-    let staged: string | null = null;
-    try {
-      staged = sessionStorage.getItem(STAGED_ASK_KEY);
-      if (staged) sessionStorage.removeItem(STAGED_ASK_KEY);
-    } catch {
-      /* storage unavailable (private mode) — land with an empty composer */
-    }
-    if (!staged) return;
-    composerRuntime.setText(staged);
-    inputRef.current?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // The composer starts EMPTY after onboarding. The wizard used to stage a
+  // sample ask here, which meant a brand-new owner arrived to someone else's
+  // sentence sitting on top of the welcome screen's three one-click asks — a
+  // choice turned into a chore, and slower than the chips it obscured. The
+  // landing is now the welcome screen itself; see the wizard's docblock.
+  //
   // Interim speech results churn the text (lines appear, then get replaced),
   // which would make the auto-sizing textarea jump as it re-fits. While
   // dictating we lock min-height to the tallest height seen so it can only
@@ -772,6 +756,9 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 
       <div className="ain-composer-dock">
         <SessionUsageChip />
+        {/* Renders only in the one moment it's earned — after the studio's first
+            live build, and only if the owner has no name yet. See name-invite.ts. */}
+        <NameInvite />
         {mode === "sealed" ? (
           // Wrapped up (read-only) — history stays readable above; the composer
           // is gone so the finished conversation can't keep running.

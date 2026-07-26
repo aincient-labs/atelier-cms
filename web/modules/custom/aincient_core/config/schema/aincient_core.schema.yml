@@ -18,3 +18,16 @@ aincient_core.model_roles:
     default_role:
       type: string
       label: 'Default role'
+    profile:
+      type: string
+      label: 'Active model profile'
+      # The tier the operator chose ("best value" / "balanced" / "best quality"),
+      # or '' for Custom — they picked models per role and own them from here.
+      # This is the INTENT; `roles` above is what it currently resolves to. Both
+      # are stored: everything downstream reads concrete bindings, and we must be
+      # able to honour "keep me on balanced" when the recommendations change.
+    profile_updated:
+      type: string
+      label: 'Recommendations date the profile last resolved against'
+      # RecommendationSource::meta()['updated'] at the moment the profile was
+      # applied, so staleness is computable instead of guessed. Empty in Custom.

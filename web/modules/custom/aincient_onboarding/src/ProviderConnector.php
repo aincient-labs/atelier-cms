@@ -354,10 +354,17 @@ final class ProviderConnector {
    * @param array<string, array{provider_id: string, model_id: string}> $roleBindings
    *   Role id => the chosen provider+model. Unknown roles and empty bindings are
    *   ignored; at least one valid binding is required.
+   * @param string $profileId
+   *   The tier these bindings came from, or '' when the operator picked per role.
+   *   Stored as the operator's standing INTENT so the site can say which tier is
+   *   active and so a later recommendations refresh can honour it; '' puts the
+   *   site in Custom, which no refresh will ever overwrite.
+   * @param string $recommendationsUpdated
+   *   The recommendations document date $profileId resolved against.
    *
    * @return array{ok: bool, message: string}
    */
-  public function finalizeRoles(array $roleBindings): array {
+  public function finalizeRoles(array $roleBindings, string $profileId = '', string $recommendationsUpdated = ''): array {
     $bound = FALSE;
     foreach ($roleBindings as $role => $binding) {
       if (!ModelRoles::isRole((string) $role)) {
@@ -376,6 +383,15 @@ final class ProviderConnector {
       return ['ok' => FALSE, 'message' => 'Choose at least one model.'];
     }
 
+    // Record the intent BEFORE projecting, so the config is consistent the
+    // moment anything reads it.
+    if (trim($profileId) !== '') {
+      $this->resolver->setProfile($profileId, $recommendationsUpdated);
+    }
+    else {
+      $this->resolver->clearProfile();
+    }
+
     // Projecting writes each bound role onto drupal/ai's operation-type defaults
     // (the task role drives `default_providers.chat`) + flowdrop_chat, and
     // invalidates the model cache — so the site is fully routable, not just
@@ -392,7 +408,7 @@ final class ProviderConnector {
    * The decoupled counterpart to {@see self::connectAndStore()}: it lists the
    * chat + image models a provider offers WITHOUT a credential being passed in,
    * resolving the stored Key entity → State the provider is already wired to. So
-   * the "Choose your models" step can show the full catalogue on load — including
+   * the models step can show the full catalogue on load — including
    * on a re-run, or for a key set headlessly (`drush state:set`) — instead of
    * only what was (re)connected in the current session.
    *

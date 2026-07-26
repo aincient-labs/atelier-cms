@@ -7,6 +7,7 @@ namespace Drupal\aincient_onboarding\Controller;
 use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
+use Drupal\aincient_onboarding\ProfileApplier;
 use Drupal\aincient_onboarding\ProviderCatalog;
 use Drupal\aincient_onboarding\ProviderConnector;
 use Drupal\Core\Controller\ControllerBase;
@@ -37,6 +38,7 @@ final class OnboardingController extends ControllerBase {
     private readonly ProviderCatalog $catalog,
     private readonly ModelPresetResolver $presets,
     private readonly RecommendationSource $recommendations,
+    private readonly ProfileApplier $profiles,
   ) {}
 
   /**
@@ -48,6 +50,7 @@ final class OnboardingController extends ControllerBase {
       $container->get('aincient_onboarding.provider_catalog'),
       $container->get('aincient_core.model_preset_resolver'),
       $container->get('aincient_core.recommendation_source'),
+      $container->get('aincient_onboarding.profile_applier'),
     );
   }
 
@@ -139,12 +142,22 @@ final class OnboardingController extends ControllerBase {
       ], 502);
     }
 
+    // Auto mode's side of the bargain: the operator chose a tier, not a list of
+    // models, so a new document is ours to act on rather than to ask about. Re-
+    // resolve the stored tier and move the bindings with it — quietly. `changed`
+    // carries what moved so the UI can report it after the fact. A Custom site
+    // is left strictly alone.
+    $reapplied = $this->profiles->reapplyStored();
+
     return new JsonResponse([
       'ok' => TRUE,
       'meta' => $meta,
       'profiles' => $this->presets->profiles(),
       'defaultProfile' => $this->presets->defaultProfile(),
       'presets' => $this->currentPresets(),
+      'activeProfile' => $reapplied['profile'],
+      'reapplied' => $reapplied['applied'],
+      'changed' => $reapplied['changed'],
     ]);
   }
 
@@ -194,7 +207,22 @@ final class OnboardingController extends ControllerBase {
       return new JsonResponse(['ok' => FALSE, 'error' => 'Choose at least one model.'], 400);
     }
 
-    $result = $this->connector->finalizeRoles($bindings);
+    // WHICH tier produced these bindings, or '' when the operator picked per
+    // role. Without it the site can only ever describe itself as "Custom", and a
+    // standing "keep me on balanced" has nothing to re-resolve when the
+    // recommendations change. An unrecognised id is treated as Custom rather
+    // than trusted — it would otherwise pin the site to a tier that cannot be
+    // resolved again.
+    $profile = trim((string) ($data['profile'] ?? ''));
+    if ($profile !== '' && !$this->presets->hasProfile($profile)) {
+      $profile = '';
+    }
+
+    $result = $this->connector->finalizeRoles(
+      $bindings,
+      $profile,
+      $profile !== '' ? (string) ($this->recommendations->meta()['updated'] ?? '') : '',
+    );
     if (!$result['ok']) {
       return new JsonResponse(['ok' => FALSE, 'error' => $result['message']], 422);
     }
