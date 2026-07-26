@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ea5179fada4368826d1193c4d4c6142c",
+    "content-hash": "a2f6de12edd410f6463d7edc03f69ded",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -2868,11 +2868,17 @@
         },
         {
             "name": "drupal/flowdrop",
-            "version": "dev-2.x",
+            "version": "2.0.0-alpha11",
             "source": {
                 "type": "git",
                 "url": "https://git.drupalcode.org/project/flowdrop.git",
-                "reference": "c6f32625"
+                "reference": "2.0.0-alpha11"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha11.zip",
+                "reference": "2.0.0-alpha11",
+                "shasum": "681b2f1e8a204c86f545e6fde8b29ecf11d61ca9"
             },
             "require": {
                 "d34dman/vanilla-icon-picker": "^1.4",
@@ -2926,15 +2932,12 @@
             },
             "type": "drupal-module",
             "extra": {
-                "branch-alias": {
-                    "dev-2.x": "2.x-dev"
-                },
                 "drupal": {
-                    "version": "2.0.0-alpha10+22-dev",
-                    "datestamp": "1785028335",
+                    "version": "2.0.0-alpha11",
+                    "datestamp": "1785037118",
                     "security-coverage": {
                         "status": "not-covered",
-                        "message": "Dev releases are not covered by Drupal security advisories."
+                        "message": "Alpha releases are not covered by Drupal security advisories."
                     }
                 }
             },
@@ -17847,7 +17850,6 @@
         "drupal/ai_provider_mistral": 5,
         "drupal/ai_provider_nanobanana": 10,
         "drupal/ai_provider_ollama": 5,
-        "drupal/flowdrop": 20,
         "drupal/flowdrop_ai_provider": 20
     },
     "prefer-stable": true,

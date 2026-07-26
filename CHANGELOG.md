@@ -8,6 +8,9 @@ public snapshot published from the development source.
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
 ## 2026-07-26
+- Maintenance: the bundled workflow engine now tracks a tagged release (FlowDrop
+  `2.0.0-alpha11`) instead of a pinned development snapshot. Same code, no behaviour
+  change.
 - Changed: **building a page now uses your "High thinking" model.** Composing a page is
   the most demanding thing the assistant does — it plans a whole layout, then drives its
   own tools to build it — but it had been running on the everyday tier. Expect stronger
