@@ -221,6 +221,12 @@ export type OnboardingSettings = {
   recommendationsMeta?: OnboardingRecommendationsMeta;
   /** Fetch the latest published recommendations (explicit operator action). */
   refreshRecommendationsUrl?: string;
+  /**
+   * Whether this site narrows what the tiers may pick, via
+   * `aincient_core.model_preferences`. Only ever used to SAY so — a reshaped tier
+   * that looks like ours but isn't is the one thing worth never leaving silent.
+   */
+  preferencesDeclared?: boolean;
 };
 
 export function settings(): AincientSettings {

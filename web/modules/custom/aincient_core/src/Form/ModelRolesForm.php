@@ -78,6 +78,26 @@ final class ModelRolesForm extends ConfigFormBase {
   }
 
   /**
+   * Whether this site has declared any model preference of its own.
+   *
+   * Mirrors `_aincient_onboarding_preferences_declared()`: true as soon as either
+   * list has an entry, without trying to prove a declaration changed this
+   * particular pick.
+   */
+  private function preferencesDeclared(): bool {
+    $preferences = $this->configFactory()->get('aincient_core.model_preferences');
+    if (array_filter((array) $preferences->get('avoid') ?: []) !== []) {
+      return TRUE;
+    }
+    foreach ((array) $preferences->get('prefer') ?: [] as $patterns) {
+      if (array_filter((array) $patterns) !== []) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId(): string {
@@ -335,6 +355,14 @@ final class ModelRolesForm extends ConfigFormBase {
       'provenance' => [
         '#type' => 'item',
         '#markup' => $provenance,
+      ],
+      // Same reason as the onboarding wizard's note: a preset that has been
+      // narrowed by this site's own rules looks exactly like one of ours, and an
+      // operator surprised by a pick needs somewhere to go and look.
+      'preferences' => [
+        '#type' => 'item',
+        '#access' => $this->preferencesDeclared(),
+        '#markup' => $this->t('This site also narrows which models may be chosen, so a preset here can differ from the suggestions above. The rules live in <code>aincient_core.model_preferences</code>.'),
       ],
       // Stashed so the submit handlers resolve against exactly what this build
       // offered, rather than re-probing every provider.

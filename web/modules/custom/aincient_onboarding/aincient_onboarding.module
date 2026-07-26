@@ -129,6 +129,13 @@ function aincient_onboarding_aincient_console_settings_alter(array &$settings): 
     // updates" honestly. The fetch is an explicit click, never automatic.
     'recommendationsMeta' => $recommendationSource->meta(),
     'refreshRecommendationsUrl' => Url::fromRoute('aincient_onboarding.refresh_recommendations')->toString(),
+    // Whether this site narrows what the tiers may pick
+    // (`aincient_core.model_preferences`). A tier that has been quietly reshaped
+    // is a trap: the operator sees "Balanced" produce something our own
+    // documentation doesn't describe and has nothing to attribute it to. A
+    // boolean is enough — the wizard only needs to say that a local rule is in
+    // play and where it lives, not to render or edit it.
+    'preferencesDeclared' => _aincient_onboarding_preferences_declared(),
     // The AIncient model roles (id/label/description/pool), in display order —
     // the taxonomy behind the per-role model pickers the wizard shows once
     // providers are connected. Chat tiers + Vision draw from the chat pool;
@@ -162,6 +169,27 @@ function _aincient_onboarding_current_bindings(): array {
     }
   }
   return $out;
+}
+
+/**
+ * Whether this site has declared any model preference of its own.
+ *
+ * True as soon as either list has an entry — we don't try to work out whether a
+ * declaration actually changed a pick, because the honest statement to the
+ * operator is "a local rule is in play here", not "a local rule altered exactly
+ * this row".
+ */
+function _aincient_onboarding_preferences_declared(): bool {
+  $preferences = \Drupal::config('aincient_core.model_preferences');
+  if (array_filter((array) $preferences->get('avoid') ?: []) !== []) {
+    return TRUE;
+  }
+  foreach ((array) $preferences->get('prefer') ?: [] as $patterns) {
+    if (array_filter((array) $patterns) !== []) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 /**

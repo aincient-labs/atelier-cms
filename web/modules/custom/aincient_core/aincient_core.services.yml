@@ -27,3 +27,4 @@ services:
     class: Drupal\aincient_core\ModelPresetResolver
     arguments:
       - '@aincient_core.recommendation_source'
+      - '@config.factory'

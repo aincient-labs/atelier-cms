@@ -7,6 +7,21 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-27
+- **New: tell Atelier which models it may use.** `aincient_core.model_preferences` takes two
+  lists: `avoid` rules a model — or a whole vendor — out of every job, and `prefer` puts your
+  own pick ahead of our suggestions for one job. Our published recommendations are written
+  for everyone and can't know that your site isn't licensed for a vendor, or that your AI
+  proxy lists models it has no working credential for; this is where you say so.
+- Exclusions hold. A ruled-out model can't come back through a fallback, and a job left with
+  nothing is **left unset** rather than filled with something you refused. Excluding a vendor
+  also excludes their models reached through a proxy — ruling out Anthropic also rules out
+  Anthropic served via LiteLLM or OpenRouter. Preferences are the softer half: one that can't
+  be met falls back to our suggestions instead of stranding the job.
+- Setup and the model settings now say when your site is narrowing the choices, so a preset
+  that differs from our published suggestions is never left unexplained. Both lists are empty
+  on a fresh install and on upgrade — a site that declares nothing behaves exactly as before.
+
 ## 2026-07-26
 - **First-run setup is two steps.** The screen that only asked your name is gone — its
   welcome now sits on *Connect your AI*, where the work starts. Setup finishes on the

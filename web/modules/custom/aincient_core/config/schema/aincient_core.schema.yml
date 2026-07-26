@@ -31,3 +31,27 @@ aincient_core.model_roles:
       label: 'Recommendations date the profile last resolved against'
       # RecommendationSource::meta()['updated'] at the moment the profile was
       # applied, so staleness is computable instead of guessed. Empty in Custom.
+
+# This site's own constraints on model selection, layered over the curated
+# recommendations. A SEPARATE config object from model_roles on purpose: that one
+# is rewritten by the wizard on every finalise, and an operator's standing policy
+# must not be collateral damage of someone re-picking a tier.
+aincient_core.model_preferences:
+  type: config_object
+  label: 'Atelier model preferences'
+  mapping:
+    avoid:
+      type: sequence
+      label: 'Patterns never bound to any role'
+      sequence:
+        type: string
+        label: 'Pattern'
+    prefer:
+      type: sequence
+      label: 'Preferred patterns, keyed by role id'
+      sequence:
+        type: sequence
+        label: 'Ordered patterns for one role'
+        sequence:
+          type: string
+          label: 'Pattern'

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
+
 /**
  * Turns "what are you optimising for?" into a model per role.
  *
@@ -42,6 +44,30 @@ namespace Drupal\aincient_core;
  * and a stale entry degrades to the next candidate instead of binding something
  * broken. An empty pool yields an empty string: unresolvable roles are left
  * UNBOUND rather than guessed at.
+ *
+ * ## This site's own say (`aincient_core.model_preferences`)
+ *
+ * Our curated document is written for everyone, so it cannot know that this
+ * particular deployment is unlicensed for a vendor, or sits behind a proxy whose
+ * catalogue runs a generation behind ours. Two operator-authored lists layer over
+ * the contract above, and they are deliberately asymmetric:
+ *
+ *   avoid  — subtracted from the POOL, before anything is resolved. Filtering the
+ *     pool rather than the candidate list is the whole point: the pool is the one
+ *     choke point every path reads through, so an avoided model cannot re-enter via
+ *     a family match, a proxy pass, a tier hint, or "first model in the pool". If
+ *     that empties a role's pool the role is left UNBOUND — a site that said "never
+ *     this" is better served by an unfilled role it can see than by a quiet
+ *     substitution it cannot.
+ *
+ *   prefer — resolved as its OWN pass, ahead of region and profile candidates, and
+ *     falling through to them when nothing matches. It runs separately rather than
+ *     being prepended so that "prefer" outranks step 4's direct-beats-proxy rule:
+ *     an operator who asks for a model their proxy serves means it, even when the
+ *     curated pick happens to sit on a directly-connected key.
+ *
+ * Both are inert when unset, which is the shipped default — an install that
+ * declares nothing resolves exactly as it did before this existed.
  */
 final class ModelPresetResolver {
 
@@ -73,7 +99,10 @@ final class ModelPresetResolver {
    */
   private const FAMILY_MIN = 8;
 
-  public function __construct(private readonly RecommendationSource $source) {}
+  public function __construct(
+    private readonly RecommendationSource $source,
+    private readonly ConfigFactoryInterface $configFactory,
+  ) {}
 
   /**
    * The selectable profiles, in document order.
@@ -161,9 +190,16 @@ final class ModelPresetResolver {
     $profileRoles = $document['profiles'][$profileId]['roles'] ?? [];
     $regionRoles = $region !== NULL ? ($document['regions'][$region]['roles'] ?? []) : [];
 
+    $preferences = $this->configFactory->get('aincient_core.model_preferences');
+    $avoid = array_filter(array_map('strval', (array) $preferences->get('avoid') ?: []));
+    $prefer = (array) $preferences->get('prefer') ?: [];
+
     $out = [];
     foreach (self::rolePools() as $role => $which) {
-      $pool = $which === 'image' ? $imagePool : $chatPool;
+      // Subtract this site's exclusions FIRST, so every later step — family
+      // matches, the proxy pass, tier hints, first-in-pool — reads a pool that
+      // already cannot yield an avoided model.
+      $pool = $this->withoutAvoided($which === 'image' ? $imagePool : $chatPool, $avoid);
       if ($pool === []) {
         continue;
       }
@@ -171,12 +207,82 @@ final class ModelPresetResolver {
         ...(is_array($regionRoles[$role] ?? NULL) ? $regionRoles[$role] : []),
         ...(is_array($profileRoles[$role] ?? NULL) ? $profileRoles[$role] : []),
       ];
-      $picked = $this->pick($role, $candidates, $pool);
+      $preferred = is_array($prefer[$role] ?? NULL) ? $prefer[$role] : [];
+      $picked = $this->pickFrom($preferred, $pool)
+        ?: $this->pick($role, $candidates, $pool);
       if ($picked !== '') {
         $out[$role] = $picked;
       }
     }
     return $out;
+  }
+
+  /**
+   * The pool minus everything this site has declared it will not run.
+   *
+   * @param array<string, string> $pool
+   *   Available models, "provider:model" => label.
+   * @param list<string> $avoid
+   *   Patterns from `aincient_core.model_preferences:avoid`.
+   *
+   * @return array<string, string>
+   *   The pool, with excluded entries removed. Unchanged when nothing is declared.
+   */
+  private function withoutAvoided(array $pool, array $avoid): array {
+    if ($avoid === []) {
+      return $pool;
+    }
+    return array_filter(
+      $pool,
+      fn (string $key): bool => !$this->isAvoided($key, $avoid),
+      ARRAY_FILTER_USE_KEY,
+    );
+  }
+
+  /**
+   * Whether a pool entry matches any exclusion pattern.
+   *
+   * A pool key is `provider:model`, but the vendor an operator means is not always
+   * the provider: `litellm:anthropic/claude-sonnet-4-6` is Anthropic's model reached
+   * through a proxy, and someone excluding `anthropic:*` plainly means that one too.
+   * So each entry is tested under both identities — the provider it is served by,
+   * and (for a proxy) the vendor named in its own id.
+   *
+   * @param string $poolKey
+   *   A pool key, "provider:model".
+   * @param list<string> $avoid
+   *   Patterns, each `vendor:*` or `vendor:needle`.
+   */
+  private function isAvoided(string $poolKey, array $avoid): bool {
+    [$provider, $model] = array_pad(explode(':', strtolower($poolKey), 2), 2, '');
+    if ($provider === '' || $model === '') {
+      return FALSE;
+    }
+    // Identity 1: served directly by this provider. Identity 2: re-served by a
+    // proxy, under the vendor its id names.
+    $identities = [[$provider, $model]];
+    if (ModelRoles::isProxyProvider($provider)) {
+      [$vendor, $bare] = ModelRoles::splitProxyModel($model);
+      if ($vendor !== '') {
+        $identities[] = [$vendor, $bare];
+      }
+    }
+
+    foreach ($avoid as $pattern) {
+      [$wantVendor, $wantModel] = array_pad(explode(':', strtolower(trim($pattern)), 2), 2, '');
+      if ($wantVendor === '' || $wantModel === '') {
+        continue;
+      }
+      foreach ($identities as [$vendor, $modelId]) {
+        if ($vendor !== $wantVendor) {
+          continue;
+        }
+        if ($wantModel === '*' || $this->matches($modelId, $wantModel)) {
+          return TRUE;
+        }
+      }
+    }
+    return FALSE;
   }
 
   /**
@@ -235,6 +341,24 @@ final class ModelPresetResolver {
    *   Available models for the role, "provider:model" => label.
    */
   private function pick(string $role, array $candidates, array $pool): string {
+    return $this->pickFrom($candidates, $pool)
+      ?: $this->fromTierHints($role, $pool);
+  }
+
+  /**
+   * The candidate passes alone — no tier-hint fallback, '' when nothing matches.
+   *
+   * Split out of {@see self::pick()} because the preference list needs exactly
+   * these two passes and NOT the fallback: a tier hint firing here would mean an
+   * empty `prefer` list silently decided the role, and the curated candidates
+   * would never get their turn.
+   *
+   * @param list<mixed> $candidates
+   *   Ordered "provider:model" candidates.
+   * @param array<string, string> $pool
+   *   Available models for the role, "provider:model" => label.
+   */
+  private function pickFrom(array $candidates, array $pool): string {
     // Parse once: both passes below walk the same candidates.
     $parsed = [];
     foreach ($candidates as $candidate) {
@@ -278,10 +402,10 @@ final class ModelPresetResolver {
       }
     }
 
-    // Nothing the document named is available. Fall back to the per-provider tier
-    // hints, which is exactly what onboarding did before profiles existed — so a
-    // provider the document is silent about is no worse off than it was.
-    return $this->fromTierHints($role, $pool);
+    // Nothing these candidates named is available. The caller decides what that
+    // means: {@see self::pick()} falls back to the tier hints, the preference pass
+    // falls through to the curated candidates.
+    return '';
   }
 
   /**

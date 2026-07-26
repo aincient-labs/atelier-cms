@@ -873,6 +873,8 @@ export function OnboardingWizard() {
               </button>
             )}
 
+            {cfg.preferencesDeclared && <SitePreferencesNote />}
+
             <p className="ain-wiz__foot ain-wiz__provenance">
               <RecommendationsNote meta={meta} />{" "}
               <button
@@ -959,6 +961,23 @@ function UnfillableRoles({
  * "Bundled" is not an apology — the shipped snapshot is what makes an offline or
  * air-gapped install work — so it reads as a fact with a date, not a warning.
  */
+/**
+ * Says that this site narrows what the tiers may pick.
+ *
+ * Without it a tier is a lie of omission: the operator picks "Balanced", gets a
+ * model our own guidance doesn't name, and has nothing to attribute it to. The
+ * line does not attempt to render the rules — it names where they live, which is
+ * the one thing someone surprised by a pick actually needs.
+ */
+function SitePreferencesNote() {
+  return (
+    <p className="ain-wiz__foot ain-wiz__sitepref">
+      This site narrows which models may be chosen, so a tier here can differ from
+      our published suggestions. The rules live in <code>aincient_core.model_preferences</code>.
+    </p>
+  );
+}
+
 function RecommendationsNote({ meta }: { meta: OnboardingRecommendationsMeta }) {
   const dated = meta.updated ? ` ${meta.updated}` : "";
   if (meta.source === "remote") {

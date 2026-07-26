@@ -1,0 +1,21 @@
+# This site's own say over which models Atelier may bind.
+#
+# Empty by default: with nothing declared here the curated recommendations decide
+# everything, exactly as before. This file exists for the operator (or whoever
+# packaged this install) who knows something about their deployment that our
+# published guidance cannot: a vendor they are not licensed for, a proxy whose
+# catalogue runs a generation behind, a house preference for one vendor's models.
+#
+#   avoid   patterns that are never bound, in any role, however highly we rate
+#           them. Hard: if avoiding empties a role, the role is left UNBOUND
+#           rather than filled with something this site said no to.
+#   prefer  per role, ordered patterns tried BEFORE the curated picks. Soft: a
+#           preference that resolves to nothing falls through to the curated
+#           list, so a temporarily unreachable provider degrades instead of
+#           breaking the site.
+#
+# Patterns are the same `vendor:model` vocabulary the recommendation document
+# uses, plus `vendor:*` for a whole vendor. They match a model reached through a
+# proxy too — `anthropic:*` also excludes `litellm:anthropic/claude-sonnet-4-6`.
+avoid: {  }
+prefer: {  }

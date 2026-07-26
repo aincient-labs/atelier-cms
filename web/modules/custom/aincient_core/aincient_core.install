@@ -31,3 +31,26 @@ function aincient_core_update_11001(): void {
   }
   $config->save();
 }
+
+/**
+ * Create the empty `aincient_core.model_preferences` object.
+ *
+ * Config in `config/install` only lands on a FRESH install, so an existing site
+ * would otherwise carry no such object at all. The resolver copes — a missing
+ * object reads as "declares nothing" — but an operator can't declare anything
+ * into a config object that isn't there, and `drush config:set` on a nonexistent
+ * object is a poor way to find that out.
+ *
+ * Created empty, which is exactly the pre-upgrade behaviour: no exclusions, no
+ * preferences, the curated document deciding everything as before.
+ */
+function aincient_core_update_11002(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_core.model_preferences');
+  if ($config->get('avoid') === NULL) {
+    $config->set('avoid', []);
+  }
+  if ($config->get('prefer') === NULL) {
+    $config->set('prefer', []);
+  }
+  $config->save();
+}

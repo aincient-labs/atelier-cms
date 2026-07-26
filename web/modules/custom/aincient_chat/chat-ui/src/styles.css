@@ -1599,6 +1599,16 @@
 .ain-wiz__linkbtn:disabled { opacity: .6; cursor: default; text-decoration: none; }
 .ain-wiz__provenance-note { color: var(--ain-text); }
 
+/* "This site narrows which models may be chosen." A fact about the install, so
+   it sits with the provenance line and whispers like it (Law 02) — no accent,
+   no rule, no icon. The config name is the actionable part, so only it is set
+   in the mono face. */
+.ain-wiz__sitepref { text-align: left; }
+.ain-wiz__sitepref code {
+  font-family: var(--ain-font-mono, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
+  font-size: 11px; color: var(--ain-text);
+}
+
 /* Per-role model pickers (the "choose your models" step) */
 .ain-wiz__roles { display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .ain-wiz__role { display: flex; flex-direction: column; gap: 6px; }

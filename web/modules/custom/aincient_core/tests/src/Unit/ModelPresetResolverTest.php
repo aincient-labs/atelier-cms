@@ -8,6 +8,8 @@ use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\State\StateInterface;
@@ -32,8 +34,11 @@ final class ModelPresetResolverTest extends UnitTestCase {
    *
    * @param array<string, mixed> $document
    *   The document the source should serve.
+   * @param array<string, mixed> $preferences
+   *   `aincient_core.model_preferences` values; empty means "site declares
+   *   nothing", which must resolve exactly as it did before preferences existed.
    */
-  private function resolver(array $document): ModelPresetResolver {
+  private function resolver(array $document, array $preferences = []): ModelPresetResolver {
     $state = $this->createMock(StateInterface::class);
     $state->method('get')->willReturnCallback(
       static fn (string $key) => $key === 'aincient.model_recommendations' ? $document : NULL,
@@ -45,7 +50,23 @@ final class ModelPresetResolverTest extends UnitTestCase {
       $this->createMock(LoggerChannelFactoryInterface::class),
       $this->createMock(TimeInterface::class),
     );
-    return new ModelPresetResolver($source);
+    return new ModelPresetResolver($source, $this->configFactory($preferences));
+  }
+
+  /**
+   * A config factory serving one `aincient_core.model_preferences` payload.
+   *
+   * @param array<string, mixed> $preferences
+   *   Keys of that config object ('avoid', 'prefer'); anything else reads NULL.
+   */
+  private function configFactory(array $preferences = []): ConfigFactoryInterface {
+    $config = $this->createMock(ImmutableConfig::class);
+    $config->method('get')->willReturnCallback(
+      static fn (string $key) => $preferences[$key] ?? NULL,
+    );
+    $factory = $this->createMock(ConfigFactoryInterface::class);
+    $factory->method('get')->willReturn($config);
+    return $factory;
   }
 
   /**
@@ -58,13 +79,16 @@ final class ModelPresetResolverTest extends UnitTestCase {
     $moduleList->method('getPath')->with('aincient_core')->willReturn($moduleRoot);
     $state = $this->createMock(StateInterface::class);
     $state->method('get')->willReturn(NULL);
-    return new ModelPresetResolver(new RecommendationSource(
-      $moduleList,
-      $state,
-      $this->createMock(ClientInterface::class),
-      $this->createMock(LoggerChannelFactoryInterface::class),
-      $this->createMock(TimeInterface::class),
-    ));
+    return new ModelPresetResolver(
+      new RecommendationSource(
+        $moduleList,
+        $state,
+        $this->createMock(ClientInterface::class),
+        $this->createMock(LoggerChannelFactoryInterface::class),
+        $this->createMock(TimeInterface::class),
+      ),
+      $this->configFactory(),
+    );
   }
 
   /**
@@ -508,6 +532,155 @@ final class ModelPresetResolverTest extends UnitTestCase {
         "profile {$id} put the fast tier on an expensive model",
       );
     }
+  }
+
+  /**
+   * An install that declares nothing resolves exactly as it always did.
+   *
+   * The guard on the whole feature: preferences are opt-in, and their machinery
+   * must be invisible until someone writes something into the config object.
+   */
+  public function testEmptyPreferencesChangeNothing(): void {
+    $chat = [
+      'anthropic:claude-sonnet-5' => 'Claude Sonnet 5',
+      'anthropic:claude-haiku-4-5' => 'Claude Haiku 4.5',
+    ];
+    $bare = $this->resolver($this->document())->apply('balanced', $chat, []);
+    $declared = $this->resolver($this->document(), ['avoid' => [], 'prefer' => []])
+      ->apply('balanced', $chat, []);
+    $this->assertSame($bare, $declared);
+    $this->assertSame('anthropic:claude-sonnet-5', $bare[ModelRoles::REASONING]);
+  }
+
+  /**
+   * An avoided vendor is never bound, and the next candidate takes the role.
+   */
+  public function testAvoidSkipsToTheNextCandidate(): void {
+    $chat = [
+      'anthropic:claude-sonnet-5' => 'Claude Sonnet 5',
+      'openai:gpt-5.4' => 'GPT-5.4',
+    ];
+    $picked = $this->resolver($this->document(), ['avoid' => ['anthropic:*']])
+      ->apply('balanced', $chat, []);
+    $this->assertSame('openai:gpt-5.4', $picked[ModelRoles::REASONING]);
+  }
+
+  /**
+   * `avoid` reaches a vendor's models served through a proxy.
+   *
+   * The case this feature exists for: excluding `anthropic:*` on a site whose only
+   * provider is a LiteLLM proxy has to exclude `litellm:anthropic/...` too, or the
+   * declaration means nothing where it is needed most.
+   */
+  public function testAvoidReachesThroughAProxy(): void {
+    $chat = [
+      'litellm:anthropic/claude-sonnet-5' => 'Sonnet via LiteLLM',
+      'litellm:openai/gpt-5.4' => 'GPT-5.4 via LiteLLM',
+    ];
+    $picked = $this->resolver($this->document(), ['avoid' => ['anthropic:*']])
+      ->apply('balanced', $chat, []);
+    $this->assertSame('litellm:openai/gpt-5.4', $picked[ModelRoles::REASONING]);
+  }
+
+  /**
+   * A single model can be excluded without excluding its vendor.
+   */
+  public function testAvoidCanNameOneModel(): void {
+    $chat = [
+      'anthropic:claude-sonnet-5' => 'Claude Sonnet 5',
+      'anthropic:claude-haiku-4-5' => 'Claude Haiku 4.5',
+    ];
+    $picked = $this->resolver($this->document(), ['avoid' => ['anthropic:claude-sonnet-5']])
+      ->apply('balanced', $chat, []);
+    // Reasoning wanted Sonnet and cannot have it; Haiku is still fair game, and
+    // the roles that always wanted Haiku are untouched.
+    $this->assertNotSame('anthropic:claude-sonnet-5', $picked[ModelRoles::REASONING] ?? '');
+    $this->assertSame('anthropic:claude-haiku-4-5', $picked[ModelRoles::TASK]);
+  }
+
+  /**
+   * Avoiding everything leaves the role UNBOUND rather than substituting.
+   *
+   * The important half of "hard": the tier hints and the first-in-pool fallback
+   * both read the pool, so filtering the pool is what stops them quietly handing
+   * back the very model the site excluded.
+   */
+  public function testAvoidingTheWholePoolLeavesRolesUnbound(): void {
+    $chat = [
+      'anthropic:claude-sonnet-5' => 'Claude Sonnet 5',
+      'anthropic:claude-haiku-4-5' => 'Claude Haiku 4.5',
+    ];
+    $picked = $this->resolver($this->document(), ['avoid' => ['anthropic:*']])
+      ->apply('balanced', $chat, []);
+    $this->assertSame([], $picked);
+  }
+
+  /**
+   * `prefer` outranks the curated pick for that role, and only that role.
+   */
+  public function testPreferOverridesTheCuratedPick(): void {
+    $chat = [
+      'anthropic:claude-sonnet-5' => 'Claude Sonnet 5',
+      'anthropic:claude-haiku-4-5' => 'Claude Haiku 4.5',
+      'openai:gpt-5.4' => 'GPT-5.4',
+    ];
+    $picked = $this->resolver($this->document(), [
+      'prefer' => [ModelRoles::REASONING => ['openai:gpt-5.4']],
+    ])->apply('balanced', $chat, []);
+
+    $this->assertSame('openai:gpt-5.4', $picked[ModelRoles::REASONING]);
+    // Untouched roles still follow the document.
+    $this->assertSame('anthropic:claude-haiku-4-5', $picked[ModelRoles::TASK]);
+  }
+
+  /**
+   * A preference wins even when the curated pick sits on a DIRECT provider.
+   *
+   * Deliberately inverts the document's own "a direct key beats the same model
+   * through a proxy" rule. That rule breaks ties between candidates we chose; an
+   * operator naming a model their proxy serves has made the choice themselves.
+   */
+  public function testPreferBeatsADirectlyConnectedCuratedPick(): void {
+    $chat = [
+      'anthropic:claude-sonnet-5' => 'Claude Sonnet 5',
+      'litellm:openai/gpt-5.4' => 'GPT-5.4 via LiteLLM',
+    ];
+    $picked = $this->resolver($this->document(), [
+      'prefer' => [ModelRoles::REASONING => ['openai:gpt-5.4']],
+    ])->apply('balanced', $chat, []);
+    $this->assertSame('litellm:openai/gpt-5.4', $picked[ModelRoles::REASONING]);
+  }
+
+  /**
+   * An unresolvable preference falls through to the curated list.
+   *
+   * The soft half: a house preference for a provider that is briefly unreachable
+   * must degrade to our guidance, not strand the role.
+   */
+  public function testPreferFallsThroughWhenUnavailable(): void {
+    $chat = ['anthropic:claude-sonnet-5' => 'Claude Sonnet 5'];
+    $picked = $this->resolver($this->document(), [
+      'prefer' => [ModelRoles::REASONING => ['mistral:mistral-large-2512']],
+    ])->apply('balanced', $chat, []);
+    $this->assertSame('anthropic:claude-sonnet-5', $picked[ModelRoles::REASONING]);
+  }
+
+  /**
+   * `avoid` wins over `prefer` — the hard list is hard.
+   *
+   * A contradictory pair is a mistake, and the safe reading of a mistake is the
+   * restrictive one: never bind what the site said never to bind.
+   */
+  public function testAvoidOverridesPrefer(): void {
+    $chat = [
+      'anthropic:claude-sonnet-5' => 'Claude Sonnet 5',
+      'openai:gpt-5.4' => 'GPT-5.4',
+    ];
+    $picked = $this->resolver($this->document(), [
+      'avoid' => ['anthropic:*'],
+      'prefer' => [ModelRoles::REASONING => ['anthropic:claude-sonnet-5']],
+    ])->apply('balanced', $chat, []);
+    $this->assertSame('openai:gpt-5.4', $picked[ModelRoles::REASONING]);
   }
 
 }
