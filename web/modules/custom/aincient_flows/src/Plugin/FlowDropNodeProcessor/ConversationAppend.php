@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
+use Drupal\aincient_flows\Conversation\BufferNormalizer;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
@@ -45,6 +46,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * on tool results: a tool_call_id already present in the buffer is never
  * appended twice, so a wave-scheduler re-fire or a pipeline resume on the
  * loop_back cycle cannot duplicate a tool turn (which a provider would reject).
+ *
+ * STRUCTURE, however, is now the writer's job. Topology alone guarantees a
+ * well-formed buffer only when the loop RUNS TO COMPLETION; a provider blip
+ * mid-loop skips the closing assistant turn and leaves the tail an open
+ * tool-use block, which the next user turn then makes permanently unsendable
+ * (DECISIONS 0269). So an append that starts a NEW turn closes an open block
+ * first, via {@see BufferNormalizer::closeOpenTurn()}. Mid-loop appends leave
+ * the tail alone — open is the correct state there.
  *
  * GATING THE LOOP. Idempotency alone only makes the re-fire harmless to the
  * BUFFER — the re-fired append still triggered the loop_back edge, spawning an
@@ -188,6 +197,21 @@ class ConversationAppend extends AbstractFlowDropNodeProcessor implements Execut
       return TRUE;
     }));
 
+    // THE 0269 INVARIANT: never persist an unterminated tool loop. A new
+    // user/system turn means the previous turn is over — but if the agent loop
+    // died mid-flight (a transient provider 503 between the tool results and
+    // the closing assistant turn), the buffer's tail is still an OPEN tool-use
+    // block. Appending the user's next message straight onto it produces a
+    // shape providers reject, and since the failure also prevents the closing
+    // turn, every retry appends another orphan user message: the thread is
+    // bricked for good and gets worse with each attempt. Close the open block
+    // first, so the damage cannot be written down. (Only on a new turn — a
+    // mid-loop append of the assistant turn or its tool results is exactly what
+    // legitimately leaves the tail open.)
+    if ($this->startsNewTurn($append)) {
+      $messages = BufferNormalizer::closeOpenTurn($messages);
+    }
+
     $messages = array_merge($messages, $append);
     $messages = $this->trimToWindow($messages, $maxMessages);
 
@@ -209,6 +233,28 @@ class ConversationAppend extends AbstractFlowDropNodeProcessor implements Execut
       // this port exists so the wire into a boolean gateway input is typed.
       'appended_any' => $append !== [],
     ];
+  }
+
+  /**
+   * Whether this append opens a new conversation turn.
+   *
+   * A user (or system) message is the start of a turn; an assistant message and
+   * tool results belong to the turn already in flight. Only the former means
+   * the previous turn must be closed first — see the 0269 note in process().
+   *
+   * @param array<int, array<string, mixed>> $append
+   *   The messages about to be appended.
+   *
+   * @return bool
+   *   TRUE when any of them starts a new turn.
+   */
+  private function startsNewTurn(array $append): bool {
+    foreach ($append as $message) {
+      if (in_array($message['role'] ?? '', ['user', 'system'], TRUE)) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
   /**

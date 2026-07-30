@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Service\Reasoning;
 
 use Drupal\ai\AiProviderPluginManager;
+use Drupal\ai\Exception\AiQuotaException;
+use Drupal\ai\Exception\AiRateLimitException;
+use Drupal\aincient_core\Exception\AiProviderFailure;
+use Drupal\aincient_core\Exception\UpstreamDetail;
 use Drupal\flowdrop\DTO\Reason\ModelChoices;
 use Drupal\flowdrop\DTO\Reason\ReasonRequest;
 use Drupal\flowdrop\DTO\Reason\ReasonResult;
@@ -61,9 +65,47 @@ final class AincientChatReasoner implements ChatReasonerInterface {
 
   /**
    * {@inheritdoc}
+   *
+   * Delegates the inference, and does one thing of its own on the way out:
+   * makes a failed request SAY WHY.
+   *
+   * openai-php's `ServerException` is constructed as
+   * `"Server error (HTTP 503) occurred."` and DISCARDS the response body;
+   * `LiteLlmAiProvider::handleApiException()` only string-matches rate-limit
+   * and budget messages and rethrows everything else untouched. So an upstream
+   * failure reached the job trail, the log and the user as five words with no
+   * cause — DECISIONS 0269 needed browser forensics purely because of that.
+   * The exception does still carry its PSR-7 response, so the body is right
+   * there for the taking.
+   *
+   * The failure keeps its current RUNTIME path on purpose — see
+   * {@see AiProviderFailure} for why it is not retyped to \RuntimeException,
+   * and note the (separate) finding that as thrown today, a provider blip can
+   * never reach a workflow's error port at all.
+   *
+   * Only failures we can actually explain are re-wrapped. Anything already
+   * carrying a usable message — rate limits, quota, and every exception with no
+   * response body to unwrap — is rethrown untouched, so no other behaviour
+   * changes.
    */
   public function reason(ReasonRequest $request): ReasonResult {
-    return $this->inner->reason($request);
+    try {
+      return $this->inner->reason($request);
+    }
+    catch (AiRateLimitException | AiQuotaException $e) {
+      throw $e;
+    }
+    catch (\Throwable $e) {
+      $detail = UpstreamDetail::from($e);
+      if ($detail === NULL) {
+        throw $e;
+      }
+      throw new AiProviderFailure(
+        $e->getMessage() . ' Upstream said: ' . $detail,
+        (int) $e->getCode(),
+        $e,
+      );
+    }
   }
 
   /**

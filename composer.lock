@@ -2868,17 +2868,17 @@
         },
         {
             "name": "drupal/flowdrop",
-            "version": "2.0.0-alpha11",
+            "version": "2.0.0-alpha12",
             "source": {
                 "type": "git",
                 "url": "https://git.drupalcode.org/project/flowdrop.git",
-                "reference": "2.0.0-alpha11"
+                "reference": "2.0.0-alpha12"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha11.zip",
-                "reference": "2.0.0-alpha11",
-                "shasum": "681b2f1e8a204c86f545e6fde8b29ecf11d61ca9"
+                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha12.zip",
+                "reference": "2.0.0-alpha12",
+                "shasum": "0957495824f0ef12861ea4fca99d6f5f1d4723a1"
             },
             "require": {
                 "d34dman/vanilla-icon-picker": "^1.4",
@@ -2924,6 +2924,7 @@
                 "drupal/tool_belt": "^1.0.0-alpha1",
                 "drupal/ultimate_cron": "^2.0@beta",
                 "drush/drush": "^13.0",
+                "jangregor/phpstan-prophecy": "^2.2",
                 "nikic/php-parser": "^5.0",
                 "phpdocumentor/reflection-docblock": "^5.0"
             },
@@ -2933,8 +2934,8 @@
             "type": "drupal-module",
             "extra": {
                 "drupal": {
-                    "version": "2.0.0-alpha11",
-                    "datestamp": "1785037118",
+                    "version": "2.0.0-alpha12",
+                    "datestamp": "1785178469",
                     "security-coverage": {
                         "status": "not-covered",
                         "message": "Alpha releases are not covered by Drupal security advisories."

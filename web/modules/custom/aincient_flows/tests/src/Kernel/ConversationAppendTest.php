@@ -364,6 +364,105 @@ final class ConversationAppendTest extends KernelTestBase {
   /**
    * @covers ::process
    *
+   * The 0269 invariant, end to end through the nodes: a turn that died mid-loop
+   * left the tail an open tool-use block, and the NEXT user turn must not be
+   * written onto it. Before the fix this stored `tool` directly followed by
+   * `user` — permanently unsendable, and self-reinforcing.
+   */
+  public function testNewUserTurnClosesAnOpenToolLoop(): void {
+    $node = $this->node();
+
+    // Turn one runs the loop but dies before the closing assistant turn: the
+    // provider 503'd right after the tool result was appended.
+    $node->process($this->params(['content' => 'build me a landing page']));
+    $node->process($this->params([
+      'message' => [
+        'role' => 'assistant',
+        'content' => '',
+        'tool_calls' => [['name' => 'preview_page', 'tool_call_id' => 'c1']],
+      ],
+    ]));
+    $node->process($this->params([
+      'messages' => [['role' => 'tool', 'tool_call_id' => 'c1', 'content' => 'previewed']],
+    ]));
+
+    // The user, seeing nothing happen, types again.
+    $result = $node->process($this->params(['content' => 'hello?']));
+
+    $roles = array_map(static fn (array $m): string => $m['role'], $result['messages']);
+    $this->assertSame(['user', 'assistant', 'tool', 'assistant', 'user'], $roles);
+    $this->assertSame('hello?', $result['messages'][4]['content']);
+  }
+
+  /**
+   * @covers ::process
+   *
+   * The invariant must not disturb a loop that is still running: appending the
+   * assistant turn or its tool results leaves the tail open, because that IS
+   * the mid-loop state the next Reason continues from.
+   */
+  public function testMidLoopAppendsLeaveTheTailOpen(): void {
+    $node = $this->node();
+
+    $node->process($this->params(['content' => 'go']));
+    $afterCalls = $node->process($this->params([
+      'message' => ['role' => 'assistant', 'content' => '', 'tool_calls' => [['name' => 't', 'tool_call_id' => 'c1']]],
+    ]));
+    $this->assertSame(2, $afterCalls['count']);
+
+    $afterResults = $node->process($this->params([
+      'messages' => [['role' => 'tool', 'tool_call_id' => 'c1', 'content' => 'done']],
+    ]));
+    $roles = array_map(static fn (array $m): string => $m['role'], $afterResults['messages']);
+    $this->assertSame(['user', 'assistant', 'tool'], $roles);
+  }
+
+  /**
+   * Self-heal on read: an already-bricked thread recovers on its next turn.
+   *
+   * The buffer written before the guard landed carries the damage; the read
+   * normalizes it so the provider sees a sendable conversation. Storage is left
+   * as-is — the repair is a view, not a rewrite.
+   */
+  public function testReadRecoversBrickedThread(): void {
+    $bricked = [
+      ['role' => 'user', 'content' => 'build me a landing page'],
+      ['role' => 'assistant', 'content' => '', 'tool_calls' => [['name' => 'preview_page', 'tool_call_id' => 'c1']]],
+      ['role' => 'tool', 'tool_call_id' => 'c1', 'content' => 'previewed'],
+      ['role' => 'user', 'content' => 'are you there?'],
+      ['role' => 'user', 'content' => 'hello?'],
+    ];
+    $this->container->get('flowdrop_memory.manager')
+      ->set('session', '42', 'conversation', $bricked, NULL, 'static');
+
+    $read = ConversationRead::create($this->container, [], 'aincient_flows:aincient_conversation_read', []);
+    $read->setExecutionContext(new ExecutionContextDTO(
+      initialData: [],
+      workflowId: 'wf',
+      pipelineId: 'p1',
+      executionId: 'e1',
+      nodeId: 'read.1',
+      metadata: ['session_id' => '42'],
+    ));
+    $result = $read->process(new ParameterBag([
+      'scope' => 'session',
+      'key' => 'conversation',
+      'backend' => 'static',
+    ]));
+
+    $roles = array_map(static fn (array $m): string => $m['role'], $result['messages']);
+    $this->assertSame(['user', 'assistant', 'tool', 'assistant', 'user'], $roles);
+    $this->assertSame("are you there?\n\nhello?", $result['messages'][4]['content']);
+    // Storage untouched: the read heals the view, it does not rewrite history.
+    $this->assertSame(
+      $bricked,
+      $this->container->get('flowdrop_memory.manager')->get('session', '42', 'conversation', [], 'static'),
+    );
+  }
+
+  /**
+   * @covers ::process
+   *
    * The entity backend persists across node instances (the cross-request /
    * cross-turn story on the console path).
    */

@@ -7,6 +7,19 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-30
+- **Fixed: a provider hiccup no longer breaks a conversation for good.** If the AI provider
+  faltered part-way through a task — after it had used its tools, before it replied — that
+  conversation was left mid-sentence, and every message you sent afterwards failed. Starting a
+  new conversation worked fine, which made it look like the AI itself was down. Conversations
+  now survive an interrupted step, and a conversation already stuck this way repairs itself on
+  your next message: nothing you wrote is lost, and Atelier tells the assistant the step was
+  interrupted rather than letting it assume the work finished.
+- **Failed AI requests explain themselves.** "Server error (HTTP 503) occurred." was the whole
+  message; the reason the provider gave was being thrown away. Errors now carry what the
+  provider actually said.
+- Updated the workflow engine to its latest build.
+
 ## 2026-07-27
 - **New: tell Atelier which models it may use.** `aincient_core.model_preferences` takes two
   lists: `avoid` rules a model — or a whole vendor — out of every job, and `prefer` puts your

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
+use Drupal\aincient_flows\Conversation\BufferNormalizer;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
 use Drupal\flowdrop\DTO\ParameterBagInterface;
@@ -30,13 +31,18 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * loop-back edge must land on a port flagged `is_loopback` or the canvas
  * rejects the cycle.
  *
- * Self-heal: tool results are deduped by tool_call_id on the way out so Reason
- * never infers over a malformed buffer. The {@see ConversationAppend} writer is
- * idempotent, so new buffers can't carry a duplicate — but a buffer corrupted
- * BEFORE that guard landed would otherwise wedge a thread permanently (a
- * provider rejects an unpaired tool turn). Reading defensively recovers such a
- * thread on its next turn without losing history; it does not rewrite storage.
+ * Self-heal: the buffer is run through {@see BufferNormalizer::forInference()}
+ * on the way out, so Reason never infers over a malformed buffer — duplicate
+ * tool results dropped, tool-use blocks paired and terminated, consecutive user
+ * turns merged. The {@see ConversationAppend} writer maintains the same
+ * invariant on the way in, so new buffers arrive clean; but a buffer corrupted
+ * before those guards landed would otherwise wedge a thread PERMANENTLY (see
+ * DECISIONS 0269 — one transient 503 was enough). Reading defensively recovers
+ * such a thread on its next turn without losing history; it does not rewrite
+ * storage. An open tool-use block at the tail is preserved on purpose: mid-loop,
+ * that is exactly the state Reason continues from.
  *
+ * @see \Drupal\aincient_flows\Conversation\BufferNormalizer
  * @see \Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\ConversationAppend
  * @see \Drupal\flowdrop_node_processor\Plugin\FlowDropNodeProcessor\Reason
  */
@@ -91,7 +97,7 @@ class ConversationRead extends AbstractFlowDropNodeProcessor implements Executio
     if (!is_array($messages)) {
       $messages = [];
     }
-    $messages = $this->dedupeToolResults($messages);
+    $messages = BufferNormalizer::forInference($messages);
 
     return [
       'messages' => $messages,
@@ -100,39 +106,6 @@ class ConversationRead extends AbstractFlowDropNodeProcessor implements Executio
       'scope' => $scope,
       'resolved_scope_id' => $resolvedScopeId,
     ];
-  }
-
-  /**
-   * Drop tool turns whose tool_call_id already appeared earlier in the buffer.
-   *
-   * A tool result is uniquely keyed by tool_call_id, so a second one is always
-   * a duplicate (a pre-guard wave re-fire / resume artefact). Keeping the first
-   * preserves the tool_use → tool_result pairing the provider validates; the
-   * extra copy is what an unpaired-tool error trips on. Non-tool turns and tool
-   * turns missing an id pass through untouched.
-   *
-   * @param array<int, mixed> $messages
-   *   The stored buffer.
-   *
-   * @return array<int, mixed>
-   *   The buffer with duplicate tool results removed, re-indexed.
-   */
-  private function dedupeToolResults(array $messages): array {
-    $seen = [];
-    $out = [];
-    foreach ($messages as $message) {
-      if (is_array($message)
-        && ($message['role'] ?? '') === 'tool'
-        && !empty($message['tool_call_id'])) {
-        $id = (string) $message['tool_call_id'];
-        if (isset($seen[$id])) {
-          continue;
-        }
-        $seen[$id] = TRUE;
-      }
-      $out[] = $message;
-    }
-    return $out;
   }
 
   /**
