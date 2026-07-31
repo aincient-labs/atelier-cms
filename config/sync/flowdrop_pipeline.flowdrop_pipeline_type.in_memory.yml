@@ -10,9 +10,5 @@ _core:
 id: in_memory
 label: In-Memory
 description: 'Synchronous in-memory execution. No DB persistence.'
-default_max_concurrent_jobs: 1
-default_job_priority_strategy: dependency_order
-default_retry_strategy: individual
 execution_timeout: 300
 memory_limit: 256
-allowed_workflow_types: {  }

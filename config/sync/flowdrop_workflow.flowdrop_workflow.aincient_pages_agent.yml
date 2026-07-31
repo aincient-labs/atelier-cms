@@ -25,12 +25,31 @@ nodes:
   -
     id: chat_input.1
     position:
-      x: -2140
-      'y': 560
+      x: -2000
+      'y': -260
     data:
       label: 'Chat Input'
       config:
         nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
       metadata:
         node_type_id: chat_input
       extensions:
@@ -90,7 +109,26 @@ nodes:
       'y': -1400
     data:
       label: 'Invoke tool'
-      config: {  }
+      config:
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: tool_messages
+            -
+              id: tool_results
+              exposed: false
+            -
+              id: ok
+              exposed: false
+            -
+              id: skipped
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
       metadata:
         node_type_id: aincient_flows_aincient_invoke
       extensions:
@@ -105,13 +143,33 @@ nodes:
     id: chat_output.1
     position:
       x: 1360
-      'y': -100
+      'y': -380
     data:
       label: 'Chat Output'
       config:
         format: text
         showTimestamp: false
         nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+              exposed: false
+            -
+              id: format
+              exposed: false
+            -
+              id: timestamp
+              exposed: false
+            -
+              id: metadata
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
       metadata:
         node_type_id: chat_output
     measured:
@@ -148,8 +206,8 @@ nodes:
   -
     id: aincient_flows_aincient_conversation_append.1
     position:
-      x: -1540
-      'y': 480
+      x: -1500
+      'y': 20
     data:
       label: 'Append user turn'
       config:
@@ -158,6 +216,34 @@ nodes:
         key: conversation
         backend: entity
         max_messages: 60
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: messages
+              exposed: false
+            -
+              id: count
+              exposed: false
+            -
+              id: appended
+              exposed: false
+            -
+              id: appended_any
+              exposed: false
+            -
+              id: key
+              exposed: false
+            -
+              id: scope
+              exposed: false
+            -
+              id: resolved_scope_id
+              exposed: false
+            -
+              id: trigger
+            -
+              id: error
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -170,14 +256,35 @@ nodes:
   -
     id: aincient_flows_aincient_conversation_read.1
     position:
-      x: -960
-      'y': 340
+      x: -900
+      'y': 80
     data:
       label: 'Read conversation'
       config:
         key: conversation
         scope: session
         backend: entity
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: messages
+            -
+              id: count
+              exposed: false
+            -
+              id: key
+              exposed: false
+            -
+              id: scope
+              exposed: false
+            -
+              id: resolved_scope_id
+              exposed: false
+            -
+              id: trigger
+            -
+              id: error
       metadata:
         node_type_id: aincient_flows_aincient_conversation_read
       extensions:
@@ -191,7 +298,7 @@ nodes:
     id: aincient_flows_aincient_conversation_append.2
     position:
       x: 240
-      'y': -160
+      'y': -180
     data:
       label: 'Append assistant turn'
       config:
@@ -200,6 +307,50 @@ nodes:
         key: conversation
         backend: entity
         max_messages: 60
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: messages
+              exposed: false
+            -
+              id: count
+              exposed: false
+            -
+              id: appended
+              exposed: false
+            -
+              id: appended_any
+              exposed: false
+            -
+              id: key
+              exposed: false
+            -
+              id: scope
+              exposed: false
+            -
+              id: resolved_scope_id
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: content
+              exposed: false
+            -
+              id: message
+            -
+              id: messages
+              exposed: false
+            -
+              id: declined_tool_calls
+              exposed: false
+            -
+              id: trigger
+              exposed: false
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -211,8 +362,8 @@ nodes:
   -
     id: aincient_flows_aincient_conversation_append.3
     position:
-      x: 3160
-      'y': -540
+      x: 3120
+      'y': -1220
     data:
       label: 'Append tool results'
       config:
@@ -221,6 +372,49 @@ nodes:
         key: conversation
         backend: entity
         max_messages: 60
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: messages
+              exposed: false
+            -
+              id: count
+              exposed: false
+            -
+              id: appended
+              exposed: false
+            -
+              id: appended_any
+            -
+              id: key
+              exposed: false
+            -
+              id: scope
+              exposed: false
+            -
+              id: resolved_scope_id
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: content
+              exposed: false
+            -
+              id: message
+              exposed: false
+            -
+              id: messages
+            -
+              id: declined_tool_calls
+              exposed: false
+            -
+              id: trigger
+              exposed: false
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -232,8 +426,8 @@ nodes:
   -
     id: aincient_flows_aincient_conversation_append.4
     position:
-      x: 2640
-      'y': -620
+      x: 2660
+      'y': -640
     data:
       label: 'Append declined results'
       config:
@@ -242,6 +436,48 @@ nodes:
         key: conversation
         backend: entity
         max_messages: 60
+        maxRetries: 0
+        ports:
+          inputs:
+            -
+              id: content
+              exposed: false
+            -
+              id: message
+              exposed: false
+            -
+              id: messages
+              exposed: false
+            -
+              id: declined_tool_calls
+            -
+              id: trigger
+          outputs:
+            -
+              id: messages
+              exposed: false
+            -
+              id: count
+              exposed: false
+            -
+              id: appended
+              exposed: false
+            -
+              id: appended_any
+            -
+              id: key
+              exposed: false
+            -
+              id: scope
+              exposed: false
+            -
+              id: resolved_scope_id
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -266,8 +502,8 @@ nodes:
   -
     id: data_extractor.1
     position:
-      x: 1180
-      'y': -1220
+      x: 1160
+      'y': -1160
     data:
       label: 'Data Extractor'
       config:
@@ -275,6 +511,37 @@ nodes:
         default: null
         extract_all: false
         engine: jsonpath
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: data
+            -
+              id: path
+              exposed: false
+            -
+              id: success
+              exposed: false
+            -
+              id: is_jsonpath
+              exposed: false
+            -
+              id: match_count
+              exposed: false
+            -
+              id: engine
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: data
+            -
+              id: trigger
+              exposed: false
       metadata:
         node_type_id: data_extractor
       extensions:
@@ -472,6 +739,28 @@ nodes:
           Call ONE tool at a time. When a tool result contains a `__widget__` field, reply
           with a single short framing sentence — do not restate the page. Keep replies brief. If a tool result also contains `warnings`, the section will not render as intended (e.g. an empty content array or a prop under the wrong name) — CORRECT it with another preview_page call BEFORE replying to the user.
         nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: prompt
+            -
+              id: template
+              exposed: false
+            -
+              id: variables
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: variables
+            -
+              id: trigger
+              exposed: false
       metadata:
         node_type_id: prompt_template
       extensions:
@@ -479,31 +768,11 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 502
+      height: 262
   -
     id: boolean_gateway.2
     position:
-      x: 3520
-      'y': -540
-    data:
-      label: 'Loop while appending'
-      config:
-        branches:
-          -
-            name: 'True'
-            value: true
-          -
-            name: 'False'
-            value: false
-      metadata:
-        node_type_id: boolean_gateway
-    measured:
-      width: 280
-      height: 382
-  -
-    id: boolean_gateway.3
-    position:
-      x: 3000
+      x: 3620
       'y': -620
     data:
       label: 'Loop while appending'
@@ -515,11 +784,47 @@ nodes:
           -
             name: 'False'
             value: false
+        maxRetries: 0
+        ports:
+          inputs:
+            -
+              id: value
+            -
+              id: trigger
+              exposed: false
       metadata:
         node_type_id: boolean_gateway
     measured:
       width: 280
       height: 382
+  -
+    id: boolean_gateway.3
+    position:
+      x: 3180
+      'y': -320
+    data:
+      label: 'Loop while appending'
+      config:
+        branches:
+          -
+            name: 'True'
+            value: true
+          -
+            name: 'False'
+            value: false
+        maxRetries: 0
+        ports:
+          inputs:
+            -
+              id: value
+            -
+              id: trigger
+              exposed: false
+      metadata:
+        node_type_id: boolean_gateway
+    measured:
+      width: 280
+      height: 322
 edges:
   -
     id: xy-edge__aincient_reason.1aincient_reason.1-output-has_tool_calls-boolean_gateway.1boolean_gateway.1-input-value
@@ -1034,9 +1339,9 @@ edges:
     class: flowdrop--edge--loopback
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-06-24T00:39:52.129Z'
+  updatedAt: '2026-07-28T14:38:37.647Z'
 created: 1781612612
-changed: 1785029728
+changed: 1785249517
 uid: 1
 input_ports:
   -

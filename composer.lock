@@ -2868,17 +2868,17 @@
         },
         {
             "name": "drupal/flowdrop",
-            "version": "2.0.0-alpha12",
+            "version": "2.0.0-alpha13",
             "source": {
                 "type": "git",
                 "url": "https://git.drupalcode.org/project/flowdrop.git",
-                "reference": "2.0.0-alpha12"
+                "reference": "2.0.0-alpha13"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha12.zip",
-                "reference": "2.0.0-alpha12",
-                "shasum": "0957495824f0ef12861ea4fca99d6f5f1d4723a1"
+                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha13.zip",
+                "reference": "2.0.0-alpha13",
+                "shasum": "686e9dae278581914d8fe5dc942a263dab4de95c"
             },
             "require": {
                 "d34dman/vanilla-icon-picker": "^1.4",
@@ -2929,13 +2929,14 @@
                 "phpdocumentor/reflection-docblock": "^5.0"
             },
             "suggest": {
+                "drupal/key": "^1.18 -- Enables ${{ secrets.NAME }} references in node configuration, so credentials are never stored in workflow config or job records. Without it, references are left as written.",
                 "league/commonmark": "^2.4 -- Enables spec-compliant markdown-to-HTML conversion in the Markdown to HTML node. Without it, a regex-based fallback is used."
             },
             "type": "drupal-module",
             "extra": {
                 "drupal": {
-                    "version": "2.0.0-alpha12",
-                    "datestamp": "1785178469",
+                    "version": "2.0.0-alpha13",
+                    "datestamp": "1785527402",
                     "security-coverage": {
                         "status": "not-covered",
                         "message": "Alpha releases are not covered by Drupal security advisories."

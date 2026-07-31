@@ -4,5 +4,3 @@ enabled: false
 allowed_event_types: {  }
 allowed_form_ids: {  }
 excluded_form_ids: {  }
-include_form_values: true
-include_form_state: false
