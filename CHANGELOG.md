@@ -7,6 +7,10 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-07-31
+- **Maintenance:** dependency update and internal config cleanup. No change to how Atelier
+  behaves.
+
 ## 2026-07-30
 - **Fixed: a provider hiccup no longer breaks a conversation for good.** If the AI provider
   faltered part-way through a task — after it had used its tools, before it replied — that

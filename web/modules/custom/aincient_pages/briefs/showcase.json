@@ -14,7 +14,7 @@
         "cta_url": "#",
         "secondary_label": "See the docs",
         "secondary_url": "#",
-        "image": "https://picsum.photos/seed/aincient-hero/800/600"
+        "image": "%module%/images/type-blocks.webp"
       }
     },
     {
@@ -65,7 +65,7 @@
         "eyebrow": "The idea",
         "heading": "Explain one thing, beautifully",
         "body": "The content section pairs prose with an image. Alternate the image side as you stack them down the page for a natural rhythm.",
-        "image": "https://picsum.photos/seed/aincient-content/720/540",
+        "image": "%module%/images/paper-grid.webp",
         "cta_label": "Learn more",
         "cta_url": "#"
       }
@@ -77,9 +77,9 @@
         "heading": "From the gallery",
         "columns": 3,
         "images": [
-          { "image": "https://picsum.photos/seed/g1/600/450", "caption": "First light" },
-          { "image": "https://picsum.photos/seed/g2/600/450", "caption": "Second look" },
-          { "image": "https://picsum.photos/seed/g3/600/450", "caption": "Third angle" }
+          { "image": "%module%/images/paper-swatches.webp", "caption": "First light" },
+          { "image": "%module%/images/type-blocks.webp", "caption": "Second look" },
+          { "image": "%module%/images/paper-grid.webp", "caption": "Third angle" }
         ]
       }
     },

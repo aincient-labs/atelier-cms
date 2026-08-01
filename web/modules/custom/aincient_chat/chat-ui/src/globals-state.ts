@@ -26,7 +26,8 @@ export type ChromeMenuLink = {
 };
 
 /** Header/footer layout variant settings (enum strings + booleans), keyed by the
- *  registry setting key (logo_position, sticky, nav_alignment / layout, show_tagline). */
+ *  registry setting key (header: logo_position, logo_size, sticky, nav_alignment /
+ *  footer: layout, logo_size, show_tagline). */
 export type ChromeLayout = {
   header: Record<string, string | boolean>;
   footer: Record<string, string | boolean>;

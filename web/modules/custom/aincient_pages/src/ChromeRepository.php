@@ -13,7 +13,8 @@ use Drupal\Core\Config\ConfigFactoryInterface;
  * (name/logo/tagline/footer note, {@see SiteIdentity}), the NAV (Drupal's core
  * `main`/`footer` menus, {@see SiteChrome::nav()}), and FOUNDATIONS (the design
  * tokens, {@see BrandRepository}). It stores a small, strictly-enumerated set of
- * layout choices (logo position, sticky header, nav alignment, footer layout)
+ * layout choices (logo position + size, sticky header, nav alignment, footer
+ * layout)
  * that the `site-header`/`site-footer` SDCs read as variant props.
  *
  * Every setting is validated against {@see self::REGISTRY} on the way in and on
@@ -36,6 +37,12 @@ final class ChromeRepository {
     'header' => [
       // Where the wordmark/logo sits in the bar.
       'logo_position' => ['enum' => ['left', 'center'], 'default' => 'left'],
+      // How tall the logo renders. `medium` is the pre-variant 2rem look, so a
+      // fresh site is unchanged; the SDC maps these to fixed heights. Capped at
+      // `large` (3rem) on purpose: the stored logo is delivered through the
+      // 480x480 `large` image style ({@see SiteIdentity::LOGO_STYLE}), so a
+      // taller box would outrun the derivative and render soft on HiDPI.
+      'logo_size' => ['enum' => ['small', 'medium', 'large'], 'default' => 'medium'],
       // Whether the header sticks to the top on scroll (the current behaviour).
       'sticky' => ['default' => TRUE],
       // Where the nav links align (the current look is end / right).
@@ -45,6 +52,9 @@ final class ChromeRepository {
       // `inline` = logo block + nav in one row (the current look); `stacked` =
       // centred logo block with the nav beneath.
       'layout' => ['enum' => ['inline', 'stacked'], 'default' => 'inline'],
+      // The footer mark is secondary, so the same three steps sit one notch
+      // below the header's. `medium` is the pre-variant 1.75rem look.
+      'logo_size' => ['enum' => ['small', 'medium', 'large'], 'default' => 'medium'],
       // Whether the tagline shows under the footer name.
       'show_tagline' => ['default' => TRUE],
       // The default-on "Made with ♥ using Atelier by AIncient Labs" attribution

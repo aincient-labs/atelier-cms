@@ -91,6 +91,9 @@ aincient_pages.chrome:
         logo_position:
           type: string
           label: 'Logo position (left|center)'
+        logo_size:
+          type: string
+          label: 'Logo size (small|medium|large)'
         sticky:
           type: boolean
           label: 'Stick the header to the top on scroll'
@@ -104,6 +107,9 @@ aincient_pages.chrome:
         layout:
           type: string
           label: 'Footer layout (inline|stacked)'
+        logo_size:
+          type: string
+          label: 'Logo size (small|medium|large)'
         show_tagline:
           type: boolean
           label: 'Show the tagline under the footer name'

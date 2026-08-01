@@ -9,34 +9,37 @@
  * uninstall — so it never pollutes config or the kernel-test fixture (the product
  * modules don't depend on this one).
  *
- * Homepage images ship as real files under images/ and are minted into MEDIA
- * entities on install (so they carry alt text, work fully offline, and land in
- * the operator's Media library to reuse). The brief references each with an
- * `@<slug>` placeholder token that install swaps for the fresh `media:<id>`.
+ * Homepage images ship as real files in the SHARED photo set at
+ * `aincient_pages/images/` (see its README — the spike/demo briefs draw from the
+ * same masters) and are minted into MEDIA entities on install (so they carry
+ * alt text, work fully offline, and land in the operator's Media library to
+ * reuse). The brief references each with an `@<slug>` placeholder token that
+ * install swaps for the fresh `media:<id>`.
  */
 
 declare(strict_types=1);
 
 /**
- * The homepage images shipped under images/, keyed by the `@<slug>` token the
- * brief uses. Each: the source file, the alt text (accessibility — these become
- * the media entity's alt), and the media library display name. A slug whose file
- * is absent is simply dropped from the composed page (the section renders without
- * it) so the demo still installs before the art is dropped in.
+ * The homepage images, keyed by the `@<slug>` token the brief uses. Each: the
+ * source file in the shared set (`aincient_pages/images/`), the alt text
+ * (accessibility — these become the media entity's alt), and the media library
+ * display name. A slug whose file is absent is simply dropped from the composed
+ * page (the section renders without it) so the demo still installs before the
+ * art is dropped in.
  */
 const AINCIENT_DEMO_IMAGES = [
   'hero' => [
-    'file' => 'hero.webp',
+    'file' => 'type-blocks.webp',
     'alt' => 'Hands arrange colorful paper swatches and wooden type blocks on a gesso workbench in soft natural light.',
     'name' => 'Hands arranging design materials',
   ],
   'pages' => [
-    'file' => 'pages.webp',
+    'file' => 'paper-grid.webp',
     'alt' => 'Hands carefully arrange beige and cream paper rectangles into a grid on a warm worktable, with one cinnabar red accent piece.',
     'name' => 'Arranging cut paper in grid layout',
   ],
   'brand' => [
-    'file' => 'brand.webp',
+    'file' => 'paper-swatches.webp',
     'alt' => 'Overhead view of hands laying out terracotta-toned paper rectangles in a grid on a wooden table with natural window light.',
     'name' => 'Hands arranging paper rectangles carefully',
   ],
@@ -111,10 +114,13 @@ function aincient_demo_install(): void {
  */
 function _aincient_demo_bind_images(array $schema): array {
   $media = \Drupal::service('aincient_pages.media');
+  // The masters live in aincient_pages (always installed; this module depends on
+  // it) so the spike/demo briefs and this homepage share ONE photo set.
+  $images = DRUPAL_ROOT . '/' . \Drupal::service('extension.list.module')->getPath('aincient_pages') . '/images';
   $map = [];
   $ids = [];
   foreach (AINCIENT_DEMO_IMAGES as $slug => $img) {
-    $path = __DIR__ . '/images/' . $img['file'];
+    $path = $images . '/' . $img['file'];
     if (!is_file($path)) {
       \Drupal::logger('aincient_demo')->warning('Demo image @file missing; homepage will render without it.', ['@file' => $img['file']]);
       continue;

@@ -1,7 +1,9 @@
 header:
   logo_position: left
+  logo_size: medium
   sticky: true
   nav_alignment: end
 footer:
   layout: inline
+  logo_size: medium
   show_tagline: true

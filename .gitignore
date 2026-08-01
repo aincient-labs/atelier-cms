@@ -76,3 +76,7 @@ ralph/
 # Static export output (drush aincient:export)
 /aincient-export/
 /aincient-export.zip
+
+# Test-harness artifacts
+/.phpunit.cache/
+/coverage/

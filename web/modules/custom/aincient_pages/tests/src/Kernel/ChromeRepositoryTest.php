@@ -37,10 +37,13 @@ final class ChromeRepositoryTest extends KernelTestBase {
     // The shipped install config matches the registry defaults (a fresh site is
     // unchanged from the pre-variant look).
     $this->assertSame(
-      ['logo_position' => 'left', 'sticky' => TRUE, 'nav_alignment' => 'end'],
+      ['logo_position' => 'left', 'logo_size' => 'medium', 'sticky' => TRUE, 'nav_alignment' => 'end'],
       $this->repo()->header(),
     );
-    $this->assertSame(['layout' => 'inline', 'show_tagline' => TRUE, 'show_credit' => TRUE], $this->repo()->footer());
+    $this->assertSame(
+      ['layout' => 'inline', 'logo_size' => 'medium', 'show_tagline' => TRUE, 'show_credit' => TRUE],
+      $this->repo()->footer(),
+    );
   }
 
   public function testUpdateValidatesAndDropsUnknown(): void {
@@ -61,6 +64,26 @@ final class ChromeRepositoryTest extends KernelTestBase {
     $this->assertSame('left', $header['logo_position'], 'Invalid enum left at default.');
     $this->assertArrayNotHasKey('unknown_key', $header);
     $this->assertFalse($this->repo()->footer()['show_tagline']);
+  }
+
+  public function testLogoSizeAcceptsTheThreeStepsAndCapsAtLarge(): void {
+    // Both chrome sections take the size on the header and the footer.
+    $applied = $this->repo()->update([
+      'header' => ['logo_size' => 'large'],
+      'footer' => ['logo_size' => 'small'],
+    ]);
+    $this->assertContains('header.logo_size → large', $applied);
+    $this->assertContains('footer.logo_size → small', $applied);
+    $this->assertSame('large', $this->repo()->header()['logo_size']);
+    $this->assertSame('small', $this->repo()->footer()['logo_size']);
+
+    // `large` is the ceiling: anything beyond it is not a value, so the stored
+    // size is left alone rather than growing past the 480px derivative.
+    $this->repo()->update(['header' => ['logo_size' => 'huge']]);
+    $this->assertSame('large', $this->repo()->header()['logo_size']);
+    // Numeric/CSS lengths are not part of the vocabulary either.
+    $this->repo()->update(['header' => ['logo_size' => '96px']]);
+    $this->assertSame('large', $this->repo()->header()['logo_size']);
   }
 
   public function testBooleanStringsCoerce(): void {

@@ -125,11 +125,20 @@ final class PageSpikeController implements ContainerInjectionInterface {
     ];
   }
 
-  /** Render a hand-authored brief file (the spike demos). */
+  /**
+   * Render a hand-authored brief file (the spike demos).
+   *
+   * The briefs reference the shipped photo set (images/, see its CATALOG.md) by
+   * a `%module%/…` placeholder rather than a hardcoded path: these are plain
+   * files, not media entities — a brief can't name a not-yet-created entity —
+   * so resolve the placeholder to a real URL here, once, before decoding.
+   * Keeps the demos working offline and wherever the module is installed.
+   */
   public function render(string $brief): Response {
     $path = $this->moduleList->getPath('aincient_pages');
-    $data = json_decode((string) file_get_contents("$path/briefs/$brief.json"), TRUE);
-    return $this->respond($data);
+    $json = (string) file_get_contents("$path/briefs/$brief.json");
+    $json = str_replace('%module%/', base_path() . $path . '/', $json);
+    return $this->respond(json_decode($json, TRUE));
   }
 
   /**

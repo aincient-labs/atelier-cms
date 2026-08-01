@@ -20,6 +20,11 @@ props:
       enum: [inline, stacked]
       default: inline
       description: 'inline = logo + nav in one row; stacked = centred logo with nav beneath.'
+    logo_size:
+      type: string
+      enum: [small, medium, large]
+      default: medium
+      description: 'How tall the footer logo renders: small = 1.25rem, medium = 1.75rem (default), large = 2.5rem.'
     show_tagline:
       type: boolean
       default: true

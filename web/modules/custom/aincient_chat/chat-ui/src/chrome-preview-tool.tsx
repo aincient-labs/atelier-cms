@@ -23,8 +23,8 @@ import { consoleNav } from "./console-nav";
  *
  * The payload is a true PARTIAL (only the fields the agent set):
  *   identity — { guidelines?: { name?, tagline?, description?, tone? }, footer_note? }
- *   layout   — { header?: { logo_position?, sticky?, nav_alignment? },
- *               footer?: { layout?, show_tagline? } }
+ *   layout   — { header?: { logo_position?, logo_size?, sticky?, nav_alignment? },
+ *               footer?: { layout?, logo_size?, show_tagline? } }
  *   reset    — revert the whole draft to the saved chrome
  *
  * MENUS are not in the agent's scope (the inline menu editor owns them), so this

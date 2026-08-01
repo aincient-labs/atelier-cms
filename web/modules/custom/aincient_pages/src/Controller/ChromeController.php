@@ -35,11 +35,13 @@ final class ChromeController implements ContainerInjectionInterface {
   private const LABELS = [
     'header' => [
       'logo_position' => 'Logo position',
+      'logo_size' => 'Logo size',
       'sticky' => 'Stick to top on scroll',
       'nav_alignment' => 'Nav alignment',
     ],
     'footer' => [
       'layout' => 'Footer layout',
+      'logo_size' => 'Logo size',
       'show_tagline' => 'Show tagline',
       'show_credit' => 'Show "Made with Atelier" credit',
     ],

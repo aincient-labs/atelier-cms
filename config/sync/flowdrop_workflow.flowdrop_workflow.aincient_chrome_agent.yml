@@ -355,10 +355,12 @@ nodes:
           layout_json — header/footer arrangement (use ONLY these keys + values):
             header:
               - logo_position   left | center
+              - logo_size       small | medium | large   (how tall the logo renders)
               - sticky          true | false   (stick to the top on scroll)
               - nav_alignment   start | center | end
             footer:
               - layout          inline | stacked
+              - logo_size       small | medium | large   (how tall the logo renders)
               - show_tagline    true | false
 
           Examples (send just the keys you change):
@@ -366,6 +368,10 @@ nodes:
                   → identity_json {"name":"Lumen","tagline":"Light, organised"}
             - "center the logo and stop the header sticking"
                   → layout_json {"header":{"logo_position":"center","sticky":false}}
+            - "make the logo bigger" / "the logo is too small"
+                  → layout_json {"header":{"logo_size":"large"}}
+              (already large? say so — large is the cap, because the stored logo is
+               delivered at 480px and a taller box would render soft.)
             - "stack the footer and hide its tagline"
                   → layout_json {"footer":{"layout":"stacked","show_tagline":false}}
 

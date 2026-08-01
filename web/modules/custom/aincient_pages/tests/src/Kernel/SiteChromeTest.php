@@ -61,9 +61,11 @@ final class SiteChromeTest extends KernelTestBase {
     $this->assertStringStartsWith('©', $footer['note']);
     // The chrome layout variants ride along into the SDC props (defaults).
     $this->assertSame('left', $header['logo_position']);
+    $this->assertSame('medium', $header['logo_size']);
     $this->assertTrue($header['sticky']);
     $this->assertSame('end', $header['nav_alignment']);
     $this->assertSame('inline', $footer['layout']);
+    $this->assertSame('medium', $footer['logo_size']);
     $this->assertTrue($footer['show_tagline']);
   }
 

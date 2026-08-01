@@ -18,6 +18,11 @@ props:
       enum: [left, center]
       default: left
       description: 'Where the logo/wordmark sits in the bar.'
+    logo_size:
+      type: string
+      enum: [small, medium, large]
+      default: medium
+      description: 'How tall the logo renders: small = 1.5rem, medium = 2rem (default), large = 3rem.'
     sticky:
       type: boolean
       default: true
