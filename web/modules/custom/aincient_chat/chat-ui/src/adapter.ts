@@ -957,8 +957,21 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
             break;
           }
 
-          case "error":
-            throw new Error(String(data.message ?? "The assistant returned an error."));
+          case "error": {
+            // RENDER the error; don't throw it. Throwing rejects the run and the
+            // runtime discards the partial content, so the turn collapsed to an
+            // EMPTY BUBBLE — the dispatcher's "the flow failed, please try
+            // again" was genuinely on the wire and the user saw a blank reply
+            // and a spinner that just stopped. That masked three separate
+            // backend failures in one day, each reported as "it did nothing".
+            // Ending the stream cleanly keeps whatever the turn produced (the
+            // node trail, any tool cards) and puts the reason in the bubble.
+            text = text
+              ? `${text}\n\n${String(data.message ?? "The assistant returned an error.")}`
+              : String(data.message ?? "The assistant returned an error.");
+            yield snapshot();
+            return;
+          }
   
           case "status":
             // Transient progress — not message content. Feeds the thinking

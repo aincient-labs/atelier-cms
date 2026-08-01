@@ -12,6 +12,8 @@ use Drupal\image\Entity\ImageStyle;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\media\Entity\Media;
 use Drupal\media\Entity\MediaType;
+use Drupal\node\NodeInterface;
+use Drupal\user\Entity\Role;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
@@ -38,6 +40,13 @@ final class EntityEmbedResolverTest extends KernelTestBase {
     $this->installSchema('file', ['file_usage']);
     $this->installSchema('node', ['node_access']);
     $this->installConfig(['system', 'field', 'media']);
+
+    // The link-resolution tests run as the VISITOR (anonymous), who may see
+    // published content and nothing more — the access boundary linkUrl() is
+    // supposed to respect.
+    Role::create(['id' => 'anonymous', 'label' => 'Anonymous'])->save();
+    Role::create(['id' => 'authenticated', 'label' => 'Authenticated'])->save();
+    user_role_grant_permissions('anonymous', ['access content']);
 
     // A standard image media type with an alt-bearing source field.
     MediaType::create([
@@ -153,6 +162,100 @@ final class EntityEmbedResolverTest extends KernelTestBase {
     $this->assertTrue(EntityEmbedResolver::isWellFormed('block:7'));
     $this->assertFalse(EntityEmbedResolver::isWellFormed('entity:node:'));
     $this->assertFalse(EntityEmbedResolver::isWellFormed('just text'));
+  }
+
+  /**
+   * A page reference in a LINK prop resolves to that page's canonical URL — the
+   * "I don't know the URL yet" path the studio's URL｜Page picker writes.
+   */
+  public function testLinkUrlResolvesPublishedPage(): void {
+    $node = $this->page('Pricing', TRUE);
+    $url = $this->resolver()->linkUrl('entity:node:' . $node->id());
+    $this->assertIsString($url);
+    $this->assertStringContainsString('/node/' . $node->id(), $url);
+  }
+
+  /**
+   * A link target is followed by a VISITOR, so it is access-checked: an
+   * unpublished (or deleted) page yields NULL and the caller drops the button
+   * rather than shipping one that leads to a 403 / nowhere. `block:` tokens name
+   * a spliced fragment with no canonical URL of its own and never link.
+   */
+  public function testLinkUrlRefusesUnviewableAndUnlinkableTargets(): void {
+    $draft = $this->page('Secret launch', FALSE);
+    $this->assertNull($this->resolver()->linkUrl('entity:node:' . $draft->id()));
+    $this->assertNull($this->resolver()->linkUrl('entity:node:999999'));
+    $this->assertNull($this->resolver()->linkUrl('block:7'));
+    $this->assertNull($this->resolver()->linkUrl('https://example.com/pricing'));
+  }
+
+  /**
+   * resolveLinks() flattens link props anywhere in a prop tree, and a dead
+   * target takes its LABEL with it (the twigs gate the anchor on the label, so
+   * leaving it behind would render a live-looking button pointing at `#`).
+   * Raw URLs, paths and non-link props pass through untouched.
+   */
+  public function testResolveLinksFlattensTokensAndDropsDeadPairs(): void {
+    $live = $this->page('Pricing', TRUE);
+    $dead = $this->page('Secret launch', FALSE);
+    $out = $this->resolver()->resolveLinks([
+      'heading' => 'Start here',
+      'cta_label' => 'See pricing',
+      'cta_url' => 'entity:node:' . $live->id(),
+      'secondary_label' => 'Sneak peek',
+      'secondary_url' => 'entity:node:' . $dead->id(),
+      // Not a link prop — a token here is the image path's business, untouched.
+      'image' => 'media:' . $this->mediaId,
+    ]);
+
+    $this->assertStringContainsString('/node/' . $live->id(), $out['cta_url']);
+    $this->assertSame('See pricing', $out['cta_label']);
+    // The dead pair is gone entirely — no url, no label, so no button renders.
+    $this->assertArrayNotHasKey('secondary_url', $out);
+    $this->assertArrayNotHasKey('secondary_label', $out);
+    $this->assertSame('media:' . $this->mediaId, $out['image']);
+    $this->assertSame('Start here', $out['heading']);
+  }
+
+  /**
+   * Repeatables get the same treatment (a card's / tier's cta_url, a logo row's
+   * url) — the picker is offered per row, so resolution must reach in there too.
+   * A logo's `url` has no paired label: it just loses the link, keeping the mark.
+   */
+  public function testResolveLinksReachesIntoRepeatableRows(): void {
+    $live = $this->page('Pricing', TRUE);
+    $dead = $this->page('Secret launch', FALSE);
+    $out = $this->resolver()->resolveLinks([
+      'cards' => [
+        ['title' => 'Plans', 'cta_label' => 'Compare', 'cta_url' => 'entity:node:' . $live->id()],
+        ['title' => 'Beta', 'cta_label' => 'Join', 'cta_url' => 'entity:node:' . $dead->id()],
+        ['title' => 'Docs', 'cta_label' => 'Read', 'cta_url' => '/docs'],
+      ],
+      'logos' => [
+        ['name' => 'Gone', 'image' => 'media:1', 'url' => 'entity:node:' . $dead->id()],
+      ],
+    ]);
+
+    $this->assertStringContainsString('/node/' . $live->id(), $out['cards'][0]['cta_url']);
+    $this->assertArrayNotHasKey('cta_url', $out['cards'][1]);
+    $this->assertArrayNotHasKey('cta_label', $out['cards'][1]);
+    $this->assertSame('Beta', $out['cards'][1]['title']);
+    // A plain path is not a token — untouched.
+    $this->assertSame('/docs', $out['cards'][2]['cta_url']);
+    // No label to drop: the logo survives, unlinked.
+    $this->assertArrayNotHasKey('url', $out['logos'][0]);
+    $this->assertSame('Gone', $out['logos'][0]['name']);
+  }
+
+  /** A published-or-not article node (the link-target fixture). */
+  private function page(string $title, bool $published): NodeInterface {
+    $storage = \Drupal::entityTypeManager()->getStorage('node');
+    if (!\Drupal::entityTypeManager()->getStorage('node_type')->load('article')) {
+      \Drupal::entityTypeManager()->getStorage('node_type')->create(['type' => 'article', 'name' => 'Article'])->save();
+    }
+    $node = $storage->create(['type' => 'article', 'title' => $title, 'status' => $published]);
+    $node->save();
+    return $node;
   }
 
   /**

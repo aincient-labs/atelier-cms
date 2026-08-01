@@ -339,6 +339,10 @@ final class PageController implements ContainerInjectionInterface {
       // The image-bearing prop / row-field names, so the studio renders a media
       // picker for them (top-level props are also flagged per-prop below).
       'image_props' => ComponentCatalog::IMAGE_PROPS,
+      // The link-bearing prop / row-field names, so the studio renders the
+      // URL｜Page target control for them inside repeatables too (top-level
+      // props are also flagged per-prop below).
+      'link_props' => ComponentCatalog::LINK_PROPS,
       // The bounded child allow-list for accordion panels — the components the
       // studio's panels editor offers in its per-block component picker. Their
       // prop schemas are read from `sections` (the children are leaf sections).
@@ -360,6 +364,12 @@ final class PageController implements ContainerInjectionInterface {
       if (ComponentCatalog::isImageProp($prop)) {
         // Render a media picker for this prop (it holds a media:<id> token).
         $entry['image'] = TRUE;
+      }
+      if (ComponentCatalog::isLinkProp($prop)) {
+        // Render the URL｜Page target control (the menu editor's), so a link can
+        // be a picked page (an entity:node:<id> token) instead of a URL the
+        // author would have to visit the page to copy.
+        $entry['link'] = TRUE;
       }
       if ($prop === 'entity') {
         // Render an embed picker (it holds an entity:<…> reference token).

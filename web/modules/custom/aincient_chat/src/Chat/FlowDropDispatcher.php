@@ -209,6 +209,34 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
         return;
 
       case $turn::STATUS_FAILED:
+        // A failed pipeline does NOT mean a fruitless turn. One bad tool call
+        // marks the run failed, but the agent loop keeps going and usually
+        // recovers — we watched it re-issue a `preview_page` with correctly
+        // typed args seconds after the first was rejected, succeed, and then
+        // have that success thrown away here because this branch returned an
+        // error and nothing else. Salvage first: surface whatever the turn
+        // actually produced, and fall back to the error only when it produced
+        // nothing. (The deeper fix — a tool failure that degrades instead of
+        // failing the run — is the reserved `error` port work in plans/.)
+        $salvaged = $this->harvestTurnWidgets($turn->pipelineId);
+        foreach ($salvaged as $widget) {
+          yield ChatEvent::toolCall($widget['widget'], $widget['payload']);
+        }
+        $this->persistTurnWidgets((int) $session->id(), $salvaged, $turn->assistantMessageIds);
+        $rescued = $this->chatOutputMessage($turn->pipelineId);
+        if ($rescued !== '' && !$this->isNodeStatusEcho($rescued)) {
+          yield from $this->resultEvents($rescued);
+          return;
+        }
+        if ($salvaged !== []) {
+          // Work landed but the agent never got to speak — say so plainly
+          // rather than claiming failure over a preview the user can see.
+          yield ChatEvent::result(
+            'That ran into a problem partway through, but the changes above were applied to your '
+            . 'preview. Check them over, and send another message if something is missing.'
+          );
+          return;
+        }
         yield ChatEvent::error('The flow failed to complete. Please try again.');
         return;
 
@@ -224,8 +252,19 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
         // the agent's prose. The direct path has no Invoke jobs, so this is a
         // no-op there and resultEvents() still does the unwrapping.
         $text = $this->assistantText($turn->assistantMessageIds);
+        // A write-back that captured the chat_output NODE'S STATUS instead of the
+        // message it was handed ("success") is not a reply — recover the real
+        // text from the node's input and repair the stored message in place.
+        if ($this->isNodeStatusEcho($text)) {
+          $recovered = $this->chatOutputMessage($turn->pipelineId);
+          if ($recovered !== '') {
+            $this->repairStatusEcho($turn->assistantMessageIds, $recovered);
+            $text = $recovered;
+          }
+        }
         if ($text === '') {
-          $text = $this->finalAssistantText($sessions, (int) $session->id());
+          $text = $this->chatOutputMessage($turn->pipelineId)
+            ?: $this->finalAssistantText($sessions, (int) $session->id());
         }
         $widgets = $this->harvestTurnWidgets($turn->pipelineId);
         foreach ($widgets as $widget) {
@@ -393,6 +432,85 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
   }
 
   /**
+   * The bare words a node's `status` uses. Never a real assistant reply.
+   */
+  private const NODE_STATUS_WORDS = ['success', 'completed', 'failed', 'error', 'skipped', 'pending', 'running', 'ok'];
+
+  /**
+   * TRUE if a write-back is a node STATUS that leaked into the reply slot.
+   *
+   * FlowDrop writes the turn's assistant message from the `chat_output` node.
+   * When it captures that node's OUTPUT (`{"status":"success"}`) rather than the
+   * `message` input it was handed, the thread shows the single word "success" and
+   * the real sentence is lost — the failure mode users kept reporting as "the
+   * agent replied success and did nothing" (the work HAD happened).
+   *
+   * Detection is deliberately narrow: an exact, case-insensitive match on a bare
+   * status word. A genuine reply is a sentence; it is never the single token
+   * "success". Anything longer is left alone.
+   */
+  private function isNodeStatusEcho(string $text): bool {
+    return in_array(strtolower(trim($text)), self::NODE_STATUS_WORDS, TRUE);
+  }
+
+  /**
+   * The message a turn's `chat_output` node was GIVEN — its input, not its status.
+   *
+   * The authoritative reply text when the write-back captured a status instead:
+   * the workflow put the sentence on the node's `message` input, so that input is
+   * what the user was meant to read. The LAST chat_output job wins (an agent loop
+   * can pass through more than one; the final one is the turn's answer).
+   */
+  private function chatOutputMessage(?string $pipelineId): string {
+    if ($pipelineId === NULL || $pipelineId === '') {
+      return '';
+    }
+    $pipeline = \Drupal::entityTypeManager()->getStorage('flowdrop_pipeline')->load($pipelineId);
+    if ($pipeline === NULL || !method_exists($pipeline, 'getJobs')) {
+      return '';
+    }
+    $text = '';
+    foreach ($pipeline->getJobs() as $job) {
+      if (!method_exists($job, 'getMetadataValue') || $job->getMetadataValue('node_type_id') !== 'chat_output') {
+        continue;
+      }
+      $input = json_decode((string) ($job->get('input_data')->value ?? ''), TRUE);
+      $message = is_array($input) ? trim((string) ($input['message'] ?? '')) : '';
+      if ($message !== '') {
+        $text = $message;
+      }
+    }
+    return $text;
+  }
+
+  /**
+   * Rewrite a status-echo write-back with the message it should have carried.
+   *
+   * Repairing the STORED message (rather than only what we stream now) is what
+   * makes the reload consistent: {@see SessionThreadStore} replays a thread from
+   * these rows, so a live-only fix would show the real sentence once and "success"
+   * forever after. Best-effort — a failure here must never break the turn, which
+   * is already streaming its answer.
+   */
+  private function repairStatusEcho(array $messageIds, string $text): void {
+    $storage = \Drupal::entityTypeManager()->getStorage('flowdrop_session_message');
+    foreach ($messageIds as $id) {
+      try {
+        $message = $storage->load($id);
+        if ($message !== NULL && $this->isNodeStatusEcho((string) $message->getContent())) {
+          $message->set('content', $text)->save();
+        }
+      }
+      catch (\Throwable $e) {
+        $this->logger->warning('Could not repair a status-echo assistant message (@id): @msg', [
+          '@id' => $id,
+          '@msg' => $e->getMessage(),
+        ]);
+      }
+    }
+  }
+
+  /**
    * Turn an assistant write-back into the chat events that render it.
    *
    * The generative-UI bridge: a workflow whose reply is a widget envelope
@@ -467,8 +585,9 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
         }
         continue;
       }
-      // Cheap pre-filter: only Invoke results carry tool_results envelopes.
-      if (!str_contains($output, 'tool_results')) {
+      // Cheap pre-filter: only an Invoke node's results carry tool envelopes.
+      // BOTH key names are accepted — see widgetEnvelopesFromInvokeOutput().
+      if (!str_contains($output, 'tool_results') && !str_contains($output, 'tool_messages')) {
         continue;
       }
       foreach ($this->widgetEnvelopesFromInvokeOutput($output) as $envelope) {
@@ -484,8 +603,22 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
   /**
    * Decode widget envelopes out of an Invoke node's serialized output.
    *
-   * Invoke output is `{"tool_results": [{"name", "tool_call_id", "content"}, …]}`
-   * where each `content` is itself a JSON string — typically the tool's
+   * {@see ToolInvoke} returns the same per-tool content under TWO keys:
+   * `tool_results` (`[{name, tool_call_id, content}, …]`) and `tool_messages`
+   * (`[{role, tool_call_id, content}, …]`, the LLM-shaped one that feeds the
+   * conversation). Either is a valid source — we only read `content`.
+   *
+   * Reading both is what makes this robust rather than tidy. FlowDrop persists
+   * only a node's EXPOSED outputs, and exposure is per workflow-INSTANCE config:
+   * the alpha13 upgrade rewrote the pages-agent Invoke node from `config: {}` to
+   * an explicit port list marking the unwired `tool_results` `exposed: false`, so
+   * from that moment the persisted job carried `tool_messages` alone. This
+   * harvester read `tool_results` only, found nothing, emitted no `page_preview`
+   * frame — and every studio preview silently stopped applying while the tool
+   * itself kept reporting success. Keying off which port someone happened to wire
+   * is the bug; the content is the same either way.
+   *
+   * Each `content` is itself a JSON string — typically the tool's
    * `{"message": "<envelope>", "status": …}`. Try the inner `message` first, then
    * the raw content, and keep whatever decodes to a valid envelope.
    *
@@ -493,11 +626,15 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
    */
   private function widgetEnvelopesFromInvokeOutput(string $output): array {
     $data = json_decode($output, TRUE);
-    if (!is_array($data) || !is_array($data['tool_results'] ?? NULL)) {
+    if (!is_array($data)) {
+      return [];
+    }
+    $rows = $data['tool_results'] ?? $data['tool_messages'] ?? NULL;
+    if (!is_array($rows)) {
       return [];
     }
     $envelopes = [];
-    foreach ($data['tool_results'] as $result) {
+    foreach ($rows as $result) {
       $content = $result['content'] ?? NULL;
       if (!is_string($content) || $content === '') {
         continue;
@@ -629,7 +766,10 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
   private function finalAssistantText(object $sessions, int $sessionId): string {
     $text = '';
     foreach ($sessions->getMessages($sessionId, NULL, 100, NULL, TRUE) as $message) {
-      if ((string) $message->getRole() === 'assistant') {
+      // A status echo is not a reply ({@see isNodeStatusEcho}); skipping it here
+      // lets an earlier real message stand rather than surfacing "success".
+      if ((string) $message->getRole() === 'assistant'
+        && !$this->isNodeStatusEcho((string) $message->getContent())) {
         $text = (string) $message->getContent();
       }
     }

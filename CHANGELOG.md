@@ -7,6 +7,39 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-08-01
+- **New: link a button to a page by picking it.** A call-to-action can now point at a page you
+  choose from your own site, instead of a URL you had to go and look up first — on hero buttons
+  and inside cards, pricing tiers and logo rows. A picked page keeps working if its address
+  later changes, and a button whose page is deleted or unpublished disappears rather than
+  leading nowhere.
+- **The assistant links to real pages.** Ask it to "link this to the pricing page" and it finds
+  the page itself rather than guessing an address — and tells you when no such page exists.
+- **Fixed: page edits made through chat could report success and never appear in your preview.**
+  Introduced in the release published earlier today; if you are on that release, update. The
+  edits were being made correctly the whole time — the result just never reached the screen.
+- **Fixed: a chat turn could end with an empty reply**, or with the single word "success",
+  instead of telling you what it had done. When something goes wrong you now see the reason.
+- **A malformed step no longer throws away the rest of a turn's work.** Whatever the assistant
+  completed is applied to your preview, with a note that it hit a problem along the way.
+
+## 2026-08-01
+- **Fixed: chat in every studio works again.** On the 2026-07-31 release, asking a studio
+  assistant to change something returned an empty reply and saved nothing — no message, no
+  error, no explanation. Design System, Globals, Content, Library and Checks were all
+  affected, and the whole chat-driven way of working was unusable. If you are running that
+  release, update. (The cause was a regression in the workflow engine: a workflow input
+  declared as unconstrained stopped accepting anything but a plain scalar, and the studios
+  send their unsaved draft as one.)
+- **New: the logo has a size.** Set it to small, medium or large for the header and the
+  footer, from the Globals tabs or by asking the assistant. Existing sites are unchanged —
+  the previous fixed size is the default.
+- **Fixed: a small logo no longer renders full-width** in the studio preview. The published
+  site was always correct; only the preview was wrong.
+- **The bundled demo pages no longer fetch stock photography from the internet.** They now
+  use images that ship with Atelier, so a fresh install looks finished offline and makes no
+  third-party requests.
+
 ## 2026-07-31
 - **Maintenance:** dependency update and internal config cleanup. No change to how Atelier
   behaves.

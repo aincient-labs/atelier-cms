@@ -657,11 +657,18 @@ nodes:
             into a prop: a `media:<id>` token in an image / avatar / cover prop (e.g.
             `props:{ image:"media:42" }` — renders at the right size with alt text, ALWAYS
             prefer this to a raw image URL); an `entity:node:<id>` token in an embed
-            section's `entity` (append `@teaser` or `@full` for a view mode); a `block:<id>`
-            token in a block section's `ref`. Pass `types` (e.g. "media", "node", "block")
-            to narrow the search. If find_reference returns nothing useful, tell the user to
-            upload the image or author the block in the page studio (don't invent a
-            token/URL), and leave the prop unset.
+            section's `entity` (append `@teaser` or `@full` for a view mode) OR in a LINK
+            prop (`cta_url` / `secondary_url` / a logo's `url`) to point a button at that
+            page; a `block:<id>` token in a block section's `ref`. Pass `types` (e.g.
+            "media", "node", "block") to narrow the search. If find_reference returns
+            nothing useful, tell the user to upload the image or author the block in the
+            page studio (don't invent a token/URL), and leave the prop unset.
+
+          - Never GUESS a link. When the user asks for a button to a page on this site
+            ("link it to our pricing page"), take the target from SITE DESTINATIONS if it is
+            listed there, otherwise call **find_reference** (types "node"). Only type a path
+            yourself when the user gives you one, and only use an absolute `https://` URL for
+            a genuinely external site.
 
           OPS (pass as a JSON array in `ops`; applied against the CURRENT draft, in order):
             - set_meta {type?, title?}                page type (landing | blog) + title
@@ -700,6 +707,10 @@ nodes:
           call **find_reference** (types "node" for an embed, "block" for a block) to look
           up the token; don't invent an `entity` token or a `ref`. The page studio also has
           pickers for both; prefer them when the user is browsing rather than naming one.
+
+          {% if site_destinations() %}
+          {{ site_destinations() }}
+          {% endif %}
 
           GRAMMAR / TASTE:
           - Open with exactly ONE hero; close with ONE cta. Compose 3–6 sections.

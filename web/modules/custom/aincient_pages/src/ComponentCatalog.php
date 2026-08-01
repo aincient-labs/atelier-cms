@@ -353,12 +353,12 @@ final class ComponentCatalog {
     'ref' => 'a reference token to the reusable global block to place here, e.g. block:7. Find one with find_reference (types "block").',
     'placeholder' => 'placeholder text for an input field.',
     'cta_label' => 'primary action label.',
-    'cta_url' => 'primary action URL.',
+    'cta_url' => 'primary action target: an absolute URL (https://…), a site path (/pricing), or a page reference token (entity:node:15) resolved to that page\'s live URL at render — prefer the token when linking to a page on this site (it survives an alias change). Find one with find_reference.',
     'secondary_label' => 'secondary action label.',
-    'secondary_url' => 'secondary action URL.',
+    'secondary_url' => 'secondary action target — same forms as cta_url (absolute URL, site path, or an entity:node:<id> reference token).',
     'items' => 'repeatable rows: [{value,label}].',
     'features' => 'repeatable feature cards: [{icon,title,body}]. `body` accepts inline Markdown (links/bold/italic/code).',
-    'logos' => 'repeatable logo marks: [{name,image,url}].',
+    'logos' => 'repeatable logo marks: [{name,image,url}]. `url` accepts the same forms as cta_url (absolute URL, site path, or an entity:node:<id> reference token).',
     'images' => 'repeatable images: [{image,caption}].',
     'quotes' => 'repeatable testimonial quotes: [{quote,author,role,avatar}]. `quote` accepts inline Markdown (links/bold/italic/code).',
     'members' => 'repeatable people: [{name,role,bio,avatar}]. `bio` accepts inline Markdown (links/bold/italic/code).',
@@ -387,6 +387,45 @@ final class ComponentCatalog {
    */
   public static function isImageProp(string $name): bool {
     return in_array($name, self::IMAGE_PROPS, TRUE);
+  }
+
+  /**
+   * LINK-bearing prop / row-field names — props (and repeatable row fields)
+   * whose value is a navigation TARGET: an absolute URL, a site path, or a
+   * reference token (`entity:node:<id>`) resolved to that page's live URL at
+   * render ({@see EntityEmbedResolver::resolveLinks()}).
+   *
+   * The token form exists because nobody knows a URL before the page exists —
+   * the same problem the menu editor solves with its URL｜Page picker, and the
+   * studio renders the SAME control for these props (the `link` flag in the
+   * editor manifest; see PageController::manifestEntry). A token also survives
+   * an alias change, where a pasted path would rot.
+   *
+   * One canonical meaning per name (the PROP_VOCAB discipline): `cta_url` is the
+   * primary action everywhere (hero/cta props AND card/tier row fields),
+   * `secondary_url` the secondary one, `url` the bare link on a logo row. A new
+   * link prop MUST reuse one of these words.
+   */
+  public const LINK_PROPS = ['cta_url', 'secondary_url', 'url'];
+
+  /**
+   * The LABEL prop each link prop is paired with — the other half of a button.
+   *
+   * The twigs gate the anchor on the LABEL (`{% if cta_label %}`), so a link
+   * whose target became unresolvable would still render, pointing at `#`. The
+   * renderer therefore drops the pair together. A link prop absent from this map
+   * (a logo's `url`) has no label to drop and simply renders unlinked.
+   */
+  public const LINK_LABELS = [
+    'cta_url' => 'cta_label',
+    'secondary_url' => 'secondary_label',
+  ];
+
+  /**
+   * TRUE if a prop / row-field name holds a link target (see LINK_PROPS).
+   */
+  public static function isLinkProp(string $name): bool {
+    return in_array($name, self::LINK_PROPS, TRUE);
   }
 
   /**
@@ -548,7 +587,36 @@ final class ComponentCatalog {
       $lines[] = sprintf('- %s — %s', $name, $def['use']);
       $lines[] = '    props: ' . self::describeProps($def['props']);
     }
+    $lines[] = '';
+    $lines[] = self::linkTargetNote();
     return implode("\n", $lines);
+  }
+
+  /**
+   * The LINK TARGETS note — how to fill a link prop, in the agent's prompt.
+   *
+   * The prompt carries prop NAMES, not {@see PROP_VOCAB} meanings (see
+   * {@see describeProps()}), so without this the agent has no way to know a link
+   * prop takes anything but a URL — and would invent `/get-started` for a page
+   * that may not exist. Deliberately ONE fixed-size paragraph naming the three
+   * accepted forms and the retrieval route: the site's page list must NEVER be
+   * inlined here (it would grow without bound and be stale within a turn). The
+   * bounded shortlist of real destinations is injected separately from the site's
+   * own main menu ({@see SiteDestinations}).
+   */
+  public static function linkTargetNote(): string {
+    return implode("\n", [
+      'LINK TARGETS (' . implode(' / ', self::LINK_PROPS) . ') accept THREE forms:',
+      '  - an absolute URL for an external site — https://example.com',
+      '  - a path on this site — /pricing',
+      '  - a page REFERENCE TOKEN — entity:node:15 — which resolves to that page\'s live',
+      '    URL at render and keeps working if the page is later renamed or re-aliased.',
+      'PREFER the token for anything on this site. Never guess a path: if the destination is',
+      'not in SITE DESTINATIONS below, call find_reference (types "node") to get its token.',
+      'If it genuinely does not exist, leave the link prop unset and say so — a button with an',
+      'invented target is worse than no button (and one pointing at a deleted or unpublished',
+      'page is dropped from the page entirely at render, label and all).',
+    ]);
   }
 
   /**

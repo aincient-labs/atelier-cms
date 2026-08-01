@@ -66,6 +66,7 @@ export function ReferenceField({
   dirty = false,
   revert,
   compact = false,
+  hideLabel = false,
 }: {
   label: string;
   meaning?: string;
@@ -90,6 +91,10 @@ export function ReferenceField({
   /** Drop the raw-token chip / manual-entry row — for narrow hosts (e.g. the
    *  menu-editor rail) where the token is noise and would collapse to "e…". */
   compact?: boolean;
+  /** Suppress the label row — the HOST already labels this control (LinkField
+   *  puts the label and the URL｜Page switch on one line above it). `label` is
+   *  still required, and still names the control for assistive tech. */
+  hideLabel?: boolean;
 }) {
   const current = typeof value === "string" ? value.trim() : "";
   const parsed = parseToken(current);
@@ -155,10 +160,12 @@ export function ReferenceField({
 
   return (
     <div className="ain-field ain-media" data-dirty={dirty || undefined} title={meaning}>
-      <span className="ain-field__label">
-        <span className="ain-field__labeltext">{label}</span>
-        {revert}
-      </span>
+      {!hideLabel && (
+        <span className="ain-field__label">
+          <span className="ain-field__labeltext">{label}</span>
+          {revert}
+        </span>
+      )}
       <div className="ain-media__control">
         <button
           type="button"
@@ -166,6 +173,7 @@ export function ReferenceField({
           onClick={() => !disabled && setOpen((o) => !o)}
           disabled={disabled}
           aria-expanded={open}
+          aria-label={hideLabel ? label : undefined}
           title={disabled ? "Inherited from the source layout" : current ? "Change…" : "Choose…"}
         >
           {preview?.thumb ? <img src={preview.thumb} alt="" /> : <Icon className="ain-media__thumbicon" />}

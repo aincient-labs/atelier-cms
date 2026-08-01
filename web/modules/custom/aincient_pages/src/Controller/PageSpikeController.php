@@ -569,6 +569,12 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // to a container-query Rift picture (HTML), since a slot can't nest per row.
     $props = $this->rowPictures($name, $props, $langcode);
 
+    // Link props (cta_url / secondary_url / a logo row's url) may hold a page
+    // reference token instead of a URL — resolved (access-checked) here, BEFORE
+    // resolveEmbeds() would flatten it like an image and leave a dead button
+    // behind. A dangling target takes its label with it.
+    $props = $this->embed->resolveLinks($props, $langcode);
+
     $build = ['#type' => 'component', '#component' => "aincient_pages:$name", '#props' => $this->resolveEmbeds($props, $name)];
     if ($slots !== []) {
       $build['#slots'] = $slots;

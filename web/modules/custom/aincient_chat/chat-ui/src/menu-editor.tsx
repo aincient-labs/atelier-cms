@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import type { ChromeMenuLink } from "./globals-state";
-import { ReferenceField } from "./reference-field";
+import { LinkField } from "./link-field";
 import {
   ChevronUpIcon,
   ChevronDownIcon,
@@ -9,12 +9,6 @@ import {
   TrashIcon,
   PlusIcon,
 } from "./icons";
-
-/** A page-reference link stores a console token (`entity:node:<id>`) in `url`,
- *  so a link's "mode" is derived from whether its url is such a token. */
-function isPageToken(url: string): boolean {
-  return /^entity:[a-z][a-z0-9_]*:\d+/.test(url.trim());
-}
 
 /**
  * The shared inline menu editor used by the Header and Footer tabs of the Globals
@@ -158,13 +152,9 @@ export function MenuEditor({
 }
 
 /**
- * One link row: reorder handles, the label, the URL｜Page target editor, and the
+ * One link row: reorder handles, the label, the URL｜Page target editor
+ * ({@link LinkField}, shared with the page studio's CTA props), and the
  * shown/submenu/remove actions.
- *
- * The target's mode (raw URL vs a page reference) is local state so switching to
- * "Page" and not-yet-picking a page keeps the picker up (an empty value isn't a
- * token, so a pure value-derived mode would snap back to URL). It seeds from the
- * link's url on mount, which covers reload / agent edits.
  */
 function MenuRow({
   link,
@@ -183,17 +173,7 @@ function MenuRow({
   onRemove: () => void;
   onDrill: () => void;
 }) {
-  const [mode, setMode] = useState<"url" | "page">(isPageToken(link.url) ? "page" : "url");
   const childCount = link.children?.length ?? 0;
-
-  // Switching mode clears a value that doesn't belong to the target mode, so the
-  // control starts clean (a leftover token in a url box, or vice versa, is junk).
-  const toMode = (next: "url" | "page") => {
-    if (next === mode) return;
-    if (next === "page" && !isPageToken(link.url)) onPatch({ url: "" });
-    if (next === "url" && isPageToken(link.url)) onPatch({ url: "" });
-    setMode(next);
-  };
 
   return (
     <li className={`ain-menued__row${link.enabled ? "" : " is-disabled"}`}>
@@ -228,45 +208,7 @@ function MenuRow({
           aria-label="Link label"
           onChange={(e) => onPatch({ title: e.target.value })}
         />
-        <div className="ain-menued__target">
-          <div className="ain-facet ain-menued__mode" role="group" aria-label="Link target type">
-            <button
-              type="button"
-              className="ain-facet__btn"
-              aria-pressed={mode === "url"}
-              onClick={() => toMode("url")}
-            >
-              URL
-            </button>
-            <button
-              type="button"
-              className="ain-facet__btn"
-              aria-pressed={mode === "page"}
-              onClick={() => toMode("page")}
-            >
-              Page
-            </button>
-          </div>
-          {mode === "url" ? (
-            <input
-              className="ain-field__input ain-menued__url"
-              type="text"
-              value={link.url}
-              placeholder="/about or https://…"
-              aria-label="Link URL"
-              onChange={(e) => onPatch({ url: e.target.value })}
-            />
-          ) : (
-            <ReferenceField
-              label="Links to page"
-              meaning="Pick a page — the link follows its published URL."
-              value={link.url}
-              onChange={(v) => onPatch({ url: typeof v === "string" ? v : "" })}
-              types={["node"]}
-              compact
-            />
-          )}
-        </div>
+        <LinkField value={link.url} onChange={(url) => onPatch({ url })} compact />
       </div>
       <div className="ain-menued__rowactions">
         <label className="ain-menued__shown" title="Show this link in the menu">

@@ -115,6 +115,17 @@ services:
     class: Drupal\aincient_pages\Twig\ComponentCatalogExtension
     tags:
       - { name: twig.extension }
+  # The site's own main menu as link targets — the bounded shortlist the page
+  # agent links CTAs to (the long tail stays with find_reference).
+  aincient_pages.site_destinations:
+    class: Drupal\aincient_pages\SiteDestinations
+    arguments: ['@aincient_pages.menu_repository']
+  # The `site_destinations()` Twig function (page-agent Prompt Template node).
+  aincient_pages.twig.site_destinations:
+    class: Drupal\aincient_pages\Twig\SiteDestinationsExtension
+    arguments: ['@aincient_pages.site_destinations']
+    tags:
+      - { name: twig.extension }
   aincient_pages.design_tokens:
     class: Drupal\aincient_pages\DesignTokens
     arguments: ['@extension.list.module']

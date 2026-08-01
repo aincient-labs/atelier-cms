@@ -33,7 +33,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   id: 'aincient_pages:find_reference',
   function_name: 'aincient_find_reference',
   name: 'Find reference',
-  description: 'Find REAL existing content to reference in a page, returned as a text TOKEN you put straight into a prop. Use it instead of inventing an id. Token → where it goes: a `media:<id>` token goes in an image / avatar / cover prop (renders at the right size with alt text); an `entity:node:<id>` token goes in an embed section\'s `entity` prop (append @teaser or @full for a view mode); an `entity:user:<id>` token references a person (author byline, team card) in an embed section; a `block:<id>` token goes in a block section\'s `ref` prop. Pass "query" to filter by name/title, and optional "types" (CSV of: media, node, user, block) to narrow the search. ALWAYS prefer a media token to a raw image URL. If nothing fits, tell the user to upload an image or author the block in the page studio — do not invent a token.',
+  description: 'Find REAL existing content to reference in a page, returned as a text TOKEN you put straight into a prop. Use it instead of inventing an id — or a URL. Token → where it goes: a `media:<id>` token goes in an image / avatar / cover prop (renders at the right size with alt text); an `entity:node:<id>` token goes EITHER in an embed section\'s `entity` prop (append @teaser or @full for a view mode) OR in a LINK prop — `cta_url`, `secondary_url`, a logo row\'s `url` — to point a button at that page (it resolves to the page\'s live URL at render and survives a rename); an `entity:user:<id>` token references a person (author byline, team card) in an embed section; a `block:<id>` token goes in a block section\'s `ref` prop. Pass "query" to filter by name/title, and optional "types" (CSV of: media, node, user, block) to narrow the search. ALWAYS prefer a media token to a raw image URL, and a node token to a hand-typed path for a page on this site. This is also how you answer "what pages can I link to?" — search rather than guess. If nothing fits, tell the user to upload an image or author the block in the page studio — do not invent a token or a URL.',
   context_definitions: [
     'query' => new ContextDefinition(
       data_type: 'string',
@@ -107,7 +107,8 @@ final class FindReference extends FunctionCallBase implements ExecutableFunction
     }
     $this->result = sprintf(
       "Found %d reference%s. Put the token in the matching prop "
-      . "(media:→image/avatar/cover, entity:node:→embed `entity`, block:→block `ref`):\n%s",
+      . "(media:→image/avatar/cover, entity:node:→embed `entity` OR a link prop "
+      . "cta_url/secondary_url/url, block:→block `ref`):\n%s",
       count($rows),
       count($rows) === 1 ? '' : 's',
       implode("\n", $lines),

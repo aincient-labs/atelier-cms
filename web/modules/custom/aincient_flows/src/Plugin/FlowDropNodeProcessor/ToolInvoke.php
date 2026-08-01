@@ -166,7 +166,7 @@ final class ToolInvoke extends AbstractFlowDropNodeProcessor implements ToolsAwa
         $ok = FALSE;
       }
       else {
-        $result = $binding->invoke($args);
+        $result = $binding->invoke($this->coerceArgs($args, $binding->getInputSchema()));
         $content = $this->resultToString($result);
         $ok = $ok && $result->isSuccess();
       }
@@ -189,6 +189,70 @@ final class ToolInvoke extends AbstractFlowDropNodeProcessor implements ToolsAwa
       'ok' => $ok,
       'skipped' => $skipped,
     ];
+  }
+
+  /**
+   * Reconcile a model's tool arguments with the tool's declared input schema.
+   *
+   * Providers disagree about STRUCTURED arguments. Given a parameter declared
+   * `array`, some send a native array and some send the same JSON as a STRING —
+   * and the same provider does both across runs. The runtime type check
+   * (`ParameterResolver::validateValue()`) is strict, so the mismatched shape is
+   * rejected before the capability — which accepts either form quite happily —
+   * ever sees it, and the whole run dies on a difference of quoting.
+   *
+   * We have now been bitten from both directions: "expects type 'string', got
+   * 'array'" when the reasoning role moved off Claude (fixed by re-declaring the
+   * parameter as `array`), then "expects type 'array', got 'string'" when Claude
+   * later stringified `ops` mid-turn and killed the pipeline. Flipping the
+   * declaration chases the symptom; the declaration serves the LLM-facing tool
+   * schema too, and `array` is the honest thing to advertise there. So the fix
+   * belongs HERE, at the boundary we own: decode a JSON string when the schema
+   * asks for a structure, and leave everything else exactly as the model sent it.
+   *
+   * Deliberately narrow. It acts only when (a) the schema declares `array` or
+   * `object` for that named parameter, (b) the value arrived as a string, and
+   * (c) that string parses to the declared shape. A parameter declared `string`
+   * is untouched even if its value looks like JSON — a page heading that happens
+   * to read `[1,2]` stays text.
+   *
+   * @param array<string, mixed> $args
+   *   The arguments as the model produced them.
+   * @param array<string, mixed> $schema
+   *   The tool's JSON-schema input definition ({@see ToolBindingInterface}).
+   *
+   * @return array<string, mixed>
+   *   The arguments, with structured parameters decoded where needed.
+   */
+  private function coerceArgs(array $args, array $schema): array {
+    $properties = is_array($schema['properties'] ?? NULL) ? $schema['properties'] : [];
+    foreach ($args as $name => $value) {
+      if (!is_string($value)) {
+        continue;
+      }
+      $expected = is_array($properties[$name] ?? NULL) ? (string) ($properties[$name]['type'] ?? '') : '';
+      if ($expected !== 'array' && $expected !== 'object') {
+        continue;
+      }
+      $decoded = json_decode($value, TRUE);
+      if (!is_array($decoded)) {
+        // Not JSON at all — leave it and let validation report the real problem
+        // rather than silently substituting something the model never sent.
+        continue;
+      }
+      // A JSON array decodes to a list, an object to a map. Only accept the one
+      // the schema actually asked for, so `"{…}"` can't slip into an array slot.
+      $isList = array_is_list($decoded);
+      if (($expected === 'array') !== $isList) {
+        continue;
+      }
+      $args[$name] = $decoded;
+      $this->logger->notice('Decoded a JSON-string @type argument "@name" the model sent for a structured parameter.', [
+        '@type' => $expected,
+        '@name' => $name,
+      ]);
+    }
+    return $args;
   }
 
   /**

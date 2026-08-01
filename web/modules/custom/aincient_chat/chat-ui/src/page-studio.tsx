@@ -49,6 +49,7 @@ import { activeStudioKey } from "./flow";
 import { CheckIcon, XIcon, PlusIcon, ChevronDownIcon, GripIcon, MoreHorizontalIcon, ShieldCheckIcon } from "./icons";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { ReferenceField } from "./reference-field";
+import { LinkField } from "./link-field";
 import { openBlock } from "./block-nav";
 import { PanelBar } from "./panel-bar";
 import { FieldRevert } from "./field-revert";
@@ -71,6 +72,9 @@ type PropDef = {
   shape?: string;
   /** This prop holds an image (a media:<id> token) — render a media picker. */
   image?: boolean;
+  /** This prop holds a link target (a URL, a path, or a page reference token) —
+   *  render the URL｜Page control the menu editor uses. */
+  link?: boolean;
   /** This prop holds an embed token (entity:<…>) — render an embed picker. */
   embed?: boolean;
   /** This prop holds a global-block id — render a block picker. */
@@ -97,6 +101,8 @@ type Manifest = {
   prop_vocab: Record<string, string>;
   /** Prop / row-field names that hold an image (render a media picker). */
   image_props: string[];
+  /** Prop / row-field names that hold a link target (render the URL｜Page control). */
+  link_props?: string[];
   /** The bounded child allow-list for accordion panels — the components the
    *  panels editor offers per block (their prop schemas come from `sections`). */
   accordion_blocks?: string[];
@@ -512,6 +518,10 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   // Image-bearing prop / row-field names (manifest-driven) → render a media
   // picker for them, in both top-level props and repeatable rows.
   const imageProps = useMemo(() => new Set(manifest?.image_props ?? []), [manifest]);
+
+  // Link-bearing prop / row-field names (manifest-driven) → render the URL｜Page
+  // target control for them, in both top-level props and repeatable rows.
+  const linkProps = useMemo(() => new Set(manifest?.link_props ?? []), [manifest]);
 
   // Accordion panels editor: the bounded child allow-list + a lookup of each
   // child component's prop schema (children are leaf sections, so their defs
@@ -1364,6 +1374,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                         count={sections.length}
                         props={propDefs.get(section.component) ?? []}
                         imageProps={imageProps}
+                        linkProps={linkProps}
                         blockComponents={blockComponents}
                         blockDefs={blockDefs}
                         open={expanded.has(index)}
@@ -1630,6 +1641,7 @@ function SectionCard({
   count,
   props,
   imageProps,
+  linkProps,
   blockComponents,
   blockDefs,
   open,
@@ -1650,6 +1662,8 @@ function SectionCard({
   props: PropDef[];
   /** Row-field names that hold an image (render a media picker inside rows). */
   imageProps: Set<string>;
+  /** Row-field names that hold a link target (render the URL｜Page control). */
+  linkProps: Set<string>;
   /** Accordion panels editor: allowed child components + their prop-schema lookup. */
   blockComponents: string[];
   blockDefs: (component: string) => PropDef[];
@@ -1688,6 +1702,7 @@ function SectionCard({
       prop={prop}
       value={section.props[prop.name]}
       imageProps={imageProps}
+      linkProps={linkProps}
       blockComponents={blockComponents}
       blockDefs={blockDefs}
       onChange={(v) => onProp(index, prop.name, v)}
@@ -1796,6 +1811,7 @@ function PropControl({
   prop,
   value,
   imageProps,
+  linkProps,
   blockComponents,
   blockDefs,
   onChange,
@@ -1807,6 +1823,8 @@ function PropControl({
   value: unknown;
   /** Row-field names that hold an image (forwarded into the rows editor). */
   imageProps: Set<string>;
+  /** Row-field names that hold a link target (forwarded into the rows editor). */
+  linkProps: Set<string>;
   /** Accordion panels editor: allowed child components + their prop-schema lookup. */
   blockComponents: string[];
   blockDefs: (component: string) => PropDef[];
@@ -1829,6 +1847,7 @@ function PropControl({
         prop={prop}
         value={Array.isArray(value) ? (value as Panel[]) : []}
         imageProps={imageProps}
+        linkProps={linkProps}
         blockComponents={blockComponents}
         blockDefs={blockDefs}
         onChange={onChange}
@@ -1845,6 +1864,7 @@ function PropControl({
         prop={prop}
         value={Array.isArray(value) ? (value as Record<string, unknown>[]) : []}
         imageProps={imageProps}
+        linkProps={linkProps}
         onChange={onChange}
         dirty={dirty}
         revert={revert}
@@ -1862,6 +1882,22 @@ function PropControl({
         disabled={disabled}
         types={["media"]}
         allowUpload
+        dirty={dirty}
+        revert={revert}
+      />
+    );
+  }
+  // A link target (cta_url / secondary_url) → the URL｜Page control: type a path
+  // or an external address, or PICK a page (stored as a reference token, so the
+  // author never has to go and copy a URL, and the link survives an alias change).
+  if (prop.link) {
+    return (
+      <LinkField
+        label={fieldLabel}
+        meaning={prop.meaning}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
         dirty={dirty}
         revert={revert}
       />
@@ -1990,6 +2026,7 @@ function RowsControl({
   prop,
   value,
   imageProps,
+  linkProps,
   onChange,
   dirty = false,
   revert,
@@ -1998,6 +2035,8 @@ function RowsControl({
   value: Record<string, unknown>[];
   /** Row-field names that hold an image (render a media picker for them). */
   imageProps: Set<string>;
+  /** Row-field names that hold a link target (render the URL｜Page control). */
+  linkProps: Set<string>;
   onChange: (value: unknown) => void;
   /** The whole repeatable differs from the saved baseline. */
   dirty?: boolean;
@@ -2031,6 +2070,15 @@ function RowsControl({
                     onChange={(v) => setField(rowIdx, field, v)}
                     types={["media"]}
                     allowUpload
+                  />
+                ) : linkProps.has(field) ? (
+                  // A per-row link target (a card's / tier's cta_url, a logo's
+                  // url) — the same URL｜Page control the top-level props get.
+                  <LinkField
+                    key={field}
+                    label={humanize(field)}
+                    value={row[field]}
+                    onChange={(v) => setField(rowIdx, field, v)}
                   />
                 ) : (
                   <input
@@ -2080,6 +2128,7 @@ function PanelsControl({
   prop,
   value,
   imageProps,
+  linkProps,
   blockComponents,
   blockDefs,
   onChange,
@@ -2089,6 +2138,7 @@ function PanelsControl({
   prop: PropDef;
   value: Panel[];
   imageProps: Set<string>;
+  linkProps: Set<string>;
   /** Allow-listed child components offered in each block's component picker. */
   blockComponents: string[];
   /** Prop-schema lookup for a child component (children are leaf sections). */
@@ -2205,6 +2255,7 @@ function PanelsControl({
                             prop={p}
                             value={block.props?.[p.name]}
                             imageProps={imageProps}
+                            linkProps={linkProps}
                             blockComponents={blockComponents}
                             blockDefs={blockDefs}
                             onChange={(v) => setBlockProp(panelIdx, blockIdx, p.name, v)}

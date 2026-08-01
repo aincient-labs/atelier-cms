@@ -58,7 +58,7 @@ final class ToolInvokeTest extends KernelTestBase {
   /**
    * A node instance bound to one pipeline (the ledger's scope).
    */
-  private function node(string $pipelineId = 'p1'): ToolInvoke {
+  private function node(string $pipelineId = 'p1', ?array $schema = NULL): ToolInvoke {
     $node = ToolInvoke::create($this->container, [], 'aincient_flows:aincient_tool_invoke', []);
     $node->setExecutionContext(new ExecutionContextDTO(
       initialData: [],
@@ -68,14 +68,14 @@ final class ToolInvokeTest extends KernelTestBase {
       nodeId: 'invoke.2',
       metadata: [],
     ));
-    $node->setTools($this->tools());
+    $node->setTools($this->tools($schema));
     return $node;
   }
 
   /**
    * One wired tool that records every invocation it receives.
    */
-  private function tools(): ToolCollection {
+  private function tools(?array $schema = NULL): ToolCollection {
     $invoker = new class($this->invocations) implements ToolInvokerInterface {
 
       /**
@@ -101,7 +101,7 @@ final class ToolInvokeTest extends KernelTestBase {
         'preview_page',
         'cap_preview_page',
         'Preview page',
-        ['type' => 'object', 'properties' => []],
+        $schema ?? ['type' => 'object', 'properties' => []],
         'Preview page (cap_preview_page)',
         $invoker,
       ),
@@ -252,6 +252,99 @@ final class ToolInvokeTest extends KernelTestBase {
     $this->node()->process($batch);
 
     $this->assertCount(2, $this->invocations);
+  }
+
+  /**
+   * A tool schema declaring a structured parameter.
+   */
+  private const OPS_SCHEMA = [
+    'type' => 'object',
+    'properties' => [
+      'ops' => ['type' => 'array'],
+      'title' => ['type' => 'string'],
+      'settings' => ['type' => 'object'],
+    ],
+  ];
+
+  /**
+   * A model that STRINGIFIES a structured argument still gets its tool run.
+   *
+   * The regression: Claude sent `ops` as pretty-printed JSON text, the runtime
+   * type check rejected string-where-array before the capability (which accepts
+   * either form) ever ran, and the whole turn died. The mirror image — a native
+   * array where `string` was declared — killed it once before, from the other
+   * side. The boundary reconciles the two.
+   *
+   * @covers ::process
+   * @covers ::coerceArgs
+   */
+  public function testStringifiedStructuredArgsAreDecodedToTheDeclaredShape(): void {
+    $this->node('p1', self::OPS_SCHEMA)->process(new ParameterBag([
+      'tool_calls' => [
+        [
+          'name' => 'preview_page',
+          'args' => [
+            'ops' => "[\n  {\"op\":\"set_meta\",\"title\":\"Mackerel\"}\n]",
+            'settings' => '{"dry_run":true}',
+          ],
+          'tool_call_id' => 'call_a',
+        ],
+      ],
+    ]));
+
+    $this->assertCount(1, $this->invocations);
+    $args = $this->invocations[0]['args'];
+    $this->assertSame([['op' => 'set_meta', 'title' => 'Mackerel']], $args['ops']);
+    $this->assertSame(['dry_run' => TRUE], $args['settings']);
+  }
+
+  /**
+   * A provider that sends the NATIVE shape is passed through untouched — the
+   * coercion is a repair, never a round-trip.
+   *
+   * @covers ::coerceArgs
+   */
+  public function testNativeStructuredArgsArePassedThrough(): void {
+    $ops = [['op' => 'set_meta', 'title' => 'Mackerel']];
+    $this->node('p1', self::OPS_SCHEMA)->process(new ParameterBag([
+      'tool_calls' => [['name' => 'preview_page', 'args' => ['ops' => $ops], 'tool_call_id' => 'call_a']],
+    ]));
+
+    $this->assertSame($ops, $this->invocations[0]['args']['ops']);
+  }
+
+  /**
+   * The narrowness that keeps this safe: a parameter declared `string` is never
+   * decoded (a heading that reads `[1,2]` is text, not ops); a non-JSON string
+   * in an array slot is left for validation to report honestly; and an OBJECT
+   * literal is not smuggled into an ARRAY parameter.
+   *
+   * @covers ::coerceArgs
+   */
+  public function testOnlyTheDeclaredStructuredShapeIsDecoded(): void {
+    $this->node('p1', self::OPS_SCHEMA)->process(new ParameterBag([
+      'tool_calls' => [
+        [
+          'name' => 'preview_page',
+          'args' => [
+            // Declared `string` — JSON-looking text stays text.
+            'title' => '[1,2]',
+            // Declared `array` — but this is neither JSON nor a list.
+            'ops' => 'set the title please',
+          ],
+          'tool_call_id' => 'call_a',
+        ],
+      ],
+    ]));
+    $this->assertSame('[1,2]', $this->invocations[0]['args']['title']);
+    $this->assertSame('set the title please', $this->invocations[0]['args']['ops']);
+
+    $this->node('p2', self::OPS_SCHEMA)->process(new ParameterBag([
+      'tool_calls' => [
+        ['name' => 'preview_page', 'args' => ['ops' => '{"op":"set_meta"}'], 'tool_call_id' => 'call_b'],
+      ],
+    ]));
+    $this->assertSame('{"op":"set_meta"}', $this->invocations[1]['args']['ops']);
   }
 
 }

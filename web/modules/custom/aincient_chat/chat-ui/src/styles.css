@@ -2295,11 +2295,16 @@
 .ain-menued__move { width: 22px; height: 18px; font-size: 12px; }
 .ain-menued__fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .ain-menued__fields .ain-field__input { flex: none; width: 100%; }
-/* URL｜Page target: the mode switch (reusing the .ain-facet segmented grammar)
-   over either a raw-url input or the page ReferenceField. */
-.ain-menued__target { display: flex; flex-direction: column; gap: 5px; }
-.ain-menued__mode { align-self: flex-start; }
-.ain-menued__target .ain-field { margin: 0; }
+/* URL｜Page target (.ain-linkfield) — shared by the menu rail and the page
+   studio's CTA props: the mode switch (reusing the .ain-facet segmented
+   grammar) sits on the label line, over either a raw-url input or the page
+   ReferenceField (label-suppressed; this field already carries one). */
+.ain-linkfield { display: flex; flex-direction: column; gap: 5px; }
+.ain-linkfield > .ain-field__label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ain-linkfield__mode { align-self: flex-start; }
+.ain-linkfield__target { display: flex; flex-direction: column; gap: 5px; }
+.ain-linkfield__target .ain-field { margin: 0; }
+.ain-linkfield__target .ain-field__input { width: 100%; }
 .ain-menued__rowactions {
   display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: none;
 }

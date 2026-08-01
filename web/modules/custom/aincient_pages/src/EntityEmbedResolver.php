@@ -7,6 +7,7 @@ namespace Drupal\aincient_pages;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
@@ -133,6 +134,79 @@ final class EntityEmbedResolver {
     return $entity->hasLinkTemplate('canonical')
       ? $entity->toUrl('canonical')->toString()
       : NULL;
+  }
+
+  /**
+   * Flatten a reference token to a LINK target URL, or NULL if it must not be
+   * linked.
+   *
+   * The link counterpart to {@see url()}, and deliberately STRICTER: a CTA target
+   * is followed by a visitor, so it is access-checked in the render language. A
+   * page that was deleted, unpublished, or is otherwise unviewable resolves to
+   * NULL and the caller DROPS the affordance ({@see resolveLinks()}) rather than
+   * shipping a button into a 403 or a `#`. `block:` tokens (fragments spliced
+   * inline — no canonical URL of their own) never link either.
+   *
+   * A media token DOES resolve, to its canonical media page rather than the raw
+   * file: a link prop is a navigation target, not an <img src>.
+   */
+  public function linkUrl(string $token, ?string $langcode = NULL): ?string {
+    $ref = $this->parse($token);
+    if (!$ref || $ref['type'] === 'block') {
+      return NULL;
+    }
+    $entity = $this->load($ref['type'], $ref['id']);
+    if (!$entity instanceof EntityInterface || !$entity->hasLinkTemplate('canonical')) {
+      return NULL;
+    }
+    if ($langcode !== NULL && $entity->hasTranslation($langcode)) {
+      $entity = $entity->getTranslation($langcode);
+    }
+    return $entity->access('view') ? $entity->toUrl('canonical')->toString() : NULL;
+  }
+
+  /**
+   * Resolve every LINK-bearing prop in a prop tree, dropping dead affordances.
+   *
+   * The render-time seam for link tokens — the counterpart to the controller's
+   * image-token pass, but with the opposite failure mode. An unresolvable IMAGE
+   * collapses to '' and the twig's `{% if image %}` simply hides it; an
+   * unresolvable LINK must take its LABEL with it, because a button whose target
+   * vanished still renders (the twigs gate the anchor on `cta_label`, not on the
+   * url) and would ship a live-looking `#` button. So a dangling target unsets
+   * BOTH halves of the pair ({@see ComponentCatalog::LINK_LABELS}); a link prop
+   * with no paired label (a logo's `url`) just loses its url and renders
+   * unlinked.
+   *
+   * Recurses into arrays so tokens inside repeatables (grid cards, pricing
+   * tiers, logos) resolve on the same terms as top-level props. Raw URLs and
+   * plain paths pass through untouched.
+   */
+  public function resolveLinks(array $props, ?string $langcode = NULL): array {
+    foreach ($props as $key => $value) {
+      if (is_array($value)) {
+        $props[$key] = $this->resolveLinks($value, $langcode);
+        continue;
+      }
+      if (!is_string($key) || !is_string($value) || !ComponentCatalog::isLinkProp($key)) {
+        continue;
+      }
+      $token = trim($value);
+      if (!$this->isToken($token)) {
+        continue;
+      }
+      $url = $this->linkUrl($token, $langcode);
+      if ($url !== NULL) {
+        $props[$key] = $url;
+        continue;
+      }
+      unset($props[$key]);
+      $label = ComponentCatalog::LINK_LABELS[$key] ?? NULL;
+      if ($label !== NULL) {
+        unset($props[$label]);
+      }
+    }
+    return $props;
   }
 
   /**

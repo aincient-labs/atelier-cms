@@ -192,6 +192,38 @@ final class ComponentCatalogTest extends UnitTestCase {
   }
 
   /**
+   * The agent's prompt carries prop NAMES, not PROP_VOCAB meanings, so the link
+   * grammar has to reach it some other way: the manifest ends with the LINK
+   * TARGETS note. Without it the agent has no way to know a link prop takes
+   * anything but a URL, and invents a path for a page that may not exist.
+   */
+  public function testManifestTeachesTheLinkGrammar(): void {
+    $manifest = ComponentCatalog::manifest();
+    foreach (ComponentCatalog::LINK_PROPS as $prop) {
+      $this->assertStringContainsString($prop, $manifest);
+    }
+    // The token form, and the retrieval route for anything not already listed.
+    $this->assertStringContainsString('entity:node:15', $manifest);
+    $this->assertStringContainsString('find_reference', $manifest);
+    $this->assertStringContainsString('SITE DESTINATIONS', $manifest);
+  }
+
+  /**
+   * The prompt-side of the "don't inline the site" rule: the page agent is given
+   * the site's destinations through the `site_destinations()` Twig call — a
+   * BOUNDED block built from the main menu — and the manifest itself stays a
+   * pure function of the grammar. If either the call goes missing or the
+   * manifest starts carrying live site content, the scalability property (prompt
+   * size independent of page count) is gone.
+   */
+  public function testPageAgentGetsDestinationsThroughTheBoundedCall(): void {
+    $this->assertStringContainsString('site_destinations()', $this->pageAgentSystemPrompt());
+    // The manifest is grammar only — it may POINT at the destinations block, but
+    // it must never carry destination lines itself (that is live site content).
+    $this->assertStringNotContainsString('→', ComponentCatalog::manifest());
+  }
+
+  /**
    * The accordion child allow-list is BOUNDED and ONE level deep: every member
    * is a known placeable, never a container (no accordion/grid/stack), so a
    * panel can never nest a section or another container. The teeth behind the
@@ -280,6 +312,64 @@ final class ComponentCatalogTest extends UnitTestCase {
     // Every top-level image prop is a real entry in the locked vocab.
     foreach (['image'] as $prop) {
       $this->assertArrayHasKey($prop, ComponentCatalog::PROP_VOCAB);
+    }
+  }
+
+  /**
+   * LINK_PROPS names real prop/row-field words, and every pairing in
+   * LINK_LABELS points at a real label word — the studio renders the URL｜Page
+   * control off the first, and the renderer DROPS the pair off the second, so a
+   * stray/misspelled name would either mis-render a control or silently fail to
+   * remove a dead button's label.
+   */
+  public function testLinkPropsAreRealAndPairedWithLabels(): void {
+    foreach (ComponentCatalog::LINK_PROPS as $prop) {
+      $this->assertTrue(ComponentCatalog::isLinkProp($prop));
+    }
+    // The top-level link words are real entries in the locked vocab (`url` is a
+    // row field only — the logos shape — exactly like `avatar` / `cover`).
+    foreach (['cta_url', 'secondary_url'] as $prop) {
+      $this->assertArrayHasKey($prop, ComponentCatalog::PROP_VOCAB);
+    }
+    $this->assertSame(['cta_url', 'secondary_url', 'url'], ComponentCatalog::LINK_PROPS);
+    $this->assertFalse(ComponentCatalog::isLinkProp('cta_label'));
+    $this->assertFalse(ComponentCatalog::isLinkProp('image'));
+    // A link prop and an image prop are disjoint sets — the studio picks ONE
+    // control per prop word, and they'd fight over the same field.
+    $this->assertSame([], array_intersect(ComponentCatalog::LINK_PROPS, ComponentCatalog::IMAGE_PROPS));
+    foreach (ComponentCatalog::LINK_LABELS as $url => $label) {
+      $this->assertTrue(ComponentCatalog::isLinkProp($url), sprintf('"%s" pairs a label but is not a link prop.', $url));
+      $this->assertArrayHasKey($label, ComponentCatalog::PROP_VOCAB, sprintf('"%s" must be a locked vocab word.', $label));
+    }
+    // A logo row's `url` has no label — it degrades to an unlinked mark.
+    $this->assertArrayNotHasKey('url', ComponentCatalog::LINK_LABELS);
+  }
+
+  /**
+   * Every link prop / label word the twigs actually use appears in the maps —
+   * scanned from the placeable defs (top-level props AND repeatable row shapes),
+   * so adding a `cta_url` to a new component can't quietly skip the picker.
+   */
+  public function testEveryPlaceableLinkPropIsCovered(): void {
+    $seen = [];
+    foreach (ComponentCatalog::placeableNames() as $name) {
+      foreach (ComponentCatalog::placeable($name)['props'] ?? [] as $prop => $hint) {
+        $seen[] = $prop;
+        // Row shapes, e.g. "[{title,body,cta_label,cta_url}]".
+        if (str_starts_with((string) $hint, '[') && preg_match('/\{([^}]*)\}/', (string) $hint, $m)) {
+          foreach (explode(',', $m[1]) as $field) {
+            $seen[] = trim($field);
+          }
+        }
+      }
+    }
+    foreach (array_unique($seen) as $name) {
+      if (str_ends_with($name, '_url') || $name === 'url') {
+        $this->assertTrue(
+          ComponentCatalog::isLinkProp($name),
+          sprintf('"%s" looks like a link target but is missing from LINK_PROPS (the studio would render a bare text input and the renderer would not resolve a page token).', $name),
+        );
+      }
     }
   }
 
