@@ -46,12 +46,13 @@ On upgrade converge runs `drush config:import`, so a release ships config change
 `hook_post_update` for each. This is safe because **`config_ignore`** fences off the
 config objects a site owns — `cim` never imports over them:
 
-| Ignored config object              | What the site owns                          |
-| ---------------------------------- | ------------------------------------------- |
-| `system.site`                      | site name, slogan, mail, front page         |
-| `aincient_core.model_roles`        | role → provider:model bindings + default    |
-| `ai.settings`                      | operation-type → model fallbacks            |
-| `aincient_mail.settings`           | transport + sender identity                 |
+| Ignored config object                                            | What the site owns                       |
+| ---------------------------------------------------------------- | ---------------------------------------- |
+| `system.site`                                                      | site name, slogan, mail, front page      |
+| `aincient_core.model_roles`                                        | role → provider:model bindings + default |
+| `aincient_pages.brand` / `.chrome` / `.identity`                   | the site's look, chrome and identity     |
+| `aincient_mail.settings`                                           | transport + sender identity              |
+| `language.entity.*` / `language.negotiation`                       | which languages exist, and how they route |
 
 (See [`config/sync/config_ignore.settings.yml`](../config/sync/config_ignore.settings.yml).
 Model rates are **not** on this list: `aincient_core.pricing`
@@ -66,7 +67,7 @@ removed there is no per-provider config object left to fence off.)
 Two consequences worth knowing:
 
 - **The ignore is bidirectional** (config_ignore `simple` mode). `drush cex` won't
-  capture your local edits to these four objects into `config/sync` either, so a
+  capture your local edits to these objects into `config/sync` either, so a
   developer's site name / model picks can never leak into the distribution. To change
   a *shipped default* (what fresh installs get), **hand-edit the YAML** in
   `config/sync` — `cex` won't do it for you.
@@ -89,8 +90,10 @@ module still enabled in its database and nothing left to uninstall it with. The 
 2. **A later release** — `composer remove` it, once every install has converged past
    step 1.
 
-This is why `composer.json` still requires the `ai_provider_*` modules and
-`flowdrop_ai_provider` that nothing loads: they are waiting out step 2.
+This is why `composer.json` still requires `ai` itself, the `ai_provider_*` modules,
+`ai_agents`, `ai_observability`, `gemini_provider`, `modeler_api` and
+`flowdrop_ai_provider` — none of which anything loads: they are waiting out step 2, and
+sit under `extra._uninstalled-pending-removal` so the list is not folklore.
 
 ## One-click upgrade: the updater sidecar
 

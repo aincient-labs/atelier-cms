@@ -23,6 +23,9 @@ public snapshot published from the development source.
   you were creating.
 - **Clearer field labels in the Globals editor**, and a pager that keeps its shape at both ends
   of a long list.
+- **Maintenance:** the appliance self-test was still checking for AI modules Atelier no longer
+  uses, which failed the build for the release above. Installing from the bundled recipe no
+  longer enables one of them either, so both install paths now produce the same site.
 
 ## 2026-08-01
 - **New: link a button to a page by picking it.** A call-to-action can now point at a page you

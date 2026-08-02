@@ -12,14 +12,16 @@ install:
   - token
   - pathauto
   - metatag
-  # The AI stack. No provider modules: every provider Atelier offers is served by
-  # an adapter of our own (aincient_core Inference/), so there is nothing to
-  # install per vendor — the onboarding wizard's picker is the adapter set, and a
-  # credential is all a provider needs. `ai` itself stays: the role layer projects
-  # its bindings onto `ai.settings`, and writing that config needs the module that
-  # owns its schema (see aincient_core.info.yml).
+  # The AI stack, and it is one module. Every provider Atelier offers is served by
+  # an adapter of our own (aincient_core Inference/) over symfony/ai, so there is
+  # nothing to install per vendor — the onboarding wizard's picker IS the adapter
+  # set, and a credential is all a provider needs. `ai` itself is gone too: the one
+  # reason it outlived the provider modules — the role layer projecting bindings
+  # onto `ai.settings` — was a write with no reader, so the projection now stops at
+  # flowdrop_chat and the module was uninstalled. Leaving it listed here was the
+  # last way `ai` could come back, on the recipe branch only, and diverge this
+  # install path from the `--existing-config` one the appliance uses.
   - key
-  - ai
   # The AIncient operator console (deps pull in node + aincient_core).
   - aincient_core
   - aincient_chat

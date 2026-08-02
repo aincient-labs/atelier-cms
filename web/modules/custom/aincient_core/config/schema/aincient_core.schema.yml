@@ -127,3 +127,23 @@ aincient_core.pricing:
           note:
             type: string
             label: 'Anything a reader needs to know to judge the rate'
+
+# A provider's credential POINTER — never the credential itself.
+#
+# PlatformRegistry::credentialFor() resolves a provider's secret by loading the
+# Key entity this object names, falling back to the `aincient.<id>_api_key` State
+# convention when there is no pointer (which is the ordinary wizard-connected
+# case — ProviderConnector writes State and lets the convention do the work).
+#
+# The pointer exists for the deployment that must NOT put a secret in the
+# database: name a Key entity backed by the `env` provider and the value is read
+# out of the container environment on every request, so it never reaches State,
+# never reaches a `drush sql:dump`, and never reaches a published image. That is
+# exactly what the Drupal Forge demo does with its per-container trial key.
+aincient.provider.*:
+  type: config_object
+  label: 'Atelier provider credential pointer'
+  mapping:
+    api_key:
+      type: string
+      label: 'The key.key entity id holding this provider''s secret'

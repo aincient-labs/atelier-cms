@@ -75,8 +75,16 @@ for _ in $(seq 1 60); do
 done
 
 echo "== assert: install-from-config brought up the stack =="
-for m in aincient_core aincient_chat aincient_assistant_ui ai ai_provider_anthropic key; do
+for m in aincient_core aincient_chat aincient_assistant_ui key; do
   if drush pm:list --status=enabled --field=name 2>/dev/null | grep -qx "$m"; then ok "module enabled: $m"; else bad "module NOT enabled: $m"; fi
+done
+# The inverse assertion, and it is the point of the two above it being shorter:
+# inference runs on our own adapters over symfony/ai, so `ai` and the per-vendor
+# `ai_provider_*` modules must NOT be on an installed site. They are still in
+# composer.json for the uninstall window, which is exactly why a stray dependency
+# or an `.info.yml` line could quietly switch one back on.
+for m in ai ai_provider_anthropic; do
+  if drush pm:list --status=enabled --field=name 2>/dev/null | grep -qx "$m"; then bad "module unexpectedly enabled: $m"; else ok "module absent as intended: $m"; fi
 done
 if drush php:eval 'print \Drupal::entityTypeManager()->getStorage("user_role")->load("content_editor")->hasPermission("use aincient operator console") ? "Y" : "N";' 2>/dev/null | grep -q Y; then
   ok "console permission granted to content_editor"; else bad "console permission NOT granted"; fi
