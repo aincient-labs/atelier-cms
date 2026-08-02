@@ -56,7 +56,15 @@
         "drupal/simple_sitemap": "^4.2.3",
         "drupal/tome": "^1.16",
         "drush/drush": "^13.7.6",
-        "league/commonmark": "^2.8.3"
+        "league/commonmark": "^2.8.3",
+        "symfony/ai-anthropic-platform": "^0.12",
+        "symfony/ai-deep-seek-platform": "^0.12",
+        "symfony/ai-gemini-platform": "^0.12",
+        "symfony/ai-generic-platform": "^0.12",
+        "symfony/ai-mistral-platform": "^0.12",
+        "symfony/ai-ollama-platform": "^0.12",
+        "symfony/ai-open-ai-platform": "^0.12",
+        "symfony/ai-platform": "^0.12"
     },
     "conflict": {
         "drupal/drupal": "*"
@@ -91,6 +99,22 @@
         }
     },
     "extra": {
+        "_uninstalled-pending-removal": {
+            "_why": "Packages still in require whose Drupal module is UNINSTALLED. They stay on disk for one release because drush pm:uninstall needs the module's hook_uninstall and schema to drop its tables cleanly — dropping the package first deletes the code before the uninstall can use it. Remove from require in the NEXT release, not this one. A bare requirement for a module nobody installs is otherwise indistinguishable from an oversight.",
+            "drupal/ai_metering": "Superseded by aincient_core's own aincient_ai_usage table, UsageLog writer and /admin/reports/aincient/usage. Quotas were dropped outright.",
+            "drupal/ai_provider_anthropic": "Inference runs on aincient_core's own adapters over symfony/ai bridges (Inference/Adapter/AnthropicAdapter). Connecting a provider is storing a credential, not installing a module.",
+            "drupal/ai_provider_litellm": "Never installed; superseded by Inference/Adapter/OpenAiCompatibleAdapter (a LiteLLM proxy is just an OpenAI-compatible base URL).",
+            "drupal/ai_provider_mistral": "Superseded by Inference/Adapter/OpenAiCompatibleAdapter.",
+            "drupal/ai_provider_nanobanana": "Superseded by Inference/Adapter/NanoBananaAdapter over symfony/ai-gemini-platform.",
+            "drupal/ai_provider_ollama": "Superseded by Inference/Adapter/OllamaAdapter over symfony/ai-ollama-platform. Ollama IS supported again — through our own adapter, not this module.",
+            "drupal/ai_provider_openai": "Superseded by Inference/Adapter/OpenAiCompatibleAdapter.",
+            "drupal/ai_provider_openrouter": "Superseded by Inference/Adapter/OpenAiCompatibleAdapter.",
+            "drupal/flowdrop_ai_provider": "Uninstalled with its AI Assistant (flowdrop_chat); it reasoned through the removed drupal/ai provider plugins. Superseded by aincient_core Inference/SymfonyAiReasoner + aincient_flows SimpleChat (the flowdrop_ai_provider_simple_chat node type keeps its id). No live code references it — only docblock prose. Still pinned 2.x-dev, which is what holds minimum-stability: dev, so dropping it should retire that gate. It also requires drupal/ai_agents, so remove both together or composer pulls ai_agents back transitively.",
+            "drupal/ai": "The framework itself, now uninstalled too. Nothing in web/modules/custom references a Drupal\\ai class, the ai.provider service or a plugin.manager.ai_*. Its last hold was aincient_core/aincient_chat declaring it for one boolean — 'is a chat provider pinned?' — which now asks the role layer (ModelRoleResolver::binding) instead of ai.settings:default_providers.chat. Removing the package also retires patches/ai-tools-null-parameters.patch, which patches reasoning code nothing runs.",
+            "drupal/ai_agents": "Uninstalled with ai. Nothing referenced it; its four config entities were the module's own shipped defaults. NOTE: drupal/flowdrop_ai_provider requires it, so remove both in the same commit or composer pulls it back transitively.",
+            "drupal/modeler_api": "Not a direct requirement — listed here because it was ai_agents' transitive dependency and was uninstalled alongside it. It leaves with ai_agents.",
+            "drupal/gemini_provider": "Uninstalled. Its provider plugin was never loaded after inference moved to Inference/Adapter/GeminiAdapter; update_11009 rescued its credential pointer (gemini_provider.settings was the pointer for BOTH gemini and nanobanana) onto the durable State keys first. Removing the package also retires patches/gemini-return-tool-calls.patch, which patches that unused plugin."
+        },
         "enable-patching": true,
         "composer-exit-on-patch-failure": true,
         "patches": {

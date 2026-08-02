@@ -13,6 +13,7 @@ use Drupal\aincient_chat\Chat\StreamRelay;
 use Drupal\aincient_chat\Chat\ThreadNamer;
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
 use Drupal\aincient_chat\Event\ChatEvent;
+use Drupal\aincient_core\ModelRoleResolver;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,6 +45,7 @@ final class ChatController extends ControllerBase {
     private readonly StreamRelay $streamRelay,
     private readonly StateInterface $state,
     private readonly ThreadNamer $threadNamer,
+    private readonly ModelRoleResolver $roleResolver,
   ) {}
 
   /**
@@ -57,6 +59,7 @@ final class ChatController extends ControllerBase {
       $container->get('aincient_chat.stream_relay'),
       $container->get('state'),
       $container->get('aincient_chat.thread_namer'),
+      $container->get('aincient_core.model_role_resolver'),
     );
   }
 
@@ -610,15 +613,22 @@ final class ChatController extends ControllerBase {
    * Whether the console should force the first-run onboarding flow.
    *
    * True only on a genuinely unconfigured site: onboarding never completed AND
-   * no default chat provider pinned. Cheap, core-only check (no AI / module dep)
-   * and provider-neutral — it reads `ai.settings`, never a vendor-specific key.
+   * no model bound to the default role. Cheap (one config read) and
+   * provider-neutral — it names a role, never a vendor.
+   *
+   * The second clause is what keeps the console from nagging an operator who
+   * configured the site by another route — the models form at
+   * `/admin/config/aincient/models`, or `drush aincient:model-*` — without ever
+   * opening the wizard. It used to ask `ai.settings:default_providers.chat`,
+   * which answered the same question only because the role layer wrote that
+   * config; asking the role layer directly drops a dependency on drupal/ai and
+   * removes the indirection between the binding and the question about it.
    */
   private function needsOnboarding(): bool {
     if ((bool) $this->state->get(self::ONBOARDING_COMPLETED, FALSE)) {
       return FALSE;
     }
-    $default = $this->config('ai.settings')->get('default_providers.chat');
-    return empty($default['provider_id']);
+    return $this->roleResolver->binding($this->roleResolver->defaultRole()) === NULL;
   }
 
   /**

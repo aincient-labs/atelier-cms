@@ -146,9 +146,9 @@
   text-decoration: none;
 }
 
-/* A primary-styled LINK sitting INSIDE a form (e.g. ai_metering's "Sync now
-   from LiteLLM", which ships `button button--primary` in its render array) is a
-   secondary ACTION, not the page's one promise — the cinnabar fill belongs to
+/* A primary-styled LINK sitting INSIDE a form (contrib settings forms do this —
+   a "fetch the data now" link shipped with `button button--primary` in its
+   render array) is a secondary ACTION, not the page's one promise — the cinnabar fill belongs to
    the real submit ("Save configuration"). Demote it to the raised-paper voice
    so a screen never carries two loud fills (Law 07 "navigation is links"; Law
    08 "one primary per view"). Scoped to `form` so genuine action links stay
@@ -365,8 +365,8 @@
 .sb-content details[open] > summary::before { transform: rotate(45deg); }
 .sb-content details > .details-wrapper { padding: 0.25rem 1.25rem 1rem; }
 /* Core renders a details body two ways: wrapped in a .details-wrapper (Claro)
-   or as BARE direct children of <details> (e.g. ai_metering's settings form,
-   which builds its panels by hand). Without a wrapper the body items fall to
+   or as BARE direct children of <details> (contrib settings forms that build
+   their panels by hand do this). Without a wrapper the body items fall to
    zero padding and hang off the card's left edge + floor — give them the same
    inset the wrapper carries. */
 .sb-content details > *:not(summary):not(.details-wrapper) { margin-inline: 1.25rem; }
@@ -1071,22 +1071,76 @@
 
 /* ================================================================== pager === */
 
+/* ONE BOX PER ITEM, DRAWN ON THE CHILD — NOT TWO.
+   This used to put the padding+border on `.pager__item a` AND on
+   `.pager__item.is-active`, which is the <li> WRAPPING that anchor. On every
+   page but one that is fine; on the current page the two rules stack, so the
+   active number came out as a bordered box inside a bordered box, a couple of
+   pixels taller than its neighbours and sitting off the shared baseline. The
+   box belongs to the thing you click, so every item draws it on its child
+   (<a> when it is live, <span> when it is disabled) and the <li> stays bare.
+
+   `pager.html.twig` (overridden here) keeps previous/next on screen at the
+   ends of the range instead of dropping them, so the strip does not reflow
+   under the cursor; `--disabled` is what those two look like. */
+
 .sb-content .pager__items {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.25rem;
   padding: 0;
   justify-content: center;
 }
-.sb-content .pager__item a,
-.sb-content .pager__item.is-active {
-  display: inline-block;
-  padding: 0.375rem 0.625rem;
-  border-radius: var(--ain-radius);
-  border: 1px solid var(--ain-border);
+.sb-content .pager__item {
+  display: flex;
 }
-.sb-content .pager__item.is-active { background: var(--ain-surface-2); font-weight: 600; }
+.sb-content .pager__item > a,
+.sb-content .pager__item > span {
+  display: block;
+  min-width: 2.25rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--ain-border);
+  border-radius: var(--ain-radius);
+  color: var(--ain-text-dim);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+}
+.sb-content .pager__item > a:hover,
+.sb-content .pager__item > a:focus-visible {
+  border-color: var(--ain-border-strong);
+  background: var(--ain-surface-2);
+  color: var(--ain-text);
+}
+
+/* The current page is a statement of where you are, not a call to click — it
+   reads as a filled, unlinked-looking chip. No pigment: Law 01 caps cinnabar
+   at two elements per screen and the usage report has already spent them. */
+.sb-content .pager__item.is-active > a {
+  border-color: var(--ain-border-strong);
+  background: var(--ain-surface-2);
+  color: var(--ain-text);
+  font-weight: 600;
+}
+
+/* Present, aligned, and plainly unavailable. Kept dim rather than removed so
+   the row of controls has the same width on page 1 as in the middle. */
+.sb-content .pager__item--disabled > span {
+  border-color: color-mix(in oklch, var(--ain-border) 55%, transparent);
+  color: var(--ain-text-faint);
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* The gap marker is not a control: no box, just the space it stands for. */
+.sb-content .pager__item--ellipsis {
+  align-items: center;
+  padding: 0.375rem 0.25rem;
+  color: var(--ain-text-faint);
+}
 
 /* ================================================================ dialogs === */
 /* Modal panels take the 14px radius; the overlay is a shadow tint, never a

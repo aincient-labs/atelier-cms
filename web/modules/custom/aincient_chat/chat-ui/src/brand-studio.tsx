@@ -730,7 +730,7 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
   );
 
   return (
-    <div className="ain-studio__rail">
+    <div className="ain-studio__rail" data-testid="studio-rail" data-studio="design_system">
       {/* Primary actions live in the top bar (so they survive the rail
           collapsing to a sheet on narrow screens). The rail head keeps the
           title and a sheet-dismiss ✕ that's only shown when the rail is a

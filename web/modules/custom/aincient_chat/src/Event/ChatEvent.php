@@ -78,11 +78,11 @@ final class ChatEvent {
   /**
    * Token usage + estimated cost for one metered AI call within the turn.
    *
-   * Relayed from ai_metering's per-call record (input/output/cached tokens and
-   * its computed USD cost). A turn can emit several of these (operator step +
-   * any sub-agent calls); the console sums them per turn and per session. Cost
-   * is NULL when ai_metering has no pricing for the model — the console then
-   * shows tokens only.
+   * Relayed from the row Atelier's usage log just wrote (input/output/cached
+   * tokens and the USD cost recorded with them). A turn can emit several of
+   * these (operator step + any sub-agent calls); the console sums them per turn
+   * and per session. Cost is NULL when `aincient_core.pricing` has no rate for
+   * the model — the console then shows tokens only.
    *
    * @param int $input
    *   Input (prompt) tokens.

@@ -25,6 +25,11 @@ use Symfony\Component\HttpFoundation\Request;
  * - {@see self::save()} validates again and, on success, persists: it stores
  *   the credential, pins the default chat provider, and binds every model role.
  *
+ * Both take an optional `endpoint` alongside the credential, for the providers
+ * whose credential is a key AND a base URL (an OpenAI-compatible endpoint). It
+ * is a separate field rather than a second meaning for `credential` because the
+ * two are stored separately and only one of them is a secret.
+ *
  * `save()` accepts `{ "provider": <id>, "credential": <key|url>, "model"?: …,
  * "roles"?: { reasoning|task|fast: <model id> } }` (the legacy in-chat panel
  * posts `{ "api_key": …, "model"? }` — still accepted). An invalid credential
@@ -72,7 +77,7 @@ final class OnboardingController extends ControllerBase {
       return new JsonResponse(['ok' => FALSE, 'error' => 'Choose a provider.'], 400);
     }
 
-    $result = $this->connector->validate($provider, $credential);
+    $result = $this->connector->validate($provider, $credential, trim((string) ($data['endpoint'] ?? '')));
     if (!$result['ok']) {
       return new JsonResponse(['ok' => FALSE, 'error' => $result['message']], 422);
     }
@@ -105,7 +110,11 @@ final class OnboardingController extends ControllerBase {
       return new JsonResponse(['ok' => FALSE, 'error' => 'Choose a provider.'], 400);
     }
 
-    $result = $this->connector->connectAndStore($provider, $credential);
+    // The second field, sent only by the `api_key_endpoint` shape. Absent for
+    // every other provider, and ignored by the connector when it arrives anyway.
+    $endpoint = trim((string) ($data['endpoint'] ?? ''));
+
+    $result = $this->connector->connectAndStore($provider, $credential, $endpoint);
     if (!$result['ok']) {
       return new JsonResponse(['ok' => FALSE, 'error' => $result['message']], 422);
     }

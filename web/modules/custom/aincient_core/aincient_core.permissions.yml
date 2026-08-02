@@ -7,3 +7,14 @@
   title: 'Approve AIncient templates'
   description: 'Approve AI-generated SDC templates for publication (the HITL gate).'
   restrict access: true
+
+# Atelier's own, deliberately NOT contrib's `view ai metering dashboard`. The
+# usage dashboard is ours now; reusing contrib's permission would make every
+# site's access control depend on a module we intend to drop, and dropping it
+# would then silently open or close the page. `aincient_core_update_11006`
+# grants this to every role that already held contrib's, so no existing site
+# loses the report on upgrade.
+'view aincient usage':
+  title: 'View the Atelier AI usage report'
+  description: 'See what AI calls this site has made and what they cost, broken down by call site, model and editor — and export the same rows. Reveals what every editor has been doing with the assistant.'
+  restrict access: true

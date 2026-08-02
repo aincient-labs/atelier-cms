@@ -95,30 +95,48 @@ final class ModelRoles {
   }
 
   /**
-   * The drupal/ai operation-type defaults each role projects onto.
+   * Every role an operator picks a model for, in the order they are shown.
    *
-   * Mirrors how drupal/ai already splits work: plain `chat` for everyday turns,
-   * the `complex`/`structured`/`tools` variants for harder calls. `fast` has no
-   * native operation type yet, so it carries no targets in v1 — it's bound and
-   * resolvable, but only consumed once a node can request a role explicitly.
+   * The chat tiers ({@see self::definitions()}) plus the two capability roles
+   * that live outside that set — Vision and Image. This is a strictly larger
+   * set than `definitions()` and exists for a different reason: `definitions()`
+   * is the *chat-tier taxonomy* the resolver projects onto operation types,
+   * while this is the *picker list* — the five rows an operator recognises from
+   * the onboarding "Set the pace" screen.
    *
-   * @return array<string, list<string>>
+   * TWO SURFACES ITERATE IT, and they must show the same five rows in the same
+   * order with the same words: the wizard (`_aincient_onboarding_role_taxonomy()`)
+   * and the rate sheet ({@see \Drupal\aincient_core\Controller\PricingController}).
+   * The rate sheet's entire value is being comparable at a glance against how the
+   * site was configured, and a page whose rows drift from the wizard's — a
+   * renamed role, a reordered pair — silently stops being that comparison while
+   * still looking like one. So the list lives here, in the product vocabulary,
+   * once.
+   *
+   * `pool` (which model pool the picker draws from) and `optional` (never blocks
+   * finishing onboarding) are product facts about the role, not wizard chrome,
+   * which is why they travel with the definition rather than being re-derived.
+   *
+   * @return array<string, array{label: string, description: string, pool: string, optional: bool}>
    */
-  public static function operationTypeMap(): array {
-    return [
-      self::TASK => ['chat', 'chat_with_image_vision'],
-      self::REASONING => [
-        'chat_with_complex_json',
-        'chat_with_structured_response',
-        'chat_with_tools',
-      ],
-      self::FAST => [],
-      // The image role drives both generation modes. When bound, {@see
-      // ModelRoleResolver::project()} writes it onto BOTH operation-type
-      // defaults so any op-default lookup also lands on the image provider —
-      // but the Media studio always resolves it through the explicit binding.
-      self::IMAGE => ['text_to_image', 'image_to_image'],
+  public static function pickerDefinitions(): array {
+    $roles = [];
+    foreach (self::definitions() as $id => $def) {
+      $roles[$id] = $def + ['pool' => 'chat', 'optional' => FALSE];
+    }
+    $roles[self::VISION] = [
+      'label' => 'Image description',
+      'description' => 'Reads an image to write alt text and captions. Pick a vision-capable chat model (Gemini, GPT-4o, Claude). Optional — falls back to your task model.',
+      'pool' => 'chat',
+      'optional' => TRUE,
     ];
+    $roles[self::IMAGE] = [
+      'label' => 'Image generation',
+      'description' => 'Generates and edits images in the Media studio (text→image, image→image). Needs an image provider such as Google Gemini / Nano Banana.',
+      'pool' => 'image',
+      'optional' => TRUE,
+    ];
+    return $roles;
   }
 
   /**
@@ -186,10 +204,27 @@ final class ModelRoles {
         self::TASK => ['sonnet'],
         self::FAST => ['haiku'],
       ],
+      // Refreshed 2026-08-02, when `openai` became connectable again and these
+      // needles therefore became REACHABLE. They had named the GPT-4/o-series
+      // generation OpenAI retired on 2026-07-25 — harmless while no adapter could
+      // serve the provider, and a fallback that matches nothing the moment one
+      // can. The curated document (`models.yml`) is still tried first; this is
+      // what catches an account whose catalogue names none of its candidates.
       'openai' => [
-        self::REASONING => ['o3', 'o1', 'gpt-4o'],
-        self::TASK => ['gpt-4o', 'gpt-4.1', 'gpt-4-'],
-        self::FAST => ['gpt-4o-mini', 'mini', 'gpt-3.5'],
+        self::REASONING => ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6', 'gpt-5'],
+        self::TASK => ['gpt-5.6-luna', 'gpt-5.6', 'gpt-5'],
+        self::FAST => ['nano', 'mini', 'luna'],
+      ],
+      // Mistral had no entry at all until it became connectable. `magistral` is
+      // Mistral's reasoning family and a distinct id rather than a `mistral-*`
+      // match, so it needs its own needle; `ministral` is the small/cheap line and
+      // must be listed before `mistral-small` or the longer family wins the FAST
+      // role. Medium is the model the curated document actually backs, so it is
+      // the safe landing place for both of the thinking roles.
+      'mistral' => [
+        self::REASONING => ['magistral', 'mistral-large', 'mistral-medium'],
+        self::TASK => ['mistral-medium', 'mistral-small'],
+        self::FAST => ['ministral', 'mistral-small'],
       ],
       // OpenRouter aggregates many vendors; ids are namespaced (e.g.
       // "anthropic/claude-opus-4", "openai/gpt-4o-mini"), so the needles favour

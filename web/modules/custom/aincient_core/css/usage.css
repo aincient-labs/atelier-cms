@@ -1,0 +1,284 @@
+/**
+ * Atelier layer over its own usage dashboard
+ * (aincient_core, /admin/reports/aincient/usage).
+ *
+ * The Studio Backend theme already styles admin pages, and everything it can
+ * style generically is left to it. This file covers only what it cannot know
+ * about:
+ *
+ *   1. The totals — three figures that have to be readable from across a desk,
+ *      because they are the answer the page was opened for.
+ *   2. The call-site column — a label, the raw tag, one line of what it is, and
+ *      a proportion bar. The bar is the reason there is no chart library here:
+ *      contrib draws its charts with Chart.js from a CDN, which an offline
+ *      appliance cannot fetch, and a ranked bar is what those charts were being
+ *      used to say anyway.
+ *   3. The two states that are not numbers — a recorded $0.00 that means "no
+ *      rate" and a call-site tag this release does not recognise. Neither may
+ *      look like an ordinary row, and the first must never look like a cheap
+ *      one.
+ *
+ * The `--ain-*` tokens come from the Studio Backend theme's :root
+ * (studio-backend.css), so no extra token dependency. Everything is scoped to
+ * `.ain-usage`, set by the controller.
+ */
+
+.ain-usage .ain-usage__intro,
+.ain-usage .ain-usage__note,
+.ain-usage .ain-usage__exports {
+  max-width: 46rem;
+  color: var(--ain-text-dim);
+}
+
+.ain-usage .ain-usage__note {
+  font-size: 0.8125rem;
+}
+
+.ain-usage .ain-usage__heading {
+  margin-block: 2rem 0.5rem;
+  font-size: 1.05rem;
+}
+
+/* ===== The period selector ===== */
+/* Three links, no form and no script. The active one is marked in the one
+   pigment rather than merely bolded — which period is on screen changes every
+   number below it, so it cannot be a subtle distinction. */
+.ain-usage .ain-usage__periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+
+.ain-usage .ain-usage__period {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--ain-border);
+  border-radius: var(--ain-radius);
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.ain-usage .ain-usage__period.is-active {
+  border-color: var(--ain-accent);
+  background: var(--ain-surface-2);
+  color: var(--ain-accent);
+  font-weight: 600;
+}
+
+/* ===== 1. The totals ===== */
+.ain-usage .ain-usage__totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ain-usage .ain-usage__totals li {
+  flex: 1 1 10rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--ain-border);
+  border-radius: var(--ain-radius);
+  background: var(--ain-surface-2);
+  list-style: none;
+}
+
+.ain-usage .ain-usage__stat-label {
+  display: block;
+  color: var(--ain-text-faint);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ain-usage .ain-usage__stat-value {
+  display: block;
+  margin-block-start: 0.2rem;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ===== The tables ===== */
+/* Numeric columns are everything after the first; tabular figures throughout.
+
+   A REAL TABLE BOX, NOT A BLOCK. This carried `display: block; overflow-x: auto`
+   to give each table its own scroller on a narrow viewport. The cost was
+   invisible until the page was looked at: `display: block` on a <table> stops it
+   being a table box at all, so the rows re-form as an anonymous inner table that
+   SHRINK-WRAPS — every table sat at its content width inside a full-width card,
+   leaving a third of each card empty and the two tables' right edges at
+   different places. The horizontal-scroll problem was hypothetical (four columns
+   on the summaries); the ragged layout was on screen. `width: 100%` on a genuine
+   table box fills the card and lets the first column absorb the slack. */
+.ain-usage .ain-usage__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ain-usage .ain-usage__table caption {
+  caption-side: bottom;
+  padding-block-start: 0.5rem;
+  color: var(--ain-text-faint);
+  font-size: 0.8125rem;
+  text-align: start;
+}
+
+.ain-usage .ain-usage__table th,
+.ain-usage .ain-usage__table td {
+  padding: 0.55rem 0.75rem;
+  border-block-end: 1px solid var(--ain-border);
+  vertical-align: top;
+  text-align: start;
+}
+
+.ain-usage .ain-usage__table th {
+  color: var(--ain-text-dim);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ain-usage .ain-usage__table th:not(:first-child),
+.ain-usage .ain-usage__table td:not(:first-child) {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* The log table leads with several text columns, not one, so the numeric
+   alignment above has to start later. */
+.ain-usage .ain-usage__table--log th:nth-child(-n + 5),
+.ain-usage .ain-usage__table--log td:nth-child(-n + 5) {
+  text-align: start;
+}
+
+/* The timestamp is the first column, so it misses the nowrap the numeric columns
+   get — and "2 Aug 2026 - 04:51" broke over two lines in every one of fifty
+   rows, doubling the height of the whole page to save about forty pixels of
+   width. */
+.ain-usage .ain-usage__table--log td:first-child {
+  white-space: nowrap;
+}
+
+/* A machine string rendered as one, so a typo in `claude-haiku-4-5-20251001`
+   is visible rather than smoothed over. */
+.ain-usage .ain-usage__id {
+  font-family: var(--ain-mono);
+  font-size: 0.8125rem;
+}
+
+/* ===== 2. The call-site column ===== */
+.ain-usage .ain-usage__table--sites td:first-child {
+  min-width: 20rem;
+}
+
+.ain-usage .ain-usage__site {
+  display: block;
+  font-weight: 600;
+}
+
+/* The raw tag under the label. Ours is the label; the tag is what a grep of the
+   code and a filter on the export both key on, so it is always shown. */
+.ain-usage .ain-usage__tag {
+  display: block;
+  color: var(--ain-text-faint);
+  font-family: var(--ain-mono);
+  font-size: 0.75rem;
+}
+
+.ain-usage .ain-usage__site-desc {
+  display: block;
+  max-width: 26rem;
+  margin-block-start: 0.2rem;
+  color: var(--ain-text-faint);
+  font-size: 0.8125rem;
+}
+
+/* The bar. Scaled by tokens, never by spend — see CallSites::decorate(): a bar
+   drawn on money would render an unpriced model, the biggest consumer on the
+   page, as an empty sliver.
+
+   DRAWN IN INK, NOT IN THE PIGMENT. It used to be cinnabar, which broke Law 01
+   twice over: the pigment is allowed on at most two elements per screen, and it
+   is never allowed on decoration — "rules, stripes, glows" is the law's own
+   list, and a proportion stripe is exactly that. A quantity is not a state and
+   has nothing to announce; rendered in muted ink it still ranks the rows, which
+   is the only job it has. */
+.ain-usage .ain-usage__bar {
+  display: block;
+  height: 6px;
+  max-width: 26rem;
+  margin-block-start: 0.5rem;
+  border-radius: 3px;
+  background: var(--ain-surface-2);
+}
+
+.ain-usage .ain-usage__bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 3px;
+  background: var(--ain-border-strong);
+}
+
+/* ===== 3. The two states that are not numbers ===== */
+/* STATE READS IN THE EARTH SET, NOT IN THE PIGMENT (Law 02, brand.md §3.4).
+   Everything below used to be cinnabar, which put five accented elements on one
+   screen against a limit of two — and worse, it spent the brand's one pigment on
+   a warning, leaving the page no louder colour to escalate to. Ochre is the
+   muted "needs attention" tint: quieter than cinnabar, and still the only warm
+   thing in a column of ink. */
+
+/* A recorded $0.00 with real tokens is a fault, and a quiet one — the row looks
+   like every other row. Tint the row, because the consequence belongs to the
+   model, not to the cost cell alone. */
+.ain-usage tr.ain-usage__row--unpriced > td {
+  background: var(--ain-surface-2);
+}
+
+/* Sits under the model id in the first column, so it reads as a note on the
+   model and cannot widen a numeric cell. Left-aligned with the id above it. */
+.ain-usage .ain-usage__flag {
+  display: block;
+  max-width: 30rem;
+  margin-block-start: 0.3rem;
+  color: var(--ain-accent-2);
+  font-family: var(--ain-font);
+  font-size: 0.8125rem;
+  text-align: start;
+  white-space: normal;
+}
+
+/* A tag this release does not write. Not an error and not hidden: it is either
+   a call site we forgot to name or one we did not know was running, and both are
+   worth a mark. */
+.ain-usage tr.ain-usage__row--unknown .ain-usage__tag {
+  color: var(--ain-accent-2);
+}
+
+/* ===== The under-report notice ===== */
+/* A tinted edge directly under the totals it invalidates, not a filled banner at
+   the top of the page — a banner above the fold is a banner people learn to
+   scroll past, and this is the one sentence on the page that must not be. The
+   edge is ochre for the reason above: it reports that a number is wrong, which
+   is a state, and states do not wear the brand. */
+.ain-usage .ain-usage__unpriced {
+  margin-block: 1rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 3px solid var(--ain-accent-2);
+  border-radius: 0 var(--ain-radius) var(--ain-radius) 0;
+  background: var(--ain-surface-2);
+}
+
+.ain-usage .ain-usage__unpriced .form-item,
+.ain-usage .ain-usage__unpriced ul {
+  margin-block: 0.25rem 0;
+}
+
+.ain-usage .ain-usage__unpriced li {
+  font-family: var(--ain-mono);
+  font-size: 0.8125rem;
+}

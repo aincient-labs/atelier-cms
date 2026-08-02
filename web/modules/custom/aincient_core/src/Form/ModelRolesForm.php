@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Form;
 
+use Drupal\aincient_core\Inference\ProviderInventory;
+use Drupal\aincient_core\Usage\UnpricedNotice;
 use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRoleResolver;
 use Drupal\aincient_core\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
-use Drupal\ai\AiProviderPluginManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -21,44 +21,34 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Console settings for the AIncient model roles.
  *
  * Binds each semantic role ({@see ModelRoles}) to a concrete `provider:model`
- * sourced from the installed, usable chat providers, then projects the bindings
- * onto drupal/ai's operation-type defaults so stock FlowDrop inherits them
- * ({@see ModelRoleResolver::project()}). This is the in-Drupal twin of the
+ * sourced from the providers this site can actually serve, then projects the
+ * bindings onto drupal/ai's operation-type defaults so stock FlowDrop inherits
+ * them ({@see ModelRoleResolver::project()}). This is the in-Drupal twin of the
  * onboarding pickers and the `drush aincient:model-set` command — all three
  * write the same source of truth.
+ *
+ * THE POOLS ARE NOW HONEST, which changed this form in two visible ways. It used
+ * to list every installed `drupal/ai` provider, including four this product has
+ * no adapter for, so an operator could bind `mistral` and get a
+ * ProviderConfigurationException on the next turn. And the image pool came from
+ * an operation-type string, so it filled up with Anthropic's chat models. Both
+ * are gone ({@see ProviderInventory}). What replaces them is the third case:
+ * a binding SAVED before this change can name a provider that is no longer
+ * servable, and that must never disappear quietly — {@see self::orphanedRoles()}
+ * keeps it selectable and says what to do about it.
  */
 final class ModelRolesForm extends ConfigFormBase {
 
   private const SETTINGS = 'aincient_core.model_roles';
 
-  /**
-   * Providers whose models are only offered once the operator curates them.
-   *
-   * Aggregators like OpenRouter proxy hundreds of upstream models and return
-   * the *entire* catalog from getConfiguredModels() — and, worse, return that
-   * same text-model catalog for `text_to_image` (they don't filter by modality),
-   * so an uncurated OpenRouter dumps ~340 non-image models into the image pool.
-   * We therefore hide such a provider from the role selects until its curation
-   * shortlist ({@see self::isCurated()}) is non-empty. Keyed by provider id →
-   * the config that holds the shortlist + the route to curate it.
-   *
-   * @var array<string, array{config: string, key: string, route: string}>
-   */
-  private const CURATED_AGGREGATORS = [
-    'openrouter' => [
-      'config' => 'ai_provider_openrouter.settings',
-      'key' => 'enabled_models',
-      'route' => 'ai_provider_openrouter.settings',
-    ],
-  ];
-
   public function __construct(
     ConfigFactoryInterface $config_factory,
     TypedConfigManagerInterface $typed_config_manager,
     private readonly ModelRoleResolver $resolver,
-    private readonly AiProviderPluginManager $providerManager,
+    private readonly ProviderInventory $providerManager,
     private readonly ModelPresetResolver $presets,
     private readonly RecommendationSource $recommendations,
+    private readonly UnpricedNotice $unpricedNotice,
   ) {
     parent::__construct($config_factory, $typed_config_manager);
   }
@@ -71,9 +61,10 @@ final class ModelRolesForm extends ConfigFormBase {
       $container->get('config.factory'),
       $container->get('config.typed'),
       $container->get('aincient_core.model_role_resolver'),
-      $container->get('ai.provider'),
+      $container->get('aincient_core.inference.provider_inventory'),
       $container->get('aincient_core.model_preset_resolver'),
       $container->get('aincient_core.recommendation_source'),
+      $container->get('aincient_core.unpriced_notice'),
     );
   }
 
@@ -116,29 +107,34 @@ final class ModelRolesForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
     $roles = $this->resolver->roles();
-    // Aggregators skipped for lack of a curated shortlist, collected across
-    // both pools so the form can prompt the operator to curate them.
-    $uncurated = [];
-    $options = $this->groupedOptions('chat', $uncurated);
-    // Make sure each current binding is selectable even if its provider is no
-    // longer usable (so the form never silently drops a saved choice).
+    // The pools as offered, kept separate from the selects below: a saved binding
+    // that can no longer be served is added to the SELECTS so the operator's choice
+    // survives a page load, but it must never enter the pool a preset resolves
+    // against — "apply Balanced" would then be able to pick the very binding that
+    // stopped working.
+    $chatPool = $this->groupedOptions(ProviderInventory::CHAT);
+    $imagePool = $this->groupedOptions(ProviderInventory::IMAGE);
+
+    $options = $chatPool;
+    // Make sure each current binding is selectable even if its provider can no
+    // longer serve it (so the form never silently drops a saved choice).
     foreach ($roles as $role) {
       $value = $this->bindingValue($role['provider_id'], $role['model_id']);
       if ($value !== '' && !$this->optionExists($options, $value)) {
-        $options[(string) $this->t('Current')][$value] = $value;
+        $options[$this->currentGroupLabel($role['provider_id'])][$value] = $value;
       }
     }
 
     // The image role lives outside the chat-role taxonomy (see ModelRoles::IMAGE)
-    // and binds to an *image* provider, so its options come from a separate
-    // operation-type pool.
-    $imageOptions = $this->groupedOptions('text_to_image', $uncurated);
+    // and binds to a provider that can actually draw, so its options come from a
+    // separate capability pool.
+    $imageOptions = $imagePool;
     $imageBinding = $this->resolver->imageBinding();
     $imageValue = $imageBinding !== NULL
       ? $this->bindingValue($imageBinding['provider_id'], $imageBinding['model_id'])
       : '';
     if ($imageValue !== '' && !$this->optionExists($imageOptions, $imageValue)) {
-      $imageOptions[(string) $this->t('Current')][$imageValue] = $imageValue;
+      $imageOptions[$this->currentGroupLabel($imageBinding['provider_id'])][$imageValue] = $imageValue;
     }
 
     // Vision draws from the CHAT pool (image→text is a chat call with the image
@@ -149,15 +145,31 @@ final class ModelRolesForm extends ConfigFormBase {
       ? $this->bindingValue($visionBinding['provider_id'], $visionBinding['model_id'])
       : '';
     if ($visionValue !== '' && !$this->optionExists($options, $visionValue)) {
-      $options[(string) $this->t('Current')][$visionValue] = $visionValue;
+      $options[$this->currentGroupLabel($visionBinding['provider_id'])][$visionValue] = $visionValue;
     }
 
+    // Warn BEFORE the early return: a site whose only bindings are orphaned has
+    // no pools at all, and that is exactly the operator who most needs to be told
+    // why rather than shown an empty page.
+    $form['orphaned'] = $this->orphanedWarning();
+    $form['unpriced'] = $this->unpricedWarning();
+
+    // The rate sheet is this form's read-only twin — same five roles, same
+    // bindings, priced. Linked BEFORE the no-providers early return below,
+    // because a site with nothing connected yet is exactly where an operator is
+    // still deciding what a model will cost them.
+    $form['rates_link'] = [
+      '#type' => 'item',
+      '#markup' => $this->t('What each role costs to run is on the <a href="@url">model rates</a> page.', [
+        '@url' => Url::fromRoute('aincient_core.pricing')->toString(),
+      ]),
+      '#weight' => 100,
+    ];
+
     if ($this->flatCount($options) === 0 && $this->flatCount($imageOptions) === 0) {
-      // Distinguish "nothing connected" from "connected but uncurated" — the
-      // latter just needs the operator to pick a shortlist.
-      $form['none'] = $uncurated !== [] ? $this->curationHint($uncurated) : [
+      $form['none'] = [
         '#type' => 'item',
-        '#markup' => $this->t('No usable AI providers yet. Connect a provider through onboarding (or configure one under AI settings) and its models will appear here.'),
+        '#markup' => $this->t('No AI providers are connected yet. Connect one through onboarding and its models will appear here.'),
       ];
       return parent::buildForm($form, $form_state);
     }
@@ -167,8 +179,7 @@ final class ModelRolesForm extends ConfigFormBase {
       '#markup' => $this->t('AIncient speaks in <em>roles</em>, not vendor model ids. Bind each role to a model from any connected provider; the choices are projected onto the framework so every assistant flow inherits them.'),
     ];
 
-    $form['curation_hint'] = $this->curationHint($uncurated);
-    $form['presets'] = $this->presetSection($options, $imageOptions);
+    $form['presets'] = $this->presetSection($chatPool, $imagePool);
 
     if ($this->flatCount($options) > 0) {
       $form['default_role'] = [
@@ -209,7 +220,7 @@ final class ModelRolesForm extends ConfigFormBase {
     if ($this->flatCount($imageOptions) === 0) {
       $form['image']['image_none'] = [
         '#type' => 'item',
-        '#markup' => $this->t('No usable image providers yet. Connect one that advertises image generation (e.g. Nano Banana / Gemini) and its models will appear here.'),
+        '#markup' => $this->t('No image providers are connected yet. Connect one that can draw (Nano Banana, from a Google AI Studio key) and its models will appear here.'),
       ];
     }
     else {
@@ -446,43 +457,25 @@ final class ModelRolesForm extends ConfigFormBase {
   /**
    * Grouped `provider:model` options for a role select (optgroup per provider).
    *
-   * The single source for every pool: the chat roles + vision draw from `chat`,
-   * the image role from `text_to_image`. Uncurated aggregators
-   * ({@see self::CURATED_AGGREGATORS}) are skipped so the selects stay a
-   * hand-picked set instead of an unusable hundreds-of-models dump; each one
-   * skipped is recorded in $uncurated so the form can prompt the operator to
-   * curate it.
+   * The single source for every pool: the chat roles + vision draw from
+   * {@see ProviderInventory::CHAT}, the image role from
+   * {@see ProviderInventory::IMAGE}. A provider with no models simply does not
+   * appear — which now covers "not connected" and nothing else, since a provider
+   * the site cannot serve is not in the inventory to begin with. No try/catch:
+   * the inventory answers [] rather than throwing, so guarding here would be
+   * guarding against nothing.
    *
-   * @param string $operationType
-   *   The AI operation type ('chat' or 'text_to_image').
-   * @param array<string, array{label: string, config: string, key: string, route: string}> $uncurated
-   *   Collects the aggregators that were skipped for lack of a shortlist,
-   *   keyed by provider id (deduped across pools).
+   * @param string $capability
+   *   {@see ProviderInventory::CHAT} or {@see ProviderInventory::IMAGE}.
    *
    * @return array<string, array<string, string>>
    *   provider label => ("provider_id:model_id" => model label).
    */
-  private function groupedOptions(string $operationType, array &$uncurated = []): array {
+  private function groupedOptions(string $capability): array {
     $grouped = [];
-    foreach ($this->providerManager->getProvidersForOperationType($operationType, FALSE) as $id => $definition) {
-      $label = (string) ($definition['label'] ?? $id);
-      // Hide a noisy aggregator until the operator has curated a shortlist —
-      // otherwise it floods the select with its entire upstream catalog.
-      if (isset(self::CURATED_AGGREGATORS[$id]) && !$this->isCurated($id)) {
-        $uncurated[$id] = ['label' => $label] + self::CURATED_AGGREGATORS[$id];
-        continue;
-      }
-      try {
-        $models = $this->providerManager->createInstance($id)->getConfiguredModels($operationType);
-      }
-      catch (\Throwable) {
-        $models = [];
-      }
-      if (empty($models)) {
-        continue;
-      }
-      foreach ($models as $modelId => $modelLabel) {
-        $grouped[$label][$id . ':' . $modelId] = (string) $modelLabel;
+    foreach ($this->providerManager->providersWith($capability) as $id => $row) {
+      foreach ($this->providerManager->models($id, $capability) as $modelId => $modelLabel) {
+        $grouped[$row['label']][$id . ':' . $modelId] = (string) $modelLabel;
       }
     }
     ksort($grouped);
@@ -490,49 +483,98 @@ final class ModelRolesForm extends ConfigFormBase {
   }
 
   /**
-   * Whether a curated-aggregator provider has a non-empty shortlist.
+   * The optgroup a saved-but-unavailable binding is kept under.
    *
-   * Non-aggregator providers are always "curated" (they ship a sane vendor
-   * list). An aggregator counts as curated once its configured shortlist holds
-   * at least one model id.
+   * Two different situations wear the same shape in this form — a model this
+   * provider no longer lists (renamed, retired), and a provider the site can no
+   * longer serve at all. The first is worth keeping quietly selectable; the second
+   * needs a name that says so, because the select alone would read as a working
+   * choice. {@see self::orphanedWarning()} carries the remedy.
    */
-  private function isCurated(string $providerId): bool {
-    $spec = self::CURATED_AGGREGATORS[$providerId] ?? NULL;
-    if ($spec === NULL) {
-      return TRUE;
-    }
-    $list = $this->configFactory()->get($spec['config'])->get($spec['key']) ?? [];
-    return (bool) array_filter((array) $list);
+  private function currentGroupLabel(string $providerId): string {
+    return (string) ($this->providerManager->has($providerId)
+      ? $this->t('Current')
+      : $this->t('Bound previously — not available on this site'));
   }
 
   /**
-   * A hint render element pointing at each uncurated aggregator's settings.
+   * The roles bound to a provider this site has no adapter for.
    *
-   * @param array<string, array{label: string, config: string, key: string, route: string}> $uncurated
-   *   The aggregators skipped by {@see self::groupedOptions()}.
+   * @return array<string, string>
+   *   Role id => provider id.
+   */
+  private function orphanedRoles(): array {
+    $bindings = (array) ($this->configFactory()->get(self::SETTINGS)->get('roles') ?? []);
+    $orphaned = [];
+    foreach ($bindings as $role => $binding) {
+      $providerId = (string) ($binding['provider_id'] ?? '');
+      if ($providerId !== '' && !$this->providerManager->has($providerId)) {
+        $orphaned[(string) $role] = $providerId;
+      }
+    }
+    return $orphaned;
+  }
+
+  /**
+   * A warning naming every orphaned binding, and what to do instead.
+   *
+   * The visible-degradation path. A stored binding to a provider we cannot serve
+   * fails at call time as {@see \Drupal\aincient_core\Inference\AiGateway::STATUS_UNUSABLE},
+   * which is honest but only reaches the operator when they next use the feature.
+   * This says it on the page where it can be fixed, names the provider (so the
+   * sentence is actionable rather than mysterious), and points at the one
+   * genuinely working replacement for most of the providers this affects.
    *
    * @return array<string, mixed>
-   *   A render array (empty when nothing was skipped).
+   *   A render array (empty when nothing is orphaned).
    */
-  private function curationHint(array $uncurated): array {
-    if ($uncurated === []) {
+  private function orphanedWarning(): array {
+    $orphaned = $this->orphanedRoles();
+    if ($orphaned === []) {
       return [];
     }
     $items = [];
-    foreach ($uncurated as $info) {
-      $items[] = Link::fromTextAndUrl(
-        $this->t('Choose @provider models', ['@provider' => $info['label']]),
-        Url::fromRoute($info['route']),
-      )->toRenderable();
+    foreach ($orphaned as $role => $providerId) {
+      $items[] = $this->t('@role → @provider', [
+        '@role' => $role,
+        '@provider' => $providerId,
+      ]);
     }
     return [
       '#type' => 'item',
-      '#markup' => $this->t('Some providers proxy hundreds of upstream models and stay hidden here until you pick a shortlist:'),
-      'links' => [
+      '#markup' => $this->t('Some roles are bound to a provider this site can no longer serve, so those roles will fail until you rebind them. Your saved choice is kept in the selects below (under “Bound previously”) so nothing is lost. OpenAI and Mistral are connectable by name again — reconnect them in the onboarding wizard. The rest (OpenRouter, a LiteLLM proxy, and anything else speaking OpenAI’s API) are offered there too, as the <em>OpenAI-compatible endpoint</em> provider: give it the base URL as well as the key.'),
+      'roles' => [
         '#theme' => 'item_list',
         '#items' => $items,
       ],
     ];
+  }
+
+  /**
+   * A warning naming every bound model this site cannot put a price on.
+   *
+   * THE SAME CLASS OF PROBLEM as {@see self::orphanedWarning()} above, and
+   * deliberately the same shape: a binding that is saved, selectable and
+   * apparently fine, but degraded in a way that only shows up later. The orphan
+   * fails loudly at call time; this one fails QUIETLY — every call the role
+   * serves is recorded at $0.00 and the usage dashboard reads as if the model
+   * were free. That is the worse failure of the two, which is why it is said
+   * here, on the page where the model is being chosen, and not only on the
+   * status report where it is also reported.
+   *
+   * Rendered after save as well as before it, because saving this form rebuilds
+   * it: pick an unpriced model and the warning appears in the same page load.
+   * The wording itself lives in {@see UnpricedNotice} — the pricing page shows
+   * the same warning over the same rate table, and two pages that phrase one
+   * silent failure two ways read as two different problems.
+   *
+   * @return array<string, mixed>
+   *   A render array (empty when every bound model is priced).
+   */
+  private function unpricedWarning(): array {
+    return $this->unpricedNotice->build(
+      (array) ($this->configFactory()->get(self::SETTINGS)->get('roles') ?? []),
+    );
   }
 
   /**

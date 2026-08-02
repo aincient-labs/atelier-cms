@@ -37,7 +37,6 @@ final class ConsoleViewerTest extends KernelTestBase {
     'text',
     'node',
     'key',
-    'ai',
     'aincient_core',
     'workflows',
     'content_moderation',

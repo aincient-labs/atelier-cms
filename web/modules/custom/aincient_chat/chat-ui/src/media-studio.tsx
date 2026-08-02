@@ -168,7 +168,12 @@ export function MediaStudio({ onClose: _onClose }: { onClose: () => void }) {
   }, [canReplaceOriginal]);
 
   return (
-    <section className="ain-studio__rail ain-mediastudio" aria-label="Edit media">
+    <section
+      className="ain-studio__rail ain-mediastudio"
+      aria-label="Edit media"
+      data-testid="studio-rail"
+      data-studio="media"
+    >
       <PanelBar
         title="Edit image"
         actions={

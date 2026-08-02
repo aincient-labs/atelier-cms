@@ -4,13 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_chat\Chat;
 
-use Drupal\aincient_core\ModelRoleResolver;
+use Drupal\aincient_core\Inference\AiGateway;
 use Drupal\aincient_core\ModelRoles;
-use Drupal\ai\AiProviderPluginManager;
-use Drupal\ai\OperationType\Chat\ChatInput;
-use Drupal\ai\OperationType\Chat\ChatInterface;
-use Drupal\ai\OperationType\Chat\ChatMessage;
-use Drupal\ai\Plugin\ProviderProxy;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -37,8 +32,7 @@ final class ThreadNamer {
 
   public function __construct(
     private readonly SessionThreadStore $threadStore,
-    private readonly ModelRoleResolver $roles,
-    private readonly AiProviderPluginManager $providers,
+    private readonly AiGateway $ai,
     private readonly LoggerInterface $logger,
   ) {}
 
@@ -77,13 +71,7 @@ final class ThreadNamer {
    * One small chat call: the first exchange in, a ≤5-word outcome out.
    */
   private function generate(string $userText, string $assistantText): ?string {
-    $binding = $this->roles->resolve(ModelRoles::FAST);
-    if ($binding['provider_id'] === '') {
-      return NULL;
-    }
-    $provider = $this->providers->createInstance($binding['provider_id']);
-    $plugin = $provider instanceof ProviderProxy ? $provider->getPlugin() : $provider;
-    if (!$plugin instanceof ChatInterface) {
+    if (!$this->ai->canText(ModelRoles::FAST)) {
       return NULL;
     }
 
@@ -95,12 +83,9 @@ final class ThreadNamer {
       . "\n\nUser asked:\n" . mb_strimwidth($userText, 0, 600, '…')
       . "\n\nAssistant replied:\n" . mb_strimwidth($assistantText, 0, 600, '…');
 
-    $input = new ChatInput([new ChatMessage('user', $prompt)]);
-    $output = $provider->chat($input, $binding['model_id'], ['aincient_chat_thread_namer']);
-    $normalized = $output->getNormalized();
-    $text = $normalized instanceof ChatMessage ? trim($normalized->getText()) : '';
-
-    return $this->sanitize($text);
+    return $this->sanitize(
+      $this->ai->text($prompt, ModelRoles::FAST, 'aincient_chat_thread_namer')
+    );
   }
 
   /**

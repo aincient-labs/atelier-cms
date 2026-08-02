@@ -1,0 +1,8 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'AIncient inference test provider'
+type: module
+description: 'TEST ONLY: a scripted inference adapter, so kernel tests can drive the whole one-shot AI path (role → platform → result union) without a live API key.'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_core

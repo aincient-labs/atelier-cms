@@ -7,6 +7,167 @@
 
 declare(strict_types=1);
 
+use Symfony\Component\Yaml\Yaml;
+
+/**
+ * Implements hook_schema().
+ *
+ * THE STORE IS OURS NOW. Atelier used to write its usage rows into
+ * `ai_metering_usage` and depend on that module being installed for the console
+ * footer and the usage dashboard to have anything to read. What the dependency
+ * actually bought was a table and an INSERT: every other part of it — the cost
+ * estimator that priced an unknown model at $0.00 and said nothing, the Views
+ * dashboard that groups by uid and month and has no notion of a call site, the
+ * LiteLLM pricing sync — had already been replaced or refused. Carrying a contrib
+ * module, its config, its permissions and its routes to obtain one CREATE TABLE
+ * is a dependency that costs more than it gives.
+ *
+ * NO QUOTA TABLE, DELIBERATELY. Contrib paired the log with
+ * `ai_metering_quota`: a per-user monthly token budget, per-role defaults and an
+ * alert at a threshold percentage. None of it ever fired here. The enforcement
+ * point was `hook_ai_metering_quota_exceeded`, invoked only from a subscriber to
+ * a `drupal/ai` event that nothing has dispatched since Atelier moved onto its
+ * own inference seams — so the budget form accepted a number, the row counted
+ * up, and no call was ever refused. A control that accepts a value it will never
+ * apply is worse than a missing one: it tells an operator they are protected.
+ * When Atelier wants budgets it will build them at the seam that can actually
+ * stop a call, and this table is the ledger they would read.
+ *
+ * NO `provider_type`, NO `status`. Both were single-valued in practice.
+ * `provider_type` existed to mark local models free, but it keyed on `drupal/ai`
+ * plugin ids that no longer exist here and the recorder wrote the literal
+ * 'cloud' for every row; `status` was written 'completed' and never anything
+ * else, because a row is only written after a call has returned. Columns that
+ * hold one value are a filter axis that always answers "all of them", and an
+ * index on them (contrib indexed `provider_type`) is a page of the table that
+ * points at the whole table.
+ *
+ * `context_id` is 64 rather than contrib's 36. It no longer holds a run UUID: it
+ * holds the CALL-SITE TAG (`aincient_agent_turn`, `aincient_flows_simple_chat`,
+ * …), which is the axis Atelier's dashboard is built around, and a truncation at
+ * 36 would silently merge two tags that share a prefix.
+ */
+function aincient_core_schema(): array {
+  $schema['aincient_ai_usage'] = [
+    'description' => 'One row per completed AI inference call: who, what model, how many tokens, what it cost.',
+    'fields' => [
+      'id' => ['type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE],
+      'uid' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The account the call was made for. 0 means anonymous or a cron/CLI context — an answer, not a gap.',
+      ],
+      'timestamp' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Request time, seconds. One agent turn writes several rows in one second — order by id too.',
+      ],
+      'provider_id' => [
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The adapter that served the call (anthropic, gemini, openai_compatible, …).',
+      ],
+      'model_id' => [
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The model as RESOLVED, never as requested — a rate is looked up by this string.',
+      ],
+      'operation' => [
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'One of UsageRecorder::OPERATION_* (chat, text_to_image, image_to_image).',
+      ],
+      'input_tokens' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Everything charged at or above the input rate: prompt tokens plus cache WRITES (billed at a premium, broken out again in token_details).',
+      ],
+      'output_tokens' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Completion tokens, thinking tokens included (providers bill both as output).',
+      ],
+      'cached_tokens' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Cache READ tokens, a SUBSET of input_tokens — summing the two double-counts them.',
+      ],
+      'cost_usd' => [
+        'type' => 'numeric',
+        'precision' => 12,
+        'scale' => 8,
+        'not null' => TRUE,
+        'default' => 0.0,
+        'description' => 'What ModelPricing charged, in USD. DECIMAL(12,8) because a haiku call can cost less than a millionth of a dollar.',
+      ],
+      'context_id' => [
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => 'The call-site tag (see UsageRecorder::TAG_*), or NULL when the caller supplied none.',
+      ],
+      'token_details' => [
+        'type' => 'blob',
+        'not null' => FALSE,
+        'description' => 'JSON breakdown the columns cannot hold, incl. usage_reported — which separates "free call" from "no accounting filed".',
+      ],
+    ],
+    'primary key' => ['id'],
+    'indexes' => [
+      // ONE INDEX, AND IT IS THE ONLY ONE ANY READER USES. Every query in
+      // {@see \Drupal\aincient_core\Usage\UsageQuery} narrows by period first
+      // and nothing else — there is not a single WHERE on uid, provider_id,
+      // model_id or context_id anywhere on the read side. Those four columns are
+      // GROUP BY keys and selected output, which a btree does not help: they hold
+      // a handful of distinct values across the whole table, so the planner
+      // declines to use such an index even when it is the only one offered.
+      //
+      // `id` is the second column rather than a bare `timestamp` because the
+      // pager and the export both order by (timestamp, id) — the column is
+      // second-resolution and one agent turn writes several rows inside one
+      // second, so ordering by timestamp alone leaves their order to the engine.
+      // A non-unique btree on `timestamp` cannot supply that tiebreak, so the
+      // planner puts an Incremental Sort on top of the range scan; carrying `id`
+      // in the index turns that into a plain Index Only Scan Backward, in both
+      // directions, with the sort node gone. (Measured on PostgreSQL 16 over
+      // 200k synthetic rows, several sharing each second.)
+      //
+      // WHAT THIS INDEX DOES NOT FIX: the four dashboard aggregates. Those match
+      // every row in the period and sum four columns, so a selective period gets
+      // an index scan and a wide one gets — correctly — a parallel seq scan. No
+      // index shape changes that; the lever there is a rollup table or a shorter
+      // cache life, not more indexes. `COUNT(*)` alone does stay index-only, but
+      // only while the period is selective.
+      //
+      // FOUR INDEXES WERE DROPPED HERE ({@see aincient_core_update_11008()}), one
+      // of them (`uid_timestamp`) serving `byEditor()`, which was deleted with the
+      // per-editor table. This table takes one INSERT per AI call and several per
+      // agent turn, so an index with no reader is not free documentation — it is
+      // write amplification on the hot path.
+      'timestamp_id' => ['timestamp', 'id'],
+    ],
+  ];
+
+  return $schema;
+}
+
 /**
  * Add the model-profile keys to `aincient_core.model_roles`.
  *
@@ -53,4 +214,283 @@ function aincient_core_update_11002(): void {
     $config->set('prefer', []);
   }
   $config->save();
+}
+
+/**
+ * Move provider credentials off the `ai_provider_*` config that is about to go.
+ *
+ * The six `drupal/ai` provider modules are uninstalled in this release, and a
+ * module uninstall deletes its config objects. Those objects held a POINTER —
+ * `ai_provider_<id>.settings: api_key` naming a Key entity — and
+ * {@see \Drupal\aincient_core\Inference\PlatformRegistry::credentialFor()} reads
+ * it before falling back to the State key `aincient.<id>_api_key`. On every
+ * install onboarded since 2026-07-06 the pointer and the fallback resolve to the
+ * same State value, so the fallback alone would do; on an older one, wired to a
+ * Key entity backed by anything else, deleting the pointer silently unbinds a
+ * working key. So resolve the pointer NOW, while the config still exists, and
+ * write the VALUE to the durable State key.
+ *
+ * Endpoints get the same treatment: Ollama's `host_name` and the
+ * OpenAI-compatible `endpoint` are equally load-bearing and equally about to be
+ * deleted.
+ *
+ * Never overwrites a State value that is already set — that one is the
+ * operator's current answer, and the config pointer may be older.
+ */
+function aincient_core_update_11003(): void {
+  $state = \Drupal::state();
+  $configFactory = \Drupal::configFactory();
+  $keyStorage = \Drupal::entityTypeManager()->getStorage('key');
+
+  foreach (['anthropic', 'mistral', 'nanobanana', 'ollama', 'openai', 'openrouter'] as $providerId) {
+    $settings = $configFactory->get('ai_provider_' . $providerId . '.settings');
+
+    $stateKey = 'aincient.' . $providerId . '_api_key';
+    if (trim((string) $state->get($stateKey, '')) === '') {
+      $keyId = (string) $settings->get('api_key');
+      if ($keyId !== '') {
+        try {
+          $value = (string) ($keyStorage->load($keyId)?->getKeyValue() ?? '');
+        }
+        catch (\Throwable) {
+          // A Key entity whose provider can no longer read its store is a key we
+          // could not have used anyway; leave State empty and let the operator
+          // reconnect rather than write an empty credential over nothing.
+          $value = '';
+        }
+        if ($value !== '') {
+          $state->set($stateKey, $value);
+        }
+      }
+    }
+
+    $endpointKey = 'aincient.' . $providerId . '_endpoint';
+    if (trim((string) $state->get($endpointKey, '')) === '') {
+      foreach (['endpoint', 'host_name'] as $key) {
+        $endpoint = trim((string) $settings->get($key));
+        if ($endpoint !== '') {
+          $state->set($endpointKey, $endpoint);
+          break;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Install the `aincient_core.pricing` rate table on existing sites.
+ *
+ * Config in `config/install` only lands on a FRESH install, and an existing site
+ * with no such object prices nothing: every call would be reported as unpriced
+ * and recorded at $0.00 — the exact failure the object exists to end. Unlike the
+ * empty-by-default objects above, this one has to arrive WITH ITS CONTENTS.
+ *
+ * Read from the shipped file rather than restated here, so the rates have one
+ * home and an update hook can never drift from what a fresh install gets. An
+ * object that already exists is left alone: it may carry an operator's own
+ * corrections, and a release must not silently overwrite a rate someone fixed.
+ */
+function aincient_core_update_11005(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_core.pricing');
+  if ($config->get('models') !== NULL) {
+    return;
+  }
+
+  $file = \Drupal::service('extension.list.module')->getPath('aincient_core')
+    . '/config/install/aincient_core.pricing.yml';
+  $shipped = Yaml::parseFile($file);
+  $config->set('models', $shipped['models'] ?? [])->save();
+}
+
+/**
+ * Grant `view aincient usage` to every role that had contrib's dashboard.
+ *
+ * Atelier's usage dashboard supersedes `ai_metering`'s and is gated on its OWN
+ * permission — reusing `view ai metering dashboard` would make this site's access
+ * control depend on a module we intend to drop, and dropping it would then
+ * silently open or close the report. But a new permission defaults to nobody, so
+ * on an existing site the replacement page would 403 for the very roles that
+ * could read the page it replaces: the operator upgrades and loses a report they
+ * had yesterday, with no error naming what happened.
+ *
+ * So the grant is derived from what each role already holds. Roles with contrib's
+ * permission get ours; roles without it are untouched, because this update must
+ * not widen access — only carry it across.
+ *
+ * `is_admin` roles are skipped: they hold every permission implicitly and writing
+ * one into their list would be a no-op that shows up as a config diff.
+ *
+ * HISTORICAL AS OF THE RELEASE THAT DROPPED `ai_metering`. The permission it reads
+ * from, `view ai metering dashboard`, no longer exists on any site, so this hook is
+ * now a no-op wherever it has not already run — a fresh install finds no role
+ * holding it and grants nothing. It is left exactly as shipped on purpose: an
+ * update hook is history, and rewriting one gives sites that already ran it a
+ * different outcome from sites that have not. Nothing is broken by the miss; a
+ * fresh install grants `view aincient usage` from `aincient_core.permissions.yml`
+ * and the role config that ships with it, not from here.
+ */
+function aincient_core_update_11006(): void {
+  $storage = \Drupal::entityTypeManager()->getStorage('user_role');
+  foreach ($storage->loadMultiple() as $role) {
+    /** @var \Drupal\user\RoleInterface $role */
+    if ($role->isAdmin() || !$role->hasPermission('view ai metering dashboard')) {
+      continue;
+    }
+    $role->grantPermission('view aincient usage');
+    $role->save();
+  }
+}
+
+/**
+ * Create the `aincient_ai_usage` table on existing sites.
+ *
+ * `hook_schema()` only runs on a FRESH install, so without this an upgraded site
+ * would have a recorder writing into a table that is not there. That failure is
+ * caught and logged rather than thrown ({@see
+ * \Drupal\aincient_core\Usage\UsageRecorder::record()}), which is the right
+ * behaviour for a bookkeeping fault mid-turn and exactly the wrong thing to rely
+ * on: every call would silently go unrecorded and the dashboard would report a
+ * site that apparently stopped spending money.
+ *
+ * The definition is READ FROM `aincient_core_schema()` rather than restated
+ * here, so a fresh install and an upgraded one cannot end up with two different
+ * tables of the same name — the kind of drift that only surfaces months later as
+ * a query that works on one site and not the next.
+ *
+ * NOTHING IS MIGRATED from `ai_metering_usage`. The old rows were written under
+ * a different meaning of several columns — `context_id` held nothing at all
+ * (0 non-null rows), the cost column carried $0.00 for calls that genuinely
+ * billed, because contrib's estimator priced what it did not know as free — so
+ * copying them across would import a spend figure that is known to be wrong and
+ * make it indistinguishable from rows that are right. A clean start says "the
+ * log begins here", which is an honest thing for a report to say. The old table
+ * is left in place by this hook; uninstalling `ai_metering` drops it.
+ */
+function aincient_core_update_11007(): void {
+  $schema = \Drupal::database()->schema();
+  if ($schema->tableExists('aincient_ai_usage')) {
+    return;
+  }
+  $schema->createTable('aincient_ai_usage', aincient_core_schema()['aincient_ai_usage']);
+}
+
+/**
+ * Reduce `aincient_ai_usage` to the one index its readers actually use.
+ *
+ * THE TABLE WAS INDEXED FOR QUERIES THAT DO NOT EXIST. It shipped with five
+ * indexes; the read side ({@see \Drupal\aincient_core\Usage\UsageQuery}) puts a
+ * WHERE on exactly one column, `timestamp`. `uid_timestamp` was written for
+ * `byEditor()`, which 0292 deleted along with the per-editor table. The three
+ * single-column indexes on `provider_id`, `model_id` and `context_id` never had a
+ * reader at all: those columns are grouped on, never filtered on, and each holds
+ * a handful of distinct values across the whole table — selectivity a planner
+ * will not use an index for.
+ *
+ * That is not a tidiness argument. One INSERT lands per AI call and several per
+ * agent turn, on the same request the operator is waiting on, and each index is
+ * another write. Four of the five were being maintained for nobody.
+ *
+ * `timestamp` is REPLACED by `(timestamp, id)` rather than kept. Both the pager
+ * and the CSV export order by (timestamp, id) deliberately — the column is
+ * second-resolution and one turn writes several rows inside one second, so
+ * timestamp alone leaves their relative order to the engine, which is a pager
+ * that can show one row twice and skip another. A non-unique btree on
+ * `timestamp` cannot supply the `id` tiebreak, so the planner sorts on top of the
+ * range scan; carrying `id` in the index removes that sort in both directions and
+ * costs nothing the export was not already paying for.
+ *
+ * Written index-by-index against the live schema rather than by dropping the
+ * table: the rows are the site's spend history, and 0291 already established
+ * that a usage log is not something this module recreates to change its shape.
+ * `indexExists()` guards each step so the hook is safe on a site installed fresh
+ * from the new {@see aincient_core_schema()} (nothing to drop, index already
+ * there) and on one upgraded from the old (everything to do).
+ */
+function aincient_core_update_11008(): void {
+  $schema = \Drupal::database()->schema();
+  if (!$schema->tableExists('aincient_ai_usage')) {
+    // A site that has not run update_11007 has no table to reindex. That hook
+    // creates it from aincient_core_schema(), which already carries the index
+    // this one installs, so there is nothing to do here either way.
+    return;
+  }
+
+  foreach (['uid_timestamp', 'provider_id', 'model_id', 'context_id'] as $index) {
+    if ($schema->indexExists('aincient_ai_usage', $index)) {
+      $schema->dropIndex('aincient_ai_usage', $index);
+    }
+  }
+
+  if (!$schema->indexExists('aincient_ai_usage', 'timestamp_id')) {
+    $schema->addIndex(
+      'aincient_ai_usage',
+      'timestamp_id',
+      ['timestamp', 'id'],
+      aincient_core_schema()['aincient_ai_usage'],
+    );
+  }
+  // Dropped LAST, so the period queries are never left without an index to use
+  // partway through the hook.
+  if ($schema->indexExists('aincient_ai_usage', 'timestamp')) {
+    $schema->dropIndex('aincient_ai_usage', 'timestamp');
+  }
+}
+
+/**
+ * Resolve the Gemini credential pointer onto State before `gemini_provider` goes.
+ *
+ * The counterpart to {@see aincient_core_update_11003}, which did this for the
+ * six `ai_provider_*` modules but could not do it here: `gemini_provider` was
+ * still installed, so its config was still the live pointer and there was
+ * nothing to rescue yet. Now that module is being uninstalled too, and
+ * uninstalling takes `gemini_provider.settings` with it.
+ *
+ * That config is load-bearing in a way its module is not. `gemini_provider` is
+ * the one module that broke the `ai_provider_<id>.settings` convention, so
+ * PlatformRegistry::settingsNameFor() special-cases BOTH `gemini` and
+ * `nanobanana` onto it — one config object is the pointer for two providers.
+ * Note 11003 listed `nanobanana` but read `ai_provider_nanobanana.settings`,
+ * which has not been that provider's pointer since the Key entities were
+ * unified; this hook reads the object that actually holds it.
+ *
+ * On a site connected through onboarding this is a no-op: `storeApiKey()` runs
+ * per key-group member, so both State keys are already written and the
+ * credential resolves through the same values either way. It matters for an
+ * install wired up before that — pointed at a Key entity backed by a file or an
+ * env provider, say — where deleting the pointer silently unbinds a working key.
+ *
+ * Never overwrites a State value that is already set: that one is the operator's
+ * current answer, and the config pointer may be older.
+ */
+function aincient_core_update_11009(): void {
+  $state = \Drupal::state();
+  $keyStorage = \Drupal::entityTypeManager()->getStorage('key');
+  $keyId = (string) \Drupal::configFactory()->get('gemini_provider.settings')->get('api_key');
+
+  if ($keyId === '') {
+    return;
+  }
+
+  try {
+    $value = (string) ($keyStorage->load($keyId)?->getKeyValue() ?? '');
+  }
+  catch (\Throwable) {
+    // A Key entity whose provider can no longer read its store is a key we
+    // could not have used anyway; leave State empty and let the operator
+    // reconnect rather than write an empty credential over nothing.
+    return;
+  }
+
+  if ($value === '') {
+    return;
+  }
+
+  // Both members of the Google key group, because both resolved through this
+  // one pointer and each falls back to its own State key once it is gone.
+  foreach (['gemini', 'nanobanana'] as $providerId) {
+    $stateKey = 'aincient.' . $providerId . '_api_key';
+    if (trim((string) $state->get($stateKey, '')) === '') {
+      $state->set($stateKey, $value);
+    }
+  }
 }

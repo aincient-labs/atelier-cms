@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
-use Drupal\ai\Service\FunctionCalling\ExecutableFunctionCallInterface;
-use Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager;
+use Drupal\aincient_core\Capability\CapabilityManager;
+use Drupal\aincient_core\Capability\ExecutableCapabilityInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
 use Drupal\flowdrop\Constants\ReservedName;
@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * A single AIncient capability, placed on the canvas as a tool node.
  *
- * One derivative per AIncient FunctionCall (see
+ * One derivative per Atelier capability plugin (see
  * {@see CapabilityToolDeriver} for the provider list). This is where a
  * capability actually *runs* —
  * on the graph, as a node execution on the shared session — so that when an
@@ -27,7 +27,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * and interrupt handling and is auditable. The invoker also enforces the
  * allow-list (the wired `tool_availability` edges) and validates args first.
  *
- * The node's parameter schema is the FunctionCall's OWN declared context, so
+ * The node's parameter schema is the capability's OWN declared context, so
  * the tool's `input_schema` (what the model is shown) can never drift from the
  * primitive's signature. The bound capability is carried in the derivative's
  * `function_call_id`.
@@ -48,7 +48,7 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
     array $configuration,
     $plugin_id,
     $plugin_definition,
-    protected FunctionCallPluginManager $functionCallManager,
+    protected CapabilityManager $capabilityManager,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -66,12 +66,14 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('plugin.manager.ai.function_calls'),
+      $container->get('plugin.manager.aincient.capabilities'),
     );
   }
 
   /**
-   * The FunctionCall id this node is bound to (from the derivative definition).
+   * The capability plugin id this node is bound to (from the derivative
+   * definition). The key is still named `function_call_id` — it is carried in
+   * shipped node-type definitions, so renaming it is a separate change.
    */
   protected function functionCallId(): string {
     $definition = $this->getPluginDefinition();
@@ -88,8 +90,8 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
     }
 
     try {
-      $plugin = $this->functionCallManager->createInstance($id);
-      assert($plugin instanceof ExecutableFunctionCallInterface);
+      $plugin = $this->capabilityManager->createInstance($id);
+      assert($plugin instanceof ExecutableCapabilityInterface);
 
       // Set only the arguments the capability actually declares; the model's
       // tool-call args arrive as the node's runtime inputs. Entities emitted by
@@ -184,7 +186,7 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
   /**
    * {@inheritdoc}
    *
-   * The tool's `input_schema` — built from the bound FunctionCall's own context
+   * The tool's `input_schema` — built from the bound capability's own context
    * so it cannot drift from the primitive's signature. Read by FlowDrop's
    * ToolProjector on a bare instance (no node config), so it relies only on the
    * derivative's `function_call_id`.
@@ -196,7 +198,7 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
       return $empty;
     }
     try {
-      $plugin = $this->functionCallManager->createInstance($id);
+      $plugin = $this->capabilityManager->createInstance($id);
     }
     catch (\Throwable) {
       return $empty;
@@ -217,7 +219,7 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
       ];
       // An array param needs an `items` schema — several providers reject a bare
       // `array` type outright. Source the element shape from the capability's
-      // SimpleToolItems constraint (the AI module's declared item shape),
+      // SimpleToolItems constraint (the capability's declared item shape),
       // defaulting to string items for a plain list.
       if ($jsonType === 'array') {
         $items = $context->getConstraints()['SimpleToolItems'] ?? NULL;

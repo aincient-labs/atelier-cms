@@ -51,17 +51,22 @@ config objects a site owns — `cim` never imports over them:
 | `system.site`                      | site name, slogan, mail, front page         |
 | `aincient_core.model_roles`        | role → provider:model bindings + default    |
 | `ai.settings`                      | operation-type → model fallbacks            |
-| `ai_provider_anthropic.settings`   | Anthropic provider config                   |
-| `ai_provider_openai.settings`      | OpenAI provider config                      |
+| `aincient_mail.settings`           | transport + sender identity                 |
 
 (See [`config/sync/config_ignore.settings.yml`](../config/sync/config_ignore.settings.yml).
-Per-provider API keys already live in Drupal **State**, not config, so they were
-never at risk.)
+Model rates are **not** on this list: `aincient_core.pricing`
+(`/admin/config/aincient/pricing`) is shipped config, so a release can correct a
+wrong rate on every site. A row an operator has edited locally would be overwritten
+by `cim` — that is the trade, and it is the right one for numbers that turn into an
+invoice.
+Provider credentials live in Drupal **State** (named by a Key entity), not config,
+so they were never at risk — and since the per-vendor `ai_provider_*` modules were
+removed there is no per-provider config object left to fence off.)
 
 Two consequences worth knowing:
 
 - **The ignore is bidirectional** (config_ignore `simple` mode). `drush cex` won't
-  capture your local edits to these five objects into `config/sync` either, so a
+  capture your local edits to these four objects into `config/sync` either, so a
   developer's site name / model picks can never leak into the distribution. To change
   a *shipped default* (what fresh installs get), **hand-edit the YAML** in
   `config/sync` — `cex` won't do it for you.
@@ -71,6 +76,21 @@ Two consequences worth knowing:
   touches only the new key.
 
 Escape hatch: set `AINCIENT_IMPORT_CONFIG=0` to skip the import for a release.
+
+**Removing a module takes two releases, and the first one keeps the code.** `cim`
+uninstalls an extension that has left `core.extension` — that part is automatic. But
+Drupal needs the module's **code on disk** to uninstall it: `hook_uninstall` has to run,
+schema has to be torn down, dependent config has to be removed. So a release that drops
+the package *and* the `core.extension` entry in one go leaves an existing site with the
+module still enabled in its database and nothing left to uninstall it with. The order is:
+
+1. **This release** — drop it from `core.extension` (and from the recipe), but leave the
+   `composer.json` requirement alone. Converge's `cim` uninstalls it cleanly.
+2. **A later release** — `composer remove` it, once every install has converged past
+   step 1.
+
+This is why `composer.json` still requires the `ai_provider_*` modules and
+`flowdrop_ai_provider` that nothing loads: they are waiting out step 2.
 
 ## One-click upgrade: the updater sidecar
 

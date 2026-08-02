@@ -12,15 +12,15 @@ install:
   - token
   - pathauto
   - metatag
-  # The AI stack.
+  # The AI stack. No provider modules: every provider Atelier offers is served by
+  # an adapter of our own (aincient_core Inference/), so there is nothing to
+  # install per vendor — the onboarding wizard's picker is the adapter set, and a
+  # credential is all a provider needs. `ai` itself stays: the role layer projects
+  # its bindings onto `ai.settings`, and writing that config needs the module that
+  # owns its schema (see aincient_core.info.yml).
   - key
   - ai
-  # Ship three first-class providers so the onboarding picker is a real choice:
-  # Anthropic (recommended default), OpenAI, and Ollama (local/self-hosted).
-  - ai_provider_anthropic
-  - ai_provider_openai
-  - ai_provider_ollama
-  # The AIncient operator console (deps pull in node + ai + aincient_core).
+  # The AIncient operator console (deps pull in node + aincient_core).
   - aincient_core
   - aincient_chat
   - aincient_assistant_ui

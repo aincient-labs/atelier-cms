@@ -1,0 +1,10 @@
+services:
+  # A tagged adapter like any other, which is the point: the gateway and the
+  # registry cannot tell it from Anthropic, so a kernel test exercises the real
+  # resolution → capability → invoke → unpack path.
+  aincient_inference_test.adapter:
+    class: Drupal\aincient_inference_test\ScriptedAdapter
+    arguments:
+      - '@state'
+    tags:
+      - { name: aincient_core.inference_adapter }

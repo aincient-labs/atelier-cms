@@ -1,0 +1,100 @@
+# What Atelier believes each model it binds actually costs.
+#
+# WHY WE OWN THIS. Cost used to come from a contrib estimator (`ai_metering`'s,
+# since removed) which walked four lookups (manual config → a 2,497-row synced
+# table in State → a provider default → any-provider-same-model) and, when all
+# four missed, priced every token at 0.0 and returned a total of 0.0 WITHOUT
+# SAYING SO. An unpriced model was then indistinguishable from a free one: a real
+# sonnet-5 turn that billed $0.0475 was recorded as $0.00, four times, and the
+# console showed the haiku thread-namer's $0.000042 as the cost of the turn.
+#
+# WHY WE DID NOT JUST FIX ENTRIES IN THAT TABLE. Two reasons, both structural.
+# Manual entries there beat synced ones BY DESIGN, so a wrong manual rate
+# permanently masked the correct synced one — which is exactly how
+# `claude-haiku-4-5-20251001` came to be priced at Haiku *3.5* rates ($0.25/$1.25
+# instead of $1/$5). And its settings object was config-ignored here, so a
+# corrected file would only ever have reached fresh installs; every existing site
+# would keep the wrong number forever. This object is versioned, exported and NOT
+# ignored, so a correction here actually lands on `drush cim`.
+#
+# WHY A SHORT LIST. Five bound models can be read, checked against a vendor's
+# price sheet, and argued with. 2,497 synced rows cannot. A model we have not
+# priced is NOT silently free — it is reported by the status page, warned about
+# on /admin/config/aincient/models the moment an operator binds it, and logged
+# the first time it records tokens. A gap is visible; that is the whole design.
+#
+# RATES ARE USD PER MILLION TOKENS, deliberately: that is the unit every vendor
+# publishes in, so a line here can be compared to a price sheet without moving a
+# decimal point six places. `ModelPricing` divides by 1e6.
+#
+# A LIST, not a map keyed by `provider:model`, for a boring reason worth writing
+# down so nobody "tidies" it back: Drupal config keys cannot contain a dot, and
+# real model ids do (`gemini-2.5-flash-image`). That restriction is exactly why
+# the contrib table we replaced hid itself in State — off in a corner where no
+# config export, diff or review ever saw it. A list keeps the table in config,
+# where it is versioned and reviewable. `model: '*'` prices a whole provider.
+#
+# Every entry carries WHERE the number came from and WHEN it was last checked,
+# because the failure above was not a wrong number so much as a number nobody
+# could tell was stale.
+models:
+  # Anthropic cache rates are derived, not quoted per model: a cache READ is
+  # 0.1x input and a 5-minute cache WRITE is 1.25x input, published as
+  # multipliers. We model the 5-minute write because that is the TTL our calls
+  # use; a 1-hour write would be 2x and would need its own entry.
+  - provider: anthropic
+    model: claude-sonnet-5
+    input_per_mtok: 2.0
+    output_per_mtok: 10.0
+    cache_read_per_mtok: 0.2
+    cache_write_per_mtok: 2.5
+    source: 'https://platform.claude.com/docs/en/pricing'
+    checked: '2026-08-02'
+    expires: '2026-08-31'
+    note: 'Introductory rate, in force through 2026-08-31; list price is $3/$15 per Mtok. Re-check on 2026-09-01 — this entry silently becomes a 33% under-report the day it lapses.'
+  - provider: anthropic
+    model: claude-haiku-4-5-20251001
+    input_per_mtok: 1.0
+    output_per_mtok: 5.0
+    cache_read_per_mtok: 0.1
+    cache_write_per_mtok: 1.25
+    source: 'https://platform.claude.com/docs/en/pricing'
+    checked: '2026-08-02'
+    note: 'The rate table Atelier shipped before this one carried $0.25/$1.25 for this model — those are Haiku 3.5 rates, 4x too low. Pinned here so the correct figure cannot be lost again.'
+  # Not bound on a default install, but it is the `reasoning` pick of the "Best
+  # quality" preset, so one click binds it. Priced up front so that click does
+  # not produce a run of $0.00 rows.
+  - provider: anthropic
+    model: claude-opus-5
+    input_per_mtok: 5.0
+    output_per_mtok: 25.0
+    cache_read_per_mtok: 0.5
+    cache_write_per_mtok: 6.25
+    source: 'https://platform.claude.com/docs/en/pricing'
+    checked: '2026-08-02'
+  # The image role. Output is priced as IMAGE tokens ($30/Mtok, ~1290 tokens =
+  # $0.039 per 1024px image), NOT as the $2.50/Mtok text-output rate that the
+  # LiteLLM snapshot in State carries for this same model id — that snapshot
+  # prices the text path and would under-report a generated image by 12x. No
+  # cache rates: Google quotes none for this model, and the honest answer to
+  # "what does a cached token cost here" is that we do not know. The keys are
+  # absent rather than 0.0 so that a cached token would be REPORTED as unpriced
+  # instead of silently charged nothing.
+  - provider: nanobanana
+    model: gemini-2.5-flash-image
+    input_per_mtok: 0.3
+    output_per_mtok: 30.0
+    source: 'https://ai.google.dev/gemini-api/docs/pricing'
+    checked: '2026-08-02'
+    note: 'Output is the image-token rate. No free tier for this model.'
+  # A local Ollama IS free, and that is a statement rather than a gap: `free`
+  # marks a zero as deliberate, which is what keeps the loud-zero warning quiet
+  # here and loud everywhere else. Provider-wide because which models a local
+  # daemon serves is the operator's business, and all of them cost nothing.
+  - provider: ollama
+    model: '*'
+    input_per_mtok: 0.0
+    output_per_mtok: 0.0
+    free: true
+    source: 'Local inference — no per-token billing.'
+    checked: '2026-08-02'

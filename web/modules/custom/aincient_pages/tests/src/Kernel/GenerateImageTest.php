@@ -5,10 +5,6 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_pages\Kernel;
 
 use Drupal\aincient_core\ModelRoles;
-use Drupal\ai\OperationType\Chat\ChatInput;
-use Drupal\ai\OperationType\Chat\ChatMessage;
-use Drupal\ai_test\Entity\AIMockProviderResult;
-use Drupal\Component\Serialization\Yaml;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\file\Entity\File;
@@ -16,28 +12,35 @@ use Drupal\image\Entity\ImageStyle;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\media\Entity\Media;
 use Drupal\media\Entity\MediaType;
+use Drupal\Tests\aincient_core\Traits\ScriptedInferenceTrait;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Tests the generate_image capability (the Media studio's Nano Banana rail).
  *
- * Uses drupal/ai's bundled `echoai` test provider (it implements both
- * text_to_image and image_to_image) bound to the `image` model role, so the
- * whole tool path is exercised — role resolution → provider call → createFromBytes
- * → widget envelope — without a live image API key.
+ * Runs on the scripted inference provider ({@see ScriptedInferenceTrait}) bound to
+ * the `image` model role, so the whole tool path is exercised — role resolution →
+ * capability check → platform invoke → result unpacking → createFromBytes →
+ * widget envelope — without a live image API key.
+ *
+ * The scripted provider answers an image turn the way Gemini does: a
+ * MultiPartResult carrying the model's chatter AND the image bytes. So these
+ * tests also pin that the bytes survive that shape, which is the shape a
+ * half-read result union silently loses.
  *
  * @group aincient
  */
 #[RunTestsInSeparateProcesses]
 final class GenerateImageTest extends KernelTestBase {
 
+  use ScriptedInferenceTrait;
   use UserCreationTrait;
 
   protected static $modules = [
     'system', 'user', 'field', 'text', 'file', 'image', 'media',
-    'workflows', 'content_moderation', 'key', 'ai', 'ai_test',
-    'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'key',
+    'aincient_core', 'aincient_inference_test', 'aincient_pages',
   ];
 
   protected function setUp(): void {
@@ -45,9 +48,6 @@ final class GenerateImageTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('file');
     $this->installEntitySchema('media');
-    // The title call runs a chat turn through echoai, which consults the
-    // ai_test mock-response store — install its schema so we can script a reply.
-    $this->installEntitySchema('ai_mock_provider_result');
     $this->installSchema('file', ['file_usage']);
     $this->installConfig(['system', 'field', 'media']);
 
@@ -82,7 +82,7 @@ final class GenerateImageTest extends KernelTestBase {
 
   /** Run the tool with the given context, returning its readable output. */
   private function invoke(array $context): string {
-    $tool = $this->container->get('plugin.manager.ai.function_calls')
+    $tool = $this->container->get('plugin.manager.aincient.capabilities')
       ->createInstance('aincient_pages:generate_image');
     foreach ($context as $name => $value) {
       $tool->setContextValue($name, $value);
@@ -90,52 +90,37 @@ final class GenerateImageTest extends KernelTestBase {
     $tool->execute();    return $tool->getReadableOutput();
   }
 
-  /** Bind the image role to the echoai test provider. */
+  /** Bind the image role to the scripted image model. */
   private function bindImageRole(): void {
-    $resolver = $this->container->get('aincient_core.model_role_resolver');
-    $resolver->bind(ModelRoles::IMAGE, 'echoai', 'gpt-4o');
-    $this->assertNotNull($resolver->imageBinding());
+    $this->connectScriptedProvider();
+    $this->bindScriptedRole(ModelRoles::IMAGE, 'scripted-image');
+    $this->assertNotNull($this->container->get('aincient_core.model_role_resolver')->imageBinding());
   }
 
-  /** Route the FAST role (the title call) to echoai's default chat model. */
-  private function useEchoForTitleCall(): void {
-    \Drupal::configFactory()->getEditable('ai.settings')
-      ->set('default_providers.chat', ['provider_id' => 'echoai', 'model_id' => 'gpt-4o'])
-      ->save();
+  /** Route the FAST role (the title call) to the scripted chat model. */
+  private function useScriptedTitleCall(): void {
+    $this->bindScriptedRole(ModelRoles::FAST);
   }
 
   /**
-   * Script echoai's chat reply for the title call fired by the given prompt.
+   * Script the title model's reply.
    *
-   * echoai matches a request by exact-equality on the ChatInput array, so we
-   * rebuild the SAME input the tool builds — the instruction string here MUST
-   * mirror {@see GenerateImage::madeNameAndAlt}; if it drifts, the match misses,
-   * the tool falls back, and the made-title assertion fails loudly (not silently).
+   * Scripted by VALUE rather than by matching the request, because what the
+   * product promises is that a usable reply becomes the item's title and alt — not
+   * that a particular instruction string was assembled. (The old echoai fixture
+   * matched on request equality, so it duplicated
+   * {@see GenerateImage::madeNameAndAlt}'s prompt and had to be kept in step with
+   * it.)
    */
-  private function scriptTitleReply(string $prompt, string $title, string $alt): void {
-    $instruction = 'A user generated an image from this prompt: "' . $prompt . '". '
-      . 'Write a short human title and alt text for that image. '
-      . 'Return ONLY strict JSON, no commentary: {"title": "...", "alt": "..."}. '
-      . 'The title is at most 6 words, sentence case, naming the SUBJECT of the image — never the raw prompt text. '
-      . 'The alt is one descriptive sentence of about 125 characters for an HTML alt attribute; do not begin with "image of".';
-    $input = new ChatInput([new ChatMessage('user', $instruction)]);
-    AIMockProviderResult::create([
-      'label' => 'title-call',
-      'operation_type' => 'chat',
-      'mock_enabled' => TRUE,
-      'request' => Yaml::encode($input->toArray()),
-      'response' => Yaml::encode([
-        'normalized' => ['role' => 'assistant', 'text' => (string) json_encode(['title' => $title, 'alt' => $alt])],
-      ]),
-      'sleep_time' => 0,
-    ])->save();
+  private function scriptTitleReply(string $title, string $alt): void {
+    $this->scriptInferenceText((string) json_encode(['title' => $title, 'alt' => $alt]));
   }
 
   public function testMakesATitleAndAltFromTheTitleModel(): void {
     $this->bindImageRole();
-    $this->useEchoForTitleCall();
+    $this->useScriptedTitleCall();
     $prompt = 'a warm sunrise over terracotta rooftops';
-    $this->scriptTitleReply($prompt, 'Golden rooftop morning', 'Sunlight spills across a cluster of clay rooftops at dawn.');
+    $this->scriptTitleReply('Golden rooftop morning', 'Sunlight spills across a cluster of clay rooftops at dawn.');
 
     $out = $this->invoke(['prompt' => $prompt]);
     $payload = json_decode($out, TRUE);
@@ -152,10 +137,11 @@ final class GenerateImageTest extends KernelTestBase {
 
   public function testFallsBackToPromptWhenTitleReplyIsUnusable(): void {
     $this->bindImageRole();
-    // echoai is the chat model but NO reply is scripted → it echoes "Hello world…",
-    // which is not JSON → the tool must fall back to the prompt-derived strings and
-    // still mint the image (generation never blocks on titling).
-    $this->useEchoForTitleCall();
+    // The title model answers with prose, not JSON → the tool must fall back to
+    // the prompt-derived strings and still mint the image (generation never blocks
+    // on titling).
+    $this->useScriptedTitleCall();
+    $this->scriptInferenceText('Sure! Here are some ideas for a title.');
 
     $out = $this->invoke(['prompt' => 'a warm sunrise over terracotta rooftops']);
     $payload = json_decode($out, TRUE);
@@ -213,6 +199,10 @@ final class GenerateImageTest extends KernelTestBase {
     $newId = (int) explode(':', $payload['payload']['token'])[1];
     $this->assertNotSame((int) $source->id(), $newId);
     $this->assertInstanceOf(Media::class, Media::load($newId));
+    // The source really travelled: an edit is a prompt AND an image part. Asserted
+    // because "edit" that silently generates from scratch is a plausible failure
+    // that every other assertion here would pass.
+    $this->assertContains('Image', $this->lastInferenceCall()['parts']);
   }
 
   public function testRejectsEmptyPrompt(): void {
@@ -226,6 +216,81 @@ final class GenerateImageTest extends KernelTestBase {
     $out = $this->invoke(['prompt' => 'anything']);
     $this->assertStringStartsWith('Error:', $out);
     $this->assertStringContainsString('no image model', strtolower($out));
+  }
+
+  /**
+   * A bound provider with no key stored is a DIFFERENT refusal from unbound.
+   *
+   * The remedies differ — connect a provider vs. bind a different model — and the
+   * new backend can tell them apart because it reads the stored credential rather
+   * than asking a plugin whether it feels usable. A keyless install must not offer
+   * a rail that fails on first use.
+   */
+  public function testRefusesWhenTheImageProviderHasNoCredential(): void {
+    // Bound, but deliberately never connected.
+    $this->bindScriptedRole(ModelRoles::IMAGE, 'scripted-image');
+
+    $out = $this->invoke(['prompt' => 'anything']);
+    $this->assertStringStartsWith('Error:', $out);
+    $this->assertStringNotContainsString('no image model', strtolower($out));
+    $this->assertStringContainsString("can't generate images", $out);
+  }
+
+  /**
+   * A provider that can draw but cannot EDIT gets the "describe it" remedy.
+   *
+   * The advice a NULL could never carry, and the reason the image status is three
+   * values rather than a boolean.
+   */
+  public function testOffersToGenerateAfreshWhenTheProviderCannotEdit(): void {
+    $this->bindImageRole();
+    \Drupal::state()->set('aincient_inference_test.supports_editing', FALSE);
+    $seed = $this->seedSourceImage();
+
+    $out = $this->invoke(['prompt' => 'make it warmer', 'source' => $seed]);
+    $this->assertStringStartsWith('Error:', $out);
+    $this->assertStringContainsString("can't edit an existing image", $out);
+
+    // Text→image on the very same provider still works: the refusal is about the
+    // MODE, not the provider.
+    $this->assertSame(
+      'media_result',
+      json_decode($this->invoke(['prompt' => 'a fresh sunrise']), TRUE)['__widget__'] ?? NULL,
+    );
+  }
+
+  /**
+   * A provider that fails mid-call says so — it never returns quietly.
+   *
+   * The DECISIONS 0278/0279 shape: a failed turn that reads as an empty success is
+   * unactionable and undebuggable. The tool must show the human an error.
+   */
+  public function testSurfacesAProviderFailureAsAnError(): void {
+    $this->bindImageRole();
+    \Drupal::state()->set('aincient_inference_test.fail', TRUE);
+
+    $out = $this->invoke(['prompt' => 'a warm sunrise']);
+    $this->assertStringStartsWith('Error:', $out);
+    $this->assertStringContainsString('scripted_test', $out);
+  }
+
+  /**
+   * Seeds an image media item and returns its `media:<id>` token.
+   */
+  private function seedSourceImage(): string {
+    $path = 'public://seed-source.png';
+    file_put_contents($path, base64_decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+    ));
+    $file = File::create(['uri' => $path, 'status' => 1]);
+    $file->save();
+    $media = Media::create([
+      'bundle' => 'image',
+      'name' => 'Seed source',
+      'field_media_image' => ['target_id' => $file->id(), 'alt' => 'Seed alt'],
+    ]);
+    $media->save();
+    return 'media:' . $media->id();
   }
 
   public function testRefusesWithoutPermission(): void {

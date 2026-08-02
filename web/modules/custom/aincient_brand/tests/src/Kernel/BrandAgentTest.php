@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_brand\Kernel;
 
 use Drupal\aincient_pages\BrandRepository;
-use Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager;
+use Drupal\aincient_core\Capability\CapabilityManager;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -35,7 +35,6 @@ final class BrandAgentTest extends KernelTestBase {
     'system',
     'user',
     'key',
-    'ai',
     'workflows',
     'content_moderation',
     'aincient_core',
@@ -57,8 +56,8 @@ final class BrandAgentTest extends KernelTestBase {
     $this->setCurrentUser($this->createUser(['administer aincient pages']));
   }
 
-  private function manager(): FunctionCallPluginManager {
-    return $this->container->get('plugin.manager.ai.function_calls');
+  private function manager(): CapabilityManager {
+    return $this->container->get('plugin.manager.aincient.capabilities');
   }
 
   private function brand(): BrandRepository {
@@ -69,7 +68,7 @@ final class BrandAgentTest extends KernelTestBase {
    * Run a capability and return its readable output.
    */
   private function runCapability(string $id, array $values = []): string {
-    /** @var \Drupal\ai\Service\FunctionCalling\ExecutableFunctionCallInterface $tool */
+    /** @var \Drupal\aincient_core\Capability\ExecutableCapabilityInterface $tool */
     $tool = $this->manager()->createInstance($id);
     foreach ($values as $key => $value) {
       $tool->setContextValue($key, $value);

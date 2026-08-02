@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_onboarding\Kernel;
 
-use Drupal\ai\Service\FunctionCalling\ExecutableFunctionCallInterface;
-use Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager;
+use Drupal\aincient_core\Capability\ExecutableCapabilityInterface;
+use Drupal\aincient_core\Capability\CapabilityManager;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -32,7 +32,6 @@ final class StudioTourTest extends KernelTestBase {
     'system',
     'user',
     'key',
-    'ai',
     'aincient_core',
     // Defines `use aincient operator console` (the tour's gate).
     'aincient_chat',
@@ -53,11 +52,11 @@ final class StudioTourTest extends KernelTestBase {
   /**
    * Instantiates the capability under test.
    */
-  private function tour(): ExecutableFunctionCallInterface {
-    $manager = $this->container->get('plugin.manager.ai.function_calls');
-    assert($manager instanceof FunctionCallPluginManager);
+  private function tour(): ExecutableCapabilityInterface {
+    $manager = $this->container->get('plugin.manager.aincient.capabilities');
+    assert($manager instanceof CapabilityManager);
     $plugin = $manager->createInstance('aincient_onboarding:studio_tour');
-    assert($plugin instanceof ExecutableFunctionCallInterface);
+    assert($plugin instanceof ExecutableCapabilityInterface);
     return $plugin;
   }
 

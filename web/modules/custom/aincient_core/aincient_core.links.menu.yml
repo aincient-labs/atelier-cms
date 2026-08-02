@@ -3,3 +3,16 @@ aincient_core.model_roles:
   description: 'Bind each Atelier model role (high thinking, task, fast, image) to a provider and model.'
   route_name: aincient_core.model_roles
   parent: system.admin_config_ui
+
+aincient_core.pricing:
+  title: 'Model rates'
+  description: 'What each model costs per million tokens, and which roles are charged at it.'
+  route_name: aincient_core.pricing
+  parent: system.admin_config_ui
+
+aincient_core.usage:
+  title: 'AI usage'
+  description: 'What the AI work cost, by call site, model and editor.'
+  route_name: aincient_core.usage
+  parent: system.admin_reports
+  weight: 10

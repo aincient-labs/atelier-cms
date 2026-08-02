@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useAssistantRuntime } from "@assistant-ui/react";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { offerWrapup } from "./thread-seal";
@@ -195,6 +195,8 @@ function LayoutControl({
   value: string | boolean | undefined;
   onChange: (v: string | boolean) => void;
 }) {
+  // Hoisted above the bool branch: hooks cannot sit behind an early return.
+  const id = useId();
   if (def.type === "bool") {
     return (
       <label className="ain-field ain-field--check">
@@ -208,10 +210,15 @@ function LayoutControl({
       </label>
     );
   }
+  // Wired by id for the same reason as TextField below: the checkbox branch
+  // above wraps its control and is fine, but this branch's label is a sibling.
   return (
     <div className="ain-field">
-      <label className="ain-field__label">{def.label}</label>
+      <label className="ain-field__label" htmlFor={id}>
+        {def.label}
+      </label>
       <select
+        id={id}
         className="ain-field__input"
         value={String(value ?? def.default)}
         onChange={(e) => onChange(e.target.value)}
@@ -240,11 +247,19 @@ function TextField({
   placeholder?: string;
   multiline?: boolean;
 }) {
+  // The label is a SIBLING of the control here (the multiline branch means we
+  // cannot simply wrap, the way the page studio's fields do), so it has to be
+  // wired by id — an `ain-field__label` floating next to an input associates
+  // with nothing, and a screen reader announces a bare "edit text".
+  const id = useId();
   return (
     <div className="ain-field">
-      <label className="ain-field__label">{label}</label>
+      <label className="ain-field__label" htmlFor={id}>
+        {label}
+      </label>
       {multiline ? (
         <textarea
+          id={id}
           className="ain-field__input ain-field__textarea ain-globals__textarea"
           value={value}
           placeholder={placeholder}
@@ -252,6 +267,7 @@ function TextField({
         />
       ) : (
         <input
+          id={id}
           className="ain-field__input"
           type="text"
           value={value}
@@ -466,7 +482,7 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
   }, [discard]);
 
   return (
-    <div className="ain-studio__rail">
+    <div className="ain-studio__rail" data-testid="studio-rail" data-studio="globals">
       {/* Primary actions live in the top bar so they survive the rail collapsing
           to a sheet on narrow screens (the brand/page studio idiom). */}
       <StudioActionsPortal>
@@ -714,8 +730,12 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
                   How brand fonts reach your public pages — the one setting that decides
                   whether visitors see a GDPR consent banner.
                 </p>
-                <div className="ain-field">
-                  <label className="ain-field__label">Font delivery</label>
+                {/* A caption over a SET of radios, not a control label — a
+                    <label> here would associate with nothing. Named group. */}
+                <div className="ain-field" role="radiogroup" aria-labelledby="ain-font-delivery">
+                  <span className="ain-field__label" id="ain-font-delivery">
+                    Font delivery
+                  </span>
                   {manifest.privacy.options.map((mode) => {
                     const copy = DELIVERY_COPY[mode] ?? { label: mode, desc: "" };
                     return (

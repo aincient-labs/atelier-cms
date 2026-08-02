@@ -39,7 +39,6 @@ final class AccountControllerTest extends KernelTestBase {
     'node',
     'file',
     'key',
-    'ai',
     'aincient_core',
     'workflows',
     'content_moderation',

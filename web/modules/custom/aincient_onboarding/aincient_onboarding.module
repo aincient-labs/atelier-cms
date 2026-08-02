@@ -195,40 +195,20 @@ function _aincient_onboarding_preferences_declared(): bool {
 /**
  * The model-role taxonomy as a display-ordered list for the wizard.
  *
- * The three chat tiers ({@see ModelRoles::definitions()}) plus the two
- * capability roles that live outside that set — Vision (image→text, chat pool)
- * and Image (image generation, image pool). Each row is tagged with the `pool`
- * its models come from and whether it's `optional` (skippable), so the models
- * step can group the pickers correctly and never block finishing on an image
- * provider the operator chose not to connect.
+ * Shape-shifting only: the five rows themselves are
+ * {@see ModelRoles::pickerDefinitions()}, because the rate sheet
+ * (/admin/config/aincient/pricing) shows the SAME five and the operator is meant
+ * to read one against the other. This wizard wants a JSON list with the id
+ * inlined; the definition is a keyed map. That is the whole difference, and it
+ * is the only thing this function is still allowed to know.
  *
  * @return list<array{id: string, label: string, description: string, pool: string, optional: bool}>
  */
 function _aincient_onboarding_role_taxonomy(): array {
   $roles = [];
-  foreach (ModelRoles::definitions() as $id => $def) {
-    $roles[] = [
-      'id' => $id,
-      'label' => $def['label'],
-      'description' => $def['description'],
-      'pool' => 'chat',
-      'optional' => FALSE,
-    ];
+  foreach (ModelRoles::pickerDefinitions() as $id => $def) {
+    $roles[] = ['id' => $id] + $def;
   }
-  $roles[] = [
-    'id' => ModelRoles::VISION,
-    'label' => 'Image description',
-    'description' => 'Reads an image to write alt text and captions. Pick a vision-capable chat model (Gemini, GPT-4o, Claude). Optional — falls back to your task model.',
-    'pool' => 'chat',
-    'optional' => TRUE,
-  ];
-  $roles[] = [
-    'id' => ModelRoles::IMAGE,
-    'label' => 'Image generation',
-    'description' => 'Generates and edits images in the Media studio (text→image, image→image). Needs an image provider such as Google Gemini / Nano Banana.',
-    'pool' => 'image',
-    'optional' => TRUE,
-  ];
   return $roles;
 }
 

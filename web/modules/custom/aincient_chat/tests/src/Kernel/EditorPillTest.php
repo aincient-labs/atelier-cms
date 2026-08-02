@@ -42,7 +42,6 @@ final class EditorPillTest extends KernelTestBase {
     'language',
     'content_translation',
     'key',
-    'ai',
     'aincient_core',
     'workflows',
     'content_moderation',

@@ -7,3 +7,69 @@ aincient_core.model_roles:
     _title: 'Atelier models'
   requirements:
     _permission: 'administer site configuration'
+
+# Atelier's rate sheet — the read-only view of `aincient_core.pricing`, which
+# is what a call is actually billed at. It took the place of the contrib
+# metering settings form Atelier used to carry, which was closed off and then
+# dropped with its module. No `_module_dependencies`: the rate table is ours,
+# installed and read by this module alone, so there is nothing optional left
+# for this route to be conditional on. Same
+# permission as the models form — both answer "what does this site run, and at
+# what price", and splitting them behind two permissions would let an operator
+# bind a model they cannot see the cost of.
+aincient_core.pricing:
+  path: '/admin/config/aincient/pricing'
+  defaults:
+    _controller: 'Drupal\aincient_core\Controller\PricingController::page'
+    _title: 'Model rates'
+  requirements:
+    _permission: 'administer site configuration'
+
+# Atelier's usage dashboard. The log table is this module's own now, so there is
+# nothing optional left to gate on — but the route still stays reachable when the
+# table is missing, because that state means "upgraded without running updates"
+# and a 404 would present it as a broken install rather than a pending `updb`.
+# The page says so itself (see UsageController::missingTable()).
+aincient_core.usage:
+  path: '/admin/reports/aincient/usage'
+  defaults:
+    _controller: 'Drupal\aincient_core\Controller\UsageController::page'
+    _title: 'AI usage'
+  requirements:
+    _permission: 'view aincient usage'
+
+# Every call, one row each, paged — what the dashboard's summaries are made of.
+# This replaces the deleted `views.view.ai_usage_log`, which was contrib config
+# over contrib's table and read through three of its field plugins; keeping it
+# would have meant porting all four to a table they never knew about. A plain
+# controller renders the same rows and costs no Views dependency.
+#
+# Same permission as the dashboard: it is the same facts at a finer grain, so a
+# role that can read the totals gains nothing by reading the rows behind them.
+aincient_core.usage_log:
+  path: '/admin/reports/aincient/usage/log'
+  defaults:
+    _controller: 'Drupal\aincient_core\Controller\UsageController::log'
+    _title: 'AI call log'
+  requirements:
+    _permission: 'view aincient usage'
+
+# The exports, ours, carrying the `context_id` call site contrib's omit. Same
+# permission as the page and not a stricter one: they are the same facts in a
+# different container, and a role that can read the numbers on screen gains
+# nothing it did not already have by downloading them.
+aincient_core.usage_export_csv:
+  path: '/admin/reports/aincient/usage/export/csv'
+  defaults:
+    _controller: 'Drupal\aincient_core\Controller\UsageController::exportCsv'
+    _title: 'Export AI usage (CSV)'
+  requirements:
+    _permission: 'view aincient usage'
+
+aincient_core.usage_export_json:
+  path: '/admin/reports/aincient/usage/export/json'
+  defaults:
+    _controller: 'Drupal\aincient_core\Controller\UsageController::exportJson'
+    _title: 'Export AI usage (JSON)'
+  requirements:
+    _permission: 'view aincient usage'

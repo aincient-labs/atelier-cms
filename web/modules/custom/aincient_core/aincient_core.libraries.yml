@@ -26,32 +26,23 @@ flowdrop_theme_sync:
     - core/drupal
     - core/once
 
-# Atelier layer over the contrib AI Metering dashboard (its bespoke
-# `.ai-dashboard__*` widgets + the Chart.js canvases). Attached to
-# `ai_metering/ai_metering_dashboard` via hook_library_info_alter so it loads
-# on exactly the metering report pages. The `--ain-*` tokens come from the
-# Studio Backend theme's :root (studio-backend.css), so no extra token
-# dependency.
-ai_metering_brand:
+# Atelier's rate sheet (PricingController, /admin/config/aincient/pricing).
+# The Studio Backend theme styles admin pages generically; the one thing on
+# this page it cannot know about is the rate table — a wide, mostly-numeric
+# grid whose whole purpose is comparing figures by eye, which needs tabular
+# alignment and its own scroll box. Attached by the controller, so it loads
+# nowhere else.
+pricing:
   css:
     theme:
-      css/ai-metering-brand.css: {}
-  js:
-    js/ai-metering-brand.js: {}
-  dependencies:
-    - core/drupal
-    - core/once
+      css/pricing.css: {}
 
-# Atelier layer over the contrib AI Metering SETTINGS form
-# (/admin/config/ai/ai-metering/settings). The Studio Backend theme styles the
-# form generically, but this contrib form is a long single column of
-# full-width controls and homogeneous number-field stacks (per-token pricing,
-# per-role quotas, per-currency rates) that read as crowded next to the calm
-# gesso chrome. This layer compacts control widths and flows the pure
-# number-field panels into a responsive grid. Attached via
-# hook_form_ai_metering_settings_alter(), which also tags the form + the grid
-# panels with the classes these rules hang on.
-ai_metering_settings:
+# Atelier's usage dashboard (UsageController, /admin/reports/aincient/usage).
+# Deliberately CSS-only and origin-only: contrib's dashboard library pulls
+# Chart.js from jsdelivr and htmx from unpkg, which an offline appliance cannot
+# fetch and a private one should not. The proportion bars here are two spans and
+# a width. Attached by the controller, so it loads nowhere else.
+usage:
   css:
     theme:
-      css/ai-metering-settings.css: {}
+      css/usage.css: {}

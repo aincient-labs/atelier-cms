@@ -185,11 +185,13 @@ function ProviderRow({
   modelCount,
   open,
   credential,
+  endpoint,
   status,
   disconnecting,
   error,
   onToggle,
   onCredentialChange,
+  onEndpointChange,
   onConnect,
   onDisconnect,
 }: {
@@ -207,17 +209,24 @@ function ProviderRow({
   modelCount: number;
   open: boolean;
   credential: string;
+  /** The base URL, for the two-field `api_key_endpoint` shape only. */
+  endpoint: string;
   status: "idle" | "connecting";
   disconnecting: boolean;
   error: string | null;
   onToggle: () => void;
   onCredentialChange: (value: string) => void;
+  onEndpointChange: (value: string) => void;
   onConnect: () => void;
   onDisconnect: () => void;
 }) {
   // No mark for this provider ⇒ an empty badge, never ours (see PROVIDER_BRAND).
   const Icon = PROVIDER_BRAND[provider.id]?.Icon;
   const isHost = provider.auth === "host";
+  // A key AND the base URL to send it to — two fields, both required. This row
+  // is why the shape was hidden from the picker at all: offering a provider one
+  // field can't connect is the dead end the whole step is built to avoid.
+  const needsEndpoint = provider.auth === "api_key_endpoint";
   const keyHelp = isHost ? undefined : KEY_HELP[provider.id];
   const chip = providerChip(provider.recommendation);
   return (
@@ -286,6 +295,27 @@ function ProviderRow({
 
       {open && (
         <div className="ain-wiz__connect">
+          {/* The base URL leads: it says WHICH service this is, and the key is
+              meaningless without it. Its own row, no button — the Connect press
+              belongs to the last field you fill. */}
+          {needsEndpoint && (
+            <label className="ain-wiz__field">
+              <span className="ain-wiz__label">Base URL</span>
+              <div className="ain-wiz__field-row">
+                <input
+                  type="text"
+                  className="ain-wiz__input"
+                  value={endpoint}
+                  onChange={(e) => onEndpointChange(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && onConnect()}
+                  placeholder="https://api.deepseek.com"
+                  autoComplete="off"
+                  spellCheck={false}
+                  autoFocus
+                />
+              </div>
+            </label>
+          )}
           <label className="ain-wiz__field">
             <span className="ain-wiz__label">{isHost ? "Server URL" : "API key"}</span>
             <div className="ain-wiz__field-row">
@@ -298,7 +328,7 @@ function ProviderRow({
                 placeholder={isHost ? "http://host.docker.internal:11434" : "sk-…"}
                 autoComplete="off"
                 spellCheck={false}
-                autoFocus
+                autoFocus={!needsEndpoint}
               />
               <button
                 type="button"
@@ -319,11 +349,21 @@ function ProviderRow({
             </div>
           </label>
           {error && <p className="ain-wiz__error">{error}</p>}
-          {isHost && (
+          {needsEndpoint && (
+            <p className="ain-wiz__foot">
+              The address of any service that speaks the OpenAI API — a hosted one like{" "}
+              <code>https://api.deepseek.com</code>, or your own proxy or local server. Atelier appends{" "}
+              <code>/v1</code> itself, so leave it off.
+            </p>
+          )}
+          {/* Both URL-taking shapes hit the same wall: `localhost` inside a
+              container is the container. Said once, for whichever field is on
+              screen — the port is the only part that differs. */}
+          {(isHost || needsEndpoint) && (
             <p className="ain-wiz__foot">
               Atelier runs in a container, so <code>localhost</code> points at the container itself — not the
               machine where your server runs. Reach a server on the host with{" "}
-              <code>http://host.docker.internal:11434</code>.
+              <code>http://host.docker.internal:{isHost ? "11434" : "8000"}</code>.
             </p>
           )}
           {keyHelp && (
@@ -371,6 +411,10 @@ export function OnboardingWizard() {
   // Which provider row is expanded for key entry, and its in-progress credential.
   const [openId, setOpenId] = useState<string | null>(null);
   const [credential, setCredential] = useState("");
+  // The open row's base URL, for the `api_key_endpoint` shape only. Kept apart
+  // from `credential` because the two are stored apart — one is a secret, the
+  // other is an address — and conflating them is what made this shape wait.
+  const [endpoint, setEndpoint] = useState("");
   const [status, setStatus] = useState<"idle" | "connecting" | "saving">("idle");
   const [error, setError] = useState<string | null>(null);
   // The provider row currently being disconnected (its button shows a spinner).
@@ -523,9 +567,16 @@ export function OnboardingWizard() {
   // models into `connected` and collapse the row — the operator can connect more,
   // or move on to choosing models.
   const connectProvider = async (id: string) => {
+    const auth = providers.find((p) => p.id === id)?.auth;
     if (!credential.trim()) {
-      const isHost = providers.find((p) => p.id === id)?.auth === "host";
-      setError(isHost ? "Enter your server URL." : "Enter your API key.");
+      setError(auth === "host" ? "Enter your server URL." : "Enter your API key.");
+      return;
+    }
+    // Refuse locally rather than round-tripping to learn what the field labels
+    // already say. The server checks the same thing — this is the faster of two
+    // identical answers, not the only one.
+    if (auth === "api_key_endpoint" && !endpoint.trim()) {
+      setError("Enter the base URL to call.");
       return;
     }
     setStatus("connecting");
@@ -535,7 +586,11 @@ export function OnboardingWizard() {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: id, credential: credential.trim() }),
+        body: JSON.stringify({
+          provider: id,
+          credential: credential.trim(),
+          ...(auth === "api_key_endpoint" ? { endpoint: endpoint.trim() } : {}),
+        }),
       });
       const data = (await res.json().catch(() => ({}))) as OnboardingConnectResult & {
         ok?: boolean;
@@ -558,6 +613,7 @@ export function OnboardingWizard() {
       if (data.presets) setPresets(data.presets);
       setStatus("idle");
       setCredential("");
+      setEndpoint("");
       setOpenId(null);
     } catch (e) {
       setStatus("idle");
@@ -630,6 +686,7 @@ export function OnboardingWizard() {
   const toggleProvider = (id: string) => {
     setError(null);
     setCredential("");
+    setEndpoint("");
     setOpenId((cur) => (cur === id ? null : id));
   };
 
@@ -724,21 +781,24 @@ export function OnboardingWizard() {
                   modelCount={countProbedModels(connected[p.id])}
                   open={openId === p.id}
                   credential={openId === p.id ? credential : ""}
+                  endpoint={openId === p.id ? endpoint : ""}
                   status={status === "connecting" && openId === p.id ? "connecting" : "idle"}
                   disconnecting={disconnectingId === p.id}
                   error={openId === p.id ? error : null}
                   onToggle={() => toggleProvider(p.id)}
                   onCredentialChange={setCredential}
+                  onEndpointChange={setEndpoint}
                   onConnect={() => connectProvider(p.id)}
                   onDisconnect={() => disconnectProvider(p.id)}
                 />
               ))}
             </div>
 
+            {/* No enumeration here: the rows above ARE the list, and a hardcoded
+                one goes stale the moment an adapter is added. */}
             {!hasChat && Object.keys(connected).length > 0 && (
               <p className="ain-wiz__note">
-                Connect a chat provider (Anthropic, OpenAI, Google Gemini, or Ollama) — the
-                studio runs on chat.
+                Connect one of the chat providers above — the studio runs on chat.
               </p>
             )}
 

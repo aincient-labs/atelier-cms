@@ -6,8 +6,6 @@ package: AIncient
 core_version_requirement: ^11
 dependencies:
   - flowdrop:flowdrop
-  - flowdrop_ai_provider:flowdrop_ai_provider
   - flowdrop_memory:flowdrop_memory
-  - ai:ai
   - aincient_pages
   - aincient_audit

@@ -5,6 +5,5 @@ description: 'The branding agent layer — draft-only AI capabilities (quick bra
 package: AIncient
 core_version_requirement: ^11
 dependencies:
-  - ai:ai
   - aincient_pages
   - aincient_core

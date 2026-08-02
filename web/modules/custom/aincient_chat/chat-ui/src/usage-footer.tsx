@@ -6,11 +6,13 @@ import { type UsageTotal, useActiveThreadUsage } from "./usage-state";
  * Token-usage + cost display: a per-turn footer under each assistant message,
  * and a running session-total chip pinned just above the composer input.
  *
- * The backend relays one `usage` SSE frame per metered AI call (ai_metering's
- * record-created event; see UsageStreamSubscriber). The adapter sums them into
- * a synthetic `aincient_usage` part per turn (rendered here as the footer) and
- * into a per-thread session total (the chip). Both are live, in-session figures
- * — the authoritative lifetime total lives in ai_metering's dashboard.
+ * The backend relays one `usage` SSE frame per metered AI call (Atelier's own
+ * UsageRecordedEvent, dispatched as each row lands in the usage log; see
+ * UsageStreamSubscriber). The adapter sums them into a synthetic
+ * `aincient_usage` part per turn (rendered here as the footer) and into a
+ * per-thread session total (the chip). Both are live, in-session figures — the
+ * authoritative lifetime total is the usage report at
+ * /admin/reports/aincient/usage.
  *
  * Input tokens carry an up arrow (sent to the model), output a down arrow
  * (returned). Cost shows only when at least one call reported pricing

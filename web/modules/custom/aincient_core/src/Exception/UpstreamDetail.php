@@ -21,7 +21,7 @@ use Psr\Http\Message\ResponseInterface;
  * `BadResponseException` via `getResponse()`. Walk the `previous` chain, take the
  * first body we can read, and cap it.
  *
- * @see \Drupal\aincient_core\Service\Reasoning\AincientChatReasoner::reason()
+ * @see \Drupal\aincient_core\Inference\AiGateway
  */
 final class UpstreamDetail {
 

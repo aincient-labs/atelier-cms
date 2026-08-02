@@ -12,30 +12,31 @@ use Drupal\image\Entity\ImageStyle;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\media\Entity\Media;
 use Drupal\media\Entity\MediaType;
+use Drupal\Tests\aincient_core\Traits\ScriptedInferenceTrait;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Tests the propose_media_name capability (the Media studio's naming rail).
  *
- * The naming twin of {@see GenerateAltTextTest}: uses drupal/ai's bundled `echoai`
- * test provider (ChatInterface) as the vision model, so the whole tool path runs —
- * vision role resolution → chat call with the image attached → name proposal →
- * widget envelope — without a live vision API key. echoai echoes its input, so the
- * "name" it returns is deterministic non-empty text, which is all this path needs.
- * Crucially it asserts NOTHING is persisted (Law 11 + "AI proposes, you approve").
+ * The naming twin of {@see GenerateAltTextTest}: runs on the scripted inference
+ * provider ({@see ScriptedInferenceTrait}) as the vision model, so the whole tool
+ * path runs — vision role resolution → chat call with the image attached → name
+ * proposal → widget envelope — without a live vision API key. Crucially it asserts
+ * NOTHING is persisted (Law 11 + "AI proposes, you approve").
  *
  * @group aincient
  */
 #[RunTestsInSeparateProcesses]
 final class ProposeMediaNameTest extends KernelTestBase {
 
+  use ScriptedInferenceTrait;
   use UserCreationTrait;
 
   protected static $modules = [
     'system', 'user', 'field', 'text', 'file', 'image', 'media',
-    'workflows', 'content_moderation', 'key', 'ai', 'ai_test',
-    'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'key',
+    'aincient_core', 'aincient_inference_test', 'aincient_pages',
   ];
 
   protected function setUp(): void {
@@ -43,8 +44,6 @@ final class ProposeMediaNameTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('file');
     $this->installEntitySchema('media');
-    // echoai's chat() consults the ai_test mock-response store.
-    $this->installEntitySchema('ai_mock_provider_result');
     $this->installSchema('file', ['file_usage']);
     $this->installConfig(['system', 'field', 'media']);
 
@@ -78,7 +77,7 @@ final class ProposeMediaNameTest extends KernelTestBase {
 
   /** Run the tool with the given context, returning its readable output. */
   private function invoke(array $context): string {
-    $tool = $this->container->get('plugin.manager.ai.function_calls')
+    $tool = $this->container->get('plugin.manager.aincient.capabilities')
       ->createInstance('aincient_pages:propose_media_name');
     foreach ($context as $name => $value) {
       $tool->setContextValue($name, $value);
@@ -104,14 +103,15 @@ final class ProposeMediaNameTest extends KernelTestBase {
     return ['token' => 'media:' . $media->id(), 'id' => (int) $media->id()];
   }
 
-  /** Bind the vision role to the echoai test provider. */
+  /** Bind the vision role to the scripted provider. */
   private function bindVisionRole(): void {
-    $this->container->get('aincient_core.model_role_resolver')
-      ->bind(ModelRoles::VISION, 'echoai', 'gpt-4o');
+    $this->connectScriptedProvider();
+    $this->bindScriptedRole(ModelRoles::VISION);
   }
 
   public function testSuggestsANameWithoutPersistingIt(): void {
     $this->bindVisionRole();
+    $this->scriptInferenceText('Clay rooftop tile');
     // Seed with a known name so we can assert the tool leaves it untouched.
     $seed = $this->seedImage('untouched-name');
 
@@ -121,7 +121,9 @@ final class ProposeMediaNameTest extends KernelTestBase {
     $this->assertSame('media_result', $payload['__widget__'] ?? NULL, $out);
     $this->assertSame('propose_name', $payload['payload']['mode']);
     $this->assertSame($seed['token'], $payload['payload']['source']);
-    $this->assertNotEmpty($payload['payload']['proposed_name']);
+    // The MODEL's words are what's proposed, and the picture really travelled.
+    $this->assertSame('Clay rooftop tile', $payload['payload']['proposed_name']);
+    $this->assertContains('Image', $this->lastInferenceCall()['parts']);
     // The suggestion carries the media id so the client can populate that item.
     $this->assertSame((string) $seed['id'], $payload['payload']['id']);
     // Crucially, NOTHING was written: the suggestion is staged into the editor for
@@ -131,10 +133,9 @@ final class ProposeMediaNameTest extends KernelTestBase {
   }
 
   public function testWorksWithoutAnExplicitVisionBinding(): void {
-    // No vision binding — resolve() falls back to the default chat model.
-    \Drupal::configFactory()->getEditable('ai.settings')
-      ->set('default_providers.chat', ['provider_id' => 'echoai', 'model_id' => 'gpt-4o'])
-      ->save();
+    // No vision binding — resolve() falls back to the DEFAULT role's model.
+    $this->connectScriptedProvider();
+    $this->bindScriptedRole(ModelRoles::TASK);
     $seed = $this->seedImage();
 
     $out = $this->invoke(['source' => $seed['token']]);

@@ -923,7 +923,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const available = palette;
 
   return (
-    <div className="ain-studio__rail" ref={railRef}>
+    <div className="ain-studio__rail" ref={railRef} data-testid="studio-rail" data-studio="content">
       {/* Discard / Publish / leave pin to the top bar (reachable when the rail
           collapses to a sheet). The language switcher and "Open…" stay in the
           rail head — their popovers anchor to the rail. */}
@@ -2196,6 +2196,9 @@ function PanelsControl({
                   value={String(panel.label ?? "")}
                   onChange={(e) => setPanel(panelIdx, { label: e.target.value })}
                   placeholder={`Panel ${panelIdx + 1} label`}
+                  // A repeater row has no caption of its own, so the name has to
+                  // come from the control (cf. menu-editor's "Link label").
+                  aria-label={`Panel ${panelIdx + 1} label`}
                   spellCheck
                 />
                 <label className="ain-panel__open" title="Expanded when the page first loads">

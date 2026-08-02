@@ -14,7 +14,7 @@ namespace Drupal\aincient_pages;
  * validation, WCAG contrast advisories, the envelope shape — lives here once,
  * so every caller produces an identical, contrast-checked payload:
  *
- *  1. {@see \Drupal\aincient_brand\Plugin\AiFunctionCall\PreviewBrand} — the
+ *  1. {@see \Drupal\aincient_brand\Plugin\AiCapability\PreviewBrand} — the
  *     legacy LLM tool (kept for any non-rice agent still wired to it).
  *  2. the Brand orchestrator's deterministic merge node
  *     (`aincient_flows:brand_apply_slices`) — end-of-turn, merged slices.

@@ -55,3 +55,75 @@ aincient_core.model_preferences:
         sequence:
           type: string
           label: 'Pattern'
+
+# What Atelier believes each model it binds costs. A THIRD config object of our
+# own, rather than a corner of the contrib metering settings Atelier used to
+# carry: that one was config-ignored here (so a correction never reached an
+# existing site) and its manual entries won over its synced table by design —
+# which is how a wrong Haiku rate outranked the right one indefinitely. See the
+# shipped file for the full reasoning.
+aincient_core.pricing:
+  type: config_object
+  label: 'Atelier model pricing'
+  mapping:
+    models:
+      type: sequence
+      label: 'One rate entry per model'
+      # A LIST rather than a map keyed by `provider:model`, because Drupal config
+      # keys cannot contain a dot and model ids do. That restriction is why the
+      # contrib table we replaced lived in State; a list keeps ours in config,
+      # where it is exported, diffed and reviewed.
+      sequence:
+        type: mapping
+        label: 'Rates for one model'
+        mapping:
+          provider:
+            type: string
+            label: 'Provider id, as the role bindings spell it'
+          model:
+            type: string
+            label: "Model id, or '*' for every model this provider serves"
+          input_per_mtok:
+            type: float
+            label: 'USD per million input tokens'
+            # Per MILLION, not per token: that is the unit vendors publish in, so
+            # a line can be diffed against a price sheet without counting zeros.
+          output_per_mtok:
+            type: float
+            label: 'USD per million output tokens'
+          cache_read_per_mtok:
+            type: float
+            label: 'USD per million cache-read tokens'
+            # OPTIONAL, and absent means "not published" — not "free". An absent
+            # rate on a token class that actually gets used is reported as
+            # unpriced; a 0.0 here would charge nothing and say nothing.
+          cache_write_per_mtok:
+            type: float
+            label: 'USD per million cache-write tokens'
+            # The premium a provider charges to CREATE a cache entry (1.25x input
+            # on Anthropic's 5-minute TTL). Owning this is why cache creation is
+            # no longer priced as plain input, which understated it by ~25%.
+          free:
+            type: boolean
+            label: 'Deliberately costless (local inference)'
+            # The one thing that makes a zero honest. Without it a local Ollama
+            # and an unpriced frontier model both record $0.00 and look the same.
+          source:
+            type: string
+            label: 'Where the rate came from'
+          checked:
+            type: string
+            label: 'ISO date the rate was last verified against that source'
+          expires:
+            type: string
+            label: 'ISO date this rate is KNOWN to stop being correct'
+            # OPTIONAL, and only for a rate with a published end date — an
+            # introductory or promotional price. Distinct from `checked`, which
+            # says when we last looked: `checked` going old means we MIGHT be
+            # wrong, `expires` passing means we ARE. A vendor's price change is
+            # invisible from inside the appliance, so a date we already knew on
+            # the day we wrote the entry is the only warning that can fire
+            # without a network call. See RateFreshness.
+          note:
+            type: string
+            label: 'Anything a reader needs to know to judge the rate'

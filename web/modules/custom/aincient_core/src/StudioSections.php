@@ -27,15 +27,28 @@ final class StudioSections {
         'label' => t('People'),
         'description' => t('The accounts that work here — invite, bless, or block them.'),
       ],
+      // Atelier's own dashboard. It replaced a contrib metering dashboard that
+      // has since been removed outright. The description changed with the page:
+      // the headline breakdown is now the
+      // CALL SITE (which part of Atelier spent the money), which is the question
+      // an appliance with one administrator actually has and the one a
+      // per-editor report cannot answer. Key kept as `metering` because it is
+      // the icon key both the landing template and the sidebar switch on.
       'metering' => [
-        'route' => 'ai_metering.dashboard',
-        'label' => t('AI metering'),
-        'description' => t('What the AI work costs, editor by editor.'),
+        'route' => 'aincient_core.usage',
+        'label' => t('AI usage'),
+        'description' => t('What the AI work costs, and which part of Atelier is spending it.'),
       ],
+      // Atelier's rate sheet. It replaced a contrib metering settings form that
+      // has since been removed outright — almost nothing on it could still
+      // affect this site. The label says what this room IS: a read-only price
+      // list, not a place to
+      // configure metering. Key kept as `metering_settings` because it is the
+      // icon key both the landing template and the sidebar switch on.
       'metering_settings' => [
-        'route' => 'ai_metering.settings',
-        'label' => t('Metering settings'),
-        'description' => t('Pricing sources, quotas, and alert thresholds.'),
+        'route' => 'aincient_core.pricing',
+        'label' => t('Model rates'),
+        'description' => t('What each model costs per million tokens, and which roles are charged at it.'),
       ],
       'mail' => [
         'route' => 'aincient_mail.settings',

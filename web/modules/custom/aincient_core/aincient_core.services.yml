@@ -1,13 +1,259 @@
 services:
+  # --- Inference on symfony/ai (the drupal/ai replacement path) ----------------
+  # Adapters are collected by tag, so adding a provider is adding one tagged
+  # service — no hardcoded list, and every adapter satisfies the same contract
+  # (see Inference/ProviderAdapterInterface for why that matters).
+  # The containment boundary for one-shot AI calls (name a thread, describe a
+  # picture, make a picture). Callers speak roles + plain values and never name a
+  # vendor type — which is why moving it onto symfony/ai below changed this file
+  # and its own internals, and no call site.
+  aincient_core.inference.gateway:
+    class: Drupal\aincient_core\Inference\AiGateway
+    arguments:
+      - '@aincient_core.inference.registry'
+      - '@aincient_core.model_role_resolver'
+      - '@aincient_core.inference.result_unpacker'
+      - '@aincient_core.usage_recorder'
+      - '@logger.channel.aincient_core'
+
+  # The containment boundary for the provider INVENTORY — which providers this
+  # site can serve, what each can do, and which models it offers. The twin of the
+  # gateway above: onboarding's picker, the models form and the model-role Drush
+  # commands ask it instead of a vendor plugin manager. Now reads the adapter set
+  # below, which is what makes "installed" and "servable" the same word.
+  aincient_core.inference.provider_inventory:
+    class: Drupal\aincient_core\Inference\ProviderInventory
+    arguments:
+      - '@aincient_core.inference.registry'
+
+  # The registry of what the product can DO. Atelier owns this plugin type
+  # outright (attribute, base class, manager) rather than borrowing
+  # drupal/ai's FunctionCall system: the only thing that system gave us was
+  # discovery, and it charged a dependency on a JSON-Schema DTO stack we never
+  # read. The FlowDrop deriver enumerates it; the FlowDrop processor runs one.
+  plugin.manager.aincient.capabilities:
+    class: Drupal\aincient_core\Capability\CapabilityManager
+    parent: default_plugin_manager
+
+  # Which provider+model a NODE's stored `operation_type`/`model` pair resolves
+  # to. Shared by the reasoner and the simple-chat node so the resolution ORDER
+  # cannot drift between them — a node resolving differently depending on which
+  # processor read it would be a silently wrong model.
+  aincient_core.inference.model_targets:
+    class: Drupal\aincient_core\Inference\ModelTargetResolver
+    arguments:
+      - '@aincient_core.model_role_resolver'
+
+  # One chat turn with no tools, for a plain chat NODE (the brand specialists).
+  # Keeps symfony/ai types out of the FlowDrop integration layer, the same
+  # containment the gateway above buys for one-shot product calls.
+  aincient_core.inference.chat_completer:
+    class: Drupal\aincient_core\Inference\ChatCompleter
+    arguments:
+      - '@aincient_core.inference.registry'
+      - '@aincient_core.inference.model_targets'
+      - '@aincient_core.inference.message_mapper'
+      - '@aincient_core.inference.result_unpacker'
+      - '@aincient_core.usage_recorder'
+      - '@logger.channel.aincient_core'
+
+  # Records real token usage + cost for every call the three seams above make.
+  # Nothing dispatches drupal/ai's response events any more, so without this the
+  # usage log only ever heard about thread naming — and the console showed that
+  # one small row as the whole turn's cost.
+  #
+  # A HARD dependency on the writer below, not the `@?` optional reference this
+  # used to carry to `ai_metering.quota_manager`. The store is Atelier's now
+  # (aincient_core_schema() installs the table), so there is no site where the
+  # recorder should quietly decide there is nowhere to write — the previous
+  # posture existed only because the table came from a module we did not depend
+  # on.
+  aincient_core.usage_recorder:
+    class: Drupal\aincient_core\Usage\UsageRecorder
+    arguments:
+      - '@aincient_core.inference.result_unpacker'
+      - '@aincient_core.model_pricing'
+      - '@current_user'
+      - '@logger.channel.aincient_core'
+      - '@aincient_core.usage_log'
+
+  # The write side of `aincient_ai_usage`: one INSERT, one cache-tag
+  # invalidation, one UsageRecordedEvent (which is what puts the live cost in the
+  # console footer). No quota table and no alerting — see the class docblock for
+  # why a budget nothing can enforce was worse than no budget at all.
+  aincient_core.usage_log:
+    class: Drupal\aincient_core\Usage\UsageLog
+    arguments:
+      - '@database'
+      - '@datetime.time'
+      - '@cache_tags.invalidator'
+      - '@event_dispatcher'
+
+  # What a call cost, from a rate table we own. It replaced ai_metering's
+  # TokenEstimator, which priced an unknown model at 0.0 and returned that as a
+  # fact — which is how a $0.0475 turn was recorded as free.
+  aincient_core.model_pricing:
+    class: Drupal\aincient_core\Usage\ModelPricing
+    arguments:
+      - '@config.factory'
+  # Aliased by class name so the autowired hook class and the models form can
+  # type-hint it; the dotted id stays canonical for everything already wired.
+  Drupal\aincient_core\Usage\ModelPricing: '@aincient_core.model_pricing'
+
+  aincient_core.inference.tool_schema:
+    class: Drupal\aincient_core\Inference\ToolSchema
+  aincient_core.inference.message_mapper:
+    class: Drupal\aincient_core\Inference\MessageMapper
+  # The one reader of symfony/ai's result union, shared by the reasoner (text +
+  # tool calls) and the gateway (text, and an image's bytes). One class because
+  # two half-readers of that union is how a successful turn reached the screen as
+  # silence — see ResultUnpacker's docblock.
+  aincient_core.inference.result_unpacker:
+    class: Drupal\aincient_core\Inference\ResultUnpacker
+    arguments:
+      - '@aincient_core.inference.message_mapper'
+
+  aincient_core.inference.adapter.anthropic:
+    class: Drupal\aincient_core\Inference\Adapter\AnthropicAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+    tags:
+      - { name: aincient_core.inference_adapter }
+  # OpenAI by name, on OpenAI's own bridge (the Responses API) — distinct from
+  # `openai_compatible` below, which reaches the same vendor through the generic
+  # chat-completions shape and needs a base URL to do it.
+  aincient_core.inference.adapter.openai:
+    class: Drupal\aincient_core\Inference\Adapter\OpenAiAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+    tags:
+      - { name: aincient_core.inference_adapter }
+  aincient_core.inference.adapter.mistral:
+    class: Drupal\aincient_core\Inference\Adapter\MistralAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+    tags:
+      - { name: aincient_core.inference_adapter }
+  aincient_core.inference.adapter.openai_compatible:
+    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+    tags:
+      - { name: aincient_core.inference_adapter }
+  # The one provider with no secret: a server URL is the whole credential
+  # (AUTH_HOST). Same three arguments as every other adapter — the credential
+  # shape is the adapter's own answer, not something the container knows.
+  aincient_core.inference.adapter.ollama:
+    class: Drupal\aincient_core\Inference\Adapter\OllamaAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+    tags:
+      - { name: aincient_core.inference_adapter }
+
+  # Two ids, one Google key: `gemini` is chat/vision, `nanobanana` is the image
+  # model. Both are historical drupal/ai plugin ids that stored role bindings
+  # name, so they are registered separately rather than merged.
+  aincient_core.inference.adapter.gemini:
+    class: Drupal\aincient_core\Inference\Adapter\GeminiAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+    tags:
+      - { name: aincient_core.inference_adapter }
+  aincient_core.inference.adapter.nanobanana:
+    class: Drupal\aincient_core\Inference\Adapter\NanoBananaAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+    tags:
+      - { name: aincient_core.inference_adapter }
+
+  aincient_core.inference.registry:
+    class: Drupal\aincient_core\Inference\PlatformRegistry
+    arguments:
+      - !tagged_iterator aincient_core.inference_adapter
+      - '@state'
+      - '@entity_type.manager'
+      - '@config.factory'
+
+  # The reasoning backend itself. The LIVE binding is not this definition:
+  # AincientCoreServiceProvider re-points `flowdrop.chat_reasoner` at this class
+  # and supplies its own argument list, so a constructor argument added here must
+  # be added THERE too or the agent loop runs without it.
+  aincient_core.inference.reasoner:
+    class: Drupal\aincient_core\Inference\SymfonyAiReasoner
+    arguments:
+      - '@aincient_core.inference.registry'
+      - '@aincient_core.inference.model_targets'
+      - '@aincient_core.inference.message_mapper'
+      - '@aincient_core.inference.tool_schema'
+      - '@aincient_core.inference.result_unpacker'
+      - '@aincient_core.usage_recorder'
+      - '@logger.channel.aincient_core'
+
+  # The Symfony HTTP client symfony/ai's bridges transport over. Drupal ships
+  # Guzzle, not this, so it is constructed here rather than reused — and kept
+  # separate from '@http_client' (Guzzle) which our own REST calls use.
+  aincient_core.inference.http_client:
+    class: Symfony\Component\HttpClient\NativeHttpClient
+
+  logger.channel.aincient_core:
+    parent: logger.channel_base
+    arguments: ['aincient_core']
+
   aincient_core.admin_landing_route_subscriber:
     class: Drupal\aincient_core\Routing\AdminLandingRouteSubscriber
     tags:
       - { name: event_subscriber }
+  # Reads `aincient_ai_usage` for Atelier's dashboard, log page and exports.
+  # Database only: the table is installed by this module, so the module-handler
+  # check that used to ask whether `ai_metering` was present is gone. The class
+  # still answers "there is nothing to report" rather than throwing when the
+  # table is missing, which is what a site upgraded without running updates
+  # looks like.
+  aincient_core.usage_query:
+    class: Drupal\aincient_core\Usage\UsageQuery
+    arguments:
+      - '@database'
+  # Human names for the raw call-site tags in `context_id` — the axis the usage
+  # dashboard is built around and the one no contrib UI shows.
+  aincient_core.call_sites:
+    class: Drupal\aincient_core\Usage\CallSites
+    calls:
+      - [setStringTranslation, ['@string_translation']]
+  # The single "we cannot price this model" warning, shared by the models form
+  # and the rate sheet so the two cannot word one silent failure two ways.
+  aincient_core.unpriced_notice:
+    class: Drupal\aincient_core\Usage\UnpricedNotice
+    arguments:
+      - '@aincient_core.model_pricing'
+  # Decides which shipped rates have lapsed or gone unverified. Takes the clock as
+  # a service so a test can stand on either side of an expiry date — the whole
+  # behaviour is "what day is it", and it is not testable against a hard-coded now.
+  aincient_core.rate_freshness:
+    class: Drupal\aincient_core\Usage\RateFreshness
+    arguments:
+      - '@config.factory'
+      - '@datetime.time'
+  # Aliased by class name for the same reason ModelPricing is: PricingRequirements
+  # is an autowired #[Hook] class and type-hints the class, not the dotted id.
+  Drupal\aincient_core\Usage\RateFreshness: '@aincient_core.rate_freshness'
   aincient_core.model_role_resolver:
     class: Drupal\aincient_core\ModelRoleResolver
     arguments:
       - '@config.factory'
-      - '@ai.provider'
       - '@module_handler'
   # Where the curated recommendation document comes from: the bundled snapshot,
   # or a document an operator explicitly fetched from aincient-labs.com.

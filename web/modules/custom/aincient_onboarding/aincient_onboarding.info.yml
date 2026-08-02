@@ -5,6 +5,5 @@ description: 'Deterministic first-run wizard to connect AI: pick any provider an
 package: AIncient
 core_version_requirement: ^11
 dependencies:
-  - ai:ai
   - key:key
   - aincient:aincient_core

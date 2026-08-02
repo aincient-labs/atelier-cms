@@ -4,64 +4,55 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_onboarding;
 
+use Drupal\aincient_core\Inference\ProviderAdapterInterface;
+use Drupal\aincient_core\Inference\ProviderInventory;
 use Drupal\aincient_core\ModelRoleResolver;
 use Drupal\aincient_core\ModelRoles;
-use Drupal\ai\AiProviderPluginManager;
-use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\State\StateInterface;
 
 /**
- * Connects AI for a fresh install — provider-aware, on top of drupal/ai.
+ * Connects AI for a fresh install — provider-aware, on top of the adapter set.
  *
- * The onboarding wizard lets the user pick any installed chat provider
- * (Anthropic, OpenAI, Ollama, …). This service connects whichever they chose
- * WITHOUT hard-coding a single vendor: it leans on the drupal/ai provider
- * plugin API so each provider validates, stores its credential, and enumerates
- * its models in its own native way.
+ * The onboarding wizard lets the user pick any provider Atelier can serve. This
+ * service connects whichever they chose WITHOUT hard-coding a single vendor: it
+ * asks {@see ProviderInventory} what shape of credential the provider wants,
+ * proves the credential works, and stores it.
  *
- * Validation is "prove the credential works", not "is some field non-empty":
- * we hand the candidate credential to the provider and ask it for its chat
- * models (a real API round-trip). Models returned ⇒ the credential is good.
+ * Validation is "prove the credential works", not "is some field non-empty": we
+ * hand the candidate credential to the provider and ask it for its models (a real
+ * API round-trip). Models returned ⇒ the credential is good.
  *
- * Two credential shapes, by provider:
- * - API-key providers (anthropic, openai): the secret is injected at runtime
- *   via {@see AiProviderInterface::setAuthentication()} for validation, then —
- *   on success — stored through the Key module's STATE provider (the value
- *   lives in Drupal State, never in config/git; CLAUDE.md: secrets never in
- *   git) and the provider's `api_key` setting is pointed at that key entity.
- * - Host providers (ollama): no key — a server URL. drupal/ai's Ollama client
- *   reads its host straight from saved config (not runtime config), so the URL
- *   must be written before the client can reach it; we write, validate against
- *   a fresh instance, and roll the config back if it doesn't answer.
+ * VALIDATION NO LONGER WRITES ANYTHING. It used to have to. `drupal/ai`'s
+ * provider interface took a credential at runtime (`setAuthentication()`) but its
+ * Ollama client read its host from SAVED config, so probing a server URL meant
+ * writing config, constructing a fresh plugin, and rolling the config back in a
+ * `finally` — a persistence dance in the middle of a validation, one crash away
+ * from leaving a half-configured provider behind. Adapters take the credential
+ * AND the endpoint as arguments, so the probe is now a pure function of what the
+ * operator typed ({@see ProviderInventory::modelsForCredential()}), and the
+ * rollback it needed no longer exists to get wrong.
  *
- * On success the chosen provider+model is pinned as the default chat provider
- * (`ai.settings: default_providers.chat`) and the completion flag is set, which
- * flips {@see self::needsOnboarding()} and the chat layer's first-run gate off.
+ * On success the secret is stored through the Key module's STATE provider (the
+ * value lives in Drupal State, never in config/git; CLAUDE.md: secrets never in
+ * git) and the provider's `api_key` setting is pointed at that key entity. The
+ * chosen provider+model is pinned by binding the role layer's DEFAULT ROLE, and
+ * the completion flag is set, which flips {@see self::needsOnboarding()} and the
+ * chat layer's first-run gate off.
  */
 final class ProviderConnector {
 
   /**
-   * The operation type the console runs on — providers must support chat.
-   */
-  public const OPERATION_TYPE = 'chat';
-
-  /**
-   * The image-generation operation type (the Media studio's AI rail).
-   */
-  public const IMAGE_OPERATION_TYPE = 'text_to_image';
-
-  /**
    * Providers that share a single API key, keyed by the primary shown in the UI.
    *
-   * Some vendors ship as two drupal/ai provider plugins that authenticate with
-   * the SAME credential — most notably Google, where `gemini` (chat/vision +
-   * Imagen) and `nanobanana` (the Gemini 2.5 Flash Image "Nano Banana" model)
-   * both take one Google AI Studio key. The onboarding wizard presents such a
-   * group as ONE row (the primary), and {@see self::connectAndStore()} stores the
-   * entered key against every member so a single key entry lights up all of their
-   * capabilities at once. A provider absent here is its own single-member group.
+   * Some vendors are TWO provider ids that authenticate with the SAME credential
+   * — most notably Google, where `gemini` (chat/vision) and `nanobanana` (the
+   * Gemini image models) both take one Google AI Studio key. The onboarding
+   * wizard presents such a group as ONE row (the primary), and
+   * {@see self::connectAndStore()} stores the entered key against every member so
+   * a single key entry lights up all of their capabilities at once. A provider
+   * absent here is its own single-member group.
    *
    * @var array<string, list<string>>
    */
@@ -70,73 +61,54 @@ final class ProviderConnector {
   ];
 
   /**
-   * Settings config object name overrides for non-`ai_provider_*` modules.
-   *
-   * {@see self::settingsNameFor()} assumes the `ai_provider_<id>.settings`
-   * convention; providers whose module breaks it (e.g. `gemini_provider`) are
-   * mapped here. Keyed by provider plugin id => config object name.
-   *
-   * @var array<string, string>
-   */
-  private const SETTINGS_CONFIG = [
-    'gemini' => 'gemini_provider.settings',
-  ];
-
-  /**
    * The Drupal State flag set once onboarding has succeeded.
    */
   public const STATE_COMPLETED = 'aincient_onboarding.completed';
-
-  /**
-   * Provider plugin ids that authenticate with a host URL, not an API key.
-   */
-  private const HOST_PROVIDERS = ['ollama'];
-
-  /**
-   * Default Ollama port when the entered URL omits one.
-   */
-  private const OLLAMA_DEFAULT_PORT = 11434;
 
   public function __construct(
     private readonly StateInterface $state,
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly ConfigFactoryInterface $configFactory,
-    private readonly AiProviderPluginManager $providerManager,
+    private readonly ProviderInventory $providerManager,
     private readonly ModelRoleResolver $resolver,
   ) {}
 
   /**
-   * Whether a provider authenticates with a host URL instead of an API key.
+   * How a provider authenticates, in the provider's own vocabulary.
+   *
+   * Returns the adapter's declared shape verbatim ('api_key' | 'api_key_endpoint'
+   * | 'host') rather than a HOST_PROVIDERS list maintained here (and, until the
+   * adapter migration, in duplicate in {@see ProviderCatalog}). It used to
+   * collapse the three shapes into two, which was safe only for as long as the
+   * third could not be connected at all.
    */
   public function authType(string $providerId): string {
-    return in_array($providerId, self::HOST_PROVIDERS, TRUE) ? 'host' : 'api_key';
+    return $this->providerManager->authShape($providerId);
+  }
+
+  /**
+   * Whether a provider needs a base URL ALONGSIDE its key.
+   *
+   * The distinction the connect step exists to honour: a host provider's URL IS
+   * its credential, whereas an OpenAI-compatible endpoint needs both, and half of
+   * both is not a connection.
+   */
+  private function needsEndpoint(string $providerId): bool {
+    return $this->authType($providerId) === ProviderAdapterInterface::AUTH_KEY_ENDPOINT;
   }
 
   /**
    * Whether a provider actually has a stored, non-empty credential.
    *
-   * The honest "connected?" signal for the Connect step — unlike the provider's
-   * own `isUsable()`, which some plugins (e.g. Anthropic) return TRUE from even
-   * with no key, so it can't tell connected from empty. Host providers count as
-   * connected once a URL is saved; key providers when their configured Key
-   * entity resolves to a non-empty value (covers a key set via onboarding OR
-   * headlessly, as long as it's wired to the provider's `api_key`). No network.
+   * The honest "connected?" signal for the Connect step. It used to be a second
+   * credential reader living here, because `drupal/ai`'s `isUsable()` could not be
+   * trusted (it answered TRUE for three providers with no key stored and FALSE for
+   * one that had one). The registry now reads the same Key entity → State chain
+   * this class writes, so the duplicate is gone and there is exactly one answer to
+   * "is this connected?" on the site. Still no network.
    */
   public function hasStoredCredential(string $providerId): bool {
-    if ($this->authType($providerId) === 'host') {
-      return (string) $this->configFactory->get($this->settingsNameFor($providerId))->get('host_name') !== '';
-    }
-    $keyId = (string) $this->configFactory->get($this->settingsNameFor($providerId))->get('api_key');
-    if ($keyId === '') {
-      return FALSE;
-    }
-    try {
-      $entity = $this->entityTypeManager->getStorage('key')->load($keyId);
-      return $entity !== NULL && (string) $entity->getKeyValue() !== '';
-    }
-    catch (\Throwable) {
-      return FALSE;
-    }
+    return $this->providerManager->isConnected($providerId);
   }
 
   /**
@@ -149,18 +121,24 @@ final class ProviderConnector {
   /**
    * Whether the site has a usable AI configuration.
    *
-   * True once onboarding has run (the completion flag), or — for the operator
-   * who set a key via env without ever seeing the wizard — when the configured
-   * default chat provider is actually usable.
+   * True once onboarding has run (the completion flag), or — for the operator who
+   * provisioned everything headlessly and never saw the wizard — when the everyday
+   * chat role resolves to a provider that is actually connected.
+   *
+   * IT USED TO ASK A DIFFERENT QUESTION: whether `ai.settings`' default chat
+   * provider reported itself usable. Both halves of that were unreliable — the
+   * config is written FROM the role bindings, so it lagged them, and `isUsable()`
+   * answered TRUE with no key stored, which let a keyless site call itself
+   * configured and skip the wizard it needed. Asking the role layer and the stored
+   * credential is the same question with both answers now true.
    */
   public function isConfigured(): bool {
     if ($this->isComplete()) {
       return TRUE;
     }
-    $default = $this->providerManager->getDefaultProviderForOperationType(self::OPERATION_TYPE);
-    return is_array($default)
-      && !empty($default['provider_id'])
-      && $this->isUsable($default['provider_id']);
+    $binding = $this->resolver->resolve(ModelRoles::TASK);
+    $providerId = (string) ($binding['provider_id'] ?? '');
+    return $providerId !== '' && $this->providerManager->isConnected($providerId);
   }
 
   /**
@@ -189,13 +167,15 @@ final class ProviderConnector {
    *   The drupal/ai provider plugin id the user picked.
    * @param string $credential
    *   The API key (key providers) or server URL (host providers).
+   * @param string $endpoint
+   *   The base URL, for a provider that needs one alongside its key.
    *
    * @return array{ok: bool, message: string, models: array<string, string>, suggested: array<string, string>}
    *   On success: the provider's chat models (id => label) and a suggested
    *   model id per role. On failure: a friendly message and empty maps.
    */
-  public function validate(string $providerId, string $credential): array {
-    $probe = $this->probeModels($providerId, $credential);
+  public function validate(string $providerId, string $credential, string $endpoint = ''): array {
+    $probe = $this->probeModels($providerId, $credential, ProviderInventory::CHAT, $endpoint);
     if (!$probe['ok']) {
       return ['ok' => FALSE, 'message' => $probe['message'], 'models' => [], 'suggested' => []];
     }
@@ -233,12 +213,14 @@ final class ProviderConnector {
    * @param array<string, string> $roleModels
    *   Optional role id => chosen model id map (partial allowed). Unspecified or
    *   unavailable roles fall back to suggestions.
+   * @param string $endpoint
+   *   The base URL, for a provider that needs one alongside its key.
    *
    * @return array{ok: bool, message: string, model?: string}
    *   ok=TRUE with the pinned default model's label on success.
    */
-  public function connect(string $providerId, string $credential, string $preferredModel = '', array $roleModels = []): array {
-    $probe = $this->probeModels($providerId, $credential);
+  public function connect(string $providerId, string $credential, string $preferredModel = '', array $roleModels = [], string $endpoint = ''): array {
+    $probe = $this->probeModels($providerId, $credential, ProviderInventory::CHAT, $endpoint);
     if (!$probe['ok']) {
       return ['ok' => FALSE, 'message' => $probe['message']];
     }
@@ -251,7 +233,7 @@ final class ProviderConnector {
       ? $taskModel
       : $this->pickModel($providerId, $models, $preferredModel);
 
-    $this->persist($providerId, $credential, $modelId);
+    $this->persist($providerId, $credential, $modelId, $endpoint);
     $this->bindRoles($providerId, $models, $roleModels);
 
     return [
@@ -273,7 +255,7 @@ final class ProviderConnector {
    * A provider may be a KEY GROUP ({@see self::KEY_GROUPS}): the credential is
    * probed and stored against every member, so one Google key lights up both
    * `gemini` (chat/vision) and `nanobanana` (image) at once. It succeeds when at
-   * least one member answers with models for at least one operation type; only
+   * least one member answers with models for at least one capability; only
    * answering members are stored. Returned model maps and suggestions are
    * `provider:model`-qualified (the members differ), matching the value shape the
    * models step and {@see self::finalizeRoles()} consume.
@@ -282,18 +264,38 @@ final class ProviderConnector {
    *   The provider (or key-group primary) plugin id the user picked.
    * @param string $credential
    *   The API key (key providers) or server URL (host providers).
+   * @param string $endpoint
+   *   The base URL, for a provider that needs one alongside its key. Ignored by
+   *   every other shape — a host provider's URL arrives as the credential.
    *
    * @return array{ok: bool, message: string, models: array{chat: array<string, string>, image: array<string, string>}, suggested: array<string, string>}
    *   On success: chat + image models (each "provider:model" => label) and a
    *   suggested "provider:model" per role. On failure: a friendly message.
    */
-  public function connectAndStore(string $providerId, string $credential): array {
+  public function connectAndStore(string $providerId, string $credential, string $endpoint = ''): array {
     $credential = trim($credential);
+    $endpoint = trim($endpoint);
     $empty = ['chat' => [], 'image' => []];
     if ($credential === '') {
       return [
         'ok' => FALSE,
-        'message' => $this->authType($providerId) === 'host' ? 'Enter your server URL.' : 'Enter your API key.',
+        'message' => $this->authType($providerId) === ProviderAdapterInterface::AUTH_HOST
+          ? 'Enter your server URL.'
+          : 'Enter your API key.',
+        'models' => $empty,
+        'suggested' => [],
+      ];
+    }
+    // Half of what a provider needs is not a connection. This used to be where
+    // an OpenAI-compatible endpoint was turned away entirely, because the connect
+    // step rendered one field and could not collect the second — so the whole
+    // shape was kept out of the picker and documented as a pair of `drush
+    // state:set` calls. The step renders both fields now; what remains is the
+    // ordinary check that both were filled in.
+    if ($this->needsEndpoint($providerId) && $endpoint === '') {
+      return [
+        'ok' => FALSE,
+        'message' => sprintf('Enter the base URL %s should call.', $this->labelFor($providerId)),
         'models' => $empty,
         'suggested' => [],
       ];
@@ -305,14 +307,14 @@ final class ProviderConnector {
     $chatMemberModels = [];
     $failMessage = '';
     foreach (self::KEY_GROUPS[$providerId] ?? [$providerId] as $member) {
-      $chatProbe = $this->probeModels($member, $credential, self::OPERATION_TYPE);
-      $imageProbe = $this->probeModels($member, $credential, self::IMAGE_OPERATION_TYPE);
+      $chatProbe = $this->probeModels($member, $credential, ProviderInventory::CHAT, $endpoint);
+      $imageProbe = $this->probeModels($member, $credential, ProviderInventory::IMAGE, $endpoint);
       if (!$chatProbe['ok'] && !$imageProbe['ok']) {
         $failMessage = $chatProbe['message'] ?: $imageProbe['message'];
         continue;
       }
       // At least one capability answered — store this member's credential.
-      $this->persistCredential($member, $credential);
+      $this->persistCredential($member, $credential, $endpoint);
       if ($chatProbe['ok']) {
         $chat += $this->qualify($member, $chatProbe['models']);
         if ($chatMember === '') {
@@ -328,10 +330,6 @@ final class ProviderConnector {
     if ($chat === [] && $image === []) {
       return ['ok' => FALSE, 'message' => $failMessage ?: $this->failMessage($providerId), 'models' => $empty, 'suggested' => []];
     }
-
-    // A provider was just connected — its model list is now different; drop the
-    // cache flowdrop_ai_provider keeps under this tag (see persist()).
-    Cache::invalidateTags(['ai_provider_models']);
 
     return [
       'ok' => TRUE,
@@ -426,27 +424,14 @@ final class ProviderConnector {
     $chat = [];
     $image = [];
     foreach (self::KEY_GROUPS[$providerId] ?? [$providerId] as $member) {
-      // Gate by the op the provider actually supports — some providers (e.g.
-      // Anthropic) return their chat list for ANY op type, which would otherwise
-      // pollute the image pool with models that can't generate images.
-      if ($this->supportsOperation($member, self::OPERATION_TYPE)) {
-        $chat += $this->qualify($member, $this->configuredModels($member, self::OPERATION_TYPE));
-      }
-      if ($this->supportsOperation($member, self::IMAGE_OPERATION_TYPE)) {
-        $image += $this->qualify($member, $this->configuredModels($member, self::IMAGE_OPERATION_TYPE));
-      }
+      // No capability gate to apply here any more. It used to need one because
+      // Anthropic answered an image-model question with its chat list, so an
+      // ungated read filled the image pool with models that cannot draw; image
+      // capability is now a type the provider either has or does not.
+      $chat += $this->qualify($member, $this->providerManager->models($member, ProviderInventory::CHAT));
+      $image += $this->qualify($member, $this->providerManager->models($member, ProviderInventory::IMAGE));
     }
     return ['chat' => $chat, 'image' => $image];
-  }
-
-  /**
-   * Whether a provider plugin declares support for an operation type.
-   */
-  private function supportsOperation(string $providerId, string $operationType): bool {
-    return array_key_exists(
-      $providerId,
-      $this->providerManager->getProvidersForOperationType($operationType, FALSE),
-    );
   }
 
   /**
@@ -468,55 +453,31 @@ final class ProviderConnector {
       $removed[$member] = TRUE;
     }
     $this->unbindProviders($removed);
-    // The removed provider's model list is gone; drop the cache that
-    // flowdrop_ai_provider keeps under this tag (see persist()).
-    Cache::invalidateTags(['ai_provider_models']);
-  }
-
-  /**
-   * A provider's models for an op type, resolved from its STORED credential.
-   *
-   * No {@see AiProviderInterface::setAuthentication()} — the provider loads its
-   * configured Key entity → State on its own. Any failure (no key, network
-   * error) collapses to an empty list, so a keyless provider is cheap and quiet.
-   *
-   * @return array<string, string>
-   *   Raw model map (id => label), or [] when nothing is resolvable.
-   */
-  private function configuredModels(string $providerId, string $operationType): array {
-    try {
-      $models = $this->providerManager->createInstance($providerId)->getConfiguredModels($operationType);
-      return is_array($models) ? $models : [];
-    }
-    catch (\Throwable) {
-      return [];
-    }
   }
 
   /**
    * Delete a single provider's stored credential (key store or host config).
    *
    * The inverse of {@see self::persistCredential()}. Key providers lose their
-   * State value, Key entity, and `api_key` pointer; host providers lose their
-   * saved URL.
+   * Key entity and their State value; host providers lose their saved endpoint.
+   * A provider that stores BOTH loses both — leaving the endpoint behind would
+   * make `isConnected()` say no while a disconnected provider still carried half
+   * a configuration for the next operator to be surprised by.
    */
   private function removeCredential(string $providerId): void {
-    if ($this->authType($providerId) === 'host') {
-      $this->configFactory->getEditable($this->settingsNameFor($providerId))
-        ->clear('host_name')
-        ->clear('port')
-        ->save();
+    if ($this->authType($providerId) === ProviderAdapterInterface::AUTH_HOST) {
+      $this->state->delete($this->endpointKeyFor($providerId));
       return;
     }
-    // Clear the provider's pointer first, then the Key entity, then the secret.
-    $this->configFactory->getEditable($this->settingsNameFor($providerId))
-      ->clear('api_key')
-      ->save();
+    // The Key entity first, then the secret it pointed at.
     $entity = $this->entityTypeManager->getStorage('key')->load($this->keyIdFor($providerId));
     if ($entity !== NULL) {
       $entity->delete();
     }
     $this->state->delete($this->stateKeyFor($providerId));
+    if ($this->needsEndpoint($providerId)) {
+      $this->state->delete($this->endpointKeyFor($providerId));
+    }
   }
 
   /**
@@ -541,25 +502,12 @@ final class ProviderConnector {
   }
 
   /**
-   * Drop any ai.settings / flowdrop_chat default that names a removed provider.
+   * Drop any flowdrop_chat default that names a removed provider.
    *
    * @param array<string, true> $removed
    *   Set of removed provider ids.
    */
   private function sweepDefaults(array $removed): void {
-    $settings = $this->configFactory->getEditable('ai.settings');
-    $providers = $settings->get('default_providers') ?? [];
-    $changed = FALSE;
-    foreach ($providers as $operationType => $binding) {
-      if (isset($removed[(string) ($binding['provider_id'] ?? '')])) {
-        unset($providers[$operationType]);
-        $changed = TRUE;
-      }
-    }
-    if ($changed) {
-      $settings->set('default_providers', $providers)->save();
-    }
-
     // flowdrop_chat stores a colon-joined "provider:model". Read-only get() never
     // creates the object, so an absent module/config is simply skipped.
     $llm = (string) $this->configFactory->get('flowdrop_chat.settings')->get('llm_provider');
@@ -583,28 +531,26 @@ final class ProviderConnector {
    * @param string $modelId
    *   The chat model id to pin (the caller resolves it from the provider's own
    *   models — no vendor default is assumed).
+   * @param string $endpoint
+   *   The base URL, for a provider that needs one alongside its key.
    */
-  public function persist(string $providerId, string $credential, string $modelId = ''): void {
-    $this->persistCredential($providerId, $credential);
+  public function persist(string $providerId, string $credential, string $modelId = '', string $endpoint = ''): void {
+    $this->persistCredential($providerId, $credential, $endpoint);
 
+    // Pin the choice by BINDING THE DEFAULT ROLE, not by writing an operation-type
+    // default into `ai.settings` as this used to. Same promise, expressed in the
+    // vocabulary the site actually resolves through — and it is the pin the
+    // console reads to decide whether onboarding is still owed
+    // ({@see \Drupal\aincient_chat\Controller\ChatController::needsOnboarding()}).
+    // Skipped without a model: binding a role to an empty model id is not a pin,
+    // it is an unbind, and callers who pass none are storing a credential only.
     $modelId = trim($modelId);
-    $settings = $this->configFactory->getEditable('ai.settings');
-    $providers = $settings->get('default_providers') ?? [];
-    $providers[self::OPERATION_TYPE] = [
-      'provider_id' => $providerId,
-      'model_id' => $modelId,
-    ];
-    $settings->set('default_providers', $providers)->save();
+    if ($modelId !== '') {
+      $this->resolver->bind($this->resolver->defaultRole(), $providerId, $modelId);
+      $this->resolver->project();
+    }
 
     $this->state->set(self::STATE_COMPLETED, TRUE);
-
-    // A provider was just connected (key stored, default pinned), so the AI
-    // model list is now different. flowdrop_ai_provider's AiModelService caches
-    // that list permanently under the `ai_provider_models` tag and only drops
-    // it on this tag's invalidation — nothing else fires when a key lands in
-    // State. Without this, the cache stays at its pre-onboarding (empty) value
-    // and chat nodes resolve no model until a manual `drush cr`.
-    Cache::invalidateTags(['ai_provider_models']);
   }
 
   /**
@@ -614,14 +560,31 @@ final class ProviderConnector {
    * and the multi-provider {@see self::connectAndStore()} — it stores the secret
    * without touching the default provider or the completion flag, so callers
    * compose it with their own finalisation.
+   *
+   * @param string $providerId
+   *   The provider whose credential is being stored.
+   * @param string $credential
+   *   The API key, or the base URL when the URL IS the credential (host).
+   * @param string $endpoint
+   *   The base URL, for a provider that needs one alongside its key.
    */
-  private function persistCredential(string $providerId, string $credential): void {
-    if ($this->authType($providerId) === 'host') {
-      [$host, $port] = $this->parseHost($credential);
-      $this->writeHostConfig($providerId, $host, $port);
+  private function persistCredential(string $providerId, string $credential, string $endpoint = ''): void {
+    if ($this->authType($providerId) === ProviderAdapterInterface::AUTH_HOST) {
+      // A host provider's whole credential is its base URL, and the registry reads
+      // that from State ({@see PlatformRegistry::endpointFor()}) — so it is stored
+      // like any other value, with no per-vendor config object, no host/port split,
+      // and no default-port guessing. All three of those were `drupal/ai`'s Ollama
+      // client dictating our storage shape.
+      $this->state->set($this->endpointKeyFor($providerId), trim($credential));
+      return;
     }
-    else {
-      $this->storeApiKey($providerId, $credential);
+    $this->storeApiKey($providerId, $credential);
+    // The second half, under the SAME State convention the registry already reads
+    // for host providers — so an OpenAI-compatible endpoint needs no third storage
+    // shape, and a `drush state:set`-provisioned install and a wizard-connected one
+    // are byte-identical.
+    if ($this->needsEndpoint($providerId)) {
+      $this->state->set($this->endpointKeyFor($providerId), trim($endpoint));
     }
   }
 
@@ -688,8 +651,12 @@ final class ProviderConnector {
    *
    * The secret lives in Drupal State (the persistent volume in the appliance),
    * never in config — so a later `drush cex` captures at most "key_provider:
-   * state", never the value. The provider's `api_key` setting is pointed at the
-   * (created-if-missing) key entity.
+   * state", never the value. The (created-if-missing) Key entity is the named
+   * handle on it; {@see \Drupal\aincient_core\Inference\PlatformRegistry}
+   * resolves both by convention from the provider id, so there is no per-vendor
+   * config object pointing at either. There used to be one — the
+   * `ai_provider_<id>.settings: api_key` pointer the `drupal/ai` provider plugins
+   * read — and it went with those modules.
    */
   private function storeApiKey(string $providerId, string $key): void {
     $keyId = $this->keyIdFor($providerId);
@@ -709,105 +676,58 @@ final class ProviderConnector {
     $entity->set('key_provider', 'state');
     $entity->set('key_provider_settings', ['state_key' => $stateKey]);
     $entity->save();
-
-    $this->configFactory->getEditable($this->settingsNameFor($providerId))
-      ->set('api_key', $keyId)
-      ->save();
   }
 
   /**
-   * Write a host provider's URL to its settings; return the prior values.
+   * Probe a provider with a candidate credential, or fail with a message.
    *
-   * @return array{host: ?string, port: ?int}
-   *   The values before the write, for rollback on a failed validation.
-   */
-  private function writeHostConfig(string $providerId, string $host, ?int $port): array {
-    $config = $this->configFactory->getEditable($this->settingsNameFor($providerId));
-    $prior = [
-      'host' => $config->get('host_name'),
-      'port' => $config->get('port'),
-    ];
-    $config->set('host_name', $host)->set('port', $port)->save();
-    return $prior;
-  }
-
-  /**
-   * Split a server URL into a scheme+host and a port (Ollama default if none).
+   * The shared validation core of {@see self::validate()},
+   * {@see self::connect()} and {@see self::connectAndStore()}: it asks the
+   * provider for its models with the credential the operator just typed — a real
+   * round-trip, which is what makes "models came back" mean "the key works".
    *
-   * @return array{0: string, 1: int}
-   *   [host_name, port] — host_name carries the scheme, port is separate, to
-   *   match how the Ollama client rebuilds the base URL.
-   */
-  private function parseHost(string $url): array {
-    $url = trim($url);
-    if (!preg_match('#^https?://#i', $url)) {
-      $url = 'http://' . $url;
-    }
-    $parts = parse_url($url);
-    $scheme = $parts['scheme'] ?? 'http';
-    $host = $parts['host'] ?? 'localhost';
-    $port = isset($parts['port']) ? (int) $parts['port'] : self::OLLAMA_DEFAULT_PORT;
-    return [$scheme . '://' . $host, $port];
-  }
-
-  /**
-   * Probe a provider with a credential and return its chat models, or fail.
+   * READS ONLY. Nothing is written, and nothing needs unwinding: the adapter takes
+   * the candidate credential as an argument
+   * ({@see ProviderInventory::modelsForCredential()}), where the old path had to
+   * hand a live plugin a runtime override — or, for a host provider, SAVE the URL,
+   * build a plugin so it could read it back, and roll the config back in a
+   * `finally`. That rollback was the riskiest code in this file for the least
+   * reason, and it is gone rather than ported.
    *
-   * The shared validation core of {@see self::validate()} and
-   * {@see self::connect()}: it asks the provider for its chat models (a real
-   * round-trip that proves the credential). Host providers read their endpoint
-   * from saved config, so the URL is written first and ALWAYS rolled back here —
-   * callers that want to keep it persist it themselves afterwards. Leaves no
-   * trace on failure.
-   *
-   * @param string $operationType
-   *   The operation type to probe (defaults to chat; the image path passes
-   *   {@see self::IMAGE_OPERATION_TYPE}).
+   * @param string $providerId
+   *   The provider to probe.
+   * @param string $credential
+   *   The candidate API key, or the server URL for a host provider.
+   * @param string $capability
+   *   {@see ProviderInventory::CHAT} or {@see ProviderInventory::IMAGE}.
+   * @param string $endpoint
+   *   The base URL, for a provider that needs one alongside its key.
    *
    * @return array{ok: bool, message: string, models: array<string, string>}
    *   ok=TRUE with the model map (id => label) when the credential answered.
    */
-  private function probeModels(string $providerId, string $credential, string $operationType = self::OPERATION_TYPE): array {
+  private function probeModels(string $providerId, string $credential, string $capability = ProviderInventory::CHAT, string $endpoint = ''): array {
     $credential = trim($credential);
+    $endpoint = trim($endpoint);
     if ($credential === '') {
       return [
         'ok' => FALSE,
-        'message' => $this->authType($providerId) === 'host'
+        'message' => $this->authType($providerId) === ProviderAdapterInterface::AUTH_HOST
           ? 'Enter your server URL.'
           : 'Enter your API key.',
         'models' => [],
       ];
     }
-
-    $isHost = $this->authType($providerId) === 'host';
-    $rollback = NULL;
-    $models = [];
-    try {
-      if ($isHost) {
-        [$host, $port] = $this->parseHost($credential);
-        $rollback = $this->writeHostConfig($providerId, $host, $port);
-        // Fresh instance: the Ollama client reads its host from saved config at
-        // construction, so it must be created AFTER the write.
-        $provider = $this->providerManager->createInstance($providerId);
-      }
-      else {
-        $provider = $this->providerManager->createInstance($providerId);
-        // Runtime-only key override; nothing is written by the probe.
-        $provider->setAuthentication($credential);
-      }
-      $models = $provider->getConfiguredModels($operationType);
-    }
-    catch (\Throwable $e) {
-      $models = [];
-    }
-    finally {
-      // The probe never persists host config — the caller does, on success.
-      if ($rollback !== NULL) {
-        $this->writeHostConfig($providerId, $rollback['host'], $rollback['port']);
-      }
+    if ($this->needsEndpoint($providerId) && $endpoint === '') {
+      return [
+        'ok' => FALSE,
+        'message' => sprintf('Enter the base URL %s should call.', $this->labelFor($providerId)),
+        'models' => [],
+      ];
     }
 
-    if (empty($models)) {
+    $models = $this->providerManager->modelsForCredential($providerId, $capability, $credential, $endpoint);
+    if ($models === []) {
       return ['ok' => FALSE, 'message' => $this->failMessage($providerId), 'models' => []];
     }
     return ['ok' => TRUE, 'message' => '', 'models' => $models];
@@ -859,24 +779,10 @@ final class ProviderConnector {
   }
 
   /**
-   * Whether a provider is already configured and ready to use.
-   */
-  private function isUsable(string $providerId): bool {
-    try {
-      return $this->providerManager->createInstance($providerId)->isUsable(self::OPERATION_TYPE);
-    }
-    catch (\Throwable) {
-      return FALSE;
-    }
-  }
-
-  /**
-   * The provider's human label (e.g. "OpenAI"), falling back to its id.
+   * The provider's human label (e.g. "Anthropic"), falling back to its id.
    */
   private function labelFor(string $providerId): string {
-    $definitions = $this->providerManager->getDefinitions();
-    $label = $definitions[$providerId]['label'] ?? '';
-    return $label !== '' ? (string) $label : ucfirst($providerId);
+    return $this->providerManager->label($providerId);
   }
 
   /**
@@ -884,11 +790,17 @@ final class ProviderConnector {
    */
   private function failMessage(string $providerId): string {
     $label = $this->labelFor($providerId);
-    if ($this->authType($providerId) === 'host') {
+    if ($this->authType($providerId) === ProviderAdapterInterface::AUTH_HOST) {
       return sprintf(
-        'Couldn’t reach %s at that URL, or it has no chat models. Make sure the server is running and a model is pulled (e.g. `ollama pull llama3`), then try again.',
+        'Couldn’t reach %s at that URL, or it has no chat models. Make sure the server is running and a model is pulled, then try again.',
         $label,
       );
+    }
+    if ($this->needsEndpoint($providerId)) {
+      // Two fields, two candidate culprits, and the failure cannot tell them
+      // apart — a wrong base URL and a refused key both come back as an empty
+      // catalogue. Naming both beats guessing at one.
+      return sprintf('Couldn’t reach %s — check the base URL and the key, then try again.', $label);
     }
     return sprintf('Couldn’t validate your %s key — check it and try again.', $label);
   }
@@ -908,14 +820,14 @@ final class ProviderConnector {
   }
 
   /**
-   * The settings config object name for a provider module.
+   * The Drupal State key a host provider's base URL is stored under.
    *
-   * Follows the `ai_provider_<id>.settings` convention, with per-provider
-   * overrides ({@see self::SETTINGS_CONFIG}) for modules that break it (e.g.
-   * `gemini_provider`, whose config is `gemini_provider.settings`).
+   * The same convention as the secret, and the same one
+   * {@see \Drupal\aincient_core\Inference\PlatformRegistry::endpointFor()} reads —
+   * one place, one spelling, no vendor config object in between.
    */
-  private function settingsNameFor(string $providerId): string {
-    return self::SETTINGS_CONFIG[$providerId] ?? 'ai_provider_' . $providerId . '.settings';
+  private function endpointKeyFor(string $providerId): string {
+    return 'aincient.' . $providerId . '_endpoint';
   }
 
 }

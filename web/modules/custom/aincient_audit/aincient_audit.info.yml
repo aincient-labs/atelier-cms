@@ -6,7 +6,6 @@ package: AIncient
 core_version_requirement: ^11
 dependencies:
   - drupal:node
-  - ai:ai
   - metatag:metatag
   - aincient_pages
   - aincient_core

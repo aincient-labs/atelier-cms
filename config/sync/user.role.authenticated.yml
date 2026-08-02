@@ -5,7 +5,6 @@ dependencies:
   config:
     - filter.format.basic_html
   module:
-    - ai_metering
     - file
     - filter
     - media
@@ -19,6 +18,5 @@ permissions:
   - 'access content'
   - 'delete own files'
   - 'search content'
-  - 'use ai_metering'
   - 'use text format basic_html'
   - 'view media'

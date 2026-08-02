@@ -42,8 +42,7 @@ services:
     class: Drupal\aincient_chat\Chat\ThreadNamer
     arguments:
       - '@aincient_chat.thread_store'
-      - '@aincient_core.model_role_resolver'
-      - '@ai.provider'
+      - '@aincient_core.inference.gateway'
       - '@logger.channel.aincient_chat'
 
   # The non-agent flow dispatch seam (async / long-running / HITL). Backed by
@@ -85,10 +84,12 @@ services:
     tags:
       - { name: event_subscriber }
 
-  # Live token-usage + cost meter: relays ai_metering's per-call record-created
-  # event onto the armed stream as `usage` frames. Subscribes by literal event
-  # name, so it registers fine when ai_metering is absent (the event never
-  # fires). The console sums the frames into a per-turn footer + session total.
+  # Live token-usage + cost meter: relays aincient_core's UsageRecordedEvent —
+  # dispatched by the usage log once a call's row is written — onto the armed
+  # stream as `usage` frames. The event and the writer are both ours (this module
+  # already depends on aincient_core), so the subscriber binds to the event class
+  # constant rather than a literal name. The console sums the frames into a
+  # per-turn footer + session total.
   aincient_chat.usage_stream_subscriber:
     class: Drupal\aincient_chat\EventSubscriber\UsageStreamSubscriber
     arguments:

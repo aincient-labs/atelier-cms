@@ -33,7 +33,6 @@ final class BrandApplySlicesTest extends KernelTestBase {
     'system',
     'user',
     'key',
-    'ai',
     'aincient_core',
     'workflows',
     'content_moderation',

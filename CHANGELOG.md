@@ -7,6 +7,23 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-08-02
+- **New: Ollama, OpenAI and Mistral are connectable again**, each with a single field in setup
+  — a key, or for Ollama the address of your own server. Existing model choices keep working;
+  nothing needs to be re-picked.
+- **New: connect any OpenAI-compatible endpoint** — DeepSeek, Groq, OpenRouter, LiteLLM, vLLM,
+  LM Studio and anything else speaking that shape — by giving a base URL and a key.
+- **The setup picker only offers providers Atelier can actually use.** It previously listed
+  providers that would fail the moment you tried to use them.
+- **New: an AI usage dashboard and a call log**, showing what each part of Atelier is spending
+  and where the calls came from.
+- **New: an editable rate sheet** for model prices, which tells you when a price has gone stale
+  rather than quietly reporting an old number. Costs were previously under-reported.
+- **Fixed: starting a new page from chat could show a "not found" screen** instead of the page
+  you were creating.
+- **Clearer field labels in the Globals editor**, and a pager that keeps its shape at both ends
+  of a long list.
+
 ## 2026-08-01
 - **New: link a button to a page by picking it.** A call-to-action can now point at a page you
   choose from your own site, instead of a URL you had to go and look up first — on hero buttons

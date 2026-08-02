@@ -5,6 +5,8 @@ description: 'The AIncient chat layer: a streaming chat adapter/processor, the h
 package: AIncient
 core_version_requirement: ^11
 dependencies:
-  - ai
+  # No `- ai`: the chat layer reasons through aincient_core's own symfony/ai
+  # adapters. It carried the dependency for the onboarding gate, which read
+  # `ai.settings:default_providers.chat` — that now asks the role layer instead.
   - key
   - aincient_core

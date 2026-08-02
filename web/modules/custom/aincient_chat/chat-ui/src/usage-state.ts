@@ -5,7 +5,8 @@ import { useAssistantRuntime } from "@assistant-ui/react";
  * Running AI token-usage + cost total for a conversation, per thread.
  *
  * The SSE protocol streams a `usage` frame per metered AI call (relayed from
- * ai_metering; see UsageStreamSubscriber). Each turn's footer sums its own
+ * the row Atelier's usage log just wrote; see UsageStreamSubscriber). Each
+ * turn's footer sums its own
  * frames locally, but the SESSION total has to outlive a single run — so, like
  * the run-status text and the flow pin, it lives in a side map keyed by backend
  * thread id. The adapter adds each frame here; a chip near the composer reads
@@ -13,8 +14,8 @@ import { useAssistantRuntime } from "@assistant-ui/react";
  *
  * Live, in-session only: this accumulates across the turns you run in this tab
  * and resets on reload (it is not re-hydrated from the server — the per-turn
- * trail is live-only too). The authoritative lifetime total lives in
- * ai_metering's own dashboard.
+ * trail is live-only too). The authoritative lifetime total is the usage report
+ * at /admin/reports/aincient/usage.
  */
 
 /** A token + cost tally. `cost` is summed only from calls that reported one. */

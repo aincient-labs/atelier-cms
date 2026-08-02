@@ -353,7 +353,7 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
   const anyFixable = (report?.checks ?? []).some((c) => c.findings.some(isAiFixable));
 
   return (
-    <div className="ain-studio__rail">
+    <div className="ain-studio__rail" data-testid="studio-rail" data-studio="checks">
       {/* Re-run / Save / Publish / leave pin to the top bar (reachable when the
           rail collapses to a sheet). */}
       <StudioActionsPortal>

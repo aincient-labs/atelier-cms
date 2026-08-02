@@ -26,7 +26,7 @@ enum ChatEventType: string {
   case INTERRUPT = 'interrupt';
   case RESULT = 'result';
   // Token usage + estimated cost for one metered AI call within the turn
-  // (relayed from ai_metering's record-created event). The console accumulates
+  // (relayed from aincient_core's UsageRecordedEvent). The console accumulates
   // these into a per-turn footer and a running session total.
   case USAGE = 'usage';
   // The studio named the thread after its first exchange (ThreadNamer): the

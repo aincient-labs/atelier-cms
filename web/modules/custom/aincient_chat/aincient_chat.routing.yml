@@ -29,6 +29,32 @@ aincient_chat.console_studio:
     _permission: 'use aincient operator console'
     studio: '(?!chat$)[a-z][a-z0-9_-]*'
 
+# The New-page draft room. `console-url.ts` lists /atelier/content/draft and
+# /atelier/content/draft/<thread> as bookmarkable rooms and roomToPath EMITS
+# them, so the client pushes those URLs — but with no server route behind them a
+# reload or a shared link 404'd. Two segments (studio + the literal `draft`),
+# optionally the thread that IS the draft's identity. Distinct from console_doc
+# below: `draft` is not a doc_type, and a thr_* id is not a numeric nid, so
+# neither route can shadow the other.
+aincient_chat.console_draft:
+  path: '/atelier/{studio}/draft'
+  defaults:
+    _controller: 'Drupal\aincient_chat\Controller\ConsoleController::app'
+    _title: 'Atelier'
+  requirements:
+    _permission: 'use aincient operator console'
+    studio: '(?!chat$)[a-z][a-z0-9_-]*'
+
+aincient_chat.console_draft_thread:
+  path: '/atelier/{studio}/draft/{thread}'
+  defaults:
+    _controller: 'Drupal\aincient_chat\Controller\ConsoleController::app'
+    _title: 'Atelier'
+  requirements:
+    _permission: 'use aincient operator console'
+    studio: '(?!chat$)[a-z][a-z0-9_-]*'
+    thread: 'thr_[A-Za-z0-9_-]+'
+
 aincient_chat.console_doc:
   path: '/atelier/{studio}/{doc_type}/{nid}'
   defaults:

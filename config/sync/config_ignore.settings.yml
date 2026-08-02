@@ -2,11 +2,6 @@ _core:
   default_config_hash: IgOVnECx6lbVt6JVFnadoEEugneDf3UblPZnOzov43Q
 mode: simple
 ignored_config_entities:
-  - ai.settings
-  - ai_metering.settings
-  - ai_provider_anthropic.settings
-  - ai_provider_ollama.settings
-  - ai_provider_openai.settings
   - aincient_core.model_roles
   - aincient_mail.settings
   - aincient_pages.brand

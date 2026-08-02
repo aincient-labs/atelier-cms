@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core;
 
-use Drupal\ai\AiProviderPluginManager;
-use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 
@@ -18,10 +16,8 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
  * console settings form, or the manager CLI — and this service:
  *
  * - stores the binding in `aincient_core.model_roles` (the source of truth);
- * - {@see self::project()}s the bindings onto drupal/ai's operation-type defaults
- *   (`ai.settings:default_providers`) + `flowdrop_chat.settings:llm_provider`, so
- *   stock FlowDrop agent nodes inherit them via their empty-model fallback — no
- *   contrib patching;
+ * - {@see self::project()}s the default role onto `flowdrop_chat.settings:llm_provider`,
+ *   so the chat layer agrees with the console default — no contrib patching;
  * - {@see self::resolve()}s a role to a usable provider+model with a graceful
  *   fallback chain, for any code that wants to honour a role directly.
  *
@@ -30,11 +26,16 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
  */
 final class ModelRoleResolver {
 
-  private const CONFIG = 'aincient_core.model_roles';
+  /**
+   * The config object holding the bindings — public for the same reason
+   * {@see \Drupal\aincient_core\Usage\ModelPricing::CONFIG} is: a surface
+   * that renders these bindings needs their cache tag, and a hand-typed config
+   * name in a second file is a rename waiting to go unnoticed.
+   */
+  public const CONFIG = 'aincient_core.model_roles';
 
   public function __construct(
     private readonly ConfigFactoryInterface $configFactory,
-    private readonly AiProviderPluginManager $providerManager,
     private readonly ModuleHandlerInterface $moduleHandler,
   ) {}
 
@@ -76,10 +77,19 @@ final class ModelRoleResolver {
    *
    * Fallback chain, first hit wins:
    *   1. the role's own binding;
-   *   2. the default role's binding;
-   *   3. drupal/ai's default for the role's first operation type (or `chat`);
-   *   4. drupal/ai's default `chat` provider.
+   *   2. the default role's binding.
    * Returns empty strings if nothing is configured (a genuinely neutral site).
+   *
+   * IT USED TO HAVE TWO MORE LINKS, reading drupal/ai's operation-type defaults
+   * (`ai.settings: default_providers`) when no role was bound. They are gone, and
+   * the reason is that they could only ever resolve to something that then failed:
+   * that config is WRITTEN from these bindings by {@see self::project()}, so the
+   * only way it could hold a provider the roles do not is if something outside the
+   * role layer put one there — and after the move to `symfony/ai` such a provider
+   * has no adapter, so the gateway answers UNUSABLE and the call never happens.
+   * A fallback whose every distinct outcome is a failure is not a graceful
+   * degradation, it is a longer path to the same empty answer. Projection onto
+   * those defaults continues unchanged — stock FlowDrop still reads them.
    *
    * @return array{provider_id: string, model_id: string}
    */
@@ -89,26 +99,9 @@ final class ModelRoleResolver {
     }
     $bindings = $this->configFactory->get(self::CONFIG)->get('roles') ?? [];
 
-    $binding = $this->bindingFrom($bindings, $role);
-    if ($binding !== NULL) {
-      return $binding;
-    }
-    $binding = $this->bindingFrom($bindings, $this->defaultRole());
-    if ($binding !== NULL) {
-      return $binding;
-    }
-
-    $ops = ModelRoles::operationTypeMap()[$role] ?? [];
-    $operationType = $ops[0] ?? 'chat';
-    $default = $this->providerManager->getDefaultProviderForOperationType($operationType)
-      ?: $this->providerManager->getDefaultProviderForOperationType('chat');
-    if (is_array($default) && !empty($default['provider_id'])) {
-      return [
-        'provider_id' => (string) $default['provider_id'],
-        'model_id' => (string) ($default['model_id'] ?? ''),
-      ];
-    }
-    return ['provider_id' => '', 'model_id' => ''];
+    return $this->bindingFrom($bindings, $role)
+      ?? $this->bindingFrom($bindings, $this->defaultRole())
+      ?? ['provider_id' => '', 'model_id' => ''];
   }
 
   /**
@@ -126,8 +119,24 @@ final class ModelRoleResolver {
    * @return array{provider_id: string, model_id: string}|null
    */
   public function imageBinding(): ?array {
+    return $this->binding(ModelRoles::IMAGE);
+  }
+
+  /**
+   * The EXPLICIT binding for ANY role, or NULL when nothing is bound.
+   *
+   * The generalisation of the two named accessors around it, for a caller that
+   * walks {@see ModelRoles::pickerDefinitions()} and must treat all five roles
+   * the same way — the rate sheet, which asks "what is this role actually bound
+   * to" five times and would otherwise need a switch to ask it. NO fallback:
+   * unbound reads as unbound, which is the only answer a page reporting
+   * configuration may give.
+   *
+   * @return array{provider_id: string, model_id: string}|null
+   */
+  public function binding(string $role): ?array {
     $bindings = $this->configFactory->get(self::CONFIG)->get('roles') ?? [];
-    return $this->bindingFrom($bindings, ModelRoles::IMAGE);
+    return $this->bindingFrom($bindings, $role);
   }
 
   /**
@@ -143,8 +152,7 @@ final class ModelRoleResolver {
    * @return array{provider_id: string, model_id: string}|null
    */
   public function visionBinding(): ?array {
-    $bindings = $this->configFactory->get(self::CONFIG)->get('roles') ?? [];
-    return $this->bindingFrom($bindings, ModelRoles::VISION);
+    return $this->binding(ModelRoles::VISION);
   }
 
   /**
@@ -230,30 +238,20 @@ final class ModelRoleResolver {
   /**
    * Project the current role bindings onto the framework's routing.
    *
-   * Writes each bound role's provider+model into every drupal/ai operation-type
-   * default it maps to, and sets `flowdrop_chat.settings:llm_provider` from the
-   * default role. Unbound roles are skipped (their operation-type defaults are
-   * left as-is). This is what makes stock FlowDrop pick up the operator's choice.
+   * Sets `flowdrop_chat.settings:llm_provider` from the default role, so the
+   * chat layer agrees with the console default.
+   *
+   * This used to ALSO write every bound role into the drupal/ai operation-type
+   * defaults at `ai.settings:default_providers`, which is where the name
+   * "project" comes from. That half is gone. Its readers were the `ai_provider_*`
+   * config forms and `flowdrop_ai_provider`, all uninstalled once inference moved
+   * to our own adapters, so it had become a write with no reader — and a
+   * misleading one, because a stale operation-type default looks like a routing
+   * table long after anything stopped routing by it. Roles are resolved through
+   * {@see self::resolve()} directly.
    */
   public function project(): void {
     $roles = $this->configFactory->get(self::CONFIG)->get('roles') ?? [];
-    $map = ModelRoles::operationTypeMap();
-
-    $settings = $this->configFactory->getEditable('ai.settings');
-    $providers = $settings->get('default_providers') ?? [];
-    foreach ($map as $role => $operationTypes) {
-      $binding = $this->bindingFrom($roles, $role);
-      if ($binding === NULL) {
-        continue;
-      }
-      foreach ($operationTypes as $operationType) {
-        $providers[$operationType] = [
-          'provider_id' => $binding['provider_id'],
-          'model_id' => $binding['model_id'],
-        ];
-      }
-    }
-    $settings->set('default_providers', $providers)->save();
 
     // flowdrop_chat takes a colon-joined "provider:model" string; seed it from
     // the default role so the chat layer agrees with the console default. Guarded
@@ -265,13 +263,6 @@ final class ModelRoleResolver {
         ->set('llm_provider', $default['provider_id'] . ':' . $default['model_id'])
         ->save();
     }
-
-    // Rebinding roles changes which provider/model each operation type resolves
-    // to. flowdrop_ai_provider's AiModelService caches its per-operation model
-    // list permanently under the `ai_provider_models` tag; invalidate it so the
-    // new bindings take effect immediately rather than after a manual cache
-    // rebuild.
-    Cache::invalidateTags(['ai_provider_models']);
   }
 
   /**

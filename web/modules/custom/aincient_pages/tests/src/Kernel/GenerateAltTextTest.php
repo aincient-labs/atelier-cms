@@ -12,29 +12,32 @@ use Drupal\image\Entity\ImageStyle;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\media\Entity\Media;
 use Drupal\media\Entity\MediaType;
+use Drupal\Tests\aincient_core\Traits\ScriptedInferenceTrait;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
  * Tests the generate_alt_text capability (the Media studio's vision rail).
  *
- * Uses drupal/ai's bundled `echoai` test provider (it implements ChatInterface)
- * as the vision model, so the whole tool path runs — vision role resolution →
- * chat call with the image attached → alt write → widget envelope — without a
- * live vision API key. echoai echoes its input, so the "alt text" it returns is
- * deterministic non-empty text, which is all this path needs to assert.
+ * Runs on the scripted inference provider ({@see ScriptedInferenceTrait}) as the
+ * vision model, so the whole tool path runs — vision role resolution → chat call
+ * with the image attached → alt suggestion → widget envelope — without a live
+ * vision API key. The provider answers with whatever the test scripted, so the
+ * assertions are about the product's promise (the model's words reach the human,
+ * unwritten) rather than about an echo.
  *
  * @group aincient
  */
 #[RunTestsInSeparateProcesses]
 final class GenerateAltTextTest extends KernelTestBase {
 
+  use ScriptedInferenceTrait;
   use UserCreationTrait;
 
   protected static $modules = [
     'system', 'user', 'field', 'text', 'file', 'image', 'media',
-    'workflows', 'content_moderation', 'key', 'ai', 'ai_test',
-    'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'key',
+    'aincient_core', 'aincient_inference_test', 'aincient_pages',
   ];
 
   protected function setUp(): void {
@@ -42,8 +45,6 @@ final class GenerateAltTextTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('file');
     $this->installEntitySchema('media');
-    // echoai's chat() consults the ai_test mock-response store.
-    $this->installEntitySchema('ai_mock_provider_result');
     $this->installSchema('file', ['file_usage']);
     $this->installConfig(['system', 'field', 'media']);
 
@@ -77,7 +78,7 @@ final class GenerateAltTextTest extends KernelTestBase {
 
   /** Run the tool with the given context, returning its readable output. */
   private function invoke(array $context): string {
-    $tool = $this->container->get('plugin.manager.ai.function_calls')
+    $tool = $this->container->get('plugin.manager.aincient.capabilities')
       ->createInstance('aincient_pages:generate_alt_text');
     foreach ($context as $name => $value) {
       $tool->setContextValue($name, $value);
@@ -103,14 +104,15 @@ final class GenerateAltTextTest extends KernelTestBase {
     return ['token' => 'media:' . $media->id(), 'id' => (int) $media->id()];
   }
 
-  /** Bind the vision role to the echoai test provider. */
+  /** Bind the vision role to the scripted provider. */
   private function bindVisionRole(): void {
-    $this->container->get('aincient_core.model_role_resolver')
-      ->bind(ModelRoles::VISION, 'echoai', 'gpt-4o');
+    $this->connectScriptedProvider();
+    $this->bindScriptedRole(ModelRoles::VISION);
   }
 
   public function testSuggestsAltTextWithoutPersistingIt(): void {
     $this->bindVisionRole();
+    $this->scriptInferenceText('A single clay rooftop tile against a pale sky.');
     // Seed with a known alt so we can assert the tool leaves it untouched.
     $seed = $this->seedImage('original alt');
 
@@ -120,7 +122,11 @@ final class GenerateAltTextTest extends KernelTestBase {
     $this->assertSame('media_result', $payload['__widget__'] ?? NULL, $out);
     $this->assertSame('alt_text', $payload['payload']['mode']);
     $this->assertSame($seed['token'], $payload['payload']['source']);
-    $this->assertNotEmpty($payload['payload']['alt_text']);
+    // The MODEL's description is what's proposed — the round trip really happened.
+    $this->assertSame('A single clay rooftop tile against a pale sky.', $payload['payload']['alt_text']);
+    // And the image itself was sent, not just the instruction: a vision call that
+    // forgets the picture would still return plausible text.
+    $this->assertContains('Image', $this->lastInferenceCall()['parts']);
     // The suggestion carries the media id so the client can populate that item.
     $this->assertSame((string) $seed['id'], $payload['payload']['id']);
     // Crucially, NOTHING was written: the suggestion is staged into the editor for
@@ -130,12 +136,11 @@ final class GenerateAltTextTest extends KernelTestBase {
   }
 
   public function testWorksWithoutAnExplicitVisionBinding(): void {
-    // No vision binding — resolve() falls back to the default chat model. With
-    // the default op-type provider set to echoai, alt-text still works (the
-    // "unset = use default chat model" contract).
-    \Drupal::configFactory()->getEditable('ai.settings')
-      ->set('default_providers.chat', ['provider_id' => 'echoai', 'model_id' => 'gpt-4o'])
-      ->save();
+    // No vision binding — resolve() falls back to the DEFAULT role's model, so
+    // alt-text works out of the box (the "unset = use the default chat model"
+    // contract; the explicit vision binding is an override, not a gate).
+    $this->connectScriptedProvider();
+    $this->bindScriptedRole(ModelRoles::TASK);
     $seed = $this->seedImage();
 
     $out = $this->invoke(['source' => $seed['token']]);

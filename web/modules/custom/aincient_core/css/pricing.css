@@ -1,0 +1,261 @@
+/**
+ * Atelier layer over its own rate sheet
+ * (aincient_core, /admin/config/aincient/pricing).
+ *
+ * The Studio Backend theme (aincient_studio_backend) already styles admin
+ * pages — `.sb-content table` is the paper card, the mono eyebrow thead, the
+ * rounded corners and the row hover — and everything it can style generically
+ * is left to it. This file covers only the four things it cannot know about:
+ *
+ *   1. The role column — a label, its description, and (when the config carries
+ *      one) the note explaining the rate. The page is meant to be read against
+ *      the onboarding "Set the pace" screen, so the role has to be the thing the
+ *      eye lands on, not one cell among seven.
+ *   2. The rate columns — four numeric columns whose whole purpose is being
+ *      comparable at a glance, which needs tabular figures, fixed two-decimal
+ *      values from the controller, and a scroll box of their own on a narrow
+ *      viewport rather than a sideways page.
+ *   3. The provenance column — a short host link and a mono check date, held
+ *      NARROW on purpose. It used to print the full URL, which broke mid-word
+ *      across three lines and made the least important column the tallest thing
+ *      in every row.
+ *   4. The states that are NOT numbers — an unbound role, a bound one we cannot
+ *      price, a lapsed rate and a stale one. All must be legible as states; the
+ *      unpriced one must not be mistakable for a rate of zero; and lapsed must
+ *      not look like stale, because one is a known error and the other a request
+ *      to go and look.
+ *
+ * COLOUR. Nothing here is cinnabar. Law 01 gives the brand pigment at most two
+ * elements per screen and never on rules or edges, and everything this page
+ * marks is STATE, which §3.4 puts in the muted-earth set as a tint: brick
+ * (`--ain-danger`) for what we know is wrong, ochre (`--ain-accent-2`) for what
+ * merely wants checking. The page therefore spends none of its accent budget.
+ *
+ * The `--ain-*` tokens come from the Studio Backend theme's :root
+ * (studio-backend.css), so no extra token dependency. Everything is scoped to
+ * `.ain-pricing`, set by the controller.
+ */
+
+.ain-pricing .ain-pricing__intro,
+.ain-pricing .ain-pricing__link {
+  max-width: 46rem;
+  color: var(--ain-text-dim);
+}
+
+.ain-pricing .ain-pricing__intro {
+  margin-block-end: 1rem;
+}
+
+.ain-pricing .ain-pricing__link {
+  margin-block-start: 1rem;
+}
+
+/* ===== 1 + 2. The rate table ===== */
+/* Seven columns, four of them numeric. Scrolls inside its own box so a narrow
+   viewport never gains a horizontal scrollbar on the whole page. */
+.ain-pricing .ain-pricing__rates {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ain-pricing .ain-pricing__rates caption {
+  caption-side: bottom;
+  padding-block-start: 0.5rem;
+  color: var(--ain-text-faint);
+  font-size: 0.8125rem;
+  text-align: start;
+}
+
+.ain-pricing .ain-pricing__rates th,
+.ain-pricing .ain-pricing__rates td {
+  padding: 0.6rem 0.75rem;
+  border-block-end: 1px solid var(--ain-border);
+  vertical-align: top;
+  text-align: start;
+}
+
+.ain-pricing .ain-pricing__rates th {
+  color: var(--ain-text-dim);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The role: the row's subject, and the column an operator scans down to find
+   the row they configured on the wizard screen. It is also the column that now
+   carries the note, so it is the one allowed to be wide. */
+/* A min-width and not a percentage: the table is a scroll box (display: block),
+   so auto layout hands width to whichever column has the strongest minimum, and
+   a percentage simply loses to a long model id. This is the one column with
+   prose in it, so it claims its measure explicitly. */
+.ain-pricing .ain-pricing__rates th:first-child,
+.ain-pricing .ain-pricing__subject {
+  min-width: 22rem;
+}
+
+.ain-pricing .ain-pricing__role {
+  display: block;
+  font-weight: 600;
+}
+
+/* The same sentence the wizard shows, and — under it, in the same faint voice —
+   whatever the config says about this particular rate. Both run the full width
+   of the column rather than being capped: this cell is now the tallest thing in
+   the row, so every character of measure it gets is a line the row does not. */
+.ain-pricing .ain-pricing__role-desc,
+.ain-pricing .ain-pricing__note {
+  display: block;
+  margin-block-start: 0.15rem;
+  color: var(--ain-text-faint);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* A little air between the role's description (what this role IS) and the
+   note (why this rate is what it is). Without it the two run together as one
+   paragraph and the note reads as part of the product description. */
+.ain-pricing .ain-pricing__note {
+  margin-block-start: 0.45rem;
+}
+
+/* The four rate columns. Tabular figures over the controller's fixed two
+   decimals, so $0.20 and $2.50 line up on the point — the entire reason for
+   showing these as a table is comparing them by eye. */
+.ain-pricing .ain-pricing__rates th:nth-child(n + 3):nth-child(-n + 6),
+.ain-pricing .ain-pricing__rates td:nth-child(n + 3):nth-child(-n + 6) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* The bound model is a machine string; render it as one so a typo in
+   `claude-haiku-4-5-20251001` is visible rather than smoothed over. */
+.ain-pricing .ain-pricing__id {
+  font-family: var(--ain-mono);
+  font-size: 0.8125rem;
+}
+
+/* ===== 3. Provenance ===== */
+/* Deliberately the NARROWEST column: it is what the page is audited with, not
+   what it is read for. Nothing in it is allowed to wrap mid-word — that is what
+   turned a 44-character URL into three lines and a 130px row. */
+.ain-pricing .ain-pricing__provenance {
+  max-width: 14rem;
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/* The host, standing in for the URL. Truncated rather than wrapped if a source
+   ever has a very long host: the full address is on the `title` and on the
+   link, so the ellipsis costs nothing. */
+.ain-pricing .ain-pricing__source {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Law 13: the check date is machine text about the row, so it wears the mono
+   micro-label rather than a sentence's worth of body voice. */
+.ain-pricing .ain-pricing__checked {
+  display: block;
+  margin-block-start: 0.2rem;
+  color: var(--ain-text-faint);
+  font-family: var(--ain-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.ain-pricing .ain-pricing__checked::before {
+  content: "checked ";
+}
+
+/* ===== 4. The states that are not numbers ===== */
+/* Unbound is a normal state on a keyless install, so it is set BACK, not
+   flagged: dimmed and in the body face, so it reads as "nothing here yet"
+   rather than as a broken value. */
+.ain-pricing .ain-pricing__unbound {
+  color: var(--ain-text-faint);
+  font-family: var(--ain-font);
+  font-style: italic;
+}
+
+/* A flag is the one sentence in a cell that says what is WRONG with the row.
+   Ochre by default (§3.4's "needs attention"), because the default case — a
+   bound model we cannot price — is a quiet fault: the row would otherwise look
+   like every other row while recording a silent $0.00. */
+.ain-pricing .ain-pricing__flag {
+  display: block;
+  /* A flag is a sentence in a column sized for a hostname, so it is allowed to
+     widen its column — but only when one is present, which is the exceptional
+     case this page exists to catch. Rendered at the column's own width it came
+     out seven lines tall and put the row height back where the URL had it. */
+  min-width: 12rem;
+  max-width: 22rem;
+  margin-block-start: 0.35rem;
+  color: var(--ain-accent-2);
+  font-family: var(--ain-font);
+  font-size: 0.8125rem;
+  white-space: normal;
+}
+
+/* Stale is the mild claim — nobody has looked — and takes the same ochre. Named
+   anyway, so a future change to one severity cannot silently move the other. */
+.ain-pricing .ain-pricing__flag--stale {
+  color: var(--ain-accent-2);
+}
+
+/* Lapsed is not a suspicion: the vendor published an end date and it has gone.
+   Brick, the danger tint, is the only thing on this page that reads as an
+   error — which is what tells it apart from stale at a glance, instead of the
+   two differing only by whether the row has an edge. */
+.ain-pricing .ain-pricing__flag--lapsed {
+  color: var(--ain-danger);
+}
+
+/* The three tinted rows. Surface-2 is the shared "this row is not ordinary"
+   ground; the severity is carried by the flag's wording and colour above, and
+   by the inset edge below — never by a saturated fill (Law 02). */
+.ain-pricing tr.ain-pricing__row--unpriced > td,
+.ain-pricing tr.ain-pricing__row--lapsed > td,
+.ain-pricing tr.ain-pricing__row--stale > td {
+  background: var(--ain-surface-2);
+}
+
+/* An edge only on the certain claim. A permanent edge over "unverified" is how
+   a table ends up with a warning everyone stops reading — which would cost us
+   this row. */
+.ain-pricing tr.ain-pricing__row--lapsed > td:first-child {
+  box-shadow: inset 3px 0 0 var(--ain-danger);
+}
+
+/* ===== The bound-but-unpriced summary above the table ===== */
+/* A rule in the attention tint, not a filled alert box: this is a standing
+   condition of the table below it, and a shouting banner at the top of the page
+   trains an operator to scroll past it. Ochre and not cinnabar because it is a
+   status report, and the brand pigment is not a status (Law 01, §3.4). */
+.ain-pricing .ain-pricing__unpriced {
+  margin-block-end: 1rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 3px solid var(--ain-accent-2);
+  background: var(--ain-surface-2);
+  border-radius: 0 var(--ain-radius) var(--ain-radius) 0;
+}
+
+.ain-pricing .ain-pricing__unpriced .form-item,
+.ain-pricing .ain-pricing__unpriced ul {
+  margin-block: 0.25rem 0;
+}
+
+.ain-pricing .ain-pricing__unpriced li {
+  font-family: var(--ain-mono);
+  font-size: 0.8125rem;
+}

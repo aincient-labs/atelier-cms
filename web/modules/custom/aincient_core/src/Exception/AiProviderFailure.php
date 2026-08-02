@@ -7,8 +7,9 @@ namespace Drupal\aincient_core\Exception;
 /**
  * A provider request failed, carrying what the upstream actually said.
  *
- * Thrown by {@see \Drupal\aincient_core\Service\Reasoning\AincientChatReasoner}
- * in place of an opaque transport exception whose message was just
+ * Thrown on the inference path ({@see \Drupal\aincient_core\Inference\AiGateway},
+ * {@see \Drupal\aincient_core\Inference\ChatCompleter}) in place of an opaque
+ * transport exception whose message was just
  * "Server error (HTTP 503) occurred." (DECISIONS 0269). The original is always
  * the `previous` exception; this one exists to carry a diagnosable message and
  * to be greppable.

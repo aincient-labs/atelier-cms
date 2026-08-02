@@ -23,10 +23,20 @@ class RouteSubscriber extends RouteSubscriberBase {
    * prefix. Every path MUST start with '/'.
    */
   public const ALLOWED_PATHS = [
-    '/admin/config/ai/ai-metering/settings',
+    // Atelier's own rate sheet. The two contrib metering paths that used to be
+    // whitelisted here — .../ai-metering/settings and .../sync-pricing — are
+    // gone on purpose: aincient_core now denies both routes outright, and an
+    // entry here would only claim to reopen a door that stays shut.
+    '/admin/config/aincient/pricing',
     '/admin/config/aincient/mail',
     '/admin/config/regional/language',
-    '/admin/config/ai/ai-metering/sync-pricing',
+    // Atelier's usage dashboard and its two exports. No DISALLOWED_PATHS entry
+    // covers '/admin/reports' as a whole — only named pages under it — so this
+    // entry changes nothing TODAY. It is here because the studio-room rule says
+    // it should be (see StudioSections): every room this backend offers is
+    // named in this list, so a later blanket deny on '/admin/reports' closes the
+    // raw report tree without taking a room with it.
+    '/admin/reports/aincient/usage',
   ];
 
   /**

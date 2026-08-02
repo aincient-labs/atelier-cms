@@ -41,7 +41,6 @@ final class BrandSliceStreamTest extends KernelTestBase {
     'text',
     'node',
     'key',
-    'ai',
     'aincient_core',
     'workflows',
     'content_moderation',

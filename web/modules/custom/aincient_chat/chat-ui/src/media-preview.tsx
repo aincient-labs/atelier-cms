@@ -26,7 +26,13 @@ export function MediaPreview() {
     // (chat · centre · rail), exactly as PagePreview's does in the list room.
     if (room.kind === "shelf") {
       return (
-        <div className="ain-preview ain-mediapreview" aria-label="Library">
+        <div
+          className="ain-preview ain-mediapreview"
+          aria-label="Library"
+          data-testid="studio-preview"
+          data-studio="media"
+          data-view="shelf"
+        >
           <PanelBar title="Library" />
           <LibraryBrowse />
         </div>
@@ -36,7 +42,13 @@ export function MediaPreview() {
     // instead of the edit-an-existing-item hint.
     const isNew = room.kind === "media" && room.id == null;
     return (
-      <div className="ain-preview ain-mediapreview" aria-label="Media preview">
+      <div
+        className="ain-preview ain-mediapreview"
+        aria-label="Media preview"
+        data-testid="studio-preview"
+        data-studio="media"
+        data-view="empty"
+      >
         <PanelBar title="Image" />
         <div className="ain-pagepreview__empty">
           {isNew
@@ -48,7 +60,13 @@ export function MediaPreview() {
   }
 
   return (
-    <div className="ain-preview ain-mediapreview" aria-label="Media preview">
+    <div
+      className="ain-preview ain-mediapreview"
+      aria-label="Media preview"
+      data-testid="studio-preview"
+      data-studio="media"
+      data-view="item"
+    >
       <PanelBar title="Image" />
       <div className="ain-preview__stage ain-mediapreview__stage">
         <img className="ain-mediapreview__img" src={detail.preview} alt={detail.alt} />

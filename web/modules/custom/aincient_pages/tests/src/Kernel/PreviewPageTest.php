@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Kernel;
 
-use Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager;
+use Drupal\aincient_core\Capability\CapabilityManager;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -32,7 +32,6 @@ final class PreviewPageTest extends KernelTestBase {
     'field',
     'text',
     'key',
-    'ai',
     'aincient_core',
     'workflows', 'content_moderation', 'aincient_pages',
   ];
@@ -43,12 +42,12 @@ final class PreviewPageTest extends KernelTestBase {
     $this->setCurrentUser($this->createUser(['administer aincient pages']));
   }
 
-  private function manager(): FunctionCallPluginManager {
-    return $this->container->get('plugin.manager.ai.function_calls');
+  private function manager(): CapabilityManager {
+    return $this->container->get('plugin.manager.aincient.capabilities');
   }
 
   private function runPreview(string $opsJson): string {
-    /** @var \Drupal\ai\Service\FunctionCalling\ExecutableFunctionCallInterface $tool */
+    /** @var \Drupal\aincient_core\Capability\ExecutableCapabilityInterface $tool */
     $tool = $this->manager()->createInstance('aincient_pages:preview_page');
     $tool->setContextValue('ops', $opsJson);
     $tool->execute();

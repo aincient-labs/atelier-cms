@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_onboarding\Kernel;
 
 use Drupal\aincient_onboarding\ProviderConnector;
-use Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager;
+use Drupal\aincient_core\Capability\CapabilityManager;
+use Drupal\aincient_core\ModelRoles;
+use Drupal\aincient_inference_test\ScriptedAdapter;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,12 +37,12 @@ final class OnboardingTest extends KernelTestBase {
     'system',
     'user',
     'key',
-    'ai',
-    // The default chat provider — enabled so the connector can resolve the
-    // 'anthropic' plugin (usability checks) and its config schema is present.
-    'ai_provider_anthropic',
-    // The role layer the connector now binds through (provides the resolver).
+    // The role layer the connector binds through, and the adapter set the
+    // inventory enumerates.
     'aincient_core',
+    // A real registered adapter whose credential answers are scripted, so the
+    // validate path can be exercised without a live vendor.
+    'aincient_inference_test',
     'aincient_onboarding',
   ];
 
@@ -74,15 +76,15 @@ final class OnboardingTest extends KernelTestBase {
   /**
    * The AI function-call plugin manager (resolves the onboarding capability).
    */
-  private function manager(): FunctionCallPluginManager {
-    return $this->container->get('plugin.manager.ai.function_calls');
+  private function manager(): CapabilityManager {
+    return $this->container->get('plugin.manager.aincient.capabilities');
   }
 
   /**
    * Run the onboarding capability and return its readable output.
    */
   private function runPanel(): string {
-    /** @var \Drupal\ai\Service\FunctionCalling\ExecutableFunctionCallInterface $tool */
+    /** @var \Drupal\aincient_core\Capability\ExecutableCapabilityInterface $tool */
     $tool = $this->manager()->createInstance('aincient_onboarding:onboarding_panel');
     $tool->execute();
     return $tool->getReadableOutput();
@@ -174,10 +176,12 @@ final class OnboardingTest extends KernelTestBase {
 
     $this->assertTrue((bool) $this->container->get('state')->get(ProviderConnector::STATE_COMPLETED));
 
-    // The task role drives the default chat provider through projection.
-    $providers = $this->container->get('config.factory')->get('ai.settings')->get('default_providers');
-    $this->assertSame('anthropic', $providers['chat']['provider_id']);
-    $this->assertSame('claude-x', $providers['chat']['model_id']);
+    // The task role carries the everyday choice. This used to be asserted one
+    // hop away, on the `ai.settings` chat default the role was projected onto;
+    // the binding is the thing itself.
+    $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
+    $this->assertSame('anthropic', $roles['task']['provider_id']);
+    $this->assertSame('claude-x', $roles['task']['model_id']);
 
     // The image role is bound independently to the image provider.
     $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
@@ -213,6 +217,235 @@ final class OnboardingTest extends KernelTestBase {
   }
 
   /**
+   * Every provider the wizard offers can be connected AND then served.
+   *
+   * The picker is a promise. It used to list every installed `drupal/ai` provider,
+   * including four with no inference adapter — so an operator could enter a working
+   * Mistral key, be told "Connected", and get a console that could not answer. One
+   * rule keeps the offer honest and is asserted here rather than assumed: nothing
+   * without an adapter appears.
+   *
+   * There used to be a second rule — nothing whose credential the step cannot
+   * COLLECT — which excluded the key-plus-base-URL shape for as long as the step
+   * rendered one field. It renders two now, so the rule has nothing left to
+   * exclude and the assertion is gone rather than left passing vacuously.
+   */
+  public function testWizardOffersOnlyProvidersItCanConnectAndServe(): void {
+    $inventory = $this->container->get('aincient_core.inference.provider_inventory');
+    $rows = $this->container->get('aincient_onboarding.provider_catalog')->providers();
+
+    foreach ($rows as $row) {
+      $this->assertTrue(
+        $inventory->has($row['id']) || isset(ProviderConnector::KEY_GROUPS[$row['id']]),
+        sprintf('The wizard offers "%s", which this site cannot serve.', $row['id']),
+      );
+    }
+
+    $offered = array_column($rows, 'id');
+    // Still out, and for the one reason that remains: no adapter, so nothing on
+    // this site can serve it whatever the operator types.
+    $this->assertNotContains('openrouter', $offered);
+    // `ollama` is the case the rule has to let through rather than trip over: its
+    // credential is one field that happens to be a URL and not a secret, so a rule
+    // written as "must have an API key" would exclude it. `openai_compatible` is
+    // the other end — two fields, both required.
+    foreach (['ollama', 'openai', 'mistral', 'openai_compatible'] as $id) {
+      $this->assertContains($id, $offered);
+    }
+  }
+
+  /**
+   * OpenAI and Mistral ask for a key, and neither of them claims to draw.
+   *
+   * These two are the ids `ProviderInventory`'s docblock names as the reason the
+   * inventory was rewritten: the old picker offered them because their modules
+   * were installed, and binding one threw on the next turn. Now they are offered
+   * because an adapter can serve them — so what is asserted is that the row
+   * describes them truthfully, credential shape included.
+   */
+  public function testTheKeyProvidersThatCameBackAskForAKey(): void {
+    $byId = array_column(
+      $this->container->get('aincient_onboarding.provider_catalog')->providers(),
+      NULL,
+      'id',
+    );
+
+    foreach (['openai', 'mistral'] as $id) {
+      $this->assertArrayHasKey($id, $byId);
+      $this->assertSame('api_key', $byId[$id]['auth'], sprintf('%s must ask for a key.', $id));
+      $this->assertSame('api_key', $this->store()->authType($id));
+      $this->assertTrue($byId[$id]['capabilities']['chat']);
+      // Neither draws — image capability is a type, and claiming it by accident
+      // is what filled the image picker with models that cannot make a picture.
+      $this->assertFalse($byId[$id]['capabilities']['image']);
+    }
+  }
+
+  /**
+   * The keyless provider is offered as a host, with no secret asked for.
+   *
+   * The whole of Ollama's credential is where the server is. If this row ever came
+   * back as `api_key` the wizard would render a password field and store the URL
+   * as a secret in a Key entity — the shape mismatch that kept Ollama out of the
+   * picker in the first place, arriving from the other direction.
+   */
+  public function testOllamaIsOfferedAsAKeylessHostProvider(): void {
+    $rows = $this->container->get('aincient_onboarding.provider_catalog')->providers();
+    $byId = array_column($rows, NULL, 'id');
+
+    $this->assertArrayHasKey('ollama', $byId);
+    $this->assertSame('host', $this->store()->authType('ollama'));
+    $this->assertSame('host', $byId['ollama']['auth']);
+    $this->assertTrue($byId['ollama']['capabilities']['chat']);
+    $this->assertFalse($byId['ollama']['capabilities']['image']);
+  }
+
+  /**
+   * Connecting Ollama stores the URL as an endpoint — never as a key.
+   *
+   * Asserted on a URL that answers nothing, because the interesting half is what
+   * does NOT happen: a refused connect must leave no endpoint behind, and no
+   * `aincient.ollama_api_key` may ever exist for a provider that has no key.
+   */
+  public function testAnUnreachableOllamaConnectsNothing(): void {
+    $state = $this->container->get('state');
+
+    $result = $this->store()->connectAndStore('ollama', 'http://127.0.0.1:1/');
+
+    $this->assertFalse($result['ok']);
+    $this->assertStringContainsString('Ollama', $result['message']);
+    $this->assertNull($state->get('aincient.ollama_endpoint'));
+    $this->assertNull($state->get('aincient.ollama_api_key'));
+  }
+
+  /**
+   * The two-field provider is offered, and says so in its row.
+   *
+   * `auth` is what the connect step renders from, so this row is the whole reason
+   * a second field appears. If it ever came back as plain `api_key` the wizard
+   * would collect a key, store it alone, and leave the operator with a provider
+   * that has nowhere to send it — which is precisely why this shape spent two
+   * releases hidden from the picker rather than offered half-working.
+   */
+  public function testTheKeyPlusEndpointProviderAsksForBoth(): void {
+    $byId = array_column(
+      $this->container->get('aincient_onboarding.provider_catalog')->providers(),
+      NULL,
+      'id',
+    );
+
+    $this->assertArrayHasKey('openai_compatible', $byId);
+    $this->assertSame('api_key_endpoint', $byId['openai_compatible']['auth']);
+    $this->assertSame('api_key_endpoint', $this->store()->authType('openai_compatible'));
+    $this->assertTrue($byId['openai_compatible']['capabilities']['chat']);
+  }
+
+  /**
+   * A key with no base URL is refused, and stores neither half.
+   *
+   * The connect endpoint is a POST, so the client-side check is a courtesy and
+   * this is the real one. Storing half of what a provider needs — a key with
+   * nowhere to send it — is the failure mode the refusal exists to prevent, so
+   * what matters as much as the message is that State is untouched.
+   */
+  public function testConnectingWithoutTheBaseUrlIsRefused(): void {
+    $result = $this->store()->connectAndStore('openai_compatible', 'sk-something');
+
+    $this->assertFalse($result['ok']);
+    $this->assertStringContainsString('base URL', $result['message']);
+    $this->assertNull($this->container->get('state')->get('aincient.openai_compatible_api_key'));
+    $this->assertNull($this->container->get('state')->get('aincient.openai_compatible_endpoint'));
+  }
+
+  /**
+   * Both halves given but nothing at the other end ⇒ nothing stored.
+   *
+   * Ollama's mirror image, and the same rule: a refused connect leaves no residue.
+   * With two values the residue could be partial, which would be worse than none —
+   * a stored key against an endpoint that was never reachable reads as configured.
+   */
+  public function testAnUnreachableCompatibleEndpointConnectsNothing(): void {
+    $state = $this->container->get('state');
+
+    $result = $this->store()->connectAndStore('openai_compatible', 'sk-something', 'http://127.0.0.1:1/');
+
+    $this->assertFalse($result['ok']);
+    $this->assertNull($state->get('aincient.openai_compatible_api_key'));
+    $this->assertNull($state->get('aincient.openai_compatible_endpoint'));
+  }
+
+  /**
+   * Disconnecting a two-field provider clears BOTH halves.
+   *
+   * Seeded the headless way (`drush state:set`), because that is the install this
+   * has to be right for as much as a wizard-connected one — the storage is the
+   * same either way. Leaving the endpoint behind would make the provider read as
+   * disconnected while still carrying half a configuration.
+   */
+  public function testDisconnectingClearsTheEndpointAsWellAsTheKey(): void {
+    $state = $this->container->get('state');
+    $state->set('aincient.openai_compatible_api_key', 'sk-something');
+    $state->set('aincient.openai_compatible_endpoint', 'https://api.deepseek.com');
+
+    $this->store()->disconnect('openai_compatible');
+
+    $this->assertNull($state->get('aincient.openai_compatible_api_key'));
+    $this->assertNull($state->get('aincient.openai_compatible_endpoint'));
+  }
+
+  /**
+   * Validation proves a credential that is stored NOWHERE, and writes nothing.
+   *
+   * The onboarding handshake's first half, and the reason `ProviderInventory`'s
+   * `instanceFor()` escape hatch could be deleted: proving a key used to require a
+   * live provider instance to push the candidate into
+   * (`setAuthentication()`), and for a host provider it required SAVING the URL and
+   * rolling it back. Now the credential is an argument. What the product promises is
+   * unchanged and is what this asserts: a good credential comes back with models and
+   * per-role suggestions, a bad one comes back refused, and neither leaves a trace.
+   */
+  public function testValidateProvesAnUnstoredCredentialWithoutWriting(): void {
+    $state = $this->container->get('state');
+    $state->set(ScriptedAdapter::VALID_CREDENTIAL_KEY, 'sk-real');
+
+    $good = $this->store()->validate(ScriptedAdapter::PROVIDER_ID, 'sk-real');
+    $this->assertTrue($good['ok']);
+    $this->assertArrayHasKey('scripted-chat', $good['models']);
+    $this->assertSame('scripted-chat', $good['suggested']['task']);
+
+    $bad = $this->store()->validate(ScriptedAdapter::PROVIDER_ID, 'sk-garbage');
+    $this->assertFalse($bad['ok']);
+    $this->assertNotEmpty($bad['message']);
+    $this->assertSame([], $bad['models']);
+
+    // Neither attempt stored a credential or completed onboarding.
+    $this->assertNull($state->get(ScriptedAdapter::CREDENTIAL_KEY));
+    $this->assertFalse($this->store()->hasStoredCredential(ScriptedAdapter::PROVIDER_ID));
+    $this->assertFalse((bool) $state->get(ProviderConnector::STATE_COMPLETED));
+  }
+
+  /**
+   * A site is "configured" when a role resolves to a CONNECTED provider.
+   *
+   * Not when a provider claims to be usable, which is what this asked before: three
+   * providers answered TRUE with no key stored, so a keyless site could call itself
+   * configured and skip the wizard it needed.
+   */
+  public function testConfiguredMeansABoundRoleWithAStoredCredential(): void {
+    $resolver = $this->container->get('aincient_core.model_role_resolver');
+    $resolver->bind('task', ScriptedAdapter::PROVIDER_ID, 'scripted-chat');
+
+    // Bound but keyless is NOT configured — the wizard is still needed.
+    $this->assertFalse($this->store()->isConfigured());
+    $this->assertTrue($this->store()->needsOnboarding());
+
+    $this->container->get('state')->set(ScriptedAdapter::CREDENTIAL_KEY, 'sk-stored');
+
+    $this->assertTrue($this->store()->isConfigured());
+    $this->assertFalse($this->store()->needsOnboarding());
+  }
+
+  /**
    * Persisting a key stores it in State, flips the provider, and pins a model.
    */
   public function testPersistStoresKeyInStateAndFlipsProvider(): void {
@@ -228,10 +461,10 @@ final class OnboardingTest extends KernelTestBase {
     $this->assertSame('state', $key->getKeyProvider()->getPluginId());
     $this->assertSame('sk-ant-test-key', $key->getKeyValue());
 
-    // The chosen chat model is pinned in ai.settings.
-    $providers = $this->container->get('config.factory')->get('ai.settings')->get('default_providers');
-    $this->assertSame('anthropic', $providers['chat']['provider_id']);
-    $this->assertSame('claude-opus-4-1-20250805', $providers['chat']['model_id']);
+    // The chosen chat model is pinned by binding the default role.
+    $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
+    $this->assertSame('anthropic', $roles['task']['provider_id']);
+    $this->assertSame('claude-opus-4-1-20250805', $roles['task']['model_id']);
 
     // With a key now resolvable + the flag set, onboarding is done.
     $this->assertTrue($this->store()->isConfigured());
@@ -259,13 +492,11 @@ final class OnboardingTest extends KernelTestBase {
     // Disconnect.
     $this->store()->disconnect('anthropic');
 
-    // The secret, key entity, and provider pointer are all gone.
+    // Both halves of the credential — the Key entity and the State value it
+    // names — are gone.
     $this->assertNull($state->get('aincient.anthropic_api_key'));
     $this->assertNull(
       $this->container->get('entity_type.manager')->getStorage('key')->load('anthropic_default_key')
-    );
-    $this->assertEmpty(
-      $this->container->get('config.factory')->get('ai_provider_anthropic.settings')->get('api_key')
     );
 
     // Every role that pointed at anthropic is unbound.
@@ -273,9 +504,14 @@ final class OnboardingTest extends KernelTestBase {
     $this->assertSame('', (string) ($roles['task']['provider_id'] ?? ''));
     $this->assertSame('', (string) ($roles['reasoning']['provider_id'] ?? ''));
 
-    // The framework chat default no longer names the removed provider.
-    $providers = $this->container->get('config.factory')->get('ai.settings')->get('default_providers') ?? [];
-    $this->assertNotSame('anthropic', (string) ($providers['chat']['provider_id'] ?? ''));
+    // Nothing the site resolves through still names the removed provider. This
+    // used to check the `ai.settings` chat default as well; with that write gone
+    // the bindings ARE the record, so resolving the everyday role is the whole
+    // question rather than one of two places it could have been stale.
+    $this->assertSame(
+      ['provider_id' => '', 'model_id' => ''],
+      $this->container->get('aincient_core.model_role_resolver')->resolve(ModelRoles::TASK),
+    );
   }
 
   /**

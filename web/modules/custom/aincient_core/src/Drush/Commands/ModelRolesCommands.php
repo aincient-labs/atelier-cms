@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Drush\Commands;
 
 use Consolidation\OutputFormatters\StructuredData\RowsOfFields;
+use Drupal\aincient_core\Inference\ProviderInventory;
 use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRoleResolver;
 use Drupal\aincient_core\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
-use Drupal\ai\AiProviderPluginManager;
 use Drush\Attributes as CLI;
 use Drush\Commands\DrushCommands;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -26,7 +26,7 @@ final class ModelRolesCommands extends DrushCommands {
 
   public function __construct(
     private readonly ModelRoleResolver $resolver,
-    private readonly AiProviderPluginManager $providerManager,
+    private readonly ProviderInventory $providerManager,
     private readonly ModelPresetResolver $presets,
     private readonly RecommendationSource $recommendations,
   ) {
@@ -39,7 +39,7 @@ final class ModelRolesCommands extends DrushCommands {
   public static function create(ContainerInterface $container): self {
     return new self(
       $container->get('aincient_core.model_role_resolver'),
-      $container->get('ai.provider'),
+      $container->get('aincient_core.inference.provider_inventory'),
       $container->get('aincient_core.model_preset_resolver'),
       $container->get('aincient_core.recommendation_source'),
     );
@@ -77,7 +77,7 @@ final class ModelRolesCommands extends DrushCommands {
    */
   #[CLI\Command(name: 'aincient:model-set', aliases: ['ams'])]
   #[CLI\Argument(name: 'role', description: 'The role id: reasoning, task, or fast.')]
-  #[CLI\Argument(name: 'provider', description: 'A drupal/ai provider plugin id (e.g. anthropic, openai, ollama).')]
+  #[CLI\Argument(name: 'provider', description: 'A provider id this site can serve (e.g. anthropic, gemini, nanobanana, openai_compatible).')]
   #[CLI\Argument(name: 'model', description: 'A model id offered by that provider.')]
   #[CLI\Usage(name: 'drush aincient:model-set reasoning anthropic claude-opus-4-8', description: 'Point the reasoning role at Claude Opus.')]
   public function set(string $role, string $provider, string $model): void {
@@ -94,29 +94,28 @@ final class ModelRolesCommands extends DrushCommands {
       throw new \InvalidArgumentException('Both a provider and a model are required.');
     }
 
-    $definitions = $this->providerManager->getDefinitions();
-    if (!isset($definitions[$provider])) {
+    // Refusing an unservable provider here is the point, not a formality: this
+    // command is what the manager CLI and every scripted install bind through, so
+    // it is where a typo — or a provider id that was valid before the inference
+    // layer moved to its own adapters — has to stop. The alternative is a site
+    // that reports success and then cannot answer a single turn.
+    if (!$this->providerManager->has($provider)) {
       throw new \InvalidArgumentException(sprintf(
-        'Unknown provider "%s". Installed providers: %s.',
+        'Unknown provider "%s". This site can serve: %s.',
         $provider,
-        implode(', ', array_keys($definitions)) ?: '(none)',
+        implode(', ', array_keys($this->providerManager->providers())) ?: '(none)',
       ));
     }
 
     // A best-effort warning if the model isn't in the provider's catalogue — we
-    // still bind it (the provider may not be usable from the shell, or the model
-    // list may be gated behind a credential), but flag the likely typo.
-    try {
-      $models = $this->providerManager->createInstance($provider)->getConfiguredModels('chat');
-      if (!empty($models) && !isset($models[$model])) {
-        $this->logger()->warning(dt('Model "@model" is not in @provider\'s current chat catalogue — binding it anyway.', [
-          '@model' => $model,
-          '@provider' => $provider,
-        ]));
-      }
-    }
-    catch (\Throwable) {
-      // Provider not usable from here — bind without the catalogue check.
+    // still bind it (the provider may not be connected yet, so the catalogue can
+    // legitimately be empty), but flag the likely typo.
+    $models = $this->providerManager->models($provider, ProviderInventory::CHAT);
+    if (!empty($models) && !isset($models[$model])) {
+      $this->logger()->warning(dt('Model "@model" is not in @provider\'s current chat catalogue — binding it anyway.', [
+        '@model' => $model,
+        '@provider' => $provider,
+      ]));
     }
 
     $this->resolver->bind($role, $provider, $model);
@@ -159,8 +158,8 @@ final class ModelRolesCommands extends DrushCommands {
 
     $picked = $this->presets->apply(
       $profile,
-      $this->pool('chat'),
-      $this->pool('text_to_image'),
+      $this->pool(ProviderInventory::CHAT),
+      $this->pool(ProviderInventory::IMAGE),
       $options['region'] !== NULL ? (string) $options['region'] : NULL,
     );
     if ($picked === []) {
@@ -204,23 +203,22 @@ final class ModelRolesCommands extends DrushCommands {
   }
 
   /**
-   * Every model an installed provider offers for an operation type.
+   * Every model a servable provider offers for a capability.
+   *
+   * A provider that cannot enumerate (no credential, unreachable host) is simply
+   * not part of the pool — the inventory answers [] for it, so there is nothing
+   * to catch here any more.
+   *
+   * @param string $capability
+   *   {@see ProviderInventory::CHAT} or {@see ProviderInventory::IMAGE}.
    *
    * @return array<string, string>
    *   "provider:model" => label.
    */
-  private function pool(string $operationType): array {
+  private function pool(string $capability): array {
     $pool = [];
-    foreach (array_keys($this->providerManager->getProvidersForOperationType($operationType, FALSE)) as $providerId) {
-      try {
-        $models = $this->providerManager->createInstance($providerId)->getConfiguredModels($operationType);
-      }
-      catch (\Throwable) {
-        // A provider that can't enumerate (no credential, unreachable host) is
-        // simply not part of the pool — never fatal.
-        continue;
-      }
-      foreach ($models ?? [] as $modelId => $label) {
+    foreach (array_keys($this->providerManager->providersWith($capability)) as $providerId) {
+      foreach ($this->providerManager->models($providerId, $capability) as $modelId => $label) {
         $pool[$providerId . ':' . $modelId] = (string) $label;
       }
     }

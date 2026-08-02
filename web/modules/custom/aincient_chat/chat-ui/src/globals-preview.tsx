@@ -131,7 +131,7 @@ export function GlobalsPreview() {
   useEffect(() => subscribePreviewReload(() => render.current()), []);
 
   return (
-    <div className="ain-preview">
+    <div className="ain-preview" data-testid="studio-preview" data-studio="globals">
       <PanelBar title={updating ? "Updating preview…" : "Live preview · unsaved draft"} />
       <div className={`ain-preview__progress${updating ? " is-active" : ""}`} aria-hidden="true" />
       {error ? (

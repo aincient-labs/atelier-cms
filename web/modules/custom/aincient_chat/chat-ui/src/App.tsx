@@ -1001,7 +1001,7 @@ function ChatColumn({
     rows.some((r) => !r.sealed && !r.archived && roomStudio(roomOfThread(r.remoteId)) === section);
   if (!hasAgents && !hasThreads && !activeRemote) return null;
   return (
-    <div className="ain-workspace__chat">
+    <div className="ain-workspace__chat" data-testid="chat-column">
       <ChatThread onToggleSidebar={onToggleSidebar} />
     </div>
   );
@@ -1176,6 +1176,7 @@ function Sidebar({
   return (
     <aside
       className={`ain-sidebar${open ? "" : " ain-sidebar--closed"}`}
+      data-testid="section-sidebar"
       // Picking a thread should dismiss the overlay on mobile; rows render via a
       // provider (no per-row callback), so the close signal is read off the
       // bubbling click instead of threaded through.
@@ -2065,6 +2066,10 @@ export function App() {
   // iff it has an editor. An EDITOR-ONLY studio (Globals: no chat agent yet) has
   // no agents in the catalog — `hasAgents` gates the chat column off so the
   // workspace is just preview + editor rail (the composer is gated by construction).
+  // Subscribe to the statechart so the shell's `data-room` test anchor tracks
+  // room changes WITHIN a studio (content list → node → draft), not just studio
+  // switches — `useActiveStudio` alone would leave it stale.
+  useRoomTick();
   const activeStudio = useActiveStudio();
   const paneStudio = studioHasEditor(activeStudio) ? activeStudio : null;
   const hasAgents = agentsForStudio(activeStudio).length > 0;
@@ -2159,6 +2164,14 @@ export function App() {
         className={`ain-shell${sidebarOpen ? "" : " ain-shell--collapsed"}${paneStudio ? " ain-shell--studio" : ""}`}
         data-studio-edit={paneStudio && editOpen ? "open" : undefined}
         data-studio-convo={paneStudio && convoOpen ? "open" : undefined}
+        // Test anchors (tests/e2e). The shell is the single place that knows
+        // BOTH which studio is active and which room it resolved to, so the e2e
+        // suite reads routing off these two attributes rather than re-deriving
+        // it from visible copy. Cheap, and they cannot drift from the truth the
+        // shell already renders with.
+        data-testid="console-shell"
+        data-studio={activeStudio}
+        data-room={activeRoom().kind}
       >
         {/* Remount the sidebar when the layout MODE flips (chat-only ⇄ editor
             studio) so it reappears in its new closed representation WITHOUT a CSS

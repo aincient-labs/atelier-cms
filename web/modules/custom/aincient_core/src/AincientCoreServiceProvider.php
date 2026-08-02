@@ -6,25 +6,17 @@ namespace Drupal\aincient_core;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DependencyInjection\ServiceProviderBase;
-use Drupal\aincient_core\Service\AincientModelService;
-use Drupal\aincient_core\Service\Reasoning\AincientChatReasoner;
+use Drupal\aincient_core\Inference\SymfonyAiReasoner;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
- * Swaps FlowDrop's AI services for the role-aware AIncient subclasses.
+ * Points FlowDrop's reasoning seam at Atelier's own inference backend.
  *
- * Two re-points, both in alter() rather than Symfony `decorates:` so each
- * subclass can call parent:: for everything it doesn't override (the clean
- * pattern when the decorated service is a concrete class with no interface),
- * and both guarded by hasDefinition() so aincient_core stays installable
- * without the FlowDrop AI provider:
- *   - flowdrop_ai_provider.model_service → AincientModelService (keeping its
- *     constructor arguments) + a setter call for the model-role resolver, so
- *     the per-node select offers AIncient roles and selecting one resolves the
- *     bound model.
- *   - flowdrop.chat_reasoner → AincientChatReasoner (keeping its constructor
- *     arguments), so the native reason node's Model Role dropdown advertises
- *     those same roles as valid operation types.
+ * The re-point happens in alter() rather than via Symfony `decorates:` so the
+ * replacement can bring its own constructor arguments (the clean pattern when
+ * the decorated service is a concrete class), and it is guarded by
+ * hasDefinition() so aincient_core stays installable — and unit-testable —
+ * without FlowDrop present at all.
  */
 class AincientCoreServiceProvider extends ServiceProviderBase {
 
@@ -32,33 +24,41 @@ class AincientCoreServiceProvider extends ServiceProviderBase {
    * {@inheritdoc}
    */
   public function alter(ContainerBuilder $container): void {
-    if (!$container->hasDefinition('flowdrop_ai_provider.model_service')) {
-      // flowdrop_ai_provider not installed — nothing to route.
+    $this->bindReasoner($container);
+  }
+
+  /**
+   * Binds `flowdrop.chat_reasoner` to {@see SymfonyAiReasoner}.
+   *
+   * FlowDrop core documents `ChatReasonerInterface` as `@api` and its `reason`
+   * node depends only on that plus core's own neutral DTOs, so the concrete
+   * binding belongs to whoever owns the AI dependency. This is where the agent
+   * loop's reasoning actually comes from.
+   *
+   * FlowDrop core defines the service as a zero-argument NullChatReasoner, so
+   * the arguments are REPLACED, not kept.
+   */
+  private function bindReasoner(ContainerBuilder $container): void {
+    if (!$container->hasDefinition('flowdrop.chat_reasoner')) {
       return;
     }
 
-    $definition = $container->getDefinition('flowdrop_ai_provider.model_service');
-    $definition->setClass(AincientModelService::class);
-    $definition->addMethodCall('setRoleResolver', [
-      new Reference('aincient_core.model_role_resolver'),
-    ]);
-    // Lets getModel() tell a provider that cannot authenticate from one that is
-    // keyless by design. Guarded like everything else here, though `key` is a
-    // hard dependency of ai:ai so in practice it is always present.
-    if ($container->hasDefinition('key.repository')) {
-      $definition->addMethodCall('setKeyRepository', [
-        new Reference('key.repository'),
+    $container->getDefinition('flowdrop.chat_reasoner')
+      ->setClass(SymfonyAiReasoner::class)
+      ->setArguments([
+        new Reference('aincient_core.inference.registry'),
+        new Reference('aincient_core.inference.model_targets'),
+        new Reference('aincient_core.inference.message_mapper'),
+        new Reference('aincient_core.inference.tool_schema'),
+        new Reference('aincient_core.inference.result_unpacker'),
+        // The metering recorder. This list is the LIVE agent-turn wiring — the
+        // `aincient_core.inference.reasoner` definition in the .yml is only ever
+        // instantiated directly by tests — so a constructor argument added there
+        // and not here is an agent loop that records nothing, which is the exact
+        // regression this argument repairs.
+        new Reference('aincient_core.usage_recorder'),
+        new Reference('logger.channel.aincient_core'),
       ]);
-    }
-
-    // Re-point the reasoning backend at the role-aware subclass so the native
-    // reason node advertises AIncient roles. Same guard + keep-the-args pattern
-    // as the model service above; the reasoner's constructor arg is the
-    // (now role-aware) model_service we just re-pointed.
-    if ($container->hasDefinition('flowdrop.chat_reasoner')) {
-      $container->getDefinition('flowdrop.chat_reasoner')
-        ->setClass(AincientChatReasoner::class);
-    }
   }
 
 }

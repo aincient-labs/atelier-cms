@@ -28,7 +28,6 @@ function _aincient_studio_backend_sections(): array {
   }
   return [
     'people' => ['route' => 'view.aincient_users.page_1', 'label' => t('People')],
-    'metering' => ['route' => 'ai_metering.dashboard', 'label' => t('AI metering')],
   ];
 }
 
@@ -54,7 +53,8 @@ function aincient_studio_backend_preprocess_page(array &$variables): void {
       $url = Url::fromRoute($section['route']);
     }
     catch (\Throwable $e) {
-      // Route not available (e.g. ai_metering uninstalled) — skip the item.
+      // Route not available (the module or view providing it is uninstalled) —
+      // skip the item rather than fatal on RouteNotFoundException.
       continue;
     }
     // Don't link to a page the current user can't open.

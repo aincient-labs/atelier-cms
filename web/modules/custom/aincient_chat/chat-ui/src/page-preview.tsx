@@ -246,7 +246,7 @@ export function PagePreview() {
   }
 
   return (
-    <div className="ain-preview">
+    <div className="ain-preview" data-testid="studio-preview" data-studio="content">
       <PanelBar
         title={updating ? "Updating preview…" : "Live preview · unsaved draft"}
         actions={

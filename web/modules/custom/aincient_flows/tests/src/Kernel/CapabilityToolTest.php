@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_flows\Kernel;
 
 use Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\CapabilityTool;
-use Drupal\ai\Service\FunctionCalling\FunctionCallPluginManager;
+use Drupal\aincient_core\Capability\CapabilityManager;
 use Drupal\flowdrop\DTO\ParameterBag;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;
@@ -44,7 +44,6 @@ final class CapabilityToolTest extends KernelTestBase {
     'text',
     'node',
     'key',
-    'ai',
     'aincient_core',
     'workflows',
     'content_moderation',
@@ -54,7 +53,7 @@ final class CapabilityToolTest extends KernelTestBase {
   /**
    * The function-call plugin manager.
    */
-  private FunctionCallPluginManager $manager;
+  private CapabilityManager $manager;
 
   /**
    * {@inheritdoc}
@@ -63,7 +62,7 @@ final class CapabilityToolTest extends KernelTestBase {
     parent::setUp();
     $this->installEntitySchema('user');
 
-    $this->manager = $this->container->get('plugin.manager.ai.function_calls');
+    $this->manager = $this->container->get('plugin.manager.aincient.capabilities');
 
     $this->setCurrentUser($this->createUser(['administer aincient pages']));
   }

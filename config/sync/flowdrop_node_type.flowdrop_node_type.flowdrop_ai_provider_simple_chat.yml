@@ -3,7 +3,7 @@ langcode: en
 status: true
 dependencies:
   module:
-    - flowdrop_ai_provider
+    - aincient_flows
 _core:
   default_config_hash: VVqzxh_MIPEGn1llE6g4GSyTvRP89XmLxiE-vxTtC0A
 id: flowdrop_ai_provider_simple_chat
@@ -64,10 +64,11 @@ outputs:
 tags:
   - model
   - ai
-executor_plugin: 'flowdrop_ai_provider:simple_chat'
+executor_plugin: 'aincient_flows:aincient_simple_chat'
 visual_type: default
 supported_visual_types:
   - default
 unified_input_exposed: false
 unified_output_exposed: false
 tool_exposed: false
+reserved_port_exposure: {  }

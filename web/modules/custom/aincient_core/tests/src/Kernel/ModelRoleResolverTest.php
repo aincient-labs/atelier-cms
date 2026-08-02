@@ -27,9 +27,6 @@ final class ModelRoleResolverTest extends KernelTestBase {
    */
   protected static $modules = [
     'system',
-    // Provides the ai.provider service + ai.settings config schema that
-    // project() writes operation-type defaults into.
-    'ai',
     'aincient_core',
   ];
 
@@ -38,7 +35,7 @@ final class ModelRoleResolverTest extends KernelTestBase {
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->installConfig(['ai', 'aincient_core']);
+    $this->installConfig(['aincient_core']);
   }
 
   private function resolver(): ModelRoleResolver {
@@ -95,22 +92,41 @@ final class ModelRoleResolverTest extends KernelTestBase {
   }
 
   /**
-   * project() writes each role's binding onto its operation-type defaults.
+   * An unbound role resolves to nothing — there is no outside fallback left.
+   *
+   * The chain used to have two more links, reading drupal/ai's operation-type
+   * defaults when no role was bound, and this test used to prove they were gone
+   * by seeding `ai.settings` with a provider the roles did not have. Both the
+   * config and the module that owned it are now uninstalled, so the seeding step
+   * has nothing to seed — but the invariant it guarded is the point and outlives
+   * it: an unbound role stays unbound rather than resolving to something that
+   * would fail later with a worse error.
    */
-  public function testProjectWritesOperationDefaults(): void {
+  public function testUnboundRoleResolvesToNothing(): void {
+    $this->assertSame(
+      ['provider_id' => '', 'model_id' => ''],
+      $this->resolver()->resolve(ModelRoles::TASK),
+    );
+  }
+
+  /**
+   * project() no longer writes drupal/ai operation-type defaults.
+   *
+   * A regression guard, not a behaviour test: the write is gone, and the way it
+   * would come back is someone restoring the "project the bindings onto the
+   * framework" half without noticing it has had no reader since the
+   * `ai_provider_*` modules went. Binding then projecting must leave no
+   * `ai.settings` object behind — `getEditable()->save()` would create one even
+   * with the module uninstalled, which is exactly the silent resurrection to
+   * catch.
+   */
+  public function testProjectDoesNotWriteFrameworkDefaults(): void {
     $r = $this->resolver();
     $r->bind(ModelRoles::REASONING, 'anthropic', 'reason-model');
     $r->bind(ModelRoles::TASK, 'anthropic', 'task-model');
     $r->project();
 
-    $defaults = $this->config('ai.settings')->get('default_providers');
-    // task → chat + image vision.
-    $this->assertSame(['provider_id' => 'anthropic', 'model_id' => 'task-model'], $defaults['chat']);
-    $this->assertSame(['provider_id' => 'anthropic', 'model_id' => 'task-model'], $defaults['chat_with_image_vision']);
-    // reasoning → complex/structured/tools.
-    $this->assertSame(['provider_id' => 'anthropic', 'model_id' => 'reason-model'], $defaults['chat_with_complex_json']);
-    $this->assertSame(['provider_id' => 'anthropic', 'model_id' => 'reason-model'], $defaults['chat_with_structured_response']);
-    $this->assertSame(['provider_id' => 'anthropic', 'model_id' => 'reason-model'], $defaults['chat_with_tools']);
+    $this->assertNull($this->config('ai.settings')->get('default_providers'));
   }
 
   /**

@@ -98,8 +98,14 @@ export type OnboardingProvider = {
   id: string;
   label: string;
   description?: string;
-  /** How the connect step authenticates: an API key, or a server URL (Ollama). */
-  auth?: "api_key" | "host";
+  /**
+   * How the connect step authenticates — the provider's own declared shape.
+   *
+   * `api_key` is one field; `host` is one field that happens to be a URL and is
+   * the whole credential (Ollama); `api_key_endpoint` is TWO fields, a key and
+   * the base URL to call (any OpenAI-compatible endpoint).
+   */
+  auth?: "api_key" | "api_key_endpoint" | "host";
   /** What this provider (or key group) can do — drives the Chat/Image badges. */
   capabilities?: { chat?: boolean; image?: boolean };
   /** The highlighted "first choice" slot (sponsorship seam). */

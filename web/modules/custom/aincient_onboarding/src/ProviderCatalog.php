@@ -4,18 +4,31 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_onboarding;
 
+use Drupal\aincient_core\Inference\ProviderInventory;
 use Drupal\aincient_core\ModelRecommendations;
-use Drupal\ai\AiProviderPluginManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
  * Enumerates the chat-capable AI providers offered in the onboarding wizard.
  *
  * This is the data behind the wizard's "Choose your AI provider" step. The list
- * is sourced from drupal/ai's provider plugin system — every installed provider
- * module (ai_provider_anthropic, ai_provider_openai, …) that supports chat shows
- * up here, so the picker stays in sync with what the site can actually use
+ * comes from {@see ProviderInventory} — one row per inference adapter Atelier
+ * ships — so the picker stays in sync with what the site can actually use
  * without any hard-coded list.
+ *
+ * IT USED TO OFFER MORE THAN THE PRODUCT COULD HONOUR. Sourced from `drupal/ai`'s
+ * plugin system, this list included every installed provider module: Mistral,
+ * OpenAI, Ollama and OpenRouter alongside Anthropic and Google. None of those
+ * four had an inference adapter, so connecting one stored a key and left the
+ * operator with a console that could not answer — the picker was advertising
+ * capability the product does not have. Sourcing it from the adapter set is what
+ * makes the offer true.
+ *
+ * That cuts both ways, and three of those four are the proof: `ollama`, `openai`
+ * and `mistral` each came back the day an adapter was written for it, with
+ * nothing in this file changed. A provider appears here because the product can
+ * serve it, and for no other reason — `openrouter` is still absent for exactly
+ * the same reason it was.
  *
  * No provider is recommended by default — the distribution is fully neutral, so
  * the picker highlights nothing until an operator (or the future sponsorship
@@ -31,32 +44,22 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 final class ProviderCatalog {
 
   /**
-   * Operation type the console runs on — providers must support chat.
-   */
-  private const OPERATION_TYPE = 'chat';
-
-  /**
-   * The image-generation operation type (the Media studio's AI rail).
-   */
-  private const IMAGE_OPERATION_TYPE = 'text_to_image';
-
-  /**
-   * Provider plugin ids that authenticate with a host URL, not an API key.
+   * Provider ids hidden from the onboarding picker. Currently none.
    *
-   * Mirrors {@see \Drupal\aincient_onboarding\ProviderConnector::HOST_PROVIDERS}.
-   */
-  private const HOST_PROVIDERS = ['ollama'];
-
-  /**
-   * Provider plugin ids hidden from the onboarding picker.
+   * The rule this enforces is "never offer a row that cannot succeed". It held
+   * exactly one id — `openai_compatible`, which needs an API key AND a base URL
+   * ({@see \Drupal\aincient_core\Inference\ProviderAdapterInterface::AUTH_KEY_ENDPOINT})
+   * against a connect step that rendered one field. The step renders both fields
+   * now, so the id came out and the whole `api_key_endpoint` shape — DeepSeek,
+   * Groq, OpenRouter, a LiteLLM proxy, vLLM, LM Studio — is offered like any
+   * other.
    *
-   * OpenRouter is an aggregator that proxies hundreds of upstream models and
-   * returns its entire catalog (unfiltered by modality) — a poor first-run
-   * experience — so it's kept out of onboarding for now. The module stays
-   * installed, so any existing config keeps working and it can be re-surfaced
-   * later; it's simply not offered as a starting point.
+   * The seam stays because the rule outlives its first instance: a shape we can
+   * serve but not yet collect belongs here rather than in the picker, and being
+   * absent from the picker never means absent from the INVENTORY (the models form
+   * still lists such a provider's models, and it stays connectable headlessly).
    */
-  private const HIDDEN_PROVIDERS = ['openrouter'];
+  private const HIDDEN_PROVIDERS = [];
 
   /**
    * Display metadata for key groups (see ProviderConnector::KEY_GROUPS).
@@ -76,7 +79,7 @@ final class ProviderCatalog {
   ];
 
   public function __construct(
-    private readonly AiProviderPluginManager $providerManager,
+    private readonly ProviderInventory $providerManager,
     private readonly ConfigFactoryInterface $configFactory,
     private readonly ModelRecommendations $recommendations,
     private readonly ProviderConnector $connector,
@@ -85,9 +88,9 @@ final class ProviderCatalog {
   /**
    * Chat-capable providers for the picker, recommended slot first.
    *
-   * Lists installed providers regardless of whether they're configured yet
-   * (`setup = FALSE`) — the whole point of onboarding is to configure one — and
-   * flags which are already usable so the UI can show a "Connected" state.
+   * Lists servable providers regardless of whether they are connected yet — the
+   * whole point of onboarding is to connect one — and flags which already have a
+   * credential so the UI can show a "Connected" state.
    *
    * @return list<array{id: string, label: string, description: string, auth: string, recommended: bool, sponsored: bool, usable: bool}>
    *   One row per provider.
@@ -96,18 +99,24 @@ final class ProviderCatalog {
     $recommended = $this->recommendedProviderId();
 
     $providers = [];
-    foreach ($this->providerManager->getProvidersForOperationType(self::OPERATION_TYPE, FALSE) as $id => $definition) {
+    foreach ($this->providerManager->providersWith(ProviderInventory::CHAT) as $id => $row) {
+      if (in_array($id, self::HIDDEN_PROVIDERS, TRUE)) {
+        continue;
+      }
       $providers[] = [
         'id' => $id,
-        'label' => (string) ($definition['label'] ?? $id),
-        'description' => (string) ($definition['description'] ?? ''),
+        'label' => $row['label'],
+        'description' => $row['description'],
         // How the connect step authenticates this provider: an API key, or a
-        // server URL (host providers like Ollama, which take no key).
-        'auth' => in_array($id, self::HOST_PROVIDERS, TRUE) ? 'host' : 'api_key',
+        // server URL. The provider's own answer now — this used to be a
+        // HOST_PROVIDERS list maintained here AND in the connector.
+        'auth' => $row['auth'],
         'recommended' => $id === $recommended,
         // Reserved for the promotion manifest; never paid-placement in v1.
         'sponsored' => FALSE,
-        'usable' => $this->isUsable($id),
+        // A stored credential, not the provider's opinion of itself: `isUsable()`
+        // claimed three unkeyed providers were ready and denied one that was.
+        'usable' => $row['connected'],
       ];
     }
 
@@ -124,8 +133,8 @@ final class ProviderCatalog {
   /**
    * Providers for the multi-connect picker, with per-capability flags.
    *
-   * Unlike {@see self::chatProviders()} (chat-only, one row per plugin), this
-   * merges the chat and image pools and collapses key groups
+   * Unlike {@see self::chatProviders()} (chat-only, one row per provider), this
+   * covers every provider whatever it can do, and collapses key groups
    * ({@see ProviderConnector::KEY_GROUPS}) into a single row per primary — so
    * Google appears once as "Google Gemini" with BOTH chat and image lit, since
    * `gemini` and `nanobanana` share one key. Each row carries what it can do so
@@ -135,9 +144,7 @@ final class ProviderCatalog {
    * @return list<array{id: string, label: string, description: string, auth: string, capabilities: array{chat: bool, image: bool}, recommended: bool, recommendation: string, sponsored: bool, usable: bool}>
    */
   public function providers(): array {
-    $chatIds = array_keys($this->providerManager->getProvidersForOperationType(self::OPERATION_TYPE, FALSE));
-    $imageIds = array_keys($this->providerManager->getProvidersForOperationType(self::IMAGE_OPERATION_TYPE, FALSE));
-    $definitions = $this->providerManager->getDefinitions();
+    $inventory = $this->providerManager->providers();
     $recommended = $this->recommendedProviderId();
 
     // Reverse the key-group map: member id => the primary it's presented under.
@@ -149,20 +156,22 @@ final class ProviderCatalog {
     }
 
     $rows = [];
-    foreach (array_unique([...$chatIds, ...$imageIds]) as $id) {
+    foreach ($inventory as $id => $row) {
       $primary = $primaryOf[$id] ?? $id;
       if (in_array($id, self::HIDDEN_PROVIDERS, TRUE) || in_array($primary, self::HIDDEN_PROVIDERS, TRUE)) {
         continue;
       }
       if (!isset($rows[$primary])) {
         $meta = self::GROUP_META[$primary] ?? NULL;
-        $definition = $definitions[$primary] ?? $definitions[$id] ?? [];
+        // The primary's own row when it has one, else this member's — a key group
+        // is presented under its primary id even if only a member is registered.
+        $source = $inventory[$primary] ?? $row;
         $rows[$primary] = [
           'id' => $primary,
-          'label' => $meta['label'] ?? (string) ($definition['label'] ?? $primary),
-          'description' => $meta['description'] ?? (string) ($definition['description'] ?? ''),
-          'auth' => in_array($primary, self::HOST_PROVIDERS, TRUE) ? 'host' : 'api_key',
-          'capabilities' => ['chat' => FALSE, 'image' => FALSE],
+          'label' => $meta['label'] ?? $source['label'],
+          'description' => $meta['description'] ?? $source['description'],
+          'auth' => $source['auth'],
+          'capabilities' => [ProviderInventory::CHAT => FALSE, ProviderInventory::IMAGE => FALSE],
           'recommended' => $primary === $recommended,
           // Our curated guidance label (recommended | tested | not-recommended,
           // or '' when we've said nothing) — distinct from the `recommended`
@@ -172,16 +181,16 @@ final class ProviderCatalog {
           'usable' => FALSE,
         ];
       }
-      if (in_array($id, $chatIds, TRUE)) {
-        $rows[$primary]['capabilities']['chat'] = TRUE;
+      // Capabilities accumulate ACROSS the group: one Google key gives the row
+      // both chat (gemini) and image (nanobanana).
+      foreach ([ProviderInventory::CHAT, ProviderInventory::IMAGE] as $capability) {
+        if (!empty($row['capabilities'][$capability])) {
+          $rows[$primary]['capabilities'][$capability] = TRUE;
+        }
       }
-      if (in_array($id, $imageIds, TRUE)) {
-        $rows[$primary]['capabilities']['image'] = TRUE;
-      }
-      // "Connected" means a credential is actually stored — NOT the provider's
-      // own isUsable() (which lies for some plugins). Checked per member so a
-      // key-group row lights up when any member is keyed.
-      if ($this->connector->hasStoredCredential($id)) {
+      // "Connected" means a credential is actually stored. Checked per member so
+      // a key-group row lights up when any member is keyed.
+      if ($row['connected']) {
         $rows[$primary]['usable'] = TRUE;
       }
     }
@@ -236,19 +245,6 @@ final class ProviderCatalog {
     return (string) $this->configFactory
       ->get('aincient_onboarding.settings')
       ->get('recommended_provider');
-  }
-
-  /**
-   * Whether a provider is already configured and ready to use for an op type.
-   */
-  private function isUsable(string $id, string $operationType = self::OPERATION_TYPE): bool {
-    try {
-      return $this->providerManager->createInstance($id)->isUsable($operationType);
-    }
-    catch (\Throwable) {
-      // A provider that can't even instantiate isn't usable — never fatal here.
-      return FALSE;
-    }
   }
 
 }
