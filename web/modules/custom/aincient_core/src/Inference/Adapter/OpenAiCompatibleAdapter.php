@@ -52,6 +52,46 @@ final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
    */
   private const EMBEDDINGS_PATH = '/v1/embeddings';
 
+  /**
+   * Id fragments that mark something other than a text-answering chat model.
+   *
+   * The union of what the sibling adapters each name for their own vendor
+   * ({@see OpenAiAdapter}, {@see MistralAdapter}), because this adapter's
+   * catalogue is not one vendor's — a LiteLLM or OpenRouter endpoint re-serves
+   * OpenAI, Gemini, Anthropic and Mistral from a single `/v1/models`, so every
+   * vendor's non-chat modalities arrive in the same list. Measured against the
+   * Forge demo's proxy, which offered text-to-speech, native-audio, video,
+   * music, robotics and computer-use models as chat options.
+   *
+   * No capability field exists to read here — the OpenAI list shape carries an
+   * id, an owner and a timestamp — so this heuristic is the only filter
+   * available, exactly as for {@see OpenAiAdapter}.
+   */
+  private const NON_CHAT_MARKERS = [
+    'embed',
+    'whisper',
+    'tts',
+    'audio',
+    'transcribe',
+    'speech',
+    'dall-e',
+    'image',
+    'sora',
+    'veo',
+    'lyria',
+    'moderation',
+    'guard',
+    'rerank',
+    'realtime',
+    'live',
+    'robotics',
+    'computer-use',
+    'ocr',
+    'instruct',
+    'davinci',
+    'babbage',
+  ];
+
   public function __construct(
     private readonly HttpClientInterface $httpClient,
     private readonly \GuzzleHttp\ClientInterface $guzzle,
@@ -182,16 +222,47 @@ final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
       if (!is_array($model) || empty($model['id'])) {
         continue;
       }
-      $id = (string) $model['id'];
-      // Embedding models are not chat models. The Generic bridge routes by the
-      // same "contains embed" convention, so honour it on the way in too rather
-      // than offering an embedding model as a chat option.
-      if (str_contains(strtolower($id), 'embed')) {
+      $id = trim((string) $model['id']);
+      if ($id === '' || $this->isModelGroup($id) || $this->isNonChat($id)) {
         continue;
       }
       $models[$id] = $id;
     }
+    // Sorted, because this pool's order decides a role when nothing else does:
+    // an unresolved role ends at "the first model in the pool"
+    // ({@see \Drupal\aincient_core\ModelPresetResolver}), and leaving that to
+    // the endpoint's own response order makes the binding differ between two
+    // installs pointed at the same proxy.
+    ksort($models);
     return $models;
+  }
+
+  /**
+   * Whether an id names a model GROUP rather than a model.
+   *
+   * LiteLLM publishes a wildcard group per configured vendor — `openai/*`,
+   * `anthropic/*` — and serves them from `/v1/models` in a record shaped
+   * exactly like a real model's. They are routing patterns: sending one as a
+   * `model` is an error, not a call. Left in the pool they are indistinguishable
+   * from models in the picker, and — being ids like any other — one can win a
+   * role outright, which is what happened on the Forge demo, where all four
+   * roles resolved to `openai/*` and no turn could ever have completed.
+   */
+  private function isModelGroup(string $modelId): bool {
+    return str_contains($modelId, '*');
+  }
+
+  /**
+   * Whether an id names a model that cannot hold a text conversation.
+   */
+  private function isNonChat(string $modelId): bool {
+    $id = strtolower($modelId);
+    foreach (self::NON_CHAT_MARKERS as $marker) {
+      if (str_contains($id, $marker)) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
   /**

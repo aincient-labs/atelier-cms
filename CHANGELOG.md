@@ -26,6 +26,12 @@ public snapshot published from the development source.
 - **Maintenance:** the appliance self-test was still checking for AI modules Atelier no longer
   uses, which failed the build for the release above. Installing from the bundled recipe no
   longer enables one of them either, so both install paths now produce the same site.
+- **Fixed: setting up an OpenAI-compatible endpoint could pick a model that does not exist.**
+  The model list included entries that are not chat models — a proxy's wildcard model groups
+  (such as `openai/*`), and speech, audio, image, video and moderation models — and one of them
+  could end up chosen for every role, leaving the assistant unable to answer. Setup's three
+  tiers (best value, balanced, best quality) also now pick different models on such an endpoint,
+  instead of all three landing on the same one.
 
 ## 2026-08-01
 - **New: link a button to a page by picking it.** A call-to-action can now point at a page you

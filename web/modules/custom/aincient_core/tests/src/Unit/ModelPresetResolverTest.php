@@ -280,6 +280,53 @@ final class ModelPresetResolverTest extends UnitTestCase {
   }
 
   /**
+   * A proxy reached as `openai_compatible` still gets three DIFFERENT tiers.
+   *
+   * `litellm` is not a provider id any more, so a LiteLLM proxy is connected as
+   * `openai_compatible` — which reports isProxy() === FALSE, so the document's
+   * candidates cannot reach it (the proxy pass only tries declared proxies).
+   * That leaves the tier hints as the only thing standing between this provider
+   * and "the first model in the pool", and until `openai_compatible` had an
+   * entry there was nothing: the Forge demo resolved all four roles to the same
+   * model, so the one question we ask a beginner had three identical answers.
+   */
+  public function testOpenAiCompatibleTiersAreNotAllTheSameModel(): void {
+    $chat = [
+      'openai_compatible:anthropic/claude-haiku-4-5' => 'Claude Haiku 4.5',
+      'openai_compatible:anthropic/claude-opus-5' => 'Claude Opus 5',
+      'openai_compatible:anthropic/claude-sonnet-5' => 'Claude Sonnet 5',
+      'openai_compatible:gemini/gemini-3.5-flash' => 'Gemini 3.5 Flash',
+    ];
+    $picked = $this->resolver($this->document())->apply('balanced', $chat, []);
+
+    $this->assertSame('openai_compatible:anthropic/claude-opus-5', $picked[ModelRoles::REASONING]);
+    $this->assertSame('openai_compatible:anthropic/claude-sonnet-5', $picked[ModelRoles::TASK]);
+    $this->assertSame('openai_compatible:anthropic/claude-haiku-4-5', $picked[ModelRoles::FAST]);
+  }
+
+  /**
+   * The same provider, with this site's own exclusion applied on top.
+   *
+   * The Forge demo's exact configuration: the proxy holds no working Anthropic
+   * credential, so `wire-ai.sh` declares `openai_compatible:anthropic/` and the
+   * hints must land on what remains rather than on the pool's first entry.
+   */
+  public function testOpenAiCompatibleTiersRespectTheSitesExclusion(): void {
+    $chat = [
+      'openai_compatible:anthropic/claude-opus-5' => 'Claude Opus 5',
+      'openai_compatible:gemini/gemini-3.5-flash' => 'Gemini 3.5 Flash',
+      'openai_compatible:openai/gpt-5.6-sol' => 'GPT-5.6 Sol',
+      'openai_compatible:openai/gpt-5.6-luna' => 'GPT-5.6 Luna',
+    ];
+    $picked = $this->resolver($this->document(), ['avoid' => ['openai_compatible:anthropic/']])
+      ->apply('balanced', $chat, []);
+
+    $this->assertSame('openai_compatible:openai/gpt-5.6-sol', $picked[ModelRoles::REASONING]);
+    $this->assertSame('openai_compatible:openai/gpt-5.6-luna', $picked[ModelRoles::TASK]);
+    $this->assertSame('openai_compatible:gemini/gemini-3.5-flash', $picked[ModelRoles::FAST]);
+  }
+
+  /**
    * A short, generic pool id must NOT capture a longer candidate.
    *
    * The guard on the reverse match ({@see ModelPresetResolver}'s FAMILY_MIN):
@@ -580,6 +627,38 @@ final class ModelPresetResolverTest extends UnitTestCase {
     $picked = $this->resolver($this->document(), ['avoid' => ['anthropic:*']])
       ->apply('balanced', $chat, []);
     $this->assertSame('litellm:openai/gpt-5.4', $picked[ModelRoles::REASONING]);
+  }
+
+  /**
+   * `avoid` reaches a vendor through a NON-proxy provider, via its own identity.
+   *
+   * The Drupal Forge demo depends on this and would fail silently without it. Its
+   * LiteLLM proxy is connected as `openai_compatible`, which reports
+   * `isProxy() === FALSE` — correctly, because in the general case its ids are the
+   * upstream vendor's own and unnamespaced. So the second-identity derivation
+   * {@see self::testAvoidReachesThroughAProxy} relies on never happens, and the
+   * `anthropic:*` shape matches NOTHING: a declaration that keeps being written,
+   * keeps being logged, and stops excluding anything.
+   *
+   * Writing the exclusion in the CONNECTED PROVIDER's identity works instead,
+   * because the needle test is a substring match. `.devpanel/wire-ai.sh` emits
+   * exactly this shape; the assertion below is what makes that safe to rely on.
+   */
+  public function testAvoidReachesAVendorServedByANonProxyProvider(): void {
+    $chat = [
+      'openai_compatible:anthropic/claude-sonnet-5' => 'Sonnet via the proxy',
+      'openai_compatible:openai/gpt-5.4' => 'GPT-5.4 via the proxy',
+    ];
+    $picked = $this->resolver($this->document(), ['avoid' => ['openai_compatible:anthropic/']])
+      ->apply('balanced', $chat, []);
+    $this->assertSame('openai_compatible:openai/gpt-5.4', $picked[ModelRoles::REASONING]);
+
+    // And the negative half, which is the whole point: the vendor-identity shape
+    // that works through a declared proxy is a NO-OP here. If this ever starts
+    // passing, the demo can go back to `anthropic:*` — until then, it cannot.
+    $unguarded = $this->resolver($this->document(), ['avoid' => ['anthropic:*']])
+      ->apply('balanced', $chat, []);
+    $this->assertSame('openai_compatible:anthropic/claude-sonnet-5', $unguarded[ModelRoles::REASONING]);
   }
 
   /**

@@ -248,6 +248,24 @@ final class ModelRoles {
         self::TASK => ['sonnet', 'gpt-5.6-luna', 'haiku', 'gpt-5', 'mistral-medium', 'flash'],
         self::FAST => ['haiku', 'nano', 'mini', 'flash-lite', 'flash', 'small'],
       ],
+      // The same needles as `litellm`, and for a stronger reason: `litellm` is
+      // not a provider id any more, so a LiteLLM proxy is now reached as
+      // `openai_compatible` and this is the entry that actually gets consulted.
+      // Without it the provider had NO hints at all, and because it reports
+      // isProxy() === FALSE the curated document's candidates cannot reach it
+      // either (they are tried against proxies only) — so every role fell all
+      // the way to "the first model in the pool" and all four tiers resolved
+      // identically, which is precisely what the Forge demo showed.
+      //
+      // Families rather than model ids, so they match whether the endpoint
+      // namespaces its ids (`anthropic/claude-opus-5` on a proxy) or serves the
+      // vendor's own bare ones (`deepseek-v4-pro` direct) — this one provider
+      // covers both, and a needle like `opus` is a substring match in either.
+      'openai_compatible' => [
+        self::REASONING => ['opus', 'gpt-5.6-sol', 'gpt-5.6-terra', 'sonnet', 'gpt-5', 'mistral-large', 'pro'],
+        self::TASK => ['sonnet', 'gpt-5.6-luna', 'haiku', 'gpt-5', 'mistral-medium', 'flash'],
+        self::FAST => ['haiku', 'nano', 'mini', 'flash-lite', 'flash', 'small'],
+      ],
     ];
   }
 
