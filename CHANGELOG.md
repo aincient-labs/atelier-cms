@@ -10,8 +10,9 @@ public snapshot published from the development source.
 ## [0.1.0] — 2026-08-03
 
 **Atelier has version numbers from here on.** Entries above this point are dated snapshots; from
-now on a release gets a version like `0.1.0`, published as `ghcr.io/aincient-labs/atelier-cms:0.1.0`
-alongside `:latest`. `:edge` continues to track the newest development build for anyone who wants
+now on a release gets a version like `0.1.0`, published as
+`ghcr.io/aincient-labs/atelier-cms:v0.1.0` (note the `v`) alongside `:latest`. `:edge` continues to
+track the newest development build for anyone who wants
 it. While Atelier is on `0.x` we are not yet promising that every upgrade is safe — take a backup
 before one.
 
