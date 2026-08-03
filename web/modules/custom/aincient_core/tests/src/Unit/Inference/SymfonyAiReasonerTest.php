@@ -22,6 +22,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\AI\Platform\Message\AssistantMessage;
+use Symfony\AI\Platform\Message\MessageBag;
 use Symfony\AI\Platform\Model;
 use Symfony\AI\Platform\ModelCatalog\ModelCatalogInterface;
 use Symfony\AI\Platform\PlainConverter;
@@ -85,8 +86,14 @@ final class SymfonyAiReasonerTest extends TestCase {
        */
       public ?ResultInterface $result = NULL;
 
+      /**
+       * The input of the last invoke() call — the message bag under test.
+       */
+      public array|string|object|null $input = NULL;
+
       public function invoke(string|Model $model, array|string|object $input, array $options = []): DeferredResult {
         $this->model = $model;
+        $this->input = $input;
         $this->options = $options;
 
         return new DeferredResult(
@@ -226,6 +233,44 @@ final class SymfonyAiReasonerTest extends TestCase {
     self::assertArrayHasKey('tools', $this->platform->options);
     self::assertCount(1, $this->platform->options['tools']);
     self::assertSame('list_pages', $this->platform->options['tools'][0]->getName());
+  }
+
+  /**
+   * A tool-aware turn carries the output-budget clause in its system prompt.
+   *
+   * The third cause of the DECISIONS 0278/0279 symptom, and the reason this is a
+   * shared clause rather than six copies in the flow templates: a model that
+   * overruns its output allowance mid-tool-argument has the whole call discarded
+   * by the bridge (`finish_reason: length`, empty text), so every node reports
+   * success and the user gets an empty bubble. Reproduced live on
+   * `deepseek-v4-pro`, which spent 1024 tokens reasoning before writing a
+   * `preview_page` payload and hit the cap partway through it.
+   *
+   * The node's own prompt must still come FIRST — it says who the agent is, and a
+   * generic paragraph in front of it reads as the instruction.
+   */
+  public function testToolAwareTurnsCarryTheOutputBudgetClause(): void {
+    $this->reason($this->request(temperature: 0.0, tools: [
+      ['name' => 'list_pages', 'description' => 'List every page.'],
+    ]));
+
+    $system = $this->systemPromptSent();
+    self::assertStringContainsString('OUTPUT BUDGET', $system);
+    self::assertStringStartsWith('You are helpful.', $system);
+  }
+
+  /**
+   * A turn that declared NO tools does not get it.
+   *
+   * Blast radius: the clause is entirely about the cost of an overlong tool
+   * ARGUMENT, so on a plain chat turn it is advice about something that cannot
+   * happen — and it would spend the one-shot callers' own budget telling them to
+   * prefer several small calls they have no way to make.
+   */
+  public function testToollessTurnsDoNotCarryTheClause(): void {
+    $this->reason($this->request(temperature: 0.0));
+
+    self::assertSame('You are helpful.', $this->systemPromptSent());
   }
 
   /**
@@ -460,6 +505,20 @@ final class SymfonyAiReasonerTest extends TestCase {
    * @param array<int, array<string, mixed>> $tools
    *   Tool definitions the model may call.
    */
+  /**
+   * The system prompt that actually reached the platform.
+   *
+   * Read off the recorded MessageBag rather than the request, because the whole
+   * point of the clause is that the reasoner ADDS to what the node stored — a
+   * helper that echoed the request back would pin nothing.
+   */
+  private function systemPromptSent(): string {
+    $bag = $this->platform->input;
+    self::assertInstanceOf(MessageBag::class, $bag);
+
+    return (string) $bag->getSystemMessage()?->getContent();
+  }
+
   private function request(float $temperature, int $maxTokens = 1024, array $tools = []): ReasonRequest {
     return new ReasonRequest(
       [new ReasonMessage('user', 'hello')],

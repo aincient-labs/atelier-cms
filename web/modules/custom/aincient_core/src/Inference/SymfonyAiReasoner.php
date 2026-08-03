@@ -37,6 +37,53 @@ use Psr\Log\LoggerInterface;
  */
 final class SymfonyAiReasoner implements ChatReasonerInterface {
 
+  /**
+   * Output discipline, appended to the system prompt of every TOOL-AWARE turn.
+   *
+   * WHY IT IS HERE AND NOT IN THE FLOW TEMPLATES. It is true of every agent we
+   * ship and every model an operator can bind, so a copy in each of the six
+   * `prompt_template` nodes would be six places to drift and one more thing a new
+   * flow forgets. This is the only seam every agent turn passes through, and the
+   * only one that knows a turn is tool-aware at all.
+   *
+   * WHAT IT IS ABOUT. A turn has a finite output budget, and overrunning it is
+   * not a partial answer — the provider cuts the tool call mid-argument and the
+   * OpenAI-compatible converter then discards the whole malformed call, handing
+   * back `finish_reason: length` with empty text (see
+   * `Bridge/Generic/Completions/CompletionsConversionTrait::convertChoice()`).
+   * Every node still reports success and the user gets an empty bubble: the
+   * DECISIONS 0278/0279 failure mode with a third cause.
+   *
+   * REASONING MODELS make it ordinary rather than rare, which is why this is
+   * phrased for all models and names none. A thinking model spends part of the
+   * same budget before it writes a single visible token, so the margin a
+   * non-reasoning model had is simply gone — a `deepseek-v4-pro` page turn burned
+   * 1024 reasoning tokens and then truncated its `preview_page` payload at the
+   * cap. Raising the cap buys room; it does not make one enormous argument a good
+   * plan, because the next model reasons harder or the next page is longer.
+   *
+   * It says nothing about which tools exist, what a page is, or how any studio
+   * works — that stays in the flow templates, which remain the readable, editable
+   * account of what each agent does.
+   */
+  private const OUTPUT_DISCIPLINE = <<<'TXT'
+    OUTPUT BUDGET. Every turn has a finite output allowance, and some models spend
+    part of it thinking before writing anything. A tool call that runs past the
+    allowance is cut off mid-argument and arrives as NOTHING — the whole call is
+    discarded, not delivered in part, and the user sees an empty reply. So:
+
+    - Think briefly, then act. Don't restate your plan at length before calling a
+      tool; the call itself is the answer.
+    - Keep arguments COMPACT. Pass only the fields the tool documents, in the
+      grammar it documents. Never emit HTML, CSS or markup a tool did not ask for,
+      and don't pad copy to fill a section.
+    - Prefer SEVERAL SMALL CALLS to one large one. Each call layers onto what the
+      previous one did, so work in passes — the structure first, then the detail —
+      and stop cleanly at the end of each pass rather than risking a cut-off.
+    - If you can't fit the work in one call, say what you did and what's next in
+      one short sentence, then continue in the following turn.
+    TXT;
+
   public function __construct(
     private readonly PlatformRegistryInterface $registry,
     private readonly ModelTargetResolver $targets,
@@ -60,7 +107,14 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
       $request->getModel(),
     );
 
-    $bag = $this->messages->toMessageBag($request->getSystemPrompt(), $request->getMessages());
+    // Resolved before the message bag, because whether this turn is tool-aware
+    // decides what its system prompt says — {@see self::OUTPUT_DISCIPLINE}.
+    $declarations = $this->tools->toTools($request->getTools());
+
+    $bag = $this->messages->toMessageBag(
+      $this->systemPrompt($request->getSystemPrompt(), $declarations !== []),
+      $request->getMessages(),
+    );
 
     $options = ['max_tokens' => $request->getMaxTokens()];
 
@@ -83,7 +137,6 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
       $options['temperature'] = $request->getTemperature();
     }
 
-    $declarations = $this->tools->toTools($request->getTools());
     if ($declarations !== []) {
       $options['tools'] = $declarations;
     }
@@ -134,6 +187,38 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
     // because an image turn hits the identical trap.
     [$text, $toolCalls] = $this->unpacker->textAndToolCalls($result);
     return new ReasonResult($text, $toolCalls);
+  }
+
+  /**
+   * The node's system prompt, plus the output-budget clause on a tool-aware turn.
+   *
+   * Gated on tools rather than applied to everything: the clause is entirely
+   * about the cost of an overlong TOOL ARGUMENT, so on a turn that declared no
+   * tools it would be advice about a thing that cannot happen — and the one-shot
+   * callers ({@see AiGateway}) ask for a sentence, where "prefer several small
+   * calls" is noise that eats their own budget.
+   *
+   * Appended, never prepended: the node's prompt establishes who the agent is,
+   * and a generic paragraph in front of that reads as the instruction and buries
+   * the role.
+   *
+   * @param string $prompt
+   *   The system prompt as the node stored it, possibly ''.
+   * @param bool $toolAware
+   *   Whether this turn declared any tools.
+   *
+   * @return string
+   *   The prompt to send.
+   */
+  private function systemPrompt(string $prompt, bool $toolAware): string {
+    if (!$toolAware) {
+      return $prompt;
+    }
+
+    $prompt = trim($prompt);
+    return $prompt === ''
+      ? self::OUTPUT_DISCIPLINE
+      : $prompt . "\n\n" . self::OUTPUT_DISCIPLINE;
   }
 
   /**

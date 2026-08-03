@@ -51,7 +51,7 @@ nodes:
       config:
         model: ''
         temperature: 0
-        maxTokens: 1024
+        maxTokens: 8192
         systemPrompt: ''
       metadata:
         node_type_id: aincient_reason

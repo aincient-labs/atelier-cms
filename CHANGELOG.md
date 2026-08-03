@@ -7,6 +7,16 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.1.1] — 2026-08-03
+
+- **Fixed: an agent could answer "success" and change nothing.** Asking for a whole page in one go
+  could run past the limit on how much an agent may write in a single step. The half-written step was
+  discarded rather than applied in part, so the chat reported success, the page stayed empty, and
+  nothing anywhere said why. The limit is raised eightfold, and agents now build a long page in
+  passes — sections first, then the detail — so you watch it appear instead of waiting for one large
+  step that might not arrive. This affects every agent, and models that think before answering most
+  of all, since their thinking spent part of the same allowance.
+
 ## [0.1.0] — 2026-08-03
 
 **Atelier has version numbers from here on.** Entries above this point are dated snapshots; from

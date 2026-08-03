@@ -100,7 +100,7 @@ nodes:
         operation_type: 'aincient_role:task'
         model: null
         temperature: 0
-        maxTokens: 900
+        maxTokens: 2048
         systemPrompt: ''
       metadata:
         node_type_id: flowdrop_ai_provider_simple_chat

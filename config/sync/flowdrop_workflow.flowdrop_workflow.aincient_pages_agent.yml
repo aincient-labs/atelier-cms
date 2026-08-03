@@ -70,7 +70,7 @@ nodes:
         model: ''
         operation_type: 'aincient_role:reasoning'
         temperature: 0
-        maxTokens: 1024
+        maxTokens: 8192
         systemPrompt: ''
       metadata:
         node_type_id: aincient_reason
@@ -693,7 +693,11 @@ nodes:
           title} then set_content with the body fields (author the body in `body_md` as Markdown —
           the reader-optimised prose styling is applied for you). Section ops are inert on a blog.
 
-          A fresh landing page = ONE preview_page call carrying set_meta + several add_section ops.
+          A fresh landing page = set_meta + several add_section ops, in ONE call when the copy is
+          short enough to fit your output allowance. For a longer page, lay the SECTIONS down
+          first (set_meta + add_section with the headline props), then fill in the detail with
+          update_section ops in a second call — the user watches it build, and a page that grows
+          in two passes beats one that is cut off mid-op and never appears at all.
           A fresh blog post = ONE preview_page call carrying set_meta {type:"blog", …} + set_content.
           To change one thing, send just that op — never rebuild the whole page.
 
