@@ -28,6 +28,10 @@ vendor/
 # Drupal — Composer-managed core/contrib (not committed; reproduced from composer.lock)
 web/core/
 web/modules/contrib/
+# The "engine" tier: upstream modules that version with the product rather than
+# on their own cadence (flowdrop). Retargeted out of contrib via composer.json's
+# installer-paths so the appliance image can cache it as its own layer.
+web/modules/engine/
 web/themes/contrib/
 web/profiles/contrib/
 web/libraries/

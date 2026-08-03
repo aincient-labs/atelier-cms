@@ -7,6 +7,26 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.1.0] — 2026-08-03
+
+**Atelier has version numbers from here on.** Entries above this point are dated snapshots; from
+now on a release gets a version like `0.1.0`, published as `ghcr.io/aincient-labs/atelier-cms:0.1.0`
+alongside `:latest`. `:edge` continues to track the newest development build for anyone who wants
+it. While Atelier is on `0.x` we are not yet promising that every upgrade is safe — take a backup
+before one.
+
+- **New: you can find out which Atelier you're running.** Open **Reports → Status report** and look
+  for **Atelier version**. Atelier updates itself when you pull a newer image, so the day you
+  installed says nothing about the code you're on — this row does. Include it when you report a
+  problem; it's the difference between a bug we've already fixed and one we haven't heard about.
+- **Updates download far less.** All the dependencies sat in a single 216 MB layer, so bumping any
+  one of them re-downloaded all of them. They are now four layers ordered by how often each
+  changes: an update that only moves the workflow engine is **about 22 MB instead of 216 MB**.
+- **Fixed: upgrades survive a module moving inside the image.** Drupal remembers where it found
+  each module and that memory outlives an image swap, so an appliance upgrading across such a move
+  would have failed on start before its database updates could run. Upgrades now clear that memory
+  first — on every upgrade, not just this one.
+
 ## 2026-08-03
 - **Model rates are now yours to set**, at Configuration → Atelier → Model rates. The rates we
   ship became suggestions: through a proxy the model name is an alias from your own

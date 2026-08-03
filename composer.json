@@ -42,10 +42,17 @@
         "drupal/core-composer-scaffold": "^11.4.4",
         "drupal/core-project-message": "^11.4.4",
         "drupal/core-recipe-unpack": "^11.4.4",
+        "drupal/crop": "^2.6",
+        "drupal/csv_serialization": "^4.0",
+        "drupal/file_mdm": "^3.2",
         "drupal/flowdrop": "^2",
         "drupal/flowdrop_ai_provider": "2.x-dev",
+        "drupal/focal_point": "^2.1",
         "drupal/gemini_provider": "^1.0.1",
+        "drupal/image_style_quality": "^1.7",
+        "drupal/image_widget_crop": "^3.0",
         "drupal/imagemagick": "^5.0.1",
+        "drupal/key": "^1.22",
         "drupal/metatag": "^2.2",
         "drupal/pathauto": "^1.15",
         "drupal/rabbit_hole": "^1.2",
@@ -54,7 +61,10 @@
         "drupal/rift": "^2.0.0-rc1",
         "drupal/schema_metatag": "^3.0.4",
         "drupal/simple_sitemap": "^4.2.3",
+        "drupal/sophron": "^3.1",
+        "drupal/token": "^1.17",
         "drupal/tome": "^1.16",
+        "drupal/views_data_export": "^1.10",
         "drush/drush": "^13.7.6",
         "league/commonmark": "^2.8.3",
         "symfony/ai-anthropic-platform": "^0.12",
@@ -72,7 +82,30 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "scripts": {
-        "test": "SIMPLETEST_DB=sqlite://localhost//tmp/phpunit.sqlite BROWSERTEST_OUTPUT_DIRECTORY=/tmp phpunit -c web/core/phpunit.xml.dist web/modules/custom"
+        "test": "SIMPLETEST_DB=sqlite://localhost//tmp/phpunit.sqlite BROWSERTEST_OUTPUT_DIRECTORY=/tmp phpunit -c web/core/phpunit.xml.dist web/modules/custom",
+        "_comment_prune-engine-tier": [
+            "flowdrop installs to web/modules/engine (see installer-paths) so the appliance image can",
+            "cache that fast-moving tier as its own layer. When that mapping changed, composer installed",
+            "to the new path but left the directory already sitting at the old one — it keeps no record of",
+            "a path it used to own — so any tree that predates the move has flowdrop in BOTH tiers, which",
+            "Drupal reads as two modules with the same name. This heals that automatically.",
+            "",
+            "The `[ -f ... ]` test and trailing `true` are load-bearing: docker/Dockerfile's vendor stage",
+            "runs `composer install` WITHOUT --no-scripts and with only composer.json, composer.lock and",
+            "patches/ in the build context, so the script file is absent there. Without the guard the",
+            "hook would fail and take the whole image build with it.",
+            "",
+            "--heal only deletes a contrib copy that is duplicated in engine/. A flowdrop package present",
+            "ONLY in contrib is a live module missing from the installer-paths list, so it is left alone",
+            "and CI fails on it instead."
+        ],
+        "prune-engine-tier": "sh -c '[ -f docker/tests/assert-engine-tier.sh ] && bash docker/tests/assert-engine-tier.sh --heal; true'",
+        "post-install-cmd": [
+            "@prune-engine-tier"
+        ],
+        "post-update-cmd": [
+            "@prune-engine-tier"
+        ]
     },
     "config": {
         "allow-plugins": {
@@ -142,6 +175,10 @@
             ],
             "web/libraries/{$name}": [
                 "type:drupal-library"
+            ],
+            "web/modules/engine/{$name}": [
+                "drupal/flowdrop",
+                "drupal/flowdrop_ai_provider"
             ],
             "web/modules/contrib/{$name}": [
                 "type:drupal-module"

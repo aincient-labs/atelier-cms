@@ -37,7 +37,39 @@ RUN --mount=type=secret,id=composer_github_token \
     composer install --no-dev --no-interaction --no-progress --prefer-dist --ignore-platform-reqs \
       --optimize-autoloader
 
-# Normalise mtimes across the resolved tree so the COPY --from=vendor layer below
+# --- Partition the resolved tree into cache tiers ---------------------------
+# The four big trees composer just materialised change at very different rates,
+# but a single `COPY --from=vendor /app` put them in ONE 216 MB layer — so the
+# fastest-moving tier dragged all the others with it on every dependency bump.
+# Measured across the 50 deploys in the umbrella's ledger (bin/atelier-deploys.tsv),
+# as a share of the 11 bumps that actually changed composer.lock's runtime set:
+#
+#   web/core            80 MB   18%   Drupal core releases
+#   web/modules/contrib 24 MB   36%   almost entirely the uninstalled ai_provider_*
+#                                     set, which leaves next release → ~0% after
+#   vendor              76 MB   54%   symfony/ai-* bridges are pre-1.0 and thin
+#   web/modules/engine  22 MB   63%   flowdrop — versions with the product
+#
+# Four of the eleven bumps were flowdrop and nothing else: 22 MB of change that
+# re-shipped 216 MB to every appliance. Moving each tier OUT of /app lets stage 2
+# copy them as four independent layers, ordered least- to most-volatile.
+#
+# /app keeps whatever is left — the scaffolded docroot remainder (index.php,
+# .htaccess, robots.txt, sites/, profiles/, libraries/) plus the manifests — and
+# is copied as a catch-all, so anything composer-scaffold adds in a future core
+# release still ships without anyone editing a file list here. That catch-all is
+# copied LAST because it holds composer.json/composer.lock, which change on
+# *every* dependency bump; ahead of the big tiers it would invalidate all of them.
+#
+# mkdir -p first: `mv` on a non-existent path is a hard build failure, and
+# web/modules/engine only exists while a flowdrop package is required.
+RUN mkdir -p /split /app/web/modules/contrib /app/web/modules/engine \
+    && mv /app/web/core            /split/core \
+    && mv /app/vendor              /split/vendor \
+    && mv /app/web/modules/contrib /split/contrib \
+    && mv /app/web/modules/engine  /split/engine
+
+# Normalise mtimes across the resolved tree so the COPY --from=vendor layers below
 # is byte-stable across rebuilds. composer stamps every file with the build time;
 # BuildKit's layer digest hashes those mtimes, so a cache MISS on this stage (GHA
 # cache eviction, a cancelled cache export, …) would otherwise hand the unchanged
@@ -46,7 +78,7 @@ RUN --mount=type=secret,id=composer_github_token \
 # content → identical layer, independent of when it was built. (-h so symlinks are
 # stamped in place; -t <YYYYMMDDhhmm> is busybox-portable — this is Alpine.) The
 # runtime image's opcache runs validate_timestamps=0, so these mtimes are inert.
-RUN find /app -exec touch -h -t 202401010000 {} +
+RUN find /app /split -exec touch -h -t 202401010000 {} +
 
 # --- Stage 2: runtime -------------------------------------------------------
 FROM php:8.4-apache AS runtime
@@ -76,21 +108,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV DRUPAL_ROOT=/opt/drupal/web
 WORKDIR /opt/drupal
 
-# Bring in the composer-built tree (core, contrib, vendor, scaffolded docroot)…
-COPY --from=vendor /app /opt/drupal
-# …then overlay the product's own source: custom modules, recipes, and the
-# canonical config. These are what make this image "AIncient" and not vanilla.
-COPY web/modules/custom /opt/drupal/web/modules/custom
-COPY web/themes/custom /opt/drupal/web/themes/custom
-COPY recipes /opt/drupal/recipes
-COPY config /opt/drupal/config
-
-# Environment-driven settings.php (DB creds + salt come from the container).
-COPY docker/settings.appliance.php /opt/drupal/web/sites/default/settings.php
-
-# Writable state dirs; the webserver owns files, root runs converge/install.
-RUN mkdir -p /opt/drupal/private/snapshots /opt/drupal/web/sites/default/files \
-    && chown -R www-data:www-data /opt/drupal/web/sites/default/files /opt/drupal/private
+# ---------------------------------------------------------------------------
+# LAYER ORDER BELOW IS LOAD-BEARING. Every layer is re-downloaded by every
+# appliance whenever it OR ANY LAYER ABOVE IT changes, so these are ordered
+# least- to most-volatile. Churn figures are measured over the 50 deploys in the
+# umbrella's ledger (bin/atelier-deploys.tsv) — see the partition comment in the
+# vendor stage. Adding a COPY in the wrong place silently inflates every future
+# appliance update; put new static config high and new product source low.
+# ---------------------------------------------------------------------------
 
 # Apache serves the Drupal docroot. A <Directory> grant is required — just
 # moving DocumentRoot leaves the new path under Debian's default "deny", and
@@ -112,10 +137,6 @@ RUN printf '%s\n' \
 # before PHP's 600s budget (and the 540s flow loop) elapses. Match the PHP budget.
 RUN printf 'Timeout 600\n' > /etc/apache2/conf-available/aincient-timeout.conf \
     && a2enconf aincient-timeout
-
-# Converge + health scripts.
-COPY docker/converge.sh docker/healthcheck.sh docker/entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/converge.sh /usr/local/bin/healthcheck.sh /usr/local/bin/entrypoint.sh
 
 # Start from PHP's shipped production ini (display_errors Off, hardened defaults)
 # rather than the compiled-in dev-leaning defaults, then layer our overrides on top.
@@ -146,9 +167,77 @@ RUN printf '%s\n' \
       'opcache.max_accelerated_files=100000' \
       > /usr/local/etc/php/conf.d/aincient-opcache.ini
 
+# Converge + health scripts. Below the static ini layers (a converge.sh edit
+# shouldn't re-digest them) but above the dependency tiers, since these three
+# scripts changed in only 3 of 49 deploys.
+COPY docker/converge.sh docker/healthcheck.sh docker/entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/converge.sh /usr/local/bin/healthcheck.sh /usr/local/bin/entrypoint.sh
+
+# --- The composer-resolved dependency tiers, least- to most-volatile ---------
+# Partitioned in the vendor stage; see the rationale there. Each is an
+# independent layer, so a flowdrop bump now re-ships 22 MB instead of 216 MB.
+COPY --from=vendor /split/core    /opt/drupal/web/core
+COPY --from=vendor /split/contrib /opt/drupal/web/modules/contrib
+COPY --from=vendor /split/vendor  /opt/drupal/vendor
+COPY --from=vendor /split/engine  /opt/drupal/web/modules/engine
+# The scaffolded docroot remainder + the manifests. LAST of the tiers: it carries
+# composer.json/composer.lock, which change on every dependency bump, so placing
+# it above the four big trees would invalidate all of them every time.
+COPY --from=vendor /app           /opt/drupal
+
+# Environment-driven settings.php (DB creds + salt come from the container).
+# MUST stay after the remainder COPY above: core-composer-scaffold can place its
+# own sites/default/settings.php, which would otherwise overwrite ours.
+COPY docker/settings.appliance.php /opt/drupal/web/sites/default/settings.php
+
+# --- The product's own source, least- to most-volatile ----------------------
+# These are what make this image "Atelier" and not vanilla Drupal. Ordered by
+# measured churn across the 49 build-to-build transitions: recipes 6%, custom
+# themes 14%, config 34%, custom modules 59%.
+COPY recipes /opt/drupal/recipes
+COPY web/themes/custom /opt/drupal/web/themes/custom
+COPY config /opt/drupal/config
+COPY web/modules/custom /opt/drupal/web/modules/custom
+
+# Writable state dirs; the webserver owns files, root runs converge/install.
+# After every COPY above — the remainder tier creates web/sites.
+RUN mkdir -p /opt/drupal/private/snapshots /opt/drupal/web/sites/default/files \
+    && chown -R www-data:www-data /opt/drupal/web/sites/default/files /opt/drupal/private
+
 # settings.php is expected to read DB creds + hash salt from the environment
 # (DATABASE_URL, HASH_SALT) and the config sync dir — standard containerised
 # Drupal wiring. (Left to the deployment to mount/template; noted in README.)
+
+# ---------------------------------------------------------------------------
+# Build stamp — what this image IS. Two carriers, because they're read by two
+# different consumers at two different times:
+#
+#   ENV ATELIER_VERSION  — read at RUNTIME from inside the container (PHP
+#     getenv()), so the site can show it on the status report. This is the
+#     line a bug reporter pastes.
+#   LABEL org.opencontainers.image.*  — read from OUTSIDE via
+#     `docker image inspect`, WITHOUT starting the container. This is what the
+#     manager compares before/after a pull to report "0.1.0 → 0.2.0" and to
+#     refuse a downgrade.
+#
+# MUST stay at the end of the file. These are zero-byte metadata layers, but a
+# build-arg changes on every deploy — placed earlier, it would invalidate every
+# COPY/RUN below it and re-digest the big core+contrib+vendor (~75 MB) and
+# ImageMagick (~54 MB) layers, defeating the SOURCE_DATE_EPOCH reproducibility
+# work in the release workflow and making every appliance re-pull ~130 MB it
+# already has.
+#
+# Both default to "dev": a local `docker build` (and docker/tests/smoke.sh)
+# passes no build-arg, and an unstamped image must be recognisably NOT a
+# release rather than silently claiming to be one.
+ARG ATELIER_VERSION=dev
+ARG ATELIER_REVISION=dev
+ENV ATELIER_VERSION=${ATELIER_VERSION}
+LABEL org.opencontainers.image.title="Atelier by AIncient Labs" \
+      org.opencontainers.image.version="${ATELIER_VERSION}" \
+      org.opencontainers.image.revision="${ATELIER_REVISION}" \
+      org.opencontainers.image.source="https://github.com/aincient-labs/atelier-cms" \
+      org.opencontainers.image.licenses="GPL-2.0-or-later"
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
   CMD /usr/local/bin/healthcheck.sh || exit 1

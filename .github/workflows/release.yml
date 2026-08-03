@@ -85,6 +85,12 @@ jobs:
           COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GITHUB_TOKEN }}"}}'
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      # The appliance image caches flowdrop as its own layer, which depends on it
+      # installing to web/modules/engine. composer/installers has no glob, so a
+      # new flowdrop package would silently fall back to contrib and undo that.
+      - name: Assert the engine layer tier is intact
+        run: bash docker/tests/assert-engine-tier.sh
+
       # Functional (BrowserTestBase) tests in the sweep need a real HTTP server
       # serving the docroot (must start FROM the docroot so the router's
       # DOCUMENT_ROOT resolves index.php).
@@ -194,9 +200,28 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          # The build stamp baked into the image (ENV + OCI labels; see the end of
+          # docker/Dockerfile). Mirrors the tag logic in the merge job below: a
+          # tagged release is stamped with the tag a user can actually pull, and a
+          # rolling build is stamped edge+<sha7> so an :edge bug report is still
+          # locatable to an exact commit. Deliberately the SAME string a user
+          # sees on /admin/reports/status.
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            ATELIER_VERSION="${{ github.ref_name }}"
+          else
+            ATELIER_VERSION="edge+${GITHUB_SHA::7}"
+          fi
+          echo "stamping ATELIER_VERSION=${ATELIER_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          # These two build-args are the ONLY inputs that differ from the
+          # smoke-validated build above, and they feed zero-byte metadata layers
+          # at the very end of the Dockerfile — so every substantive layer still
+          # cache-hits from smoke.sh and the published bytes remain the
+          # smoke-validated bytes.
           docker buildx build \
             --secret "id=composer_github_token,env=GITHUB_TOKEN" \
             --cache-from "type=gha,scope=appliance-${{ matrix.arch }}" \
+            --build-arg "ATELIER_VERSION=${ATELIER_VERSION}" \
+            --build-arg "ATELIER_REVISION=${GITHUB_SHA}" \
             -f docker/Dockerfile \
             --output "type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true,rewrite-timestamp=true" \
             --metadata-file /tmp/meta.json \

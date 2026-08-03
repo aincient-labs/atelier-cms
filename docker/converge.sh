@@ -181,6 +181,30 @@ upgrade() {
   # reports failure instead of being declared healthy.
   trap 'log "upgrade failed — the converged site is not healthy"; restore_snapshot; write_result rolledback; recovery_hint; die "rolled back to pre-upgrade snapshot"' ERR
 
+  # Drop the caches that pin extension FILE PATHS before anything bootstraps.
+  #
+  # Drupal resolves a module's path by scanning the filesystem exactly once, when
+  # the service container is compiled (DrupalKernel::setExtensionData), then bakes
+  # the result into the compiled container's `container.modules` parameter and the
+  # `system.module.files` state entry. Both live in the DATABASE, which is a
+  # mounted volume that survives an image swap — so after an upgrade that MOVES a
+  # module on disk, the first thing to bootstrap would load the old path and die
+  # with a "failed to open stream" fatal before updatedb could run.
+  #
+  # That is not hypothetical: flowdrop moved from web/modules/contrib/flowdrop to
+  # web/modules/engine/flowdrop (composer.json installer-paths, so the appliance
+  # image can cache the fast-moving engine tier as its own layer). Any future
+  # release that relocates a module has the same exposure.
+  #
+  # This must be bootstrap-free, which rules out `drush cache:rebuild` — that has
+  # to boot the very container we are trying to invalidate. `sql:query` only needs
+  # the DB credentials, so it works even when the cached container is unloadable.
+  # Cheap and idempotent, so it runs on every upgrade rather than being special-
+  # cased to one release.
+  log "invalidating cached extension paths (pre-bootstrap)"
+  $DRUSH sql:query "TRUNCATE cache_container; DELETE FROM key_value WHERE collection = 'state' AND name = 'system.module.files';" \
+    || die "could not invalidate the extension-path caches"
+
   # The migration engine: runs every pending hook_update_N / hook_post_update
   # (schema changes, data migrations, anything config:import can't express).
   $DRUSH updatedb -y --no-cache-clear

@@ -6,6 +6,7 @@
 vendor
 web/core
 web/modules/contrib
+web/modules/engine
 web/profiles/contrib
 web/themes/contrib
 web/libraries
