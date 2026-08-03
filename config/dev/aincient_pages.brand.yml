@@ -1,29 +1,8 @@
 tokens:
-  neutral_surface: 'oklch(0.98 0.012 85)'
-  neutral_subtle: 'oklch(0.93 0.02 90)'
-  neutral_muted_foreground: 'oklch(0.38 0.02 250)'
-  neutral_ink: 'oklch(0.22 0.02 260)'
+  neutral_surface: '#fcfaf7'
+  neutral_subtle: 'oklch(1 0 0)'
+  neutral_muted_foreground: 'oklch(0.45 0 0)'
+  neutral_ink: 'oklch(0.20 0.02 270)'
   card: var(--neutral-subtle)
-  brand_primary: '#ffb35c'
-  brand_primary_foreground: var(--color-black)
-  brand_accent: 'oklch(0.70 0.13 200)'
-  brand_accent_foreground: 'oklch(0.18 0.03 220)'
-  neutral_border: 'oklch(0.85 0.03 200)'
-  radius_sm: 0.375rem
-  radius_md: 0.5rem
-  radius_lg: 0.75rem
-  radius_xl: 1rem
-  radius_2xl: 1.5rem
-  shadow_distance: 6px
-  shadow_blur: 16px
-  shadow_strength: '0.15'
-  display_weight: var(--weight-extrabold)
-  heading_weight: var(--weight-bold)
-  subheading_weight: var(--weight-semibold)
-  density: '1.15'
-  button_radius: var(--radius-xl)
-  tabs_radius: var(--radius-xl)
+  body_size: var(--size-lg)
 font_delivery: google
-status:
-  stage: polish
-  locked: false

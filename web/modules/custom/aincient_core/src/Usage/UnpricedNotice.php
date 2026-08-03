@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Usage;
 
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Url;
 
 /**
  * The one "we cannot price this" warning, shared by every surface showing it.
@@ -161,7 +162,13 @@ final class UnpricedNotice {
     if ($stillUnpriced !== []) {
       $build['unpriced_text'] = [
         '#type' => 'item',
-        '#markup' => $this->t('Atelier still has no rate for these, so their <em>future</em> calls will be recorded at $0.00 too. Add them to the <code>aincient_core.pricing</code> config object:'),
+        '#markup' => $this->t('Atelier still has no rate for these, so their <em>future</em> calls will be recorded at $0.00 too. Set one on <a href=":url">Model rates</a>:', [
+          // Was "add them to the aincient_core.pricing config object", which was
+          // the only way to do it when rates were not editable. They are now
+          // (DECISIONS 0304), and a notice that names a config object instead of
+          // the screen that edits it sends an operator to the wrong place.
+          ':url' => Url::fromRoute('aincient_core.pricing')->toString(),
+        ]),
       ];
       $build['unpriced'] = [
         '#theme' => 'item_list',

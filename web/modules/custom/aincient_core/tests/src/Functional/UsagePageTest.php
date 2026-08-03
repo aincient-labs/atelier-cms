@@ -183,14 +183,19 @@ final class UsagePageTest extends BrowserTestBase {
    * page may tell an operator to go and fix.
    */
   public function testAModelWithNoRateIsReportedAsActionable(): void {
-    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'gpt-4o', 5000, 500, 0.0, provider: 'openai');
+    // An alias reached through a proxy, which is the case that CANNOT be priced
+    // from our side and therefore the honest fixture: the id names no vendor we
+    // could look up. `openai:gpt-4o` used to stand here and stopped working as a
+    // fixture the moment gpt-4o gained a suggested rate — an unpriced example
+    // has to be one we have no way to price, not merely one we had not got to.
+    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'production-fast', 5000, 500, 0.0, provider: 'openai_compatible');
 
     $this->drupalGet(self::PATH);
     $assert = $this->assertSession();
 
     $assert->pageTextContains('The spend below is an under-report');
     $assert->pageTextContains('still has no rate');
-    $assert->pageTextContains('openai:gpt-4o');
+    $assert->pageTextContains('openai_compatible:production-fast');
     $assert->pageTextNotContains('Nothing to fix');
   }
 

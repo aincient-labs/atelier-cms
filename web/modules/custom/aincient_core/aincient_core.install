@@ -494,3 +494,67 @@ function aincient_core_update_11009(): void {
     }
   }
 }
+
+/**
+ * Keep only rates an operator actually changed; the rest become suggestions.
+ *
+ * The shipped rate table moved out of `aincient_core.pricing` and into the
+ * module's `model-pricing.yml`, where it is a SUGGESTION rather than the answer
+ * (DECISIONS 0304 — a model reached through a proxy carries an alias only the
+ * operator can price). The config object is now the operator's own layer.
+ *
+ * An existing site has the old shipped rates sitting in that object, and leaving
+ * them would be a lie with consequences: every one would render as "set on this
+ * site", and the form's disagreement notice — the whole safeguard against a
+ * stale override outliving a correction — could never fire, because our
+ * suggestion would be compared against a copy of itself.
+ *
+ * So each entry is compared with the suggestion for the same `provider:model`.
+ * Identical on every RATE (not on note or checked date, which are ours to
+ * revise) means the operator never touched it: drop it and let the suggestion
+ * answer. Anything that differs is a real local decision and is kept, untouched,
+ * including its provenance.
+ */
+function aincient_core_update_11010(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_core.pricing');
+  $entries = (array) ($config->get('models') ?? []);
+  if ($entries === []) {
+    return;
+  }
+
+  $pricing = \Drupal::service('aincient_core.model_pricing');
+  $classes = ['input_per_mtok', 'output_per_mtok', 'cache_read_per_mtok', 'cache_write_per_mtok'];
+
+  $kept = [];
+  foreach ($entries as $entry) {
+    if (!is_array($entry)) {
+      continue;
+    }
+    $suggested = $pricing->suggestion(
+      (string) ($entry['provider'] ?? ''),
+      (string) ($entry['model'] ?? ''),
+    );
+    if ($suggested === NULL) {
+      // We suggest nothing for this model, so whatever is here is the only
+      // thing standing between it and being unpriced. Never dropped.
+      $kept[] = $entry;
+      continue;
+    }
+    $same = ((bool) ($entry['free'] ?? FALSE)) === ((bool) ($suggested['free'] ?? FALSE));
+    foreach ($classes as $class) {
+      $mine = $entry[$class] ?? NULL;
+      $ours = $suggested[$class] ?? NULL;
+      if ($mine === NULL xor $ours === NULL) {
+        $same = FALSE;
+      }
+      elseif ($mine !== NULL && abs((float) $mine - (float) $ours) > 0.0000001) {
+        $same = FALSE;
+      }
+    }
+    if (!$same) {
+      $kept[] = $entry;
+    }
+  }
+
+  $config->set('models', $kept)->save();
+}

@@ -2,28 +2,21 @@
  * Atelier layer over its own rate sheet
  * (aincient_core, /admin/config/aincient/pricing).
  *
- * The Studio Backend theme (aincient_studio_backend) already styles admin
- * pages — `.sb-content table` is the paper card, the mono eyebrow thead, the
- * rounded corners and the row hover — and everything it can style generically
- * is left to it. This file covers only the four things it cannot know about:
+ * The page is a LEDGER that opens into an editor: one line per model, the rates
+ * in a fixed column to be read down, and one row open at a time onto the single
+ * question it asks. The Studio Backend theme (aincient_studio_backend) styles
+ * admin pages generically, and everything it can reasonably know about is left
+ * to it. What follows is only what it cannot: that these `details` are table
+ * rows rather than settings groups, and that a missing rate is a state which
+ * must never be mistakable for a rate of zero.
  *
- *   1. The role column — a label, its description, and (when the config carries
- *      one) the note explaining the rate. The page is meant to be read against
- *      the onboarding "Set the pace" screen, so the role has to be the thing the
- *      eye lands on, not one cell among seven.
- *   2. The rate columns — four numeric columns whose whole purpose is being
- *      comparable at a glance, which needs tabular figures, fixed two-decimal
- *      values from the controller, and a scroll box of their own on a narrow
- *      viewport rather than a sideways page.
- *   3. The provenance column — a short host link and a mono check date, held
- *      NARROW on purpose. It used to print the full URL, which broke mid-word
- *      across three lines and made the least important column the tallest thing
- *      in every row.
- *   4. The states that are NOT numbers — an unbound role, a bound one we cannot
- *      price, a lapsed rate and a stale one. All must be legible as states; the
- *      unpriced one must not be mistakable for a rate of zero; and lapsed must
- *      not look like stale, because one is a known error and the other a request
- *      to go and look.
+ * This file used to be twice as long. The other half styled a read-only rate
+ * TABLE — role column, provenance column, flag cells — and outlived the page it
+ * was written for (DECISIONS 0305 made the sheet a form). It was not merely
+ * dead: `.ain-pricing__provenance` there clamped itself to 14rem for a narrow
+ * table cell, which the form inherited, so a one-line source URL wrapped across
+ * three lines in a container with room to spare. Dead CSS is not inert when the
+ * class names survive.
  *
  * COLOUR. Nothing here is cinnabar. Law 01 gives the brand pigment at most two
  * elements per screen and never on rules or edges, and everything this page
@@ -33,7 +26,7 @@
  *
  * The `--ain-*` tokens come from the Studio Backend theme's :root
  * (studio-backend.css), so no extra token dependency. Everything is scoped to
- * `.ain-pricing`, set by the controller.
+ * `.ain-pricing`, set by the form.
  */
 
 .ain-pricing .ain-pricing__intro,
@@ -50,196 +43,9 @@
   margin-block-start: 1rem;
 }
 
-/* ===== 1 + 2. The rate table ===== */
-/* Seven columns, four of them numeric. Scrolls inside its own box so a narrow
-   viewport never gains a horizontal scrollbar on the whole page. */
-.ain-pricing .ain-pricing__rates {
-  display: block;
-  overflow-x: auto;
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.ain-pricing .ain-pricing__rates caption {
-  caption-side: bottom;
-  padding-block-start: 0.5rem;
-  color: var(--ain-text-faint);
-  font-size: 0.8125rem;
-  text-align: start;
-}
-
-.ain-pricing .ain-pricing__rates th,
-.ain-pricing .ain-pricing__rates td {
-  padding: 0.6rem 0.75rem;
-  border-block-end: 1px solid var(--ain-border);
-  vertical-align: top;
-  text-align: start;
-}
-
-.ain-pricing .ain-pricing__rates th {
-  color: var(--ain-text-dim);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* The role: the row's subject, and the column an operator scans down to find
-   the row they configured on the wizard screen. It is also the column that now
-   carries the note, so it is the one allowed to be wide. */
-/* A min-width and not a percentage: the table is a scroll box (display: block),
-   so auto layout hands width to whichever column has the strongest minimum, and
-   a percentage simply loses to a long model id. This is the one column with
-   prose in it, so it claims its measure explicitly. */
-.ain-pricing .ain-pricing__rates th:first-child,
-.ain-pricing .ain-pricing__subject {
-  min-width: 22rem;
-}
-
-.ain-pricing .ain-pricing__role {
-  display: block;
-  font-weight: 600;
-}
-
-/* The same sentence the wizard shows, and — under it, in the same faint voice —
-   whatever the config says about this particular rate. Both run the full width
-   of the column rather than being capped: this cell is now the tallest thing in
-   the row, so every character of measure it gets is a line the row does not. */
-.ain-pricing .ain-pricing__role-desc,
-.ain-pricing .ain-pricing__note {
-  display: block;
-  margin-block-start: 0.15rem;
-  color: var(--ain-text-faint);
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  text-wrap: pretty;
-}
-
-/* A little air between the role's description (what this role IS) and the
-   note (why this rate is what it is). Without it the two run together as one
-   paragraph and the note reads as part of the product description. */
-.ain-pricing .ain-pricing__note {
-  margin-block-start: 0.45rem;
-}
-
-/* The four rate columns. Tabular figures over the controller's fixed two
-   decimals, so $0.20 and $2.50 line up on the point — the entire reason for
-   showing these as a table is comparing them by eye. */
-.ain-pricing .ain-pricing__rates th:nth-child(n + 3):nth-child(-n + 6),
-.ain-pricing .ain-pricing__rates td:nth-child(n + 3):nth-child(-n + 6) {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-  text-align: end;
-  white-space: nowrap;
-}
-
-/* The bound model is a machine string; render it as one so a typo in
-   `claude-haiku-4-5-20251001` is visible rather than smoothed over. */
-.ain-pricing .ain-pricing__id {
-  font-family: var(--ain-mono);
-  font-size: 0.8125rem;
-}
-
-/* ===== 3. Provenance ===== */
-/* Deliberately the NARROWEST column: it is what the page is audited with, not
-   what it is read for. Nothing in it is allowed to wrap mid-word — that is what
-   turned a 44-character URL into three lines and a 130px row. */
-.ain-pricing .ain-pricing__provenance {
-  max-width: 14rem;
-  color: var(--ain-text-dim);
-  font-size: 0.8125rem;
-  overflow-wrap: normal;
-  word-break: normal;
-}
-
-/* The host, standing in for the URL. Truncated rather than wrapped if a source
-   ever has a very long host: the full address is on the `title` and on the
-   link, so the ellipsis costs nothing. */
-.ain-pricing .ain-pricing__source {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Law 13: the check date is machine text about the row, so it wears the mono
-   micro-label rather than a sentence's worth of body voice. */
-.ain-pricing .ain-pricing__checked {
-  display: block;
-  margin-block-start: 0.2rem;
-  color: var(--ain-text-faint);
-  font-family: var(--ain-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.ain-pricing .ain-pricing__checked::before {
-  content: "checked ";
-}
-
-/* ===== 4. The states that are not numbers ===== */
-/* Unbound is a normal state on a keyless install, so it is set BACK, not
-   flagged: dimmed and in the body face, so it reads as "nothing here yet"
-   rather than as a broken value. */
-.ain-pricing .ain-pricing__unbound {
-  color: var(--ain-text-faint);
-  font-family: var(--ain-font);
-  font-style: italic;
-}
-
-/* A flag is the one sentence in a cell that says what is WRONG with the row.
-   Ochre by default (§3.4's "needs attention"), because the default case — a
-   bound model we cannot price — is a quiet fault: the row would otherwise look
-   like every other row while recording a silent $0.00. */
-.ain-pricing .ain-pricing__flag {
-  display: block;
-  /* A flag is a sentence in a column sized for a hostname, so it is allowed to
-     widen its column — but only when one is present, which is the exceptional
-     case this page exists to catch. Rendered at the column's own width it came
-     out seven lines tall and put the row height back where the URL had it. */
-  min-width: 12rem;
-  max-width: 22rem;
-  margin-block-start: 0.35rem;
-  color: var(--ain-accent-2);
-  font-family: var(--ain-font);
-  font-size: 0.8125rem;
-  white-space: normal;
-}
-
-/* Stale is the mild claim — nobody has looked — and takes the same ochre. Named
-   anyway, so a future change to one severity cannot silently move the other. */
-.ain-pricing .ain-pricing__flag--stale {
-  color: var(--ain-accent-2);
-}
-
-/* Lapsed is not a suspicion: the vendor published an end date and it has gone.
-   Brick, the danger tint, is the only thing on this page that reads as an
-   error — which is what tells it apart from stale at a glance, instead of the
-   two differing only by whether the row has an edge. */
-.ain-pricing .ain-pricing__flag--lapsed {
-  color: var(--ain-danger);
-}
-
-/* The three tinted rows. Surface-2 is the shared "this row is not ordinary"
-   ground; the severity is carried by the flag's wording and colour above, and
-   by the inset edge below — never by a saturated fill (Law 02). */
-.ain-pricing tr.ain-pricing__row--unpriced > td,
-.ain-pricing tr.ain-pricing__row--lapsed > td,
-.ain-pricing tr.ain-pricing__row--stale > td {
-  background: var(--ain-surface-2);
-}
-
-/* An edge only on the certain claim. A permanent edge over "unverified" is how
-   a table ends up with a warning everyone stops reading — which would cost us
-   this row. */
-.ain-pricing tr.ain-pricing__row--lapsed > td:first-child {
-  box-shadow: inset 3px 0 0 var(--ain-danger);
-}
-
-/* ===== The bound-but-unpriced summary above the table ===== */
+/* ===== The bound-but-unpriced summary above the ledger ===== */
 /* A rule in the attention tint, not a filled alert box: this is a standing
-   condition of the table below it, and a shouting banner at the top of the page
+   condition of the ledger below it, and a shouting banner at the top of the page
    trains an operator to scroll past it. Ochre and not cinnabar because it is a
    status report, and the brand pigment is not a status (Law 01, §3.4). */
 .ain-pricing .ain-pricing__unpriced {
@@ -258,4 +64,445 @@
 .ain-pricing .ain-pricing__unpriced li {
   font-family: var(--ain-mono);
   font-size: 0.8125rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * The editable rate sheet (PricingForm) — a ledger that opens into an editor.
+ *
+ * The first build made every row a form: four labelled inputs, a checkbox with
+ * two sentences under it, a status paragraph, a provenance line — per model. So
+ * the two facts the page exists to carry (which model, what it costs) had the
+ * same weight as an explanation of what a cache write is, and the price, being
+ * the tail of a variable-length title, landed at a different x on every row.
+ * There was nothing to scan DOWN.
+ *
+ * Everything below serves one rule: the collapsed row is read, the open row is
+ * edited, and only one row is open. Three weights, not one — the model id at
+ * full contrast in mono (it is a machine string and a typo in it must show), the
+ * numbers at the same size and right-aligned in a fixed column, and the roles
+ * and state set back to a dim annotation.
+ *
+ * COLOUR. Nothing here is cinnabar. Law 01 gives the brand pigment at most two
+ * elements per screen and never on rules or edges, and everything marked here is
+ * STATE, which §3.4 puts in the muted-earth set: brick (`--ain-danger`) for what
+ * we know is wrong, ochre (`--ain-accent-2`) for what wants checking.
+ * ------------------------------------------------------------------------ */
+
+/* ===== The column heading the numbers are read against ===== */
+/* One for the whole ledger, not a label per field — repeating "Input" twelve
+   times down the page is a large part of what made the first build unreadable.
+
+   The header and every row share ONE column definition, below. They have to:
+   a heading that does not sit over its own figures is worse than no heading,
+   because it invites the eye to read down a column that is not there. */
+.ain-pricing .ain-pricing__models {
+  /* The price column's width, and the indent our own disclosure marker takes.
+     Both are shared between the header and the rows, so neither can drift. */
+  --ain-price-col: 11rem;
+  --ain-marker: 1.5rem;
+  margin-block-start: 1.25rem;
+  overflow: hidden;
+  border: 1px solid var(--ain-border);
+  border-radius: var(--ain-radius);
+  /* The card belongs to the LEDGER, not to each row. Per-row cards float the
+     lines apart and break the vertical run the price column is read down; no
+     card at all leaves the open row as the only tinted thing on screen, which
+     reads as the page being broken rather than as a row being open. One paper
+     surface, hairline-ruled. */
+  background: var(--ain-surface);
+}
+
+.ain-pricing .ain-pricing__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--ain-price-col);
+  gap: 0.75rem;
+  padding: 0.5rem 0.85rem 0.4rem calc(0.85rem + var(--ain-marker));
+  border-block-end: 1px solid var(--ain-border);
+  /* The recessed eyebrow a table head wears in this theme, so the column titles
+     read as a heading rather than as a first row with no numbers. */
+  background: var(--ain-surface-2);
+  color: var(--ain-text-dim);
+  font-family: var(--ain-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ===== The collapsed row: a ledger line ===== */
+/* Flat, and deliberately so. The admin theme gives a `details` the paper-card
+   treatment — rounded, bordered, floated apart — which is right for a settings
+   group and wrong for a ledger: the gaps between cards break the vertical run
+   the numbers are supposed to be read down. Rows here are separated by a
+   hairline and nothing else. */
+.ain-pricing .ain-pricing__model {
+  margin: 0;
+  border: 0;
+  border-block-end: 1px solid var(--ain-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ain-pricing .ain-pricing__model > summary {
+  display: block;
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ain-pricing .ain-pricing__model > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The admin theme draws its own chevron as `summary::before`. It is sized and
+   positioned for a flex summary, and this one is a block, so it lands above the
+   line as a stray tick. It is also the wrong marker to keep: the whole ledger's
+   left column is measured from `--ain-marker`, so the indent has to come from a
+   marker whose width we set rather than one the theme may restyle. */
+.ain-pricing .ain-pricing__model > summary::before {
+  display: none;
+  content: none;
+}
+
+/* Our own marker, at a width we control. The native one differs per browser and
+   per platform, and the whole column alignment is measured from it. */
+.ain-pricing .ain-pricing__line::before {
+  content: "";
+  grid-row: 1 / -1;
+  align-self: center;
+  inline-size: 0;
+  block-size: 0;
+  border-block: 0.3rem solid transparent;
+  border-inline-start: 0.4rem solid var(--ain-text-faint);
+  transition: transform 0.12s ease;
+}
+
+.ain-pricing .ain-pricing__model[open] .ain-pricing__line::before {
+  transform: rotate(90deg);
+}
+
+.ain-pricing .ain-pricing__model > summary:hover {
+  background: var(--ain-surface-2);
+}
+
+/* The whole row is the control, so the ring goes round the whole row — inset,
+   because an outline on a full-bleed element inside a clipped card is otherwise
+   trimmed by the card's own overflow and half the ring disappears. */
+.ain-pricing .ain-pricing__model > summary:focus-visible {
+  outline: 2px solid var(--ain-text);
+  outline-offset: -3px;
+  background: var(--ain-surface-2);
+}
+
+/* Three columns: the marker, the id and meta, then the prices. The price column
+   is FIXED, which is the whole point — it cannot move when a model id is 45
+   characters long, and a proxy alias
+   (`openai_compatible:anthropic/claude-sonnet-5-20250219`) routinely is. The id
+   wraps instead; it is the thing with slack. */
+.ain-pricing .ain-pricing__line {
+  display: grid;
+  grid-template-columns: var(--ain-marker) minmax(0, 1fr) var(--ain-price-col);
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+  inline-size: 100%;
+}
+
+/* A machine string, rendered as one, at full contrast: this is the row's
+   subject, and a typo in `claude-haiku-4-5-20251001` has to be visible rather
+   than smoothed over by a text face. */
+.ain-pricing .ain-pricing__line .ain-pricing__id {
+  min-width: 0;
+  color: var(--ain-text);
+  font-family: var(--ain-mono);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+/* Input and output, in that order, each in half the price column. Tabular
+   figures so the decimal points line up down the whole ledger — without which
+   there is no column, only a stack of numbers. */
+.ain-pricing .ain-pricing__nums {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  text-align: end;
+}
+
+.ain-pricing .ain-pricing__num {
+  font-size: 0.875rem;
+}
+
+/* The em dash is the point of the column. A gap in a numeric column is legible
+   at a glance in a way the word "unpriced" inside a sentence is not — so it is
+   set back to read as an absence, never as a value of nothing.
+
+   This was `:only-child` for one build, which matched NOTHING: the two figures
+   are siblings, so a missing rate rendered at the same weight and colour as a
+   real one and the column's whole signal was inverted. The state is now marked
+   by a class the form sets, which cannot silently stop applying. */
+.ain-pricing .ain-pricing__num--none,
+.ain-pricing .ain-pricing__free {
+  color: var(--ain-text-dim);
+}
+
+/* Free is a claim about the model, not a number, so it says so in words rather
+   than as a $0.00 indistinguishable from an unpriced one. */
+.ain-pricing .ain-pricing__free {
+  grid-column: 1 / -1;
+  font-family: var(--ain-font);
+  font-size: 0.8125rem;
+  font-style: italic;
+}
+
+/* Line two: who uses this model, or why it is on the page at all. An annotation
+   — set back, small, and never competing with the id above it, but NOT faint.
+   `--ain-text-faint` measures 3.48:1 on this surface, under AA's 4.5 for text
+   this size, and every one of these lines carries meaning: which roles spend
+   through this model, or how many calls it has already billed at $0.00. Faint
+   is for decoration, and there is none here. */
+.ain-pricing .ain-pricing__meta {
+  grid-column: 2;
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+}
+
+/* Under the prices, sharing their right edge: the state is an annotation on the
+   figure (or on its absence), so it belongs in that column and not floating in
+   the middle of the row. */
+.ain-pricing .ain-pricing__badges {
+  grid-column: 3;
+  text-align: end;
+}
+
+/* A badge, not a sentence. In the scan it only has to be FOUND; the sentence it
+   stands for is in the open row, where it can be the only prose on screen. */
+.ain-pricing .ain-pricing__badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 2px;
+  background: var(--ain-surface-2);
+  color: var(--ain-text-dim);
+  font-family: var(--ain-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Brick is spent only on the two states that are certainly wrong: no rate at
+   all (recording $0.00 on every call), and a rate whose vendor end date has
+   passed. Ochre carries the two that merely want a look. A page where every
+   badge shouts is a page whose badges are not read. */
+/* Mixed against the SURFACE and not against `transparent`: a transparent mix is
+   a translucent colour, so what it actually composites over depends on whatever
+   is behind the badge — and it landed near-invisible on the open row. An opaque
+   tint has one appearance everywhere and can be measured. */
+.ain-pricing .ain-pricing__badge--unpriced,
+.ain-pricing .ain-pricing__badge--lapsed {
+  background: color-mix(in srgb, var(--ain-danger) 10%, var(--ain-surface));
+  color: var(--ain-danger);
+}
+
+.ain-pricing .ain-pricing__badge--stale,
+.ain-pricing .ain-pricing__badge--disagrees {
+  background: color-mix(in srgb, var(--ain-accent-2) 14%, var(--ain-surface));
+  color: var(--ain-accent-2);
+}
+
+/* The last row rules against the card's own edge; a second line there reads as
+   a stray rule under the table. */
+.ain-pricing .ain-pricing__models > .ain-pricing__model:last-of-type {
+  border-block-end: 0;
+}
+
+/* ===== The open row: the decision ===== */
+/* Marked by its RULE and its turned marker, not by a fill. A tinted open row on
+   an otherwise white ledger makes the row look flagged — the same signal the
+   badges spend on a rate that is actually wrong — when all it is doing is being
+   open. */
+.ain-pricing .ain-pricing__model[open] > summary {
+  border-block-end: 1px solid var(--ain-border);
+}
+
+/* Everything in the open row hangs off the id's left edge, not the row's — so
+   the eye keeps the same margin it was scanning down. */
+.ain-pricing .ain-pricing__model > *:not(summary) {
+  padding-inline: calc(0.85rem + var(--ain-marker)) 0.85rem;
+}
+
+.ain-pricing .ain-pricing__model .ain-pricing__status {
+  margin: 1rem 0 0;
+  max-width: 44rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.ain-pricing .ain-pricing__status--unpriced,
+.ain-pricing .ain-pricing__status--lapsed {
+  color: var(--ain-danger);
+}
+
+.ain-pricing .ain-pricing__status--disagrees,
+.ain-pricing .ain-pricing__status--stale {
+  color: var(--ain-accent-2);
+}
+
+/* The question the row is asking, in the voice of a question rather than a
+   field label — it is the only thing being asked, so it leads. */
+.ain-pricing .ain-pricing__model .form-item--radios > legend,
+.ain-pricing .ain-pricing__model fieldset > legend {
+  margin-block: 1rem 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* Each answer gets its own line and its own explanation. Radios and not the
+   checkboxes this replaced: the answers are mutually exclusive, and the first
+   build let three of them be true at once. */
+/* Each answer is a decision, so each gets its own air. Packed at 0.35rem the
+   four options read as one paragraph of alternatives rather than as four
+   choices, and an option's description crowds the option below it. */
+.ain-pricing .ain-pricing__choice .form-item {
+  margin-block: 0.6rem;
+}
+
+.ain-pricing .ain-pricing__choice .description {
+  margin-block-start: 0.15rem;
+  margin-inline-start: 1.6rem;
+  max-width: 40rem;
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* Two columns, so input and output take the first line and the cache pair the
+   second. The ranking between them is carried by that order and by these fields
+   existing only inside an already-open row — a second disclosure around the
+   cache pair was a nesting level charged for what the layout already says. */
+.ain-pricing .ain-pricing__rates-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 14rem));
+  gap: 0.75rem 1rem;
+  /* Indented to the option labels and ruled off from them: these fields hang
+     off "Enter the rates myself", and the last radio must not read as another
+     label for the first box. */
+  margin: 0.5rem 0 0.25rem 1.6rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 1px solid var(--ain-border);
+}
+
+/* `$ [ 2.00 ] / Mtok` on one line. Drupal renders a field prefix and suffix as
+   plain spans, which the admin theme lets fall above and below the box — so the
+   unit reads as two stray labels rather than as part of the figure being typed,
+   which is the one moment an operator is comparing against a vendor price
+   sheet. Label on its own row, the three parts of the number on the next. */
+.ain-pricing .ain-pricing__rates-grid .form-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.35rem;
+  margin: 0;
+}
+
+.ain-pricing .ain-pricing__rates-grid .form-item > label {
+  grid-column: 1 / -1;
+}
+
+.ain-pricing .ain-pricing__rates-grid .field-prefix,
+.ain-pricing .ain-pricing__rates-grid .field-suffix {
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.ain-pricing .ain-pricing__rate-input {
+  inline-size: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one thing an empty cache field needs to say: blank is not zero. */
+.ain-pricing .ain-pricing__rates-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  max-width: 40rem;
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* Audit material, not reading material: present, dated, and the quietest thing
+   in the open row — but given the row's full width, because it is one line
+   naming a source URL, not a paragraph. It carried a 14rem clamp inherited from
+   the read-only table's narrow provenance COLUMN, which wrapped a single source
+   line across three in a container with room to spare; that rule is gone, and
+   only a pathological URL breaks now. */
+.ain-pricing .ain-pricing__model .ain-pricing__provenance {
+  margin: 0.25rem 0 1rem;
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Models no role uses ===== */
+/* A labelled FOOTER of the same table, not a card floating inside it. Kept, not
+   hidden: one of these may have billed real calls at $0.00, which is the thing
+   this page exists to surface. But nothing further will spend on them, so they
+   must not compete with a live binding for attention.
+
+   The alignment is the point of everything below. Left to the theme's own
+   `details` chrome, this section indented its rows by its own padding, so their
+   price column no longer sat under the heading the rest of the ledger is read
+   against — two columns of numbers, a few pixels apart, in one table. Its rows
+   are the same rows and must land in the same columns. */
+.ain-pricing .ain-pricing__retired {
+  margin: 0;
+  border: 0;
+  border-block-start: 1px solid var(--ain-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* A subhead inside the table, wearing the same recessed eyebrow as the column
+   heading — so it reads as a division of the ledger rather than as a control
+   that has landed in the middle of one. */
+.ain-pricing .ain-pricing__retired > summary {
+  padding: 0.5rem 0.85rem;
+  background: var(--ain-surface-2);
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+}
+
+/* Zeroed so the rows inside keep the ledger's own padding and nothing else. */
+.ain-pricing .ain-pricing__retired > *:not(summary),
+.ain-pricing .ain-pricing__retired .details-wrapper {
+  margin: 0;
+  padding: 0;
+}
+
+.ain-pricing .ain-pricing__retired > [id$="--description"] {
+  padding: 0.6rem 0.85rem;
+  border-block-end: 1px solid var(--ain-border);
+  color: var(--ain-text-dim);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* The theme insets a NESTED details by 20px a side, which is right for a
+   settings group inside a settings group and wrong here: these are the same
+   rows as the ones above, and an inset moves their price column off the heading
+   the whole ledger is read against. Two columns of numbers a few pixels apart,
+   in one table, is exactly the scan this layout was rebuilt to give. */
+.ain-pricing .ain-pricing__retired .ain-pricing__model {
+  margin-inline: 0;
+}
+
+/* The card's own edge closes the table; a rule under the final row reads as a
+   stray line. */
+.ain-pricing .ain-pricing__retired .ain-pricing__model:last-of-type {
+  border-block-end: 0;
 }

@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
  * Guards the labelling and the proportions the usage dashboard is read through.
  *
  * Split out of the controller for exactly the reason
- * {@see \Drupal\aincient_core\Controller\PricingController::roleRows()} is:
+ * {@see \Drupal\aincient_core\Form\PricingForm} is:
  * these are the assertions that are wrong-but-plausible if they slip. A tag
  * dropped for having no label, a row sorted by money while the money is
  * under-reported, or a bar scaled so the biggest consumer looks smallest — none

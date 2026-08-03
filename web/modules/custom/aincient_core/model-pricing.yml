@@ -1,0 +1,143 @@
+# Atelier — SUGGESTED model rates.
+#
+# This file is a SUGGESTION, not the rate sheet. What a call is billed at lives
+# in the `aincient_core.pricing` config object, which belongs to the operator and
+# ships EMPTY. This file is what the pricing form offers them when they have not
+# said otherwise, and what the unpriced warning points at.
+#
+# WHY THE OPERATOR OWNS THE NUMBER (DECISIONS 0304). A model id is not reliably a
+# model. Reached through a LiteLLM-style proxy the id is an alias out of the
+# operator's own `config.yaml`: it may carry no vendor, a vendor by convention,
+# or a namespace that is simply wrong — nothing stops an alias named
+# `openai/gpt-4.1` routing to Haiku. We cannot know what such a call costs, and a
+# guess would mis-price silently in an unknown direction. So we suggest, they
+# decide, and a model nobody has priced stays unpriced and says so.
+#
+# WHAT THIS MUST NOT BECOME. The contrib table Atelier replaced had
+# manual-beats-synced precedence BY DESIGN and forever, silently — which is how
+# `claude-haiku-4-5-20251001` sat pinned at Haiku 3.5's rate, 4x low. Overrides
+# are allowed now, but never silently: one carries who set it and when, ages by
+# the same rules as ours, and the form SHOWS the disagreement when this file
+# later suggests something else. Silence was the trap, not the override.
+#
+# Rates are USD per MILLION tokens — the unit vendors publish in, so a line can
+# be diffed against a price sheet by eye.
+models:
+  -
+    provider: anthropic
+    model: claude-sonnet-5
+    input_per_mtok: 2.0
+    output_per_mtok: 10.0
+    cache_read_per_mtok: 0.2
+    cache_write_per_mtok: 2.5
+    source: 'https://platform.claude.com/docs/en/pricing'
+    checked: '2026-08-02'
+    expires: '2026-08-31'
+    note: 'Introductory rate, in force through 2026-08-31; list price is $3/$15 per Mtok. Re-check on 2026-09-01 — this entry silently becomes a 33% under-report the day it lapses.'
+  -
+    provider: anthropic
+    model: claude-haiku-4-5-20251001
+    input_per_mtok: 1.0
+    output_per_mtok: 5.0
+    cache_read_per_mtok: 0.1
+    cache_write_per_mtok: 1.25
+    source: 'https://platform.claude.com/docs/en/pricing'
+    checked: '2026-08-02'
+    note: 'The rate table Atelier shipped before this one carried $0.25/$1.25 for this model — those are Haiku 3.5 rates, 4x too low. Pinned here so the correct figure cannot be lost again.'
+  -
+    provider: anthropic
+    model: claude-opus-5
+    input_per_mtok: 5.0
+    output_per_mtok: 25.0
+    cache_read_per_mtok: 0.5
+    cache_write_per_mtok: 6.25
+    source: 'https://platform.claude.com/docs/en/pricing'
+    checked: '2026-08-02'
+  -
+    provider: openai
+    model: gpt-5.6-sol
+    input_per_mtok: 5.0
+    output_per_mtok: 30.0
+    cache_read_per_mtok: 0.5
+    source: 'https://developers.openai.com/api/docs/pricing'
+    checked: '2026-08-03'
+    note: 'No cache_write rate: OpenAI does not charge a premium to create a cache entry and reports no cache-write token class, so an absent rate here can never be read as an unpriced call.'
+  -
+    provider: openai
+    model: gpt-5.6-terra
+    input_per_mtok: 2.0
+    output_per_mtok: 12.0
+    cache_read_per_mtok: 0.2
+    source: 'https://developers.openai.com/api/docs/pricing'
+    checked: '2026-08-03'
+    note: 'Post-2026-07-30 figure — OpenAI cut this model 20% on that date. An older sheet quoting the pre-cut price OVER-reports, which is the safe direction but still wrong.'
+  -
+    provider: openai
+    model: gpt-5.6-luna
+    input_per_mtok: 0.2
+    output_per_mtok: 1.2
+    cache_read_per_mtok: 0.02
+    source: 'https://developers.openai.com/api/docs/pricing'
+    checked: '2026-08-03'
+    note: 'Post-2026-07-30 figure — cut 80% on that date, so a pre-cut sheet quotes ~5x this. The cheapest OpenAI model the curated document recommends, and what `fast` normally lands on.'
+  -
+    provider: openai
+    model: gpt-5.4
+    input_per_mtok: 2.5
+    output_per_mtok: 15.0
+    cache_read_per_mtok: 0.25
+    source: 'https://developers.openai.com/api/docs/pricing'
+    checked: '2026-08-03'
+    note: 'Superseded by the 5.6 family but still served, and named by ModelRoles::tierHints() as a `gpt-5` family fallback — so a role can still land here.'
+  -
+    provider: openai
+    model: gpt-5.4-nano
+    input_per_mtok: 0.2
+    output_per_mtok: 1.25
+    cache_read_per_mtok: 0.02
+    source: 'https://developers.openai.com/api/docs/pricing'
+    checked: '2026-08-03'
+    note: 'The `fast` pick in several curated profiles. Priced almost identically to gpt-5.6-luna, which is the newer model at the same tier.'
+  -
+    provider: openai
+    model: gpt-4.1
+    input_per_mtok: 2.0
+    output_per_mtok: 8.0
+    cache_read_per_mtok: 0.5
+    source: 'https://developers.openai.com/api/docs/pricing'
+    checked: '2026-08-03'
+    note: 'Older generation, kept because it is the one still reachable through some proxies: the GPT-5 family rejects `max_tokens` (it wants `max_completion_tokens`) and every Atelier turn sends `max_tokens`, so a chat-completions proxy may only be able to serve this generation.'
+  -
+    provider: openai
+    model: gpt-4.1-mini
+    input_per_mtok: 0.4
+    output_per_mtok: 1.6
+    cache_read_per_mtok: 0.1
+    source: 'https://developers.openai.com/api/docs/pricing'
+    checked: '2026-08-03'
+    note: 'The cheap half of the 4.1 generation, and what a chat-completions proxy can offer as a `fast` tier when the GPT-5 family is unreachable there.'
+  -
+    provider: openai
+    model: gpt-4o
+    input_per_mtok: 2.5
+    output_per_mtok: 10.0
+    cache_read_per_mtok: 1.25
+    source: 'https://developers.openai.com/api/docs/pricing'
+    checked: '2026-08-03'
+    note: 'Same reason as gpt-4.1. Note the cache read is 1.25 — half of input, not the tenth the newer models charge, so caching saves far less here.'
+  -
+    provider: nanobanana
+    model: gemini-2.5-flash-image
+    input_per_mtok: 0.3
+    output_per_mtok: 30.0
+    source: 'https://ai.google.dev/gemini-api/docs/pricing'
+    checked: '2026-08-02'
+    note: 'Output is the image-token rate. No free tier for this model.'
+  -
+    provider: ollama
+    model: '*'
+    input_per_mtok: 0.0
+    output_per_mtok: 0.0
+    free: true
+    source: 'Local inference — no per-token billing.'
+    checked: '2026-08-02'

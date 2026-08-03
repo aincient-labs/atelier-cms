@@ -26,7 +26,7 @@ flowdrop_theme_sync:
     - core/drupal
     - core/once
 
-# Atelier's rate sheet (PricingController, /admin/config/aincient/pricing).
+# Atelier's rate sheet (PricingForm, /admin/config/aincient/pricing).
 # The Studio Backend theme styles admin pages generically; the one thing on
 # this page it cannot know about is the rate table — a wide, mostly-numeric
 # grid whose whole purpose is comparing figures by eye, which needs tabular

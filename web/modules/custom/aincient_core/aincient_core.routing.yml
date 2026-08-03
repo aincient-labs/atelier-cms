@@ -8,8 +8,12 @@ aincient_core.model_roles:
   requirements:
     _permission: 'administer site configuration'
 
-# Atelier's rate sheet — the read-only view of `aincient_core.pricing`, which
-# is what a call is actually billed at. It took the place of the contrib
+# Atelier's rate sheet. EDITABLE as of DECISIONS 0304: the shipped rates moved to
+# `model-pricing.yml` as SUGGESTIONS and `aincient_core.pricing` became the
+# operator's own layer, because a model reached through a proxy carries an alias
+# we cannot price. This route was a read-only controller until then, for a reason
+# that is still in PricingForm's docblock and still true — an override must never
+# win silently. It took the place of the contrib
 # metering settings form Atelier used to carry, which was closed off and then
 # dropped with its module. No `_module_dependencies`: the rate table is ours,
 # installed and read by this module alone, so there is nothing optional left
@@ -20,7 +24,7 @@ aincient_core.model_roles:
 aincient_core.pricing:
   path: '/admin/config/aincient/pricing'
   defaults:
-    _controller: 'Drupal\aincient_core\Controller\PricingController::page'
+    _form: 'Drupal\aincient_core\Form\PricingForm'
     _title: 'Model rates'
   requirements:
     _permission: 'administer site configuration'

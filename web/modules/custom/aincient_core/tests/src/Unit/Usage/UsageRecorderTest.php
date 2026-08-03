@@ -6,6 +6,7 @@ namespace Drupal\Tests\aincient_core\Unit\Usage;
 
 use Drupal\aincient_core\Inference\MessageMapper;
 use Drupal\aincient_core\Usage\ModelPricing;
+use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\aincient_core\Inference\ResultUnpacker;
 use Drupal\aincient_core\Usage\UsageRecorder;
 use Drupal\aincient_core\Usage\UsageLog;
@@ -426,7 +427,8 @@ final class UsageRecorderTest extends UnitTestCase {
    * is.
    */
   private function pricing(): ModelPricing {
-    return new ModelPricing($this->getConfigFactoryStub([
+    return new ModelPricing(
+      $this->getConfigFactoryStub([
       ModelPricing::CONFIG => [
         'models' => [
           [
@@ -468,7 +470,9 @@ final class UsageRecorderTest extends UnitTestCase {
           ],
         ],
       ],
-    ]));
+      ]),
+      $this->noSuggestions(),
+    );
   }
 
   /**
@@ -500,6 +504,22 @@ final class UsageRecorderTest extends UnitTestCase {
     $result = new TextResult('Answered.');
     $result->getMetadata()->add('token_usage', $usage);
     return $result;
+  }
+
+
+  /**
+   * A module list that locates NO bundled suggestions.
+   *
+   * These tests assert over a fixture rate table, so the bundled
+   * `model-pricing.yml` must not leak into the answer: a suggestion silently
+   * standing in for a fixture entry would make an assertion pass for the wrong
+   * reason. Pointing at a path with no such file is the whole stub — the loader
+   * treats an unreadable bundle as "no suggestions", never as an error.
+   */
+  private function noSuggestions(): ModuleExtensionList {
+    $list = $this->createMock(ModuleExtensionList::class);
+    $list->method('getPath')->willReturn(__DIR__ . '/no-such-module');
+    return $list;
   }
 
 }

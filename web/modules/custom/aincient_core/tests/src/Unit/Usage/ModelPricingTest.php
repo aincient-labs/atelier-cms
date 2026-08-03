@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_core\Unit\Usage;
 
 use Drupal\aincient_core\Usage\ModelPricing;
+use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Component\Yaml\Yaml;
@@ -156,8 +157,12 @@ final class ModelPricingTest extends UnitTestCase {
    * are Haiku *3.5* rates and 4x too low, and that is the entry this replaces.
    */
   public function testTheShippedTableCarriesTheRatesWeVerified(): void {
+    // `model-pricing.yml`, not `config/install`: the shipped rates are
+    // SUGGESTIONS now and the config object ships empty (DECISIONS 0304). This
+    // test follows them, because what it guards — that the figures we publish
+    // are the ones we verified — did not move.
     $entries = Yaml::parseFile(
-      dirname(__DIR__, 4) . '/config/install/aincient_core.pricing.yml',
+      dirname(__DIR__, 4) . '/model-pricing.yml',
     )['models'];
     $shipped = [];
     foreach ($entries as $entry) {
@@ -184,7 +189,8 @@ final class ModelPricingTest extends UnitTestCase {
    * Pricing over a small fixture table with one of each kind of entry.
    */
   private function pricing(): ModelPricing {
-    return new ModelPricing($this->getConfigFactoryStub([
+    return new ModelPricing(
+      $this->getConfigFactoryStub([
       ModelPricing::CONFIG => [
         'models' => [
           [
@@ -217,7 +223,25 @@ final class ModelPricingTest extends UnitTestCase {
           ],
         ],
       ],
-    ]));
+      ]),
+      $this->noSuggestions(),
+    );
+  }
+
+
+  /**
+   * A module list that locates NO bundled suggestions.
+   *
+   * These tests assert over a fixture rate table, so the bundled
+   * `model-pricing.yml` must not leak into the answer: a suggestion silently
+   * standing in for a fixture entry would make an assertion pass for the wrong
+   * reason. Pointing at a path with no such file is the whole stub — the loader
+   * treats an unreadable bundle as "no suggestions", never as an error.
+   */
+  private function noSuggestions(): ModuleExtensionList {
+    $list = $this->createMock(ModuleExtensionList::class);
+    $list->method('getPath')->willReturn(__DIR__ . '/no-such-module');
+    return $list;
   }
 
 }

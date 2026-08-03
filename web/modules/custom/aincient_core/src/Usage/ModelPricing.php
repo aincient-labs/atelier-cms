@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Usage;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Extension\ModuleExtensionList;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * What a call costs, according to a rate table Atelier owns and can be checked.
@@ -55,9 +57,141 @@ final class ModelPricing {
    */
   private const CLASSES = ['input', 'output', 'cache_read', 'cache_write'];
 
+  /**
+   * The bundled suggestions, relative to the module.
+   *
+   * A plain YAML file rather than a second config object, for the same reason
+   * `model-recommendations.yml` is one: it is OUR published opinion, not this
+   * site's decision, so it must not appear in `drush cex` output where a diff
+   * would imply the operator chose it. When the suggestion channel lands
+   * (`plans/model-identity.md`) a fetched document layers in here, between the
+   * bundle and the operator, without moving anything else.
+   */
+  private const SUGGESTIONS_FILE = 'model-pricing.yml';
+
+  /**
+   * Parsed suggestions, memoised per request.
+   *
+   * @var list<array<string, mixed>>|null
+   */
+  private ?array $suggestions = NULL;
+
   public function __construct(
     private readonly ConfigFactoryInterface $configFactory,
+    private readonly ModuleExtensionList $moduleList,
   ) {}
+
+  /**
+   * The suggested entry for a model, or NULL — what WE would price it at.
+   *
+   * Never consulted for billing on its own account: {@see self::entry()} reaches
+   * it only when the operator has said nothing, and the pricing form shows it
+   * beside their value so a disagreement is visible rather than silently lost.
+   *
+   * @return array<string, mixed>|null
+   *   The raw suggestion entry, in the published per-million-token unit.
+   */
+  public function suggestion(string $providerId, string $modelId): ?array {
+    return $this->matchIn($this->suggestions(), $providerId, $modelId);
+  }
+
+  /**
+   * Every rate we could plausibly mean by this model id, best first.
+   *
+   * {@see self::suggestion()} answers "do we price exactly this?", which through
+   * a proxy is almost always no: the id is an alias out of the operator's own
+   * config and arrives namespaced (`openai/gpt-4.1`), date-stamped
+   * (`claude-haiku-4-5-20251001`) or both. Those two shapes are not guesses about
+   * what a model IS — they are conventions about how ids are written — so this
+   * normalises them away and offers what matches underneath.
+   *
+   * It goes no further on purpose. `production-fast` gets nothing, and family
+   * matching ("this contains 'sonnet'") is deliberately not attempted: an alias
+   * that merely SOUNDS like a model is exactly the case where a plausible wrong
+   * price is worse than none, because nothing downstream can tell it from a
+   * right one.
+   *
+   * Every result is a proposal for the form to offer, never a rate this class
+   * will bill at — {@see self::entry()} does not call this. A match must be
+   * chosen by a human, because only they can see where their proxy routes.
+   *
+   * @return list<array{entry: array<string, mixed>, from: string, exact: bool}>
+   *   Each candidate, the `provider:model` it came from, and whether it matched
+   *   this provider and id outright.
+   */
+  public function candidates(string $providerId, string $modelId): array {
+    $out = [];
+    $exact = $this->suggestion($providerId, $modelId);
+    if ($exact !== NULL) {
+      $out[] = [
+        'entry' => $exact,
+        'from' => $providerId . ':' . (string) ($exact['model'] ?? $modelId),
+        'exact' => TRUE,
+      ];
+    }
+
+    $wanted = self::normalizeId($modelId);
+    if ($wanted === '') {
+      return $out;
+    }
+
+    foreach ($this->suggestions() as $candidate) {
+      $itsProvider = (string) ($candidate['provider'] ?? '');
+      $itsModel = (string) ($candidate['model'] ?? '');
+      // A provider-wide wildcard says nothing about which model this is, so it
+      // cannot be evidence for a name match.
+      if ($itsModel === '' || $itsModel === '*') {
+        continue;
+      }
+      if ($exact !== NULL && $itsProvider === $providerId && $itsModel === (string) ($exact['model'] ?? '')) {
+        continue;
+      }
+      if (self::normalizeId($itsModel) === $wanted) {
+        $out[] = [
+          'entry' => $candidate,
+          'from' => $itsProvider . ':' . $itsModel,
+          'exact' => FALSE,
+        ];
+      }
+    }
+
+    return $out;
+  }
+
+  /**
+   * A model id reduced to the part that names the model.
+   *
+   * Strips the two things that are notation rather than identity: a routing
+   * namespace ahead of the last `/` or `:`, and a vendor's release stamp after
+   * the name (`-20251001`, `-latest`). The date suffix is not a hypothetical —
+   * `claude-haiku-4-5-20251001` failing to match `claude-haiku-4-5` is precisely
+   * the shape that sat 4x underpriced in the table this replaced.
+   */
+  private static function normalizeId(string $modelId): string {
+    $id = strtolower(trim($modelId));
+    $cut = max(strrpos($id, '/'), strrpos($id, ':'));
+    if ($cut !== FALSE && $cut !== 0) {
+      $id = substr($id, $cut + 1);
+    }
+    return (string) preg_replace('/-(latest|\d{6,8})$/', '', $id);
+  }
+
+  /**
+   * Every suggestion we ship, for the form's "models you could price" list.
+   *
+   * @return list<array<string, mixed>>
+   */
+  public function suggestions(): array {
+    if ($this->suggestions !== NULL) {
+      return $this->suggestions;
+    }
+    $path = $this->moduleList->getPath('aincient_core') . '/' . self::SUGGESTIONS_FILE;
+    $parsed = is_readable($path) ? Yaml::parse((string) file_get_contents($path)) : NULL;
+    $models = is_array($parsed) ? ($parsed['models'] ?? NULL) : NULL;
+    // A missing or malformed bundle costs suggestions, never billing: the
+    // operator's own rates are read from config and are untouched by this.
+    return $this->suggestions = is_array($models) ? array_values(array_filter($models, 'is_array')) : [];
+  }
 
   /**
    * The rate entry for a model, or NULL when we have not priced it.
@@ -149,23 +283,50 @@ final class ModelPricing {
    * @return array<string, mixed>|null
    */
   private function entry(string $providerId, string $modelId): ?array {
-    $models = (array) ($this->configFactory->get(self::CONFIG)->get('models') ?? []);
+    // The OPERATOR's layer first, and completely: a site that has priced this
+    // model has answered the question, and our suggestion does not get a second
+    // vote. That is the whole precedence rule, and it is the reverse of the
+    // contrib table's — there, manual beat synced silently and forever, so a
+    // stale hand-entered rate could never be corrected. Here the operator still
+    // wins, but {@see self::suggestion()} stays readable beside their value, so
+    // the pricing form can SHOW that we now suggest something different. Silence
+    // was the trap; the override was not.
+    $operator = $this->matchIn(
+      (array) ($this->configFactory->get(self::CONFIG)->get('models') ?? []),
+      $providerId,
+      $modelId,
+    );
+    return $operator ?? $this->suggestion($providerId, $modelId);
+  }
 
-    $entry = NULL;
-    foreach ($models as $candidate) {
+  /**
+   * The precedence rule itself, over one layer of entries.
+   *
+   * Exact `provider:model` beats a provider-wide `*`, and nothing else matches —
+   * see {@see self::rate()} for why a broader fallback is worse than no answer.
+   * Factored out so the operator layer and the suggestion layer cannot drift
+   * into resolving the same table two different ways.
+   *
+   * @param array<mixed> $entries
+   *   Candidate entries from one layer.
+   *
+   * @return array<string, mixed>|null
+   */
+  private function matchIn(array $entries, string $providerId, string $modelId): ?array {
+    $wildcard = NULL;
+    foreach ($entries as $candidate) {
       if (!is_array($candidate) || (string) ($candidate['provider'] ?? '') !== $providerId) {
         continue;
       }
       $itsModel = (string) ($candidate['model'] ?? '');
       if ($itsModel === $modelId) {
-        // An exact entry wins outright, wherever it sits in the list.
         return $candidate;
       }
-      if ($itsModel === '*' && $entry === NULL) {
-        $entry = $candidate;
+      if ($itsModel === '*' && $wildcard === NULL) {
+        $wildcard = $candidate;
       }
     }
-    return $entry;
+    return $wildcard;
   }
 
   /**

@@ -368,8 +368,14 @@
    or as BARE direct children of <details> (contrib settings forms that build
    their panels by hand do this). Without a wrapper the body items fall to
    zero padding and hang off the card's left edge + floor — give them the same
-   inset the wrapper carries. */
-.sb-content details > *:not(summary):not(.details-wrapper) { margin-inline: 1.25rem; }
+   inset the wrapper carries. A `width: 100%` child (our tables, /admin/modules)
+   resolves that 100% against the details' own content box, which knows nothing
+   about these margins — so clamp it to what the inset actually leaves, or the
+   row juts 1.25rem past the card's right edge. */
+.sb-content details > *:not(summary):not(.details-wrapper) {
+  margin-inline: 1.25rem;
+  max-width: calc(100% - 2.5rem);
+}
 .sb-content details > *:not(summary):last-child { margin-bottom: 1.25rem; }
 
 /* File widget — the browse control takes the secondary button voice. */

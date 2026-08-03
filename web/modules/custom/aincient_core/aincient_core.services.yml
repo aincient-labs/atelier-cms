@@ -96,6 +96,10 @@ services:
     class: Drupal\aincient_core\Usage\ModelPricing
     arguments:
       - '@config.factory'
+      # The module list locates the bundled `model-pricing.yml` suggestions —
+      # our published opinion, deliberately NOT a config object so it can never
+      # look like the operator's own decision in a `cex` diff.
+      - '@extension.list.module'
   # Aliased by class name so the autowired hook class and the models form can
   # type-hint it; the dotted id stays canonical for everything already wired.
   Drupal\aincient_core\Usage\ModelPricing: '@aincient_core.model_pricing'

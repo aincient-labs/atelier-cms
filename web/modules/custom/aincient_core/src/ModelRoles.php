@@ -106,7 +106,7 @@ final class ModelRoles {
    *
    * TWO SURFACES ITERATE IT, and they must show the same five rows in the same
    * order with the same words: the wizard (`_aincient_onboarding_role_taxonomy()`)
-   * and the rate sheet ({@see \Drupal\aincient_core\Controller\PricingController}).
+   * and the rate sheet ({@see \Drupal\aincient_core\Form\PricingForm}).
    * The rate sheet's entire value is being comparable at a glance against how the
    * site was configured, and a page whose rows drift from the wizard's — a
    * renamed role, a reordered pair — silently stops being that comparison while

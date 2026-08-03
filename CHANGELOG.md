@@ -7,6 +7,22 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## 2026-08-03
+- **Model rates are now yours to set**, at Configuration → Atelier → Model rates. The rates we
+  ship became suggestions: through a proxy the model name is an alias from your own
+  configuration, so we cannot know what a call really costs — you can. Rates you had already
+  corrected are untouched.
+- **The rate sheet reads as a ledger**, organised by model rather than by role, opening one row
+  at a time onto the decision. Models that have been billed with no rate sort to the top, since
+  those are the ones under-reporting right now.
+- **A rate you set no longer wins in silence** — it records who set it and when, ages like ours
+  do, and when our suggestion later disagrees the row says so and offers the new figure in one
+  click.
+- **New: OpenAI models are priced.** Every OpenAI call was reported as unpriced from the moment
+  the provider became connectable again, so the usage dashboard showed nothing rather than a
+  cost. Seven models now carry published rates.
+- **Fixed: module tables on the modules page overflowed their own card** by 20px.
+
 ## 2026-08-02
 - **New: Ollama, OpenAI and Mistral are connectable again**, each with a single field in setup
   — a key, or for Ollama the address of your own server. Existing model choices keep working;
