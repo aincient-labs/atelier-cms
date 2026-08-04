@@ -25,6 +25,13 @@ INSTALL_PROFILE="${AINCIENT_INSTALL_PROFILE:-minimal}"
 DB_MAX_WAIT="${AINCIENT_DB_MAX_WAIT:-60}"
 # Overridable so tests can stub the health gate.
 HEALTHCHECK_CMD="${HEALTHCHECK_CMD:-$(dirname "$0")/healthcheck.sh}"
+# The oldest site version this image will migrate a database from, and where that
+# is baked. Overridable so tests can set a floor without rebuilding the image.
+UPGRADE_FLOOR_FILE="${AINCIENT_UPGRADE_FLOOR_FILE:-/etc/atelier/upgrade-floor}"
+# The State key recording which Atelier version last converged this database.
+# The floor is meaningless without it: the image knows what it needs, only the
+# site knows where it is coming from.
+VERSION_STATE_KEY="aincient.appliance_version"
 # When the updater mounts /shared, converge reports its outcome here so the
 # sidecar can tell a healthy upgrade from one that rolled back (the server is
 # started either way, so container-start alone can't signal failure).
@@ -96,6 +103,102 @@ ensure_pgvector() {
   fi
 }
 
+# --- Installed modules whose code this image no longer carries ---------------
+#
+# THE HAZARD THE VERSION FLOOR CANNOT REACH. A release that drops a package
+# deletes the module's code, and a site that still has that module INSTALLED can
+# no longer boot: Drupal resolves every installed extension's path at container
+# compile time and fatals on the one it cannot find, before `updatedb` or `cim`
+# get a chance to uninstall it. The floor is the general answer to "this state is
+# too old", but it compares VERSIONS — and the sites most exposed here are on
+# `edge` builds, whose `edge+<sha>` stamp has no position in the version order at
+# all. Nothing version-shaped can gate them.
+#
+# This check needs no version: it asks the state and the filesystem directly, so
+# it also covers every FUTURE release that removes a module without anyone having
+# to predict which one. Concretely, it is what stands between a pre-0.1.0 `edge`
+# install (which still has `ai`, `ai_agents`, `ai_provider_*` installed) and the
+# release that finally drops those packages.
+#
+# BOOTSTRAP-FREE, and it has to be: the very condition it detects is the one that
+# makes bootstrapping impossible, so `drush pm:list` would fatal instead of
+# reporting. It reads `core.extension` out of the config table with `sql:query`
+# (credentials only) and compares against the `*.info.yml` files on disk.
+
+# Echo every installed extension name, one per line. Exit 3 when the answer can't
+# be read at all — the caller treats that as "unknown", never as "nothing missing".
+#
+# `convert_from` asks Postgres for the serialized blob AS TEXT. `config.data` is a
+# bytea, which otherwise comes back as `\x<hex>` and would need decoding; getting
+# text out of the query instead of decoding it afterwards is what keeps this to
+# grep, with no PHP and no hex tooling in the path. On a non-Postgres database the
+# function doesn't exist, the query fails, and the check reports "unknown" and
+# stands aside — the same way ensure_pgvector is Postgres-only.
+installed_extensions() {
+  local raw
+  raw="$($DRUSH sql:query \
+    "SELECT convert_from(data, 'UTF8') FROM config WHERE name = 'core.extension';" \
+    2>/dev/null)" || return 3
+  [ -n "$raw" ] || return 3
+  # core.extension serializes as {module: {name: weight}, theme: {name: weight},
+  # profile: "name"} — so every `s:LEN:"name";i:WEIGHT;` pair in it is an
+  # extension name, and nothing else in it has that shape. Matching all of them
+  # covers themes as well as modules, which is the same hazard for the same
+  # reason. Names are `[a-z0-9_]` by Drupal's own rule.
+  local names
+  names="$(printf '%s' "$raw" | grep -oE 's:[0-9]+:"[a-z0-9_]+";i:[0-9]+;' \
+    | sed -e 's/^s:[0-9]*:"//' -e 's/";i:[0-9]*;$//')"
+  [ -n "$names" ] || return 3
+  printf '%s\n' "$names"
+}
+
+# Echo every extension name this image actually ships, one per line. Deliberately
+# not `find -printf` (GNU-only): the basename is stripped with sed so this runs
+# anywhere, including the busybox find in the bats test image.
+available_extensions() {
+  find "$DRUPAL_ROOT" -name '*.info.yml' 2>/dev/null \
+    | sed -e 's|.*/||' -e 's/\.info\.yml$//' | sort -u
+}
+
+# Refuse, without side effects, if any installed module's code is gone.
+check_installed_code_present() {
+  local installed missing
+  if ! installed="$(installed_extensions)"; then
+    log "WARN: could not read the installed module list, so a module whose code is"
+    log "WARN: missing from this image would not be caught here. Continuing."
+    return 0
+  fi
+
+  # `comm -23` = in the installed list, not in what this image ships.
+  missing="$(comm -23 <(printf '%s\n' "$installed" | sort -u) <(available_extensions) | tr -d '\r')"
+  [ -n "$missing" ] || return 0
+
+  log "----------------------------------------------------------------"
+  log "  REFUSING TO UPGRADE — this image is missing code your site uses."
+  log ""
+  log "  These modules are installed on your site, but this release no longer"
+  log "  contains them:"
+  printf '%s\n' "$missing" | while IFS= read -r m; do
+    [ -n "$m" ] && log "      ${m}"
+  done
+  log ""
+  log "  Drupal cannot start without an installed module's code, so it cannot"
+  log "  uninstall them from here either — that has to happen on a version that"
+  log "  still ships them."
+  log ""
+  log "  Go back to the version you were running (or the newest release older"
+  log "  than this one), let it start and converge — it will uninstall these as"
+  log "  part of applying its own configuration — then upgrade again:"
+  log ""
+  log "      AINCIENT_IMAGE=<the previous image> docker compose up -d"
+  log ""
+  log "  YOUR DATABASE HAS NOT BEEN TOUCHED. Nothing was migrated, so running the"
+  log "  previous image again is a clean revert."
+  log "----------------------------------------------------------------"
+  write_result missing-code
+  die "refusing to migrate: installed modules absent from this image ($(printf '%s' "$missing" | tr '\n' ' '))"
+}
+
 # --- Branch 1: fresh install ------------------------------------------------
 fresh_install() {
   log "no site found → fresh install"
@@ -154,6 +257,130 @@ fresh_install() {
   log "fresh install complete (from config/sync)"
 }
 
+# --- The upgrade floor ------------------------------------------------------
+#
+# A release can reach a point where it CANNOT migrate arbitrarily old state: the
+# clearest case is a release that deletes code a still-pending update needs (drop
+# `drupal/ai` from composer.json and the hook_update_N that uninstalls it is gone
+# with it, so a site that never ran it can never run it here). Before this guard
+# such an upgrade was still attempted: updatedb or the health check failed, the
+# database rolled back, and the operator got a stack trace with no path forward.
+#
+# So each image DECLARES the oldest version it can migrate from, and refuses
+# anything older BEFORE it touches the database — naming the waypoint to go
+# through. The manager plans that route automatically (`atelier app update` walks
+# the chain), but the manager is not the only way in: people run `docker compose
+# pull` and re-run install.sh, and for them this refusal IS the instruction.
+#
+# It is a REFUSAL, not a rollback: nothing has been changed, so the recovery is
+# simply to run the old image again. Recorded as its own converge.result so the
+# updater sidecar can tell it apart from a migration that actually broke.
+
+# The floor this image declares, or empty if it declares none. Comments and
+# whitespace stripped, so the file can document itself.
+upgrade_floor() {
+  if [ -n "${AINCIENT_UPGRADE_FLOOR:-}" ]; then
+    printf '%s' "$AINCIENT_UPGRADE_FLOOR"
+    return 0
+  fi
+  [ -f "$UPGRADE_FLOOR_FILE" ] || return 0
+  sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$UPGRADE_FLOOR_FILE" \
+    | head -1 | tr -d '[:space:]'
+}
+
+# The version that last converged this database, or empty if none is recorded.
+recorded_version() {
+  $DRUSH state:get "$VERSION_STATE_KEY" --format=string 2>/dev/null | tr -d '[:space:]'
+}
+
+# Echo $1 as a bare comparable release (leading `v` dropped), or nothing at all
+# when it isn't one. `dev` and `edge+<sha>` are deliberately NOT releases: they
+# have no position in the version order, so no floor can be checked against them.
+release_version() {
+  local v="${1#v}"
+  case "$v" in
+    '' | *[!0-9.]*) return 0 ;;
+  esac
+  printf '%s' "$v"
+}
+
+# True when release $1 is strictly older than release $2.
+version_lt() {
+  [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
+}
+
+# Record which version converged this database — the other half of the floor.
+#
+# Called only after the branch SUCCEEDED, so a rolled-back upgrade leaves the
+# previous value in place. That is automatic rather than careful: the rollback
+# restores a snapshot taken before this ran, and the value lives in that snapshot.
+#
+# An unstamped build (`dev`, or no stamp at all) records NOTHING. Absence already
+# means "no released version has converged this site", which is exactly what a
+# local build leaves behind, and a recorded 'dev' would only be a value the floor
+# check has to special-case a second time.
+record_version() {
+  local stamp="${ATELIER_VERSION:-}"
+  [ -n "$stamp" ] && [ "$stamp" != "dev" ] || return 0
+  $DRUSH state:set "$VERSION_STATE_KEY" "$stamp" >/dev/null 2>&1 \
+    && log "recorded this site as converged at ${stamp}" \
+    || log "WARN: could not record the converged version (${stamp})"
+}
+
+# Refuse, loudly and without side effects, if this site is below the floor.
+check_upgrade_floor() {
+  local floor site
+  floor="$(release_version "$(upgrade_floor)")"
+  # No floor declared (or a local build with an unparseable one) → migrate as
+  # before. The floor only ever ADDS a refusal; it can't gate the common path.
+  [ -n "$floor" ] || return 0
+
+  site="$(recorded_version)"
+  if [ -z "$site" ]; then
+    # Converged by an image from before this recording existed. We can't place
+    # it in the version order, and refusing every unrecorded site would strand
+    # installs that are perfectly current, so proceed under the snapshot: the
+    # rollback is the net that was there all along. The manager covers this gap
+    # from outside — it reads the version LABEL of the image already on the host,
+    # which is recorded whether or not the site ever wrote State.
+    log "WARN: this site has no recorded Atelier version, so the upgrade floor"
+    log "WARN: (>= ${floor}) can't be verified. Continuing under the snapshot."
+    return 0
+  fi
+
+  local comparable
+  comparable="$(release_version "$site")"
+  if [ -z "$comparable" ]; then
+    log "site last converged at '${site}', an unreleased build — no position in the"
+    log "version order, so the floor (>= ${floor}) can't be checked. Continuing."
+    return 0
+  fi
+
+  version_lt "$comparable" "$floor" || return 0
+
+  log "----------------------------------------------------------------"
+  log "  REFUSING TO UPGRADE — this site is too old for this release."
+  log ""
+  log "    this site last converged at:  ${site}"
+  log "    this image can migrate from:  ${floor} or newer"
+  log ""
+  log "  Upgrade to ${floor} FIRST, then to this version. With the manager"
+  log "  this is one command, which walks the whole route for you:"
+  log ""
+  log "      atelier app update"
+  log ""
+  log "  By hand, run the waypoint image, let it converge, then come back:"
+  log ""
+  log "      AINCIENT_IMAGE=ghcr.io/aincient-labs/atelier-cms:v${floor} \\"
+  log "        docker compose up -d"
+  log ""
+  log "  YOUR DATABASE HAS NOT BEEN TOUCHED. Nothing was migrated and there is"
+  log "  nothing to restore — running the previous image again is a clean revert."
+  log "----------------------------------------------------------------"
+  write_result too-old
+  die "refusing to migrate a ${site} site with an image that requires >= ${floor}"
+}
+
 # --- Branch 2: upgrade existing site ----------------------------------------
 take_snapshot() {
   mkdir -p "$SNAPSHOT_DIR"
@@ -172,6 +399,14 @@ restore_snapshot() {
 
 upgrade() {
   log "existing site → upgrade"
+  # BEFORE the snapshot: a refusal must cost nothing, not even a dump. Two
+  # refusals, asking different questions — the floor asks whether this state is
+  # too OLD to migrate, the code check asks whether this image is missing
+  # something the state depends on. A site can fail the second while passing the
+  # first (an `edge` build has no comparable version at all), which is exactly
+  # why both run.
+  check_upgrade_floor
+  check_installed_code_present
   take_snapshot
 
   # From here, any failure rolls the database back to the snapshot AND records
@@ -253,6 +488,7 @@ main() {
     log "running health check"
     "$HEALTHCHECK_CMD" || { write_result install-failed; recovery_hint; die "post-install health check failed"; }
   fi
+  record_version
   write_result ok
   log "converge OK — site is on $($DRUSH status --field=drupal-version 2>/dev/null || echo '?')"
 }

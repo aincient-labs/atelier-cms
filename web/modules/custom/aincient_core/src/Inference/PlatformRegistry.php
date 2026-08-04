@@ -221,6 +221,17 @@ final class PlatformRegistry implements PlatformRegistryInterface {
    * `drupal/ai` names are read as a fallback so a pre-migration install keeps
    * resolving without a re-connect. The `gemini_provider` special case is the
    * one module that broke the `ai_provider_<id>.settings` convention.
+   *
+   * THE FALLBACK IS NOW DEAD ON EVERY SUPPORTED VERSION, and is kept only
+   * because deleting credential-resolution code deserves its own change rather
+   * than riding along with a composer cleanup. Those config objects belonged to
+   * the `ai_provider_*` and `gemini_provider` modules, so they left with the
+   * uninstall in v0.1.0 — verified absent from the active store, and they are not
+   * `config_ignore`d, so nothing preserved them. A site old enough to still hold
+   * them is old enough that `docker/converge.sh` refuses to upgrade it at all
+   * (its module code is gone from the image; see the missing-code guard there).
+   * `Config::get()` on an absent object returns NULL, so the branch is a
+   * harmless no-op rather than an error.
    */
   private function settingsNameFor(string $providerId): string {
     $own = 'aincient.provider.' . $providerId;

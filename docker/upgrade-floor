@@ -1,0 +1,26 @@
+# The oldest Atelier version whose DATABASE this image's converge can migrate.
+#
+# THE SINGLE SOURCE OF TRUTH for this release's upgrade floor. Read twice from
+# here, never typed twice:
+#
+#   - baked into the image at /etc/atelier/upgrade-floor, where converge.sh
+#     reads it and REFUSES to migrate an older site (before touching the DB);
+#   - stamped onto the image as LABEL dev.atelier.upgrade.min-from by the release
+#     workflow, where the manager reads it FROM THE REGISTRY WITHOUT PULLING to
+#     plan a stepped upgrade (0.1.1 → 0.3.0 → 0.4.0) instead of a doomed one.
+#
+# WHEN TO RAISE IT. Raise it in the same commit as any change that makes a
+# migration from older state impossible or unsafe — most concretely, when a
+# release DELETES the code that a still-pending update needs. Uninstalling a
+# module is the canonical case: the hook_update_N that uninstalls `ai` must be
+# present in the image that runs it, so the release that DROPS those packages
+# from composer.json can no longer perform the uninstall, and can only migrate
+# sites that already did. Set the floor to the oldest release that carries that
+# work, and every older install is routed through it automatically.
+#
+# Raising it is a promise the registry has to keep: the value MUST be a released
+# version with a published :vX.Y.Z tag, because that tag is the waypoint the
+# manager pulls. A floor naming an unreleased version strands every old install.
+#
+# Format: one bare X.Y.Z (no leading v), comments and blank lines ignored.
+0.1.0

@@ -7,6 +7,27 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.3.0] — 2026-08-04
+
+- **Changed: Atelier is leaner — twelve modules it no longer uses have been removed.** Atelier used
+  to reach AI providers through a stack of contrib modules; it now talks to them directly, and has
+  done since 0.1.0. Those modules were switched off then and are now gone from the download
+  altogether, along with three patches that only existed to fix them. Nothing you use changes:
+  Anthropic, OpenAI, Gemini, Mistral, Ollama, DeepSeek, Kimi, GLM, Qwen and any OpenAI-compatible
+  endpoint all connect exactly as before. The image is smaller and there is less to keep up to date.
+- **New: an upgrade that can't work now stops before it starts, and tells you what to do.** Because
+  this release drops that code, a site running a build old enough to still have those modules
+  switched **on** cannot upgrade straight to it — and previously it would have tried, failed partway
+  and rolled itself back with nothing useful on screen. Atelier now checks first, **before touching
+  your database**, and if the upgrade can't work it stops and names the version to go through on the
+  way. Nothing is changed, so starting your previous version again puts you exactly back.
+  - This applies to anyone who installed a pre-release `edge` build before 0.1.0. If you have
+    updated at any point since, you are unaffected and upgrade normally.
+  - The `atelier` manager can plan the route for you: `atelier app update` works out the versions to
+    pass through, shows you the plan, and walks it after you confirm.
+- **Changed: your site now records which version last updated it**, so Atelier can tell how far back
+  an upgrade is coming from and give a straight answer instead of a guess.
+
 ## [0.2.0] — 2026-08-04
 
 - **New: DeepSeek, Kimi, GLM and Qwen are providers you pick by name.** Each one is in the setup

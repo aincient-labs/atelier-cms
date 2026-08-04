@@ -173,6 +173,12 @@ RUN printf '%s\n' \
 COPY docker/converge.sh docker/healthcheck.sh docker/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/converge.sh /usr/local/bin/healthcheck.sh /usr/local/bin/entrypoint.sh
 
+# The upgrade floor — the oldest site version this image's converge will migrate.
+# A FILE, not only the build-arg that stamps the label below, because converge
+# reads it INSIDE the container and must be right even in a local `docker build`
+# that passes no build-args. Its own header documents when to raise it.
+COPY docker/upgrade-floor /etc/atelier/upgrade-floor
+
 # --- The composer-resolved dependency tiers, least- to most-volatile ---------
 # Partitioned in the vendor stage; see the rationale there. Each is an
 # independent layer, so a flowdrop bump now re-ships 22 MB instead of 216 MB.
@@ -238,6 +244,17 @@ LABEL org.opencontainers.image.title="Atelier by AIncient Labs" \
       org.opencontainers.image.revision="${ATELIER_REVISION}" \
       org.opencontainers.image.source="https://github.com/aincient-labs/atelier-cms" \
       org.opencontainers.image.licenses="GPL-2.0-or-later"
+
+# The upgrade floor, as METADATA — the same value as /etc/atelier/upgrade-floor,
+# stamped by the release workflow (which reads that file, so the two cannot be
+# typed apart). This carrier exists because the manager has to know an image's
+# floor BEFORE deciding to pull it: `docker buildx imagetools inspect` reads a
+# label straight from the registry, while the file inside the image is only
+# readable once the ~500 MB it lives in is already on the machine — by which
+# point the doomed upgrade is the cheap part. Absent on a local build; the
+# manager reads absence as "declares no floor" and plans a single hop.
+ARG ATELIER_UPGRADE_FLOOR=
+LABEL dev.atelier.upgrade.min-from="${ATELIER_UPGRADE_FLOOR}"
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
   CMD /usr/local/bin/healthcheck.sh || exit 1

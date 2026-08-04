@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "898b5e6f3074d44edda676b123057cf4",
+    "content-hash": "ac3a7ccab026ef7d6544d98ba52be392",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -61,65 +61,6 @@
                 "source": "https://github.com/asm89/stack-cors/tree/v2.4.0"
             },
             "time": "2026-01-28T13:08:04+00:00"
-        },
-        {
-            "name": "brick/math",
-            "version": "0.18.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/brick/math.git",
-                "reference": "82944324d1c1bdb2c2618e89978d4e2ad78d69ad"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/brick/math/zipball/82944324d1c1bdb2c2618e89978d4e2ad78d69ad",
-                "reference": "82944324d1c1bdb2c2618e89978d4e2ad78d69ad",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.2"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "2.1.22",
-                "phpunit/phpunit": "^11.5"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Brick\\Math\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Arbitrary-precision arithmetic library",
-            "keywords": [
-                "Arbitrary-precision",
-                "BigInteger",
-                "BigRational",
-                "arithmetic",
-                "bigdecimal",
-                "bignum",
-                "bignumber",
-                "brick",
-                "decimal",
-                "integer",
-                "math",
-                "mathematics",
-                "rational"
-            ],
-            "support": {
-                "issues": "https://github.com/brick/math/issues",
-                "source": "https://github.com/brick/math/tree/0.18.0"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/BenMorel",
-                    "type": "github"
-                }
-            ],
-            "time": "2026-06-14T18:21:03+00:00"
         },
         {
             "name": "chi-teck/drupal-code-generator",
@@ -916,70 +857,6 @@
             "time": "2022-12-20T22:53:13+00:00"
         },
         {
-            "name": "czproject/git-php",
-            "version": "v4.6.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/czproject/git-php.git",
-                "reference": "1f1ecc92aea9ee31120f4f5b759f5aa947420b0a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/czproject/git-php/zipball/1f1ecc92aea9ee31120f4f5b759f5aa947420b0a",
-                "reference": "1f1ecc92aea9ee31120f4f5b759f5aa947420b0a",
-                "shasum": ""
-            },
-            "require": {
-                "php": "8.0 - 8.5"
-            },
-            "require-dev": {
-                "nette/tester": "^2.5"
-            },
-            "type": "library",
-            "autoload": {
-                "classmap": [
-                    "src/"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Jan Pecha",
-                    "email": "janpecha@email.cz"
-                }
-            ],
-            "description": "Library for work with Git repository in PHP.",
-            "keywords": [
-                "git"
-            ],
-            "support": {
-                "issues": "https://github.com/czproject/git-php/issues",
-                "source": "https://github.com/czproject/git-php/tree/v4.6.0"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/sponsors/janpecha",
-                    "type": "github"
-                },
-                {
-                    "url": "https://www.janpecha.cz/donate/git-php/",
-                    "type": "other"
-                },
-                {
-                    "url": "https://donate.stripe.com/7sIcO2a9maTSg2A9AA",
-                    "type": "stripe"
-                },
-                {
-                    "url": "https://thanks.dev/u/gh/czproject",
-                    "type": "thanks.dev"
-                }
-            ],
-            "time": "2025-11-10T07:24:07+00:00"
-        },
-        {
             "name": "d34dman/vanilla-icon-picker",
             "version": "1.4.2",
             "source": {
@@ -1369,741 +1246,6 @@
             ],
             "support": {
                 "source": "https://git.drupalcode.org/project/admin_theme"
-            }
-        },
-        {
-            "name": "drupal/ai",
-            "version": "1.4.4",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai.git",
-                "reference": "1.4.4"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai-1.4.4.zip",
-                "reference": "1.4.4",
-                "shasum": "cb2188358266caa6365258cf61f316b019bb4c6a"
-            },
-            "require": {
-                "drupal/core": "^10.5 || ^11.2",
-                "drupal/key": "^1.18",
-                "league/html-to-markdown": "^5.1",
-                "openai-php/client": ">=v0.10.1",
-                "yethee/tiktoken": "^0.5.1"
-            },
-            "require-dev": {
-                "allanpichardo/mysql-vector": "^2.0",
-                "drupal/address": "^2.0",
-                "drupal/ai_assistant_api": "*",
-                "drupal/eca": "*",
-                "drupal/eca_content-eca_content": "*",
-                "drupal/field_validation": "^3.0@beta",
-                "drupal/key": "*",
-                "drupal/opentelemetry": "^1.0@beta",
-                "drupal/search_api": "^1.x-dev",
-                "drupal/search_api_solr": "^4.0",
-                "drupal/test_helpers": "^1.5",
-                "drupal/token": "^1.14",
-                "drush/drush": "^12|^13"
-            },
-            "suggest": {
-                "league/commonmark": "Allows previewing of chunked content when configuring the fields to be indexed in AI Search, and formats messages in the AI Chatbot module."
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.4.4",
-                    "datestamp": "1783520097",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "a.dmitriiev",
-                    "homepage": "https://www.drupal.org/user/3235287"
-                },
-                {
-                    "name": "abhisekmazumdar",
-                    "homepage": "https://www.drupal.org/user/3557964"
-                },
-                {
-                    "name": "ahmad khader",
-                    "homepage": "https://www.drupal.org/user/3727855"
-                },
-                {
-                    "name": "andrewbelcher",
-                    "homepage": "https://www.drupal.org/user/655282"
-                },
-                {
-                    "name": "anjaliprasannan",
-                    "homepage": "https://www.drupal.org/user/3637917"
-                },
-                {
-                    "name": "b_sharpe",
-                    "homepage": "https://www.drupal.org/user/2512258"
-                },
-                {
-                    "name": "fago",
-                    "homepage": "https://www.drupal.org/user/16747"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "kevinquillen",
-                    "homepage": "https://www.drupal.org/user/317279"
-                },
-                {
-                    "name": "kristen pol",
-                    "homepage": "https://www.drupal.org/user/8389"
-                },
-                {
-                    "name": "marcus_johansson",
-                    "homepage": "https://www.drupal.org/user/385947"
-                },
-                {
-                    "name": "michaellander",
-                    "homepage": "https://www.drupal.org/user/636494"
-                },
-                {
-                    "name": "murz",
-                    "homepage": "https://www.drupal.org/user/157092"
-                },
-                {
-                    "name": "mxr576",
-                    "homepage": "https://www.drupal.org/user/315522"
-                },
-                {
-                    "name": "robloach",
-                    "homepage": "https://www.drupal.org/user/61114"
-                },
-                {
-                    "name": "scott_euser",
-                    "homepage": "https://www.drupal.org/user/3267594"
-                },
-                {
-                    "name": "seogow",
-                    "homepage": "https://www.drupal.org/user/3065779"
-                },
-                {
-                    "name": "valthebald",
-                    "homepage": "https://www.drupal.org/user/239562"
-                },
-                {
-                    "name": "wouters_f",
-                    "homepage": "https://www.drupal.org/user/721548"
-                },
-                {
-                    "name": "yautja_cetanu",
-                    "homepage": "https://www.drupal.org/user/626050"
-                }
-            ],
-            "description": "AI module for Drupal",
-            "homepage": "https://www.drupal.org/project/ai",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai"
-            }
-        },
-        {
-            "name": "drupal/ai_agents",
-            "version": "1.3.2",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_agents.git",
-                "reference": "1.3.2"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_agents-1.3.2.zip",
-                "reference": "1.3.2",
-                "shasum": "4f894a50d509917664985f7bf4c4f9cc7e0a8b14"
-            },
-            "require": {
-                "drupal/ai": "^1.4.0",
-                "drupal/core": "^10.2 || ^11",
-                "drupal/modeler_api": "^1.0.3"
-            },
-            "require-dev": {
-                "drupal/webform": "^6.0"
-            },
-            "suggest": {
-                "drupal/bpmn_io": "Allows editing of AI agents with BPMN diagrams.",
-                "drupal/simple_crawler": "Allows the AI Form integrations to crawl websites.",
-                "drupal/unstructured": "Makes the AI Form integrations work better by allowing many file contexts."
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.3.2",
-                    "datestamp": "1783335164",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "a.dmitriiev",
-                    "homepage": "https://www.drupal.org/user/3235287"
-                },
-                {
-                    "name": "akhil babu",
-                    "homepage": "https://www.drupal.org/user/3632866"
-                },
-                {
-                    "name": "andrewbelcher",
-                    "homepage": "https://www.drupal.org/user/655282"
-                },
-                {
-                    "name": "harivansh",
-                    "homepage": "https://www.drupal.org/user/3678656"
-                },
-                {
-                    "name": "jurgenhaas",
-                    "homepage": "https://www.drupal.org/user/168924"
-                },
-                {
-                    "name": "marcus_johansson",
-                    "homepage": "https://www.drupal.org/user/385947"
-                },
-                {
-                    "name": "michaellander",
-                    "homepage": "https://www.drupal.org/user/636494"
-                },
-                {
-                    "name": "yautja_cetanu",
-                    "homepage": "https://www.drupal.org/user/626050"
-                }
-            ],
-            "description": "Allows AI agents to be used on Drupal websites to do changes and lookup things.",
-            "homepage": "https://www.drupal.org/project/ai_agents",
-            "keywords": [
-                "Drupal"
-            ],
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_agents"
-            }
-        },
-        {
-            "name": "drupal/ai_metering",
-            "version": "1.0.0-beta1",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_metering.git",
-                "reference": "1.0.0-beta1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_metering-1.0.0-beta1.zip",
-                "reference": "1.0.0-beta1",
-                "shasum": "54527d2de9046b21e8f95efc21362577ff18dc3c"
-            },
-            "require": {
-                "drupal/ai": "^1.0",
-                "drupal/core": "^10.5 || ^11.2",
-                "drupal/views_data_export": "^1.10"
-            },
-            "require-dev": {
-                "drupal/core-dev": "^10.3 || ^11"
-            },
-            "suggest": {
-                "drupal/ai_translate": "Primary use case for the HTMX pre-call cost estimation badge.",
-                "drupal/ai_usage_limits": "Adds provider-level system ceilings shown in the AI Metering dashboard."
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.0.0",
-                    "datestamp": "1748476800",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Project has not opted into security advisory coverage!"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "Jérôme Tchania",
-                    "homepage": "https://www.drupal.org/user/1210320",
-                    "role": "Maintainer"
-                }
-            ],
-            "description": "Tracks token usage and cost for every AI operation dispatched through the Drupal AI module. Provides per-user quotas, multi-currency display, and a usage dashboard.",
-            "homepage": "https://www.drupal.org/project/ai_metering",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_metering",
-                "issues": "https://www.drupal.org/project/issues/ai_metering"
-            }
-        },
-        {
-            "name": "drupal/ai_provider_anthropic",
-            "version": "1.2.2",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_provider_anthropic.git",
-                "reference": "1.2.2"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_provider_anthropic-1.2.2.zip",
-                "reference": "1.2.2",
-                "shasum": "603e94933ae13884298525eeec744e4cf8b29f58"
-            },
-            "require": {
-                "drupal/ai": "^1.2.0",
-                "drupal/core": "^10.3 || ^11",
-                "drupal/key": "^1.18"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.2.2",
-                    "datestamp": "1773928939",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "a.dmitriiev",
-                    "homepage": "https://www.drupal.org/user/3235287"
-                },
-                {
-                    "name": "camoa",
-                    "homepage": "https://www.drupal.org/user/2448054"
-                },
-                {
-                    "name": "marcus_johansson",
-                    "homepage": "https://www.drupal.org/user/385947"
-                },
-                {
-                    "name": "wouters_f",
-                    "homepage": "https://www.drupal.org/user/721548"
-                },
-                {
-                    "name": "yautja_cetanu",
-                    "homepage": "https://www.drupal.org/user/626050"
-                }
-            ],
-            "description": "Anthropic provider implementation for the AI module for Drupal",
-            "homepage": "https://www.drupal.org/project/ai_provider_anthropic",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_provider_anthropic"
-            }
-        },
-        {
-            "name": "drupal/ai_provider_litellm",
-            "version": "1.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_provider_litellm.git",
-                "reference": "1.2.0"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_provider_litellm-1.2.0.zip",
-                "reference": "1.2.0",
-                "shasum": "23c72f691ecc8d550b0ff1512947a06599ffa0a7"
-            },
-            "require": {
-                "drupal/ai": "^1.2.0",
-                "drupal/ai_provider_openai": "^1.2",
-                "drupal/core": "^10.2 | ^11"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.2.0",
-                    "datestamp": "1760354305",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Project has not opted into security advisory coverage!"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "abhisekmazumdar",
-                    "homepage": "https://www.drupal.org/user/3557964"
-                },
-                {
-                    "name": "andrewbelcher",
-                    "homepage": "https://www.drupal.org/user/655282"
-                },
-                {
-                    "name": "dan2k3k4",
-                    "homepage": "https://www.drupal.org/user/2437398"
-                },
-                {
-                    "name": "justanothermark",
-                    "homepage": "https://www.drupal.org/user/1369624"
-                },
-                {
-                    "name": "l_vandamme",
-                    "homepage": "https://www.drupal.org/user/3162503"
-                },
-                {
-                    "name": "marcus_johansson",
-                    "homepage": "https://www.drupal.org/user/385947"
-                },
-                {
-                    "name": "matthews",
-                    "homepage": "https://www.drupal.org/user/114486"
-                },
-                {
-                    "name": "nikro",
-                    "homepage": "https://www.drupal.org/user/576416"
-                },
-                {
-                    "name": "schnitzel",
-                    "homepage": "https://www.drupal.org/user/643820"
-                }
-            ],
-            "description": "LiteLLM AI provider integration.",
-            "homepage": "https://www.drupal.org/project/ai_provider_litellm",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_provider_litellm"
-            }
-        },
-        {
-            "name": "drupal/ai_provider_mistral",
-            "version": "1.1.0-rc1",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_provider_mistral.git",
-                "reference": "1.1.0-rc1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_provider_mistral-1.1.0-rc1.zip",
-                "reference": "1.1.0-rc1",
-                "shasum": "1315e33cd0a15996a9423e437b5de3326779668e"
-            },
-            "require": {
-                "drupal/ai": "^1.2.0",
-                "drupal/core": "^10.2 || ^11",
-                "drupal/key": "^1.18",
-                "partitech/php-mistral": "^0.1.26",
-                "php": ">=8.2"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.1.0-rc1",
-                    "datestamp": "1771509859",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "RC releases are not covered by Drupal security advisories."
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "ademarco",
-                    "homepage": "https://www.drupal.org/user/186696"
-                },
-                {
-                    "name": "fago",
-                    "homepage": "https://www.drupal.org/user/16747"
-                },
-                {
-                    "name": "marcus_johansson",
-                    "homepage": "https://www.drupal.org/user/385947"
-                },
-                {
-                    "name": "wouters_f",
-                    "homepage": "https://www.drupal.org/user/721548"
-                },
-                {
-                    "name": "yautja_cetanu",
-                    "homepage": "https://www.drupal.org/user/626050"
-                }
-            ],
-            "description": "Mistral provider implementation for the AI module for Drupal",
-            "homepage": "https://www.drupal.org/project/ai_provider_mistral",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_provider_mistral"
-            }
-        },
-        {
-            "name": "drupal/ai_provider_nanobanana",
-            "version": "1.0.0-beta1",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_provider_nanobanana.git",
-                "reference": "1.0.0-beta1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_provider_nanobanana-1.0.0-beta1.zip",
-                "reference": "1.0.0-beta1",
-                "shasum": "3811aac23083cfc2ca3a03422178ac9a3a40d252"
-            },
-            "require": {
-                "drupal/ai": "^1.0",
-                "drupal/core": "^10 || ^11",
-                "drupal/key": "*"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.0.0-beta1",
-                    "datestamp": "1763745608",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Project has not opted into security advisory coverage!"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "acolono",
-                    "homepage": "https://acolono.com",
-                    "role": "Maintainer"
-                },
-                {
-                    "name": "grienauer",
-                    "homepage": "https://www.drupal.org/user/80801"
-                }
-            ],
-            "description": "AI Provider module for Google Gemini's image generation models.",
-            "homepage": "https://www.drupal.org/project/ai_provider_nanobanana",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_provider_nanobanana"
-            }
-        },
-        {
-            "name": "drupal/ai_provider_ollama",
-            "version": "1.2.0-rc3",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_provider_ollama.git",
-                "reference": "1.2.0-rc3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_provider_ollama-1.2.0-rc3.zip",
-                "reference": "1.2.0-rc3",
-                "shasum": "1ddd1580fbd6523a816233a961a729617ae5fc5d"
-            },
-            "require": {
-                "drupal/ai": "^1.2.0",
-                "drupal/core": "^10.2 || ^11"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.2.0-rc3",
-                    "datestamp": "1775638436",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "RC releases are not covered by Drupal security advisories."
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "jibran",
-                    "homepage": "https://www.drupal.org/user/1198144"
-                },
-                {
-                    "name": "kevinquillen",
-                    "homepage": "https://www.drupal.org/user/317279"
-                },
-                {
-                    "name": "marcus_johansson",
-                    "homepage": "https://www.drupal.org/user/385947"
-                },
-                {
-                    "name": "scott_euser",
-                    "homepage": "https://www.drupal.org/user/3267594"
-                },
-                {
-                    "name": "seogow",
-                    "homepage": "https://www.drupal.org/user/3065779"
-                },
-                {
-                    "name": "valthebald",
-                    "homepage": "https://www.drupal.org/user/239562"
-                },
-                {
-                    "name": "wouters_f",
-                    "homepage": "https://www.drupal.org/user/721548"
-                },
-                {
-                    "name": "yautja_cetanu",
-                    "homepage": "https://www.drupal.org/user/626050"
-                }
-            ],
-            "description": "Ollama provider implementation for the AI module for Drupal",
-            "homepage": "https://www.drupal.org/project/ai_provider_ollama",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_provider_ollama"
-            }
-        },
-        {
-            "name": "drupal/ai_provider_openai",
-            "version": "1.2.3",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_provider_openai.git",
-                "reference": "1.2.3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_provider_openai-1.2.3.zip",
-                "reference": "1.2.3",
-                "shasum": "8698bda2b03cb2d99a2911a19321ef4039314a6f"
-            },
-            "require": {
-                "drupal/ai": "^1.2.0",
-                "drupal/core": "^10.3 || ^11",
-                "drupal/key": "^1.18"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.2.3",
-                    "datestamp": "1783612214",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "a.dmitriiev",
-                    "homepage": "https://www.drupal.org/user/3235287"
-                },
-                {
-                    "name": "b_sharpe",
-                    "homepage": "https://www.drupal.org/user/2512258"
-                },
-                {
-                    "name": "kevinquillen",
-                    "homepage": "https://www.drupal.org/user/317279"
-                },
-                {
-                    "name": "marcus_johansson",
-                    "homepage": "https://www.drupal.org/user/385947"
-                },
-                {
-                    "name": "scott_euser",
-                    "homepage": "https://www.drupal.org/user/3267594"
-                },
-                {
-                    "name": "seogow",
-                    "homepage": "https://www.drupal.org/user/3065779"
-                },
-                {
-                    "name": "wouters_f",
-                    "homepage": "https://www.drupal.org/user/721548"
-                },
-                {
-                    "name": "yautja_cetanu",
-                    "homepage": "https://www.drupal.org/user/626050"
-                }
-            ],
-            "description": "OpenAI provider implementation for the AI module for Drupal",
-            "homepage": "https://www.drupal.org/project/ai_provider_openai",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_provider_openai"
-            }
-        },
-        {
-            "name": "drupal/ai_provider_openrouter",
-            "version": "1.1.6",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/ai_provider_openrouter.git",
-                "reference": "1.1.6"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/ai_provider_openrouter-1.1.6.zip",
-                "reference": "1.1.6",
-                "shasum": "d58af5f2a506791122fbb956d49c408c4c3d1fc4"
-            },
-            "require": {
-                "drupal/ai": "^1.2.7",
-                "drupal/core": "^10.5 || ^11.2",
-                "drupal/key": "^1.18",
-                "openai-php/client": ">=0.10.1",
-                "php": ">=8.1"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.1.6",
-                    "datestamp": "1782456737",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Project has not opted into security advisory coverage!"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "Jeff Bruton",
-                    "homepage": "https://www.drupal.org/u/bdsweb",
-                    "email": "jeff@bruton.ai",
-                    "role": "Maintainer"
-                }
-            ],
-            "description": "OpenRouter provider for the Drupal AI module",
-            "homepage": "https://www.drupal.org/project/ai_provider_openrouter",
-            "support": {
-                "source": "https://git.drupalcode.org/project/ai_provider_openrouter",
-                "issues": "https://www.drupal.org/project/issues/ai_provider_openrouter"
             }
         },
         {
@@ -3066,455 +2208,6 @@
             }
         },
         {
-            "name": "drupal/flowdrop_ai_provider",
-            "version": "dev-2.x",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/flowdrop_ai_provider.git",
-                "reference": "c9ed8ff380588b95ac30431556fcff5a6ff7e980"
-            },
-            "require": {
-                "drupal/ai": "*",
-                "drupal/ai_agents": "^1.3.2",
-                "drupal/core": "^11.3",
-                "drupal/flowdrop": "^2",
-                "drupal/flowdrop_interrupt": "*",
-                "drupal/flowdrop_node_type": "*",
-                "drupal/flowdrop_session": "*",
-                "php": ">=8.2"
-            },
-            "require-dev": {
-                "drush/drush": "^13.0"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "branch-alias": {
-                    "dev-2.x": "2.x-dev"
-                },
-                "drupal": {
-                    "version": "2.x-dev",
-                    "datestamp": "1784309131",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Dev releases are not covered by Drupal security advisories."
-                    }
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Drupal\\flowdrop_ai_provider\\": "src/"
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "David Galeano",
-                    "homepage": "https://www.drupal.org/u/gxleano"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                }
-            ],
-            "description": "FlowDrop Integration with Drupal AI",
-            "homepage": "https://www.drupal.org/project/flowdrop_ai_provider",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop_ai_provider",
-                "issues": "https://www.drupal.org/project/issues/flowdrop_ai_provider"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_interrupt",
-            "version": "1.6.0",
-            "require": {
-                "drupal/core": "^11.2",
-                "drupal/flowdrop": "*",
-                "drupal/flowdrop_job": "*",
-                "drupal/flowdrop_orchestration": "*",
-                "drupal/flowdrop_pipeline": "*",
-                "drupal/flowdrop_runtime": "*",
-                "drupal/flowdrop_session": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "1.6.0",
-                    "datestamp": "1782952011",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Human-in-the-loop interrupt system for FlowDrop workflows. Enables workflows to pause and request user input via confirmations, choices, text, or JSON schema forms.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_job",
-            "version": "2.0.0-alpha6",
-            "require": {
-                "drupal/core": "^11.3",
-                "drupal/flowdrop": "^2",
-                "drupal/flowdrop_node_type": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "2.0.0-alpha6",
-                    "datestamp": "1783718060",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Alpha releases are not covered by Drupal security advisories."
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Job entity representing a single workflow node execution unit, tracking its status, input, and output.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_node_category",
-            "version": "1.6.0",
-            "require": {
-                "drupal/core": "^11.2",
-                "drupal/flowdrop": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "1.6.0",
-                    "datestamp": "1782952011",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Node category entity for grouping workflow node types into logical sections in the editor palette.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_node_type",
-            "version": "1.6.0",
-            "require": {
-                "drupal/core": "^11.2",
-                "drupal/flowdrop": "*",
-                "drupal/flowdrop_node_category": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "1.6.0",
-                    "datestamp": "1782952011",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Node type entity for defining and configuring the available workflow node plugins.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_orchestration",
-            "version": "1.6.0",
-            "require": {
-                "drupal/core": "^11.2",
-                "drupal/flowdrop": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "1.6.0",
-                    "datestamp": "1782952011",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Orchestration plugin system, contracts, and helper services powering FlowDrop workflow execution.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_pipeline",
-            "version": "2.0.0-alpha6",
-            "require": {
-                "drupal/core": "^11.3",
-                "drupal/flowdrop": "^2",
-                "drupal/flowdrop_job": "*",
-                "drupal/flowdrop_node_type": "*",
-                "drupal/flowdrop_workflow": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "2.0.0-alpha6",
-                    "datestamp": "1783718060",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Alpha releases are not covered by Drupal security advisories."
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Pipeline entity tracking the execution state of a complete workflow run and grouping its constituent jobs.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_runtime",
-            "version": "1.6.0",
-            "require": {
-                "drupal/core": "^11.2",
-                "drupal/flowdrop": "*",
-                "drupal/flowdrop_job": "*",
-                "drupal/flowdrop_node_type": "*",
-                "drupal/flowdrop_orchestration": "*",
-                "drupal/flowdrop_pipeline": "*",
-                "drupal/flowdrop_workflow": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "1.6.0",
-                    "datestamp": "1782952011",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Runtime execution engine for FlowDrop workflows, providing queue-based processing and real-time execution monitoring.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_session",
-            "version": "2.0.0-alpha6",
-            "require": {
-                "drupal/core": "^11.3",
-                "drupal/flowdrop": "^2",
-                "drupal/flowdrop_job": "*",
-                "drupal/flowdrop_orchestration": "*",
-                "drupal/flowdrop_pipeline": "*",
-                "drupal/flowdrop_runtime": "*",
-                "drupal/flowdrop_workflow": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "2.0.0-alpha6",
-                    "datestamp": "1783718060",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Alpha releases are not covered by Drupal security advisories."
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Session and message management for FlowDrop workflow execution. Provides entities and services for managing interactive workflow sessions.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
             "name": "drupal/flowdrop_ui_components",
             "version": "2.0.0-alpha14",
             "require": {
@@ -3555,54 +2248,6 @@
                 }
             ],
             "description": "Provides reusable Single Directory Components (SDC) for the FlowDrop dashboard and administrative interfaces. Delivers a consistent visual language matching the FlowDrop workflow editor.",
-            "homepage": "https://www.drupal.org/project/flowdrop",
-            "support": {
-                "source": "https://git.drupalcode.org/project/flowdrop"
-            }
-        },
-        {
-            "name": "drupal/flowdrop_workflow",
-            "version": "1.6.0",
-            "require": {
-                "drupal/core": "^11.2",
-                "drupal/flowdrop": "*",
-                "drupal/flowdrop_node_category": "*",
-                "drupal/flowdrop_node_type": "*"
-            },
-            "type": "metapackage",
-            "extra": {
-                "drupal": {
-                    "version": "1.6.0",
-                    "datestamp": "1782952011",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "d34dman",
-                    "homepage": "https://www.drupal.org/user/751698"
-                },
-                {
-                    "name": "gxleano",
-                    "homepage": "https://www.drupal.org/user/3591999"
-                },
-                {
-                    "name": "muschpusch",
-                    "homepage": "https://www.drupal.org/user/257634"
-                },
-                {
-                    "name": "stmh",
-                    "homepage": "https://www.drupal.org/user/35538"
-                }
-            ],
-            "description": "Workflow entity type for storing, versioning, and managing workflow definitions.",
             "homepage": "https://www.drupal.org/project/flowdrop",
             "support": {
                 "source": "https://git.drupalcode.org/project/flowdrop"
@@ -3661,60 +2306,6 @@
                 "source": "https://cgit.drupalcode.org/focal_point",
                 "issues": "https://drupal.org/project/issues/focal_point",
                 "irc": "irc://irc.freenode.org/drupal-contribute"
-            }
-        },
-        {
-            "name": "drupal/gemini_provider",
-            "version": "1.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/gemini_provider.git",
-                "reference": "1.0.1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/gemini_provider-1.0.1.zip",
-                "reference": "1.0.1",
-                "shasum": "51fd7744b52cffdc163a732872fca0e420e1c572"
-            },
-            "require": {
-                "drupal/ai": "^1.2",
-                "drupal/core": "^10 || ^11",
-                "drupal/key": "*",
-                "google-gemini-php/client": "^2.7"
-            },
-            "require-dev": {
-                "drush/drush": "^12 || ^13"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.0.1",
-                    "datestamp": "1774173695",
-                    "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Project has not opted into security advisory coverage!"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "jibla",
-                    "homepage": "https://www.drupal.org/user/1013184"
-                },
-                {
-                    "name": "lekso surameli",
-                    "homepage": "https://www.drupal.org/user/3709459"
-                }
-            ],
-            "description": "Gemini provider for AI module.",
-            "homepage": "https://www.drupal.org/project/gemini_provider",
-            "support": {
-                "source": "https://git.drupalcode.org/project/gemini_provider"
             }
         },
         {
@@ -4090,60 +2681,6 @@
                 "source": "https://git.drupalcode.org/project/metatag",
                 "issues": "https://www.drupal.org/project/issues/metatag",
                 "docs": "https://www.drupal.org/docs/8/modules/metatag"
-            }
-        },
-        {
-            "name": "drupal/modeler_api",
-            "version": "1.1.3",
-            "source": {
-                "type": "git",
-                "url": "https://git.drupalcode.org/project/modeler_api.git",
-                "reference": "1.1.3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/modeler_api-1.1.3.zip",
-                "reference": "1.1.3",
-                "shasum": "f66fb69dc94a9404cf963fb58398b5203f3b3387"
-            },
-            "require": {
-                "drupal/core": "^11.3 || ^12.0",
-                "php": ">=8.3"
-            },
-            "type": "drupal-module",
-            "extra": {
-                "drupal": {
-                    "version": "1.1.3",
-                    "datestamp": "1780496337",
-                    "security-coverage": {
-                        "status": "covered",
-                        "message": "Covered by Drupal's security advisory policy"
-                    }
-                }
-            },
-            "notification-url": "https://packages.drupal.org/8/downloads",
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "authors": [
-                {
-                    "name": "benjifisher",
-                    "homepage": "https://www.drupal.org/user/683300"
-                },
-                {
-                    "name": "cosmicdreams",
-                    "homepage": "https://www.drupal.org/user/42579"
-                },
-                {
-                    "name": "jurgenhaas",
-                    "homepage": "https://www.drupal.org/user/168924"
-                }
-            ],
-            "description": "Provides an API for modules to use modelers like BPMN.iO",
-            "homepage": "https://www.drupal.org/project/modeler_api",
-            "support": {
-                "source": "https://drupal.org/project/modeler_api",
-                "issues": "https://drupal.org/project/issues/modeler_api"
             }
         },
         {
@@ -5326,86 +3863,6 @@
             "time": "2026-03-19T18:27:55+00:00"
         },
         {
-            "name": "google-gemini-php/client",
-            "version": "2.7.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/google-gemini-php/client.git",
-                "reference": "d61ebe8e8f7acc2aa66ce2e8a57c23bf32e1e340"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/google-gemini-php/client/zipball/d61ebe8e8f7acc2aa66ce2e8a57c23bf32e1e340",
-                "reference": "d61ebe8e8f7acc2aa66ce2e8a57c23bf32e1e340",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1.0",
-                "php-http/discovery": "^1.19.2",
-                "psr/http-client-implementation": "*",
-                "psr/http-factory-implementation": "*"
-            },
-            "require-dev": {
-                "guzzlehttp/guzzle": "^7.8.1",
-                "guzzlehttp/psr7": "^2.6.2",
-                "laravel/pint": "^1.18.1",
-                "mockery/mockery": "^1.6.7",
-                "pestphp/pest": "^2.32.3",
-                "phpstan/phpstan": "^2.1.32"
-            },
-            "suggest": {
-                "ext-fileinfo": "Reads upload file size and mime type if not provided"
-            },
-            "type": "library",
-            "autoload": {
-                "files": [
-                    "src/Gemini.php"
-                ],
-                "psr-4": {
-                    "Gemini\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Fatih AYDIN",
-                    "email": "aydinfatih52@gmail.com"
-                }
-            ],
-            "description": "Gemini API is a supercharged PHP API client that allows you to interact with the Gemini API",
-            "keywords": [
-                "Gemini",
-                "banana",
-                "client",
-                "gemini-pro",
-                "google",
-                "language",
-                "natural",
-                "nlp",
-                "php",
-                "processing",
-                "sdk"
-            ],
-            "support": {
-                "issues": "https://github.com/google-gemini-php/client/issues",
-                "source": "https://github.com/google-gemini-php/client/tree/2.7.4"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/Plytas",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/aydinfatih",
-                    "type": "github"
-                }
-            ],
-            "time": "2025-12-29T17:51:16+00:00"
-        },
-        {
             "name": "grasmash/expander",
             "version": "3.0.1",
             "source": {
@@ -5920,46 +4377,6 @@
             "time": "2026-06-16T20:50:26+00:00"
         },
         {
-            "name": "knplabs/php-json-schema",
-            "version": "v0.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/KnpLabs/php-json-schema.git",
-                "reference": "97a06f0124e958eba8c76d011bdf3f5e72a9af20"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/KnpLabs/php-json-schema/zipball/97a06f0124e958eba8c76d011bdf3f5e72a9af20",
-                "reference": "97a06f0124e958eba8c76d011bdf3f5e72a9af20",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "KnpLabs\\JsonSchema\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Knp Labs",
-                    "email": "hello@knplabs.com"
-                }
-            ],
-            "description": "PHP json-schema implementation",
-            "support": {
-                "issues": "https://github.com/KnpLabs/php-json-schema/issues",
-                "source": "https://github.com/KnpLabs/php-json-schema/tree/v0.1.0"
-            },
-            "time": "2022-10-31T10:01:54+00:00"
-        },
-        {
             "name": "laravel/prompts",
             "version": "v0.3.21",
             "source": {
@@ -6470,51 +4887,6 @@
             "time": "2023-07-12T21:21:09+00:00"
         },
         {
-            "name": "logiscape/mcp-sdk-php",
-            "version": "v1.7.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/logiscape/mcp-sdk-php.git",
-                "reference": "febd211afba98b8067e4e493cd2eccb980885148"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/logiscape/mcp-sdk-php/zipball/febd211afba98b8067e4e493cd2eccb980885148",
-                "reference": "febd211afba98b8067e4e493cd2eccb980885148",
-                "shasum": ""
-            },
-            "require": {
-                "ext-curl": "*",
-                "ext-json": "*",
-                "php": ">=8.1",
-                "psr/log": "^2.0 ||^3.0"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "^1.10",
-                "phpunit/phpunit": "^10.0"
-            },
-            "suggest": {
-                "ext-pcntl": "For better process handling in CLI environments",
-                "monolog/monolog": "^3.0 - For debugging and logging capabilities"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Mcp\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Model Context Protocol SDK for PHP",
-            "support": {
-                "issues": "https://github.com/logiscape/mcp-sdk-php/issues",
-                "source": "https://github.com/logiscape/mcp-sdk-php/tree/v1.7.4"
-            },
-            "time": "2026-07-03T19:44:39+00:00"
-        },
-        {
             "name": "loilo/jsonpath",
             "version": "0.3.1",
             "source": {
@@ -6781,109 +5153,6 @@
             "time": "2026-07-21T11:56:06+00:00"
         },
         {
-            "name": "monolog/monolog",
-            "version": "3.10.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Seldaek/monolog.git",
-                "reference": "b321dd6749f0bf7189444158a3ce785cc16d69b0"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/b321dd6749f0bf7189444158a3ce785cc16d69b0",
-                "reference": "b321dd6749f0bf7189444158a3ce785cc16d69b0",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.1",
-                "psr/log": "^2.0 || ^3.0"
-            },
-            "provide": {
-                "psr/log-implementation": "3.0.0"
-            },
-            "require-dev": {
-                "aws/aws-sdk-php": "^3.0",
-                "doctrine/couchdb": "~1.0@dev",
-                "elasticsearch/elasticsearch": "^7 || ^8",
-                "ext-json": "*",
-                "graylog2/gelf-php": "^1.4.2 || ^2.0",
-                "guzzlehttp/guzzle": "^7.4.5",
-                "guzzlehttp/psr7": "^2.2",
-                "mongodb/mongodb": "^1.8 || ^2.0",
-                "php-amqplib/php-amqplib": "~2.4 || ^3",
-                "php-console/php-console": "^3.1.8",
-                "phpstan/phpstan": "^2",
-                "phpstan/phpstan-deprecation-rules": "^2",
-                "phpstan/phpstan-strict-rules": "^2",
-                "phpunit/phpunit": "^10.5.17 || ^11.0.7",
-                "predis/predis": "^1.1 || ^2",
-                "rollbar/rollbar": "^4.0",
-                "ruflin/elastica": "^7 || ^8",
-                "symfony/mailer": "^5.4 || ^6",
-                "symfony/mime": "^5.4 || ^6"
-            },
-            "suggest": {
-                "aws/aws-sdk-php": "Allow sending log messages to AWS services like DynamoDB",
-                "doctrine/couchdb": "Allow sending log messages to a CouchDB server",
-                "elasticsearch/elasticsearch": "Allow sending log messages to an Elasticsearch server via official client",
-                "ext-amqp": "Allow sending log messages to an AMQP server (1.0+ required)",
-                "ext-curl": "Required to send log messages using the IFTTTHandler, the LogglyHandler, the SendGridHandler, the SlackWebhookHandler or the TelegramBotHandler",
-                "ext-mbstring": "Allow to work properly with unicode symbols",
-                "ext-mongodb": "Allow sending log messages to a MongoDB server (via driver)",
-                "ext-openssl": "Required to send log messages using SSL",
-                "ext-sockets": "Allow sending log messages to a Syslog server (via UDP driver)",
-                "graylog2/gelf-php": "Allow sending log messages to a GrayLog2 server",
-                "mongodb/mongodb": "Allow sending log messages to a MongoDB server (via library)",
-                "php-amqplib/php-amqplib": "Allow sending log messages to an AMQP server using php-amqplib",
-                "rollbar/rollbar": "Allow sending log messages to Rollbar",
-                "ruflin/elastica": "Allow sending log messages to an Elastic Search server"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-main": "3.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Monolog\\": "src/Monolog"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jordi Boggiano",
-                    "email": "j.boggiano@seld.be",
-                    "homepage": "https://seld.be"
-                }
-            ],
-            "description": "Sends your logs to files, sockets, inboxes, databases and various web services",
-            "homepage": "https://github.com/Seldaek/monolog",
-            "keywords": [
-                "log",
-                "logging",
-                "psr-3"
-            ],
-            "support": {
-                "issues": "https://github.com/Seldaek/monolog/issues",
-                "source": "https://github.com/Seldaek/monolog/tree/3.10.0"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/Seldaek",
-                    "type": "github"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/monolog/monolog",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2026-01-02T08:56:05+00:00"
-        },
-        {
             "name": "nette/schema",
             "version": "v1.3.5",
             "source": {
@@ -7099,175 +5368,6 @@
             "time": "2026-07-04T14:30:18+00:00"
         },
         {
-            "name": "nyholm/psr7",
-            "version": "1.8.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Nyholm/psr7.git",
-                "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Nyholm/psr7/zipball/a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
-                "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=7.2",
-                "psr/http-factory": "^1.0",
-                "psr/http-message": "^1.1 || ^2.0"
-            },
-            "provide": {
-                "php-http/message-factory-implementation": "1.0",
-                "psr/http-factory-implementation": "1.0",
-                "psr/http-message-implementation": "1.0"
-            },
-            "require-dev": {
-                "http-interop/http-factory-tests": "^0.9",
-                "php-http/message-factory": "^1.0",
-                "php-http/psr7-integration-tests": "^1.0",
-                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.4",
-                "symfony/error-handler": "^4.4"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.8-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Nyholm\\Psr7\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Tobias Nyholm",
-                    "email": "tobias.nyholm@gmail.com"
-                },
-                {
-                    "name": "Martijn van der Ven",
-                    "email": "martijn@vanderven.se"
-                }
-            ],
-            "description": "A fast PHP7 implementation of PSR-7",
-            "homepage": "https://tnyholm.se",
-            "keywords": [
-                "psr-17",
-                "psr-7"
-            ],
-            "support": {
-                "issues": "https://github.com/Nyholm/psr7/issues",
-                "source": "https://github.com/Nyholm/psr7/tree/1.8.2"
-            },
-            "funding": [
-                {
-                    "url": "https://github.com/Zegnat",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/nyholm",
-                    "type": "github"
-                }
-            ],
-            "time": "2024-09-09T07:06:30+00:00"
-        },
-        {
-            "name": "openai-php/client",
-            "version": "v0.20.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/openai-php/client.git",
-                "reference": "de32ca459d5810d3c80989bc16fb0412f5095ae4"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/openai-php/client/zipball/de32ca459d5810d3c80989bc16fb0412f5095ae4",
-                "reference": "de32ca459d5810d3c80989bc16fb0412f5095ae4",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.2.0",
-                "php-http/discovery": "^1.20.0",
-                "php-http/multipart-stream-builder": "^1.4.2",
-                "psr/http-client": "^1.0.3",
-                "psr/http-client-implementation": "^1.0.1",
-                "psr/http-factory-implementation": "*",
-                "psr/http-message": "^1.1.0|^2.0.0"
-            },
-            "require-dev": {
-                "guzzlehttp/guzzle": "^7.10.0",
-                "guzzlehttp/psr7": "^2.8.0",
-                "laravel/pint": "^1.25.1",
-                "mockery/mockery": "^1.6.12",
-                "nunomaduro/collision": "^8.8.3",
-                "pestphp/pest": "^3.8.2|^4.1.4",
-                "pestphp/pest-plugin-arch": "^3.1.1|^4.0.0",
-                "pestphp/pest-plugin-type-coverage": "^3.5.1|^4.0.0",
-                "phpstan/phpstan": "^1.12.32",
-                "symfony/var-dumper": "^7.3.5"
-            },
-            "type": "library",
-            "autoload": {
-                "files": [
-                    "src/OpenAI.php"
-                ],
-                "psr-4": {
-                    "OpenAI\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Nuno Maduro",
-                    "email": "enunomaduro@gmail.com"
-                },
-                {
-                    "name": "Sandro Gehri"
-                }
-            ],
-            "description": "OpenAI PHP is a supercharged PHP API client that allows you to interact with the Open AI API",
-            "keywords": [
-                "GPT-3",
-                "api",
-                "client",
-                "codex",
-                "dall-e",
-                "language",
-                "natural",
-                "openai",
-                "php",
-                "processing",
-                "sdk"
-            ],
-            "support": {
-                "issues": "https://github.com/openai-php/client/issues",
-                "source": "https://github.com/openai-php/client/tree/v0.20.1"
-            },
-            "funding": [
-                {
-                    "url": "https://www.paypal.com/paypalme/enunomaduro",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/gehrisandro",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/nunomaduro",
-                    "type": "github"
-                }
-            ],
-            "time": "2026-07-20T11:03:21+00:00"
-        },
-        {
             "name": "oskarstark/enum-helper",
             "version": "1.8.4",
             "source": {
@@ -7318,72 +5418,6 @@
                 "source": "https://github.com/OskarStark/enum-helper/tree/1.8.4"
             },
             "time": "2026-02-05T08:59:09+00:00"
-        },
-        {
-            "name": "partitech/php-mistral",
-            "version": "v0.1.29",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/partITech/php-mistral.git",
-                "reference": "38793749f1b2b218cfcbb355484f5f9c0064fd58"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/partITech/php-mistral/zipball/38793749f1b2b218cfcbb355484f5f9c0064fd58",
-                "reference": "38793749f1b2b218cfcbb355484f5f9c0064fd58",
-                "shasum": ""
-            },
-            "require": {
-                "czproject/git-php": "^4.4",
-                "ext-fileinfo": "*",
-                "ext-zip": "*",
-                "knplabs/php-json-schema": "^0.1.0",
-                "logiscape/mcp-sdk-php": "^1.1",
-                "monolog/monolog": "^3.5",
-                "nyholm/psr7": "^1.8",
-                "php": ">=8.2",
-                "php-http/discovery": "^1.20",
-                "php-http/multipart-stream-builder": "^1.4",
-                "psr/http-client": "^1.0",
-                "psr/http-client-implementation": "^1.0",
-                "psr/http-factory-implementation": "^1.0",
-                "ramsey/uuid": "^4.7",
-                "symfony/mime": "^6.3 || ^7.0"
-            },
-            "require-dev": {
-                "ext-curl": "*",
-                "ext-posix": "*",
-                "guzzlehttp/guzzle": "^7.9",
-                "php-http/curl-client": "^2.3",
-                "php-http/message": "^1.16",
-                "phpstan/phpstan": "^2.1",
-                "phpunit/phpunit": "^9.6",
-                "symfony/dotenv": "^6.3 || ^7.0",
-                "symfony/http-client": "^6.3 || ^7.0"
-            },
-            "type": "library",
-            "extra": {
-                "exclude-from-classmap": [
-                    "/tests/",
-                    "/vendor/phpunit/",
-                    "/vendor/symfony/dotenv/"
-                ]
-            },
-            "autoload": {
-                "psr-4": {
-                    "Partitech\\PhpMistral\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Connect to Mistral | Anthropic | Xai | Hugging Face | LamaC++ | Vllm | Ollama",
-            "support": {
-                "issues": "https://github.com/partITech/php-mistral/issues",
-                "source": "https://github.com/partITech/php-mistral/tree/v0.1.29"
-            },
-            "time": "2026-05-05T08:27:21+00:00"
         },
         {
             "name": "pear/archive_tar",
@@ -7717,141 +5751,6 @@
                 "source": "https://github.com/phootwork/lang/tree/v3.2.3"
             },
             "time": "2024-10-03T13:43:19+00:00"
-        },
-        {
-            "name": "php-http/discovery",
-            "version": "1.20.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/php-http/discovery.git",
-                "reference": "82fe4c73ef3363caed49ff8dd1539ba06044910d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/php-http/discovery/zipball/82fe4c73ef3363caed49ff8dd1539ba06044910d",
-                "reference": "82fe4c73ef3363caed49ff8dd1539ba06044910d",
-                "shasum": ""
-            },
-            "require": {
-                "composer-plugin-api": "^1.0|^2.0",
-                "php": "^7.1 || ^8.0"
-            },
-            "conflict": {
-                "nyholm/psr7": "<1.0",
-                "zendframework/zend-diactoros": "*"
-            },
-            "provide": {
-                "php-http/async-client-implementation": "*",
-                "php-http/client-implementation": "*",
-                "psr/http-client-implementation": "*",
-                "psr/http-factory-implementation": "*",
-                "psr/http-message-implementation": "*"
-            },
-            "require-dev": {
-                "composer/composer": "^1.0.2|^2.0",
-                "graham-campbell/phpspec-skip-example-extension": "^5.0",
-                "php-http/httplug": "^1.0 || ^2.0",
-                "php-http/message-factory": "^1.0",
-                "phpspec/phpspec": "^5.1 || ^6.1 || ^7.3",
-                "sebastian/comparator": "^3.0.5 || ^4.0.8",
-                "symfony/phpunit-bridge": "^6.4.4 || ^7.0.1"
-            },
-            "type": "composer-plugin",
-            "extra": {
-                "class": "Http\\Discovery\\Composer\\Plugin",
-                "plugin-optional": true
-            },
-            "autoload": {
-                "psr-4": {
-                    "Http\\Discovery\\": "src/"
-                },
-                "exclude-from-classmap": [
-                    "src/Composer/Plugin.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Márk Sági-Kazár",
-                    "email": "mark.sagikazar@gmail.com"
-                }
-            ],
-            "description": "Finds and installs PSR-7, PSR-17, PSR-18 and HTTPlug implementations",
-            "homepage": "http://php-http.org",
-            "keywords": [
-                "adapter",
-                "client",
-                "discovery",
-                "factory",
-                "http",
-                "message",
-                "psr17",
-                "psr7"
-            ],
-            "support": {
-                "issues": "https://github.com/php-http/discovery/issues",
-                "source": "https://github.com/php-http/discovery/tree/1.20.0"
-            },
-            "time": "2024-10-02T11:20:13+00:00"
-        },
-        {
-            "name": "php-http/multipart-stream-builder",
-            "version": "1.4.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/php-http/multipart-stream-builder.git",
-                "reference": "10086e6de6f53489cca5ecc45b6f468604d3460e"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/php-http/multipart-stream-builder/zipball/10086e6de6f53489cca5ecc45b6f468604d3460e",
-                "reference": "10086e6de6f53489cca5ecc45b6f468604d3460e",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^7.1 || ^8.0",
-                "php-http/discovery": "^1.15",
-                "psr/http-factory-implementation": "^1.0"
-            },
-            "require-dev": {
-                "nyholm/psr7": "^1.0",
-                "php-http/message": "^1.5",
-                "php-http/message-factory": "^1.0.2",
-                "phpunit/phpunit": "^7.5.15 || ^8.5 || ^9.3"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Http\\Message\\MultipartStream\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Tobias Nyholm",
-                    "email": "tobias.nyholm@gmail.com"
-                }
-            ],
-            "description": "A builder class that help you create a multipart stream",
-            "homepage": "http://php-http.org",
-            "keywords": [
-                "factory",
-                "http",
-                "message",
-                "multipart stream",
-                "stream"
-            ],
-            "support": {
-                "issues": "https://github.com/php-http/multipart-stream-builder/issues",
-                "source": "https://github.com/php-http/multipart-stream-builder/tree/1.4.2"
-            },
-            "time": "2024-09-04T13:22:54+00:00"
         },
         {
             "name": "php-tuf/composer-stager",
@@ -8734,160 +6633,6 @@
                 "source": "https://github.com/ralouphie/getallheaders/tree/develop"
             },
             "time": "2019-03-08T08:55:37+00:00"
-        },
-        {
-            "name": "ramsey/collection",
-            "version": "2.1.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/ramsey/collection.git",
-                "reference": "344572933ad0181accbf4ba763e85a0306a8c5e2"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2",
-                "reference": "344572933ad0181accbf4ba763e85a0306a8c5e2",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1"
-            },
-            "require-dev": {
-                "captainhook/plugin-composer": "^5.3",
-                "ergebnis/composer-normalize": "^2.45",
-                "fakerphp/faker": "^1.24",
-                "hamcrest/hamcrest-php": "^2.0",
-                "jangregor/phpstan-prophecy": "^2.1",
-                "mockery/mockery": "^1.6",
-                "php-parallel-lint/php-console-highlighter": "^1.0",
-                "php-parallel-lint/php-parallel-lint": "^1.4",
-                "phpspec/prophecy-phpunit": "^2.3",
-                "phpstan/extension-installer": "^1.4",
-                "phpstan/phpstan": "^2.1",
-                "phpstan/phpstan-mockery": "^2.0",
-                "phpstan/phpstan-phpunit": "^2.0",
-                "phpunit/phpunit": "^10.5",
-                "ramsey/coding-standard": "^2.3",
-                "ramsey/conventional-commits": "^1.6",
-                "roave/security-advisories": "dev-latest"
-            },
-            "type": "library",
-            "extra": {
-                "captainhook": {
-                    "force-install": true
-                },
-                "ramsey/conventional-commits": {
-                    "configFile": "conventional-commits.json"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Ramsey\\Collection\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Ben Ramsey",
-                    "email": "ben@benramsey.com",
-                    "homepage": "https://benramsey.com"
-                }
-            ],
-            "description": "A PHP library for representing and manipulating collections.",
-            "keywords": [
-                "array",
-                "collection",
-                "hash",
-                "map",
-                "queue",
-                "set"
-            ],
-            "support": {
-                "issues": "https://github.com/ramsey/collection/issues",
-                "source": "https://github.com/ramsey/collection/tree/2.1.1"
-            },
-            "time": "2025-03-22T05:38:12+00:00"
-        },
-        {
-            "name": "ramsey/uuid",
-            "version": "4.9.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/ramsey/uuid.git",
-                "reference": "1df15849d00943a67d677dc9cfd80795f038c9f8"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/ramsey/uuid/zipball/1df15849d00943a67d677dc9cfd80795f038c9f8",
-                "reference": "1df15849d00943a67d677dc9cfd80795f038c9f8",
-                "shasum": ""
-            },
-            "require": {
-                "brick/math": ">=0.8.16 <=0.18",
-                "php": "^8.0",
-                "ramsey/collection": "^1.2 || ^2.0"
-            },
-            "replace": {
-                "rhumsaa/uuid": "self.version"
-            },
-            "require-dev": {
-                "captainhook/captainhook": "^5.25",
-                "captainhook/plugin-composer": "^5.3",
-                "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
-                "ergebnis/composer-normalize": "^2.47",
-                "mockery/mockery": "^1.6",
-                "paragonie/random-lib": "^2",
-                "php-mock/php-mock": "^2.6",
-                "php-mock/php-mock-mockery": "^1.5",
-                "php-parallel-lint/php-parallel-lint": "^1.4.0",
-                "phpbench/phpbench": "^1.2.14",
-                "phpstan/extension-installer": "^1.4",
-                "phpstan/phpstan": "^2.1",
-                "phpstan/phpstan-mockery": "^2.0",
-                "phpstan/phpstan-phpunit": "^2.0",
-                "phpunit/phpunit": "^9.6",
-                "slevomat/coding-standard": "^8.18",
-                "squizlabs/php_codesniffer": "^3.13"
-            },
-            "suggest": {
-                "ext-bcmath": "Enables faster math with arbitrary-precision integers using BCMath.",
-                "ext-gmp": "Enables faster math with arbitrary-precision integers using GMP.",
-                "ext-uuid": "Enables the use of PeclUuidTimeGenerator and PeclUuidRandomGenerator.",
-                "paragonie/random-lib": "Provides RandomLib for use with the RandomLibAdapter",
-                "ramsey/uuid-doctrine": "Allows the use of Ramsey\\Uuid\\Uuid as Doctrine field type."
-            },
-            "type": "library",
-            "extra": {
-                "captainhook": {
-                    "force-install": true
-                }
-            },
-            "autoload": {
-                "files": [
-                    "src/functions.php"
-                ],
-                "psr-4": {
-                    "Ramsey\\Uuid\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "A PHP library for generating and working with universally unique identifiers (UUIDs).",
-            "keywords": [
-                "guid",
-                "identifier",
-                "uuid"
-            ],
-            "support": {
-                "issues": "https://github.com/ramsey/uuid/issues",
-                "source": "https://github.com/ramsey/uuid/tree/4.9.3"
-            },
-            "time": "2026-06-18T03:57:49+00:00"
         },
         {
             "name": "revolt/event-loop",
@@ -14103,57 +11848,6 @@
                 "source": "https://github.com/webmozarts/assert/tree/2.4.1"
             },
             "time": "2026-06-15T15:31:57+00:00"
-        },
-        {
-            "name": "yethee/tiktoken",
-            "version": "0.5.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/yethee/tiktoken-php.git",
-                "reference": "94a4ac18ab505198f5a0955948ab29ce659c1697"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/yethee/tiktoken-php/zipball/94a4ac18ab505198f5a0955948ab29ce659c1697",
-                "reference": "94a4ac18ab505198f5a0955948ab29ce659c1697",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1",
-                "symfony/service-contracts": "^2.5 || ^3.0"
-            },
-            "require-dev": {
-                "doctrine/coding-standard": "^12.0",
-                "mikey179/vfsstream": "^1.6.11",
-                "phpbench/phpbench": "^1.2",
-                "phpunit/phpunit": "^10.5.20",
-                "psalm/plugin-phpunit": "^0.19.0",
-                "vimeo/psalm": "5.25.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Yethee\\Tiktoken\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "PHP version of tiktoken",
-            "keywords": [
-                "bpe",
-                "decode",
-                "encode",
-                "openai",
-                "tiktoken",
-                "tokenizer"
-            ],
-            "support": {
-                "issues": "https://github.com/yethee/tiktoken-php/issues",
-                "source": "https://github.com/yethee/tiktoken-php/tree/0.5.1"
-            },
-            "time": "2024-07-17T10:09:02+00:00"
         }
     ],
     "packages-dev": [
@@ -14291,6 +11985,65 @@
                 "source": "https://github.com/minkphp/MinkBrowserKitDriver/tree/v2.3.0"
             },
             "time": "2025-11-22T12:42:18+00:00"
+        },
+        {
+            "name": "brick/math",
+            "version": "0.18.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/brick/math.git",
+                "reference": "82944324d1c1bdb2c2618e89978d4e2ad78d69ad"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/brick/math/zipball/82944324d1c1bdb2c2618e89978d4e2ad78d69ad",
+                "reference": "82944324d1c1bdb2c2618e89978d4e2ad78d69ad",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "2.1.22",
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Brick\\Math\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Arbitrary-precision arithmetic library",
+            "keywords": [
+                "Arbitrary-precision",
+                "BigInteger",
+                "BigRational",
+                "arithmetic",
+                "bigdecimal",
+                "bignum",
+                "bignumber",
+                "brick",
+                "decimal",
+                "integer",
+                "math",
+                "mathematics",
+                "rational"
+            ],
+            "support": {
+                "issues": "https://github.com/brick/math/issues",
+                "source": "https://github.com/brick/math/tree/0.18.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/BenMorel",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-06-14T18:21:03+00:00"
         },
         {
             "name": "colinodell/psr-testlogger",
@@ -16210,6 +13963,85 @@
             "time": "2022-02-21T01:04:05+00:00"
         },
         {
+            "name": "php-http/discovery",
+            "version": "1.20.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-http/discovery.git",
+                "reference": "82fe4c73ef3363caed49ff8dd1539ba06044910d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-http/discovery/zipball/82fe4c73ef3363caed49ff8dd1539ba06044910d",
+                "reference": "82fe4c73ef3363caed49ff8dd1539ba06044910d",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^1.0|^2.0",
+                "php": "^7.1 || ^8.0"
+            },
+            "conflict": {
+                "nyholm/psr7": "<1.0",
+                "zendframework/zend-diactoros": "*"
+            },
+            "provide": {
+                "php-http/async-client-implementation": "*",
+                "php-http/client-implementation": "*",
+                "psr/http-client-implementation": "*",
+                "psr/http-factory-implementation": "*",
+                "psr/http-message-implementation": "*"
+            },
+            "require-dev": {
+                "composer/composer": "^1.0.2|^2.0",
+                "graham-campbell/phpspec-skip-example-extension": "^5.0",
+                "php-http/httplug": "^1.0 || ^2.0",
+                "php-http/message-factory": "^1.0",
+                "phpspec/phpspec": "^5.1 || ^6.1 || ^7.3",
+                "sebastian/comparator": "^3.0.5 || ^4.0.8",
+                "symfony/phpunit-bridge": "^6.4.4 || ^7.0.1"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "class": "Http\\Discovery\\Composer\\Plugin",
+                "plugin-optional": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "Http\\Discovery\\": "src/"
+                },
+                "exclude-from-classmap": [
+                    "src/Composer/Plugin.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Márk Sági-Kazár",
+                    "email": "mark.sagikazar@gmail.com"
+                }
+            ],
+            "description": "Finds and installs PSR-7, PSR-17, PSR-18 and HTTPlug implementations",
+            "homepage": "http://php-http.org",
+            "keywords": [
+                "adapter",
+                "client",
+                "discovery",
+                "factory",
+                "http",
+                "message",
+                "psr17",
+                "psr7"
+            ],
+            "support": {
+                "issues": "https://github.com/php-http/discovery/issues",
+                "source": "https://github.com/php-http/discovery/tree/1.20.0"
+            },
+            "time": "2024-10-02T11:20:13+00:00"
+        },
+        {
             "name": "php-http/guzzle7-adapter",
             "version": "1.1.0",
             "source": {
@@ -17163,6 +14995,160 @@
                 }
             ],
             "time": "2026-07-06T14:52:39+00:00"
+        },
+        {
+            "name": "ramsey/collection",
+            "version": "2.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ramsey/collection.git",
+                "reference": "344572933ad0181accbf4ba763e85a0306a8c5e2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2",
+                "reference": "344572933ad0181accbf4ba763e85a0306a8c5e2",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "captainhook/plugin-composer": "^5.3",
+                "ergebnis/composer-normalize": "^2.45",
+                "fakerphp/faker": "^1.24",
+                "hamcrest/hamcrest-php": "^2.0",
+                "jangregor/phpstan-prophecy": "^2.1",
+                "mockery/mockery": "^1.6",
+                "php-parallel-lint/php-console-highlighter": "^1.0",
+                "php-parallel-lint/php-parallel-lint": "^1.4",
+                "phpspec/prophecy-phpunit": "^2.3",
+                "phpstan/extension-installer": "^1.4",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-mockery": "^2.0",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpunit/phpunit": "^10.5",
+                "ramsey/coding-standard": "^2.3",
+                "ramsey/conventional-commits": "^1.6",
+                "roave/security-advisories": "dev-latest"
+            },
+            "type": "library",
+            "extra": {
+                "captainhook": {
+                    "force-install": true
+                },
+                "ramsey/conventional-commits": {
+                    "configFile": "conventional-commits.json"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Ramsey\\Collection\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ben Ramsey",
+                    "email": "ben@benramsey.com",
+                    "homepage": "https://benramsey.com"
+                }
+            ],
+            "description": "A PHP library for representing and manipulating collections.",
+            "keywords": [
+                "array",
+                "collection",
+                "hash",
+                "map",
+                "queue",
+                "set"
+            ],
+            "support": {
+                "issues": "https://github.com/ramsey/collection/issues",
+                "source": "https://github.com/ramsey/collection/tree/2.1.1"
+            },
+            "time": "2025-03-22T05:38:12+00:00"
+        },
+        {
+            "name": "ramsey/uuid",
+            "version": "4.9.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ramsey/uuid.git",
+                "reference": "1df15849d00943a67d677dc9cfd80795f038c9f8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ramsey/uuid/zipball/1df15849d00943a67d677dc9cfd80795f038c9f8",
+                "reference": "1df15849d00943a67d677dc9cfd80795f038c9f8",
+                "shasum": ""
+            },
+            "require": {
+                "brick/math": ">=0.8.16 <=0.18",
+                "php": "^8.0",
+                "ramsey/collection": "^1.2 || ^2.0"
+            },
+            "replace": {
+                "rhumsaa/uuid": "self.version"
+            },
+            "require-dev": {
+                "captainhook/captainhook": "^5.25",
+                "captainhook/plugin-composer": "^5.3",
+                "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+                "ergebnis/composer-normalize": "^2.47",
+                "mockery/mockery": "^1.6",
+                "paragonie/random-lib": "^2",
+                "php-mock/php-mock": "^2.6",
+                "php-mock/php-mock-mockery": "^1.5",
+                "php-parallel-lint/php-parallel-lint": "^1.4.0",
+                "phpbench/phpbench": "^1.2.14",
+                "phpstan/extension-installer": "^1.4",
+                "phpstan/phpstan": "^2.1",
+                "phpstan/phpstan-mockery": "^2.0",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpunit/phpunit": "^9.6",
+                "slevomat/coding-standard": "^8.18",
+                "squizlabs/php_codesniffer": "^3.13"
+            },
+            "suggest": {
+                "ext-bcmath": "Enables faster math with arbitrary-precision integers using BCMath.",
+                "ext-gmp": "Enables faster math with arbitrary-precision integers using GMP.",
+                "ext-uuid": "Enables the use of PeclUuidTimeGenerator and PeclUuidRandomGenerator.",
+                "paragonie/random-lib": "Provides RandomLib for use with the RandomLibAdapter",
+                "ramsey/uuid-doctrine": "Allows the use of Ramsey\\Uuid\\Uuid as Doctrine field type."
+            },
+            "type": "library",
+            "extra": {
+                "captainhook": {
+                    "force-install": true
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/functions.php"
+                ],
+                "psr-4": {
+                    "Ramsey\\Uuid\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "A PHP library for generating and working with universally unique identifiers (UUIDs).",
+            "keywords": [
+                "guid",
+                "identifier",
+                "uuid"
+            ],
+            "support": {
+                "issues": "https://github.com/ramsey/uuid/issues",
+                "source": "https://github.com/ramsey/uuid/tree/4.9.3"
+            },
+            "time": "2026-06-18T03:57:49+00:00"
         },
         {
             "name": "react/promise",
@@ -19189,13 +17175,7 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {
-        "drupal/ai_metering": 10,
-        "drupal/ai_provider_mistral": 5,
-        "drupal/ai_provider_nanobanana": 10,
-        "drupal/ai_provider_ollama": 5,
-        "drupal/flowdrop_ai_provider": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {},

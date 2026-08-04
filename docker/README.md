@@ -39,6 +39,67 @@ remember, and a failed upgrade leaves the previous database intact.
 > `hook_update_N` — it automates invoking it and wraps it in a snapshot + health
 > gate. Schema/data changes ride in `hook_update_N` / `hook_post_update`.
 
+### The upgrade floor — how far back a release can migrate
+
+`hook_update_N` migrates forward from any older state, right up until a release
+**deletes the code an older site still needs**. Uninstalling a module is the case
+that bites: the update that uninstalls `drupal/ai` has to run while `drupal/ai` is
+still in the image, so the release that finally drops it from `composer.json`
+cannot perform that uninstall — it can only migrate sites that already did.
+
+Each image therefore **declares the oldest version whose database it will migrate**,
+in [`upgrade-floor`](upgrade-floor) (one bare `X.Y.Z`; its header documents when to
+raise it). One file, read twice:
+
+| Carrier                             | Read by                             | Purpose                          |
+| ----------------------------------- | ----------------------------------- | -------------------------------- |
+| `/etc/atelier/upgrade-floor` (file) | `converge.sh`, inside the container | **enforcement**                  |
+| `dev.atelier.upgrade.min-from` (OCI label) | the manager, **from the registry** | **planning, before pulling** |
+
+The label is stamped by the release workflow *from the file*, so the enforced floor
+and the advertised one can't disagree.
+
+**Enforcement.** On upgrade, converge compares the floor against
+`aincient.appliance_version` — the version State records after every successful
+converge — and if the site is older it **refuses before touching the database**,
+naming the version to go through. Nothing is migrated, so running the previous
+image again is a clean revert. Recorded as `converge.result=too-old`, which the
+[updater sidecar](#one-click-upgrade-the-updater-sidecar) treats like any other bad
+outcome and re-pins the previous image for.
+
+A site with **no** recorded version (it converged before this recording existed)
+warns and proceeds under the snapshot rather than being refused — refusing every
+unrecorded site would strand installs that are perfectly current. An `edge` build
+records `edge+<sha>`, which has no position in the version order, so it is
+unverifiable in the same way.
+
+### The other refusal: code this image no longer ships
+
+The floor compares **versions**, and the sites most exposed to a package removal are on `edge`
+builds whose `edge+<sha>` stamp has no position in the version order at all — nothing
+version-shaped can gate them. So converge runs a second, version-free check.
+
+If a module is **installed** but its code isn't in the image, Drupal cannot boot: it resolves
+every installed extension's path when the service container is compiled and fatals on the
+missing one, long before `updatedb` or `cim` could uninstall it. Converge reads the installed
+set out of `core.extension` (with `sql:query` — **bootstrap-free by necessity**, since the very
+condition it detects is what makes bootstrapping impossible) and compares it against the
+`*.info.yml` files on disk. Anything installed and absent → refuse before the snapshot, naming
+the modules, `converge.result=missing-code`.
+
+Themes count too; they fail the same way for the same reason. An unreadable or empty answer is
+**unknown**, never "nothing is installed" — it warns and stands aside, because the snapshot and
+rollback are still there.
+
+This is what protects a site that never ran the `drupal/ai` uninstall from the release that
+dropped those packages, and it generalises: every future release that removes a module is
+covered without anyone predicting which one.
+
+**Planning.** Enforcement alone leaves the operator to work the route out by hand,
+so `atelier app update` reads these labels from the registry (no pull), walks them
+backwards until it finds a version this install satisfies, and offers to apply the
+hops in order — `0.1.1 → 0.3.0 → 0.4.0`. See the manager's README.
+
 ### Config on update — site-owned config is never clobbered
 
 On upgrade converge runs `drush config:import`, so a release ships config changes

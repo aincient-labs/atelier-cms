@@ -25,16 +25,6 @@
         "composer/installers": "^2.3",
         "cweagans/composer-patches": "^1.7.3",
         "drupal/admin_theme": "^1.1",
-        "drupal/ai": "^1.4.4",
-        "drupal/ai_agents": "^1.3.2",
-        "drupal/ai_metering": "^1.0@beta",
-        "drupal/ai_provider_anthropic": "^1.2.2",
-        "drupal/ai_provider_litellm": "^1.2",
-        "drupal/ai_provider_mistral": "^1.1@RC",
-        "drupal/ai_provider_nanobanana": "^1.0@beta",
-        "drupal/ai_provider_ollama": "^1.2@rc",
-        "drupal/ai_provider_openai": "^1.2.3",
-        "drupal/ai_provider_openrouter": "^1.1.6",
         "drupal/coffee": "^2.0.1",
         "drupal/config_ignore": "^3.4",
         "drupal/config_split": "^2.0.2",
@@ -46,9 +36,7 @@
         "drupal/csv_serialization": "^4.0",
         "drupal/file_mdm": "^3.2",
         "drupal/flowdrop": "^2",
-        "drupal/flowdrop_ai_provider": "2.x-dev",
         "drupal/focal_point": "^2.1",
-        "drupal/gemini_provider": "^1.0.1",
         "drupal/image_style_quality": "^1.7",
         "drupal/image_widget_crop": "^3.0",
         "drupal/imagemagick": "^5.0.1",
@@ -132,34 +120,10 @@
         }
     },
     "extra": {
-        "_uninstalled-pending-removal": {
-            "_why": "Packages still in require whose Drupal module is UNINSTALLED. They stay on disk for one release because drush pm:uninstall needs the module's hook_uninstall and schema to drop its tables cleanly — dropping the package first deletes the code before the uninstall can use it. Remove from require in the NEXT release, not this one. A bare requirement for a module nobody installs is otherwise indistinguishable from an oversight.",
-            "drupal/ai_metering": "Superseded by aincient_core's own aincient_ai_usage table, UsageLog writer and /admin/reports/aincient/usage. Quotas were dropped outright.",
-            "drupal/ai_provider_anthropic": "Inference runs on aincient_core's own adapters over symfony/ai bridges (Inference/Adapter/AnthropicAdapter). Connecting a provider is storing a credential, not installing a module.",
-            "drupal/ai_provider_litellm": "Never installed; superseded by Inference/Adapter/OpenAiCompatibleAdapter (a LiteLLM proxy is just an OpenAI-compatible base URL).",
-            "drupal/ai_provider_mistral": "Superseded by Inference/Adapter/OpenAiCompatibleAdapter.",
-            "drupal/ai_provider_nanobanana": "Superseded by Inference/Adapter/NanoBananaAdapter over symfony/ai-gemini-platform.",
-            "drupal/ai_provider_ollama": "Superseded by Inference/Adapter/OllamaAdapter over symfony/ai-ollama-platform. Ollama IS supported again — through our own adapter, not this module.",
-            "drupal/ai_provider_openai": "Superseded by Inference/Adapter/OpenAiCompatibleAdapter.",
-            "drupal/ai_provider_openrouter": "Superseded by Inference/Adapter/OpenAiCompatibleAdapter.",
-            "drupal/flowdrop_ai_provider": "Uninstalled with its AI Assistant (flowdrop_chat); it reasoned through the removed drupal/ai provider plugins. Superseded by aincient_core Inference/SymfonyAiReasoner + aincient_flows SimpleChat (the flowdrop_ai_provider_simple_chat node type keeps its id). No live code references it — only docblock prose. Still pinned 2.x-dev, which is what holds minimum-stability: dev, so dropping it should retire that gate. It also requires drupal/ai_agents, so remove both together or composer pulls ai_agents back transitively.",
-            "drupal/ai": "The framework itself, now uninstalled too. Nothing in web/modules/custom references a Drupal\\ai class, the ai.provider service or a plugin.manager.ai_*. Its last hold was aincient_core/aincient_chat declaring it for one boolean — 'is a chat provider pinned?' — which now asks the role layer (ModelRoleResolver::binding) instead of ai.settings:default_providers.chat. Removing the package also retires patches/ai-tools-null-parameters.patch, which patches reasoning code nothing runs.",
-            "drupal/ai_agents": "Uninstalled with ai. Nothing referenced it; its four config entities were the module's own shipped defaults. NOTE: drupal/flowdrop_ai_provider requires it, so remove both in the same commit or composer pulls it back transitively.",
-            "drupal/modeler_api": "Not a direct requirement — listed here because it was ai_agents' transitive dependency and was uninstalled alongside it. It leaves with ai_agents.",
-            "drupal/gemini_provider": "Uninstalled. Its provider plugin was never loaded after inference moved to Inference/Adapter/GeminiAdapter; update_11009 rescued its credential pointer (gemini_provider.settings was the pointer for BOTH gemini and nanobanana) onto the durable State keys first. Removing the package also retires patches/gemini-return-tool-calls.patch, which patches that unused plugin."
-        },
+        "_removed-with-drupal-ai": "The two-release uninstall window closed here. drupal/ai, ai_agents, ai_metering, gemini_provider, flowdrop_ai_provider and the seven ai_provider_* packages were UNINSTALLED in the release that shipped as v0.1.0 (config/sync stopped listing them, so converge's config:import uninstalls them) and are now dropped from require, along with the three patches that only ever patched their code. The window existed because drush pm:uninstall needs a module's own hook_uninstall and schema to drop its tables cleanly — dropping the package first would delete the code before the uninstall could use it. Any site on v0.1.0 or newer has already been through that uninstall and upgrades here directly. A site that never did (a pre-v0.1.0 :edge build) still has them installed, and cannot boot without their code at all — which is why docker/converge.sh refuses that upgrade outright, naming the modules, before touching the database. See .dev DECISIONS 0295 (the uninstalls) and 0320 (this removal).",
         "enable-patching": true,
         "composer-exit-on-patch-failure": true,
         "patches": {
-            "drupal/ai": {
-                "Render a valid JSON Schema for no-argument tools (never \"parameters\": null, which breaks LiteLLM->Anthropic)": "patches/ai-tools-null-parameters.patch"
-            },
-            "drupal/ai_provider_nanobanana": {
-                "Tolerate an unset API key on a keyless boot (no NULL into typed string)": "patches/nanobanana-null-key.patch"
-            },
-            "drupal/gemini_provider": {
-                "Support caller-driven tool calling: return tool calls (don't execute in-provider) and replay tool-call/result history (FlowDrop tool routing)": "patches/gemini-return-tool-calls.patch"
-            },
             "drupal/admin_theme": {
                 "PHP 8.4: use explicit nullable type on isAdminRoute() param": "patches/admin-theme-nullable-route.patch"
             }
@@ -177,8 +141,7 @@
                 "type:drupal-library"
             ],
             "web/modules/engine/{$name}": [
-                "drupal/flowdrop",
-                "drupal/flowdrop_ai_provider"
+                "drupal/flowdrop"
             ],
             "web/modules/contrib/{$name}": [
                 "type:drupal-module"

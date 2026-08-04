@@ -7,6 +7,11 @@
 #   MOCK_INSTALLED=1      status reports a bootstrapped (installed) site
 #   MOCK_UPDATEDB_FAIL=1  updatedb fails (simulates a bad migration)
 #   MOCK_CIM_FAIL=1       config:import fails (simulates a bad config import)
+#   MOCK_STATE_<key>      seeds State, e.g. MOCK_STATE_aincient_appliance_version
+#                         (dots → underscores) — what the upgrade floor reads
+#   MOCK_CORE_EXTENSION   serialized core.extension blob returned for the
+#                         installed-extension read (unset = query returns nothing)
+#   MOCK_CORE_EXTENSION_FAIL=1  that query fails outright
 #
 # On sql:dump it writes a real .gz so restore_snapshot's `[ -f ]` + zcat work.
 #
@@ -21,6 +26,12 @@ set -- "${args[@]}"
 printf '%s\n' "$*" >> "$DRUSH_LOG"
 
 case "$*" in
+  *core.extension*)
+    # The bootstrap-free installed-extension read. MOCK_CORE_EXTENSION holds the
+    # serialized blob; unset means "the query returned nothing", which converge
+    # must treat as unknown rather than as an empty install.
+    printf '%s' "${MOCK_CORE_EXTENSION:-}"
+    exit "${MOCK_CORE_EXTENSION_FAIL:-0}" ;;
   "sql:query"*)                     exit "${MOCK_DB_READY:-0}" ;;
   "status --field=bootstrap"*)      [ "${MOCK_INSTALLED:-0}" = "1" ] && echo "Successful" ; exit 0 ;;
   "status --field=drupal-version"*) echo "11.3.10" ; exit 0 ;;
@@ -32,6 +43,14 @@ case "$*" in
     [ -n "$f" ] && { echo "snapshot-data" | gzip > "${f}.gz"; }
     echo "Database dump saved"
     exit 0 ;;
+  "state:get "*)
+    # `state:get <key> --format=string` → the seeded value, or nothing.
+    key="$2"
+    var="MOCK_STATE_${key//./_}"
+    printf '%s' "${!var:-}"
+    [ -n "${!var:-}" ] && echo
+    exit 0 ;;
+  "state:set "*)                    exit 0 ;;
   "updatedb"*)                      exit "${MOCK_UPDATEDB_FAIL:-0}" ;;
   "config:import"*)                 exit "${MOCK_CIM_FAIL:-0}" ;;
   "cache:rebuild"*)                 exit 0 ;;

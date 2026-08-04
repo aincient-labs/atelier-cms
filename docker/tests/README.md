@@ -46,6 +46,28 @@ E2E_BASE_IMAGE=aincient/cms:dev ./upgrade-e2e.sh   # reuse a prebuilt image (fas
 > `../README.md` "Known release blocker"). The sidecar **rollback** assertions pass. Wire
 > this into CI once fresh install is fixed.
 
+## Integration — `upgrade-floor-e2e.sh` (the two upgrade REFUSALS)
+
+Same harness as `upgrade-e2e.sh` (ephemeral registry, isolated compose project, derived
+images pushed under one tag), pointed at the guards that stop an upgrade the appliance
+cannot perform. `converge.bats` proves the branching against a mock drush; only this
+proves the query really reads PostgreSQL's `bytea` column, that a refusal leaves a **real**
+database untouched, and that the sidecar re-pins for the new `converge.result` values.
+
+Three scenarios: **too-old** (site below the incoming image's declared floor), **missing-code**
+(an installed module whose code the image no longer ships — the shape of dropping
+`drupal/ai`), and a **control** proving an image whose floor the site *does* satisfy still
+upgrades normally. The control is the point: without it the first two would pass equally well
+if we had simply broken upgrading.
+
+```bash
+./upgrade-floor-e2e.sh                                  # builds the appliance image (slow)
+E2E_BASE_IMAGE=aincient/cms:dev ./upgrade-floor-e2e.sh  # reuse a prebuilt image (fast)
+```
+
+> The base image must carry the **current** `converge.sh` — a prebuilt image from before the
+> guards exists will pass scenario 3 and silently skip the refusals.
+
 ## CI
 
 `.github/workflows/ci.yml` runs all three suites as parallel jobs on push / PR to
