@@ -70,6 +70,37 @@ final class OpenAiCompatibleAdapterTest extends TestCase {
   }
 
   /**
+   * The same adapter as a named preset: a baked base URL, nothing to type.
+   */
+  private function preset(string $id, string $apiBase, Response|\Throwable|NULL $result = NULL): OpenAiCompatibleAdapter {
+    $this->requested = [];
+    $client = $this->createMock(ClientInterface::class);
+    if ($result === NULL) {
+      $client->expects($this->never())->method('request');
+    }
+    else {
+      $client->method('request')->willReturnCallback(
+        function (string $method, string $url) use ($result): Response {
+          $this->requested[] = $url;
+          if ($result instanceof \Throwable) {
+            throw $result;
+          }
+          return $result;
+        },
+      );
+    }
+    return new OpenAiCompatibleAdapter(
+      $this->createMock(HttpClientInterface::class),
+      $client,
+      $this->createMock(LoggerInterface::class),
+      $id,
+      ucfirst($id),
+      'A preset.',
+      $apiBase,
+    );
+  }
+
+  /**
    * Builds a `/v1/models` body from bare ids.
    *
    * @param list<string> $ids
@@ -222,6 +253,79 @@ final class OpenAiCompatibleAdapterTest extends TestCase {
       [],
       $this->adapter($down)->listChatModels('sk-test', 'https://ai.example'),
     );
+  }
+
+  /**
+   * A preset asks for a key and nothing else.
+   *
+   * The point of the whole preset mechanism: with the base URL baked in there is
+   * one field left, so the shape drops from `api_key_endpoint` to `api_key` and
+   * the connect step stops asking for a URL the operator would have to go find.
+   */
+  public function testAPresetAsksForNothingButAKey(): void {
+    $preset = $this->preset('deepseek', 'https://api.deepseek.com/v1');
+
+    $this->assertSame('deepseek', $preset->id());
+    $this->assertSame(ProviderAdapterInterface::AUTH_KEY, $preset->authShape());
+    // Unlike the generic row, which cannot work without one.
+    $this->assertSame(ProviderAdapterInterface::AUTH_KEY_ENDPOINT, $this->adapter(NULL)->authShape());
+  }
+
+  /**
+   * A preset builds a platform from a key alone, and still refuses an empty one.
+   */
+  public function testAPresetNeedsOnlyTheKey(): void {
+    $this->preset('deepseek', 'https://api.deepseek.com/v1')->createPlatform('sk-test', '');
+
+    $this->expectException(ProviderConfigurationException::class);
+    $this->preset('deepseek', 'https://api.deepseek.com/v1')->createPlatform('   ', '');
+  }
+
+  /**
+   * A preset's base URL is not `/v1` for everyone.
+   *
+   * GLM mounts the OpenAI shape under `/api/paas/v4`, Qwen under
+   * `/compatible-mode/v1`. The hardcoded `/v1` this adapter used to append is
+   * exactly what made those vendors unreachable through it, so the preset's base
+   * is used verbatim.
+   *
+   * @dataProvider presetBases
+   */
+  public function testAPresetTalksToItsOwnBase(string $id, string $apiBase, string $expected): void {
+    $this->preset($id, $apiBase, $this->catalogue(['whatever']))->listChatModels('sk-test', '');
+
+    $this->assertSame($expected, $this->requested[0]);
+  }
+
+  /**
+   * The bases actually registered as presets, and the URL each must produce.
+   */
+  public static function presetBases(): array {
+    return [
+      'deepseek' => ['deepseek', 'https://api.deepseek.com/v1', 'https://api.deepseek.com/v1/models'],
+      'kimi' => ['kimi', 'https://api.moonshot.ai/v1', 'https://api.moonshot.ai/v1/models'],
+      'glm (not /v1)' => ['glm', 'https://api.z.ai/api/paas/v4', 'https://api.z.ai/api/paas/v4/models'],
+      'qwen (not /v1)' => [
+        'qwen',
+        'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+        'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models',
+      ],
+    ];
+  }
+
+  /**
+   * A stored endpoint cannot redirect a named vendor.
+   *
+   * `PlatformRegistry` passes whatever sits in `aincient.<provider>_endpoint`,
+   * and a preset has no field that writes it — so a value there is either
+   * leftover or hostile. Either way the vendor whose name is on the row is the
+   * vendor we call.
+   */
+  public function testAStoredEndpointCannotRedirectAPreset(): void {
+    $this->preset('deepseek', 'https://api.deepseek.com/v1', $this->catalogue(['deepseek-chat']))
+      ->listChatModels('sk-test', 'https://elsewhere.example');
+
+    $this->assertSame('https://api.deepseek.com/v1/models', $this->requested[0]);
   }
 
   /**

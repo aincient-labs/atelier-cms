@@ -145,9 +145,13 @@ the pushed image is the exact one smoke validated.
 docker pull ghcr.io/aincient-labs/atelier-cms:latest   # or :v1.2.3 / :edge
 ```
 
-`docker/compose.yaml` already defaults `AINCIENT_IMAGE` to
-`ghcr.io/aincient-labs/atelier-cms:latest`, so a plain `up` pulls the right image.
-Override `AINCIENT_IMAGE` to pin a specific tag.
+`dist/compose.yaml`, `install.sh` and the manager's built-in template all default
+`AINCIENT_IMAGE` to `ghcr.io/aincient-labs/atelier-cms:latest`, so a plain `up` follows
+released versions. Override `AINCIENT_IMAGE` to follow `:edge` or pin one version; the
+manager calls those the **stable** and **edge** channels and can move between them
+(`atelier app channel …` — see `apps/manager/README.md`). Installs made before releases
+existed carry `:edge` in their `.env` and are moved onto `:latest` once, by both the manager
+and a re-run of `install.sh`.
 
 > The published image is currently **linux/amd64 only** (what the CI runner builds and
 > smokes). Apple-Silicon testers run it under emulation; add a buildx multi-arch step if

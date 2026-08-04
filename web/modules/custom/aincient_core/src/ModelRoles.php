@@ -198,6 +198,60 @@ final class ModelRoles {
    *   provider id => role id => ordered needles.
    */
   public static function tierHints(): array {
+    // The needle set for the two multi-vendor ids (`openai_compatible`, and the
+    // legacy `litellm`). A chat-completions endpoint is either a proxy re-serving
+    // other vendors under namespaced ids ("anthropic/claude-opus-5",
+    // "deepseek/deepseek-chat") or a vendor serving its own bare ones
+    // ("deepseek-reasoner", "glm-4.7"), and WHICH ids exist is the operator's
+    // choice — a hosted demo may expose three models, a company proxy fifty. So
+    // these are FAMILIES rather than model ids, and because every match is a
+    // substring test one needle covers both shapes.
+    //
+    // Order is the whole design. Two bands:
+    //   1. Vendor families, frontier labs first, then the direct-vendor lines
+    //      (DeepSeek, Kimi/Moonshot, GLM/Z.ai, Qwen). Before these existed a
+    //      catalogue naming none of the frontier families — i.e. anyone
+    //      connecting DeepSeek or Kimi or GLM *directly* — matched no needle at
+    //      all and every role fell to first-in-pool, collapsing the tiers into
+    //      one model. That is the same failure the entry itself was added to fix,
+    //      one layer down.
+    //   2. Generic size words (`pro`, `flash`, `small`…) LAST, as the
+    //      cost-shaped guess for a family we have never seen. They must stay
+    //      last: `flash` would otherwise take `glm-4.7-flash` for the TASK role
+    //      while the `glm-4.7` needle behind it never fired.
+    //
+    // Substring matching cannot express "not", so a needle can be out-specified
+    // by a longer id it is a prefix of: on a catalogue carrying both `glm-4.7`
+    // and `glm-4.7-flash`, whichever the endpoint lists first wins the REASONING
+    // role. Cheap models are a safe way to be wrong, and the operator can
+    // re-pick; a needle per variant would not survive the next model release.
+    $multiVendor = [
+      self::REASONING => [
+        'opus', 'gpt-5.6-sol', 'gpt-5.6-terra', 'sonnet', 'gpt-5', 'mistral-large',
+        'deepseek-reasoner', 'deepseek-r1',
+        'kimi-k3', 'kimi-k2-thinking',
+        'glm-5', 'glm-4.7', 'glm-4.6',
+        'qwen3-max', 'qwen-max',
+        'pro',
+      ],
+      self::TASK => [
+        'sonnet', 'gpt-5.6-luna', 'haiku', 'gpt-5', 'mistral-medium',
+        'deepseek-chat', 'deepseek-v',
+        'kimi-k2.6', 'kimi-k2.7', 'kimi-k2',
+        'glm-4.7', 'glm-4.6',
+        'qwen-plus', 'qwen3-coder',
+        'flash',
+      ],
+      self::FAST => [
+        'haiku', 'nano', 'mini',
+        'deepseek-chat',
+        'kimi-k2.5', 'kimi-k2', 'moonshot-v1-8k',
+        'glm-4.7-flash', '-air',
+        'qwen-turbo', 'qwen-flash',
+        'flash-lite', 'flash', 'small',
+      ],
+    ];
+
     return [
       'anthropic' => [
         self::REASONING => ['opus'],
@@ -234,38 +288,32 @@ final class ModelRoles {
         self::TASK => ['sonnet', 'gpt-4o', 'gpt-4.1', 'gemini-2.5-flash'],
         self::FAST => ['haiku', 'gpt-4o-mini', 'mini', 'flash'],
       ],
-      // A LiteLLM proxy re-serves other vendors' models under vendor-namespaced
-      // ids ("anthropic/claude-opus-5", "openai/gpt-5.4"), and WHICH ids exist is
-      // the proxy operator's choice — a hosted demo may expose three models, a
-      // company proxy fifty. So these needles are families rather than model ids,
-      // and they are only reached when the curated document named nothing the
-      // proxy serves ({@see ModelPresetResolver}, which tries the document's
-      // candidates against proxies first). The point is that a role still lands on
-      // a model of roughly the right cost, instead of whatever the catalogue
-      // happens to list first.
-      'litellm' => [
-        self::REASONING => ['opus', 'gpt-5.6-sol', 'gpt-5.6-terra', 'sonnet', 'gpt-5', 'mistral-large', 'pro'],
-        self::TASK => ['sonnet', 'gpt-5.6-luna', 'haiku', 'gpt-5', 'mistral-medium', 'flash'],
-        self::FAST => ['haiku', 'nano', 'mini', 'flash-lite', 'flash', 'small'],
-      ],
-      // The same needles as `litellm`, and for a stronger reason: `litellm` is
-      // not a provider id any more, so a LiteLLM proxy is now reached as
-      // `openai_compatible` and this is the entry that actually gets consulted.
+      // Both multi-vendor ids share ONE needle set, defined above as
+      // $multiVendor — they used to be two identical literals kept in sync by
+      // hand, and a vendor family added to one of them would silently not exist
+      // in the other.
+      //
+      // `litellm` is retained even though it is no longer a provider id: a stored
+      // role binding may still name it.
+      'litellm' => $multiVendor,
+      // The entry that actually gets consulted: a LiteLLM proxy — and every
+      // direct chat-completions vendor — is now reached as `openai_compatible`.
       // Without it the provider had NO hints at all, and because it reports
       // isProxy() === FALSE the curated document's candidates cannot reach it
       // either (they are tried against proxies only) — so every role fell all
       // the way to "the first model in the pool" and all four tiers resolved
       // identically, which is precisely what the Forge demo showed.
-      //
-      // Families rather than model ids, so they match whether the endpoint
-      // namespaces its ids (`anthropic/claude-opus-5` on a proxy) or serves the
-      // vendor's own bare ones (`deepseek-v4-pro` direct) — this one provider
-      // covers both, and a needle like `opus` is a substring match in either.
-      'openai_compatible' => [
-        self::REASONING => ['opus', 'gpt-5.6-sol', 'gpt-5.6-terra', 'sonnet', 'gpt-5', 'mistral-large', 'pro'],
-        self::TASK => ['sonnet', 'gpt-5.6-luna', 'haiku', 'gpt-5', 'mistral-medium', 'flash'],
-        self::FAST => ['haiku', 'nano', 'mini', 'flash-lite', 'flash', 'small'],
-      ],
+      'openai_compatible' => $multiVendor,
+      // The named presets — the same adapter with a baked base URL, so the same
+      // needles apply, and a single-vendor catalogue can only match its own
+      // families anyway. Sharing the set rather than splitting out four
+      // single-vendor entries is deliberate: a preset must never be the reason a
+      // family's needles exist in one place and not the other, and these ids are
+      // also reachable through the generic row.
+      'deepseek' => $multiVendor,
+      'kimi' => $multiVendor,
+      'glm' => $multiVendor,
+      'qwen' => $multiVendor,
     ];
   }
 

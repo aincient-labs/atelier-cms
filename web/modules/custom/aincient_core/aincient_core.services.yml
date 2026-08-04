@@ -144,12 +144,86 @@ services:
       - '@logger.channel.aincient_core'
     tags:
       - { name: aincient_core.inference_adapter }
+  # The generic row: the operator supplies the base URL, so this is the only
+  # `api_key_endpoint` provider and the only one that can reach a service we have
+  # never heard of.
   aincient_core.inference.adapter.openai_compatible:
     class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
       - '@logger.channel.aincient_core'
+    tags:
+      - { name: aincient_core.inference_adapter }
+
+  # NAMED PRESETS — the same adapter with its base URL filled in.
+  #
+  # Each is a full provider: its own picker row, its own credential, its own role
+  # bindings, connectable alongside the others. What it is NOT is new code — a
+  # vendor that differs from another only by a URL gets a service definition, not
+  # a class ({@see OpenAiCompatibleAdapter}'s docblock). Adding the next one is
+  # four strings.
+  #
+  # Two rules for a new entry, both enforced by
+  # OpenAiCompatibleAdapterTest::testPresetsAreServable():
+  #   1. The base URL includes the version segment and is verified to answer
+  #      `GET {base}/models` — `/v1` is NOT universal (GLM is `/api/paas/v4`).
+  #   2. The vendor's model families have ModelRoles::tierHints() entries, or the
+  #      three roles collapse onto one model (DECISIONS 0315). This is why Groq
+  #      is absent: its catalogue is Llama/Mixtral-shaped and we have no needles
+  #      for those yet.
+  #
+  # The id is permanent — it is the State key prefix a key is stored under and the
+  # value a role binding records — so it is the brand, not the vendor's legal name.
+  aincient_core.inference.adapter.deepseek:
+    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+      - 'deepseek'
+      - 'DeepSeek'
+      - 'Strong reasoning at a low price, from a two-model catalogue that needs no picking over. Key from platform.deepseek.com.'
+      - 'https://api.deepseek.com/v1'
+    tags:
+      - { name: aincient_core.inference_adapter }
+  aincient_core.inference.adapter.kimi:
+    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+      - 'kimi'
+      - 'Kimi (Moonshot)'
+      - 'Long-context models with strong tool calling, from Moonshot AI. Key from platform.moonshot.ai.'
+      - 'https://api.moonshot.ai/v1'
+    tags:
+      - { name: aincient_core.inference_adapter }
+  # Not `/v1`: Z.ai mounts the OpenAI shape under `/api/paas/v4`. A Coding-plan
+  # key wants `/api/coding/paas/v4` instead, which is a different base and would
+  # therefore be a different preset — the generic row covers it meanwhile.
+  aincient_core.inference.adapter.glm:
+    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+      - 'glm'
+      - 'GLM (Z.ai)'
+      - 'The GLM family — capable general models with a genuinely cheap Flash tier. Key from z.ai.'
+      - 'https://api.z.ai/api/paas/v4'
+    tags:
+      - { name: aincient_core.inference_adapter }
+  aincient_core.inference.adapter.qwen:
+    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    arguments:
+      - '@aincient_core.inference.http_client'
+      - '@http_client'
+      - '@logger.channel.aincient_core'
+      - 'qwen'
+      - 'Qwen (Alibaba)'
+      - 'The Qwen family on Alibaba Cloud Model Studio, from a frontier tier down to a very cheap Turbo one. Key from Model Studio (international).'
+      - 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1'
     tags:
       - { name: aincient_core.inference_adapter }
   # The one provider with no secret: a server URL is the whole credential

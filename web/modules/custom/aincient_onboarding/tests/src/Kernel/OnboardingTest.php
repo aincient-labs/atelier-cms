@@ -531,9 +531,17 @@ final class OnboardingTest extends KernelTestBase {
     $this->assertArrayHasKey('image', $onboarding['catalog']);
     $this->assertIsArray($onboarding['modelLabels']);
     // Provider rows carry our curated recommendation label alongside the row.
+    // What's pinned is the PLUMBING — the label reaches the row, and it is one the
+    // UI knows how to render. Not its value: this used to assert `anthropic` was
+    // `recommended`, and the editorial call to endorse no provider at all
+    // (DECISIONS 0317) broke a test that was never about that. Curation lives in
+    // `model-recommendations.yml`; ModelRecommendationsTest is where it is asserted.
     $byId = array_column($onboarding['providers'], NULL, 'id');
     $this->assertArrayHasKey('recommendation', $byId['anthropic']);
-    $this->assertSame('recommended', $byId['anthropic']['recommendation']);
+    $this->assertContains(
+      $byId['anthropic']['recommendation'],
+      ['recommended', 'tested', 'not-recommended', ''],
+    );
   }
 
   /**

@@ -148,4 +148,67 @@ final class ModelRoleResolverTest extends KernelTestBase {
     $this->assertSame('claude-opus-4-5', $sugg2[ModelRoles::TASK]);
   }
 
+  /**
+   * A direct chat-completions vendor tiers apart, rather than collapsing.
+   *
+   * `openai_compatible` is how every non-proxy chat-completions vendor is
+   * reached, and its needles used to name only the frontier labs' families — so
+   * a DeepSeek or Kimi or GLM catalogue matched nothing, every role fell to
+   * first-in-pool, and the three tiers resolved to one model. What this pins is
+   * that property, not the individual model ids: the roles must differ where the
+   * vendor actually offers a cheaper line.
+   *
+   * @dataProvider directVendorCatalogues
+   */
+  public function testSuggestForProviderTiersDirectVendors(array $models, string $reasoning, string $task, string $fast): void {
+    $sugg = $this->resolver()->suggestForProvider('openai_compatible', array_combine($models, $models));
+    $this->assertSame($reasoning, $sugg[ModelRoles::REASONING]);
+    $this->assertSame($task, $sugg[ModelRoles::TASK]);
+    $this->assertSame($fast, $sugg[ModelRoles::FAST]);
+    // The catalogue order must not be what decided it.
+    $this->assertNotSame([$models[0], $models[0], $models[0]], [$reasoning, $task, $fast]);
+  }
+
+  /**
+   * Catalogues as each vendor's own /models endpoint lists them.
+   *
+   * DeepSeek is the deliberate exception to "the roles differ": it publishes two
+   * models, so the cheap role shares the chat one — the assertion that matters
+   * there is that REASONING still lands on the reasoner.
+   */
+  public static function directVendorCatalogues(): array {
+    return [
+      'deepseek' => [
+        ['deepseek-chat', 'deepseek-reasoner'],
+        'deepseek-reasoner', 'deepseek-chat', 'deepseek-chat',
+      ],
+      'kimi (moonshot)' => [
+        ['kimi-k3', 'kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5'],
+        'kimi-k3', 'kimi-k2.6', 'kimi-k2.5',
+      ],
+      'glm (z.ai)' => [
+        ['glm-5.2', 'glm-4.7', 'glm-4.7-flash', 'glm-4.6', 'glm-4.5-air'],
+        'glm-5.2', 'glm-4.7', 'glm-4.7-flash',
+      ],
+      'qwen' => [
+        ['qwen3-max', 'qwen-plus', 'qwen3-coder', 'qwen-turbo', 'qwen-flash'],
+        'qwen3-max', 'qwen-plus', 'qwen-turbo',
+      ],
+      // The proxy shape the entry was written for, unchanged by the vendor
+      // families being appended behind the frontier needles.
+      'litellm-style proxy' => [
+        ['deepseek/deepseek-chat', 'anthropic/claude-opus-5', 'anthropic/claude-sonnet-5', 'anthropic/claude-haiku-4-5'],
+        'anthropic/claude-opus-5', 'anthropic/claude-sonnet-5', 'anthropic/claude-haiku-4-5',
+      ],
+    ];
+  }
+
+  /**
+   * The two multi-vendor ids share one needle set, not two copies.
+   */
+  public function testMultiVendorHintsAreShared(): void {
+    $hints = ModelRoles::tierHints();
+    $this->assertSame($hints['litellm'], $hints['openai_compatible']);
+  }
+
 }

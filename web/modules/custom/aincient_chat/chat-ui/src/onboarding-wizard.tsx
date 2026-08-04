@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType, type SVGProps } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType, type SVGProps } from "react";
 import {
   settings,
   type OnboardingConnectResult,
@@ -12,16 +12,20 @@ import {
 import {
   AnthropicIcon,
   CheckIcon,
+  DeepSeekIcon,
   GeminiIcon,
+  KimiIcon,
   MistralIcon,
   OllamaIcon,
   OpenAiIcon,
+  QwenIcon,
   ShieldCheckIcon,
   SparkleIcon,
   SpinnerIcon,
   TrashIcon,
   Wordmark,
   XIcon,
+  ZaiIcon,
 } from "./icons";
 import { ModelPicker, type ModelPickerOption } from "./model-picker";
 import { apiUrl, consoleBase } from "./console-config";
@@ -91,6 +95,12 @@ const KEY_HELP: Record<string, { href: string; label: string }> = {
   openai: { href: "https://platform.openai.com/api-keys", label: "platform.openai.com" },
   gemini: { href: "https://aistudio.google.com/apikey", label: "aistudio.google.com" },
   mistral: { href: "https://console.mistral.ai/api-keys", label: "console.mistral.ai" },
+  // The named presets. Each is the vendor's own key page, which is the only step
+  // left once the base URL is baked in.
+  deepseek: { href: "https://platform.deepseek.com/api_keys", label: "platform.deepseek.com" },
+  kimi: { href: "https://platform.moonshot.ai/console/api-keys", label: "platform.moonshot.ai" },
+  glm: { href: "https://z.ai/manage-apikey/apikey-list", label: "z.ai" },
+  qwen: { href: "https://www.alibabacloud.com/help/en/model-studio/get-api-key", label: "Alibaba Cloud Model Studio" },
 };
 
 /**
@@ -118,14 +128,39 @@ const PROVIDER_BRAND: Record<string, { Icon: ComponentType<SVGProps<SVGSVGElemen
   nanobanana: { Icon: GeminiIcon },
   ollama: { Icon: OllamaIcon },
   mistral: { Icon: MistralIcon },
+  // The named presets — the vendor's own mark, not the generic row's empty badge.
+  // `glm` wears Z.ai's, the vendor behind the GLM family; `kimi` wears Kimi's
+  // rather than Moonshot's, because Kimi is the name on the row.
+  deepseek: { Icon: DeepSeekIcon },
+  kimi: { Icon: KimiIcon },
+  glm: { Icon: ZaiIcon },
+  qwen: { Icon: QwenIcon },
 };
 
 /**
- * Display order for the picker — Mistral and Anthropic lead (both recommended),
- * then Ollama (local-first, no key needed), OpenAI, and Google Gemini. Providers
- * not listed keep their server order, sorted after the known ones.
+ * Display order for the picker. NOT a ranking — no provider is endorsed any more
+ * (`model-recommendations.yml`: every assessed provider is `tested`, and this list
+ * used to be justified by Mistral and Anthropic being `recommended`). It is a
+ * familiarity order: the names most operators arrive already holding a key for,
+ * then Ollama (local-first, no key at all), then the named vendor presets.
+ * Providers not listed keep their server order, sorted after the known ones —
+ * which is where the generic "OpenAI-compatible endpoint" row belongs: it is the
+ * escape hatch, not a suggestion. (Alphabetical would be stricter still; it also
+ * makes the list harder to scan for the row you came for.)
+ *
+ * ALREADY-CONNECTED PROVIDERS OUTRANK ALL OF THIS ({@see connectedFirst}).
  */
-const PROVIDER_ORDER = ["mistral", "anthropic", "ollama", "openai", "gemini"];
+const PROVIDER_ORDER = [
+  "mistral",
+  "anthropic",
+  "ollama",
+  "openai",
+  "gemini",
+  "deepseek",
+  "kimi",
+  "glm",
+  "qwen",
+];
 
 function progressFor(step: Step): { index: number; total: number } {
   const order: Step[] = ["connect", "models"];
@@ -383,13 +418,26 @@ function ProviderRow({
 
 export function OnboardingWizard() {
   const cfg: OnboardingSettings = settings().onboarding ?? {};
-  // Present providers in our preferred order (Ollama, Anthropic, OpenAI, Google).
+  // Connected providers first, then our preferred order. On a re-run the rows you
+  // already own are the ones you came back for — to add an image provider beside
+  // your chat one, or to replace a key — and with a scrolling list they must not
+  // be somewhere below the fold.
+  //
+  // Deliberately computed from the SERVER's snapshot (`usable`) and not from the
+  // session's `connected` state, so the order is fixed for as long as the wizard
+  // is open. Sorting reactively would yank a row to the top at the exact moment
+  // its panel expanded to report how many models the key reached — moving the
+  // thing the operator is reading, under a cursor that is about to click Continue.
+  // It leads next time it's opened, which is when the ordering is worth anything.
   const providers = useMemo(() => {
     const rank = (id: string) => {
       const i = PROVIDER_ORDER.indexOf(id);
       return i === -1 ? PROVIDER_ORDER.length : i;
     };
-    return [...(cfg.providers ?? [])].sort((a, b) => rank(a.id) - rank(b.id));
+    return [...(cfg.providers ?? [])].sort((a, b) => {
+      const connectedFirst = Number(!!b.usable) - Number(!!a.usable);
+      return connectedFirst !== 0 ? connectedFirst : rank(a.id) - rank(b.id);
+    });
   }, [cfg.providers]);
   const connectUrl = cfg.connectProviderUrl ?? apiUrl("/onboarding/connect-provider");
   const finalizeUrl = cfg.finalizeUrl ?? apiUrl("/onboarding/finalize");
@@ -410,6 +458,10 @@ export function OnboardingWizard() {
   const [step, setStep] = useState<Step>("connect");
   // Which provider row is expanded for key entry, and its in-progress credential.
   const [openId, setOpenId] = useState<string | null>(null);
+  // The scrolling provider list. Held so an expanded row can be brought into
+  // view: the list is height-capped, so opening the last one would otherwise put
+  // its key field below the fold — the click appears to do nothing.
+  const providerListRef = useRef<HTMLDivElement | null>(null);
   const [credential, setCredential] = useState("");
   // The open row's base URL, for the `api_key_endpoint` shape only. Kept apart
   // from `credential` because the two are stored apart — one is a secret, the
@@ -515,6 +567,17 @@ export function OnboardingWizard() {
     setProfile(null);
     setRoleModels((prev) => ({ ...prev, [roleId]: value }));
   };
+
+  // Keep the row being filled in visible. The provider list scrolls, so a row
+  // near the bottom expands into the clipped area and the operator sees a click
+  // that did nothing. `block: "nearest"` scrolls the minimum needed — a row
+  // already fully in view is left exactly where it is, no motion for motion's
+  // sake. Runs after layout, so the expanded panel's height is already counted.
+  useEffect(() => {
+    if (!openId) return;
+    const row = providerListRef.current?.querySelector(`[data-provider="${openId}"]`);
+    row?.scrollIntoView({ block: "nearest" });
+  }, [openId]);
 
   // Landing on the models step: apply the chosen profile, or — in Custom mode —
   // seed each still-empty role from the connected providers' suggestions,
@@ -766,7 +829,7 @@ export function OnboardingWizard() {
               before it’s saved, and stored on your own server, never in code or git.
             </p>
 
-            <div className="ain-wiz__providers">
+            <div className="ain-wiz__providers" ref={providerListRef}>
               {providers.length === 0 && (
                 <p className="ain-wiz__note">
                   No AI providers are installed. Add a provider module (e.g. Anthropic) to

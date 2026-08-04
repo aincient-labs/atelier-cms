@@ -15,7 +15,7 @@
 # the install is sent; it is a plain GET.
 #
 # HOW TO MAINTAIN IT
-# Edit here, `bin/build-site.sh`, deploy the website. Live installs pick it up on
+# Edit here, then push `main` — CI builds the image and deploys it. Live installs pick it up on
 # their next explicit refresh; new installs pick it up at their next cms release
 # via the sync script. Both halves are plain text and diffable on purpose — this
 # is an artifact a suspicious operator should be able to read, like install.sh.
@@ -27,7 +27,7 @@
 # Bumped only on a BREAKING shape change. A client that doesn't understand the
 # value ignores the whole document and keeps its bundled copy.
 schema: 1
-updated: '2026-07-25'
+updated: '2026-08-04'
 
 # ---------------------------------------------------------------------------
 # Quality labels — which providers and models we back.
@@ -48,13 +48,27 @@ updated: '2026-07-25'
 # "untested", the neutral default. It still auto-appears in onboarding via the
 # drupal/ai plugin manager; it just carries no curated badge.
 
+# NO PROVIDER IS "RECOMMENDED", DELIBERATELY (2026-08-04). Anthropic and Mistral
+# held that tier and were demoted to `tested` — not because either got worse, but
+# because a provider-level "Recommended" chip is a steer, and steering is the one
+# thing the provider picker must not do. Everything listed works; which service an
+# operator hands their money and their data to is theirs to decide.
+#
+# The MODEL labels below are untouched: "we put this model through its paces" is a
+# testing claim about a model, not an endorsement of a vendor. So Sonnet and Haiku
+# stay `recommended` while Anthropic-the-provider does not.
+#
+# `tested` means someone has run Atelier's agent loop against it. `deepseek` is
+# here because it has been; kimi, glm and qwen are reachable as named providers but
+# are absent here until they have been, which reads as "untested".
 providers:
-  anthropic: recommended
+  anthropic: tested
   openai: tested
   gemini: tested
   nanobanana: tested
   ollama: tested
-  mistral: recommended
+  mistral: tested
+  deepseek: tested
 
 # Recommended set is deliberately narrow — the models we actively back per role:
 #   High thinking → Sonnet   Task executor / Fast → Haiku

@@ -156,11 +156,37 @@ final class ModelRecommendationsTest extends UnitTestCase {
    * Provider recommendation reads the providers map; unknown → ''.
    */
   public function testProviderRecommendation(): void {
-    $this->assertSame('recommended', $this->recommendations->providerRecommendation('anthropic'));
     $this->assertSame('tested', $this->recommendations->providerRecommendation('openai'));
-    // Mistral is now a backed provider (medium-latest handles the tool loop).
-    $this->assertSame('recommended', $this->recommendations->providerRecommendation('mistral'));
+    // DeepSeek is a named preset AND a tested provider — the two are separate
+    // facts: the preset says we can reach it, the label says we have.
+    $this->assertSame('tested', $this->recommendations->providerRecommendation('deepseek'));
     $this->assertSame('', $this->recommendations->providerRecommendation('unknown_provider'));
+  }
+
+  /**
+   * The provider tier is neutral: everything assessed is `tested`, none is backed.
+   *
+   * Anthropic and Mistral used to be `recommended`. Stated as a property over the
+   * whole map rather than two ids, because the point is not "these two moved" —
+   * it is that a provider-level endorsement does not belong in this file at all,
+   * and the next provider added must not quietly reintroduce one.
+   */
+  public function testNoProviderIsEndorsed(): void {
+    foreach (['anthropic', 'mistral', 'openai', 'gemini', 'nanobanana', 'ollama', 'deepseek'] as $id) {
+      $this->assertSame(
+        'tested',
+        $this->recommendations->providerRecommendation($id),
+        sprintf('%s should be assessed but not endorsed.', $id),
+      );
+    }
+  }
+
+  /**
+   * A model may still be backed — that claim is about the model, not the vendor.
+   */
+  public function testModelLabelsSurviveTheProviderDemotion(): void {
+    $this->assertSame('recommended', $this->recommendations->labelForModel('anthropic', 'claude-sonnet-4-5'));
+    $this->assertSame('tested', $this->recommendations->providerRecommendation('anthropic'));
   }
 
   /**

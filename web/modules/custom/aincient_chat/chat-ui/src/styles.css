@@ -1429,10 +1429,21 @@
 /* Providers are a LEDGER, not boxes (study 02, onboarding kit): one panel,
    hairline rows. Selection = accent tint + check — the console's selection
    grammar, no offset shadows. */
+/* The provider list scrolls. There are ten-odd connectable providers now (the
+   named vendor presets among them), and an unbounded list pushed Continue and the
+   whole models step off the bottom of the panel — the wizard looked like it had no
+   way forward. Capped so a few rows are always visible under it: the list is the
+   scrolling part, the wizard's own frame stays put.
+   `overflow: hidden auto` keeps the y-axis scrollable while the x-axis stays
+   clipped, so the rounded corners still cut the first and last row.
+   The thumb comes from the console-wide #aincient-chat-root scrollbar rules. */
 .ain-wiz__providers {
   display: flex; flex-direction: column; gap: 0;
   border: 1px solid var(--ain-border); border-radius: var(--ain-radius);
-  background: var(--ain-surface); overflow: hidden;
+  background: var(--ain-surface); overflow: hidden auto;
+  max-height: min(420px, 46vh);
+  /* Anchored so an expanded row's own growth doesn't shove the rows above it. */
+  overflow-anchor: auto;
 }
 .ain-wiz__provider { color: var(--ain-text); transition: background .12s; }
 .ain-wiz__provider + .ain-wiz__provider { border-top: 1px solid var(--ain-border); }

@@ -7,6 +7,32 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.2.0] — 2026-08-04
+
+- **New: DeepSeek, Kimi, GLM and Qwen are providers you pick by name.** Each one is in the setup
+  list with its own logo: choose it, paste your key, done. Previously they were reachable only
+  through the generic "OpenAI-compatible endpoint" row, which meant looking up the vendor's base URL
+  yourself and getting it exactly right.
+- **Fixed: models reached through an OpenAI-compatible endpoint all came out the same.** Atelier
+  picks three models for you — one for hard thinking, one for everyday work, one for speed — by
+  recognising model families by name. It only knew the families sold by the big proxies, so a
+  vendor's own catalogue matched nothing and all three settled on whatever model came back first.
+  Your "fast" model could be the most expensive one you had. The families of the vendors above are
+  now recognised directly.
+- **Changed: no provider is labelled "Recommended" any more.** Atelier works with all of them; which
+  one suits you is your call, not ours. Providers we have put through their paces read **Tested** —
+  Anthropic, OpenAI, Gemini, Mistral, Ollama and DeepSeek at this point. Individual model
+  recommendations are unchanged: they say a model does the job well, not that you should buy from
+  that vendor.
+- **Changed: the setup list keeps what you have connected at the top** and scrolls within a fixed
+  height, instead of pushing the rest of the wizard off the screen as more providers arrive.
+- **Changed: installs follow releases.** New installs track `:latest` — the newest release — rather
+  than `:edge`, the rolling development build. `:edge` remains a supported choice for anyone who
+  wants unreleased fixes early.
+- **Fixed: re-running the installer could move you off a version you pinned.** If you had asked for
+  a specific version, an installer re-run silently replaced it with the current default. It now
+  leaves your image alone unless the run names one.
+
 ## [0.1.2] — 2026-08-04
 
 - **Fixed: every site warned "no AI provider connected yet" on every boot, connected or not.** The

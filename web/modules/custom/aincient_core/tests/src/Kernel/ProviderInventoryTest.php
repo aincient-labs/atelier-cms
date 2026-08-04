@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Kernel;
 
+use Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter;
 use Drupal\aincient_core\Inference\ProviderAdapterInterface;
 use Drupal\aincient_core\Inference\ProviderInventory;
+use Drupal\aincient_core\ModelRoles;
 use Drupal\aincient_inference_test\ScriptedAdapter;
 use Drupal\KernelTests\KernelTestBase;
 
@@ -227,6 +229,59 @@ final class ProviderInventoryTest extends KernelTestBase {
       [],
       $this->inventory()->modelsForCredential('openrouter', ProviderInventory::CHAT, 'sk-whatever'),
     );
+  }
+
+  /**
+   * Every named preset can actually tier its own models.
+   *
+   * A preset is the generic OpenAI-compatible adapter with a baked base URL, and
+   * registering one is four strings in a services file — cheap enough that the
+   * failure mode is registering a vendor whose model families nothing recognises.
+   * Then `ModelRoles::tierHints()` matches no needle, all three roles fall to
+   * "the first model in the pool", and the operator gets one model wearing three
+   * hats. That is the tier collapse DECISIONS 0315 fixed, and this is what stops
+   * the next preset from reintroducing it.
+   *
+   * Derived from the adapter set rather than a list of ids, so it covers a preset
+   * added later by us — or by a contrib module using the same class.
+   */
+  public function testEveryPresetHasTierHints(): void {
+    $hints = ModelRoles::tierHints();
+    $presets = [];
+    foreach ($this->container->get('aincient_core.inference.registry')->adapters() as $id => $adapter) {
+      // What makes it a preset: this class, with nothing left to ask for but a
+      // key — the generic row is the same class reporting AUTH_KEY_ENDPOINT.
+      if (!$adapter instanceof OpenAiCompatibleAdapter || $adapter->authShape() !== ProviderAdapterInterface::AUTH_KEY) {
+        continue;
+      }
+      $presets[] = $id;
+      $this->assertArrayHasKey($id, $hints, sprintf(
+        'Preset "%s" has no tier hints, so its three roles would all resolve to the same model.',
+        $id,
+      ));
+      foreach ([ModelRoles::REASONING, ModelRoles::TASK, ModelRoles::FAST] as $role) {
+        $this->assertNotEmpty($hints[$id][$role] ?? [], sprintf('Preset "%s" has no needles for the %s role.', $id, $role));
+      }
+    }
+    $this->assertNotSame([], $presets, 'The named presets are the point; a set with none of them means the services file stopped registering them.');
+  }
+
+  /**
+   * The presets are offered as chat providers, keyed and connectable.
+   *
+   * The user-visible half of the same change: a row per vendor, each asking for
+   * one key. Asserted through the inventory because that is what the picker reads.
+   */
+  public function testPresetsAreOfferedAsOneKeyChatProviders(): void {
+    $chat = $this->inventory()->providersWith(ProviderInventory::CHAT);
+
+    foreach (['deepseek', 'kimi', 'glm', 'qwen'] as $id) {
+      $this->assertArrayHasKey($id, $chat, sprintf('%s is not offered for chat.', $id));
+      $this->assertSame(ProviderAdapterInterface::AUTH_KEY, $this->inventory()->authShape($id));
+      $this->assertNotSame('', $chat[$id]['label']);
+      // Nothing is connected in a fresh install, presets included.
+      $this->assertFalse($chat[$id]['connected']);
+    }
   }
 
 }

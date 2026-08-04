@@ -33,24 +33,40 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * tool calling and JSON output; a service that cannot do both is not usable for
  * this product regardless of what a checkbox claims. So we assume that
  * conservative profile and let a real turn be the test.
+ *
+ * NAMED PRESETS ARE THIS CLASS WITH ITS ARGUMENTS FILLED IN. A vendor whose only
+ * difference from another is a base URL does not deserve a class: the same
+ * adapter registered a second time with an id, a label and a baked `$apiBase`
+ * IS the provider (DeepSeek, Kimi, GLM, Qwen — see this module's services file).
+ * The only behavioural difference a baked base makes is the credential shape:
+ * with nothing to ask for but a key, {@see self::authShape()} answers `AUTH_KEY`
+ * and the connect step renders one field instead of two. That is the whole
+ * mechanism behind "choose DeepSeek, paste a key, done".
+ *
+ * A preset MUST have tier hints for its model families
+ * ({@see \Drupal\aincient_core\ModelRoles::tierHints()}) — a catalogue matching
+ * no needle sends every role to first-in-pool, which is the tier collapse
+ * DECISIONS 0315 fixed. Registering a vendor whose families are unknown ships
+ * that bug on purpose, so it is asserted in tests rather than left to care.
  */
-final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
+class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
 
   /**
-   * The chat-completions path appended to the operator's base URL.
+   * The version segment assumed when the operator supplies a bare base URL.
    *
    * Most compatible services mount the OpenAI surface under `/v1`. DeepSeek
    * serves BOTH `/chat/completions` and `/v1/chat/completions`, which is exactly
    * the sort of difference that makes a bare base URL a footgun — so we always
    * send the `/v1`-prefixed path and normalise the operator's input to match
    * ({@see self::normaliseEndpoint()}).
+   *
+   * A preset does NOT go through this: it carries a complete `$apiBase` including
+   * its own version segment, because `/v1` is not universal — GLM serves the
+   * shape at `/api/paas/v4`, Groq at `/openai/v1`, Qwen at
+   * `/compatible-mode/v1`. Hardcoding `/v1` for everyone is precisely what made
+   * those vendors unreachable through this adapter before.
    */
-  private const COMPLETIONS_PATH = '/v1/chat/completions';
-
-  /**
-   * The embeddings path, for the same reason.
-   */
-  private const EMBEDDINGS_PATH = '/v1/embeddings';
+  private const DEFAULT_VERSION_PATH = '/v1';
 
   /**
    * Id fragments that mark something other than a text-answering chat model.
@@ -92,36 +108,55 @@ final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
     'babbage',
   ];
 
+  /**
+   * @param string $id
+   *   Provider id. Also the State key prefix a credential is stored under and the
+   *   value a role binding records, so it is permanent once shipped.
+   * @param string $label
+   *   Picker label. The brand an operator would search for ("Kimi (Moonshot)"),
+   *   not the vendor's legal name.
+   * @param string $description
+   *   Picker copy. For a preset, say what it is good at and where the key comes
+   *   from; the operator is choosing between rows, not reading a manual.
+   * @param string $apiBase
+   *   The complete API base INCLUDING the version segment
+   *   (`https://api.z.ai/api/paas/v4`). Empty means the operator supplies it —
+   *   the generic "any OpenAI-compatible endpoint" row.
+   */
   public function __construct(
     private readonly HttpClientInterface $httpClient,
     private readonly \GuzzleHttp\ClientInterface $guzzle,
     private readonly LoggerInterface $logger,
+    private readonly string $id = 'openai_compatible',
+    private readonly string $label = 'OpenAI-compatible endpoint',
+    private readonly string $description = 'Any service that speaks the OpenAI chat-completions API — OpenAI, Mistral, DeepSeek, Groq, OpenRouter, a LiteLLM proxy, vLLM or LM Studio. Needs a base URL as well as a key.',
+    private readonly string $apiBase = '',
   ) {}
 
   /**
    * {@inheritdoc}
    */
   public function id(): string {
-    return 'openai_compatible';
+    return $this->id;
   }
 
   /**
    * {@inheritdoc}
    */
   public function label(): string {
-    return 'OpenAI-compatible endpoint';
+    return $this->label;
   }
 
   /**
    * {@inheritdoc}
    */
   public function description(): string {
-    // Names the vendors deliberately. This adapter is the working path for
-    // OpenAI, Mistral, OpenRouter and LiteLLM, whose `drupal/ai` provider modules
-    // no longer appear in the inventory — an operator looking for one of them by
-    // name has to be able to find it here, or "my provider vanished" is the only
-    // available reading.
-    return 'Any service that speaks the OpenAI chat-completions API — OpenAI, Mistral, DeepSeek, Groq, OpenRouter, a LiteLLM proxy, vLLM or LM Studio. Needs a base URL as well as a key.';
+    // The generic row's default copy names the vendors deliberately. This adapter
+    // is the working path for OpenAI, Mistral, OpenRouter and LiteLLM, whose
+    // `drupal/ai` provider modules no longer appear in the inventory — an
+    // operator looking for one of them by name has to be able to find it here, or
+    // "my provider vanished" is the only available reading.
+    return $this->description;
   }
 
   /**
@@ -135,7 +170,10 @@ final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
    * {@inheritdoc}
    */
   public function authShape(): string {
-    return self::AUTH_KEY_ENDPOINT;
+    // A preset has nothing left to ask for but the key. This is not cosmetic: the
+    // connect step renders its fields from this answer, so a baked base URL is
+    // what removes the field an operator would otherwise have to look up.
+    return $this->apiBase === '' ? self::AUTH_KEY_ENDPOINT : self::AUTH_KEY;
   }
 
   /**
@@ -162,7 +200,7 @@ final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
    * {@inheritdoc}
    */
   public function createPlatform(string $credential, string $endpoint = ''): PlatformInterface {
-    $base = $this->normaliseEndpoint($endpoint);
+    $base = $this->apiBase($endpoint);
     if ($base === '') {
       throw new ProviderConfigurationException(
         'An OpenAI-compatible provider needs a base URL (for example https://api.deepseek.com).'
@@ -170,15 +208,18 @@ final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
     }
     $credential = trim($credential);
     if ($credential === '') {
-      throw new ProviderConfigurationException('No API key is stored for the OpenAI-compatible endpoint.');
+      throw new ProviderConfigurationException(sprintf('No API key is stored for %s.', $this->label));
     }
 
+    // The paths are relative to a base that already carries its version segment,
+    // so the bridge concatenates to the same URL a preset and a hand-typed
+    // endpoint would each produce on their own.
     return GenericFactory::createPlatform(
       baseUrl: $base,
       apiKey: $credential,
       httpClient: $this->httpClient,
-      completionsPath: self::COMPLETIONS_PATH,
-      embeddingsPath: self::EMBEDDINGS_PATH,
+      completionsPath: '/chat/completions',
+      embeddingsPath: '/embeddings',
       name: $this->id(),
     );
   }
@@ -187,14 +228,14 @@ final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
    * {@inheritdoc}
    */
   public function listChatModels(string $credential, string $endpoint = ''): array {
-    $base = $this->normaliseEndpoint($endpoint);
+    $base = $this->apiBase($endpoint);
     $credential = trim($credential);
     if ($base === '' || $credential === '') {
       return [];
     }
 
     try {
-      $response = $this->guzzle->request('GET', $base . '/v1/models', [
+      $response = $this->guzzle->request('GET', $base . '/models', [
         'headers' => ['Authorization' => 'Bearer ' . $credential],
         'timeout' => 15,
         'http_errors' => FALSE,
@@ -263,6 +304,22 @@ final class OpenAiCompatibleAdapter implements ProviderAdapterInterface {
       }
     }
     return FALSE;
+  }
+
+  /**
+   * The API base to talk to, version segment included.
+   *
+   * A preset's is baked and the operator's argument is ignored — there is no
+   * field to type it in, and a stale `<provider>_endpoint` State value left by
+   * some earlier connection must not be able to redirect a named vendor
+   * somewhere else.
+   */
+  private function apiBase(string $endpoint): string {
+    if ($this->apiBase !== '') {
+      return $this->apiBase;
+    }
+    $base = $this->normaliseEndpoint($endpoint);
+    return $base === '' ? '' : $base . self::DEFAULT_VERSION_PATH;
   }
 
   /**

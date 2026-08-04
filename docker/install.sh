@@ -23,16 +23,25 @@
 #     a database + storage — that floor can't be hidden behind a binary fetch.
 #
 # Overridable via env:
-#   AINCIENT_IMAGE   image tag to run         (default: ghcr.io/aincient-labs/atelier-cms:edge)
+#   AINCIENT_IMAGE   image tag to run         (default: ghcr.io/aincient-labs/atelier-cms:latest)
 #   HTTP_PORT        host port for the console (default: 41221 — "AINCI" in leet)
 #   ATELIER_HOME     install dir              (default: ~/.atelier)
+#
+# Channels: `:latest` is retagged on every release — that's the default, and what
+# the `atelier` CLI calls the *stable* channel. `:edge` is rebuilt on every merge
+# to main (unreleased, may break); `:vX.Y.Z` pins one version forever. Setting
+# AINCIENT_IMAGE here records the choice, so the manager's one-time move of old
+# `:edge` installs onto releases leaves a deliberate pin alone.
 #
 # No AI key is set here: a fresh install boots keyless and prompts you to connect
 # a provider in the console's first-run onboarding wizard.
 
 set -euo pipefail
 
-AINCIENT_IMAGE="${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier-cms:edge}"
+# Remember whether the operator named an image before defaulting: an explicit
+# choice is written to .env as the chosen channel, so nothing later "corrects" it.
+AINCIENT_IMAGE_EXPLICIT="${AINCIENT_IMAGE:-}"
+AINCIENT_IMAGE="${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier-cms:latest}"
 HTTP_PORT="${HTTP_PORT:-41221}"   # "AINCI" in leet (4=A,1=I,2=N,2=C,1=I)
 INSTALL_DIR="${ATELIER_HOME:-$HOME/.atelier}"
 
@@ -75,7 +84,7 @@ services:
       interval: 10s
       retries: 10
   app:
-    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier-cms:edge}
+    image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier-cms:latest}
     depends_on:
       db:
         condition: service_healthy
@@ -96,6 +105,16 @@ volumes:
   private:
 YAML
 
+# Which channel an image reference means — the same classification the manager
+# does (only our own repo's two moving tags are channels; everything else is a pin).
+channel_of() {
+  case "$1" in
+    ghcr.io/aincient-labs/atelier-cms:latest) printf 'stable' ;;
+    ghcr.io/aincient-labs/atelier-cms:edge)   printf 'edge' ;;
+    *)                                        printf 'pinned' ;;
+  esac
+}
+
 # Write .env only on first install — never clobber an existing key/salt.
 ENV_FILE="$INSTALL_DIR/.env"
 if [ ! -f "$ENV_FILE" ]; then
@@ -105,6 +124,7 @@ if [ ! -f "$ENV_FILE" ]; then
   cat > "$ENV_FILE" <<ENV
 HASH_SALT=$(openssl rand -hex 32)
 AINCIENT_IMAGE=${AINCIENT_IMAGE}
+AINCIENT_CHANNEL=$(channel_of "$AINCIENT_IMAGE")
 HTTP_PORT=${HTTP_PORT}
 ADMIN_PASS=
 ENV
@@ -122,9 +142,30 @@ else
       printf '%s=%s\n' "$1" "$2" >> "$ENV_FILE"
     fi
   }
-  upsert AINCIENT_IMAGE "$AINCIENT_IMAGE"
   upsert HTTP_PORT "$HTTP_PORT"
-  say "Reusing ${dim}${ENV_FILE}${rst} (image + port reconciled to this run)"
+
+  existing_image="$(sed -n 's/^AINCIENT_IMAGE=//p' "$ENV_FILE" | head -1)"
+  existing_channel="$(sed -n 's/^AINCIENT_CHANNEL=//p' "$ENV_FILE" | head -1)"
+  if [ -n "$AINCIENT_IMAGE_EXPLICIT" ]; then
+    # This run named an image: reconcile to it, and record it as the choice.
+    upsert AINCIENT_IMAGE "$AINCIENT_IMAGE"
+    upsert AINCIENT_CHANNEL "$(channel_of "$AINCIENT_IMAGE")"
+    say "Reusing ${dim}${ENV_FILE}${rst} (image + port reconciled to this run)"
+  elif [ -z "$existing_channel" ] && [ "$existing_image" = "ghcr.io/aincient-labs/atelier-cms:edge" ]; then
+    # An install from before releases existed: it follows :edge because :edge was
+    # the only tag, not because anyone asked for unreleased builds. Move it onto
+    # releases once, and record the choice so this never fires again.
+    upsert AINCIENT_IMAGE "$AINCIENT_IMAGE"
+    upsert AINCIENT_CHANNEL stable
+    say "Switching this install to released versions ${dim}(was ${existing_image})${rst}"
+    say "To follow unreleased builds again: ${bold}atelier app channel edge${rst}"
+  else
+    # Anything else on disk is a decision — a pinned version, or a channel the
+    # operator picked. Leave it; re-running the installer is an upgrade, not a
+    # channel change.
+    AINCIENT_IMAGE="${existing_image:-$AINCIENT_IMAGE}"
+    say "Reusing ${dim}${ENV_FILE}${rst} (keeping ${AINCIENT_IMAGE}; port reconciled)"
+  fi
 fi
 
 # --- launch (idempotent: pull + up = install OR upgrade) --------------------
