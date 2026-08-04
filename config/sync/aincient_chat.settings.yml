@@ -1,5 +1,6 @@
 features:
   checks_enabled: false
+  technical_detail: false
 default_studio: general
 studios:
   general:

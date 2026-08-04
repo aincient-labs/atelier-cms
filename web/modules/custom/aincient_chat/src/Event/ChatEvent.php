@@ -18,6 +18,19 @@ final class ChatEvent {
     return new self(ChatEventType::STATUS, ['message' => $message] + $extra);
   }
 
+  /**
+   * A status frame that only makes sense to someone debugging the engine.
+   *
+   * Same wire type as {@see status()} plus `debug: TRUE`, which the console
+   * honours by NOT showing it: our routing decisions, node bookkeeping and the
+   * like are machinery, and in-product copy names outcomes (brand.md §7). It
+   * stays on the wire — and reaches the thinking indicator — when the console
+   * runs with `aincient_chat.settings:features.technical_detail` on.
+   */
+  public static function debugStatus(string $message, array $extra = []): self {
+    return self::status($message, ['debug' => TRUE] + $extra);
+  }
+
   public static function token(string $text): self {
     return new self(ChatEventType::TOKEN, ['text' => $text]);
   }

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Inference;
 
 use Drupal\aincient_core\Exception\AiProviderFailure;
+use Drupal\aincient_core\Event\InferenceStartedEvent;
 use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
 use Drupal\aincient_core\Usage\UsageRecorder;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * One chat turn on `symfony/ai`, for a node that reasons without tools.
@@ -36,6 +38,9 @@ final class ChatCompleter {
     private readonly ResultUnpacker $unpacker,
     private readonly UsageRecorder $usage,
     private readonly LoggerInterface $logger,
+    // Optional, exactly as in {@see SymfonyAiReasoner}: it lets the console say
+    // a call is in flight, and its absence costs only that.
+    private readonly ?EventDispatcherInterface $dispatcher = NULL,
   ) {}
 
   /**
@@ -97,6 +102,19 @@ final class ChatCompleter {
       // (it wants `maxOutputTokens`) with a 400 on the whole request.
       $options = $this->registry->adapter($providerId)->translateOptions($options);
       $platform = $this->registry->platform($providerId);
+      // Announce the wait before it starts — a brand specialist's call is as
+      // silent as the agent's ({@see InferenceStartedEvent}).
+      if ($this->dispatcher !== NULL) {
+        try {
+          $this->dispatcher->dispatch(
+            new InferenceStartedEvent($providerId, $modelId, $operationType),
+            InferenceStartedEvent::EVENT_NAME,
+          );
+        }
+        catch (\Throwable $e) {
+          $this->logger->warning('Could not announce the start of a chat call: @m', ['@m' => $e->getMessage()]);
+        }
+      }
       $deferred = $platform->invoke($modelId, $bag, $options);
       // Resolved inside the try: DeferredResult is lazy, so an upstream fault
       // surfaces on conversion, not on invoke().

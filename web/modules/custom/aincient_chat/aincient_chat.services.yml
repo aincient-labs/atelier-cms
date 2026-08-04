@@ -97,6 +97,16 @@ services:
     tags:
       - { name: event_subscriber }
 
+  # Relays "a model call just went out" onto the open stream. The counterpart to
+  # the node subscriber above: that one can only report finished work, and a
+  # reasoning call routinely runs ~50s with no engine event of its own.
+  aincient_chat.inference_progress_subscriber:
+    class: Drupal\aincient_chat\EventSubscriber\InferenceProgressSubscriber
+    arguments:
+      - '@aincient_chat.stream_relay'
+    tags:
+      - { name: event_subscriber }
+
   aincient_chat.processor:
     class: Drupal\aincient_chat\Chat\ChatProcessor
     arguments:

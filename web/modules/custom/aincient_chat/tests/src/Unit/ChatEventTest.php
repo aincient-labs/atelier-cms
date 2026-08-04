@@ -48,6 +48,29 @@ final class ChatEventTest extends UnitTestCase {
   }
 
   /**
+   * debugStatus() is a status frame the console can recognise and withhold.
+   *
+   * Same wire type as a plain status (no new frame for the client to learn),
+   * marked `debug` so engine chatter never reaches a normal console.
+   *
+   * @covers ::debugStatus
+   * @covers ::status
+   */
+  public function testDebugStatusIsAFlaggedStatus(): void {
+    $debug = ChatEvent::debugStatus('Routed to "pages" (studio pin).', ['flow' => 'pages']);
+    $this->assertSame(ChatEventType::STATUS, $debug->type);
+    $this->assertSame([
+      'message' => 'Routed to "pages" (studio pin).',
+      'debug' => TRUE,
+      'flow' => 'pages',
+    ], $debug->data);
+
+    // A plain status carries no flag at all, so the console shows it.
+    $plain = ChatEvent::status('Getting started…');
+    $this->assertArrayNotHasKey('debug', $plain->data);
+  }
+
+  /**
    * A node frame serializes as `event: node` + one JSON data line.
    *
    * @covers ::toSseFrame

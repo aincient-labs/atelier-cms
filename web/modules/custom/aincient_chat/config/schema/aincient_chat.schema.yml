@@ -9,6 +9,9 @@ aincient_chat.settings:
         checks_enabled:
           type: boolean
           label: 'Enable the Checks studio (policy runtime is mid-build; ships off)'
+        technical_detail:
+          type: boolean
+          label: 'Show engine detail in the console work trail (node/type ids, wiring steps, router status) — operator debugging only; ships off'
     default_studio:
       type: string
       label: 'The studio a fresh console session opens in'

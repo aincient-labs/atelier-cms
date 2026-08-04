@@ -1101,8 +1101,16 @@
   21%, 100% { opacity: .3; background: var(--ain-text-dim); }
 }
 .ain-thinking__text { color: var(--ain-text-dim); font-size: 13px; }
+/* The wait clock: quieter than the status it follows — it is reassurance, not
+   news. Tabular figures so a ticking second never shifts the row. */
+.ain-thinking__wait {
+  color: var(--ain-text-faint); font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
 
-/* ---- Node-execution trail (live workflow progress, tool-output style) ----- */
+/* ---- Work trail (live turn progress, tool-output style) -------------------
+   Owner words by default (see step-vocabulary.ts); machine ids and the wiring
+   rows appear only on [data-technical], the operator debug flag. ----------- */
 .ain-trail { margin: 2px 0 4px; border: 1px solid var(--ain-border); border-radius: var(--ain-radius); background: var(--ain-surface-2); overflow: hidden; }
 .ain-trail__header {
   display: flex; align-items: center; gap: 8px; width: 100%;
@@ -1111,7 +1119,11 @@
 }
 .ain-trail__header:hover { color: var(--ain-text); }
 .ain-trail__title { white-space: nowrap; }
-.ain-trail__count { opacity: .75; }
+/* The summary can be the long part now ("Generated an image · checked the
+   brand"), so it ellipsizes rather than pushing the chevron off the row. */
+.ain-trail:not([data-running]) .ain-trail__title {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
 .ain-trail__latest {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--ain-text); font-size: 12.5px;
@@ -1138,6 +1150,9 @@
 /* tool-call steps (recorded as pipeline jobs) — wrench + accent label */
 .ain-trail__toolglyph { flex: 0 0 auto; align-self: center; font-size: 11px; color: var(--ain-text-dim); }
 .ain-trail__step[data-tool] .ain-trail__label { color: var(--ain-text); }
+/* Wiring rows reach the trail only in technical mode — kept a shade back so
+   the real work still reads first in a debugging session. */
+.ain-trail__step[data-kind="plumbing"] .ain-trail__label { color: var(--ain-text-dim); }
 
 /* ---- Tool activity line (fallback for unregistered tool parts) ------------
    Study 02, Plate 9: the studio's work renders as a QUIET MONO activity line —

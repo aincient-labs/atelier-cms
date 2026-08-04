@@ -56,6 +56,8 @@ services:
       - '@aincient_core.inference.result_unpacker'
       - '@aincient_core.usage_recorder'
       - '@logger.channel.aincient_core'
+      # Announces InferenceStartedEvent so the console can report the wait.
+      - '@event_dispatcher'
 
   # Records real token usage + cost for every call the three seams above make.
   # Nothing dispatches drupal/ai's response events any more, so without this the
@@ -280,6 +282,9 @@ services:
       - '@aincient_core.inference.result_unpacker'
       - '@aincient_core.usage_recorder'
       - '@logger.channel.aincient_core'
+      # Announces InferenceStartedEvent: the agent's reasoning call is the
+      # longest wait in a turn and the only one that can report it starting.
+      - '@event_dispatcher'
 
   # The Symfony HTTP client symfony/ai's bridges transport over. Drupal ships
   # Guzzle, not this, so it is constructed here rather than reused — and kept

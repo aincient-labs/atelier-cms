@@ -10,7 +10,8 @@ import { rememberThreadActivity, rememberThreadTitle } from "./thread-meta";
 import { rememberThreadWorkingNode, threadWorkingNode } from "./thread-working-node";
 import { clearRunStatus, setRunStatus } from "./run-status";
 import { addSessionUsage, addUsage, EMPTY_USAGE, type UsageTotal } from "./usage-state";
-import { apiUrl } from "./console-config";
+import { apiUrl, technicalDetail } from "./console-config";
+import { describeStep } from "./step-vocabulary";
 
 /**
  * Adapters connect the assistant-ui runtime to a backend.
@@ -981,13 +982,17 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
   
           case "status":
             // Transient progress — not message content. Feeds the thinking
-            // indicator via the run-status side store.
-            setRunStatus(threadId, String(data.message ?? ""));
+            // indicator via the run-status side store. Frames flagged `debug`
+            // (the router's own reasoning) are ENGINE detail: they reach the
+            // indicator only when the console runs with technical detail on.
+            if (!data.debug || technicalDetail()) {
+              setRunStatus(threadId, String(data.message ?? ""));
+            }
             break;
-  
+
           case "node": {
-            // One workflow node finished — grow the live execution trail.
-            steps.push({
+            // One workflow node finished — grow the live work trail.
+            const step: NodeStep = {
               nodeId: String(data.node_id ?? ""),
               label: String(data.label ?? data.node_id ?? "node"),
               status: String(data.status ?? "completed"),
@@ -995,7 +1000,16 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
               ...(typeof data.elapsed_ms === "number" ? { elapsedMs: data.elapsed_ms } : {}),
               ...(data.error ? { error: String(data.error) } : {}),
               ...(data.tool ? { tool: true } : {}),
-            });
+            };
+            steps.push(step);
+            // Narrate real work on the ONE live region (the thinking
+            // indicator): a frame arrives when its node FINISHED, so the past
+            // tense is the accurate thing to announce. Wiring stays silent —
+            // "Prompt template" is not news to the person who asked for a page.
+            const phrase = describeStep(step);
+            if (phrase.kind === "work") {
+              setRunStatus(threadId, phrase.past);
+            }
             yield snapshot();
             break;
           }

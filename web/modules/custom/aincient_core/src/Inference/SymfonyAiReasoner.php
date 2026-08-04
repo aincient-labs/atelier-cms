@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Inference;
 
+use Drupal\aincient_core\Event\InferenceStartedEvent;
 use Drupal\aincient_core\Exception\AiProviderFailure;
 use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
 use Drupal\aincient_core\Usage\UsageRecorder;
@@ -12,6 +13,7 @@ use Drupal\flowdrop\DTO\Reason\ReasonRequest;
 use Drupal\flowdrop\DTO\Reason\ReasonResult;
 use Drupal\flowdrop\Service\Reasoning\ChatReasonerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Atelier's reasoning backend, on `symfony/ai` instead of `drupal/ai`.
@@ -92,6 +94,12 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
     private readonly ResultUnpacker $unpacker,
     private readonly UsageRecorder $usage,
     private readonly LoggerInterface $logger,
+    // Announces that a call is going out, so the console can say so while it is
+    // in flight ({@see InferenceStartedEvent} for why nobody else can tell it).
+    // OPTIONAL on purpose: this class is constructed directly in unit tests and
+    // narration is not part of reasoning — no dispatcher simply means no
+    // progress frame, never a failed turn.
+    private readonly ?EventDispatcherInterface $dispatcher = NULL,
   ) {}
 
   /**
@@ -149,6 +157,11 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
       // `match ($providerId)` right here.
       $options = $this->registry->adapter($providerId)->translateOptions($options);
       $platform = $this->registry->platform($providerId);
+      // The turn's longest wait starts HERE, and this is the only place that
+      // knows it: the orchestrator dispatches nothing until the node completes,
+      // so without this announcement the console has nothing to say for the
+      // whole call. Best-effort — a subscriber's failure must not fail a turn.
+      $this->announceStart($providerId, $modelId, $request->getOperationType(), $declarations !== []);
       $deferred = $platform->invoke($modelId, $bag, $options);
       // Resolve here, inside the try: DeferredResult is lazy, so an upstream
       // fault surfaces on conversion rather than on invoke(). Converting outside
@@ -219,6 +232,28 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
     return $prompt === ''
       ? self::OUTPUT_DISCIPLINE
       : $prompt . "\n\n" . self::OUTPUT_DISCIPLINE;
+  }
+
+  /**
+   * Announce an outgoing call, never letting the announcement break the call.
+   *
+   * A subscriber here writes to a live SSE stream; a broken pipe or a client
+   * that walked away must cost the progress line and nothing else. Same reason
+   * the dispatcher is optional: reasoning does not depend on being narrated.
+   */
+  private function announceStart(string $providerId, string $modelId, string $operationType, bool $toolAware): void {
+    if ($this->dispatcher === NULL) {
+      return;
+    }
+    try {
+      $this->dispatcher->dispatch(
+        new InferenceStartedEvent($providerId, $modelId, $operationType, $toolAware),
+        InferenceStartedEvent::EVENT_NAME,
+      );
+    }
+    catch (\Throwable $e) {
+      $this->logger->warning('Could not announce the start of an inference call: @m', ['@m' => $e->getMessage()]);
+    }
   }
 
   /**

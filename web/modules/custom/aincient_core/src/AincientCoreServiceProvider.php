@@ -58,6 +58,11 @@ class AincientCoreServiceProvider extends ServiceProviderBase {
         // regression this argument repairs.
         new Reference('aincient_core.usage_recorder'),
         new Reference('logger.channel.aincient_core'),
+        // The event dispatcher, for InferenceStartedEvent. Same rule as the
+        // recorder above: THIS list is the live agent-turn wiring, so leaving it
+        // out here would mean the one call that takes ~50s announces itself in
+        // tests and nowhere else — a console silent for the whole wait.
+        new Reference('event_dispatcher'),
       ]);
   }
 

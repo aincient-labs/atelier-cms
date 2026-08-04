@@ -31,10 +31,13 @@ class ChatProcessor implements ChatProcessorInterface {
    */
   public function processTurn(string $message, string $threadId, ?string $flowOverride = NULL, ?string $workflow = NULL, array $clientContext = []): \Generator {
     try {
-      yield ChatEvent::status('Routing your request…', ['thread_id' => $threadId]);
+      yield ChatEvent::status('Getting started…', ['thread_id' => $threadId]);
 
       $decision = $this->router->route($message, $flowOverride);
-      yield ChatEvent::status(
+      // WHICH lane we picked, and why, is engine detail — a debug-flagged frame
+      // so it stays on the wire (and in a technical-detail console) without
+      // narrating our own plumbing at someone who asked for a page.
+      yield ChatEvent::debugStatus(
         sprintf('Routed to "%s" (%s).', $decision->flow, $decision->reason),
         ['flow' => $decision->flow],
       );

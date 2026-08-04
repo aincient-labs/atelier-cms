@@ -139,7 +139,13 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
       return;
     }
 
-    yield ChatEvent::status('Starting the FlowDrop workflow…', ['flow' => $flow]);
+    // Name the agent, not the engine: "FlowDrop" is an implementation
+    // dependency like Drupal, and the workflow's label is what the user already
+    // sees in the agent picker ("Page Studio", "Atelier Assistant").
+    yield ChatEvent::status(
+      sprintf('Handing this to %s…', (string) $workflow->label()),
+      ['flow' => $flow],
+    );
 
     // One FlowDrop session per console thread (reused), so repeated turns
     // don't spawn a new session each time.

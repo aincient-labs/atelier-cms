@@ -244,8 +244,10 @@ function UserMessage() {
 
 /**
  * The live "the backend is working" row: a 5-cell pixel bar + the latest
- * transient `status` frame ("Routing your request…", "Starting the FlowDrop
- * workflow…"). Shown inside the bubble while the turn runs and no answer text
+ * transient `status` frame ("Getting started…", "Generated an image" — the
+ * owner words for the newest completed step; see `step-vocabulary.ts`, and
+ * `run-status.ts` for why this is the only live region that narrates a turn).
+ * Shown inside the bubble while the turn runs and no answer text
  * has arrived — the FlowDrop turn executes synchronously server-side, so
  * without this the bubble sat empty (and felt stuck) for the whole run.
  *
@@ -255,6 +257,17 @@ function UserMessage() {
  * sweep — the logo's spectrum heating up. The stage label is only the
  * FALLBACK text: a live status frame is more specific and keeps precedence.
  * "Running", not "Thinking" — a workflow turn may not involve AI at all.
+ *
+ * A RUNNING CLOCK sits beside the text, because the text can legitimately stand
+ * still for a long time: a reasoning node routinely takes ~50s and FlowDrop
+ * dispatches nothing until it finishes (its orchestrator has no job-STARTED
+ * event), so between frames there is genuinely nothing new to say. A second-by
+ * -second count is the honest answer — the run is alive, this is how long it has
+ * been — and past 30s / 1m it carries the escalation the stage labels used to,
+ * which a live status frame otherwise suppressed for the whole run.
+ *
+ * The clock is `aria-hidden`: this element is the turn's live region, and a
+ * per-second counter inside it would announce itself every second.
  */
 const RUN_STAGES = [
   { at: 0, label: "Running…" },
@@ -262,21 +275,52 @@ const RUN_STAGES = [
   { at: 30_000, label: "Heavy lifting…" },
 ] as const;
 
+/** The stage index for an elapsed-milliseconds reading (drives the bar's heat). */
+function runStage(elapsedMs: number): number {
+  let stage = 0;
+  RUN_STAGES.forEach((s, i) => {
+    if (elapsedMs >= s.at) stage = i;
+  });
+  return stage;
+}
+
+/**
+ * The wait, in words: a clock, and past 30s a reason to keep waiting. Empty for
+ * the first few seconds — a counter on a quick turn is just flicker.
+ */
+function waitNote(elapsedMs: number): string {
+  const seconds = Math.floor(elapsedMs / 1000);
+  if (seconds < 4) return "";
+  const clock = seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  if (seconds >= 120) return `${clock} · still going, this one is long`;
+  if (seconds >= 60) return `${clock} · this can take a couple of minutes`;
+  if (seconds >= 30) return `${clock} · still working`;
+  return clock;
+}
+
 function ThinkingIndicator() {
   const status = useActiveThreadRunStatus();
-  const [stage, setStage] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
-    const timers = RUN_STAGES.slice(1).map((s, i) =>
-      window.setTimeout(() => setStage(i + 1), s.at),
-    );
-    return () => timers.forEach(clearTimeout);
+    // One 1s tick for the whole wait — it drives the clock AND the bar's heat,
+    // so there is a single timer per run rather than one per stage.
+    const started = Date.now();
+    const timer = window.setInterval(() => setElapsed(Date.now() - started), 1000);
+    return () => window.clearInterval(timer);
   }, []);
+  const stage = runStage(elapsed);
+  const note = waitNote(elapsed);
   return (
     <div className="ain-thinking" role="status" aria-live="polite" data-stage={stage}>
       <span className="ain-thinking__cells" aria-hidden>
         <span /><span /><span /><span /><span />
       </span>
       <span className="ain-thinking__text">{status || RUN_STAGES[stage].label}</span>
+      {note && (
+        <span className="ain-thinking__wait" aria-hidden>
+          {note}
+        </span>
+      )}
     </div>
   );
 }

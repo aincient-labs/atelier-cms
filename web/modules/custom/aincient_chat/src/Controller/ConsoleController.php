@@ -112,6 +112,14 @@ HTML;
       // (the API routes ship under the same segment), overridable via
       // `aincient_chat.settings:api_base`.
       'apiBase' => $this->apiBase(),
+      // OPERATOR DEBUG FLAG (off by default, deliberately not exposed in the
+      // UI): show the engine behind the work trail — every wiring step, the
+      // node/node-type ids, and the router's own `debug` status frames. The
+      // default console names outcomes only ("Generated an image"), because the
+      // machinery narrating itself ("Chat input, chat_input") is not something
+      // a site owner should have to read. Flip it while debugging a flow:
+      // `drush config:set aincient_chat.settings features.technical_detail 1`.
+      'technicalDetail' => $this->technicalDetail(),
       // Real backend: the httpAdapter parses the /atelier/chat SSE protocol.
       // Set to TRUE to fall back to the client-side mock (no network).
       'mock' => FALSE,
@@ -190,6 +198,22 @@ HTML;
     $configured = (string) ($this->configFactory->get('aincient_chat.settings')->get('api_base') ?? '');
     $base = $configured !== '' ? $configured : Url::fromRoute('aincient_chat.console')->toString();
     return rtrim($base, '/') ?: '/';
+  }
+
+  /**
+   * Whether this console shows the engine behind the work.
+   *
+   * OFF by default and deliberately not exposed in the UI: the console names
+   * outcomes ("Generated an image"), never machinery ("Chat input,
+   * chat_input") — brand.md §7. On, the work trail regains every wiring step
+   * plus node/node-type ids, and `debug`-flagged status frames reach the
+   * thinking indicator: the shape you want while debugging a flow. Flip it with
+   * `drush config:set aincient_chat.settings features.technical_detail 1`.
+   */
+  private function technicalDetail(): bool {
+    return (bool) $this->configFactory
+      ->get('aincient_chat.settings')
+      ->get('features.technical_detail');
   }
 
   /**

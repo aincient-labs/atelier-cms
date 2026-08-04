@@ -7,6 +7,20 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.4.0] — 2026-08-04
+
+- **Changed: while Atelier works, it tells you what it is doing — in your words, not its own.** A
+  running turn used to show the engine's internal job list: "Running the workflow · 7 steps",
+  "Workflow ran", and rows printing a step's label beside its machine name. Now the steps read as
+  outcomes ("Generating an image" while it runs, "Generated an image" once done), the plumbing steps
+  are hidden entirely, and a reply that needed no real work shows no box at all.
+- **Fixed: a long request no longer looks stuck.** Building a page can spend most of a minute in a
+  single model call, and the console had nothing to say for that whole wait — the status line simply
+  froze. Atelier now says **"Thinking…"** the moment it calls the model, counts the seconds, and
+  changes what it says as the wait gets longer, so you can tell it is still working.
+- **Fixed: when something goes wrong, you see it.** A failed step is now always shown, opened, with
+  the error text — previously a backend failure could leave the screen looking like nothing happened.
+
 ## [0.3.0] — 2026-08-04
 
 - **Changed: Atelier is leaner — twelve modules it no longer uses have been removed.** Atelier used

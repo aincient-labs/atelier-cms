@@ -59,6 +59,11 @@ final class AincientCoreServiceProviderTest extends TestCase {
       'aincient_core.inference.result_unpacker',
       'aincient_core.usage_recorder',
       'logger.channel.aincient_core',
+      // The dispatcher that announces InferenceStartedEvent. Wired here as well
+      // as in the .yml because THIS list is the live agent loop: without it the
+      // one call that takes ~50s would report itself starting in tests only,
+      // leaving the console silent for the whole wait.
+      'event_dispatcher',
     ], $ids);
   }
 
@@ -80,7 +85,7 @@ final class AincientCoreServiceProviderTest extends TestCase {
 
     $arguments = $container->getDefinition('flowdrop.chat_reasoner')->getArguments();
     $this->assertNotContains(new Reference('some.other.service'), $arguments);
-    $this->assertCount(7, $arguments);
+    $this->assertCount(8, $arguments);
   }
 
   /**
@@ -119,6 +124,7 @@ final class AincientCoreServiceProviderTest extends TestCase {
       'aincient_core.inference.message_mapper',
       'aincient_core.inference.tool_schema',
       'logger.channel.aincient_core',
+      'event_dispatcher',
     ] as $id) {
       $container->register($id, 'stdClass');
     }

@@ -17,7 +17,7 @@
  * depend on it without a cycle. Keep it dependency-free.
  */
 
-type UrlSettings = { basePath?: string; apiBase?: string };
+type UrlSettings = { basePath?: string; apiBase?: string; technicalDetail?: boolean };
 
 function urlSettings(): UrlSettings {
   const w = window as unknown as {
@@ -46,6 +46,21 @@ export function consoleBase(): string {
  */
 export function apiBase(): string {
   return urlSettings().apiBase ?? consoleBase();
+}
+
+/**
+ * Whether this console shows ENGINE detail — machine node ids, node type ids and
+ * the wiring steps the run trail otherwise hides, plus the router's own status
+ * frames (see `step-vocabulary.ts`).
+ *
+ * A console-wide operator flag, not a per-user preference and deliberately NOT
+ * exposed in the UI: it exists for debugging a flow, and the default console
+ * speaks outcomes only. Turn it on with
+ * `drush config:set aincient_chat.settings features.technical_detail 1`.
+ * Defaults to OFF — including in a dev harness with no injected settings.
+ */
+export function technicalDetail(): boolean {
+  return urlSettings().technicalDetail === true;
 }
 
 /**
