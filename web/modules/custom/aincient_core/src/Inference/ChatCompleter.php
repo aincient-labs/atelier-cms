@@ -38,6 +38,7 @@ final class ChatCompleter {
     private readonly ResultUnpacker $unpacker,
     private readonly UsageRecorder $usage,
     private readonly LoggerInterface $logger,
+    private readonly ProviderCall $providerCall,
     // Optional, exactly as in {@see SymfonyAiReasoner}: it lets the console say
     // a call is in flight, and its absence costs only that.
     private readonly ?EventDispatcherInterface $dispatcher = NULL,
@@ -102,43 +103,41 @@ final class ChatCompleter {
       // (it wants `maxOutputTokens`) with a 400 on the whole request.
       $options = $this->registry->adapter($providerId)->translateOptions($options);
       $platform = $this->registry->platform($providerId);
-      // Announce the wait before it starts — a brand specialist's call is as
-      // silent as the agent's ({@see InferenceStartedEvent}).
-      if ($this->dispatcher !== NULL) {
-        try {
-          $this->dispatcher->dispatch(
-            new InferenceStartedEvent($providerId, $modelId, $operationType),
-            InferenceStartedEvent::EVENT_NAME,
-          );
-        }
-        catch (\Throwable $e) {
-          $this->logger->warning('Could not announce the start of a chat call: @m', ['@m' => $e->getMessage()]);
-        }
-      }
-      $deferred = $platform->invoke($modelId, $bag, $options);
-      // Resolved inside the try: DeferredResult is lazy, so an upstream fault
-      // surfaces on conversion, not on invoke().
-      $result = $deferred->getResult();
     }
     catch (ProviderConfigurationException $e) {
       // Local misconfiguration, not an upstream fault — let it through as-is so
       // the caller can say "connect a provider" instead of blaming the model.
       throw $e;
     }
-    catch (\Throwable $e) {
-      $this->logger->error('Chat node inference failed on @provider/@model: @message', [
-        '@provider' => $providerId,
-        '@model' => $modelId,
-        '@message' => $e->getMessage(),
-      ]);
-      // Named, not bare: the predecessor threw a vague \Exception, which reached
-      // the console as a node failure nobody could act on (DECISIONS 0278/0279).
-      throw new AiProviderFailure(sprintf(
-        'The %s model "%s" could not complete this step.',
-        $providerId,
-        $modelId,
-      ), 0, $e);
+
+    // Announce the wait before it starts — a brand specialist's call is as
+    // silent as the agent's ({@see InferenceStartedEvent}). Announced once, not
+    // per attempt: a retry is the same wait continuing, not a new one.
+    if ($this->dispatcher !== NULL) {
+      try {
+        $this->dispatcher->dispatch(
+          new InferenceStartedEvent($providerId, $modelId, $operationType),
+          InferenceStartedEvent::EVENT_NAME,
+        );
+      }
+      catch (\Throwable $e) {
+        $this->logger->warning('Could not announce the start of a chat call: @m', ['@m' => $e->getMessage()]);
+      }
     }
+
+    // Retries and classification live in ProviderCall, shared with the gateway
+    // and the reasoner. Named failures, not bare ones: the predecessor threw a
+    // vague \Exception, which reached the console as a node failure nobody could
+    // act on (DECISIONS 0278/0279), and then as the provider's own wire text,
+    // which nobody could act on either (atelier-cms#8).
+    $result = $this->providerCall->run(
+      // Resolved inside the closure: DeferredResult is lazy, so an upstream
+      // fault surfaces on conversion, not on invoke().
+      fn (): object => $platform->invoke($modelId, $bag, $options)->getResult(),
+      $providerId,
+      $modelId,
+      'step',
+    );
 
     // The node reports its own token count to the job trail (below), but the trail
     // is live-only and per-run. The metering row is the durable half, and it is

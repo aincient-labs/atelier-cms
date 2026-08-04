@@ -10,6 +10,7 @@ use Drupal\aincient_core\Inference\MessageMapper;
 use Drupal\aincient_core\Inference\ModelTargetResolver;
 use Drupal\aincient_core\Inference\PlatformRegistryInterface;
 use Drupal\aincient_core\Inference\ProviderAdapterInterface;
+use Drupal\aincient_core\Inference\ProviderCall;
 use Drupal\aincient_core\Inference\ResultUnpacker;
 use Drupal\aincient_core\Inference\SymfonyAiReasoner;
 use Drupal\aincient_core\Inference\ToolSchema;
@@ -490,6 +491,8 @@ final class SymfonyAiReasonerTest extends TestCase {
       new ResultUnpacker(new MessageMapper()),
       $this->unmeteredRecorder(),
       new NullLogger(),
+      // Sleepless — see AiGatewayTest for why.
+      new ProviderCall(new NullLogger(), sleepBetweenAttempts: FALSE),
     );
 
     return $reasoner->reason($request);

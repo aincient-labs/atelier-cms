@@ -94,6 +94,7 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
     private readonly ResultUnpacker $unpacker,
     private readonly UsageRecorder $usage,
     private readonly LoggerInterface $logger,
+    private readonly ProviderCall $providerCall,
     // Announces that a call is going out, so the console can say so while it is
     // in flight ({@see InferenceStartedEvent} for why nobody else can tell it).
     // OPTIONAL on purpose: this class is constructed directly in unit tests and
@@ -157,34 +158,32 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
       // `match ($providerId)` right here.
       $options = $this->registry->adapter($providerId)->translateOptions($options);
       $platform = $this->registry->platform($providerId);
-      // The turn's longest wait starts HERE, and this is the only place that
-      // knows it: the orchestrator dispatches nothing until the node completes,
-      // so without this announcement the console has nothing to say for the
-      // whole call. Best-effort — a subscriber's failure must not fail a turn.
-      $this->announceStart($providerId, $modelId, $request->getOperationType(), $declarations !== []);
-      $deferred = $platform->invoke($modelId, $bag, $options);
-      // Resolve here, inside the try: DeferredResult is lazy, so an upstream
-      // fault surfaces on conversion rather than on invoke(). Converting outside
-      // this block is exactly how an error escapes unwrapped.
-      $result = $deferred->getResult();
     }
     catch (ProviderConfigurationException $e) {
       // Local misconfiguration — not an upstream failure. Let it through as-is
       // so the caller can say "connect a provider" instead of blaming the model.
       throw $e;
     }
-    catch (\Throwable $e) {
-      $this->logger->error('Inference failed on @provider/@model: @message', [
-        '@provider' => $providerId,
-        '@model' => $modelId,
-        '@message' => $e->getMessage(),
-      ]);
-      throw new AiProviderFailure(sprintf(
-        'The %s model "%s" could not complete this step.',
-        $providerId,
-        $modelId,
-      ), 0, $e);
-    }
+
+    // The turn's longest wait starts HERE, and this is the only place that
+    // knows it: the orchestrator dispatches nothing until the node completes,
+    // so without this announcement the console has nothing to say for the
+    // whole call. Best-effort — a subscriber's failure must not fail a turn.
+    $this->announceStart($providerId, $modelId, $request->getOperationType(), $declarations !== []);
+
+    // Retries and classification live in ProviderCall, shared with the gateway
+    // and the chat completer (atelier-cms#8). A retried attempt deliberately
+    // does NOT re-announce: the console is already showing this step, and a
+    // second "thinking…" frame would read as a second turn.
+    $result = $this->providerCall->run(
+      // Resolve inside the closure: DeferredResult is lazy, so an upstream fault
+      // surfaces on conversion rather than on invoke(). Converting outside is
+      // exactly how an error escapes unwrapped — and unretried.
+      fn (): object => $platform->invoke($modelId, $bag, $options)->getResult(),
+      $providerId,
+      $modelId,
+      'step',
+    );
 
     // Meter the turn HERE, at the seam that made the call, because this is the
     // only place that knows which model actually answered — the request usually

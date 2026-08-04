@@ -15,6 +15,17 @@ services:
       - '@aincient_core.inference.result_unpacker'
       - '@aincient_core.usage_recorder'
       - '@logger.channel.aincient_core'
+      - '@aincient_core.inference.provider_call'
+
+  # One provider call, with retries and a human answer. Shared by all three
+  # seams above/below (gateway, chat completer, reasoner) because they used to
+  # carry three copies of the same `catch (\Throwable)` — which is how one
+  # transient 429 aborted a run and arrived wearing the provider's own wire text
+  # (atelier-cms#8, tracking #4/#5/#6).
+  aincient_core.inference.provider_call:
+    class: Drupal\aincient_core\Inference\ProviderCall
+    arguments:
+      - '@logger.channel.aincient_core'
 
   # The containment boundary for the provider INVENTORY — which providers this
   # site can serve, what each can do, and which models it offers. The twin of the
@@ -56,6 +67,7 @@ services:
       - '@aincient_core.inference.result_unpacker'
       - '@aincient_core.usage_recorder'
       - '@logger.channel.aincient_core'
+      - '@aincient_core.inference.provider_call'
       # Announces InferenceStartedEvent so the console can report the wait.
       - '@event_dispatcher'
 
@@ -282,6 +294,7 @@ services:
       - '@aincient_core.inference.result_unpacker'
       - '@aincient_core.usage_recorder'
       - '@logger.channel.aincient_core'
+      - '@aincient_core.inference.provider_call'
       # Announces InferenceStartedEvent: the agent's reasoning call is the
       # longest wait in a turn and the only one that can report it starting.
       - '@event_dispatcher'

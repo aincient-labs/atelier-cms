@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Exception;
 
+use Drupal\aincient_core\Inference\ProviderCall;
+
 /**
  * A provider request failed, carrying what the upstream actually said.
  *
@@ -26,5 +28,41 @@ namespace Drupal\aincient_core\Exception;
  * the message readable.
  */
 final class AiProviderFailure extends \Exception {
+
+  /**
+   * Constructs an AiProviderFailure.
+   *
+   * @param string $message
+   *   What to tell the reader — already classified, never the upstream's text.
+   * @param int $code
+   *   Unused; kept for \Exception's signature.
+   * @param \Throwable|null $previous
+   *   The provider's own exception, always.
+   * @param string $kind
+   *   Which kind of failure this is, as one of
+   *   {@see \Drupal\aincient_core\Inference\ProviderCall}'s `KIND_*` constants.
+   *   A rejected credential and an overloaded provider need opposite responses
+   *   from the reader; this is the machine-readable half of telling them apart
+   *   (atelier-cms#8). Defaults to `unknown` for the call sites that raise this
+   *   without going through {@see \Drupal\aincient_core\Inference\ProviderCall}.
+   */
+  public function __construct(
+    string $message,
+    int $code = 0,
+    ?\Throwable $previous = NULL,
+    private readonly string $kind = ProviderCall::KIND_UNKNOWN,
+  ) {
+    parent::__construct($message, $code, $previous);
+  }
+
+  /**
+   * Which kind of failure this is.
+   *
+   * @return string
+   *   One of {@see \Drupal\aincient_core\Inference\ProviderCall}'s `KIND_*`.
+   */
+  public function getKind(): string {
+    return $this->kind;
+  }
 
 }

@@ -11,6 +11,7 @@ use Drupal\aincient_core\Inference\ImageRef;
 use Drupal\aincient_core\Inference\MessageMapper;
 use Drupal\aincient_core\Inference\PlatformRegistryInterface;
 use Drupal\aincient_core\Inference\ProviderAdapterInterface;
+use Drupal\aincient_core\Inference\ProviderCall;
 use Drupal\aincient_core\Inference\ResultUnpacker;
 use Drupal\aincient_core\ModelRoleResolver;
 use Drupal\aincient_core\ModelRoles;
@@ -457,6 +458,9 @@ final class AiGatewayTest extends UnitTestCase {
       new ResultUnpacker(new MessageMapper()),
       $this->unmeteredRecorder(),
       new NullLogger(),
+      // Sleepless: the retry policy itself is pinned in ProviderCallTest, and a
+      // real backoff would put seconds of nothing into every failure case here.
+      new ProviderCall(new NullLogger(), sleepBetweenAttempts: FALSE),
     );
   }
 

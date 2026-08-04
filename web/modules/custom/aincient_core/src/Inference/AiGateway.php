@@ -61,6 +61,7 @@ final class AiGateway {
     private readonly ResultUnpacker $unpacker,
     private readonly UsageRecorder $usage,
     private readonly LoggerInterface $logger,
+    private readonly ProviderCall $providerCall,
   ) {}
 
   /**
@@ -369,40 +370,38 @@ final class AiGateway {
     try {
       $options = $this->registry->adapter($providerId)->translateOptions($this->options());
       $platform = $this->registry->platform($providerId);
-      $deferred = $platform->invoke($modelId, $bag, $options);
-      // Resolve inside the try: DeferredResult is lazy, so an upstream fault
-      // surfaces on conversion rather than on invoke(). Converting outside this
-      // block is exactly how an error escapes unwrapped.
-      $result = $deferred->getResult();
-      // Metered here, in the one place all three product calls pass through, so
-      // adding a fourth method cannot forget to. A failed call records nothing on
-      // purpose: there is no usage to report, and the throw below is the record.
-      $this->usage->record($providerId, $modelId, $result, $tag, $operation);
-      return $result;
     }
     catch (ProviderConfigurationException $e) {
       // Local misconfiguration — not an upstream failure. Let it through as-is so
       // the caller can say "connect a provider" instead of blaming the model.
       throw $e;
     }
-    catch (\Throwable $e) {
-      $this->logger->error('One-shot inference failed on @provider/@model (@tag): @message', [
-        '@provider' => $providerId,
-        '@model' => $modelId,
-        // The tag is the only thing that says WHICH feature made this call, so it
-        // belongs in the log line. It is deliberately NOT sent to the provider:
-        // `symfony/ai` has no metering-tag channel, and an unknown option key is
-        // a hard 400 on Gemini (see
-        // {@see ProviderAdapterInterface::translateOptions()}).
-        '@tag' => $tag !== '' ? $tag : 'untagged',
-        '@message' => $e->getMessage(),
-      ]);
-      throw new AiProviderFailure(sprintf(
-        'The %s model "%s" could not complete this request.',
-        $providerId,
-        $modelId,
-      ), 0, $e);
-    }
+
+    // Retries and classification live in ProviderCall, shared with the reasoner
+    // and the chat completer — a transient 429 here used to abort the run with
+    // the provider's own wire text as the whole message (atelier-cms#8).
+    $result = $this->providerCall->run(
+      // Resolve inside the closure: DeferredResult is lazy, so an upstream fault
+      // surfaces on conversion rather than on invoke(). Converting outside is
+      // exactly how an error escapes unwrapped — and unretried.
+      fn (): object => $platform->invoke($modelId, $bag, $options)->getResult(),
+      $providerId,
+      $modelId,
+      'request',
+      // The tag is the only thing that says WHICH feature made this call, so it
+      // belongs in the log line. It is deliberately NOT sent to the provider:
+      // `symfony/ai` has no metering-tag channel, and an unknown option key is
+      // a hard 400 on Gemini (see
+      // {@see ProviderAdapterInterface::translateOptions()}).
+      ['@tag' => $tag !== '' ? $tag : 'untagged'],
+    );
+
+    // Metered here, in the one place all three product calls pass through, so
+    // adding a fourth method cannot forget to. A failed call records nothing on
+    // purpose: there is no usage to report, and the throw above is the record.
+    $this->usage->record($providerId, $modelId, $result, $tag, $operation);
+
+    return $result;
   }
 
   /**

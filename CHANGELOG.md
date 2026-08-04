@@ -7,6 +7,20 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.4.1] — 2026-08-04
+
+- **Fixed: a busy or briefly unavailable AI provider no longer throws away your whole request.**
+  Atelier used to give up the moment a provider answered "too many requests" or "server error" — one
+  bad second from upstream and the turn was gone, however far along it was. It now waits and tries
+  again, up to three times: for as long as the provider itself asks, or a second, then two, then
+  four. Failures that trying again cannot mend still stop straight away, as they should.
+- **Fixed: when a provider does refuse, the message tells you whose problem it is and what to do.**
+  A rejected key, someone else's rate limit and an outage at the provider all used to arrive as
+  whatever raw text the provider's API happened to return — three different situations reading
+  identically, none of them saying what would help. Each now has its own plain sentence and its own
+  suggestion: reconnect the provider, wait and retry, choose a different model, shorten the
+  conversation. The provider's exact words are still kept in the log, where they are useful.
+
 ## [0.4.0] — 2026-08-04
 
 - **Changed: while Atelier works, it tells you what it is doing — in your words, not its own.** A
