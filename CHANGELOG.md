@@ -7,6 +7,14 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.1.2] — 2026-08-04
+
+- **Fixed: every site warned "no AI provider connected yet" on every boot, connected or not.** The
+  startup self-test asked a component that a recent release removed. The call failed, the failure was
+  swallowed, and the warning printed unconditionally — so the one line that should tell you setup is
+  still owed said the same thing on a fully configured site. It now asks the part of Atelier that
+  actually knows, and stays quiet unless no model is connected.
+
 ## [0.1.1] — 2026-08-03
 
 - **Fixed: an agent could answer "success" and change nothing.** Asking for a whole page in one go

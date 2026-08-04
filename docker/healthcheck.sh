@@ -57,11 +57,25 @@ if [ "$front_status" -ge 400 ]; then
   fail "front page returns HTTP $front_status for an anonymous visitor (page.front = ${front}) — the site has no working front door"
 fi
 
-# 5. A default chat provider is configured (warns rather than fails — a site may
-#    be mid-setup before a provider is connected). Provider-neutral: we check for
-#    a pinned default chat provider, not a vendor-specific key. Probe by printing
-#    a token and grepping it: exit() codes from `drush php:eval` are not reliable.
-if ! $DRUSH php:eval '$d = \Drupal::service("ai.provider")->getDefaultProviderForOperationType("chat"); print !empty($d["provider_id"]) ? "AI_OK" : "";' 2>/dev/null | grep -q AI_OK; then
+# 5. A model is bound for the default role (warns rather than fails — a site may
+#    be mid-setup before a provider is connected). Provider-neutral: we ask
+#    whether the DEFAULT ROLE resolves to a provider+model, not whether any
+#    vendor-specific key exists.
+#
+#    This asks the ROLE LAYER, which is the only authority left. It used to call
+#    \Drupal::service("ai.provider"), but drupal/ai was uninstalled (2026-08-02)
+#    and that service no longer exists — so the call threw, the `|| true` shape
+#    of the test swallowed it, and every healthy site warned "no AI provider
+#    connected" on every single boot. A check that always fires is a check
+#    nobody reads.
+#
+#    Probe by printing a token and grepping it: exit() codes from `drush php:eval`
+#    are not reliable.
+if ! $DRUSH php:eval '
+  $r = \Drupal::service("aincient_core.model_role_resolver");
+  $b = $r->binding($r->defaultRole());
+  print !empty($b["provider_id"]) && !empty($b["model_id"]) ? "AI_OK" : "";
+' 2>/dev/null | grep -q AI_OK; then
   printf '[health] WARN: no AI provider connected yet — chat will not work until you connect a provider in the console (first-run onboarding wizard)\n' >&2
 fi
 
