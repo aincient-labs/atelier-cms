@@ -39,11 +39,38 @@ export type WorkflowRef = {
   welcomeText?: string;
   /** Line beneath the heading (falls back to the console default). */
   description?: string;
-  /** Suggested prompts shown as chips (falls back to the console defaults). */
+  /**
+   * Suggested prompts shown as chips. CONFIGURATION IS THE ONLY SOURCE — see
+   * `starterAsks()`. No chips ship in code.
+   */
   sampleAsks?: string[];
   /** Suppress the sample-ask chips entirely — the flow takes only custom requests. */
   freeformOnly?: boolean;
+  /**
+   * The capability verbs THIS room spends ("write" | "describe" | "draw") — the
+   * chips it shows. Server-derived from the agent's wired tools, so a room never
+   * advertises a verb it has no tool for. Absent from an un-rebuilt shell, which
+   * reads as "unscoped" and shows the whole row (the old behaviour).
+   */
+  verbs?: string[];
 };
+
+/**
+ * The starter chips for a room's empty composer.
+ *
+ * `aincient_chat.settings:workflow_metadata.<workflow>.sample_asks` is the
+ * ONLY source. There is deliberately no code-level fallback list: a room's
+ * chips are its own promise, so borrowing another room's (or a generic set)
+ * would offer asks the room cannot fulfil — the exact defect this replaced.
+ * A room with nothing configured renders NO chips, which is honest: an empty
+ * composer still takes any request, and the room's welcome/description still
+ * says what it does. A new agent room ships its own chips by adding config,
+ * never by touching this file.
+ */
+export function starterAsks(flow: WorkflowRef | undefined): string[] {
+  if (!flow || flow.freeformOnly) return [];
+  return flow.sampleAsks ?? [];
+}
 
 const listeners = new Set<() => void>();
 const threadFlows = new Map<string, WorkflowRef>();

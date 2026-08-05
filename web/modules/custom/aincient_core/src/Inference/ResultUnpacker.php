@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Inference;
 
+use Symfony\AI\Platform\FinishReason\FinishReason;
+use Symfony\AI\Platform\FinishReason\FinishReasonCase;
 use Symfony\AI\Platform\Result\BinaryResult;
 use Symfony\AI\Platform\Result\MultiPartResult;
 use Symfony\AI\Platform\Result\ToolCallResult;
@@ -202,6 +204,73 @@ final class ResultUnpacker {
     }
     $usage = $result->getMetadata()->get('token_usage');
     return $usage instanceof TokenUsageInterface ? $usage : NULL;
+  }
+
+  /**
+   * Why the model stopped, as the bridge normalised it — NULL when unreported.
+   *
+   * STATIC on purpose. Every other method here reads a result the same way, but
+   * this one has a caller that must not carry a service edge to get it:
+   * {@see ProviderCall} is the single seam all three inference paths share, and
+   * it is deliberately built from a logger alone (no registry, no unpacker) so
+   * that its retry-and-classify judgement has nothing else to go wrong. Making
+   * the read a pure function keeps the knowledge of symfony/ai's metadata keys in
+   * ONE class — the whole point of this file — without adding an optional
+   * dependency whose absence would silently turn the check off.
+   *
+   * The read is the top-level result's metadata only, which is where every bridge
+   * files it ({@see \Symfony\AI\Platform\FinishReason\FinishReasonAwareTrait}) —
+   * including when the result it wraps is a MultiPartResult. Walking the parts is
+   * not done: a part carrying its own reason is not a shape any bridge emits, and
+   * guessing there is how a false positive would get in.
+   *
+   * @param object $result
+   *   The result a platform yielded.
+   *
+   * @return \Symfony\AI\Platform\FinishReason\FinishReason|null
+   *   The reason the bridge filed, or NULL when none was.
+   */
+  public static function finishReason(object $result): ?FinishReason {
+    if (!method_exists($result, 'getMetadata')) {
+      return NULL;
+    }
+    $reason = $result->getMetadata()->get('finish_reason');
+    return $reason instanceof FinishReason ? $reason : NULL;
+  }
+
+  /**
+   * The provider's own wording when a turn was cut off at the token cap.
+   *
+   * The answer to "did this turn actually finish?", which nothing used to ask.
+   * A response truncated at `max_tokens` comes back looking exactly like a
+   * complete one — status success on every node, a half sentence or a vanished
+   * tool call on screen — which is a wrong answer presented as a right one
+   * (atelier-cms#8). {@see ProviderCall} turns a non-NULL answer here into a
+   * `too_long` failure.
+   *
+   * ONLY the normalised LENGTH case counts, and each bridge maps its provider's
+   * spelling onto it: Anthropic's `max_tokens`, chat-completions' `length` (so
+   * Mistral, DeepSeek and everything behind `openai_compatible`), the Responses
+   * API's `max_output_tokens` (our `openai`), Gemini's `MAX_TOKENS`, Ollama's
+   * `length`. An absent reason, an unrecognised one (OTHER), a clean stop, a
+   * stop sequence or a tool call are all NULL — a false positive here would turn
+   * working turns into error cards, which is worse than the bug being fixed. The
+   * response's own length or a missing tool call are NEVER evidence.
+   *
+   * @param object $result
+   *   The result a platform yielded.
+   *
+   * @return string|null
+   *   The raw provider wording (for the log), or NULL when the turn was not
+   *   truncated — or when we cannot tell.
+   */
+  public static function truncatedAtTokenCap(object $result): ?string {
+    $reason = self::finishReason($result);
+    if ($reason === NULL || !$reason->is(FinishReasonCase::LENGTH)) {
+      return NULL;
+    }
+    $raw = $reason->getRaw();
+    return $raw !== '' ? $raw : FinishReasonCase::LENGTH->value;
   }
 
   /**

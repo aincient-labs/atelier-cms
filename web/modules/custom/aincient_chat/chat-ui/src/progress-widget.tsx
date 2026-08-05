@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useMessage } from "@assistant-ui/react";
+import { useMessage, useThread, useThreadRuntime } from "@assistant-ui/react";
 import { makeSafeAssistantToolUI } from "./error-boundary";
 import { technicalDetail } from "./console-config";
 import { describeStep, describeSteps, summarizeSteps, visibleSteps } from "./step-vocabulary";
 import type { NodeStep } from "./adapter";
-import { CheckIcon, ChevronDownIcon, SpinnerIcon, WorkflowIcon, WrenchIcon, XIcon } from "./icons";
+import { providerFailureCard, type ProviderFailureCard } from "./provider-failure";
+import { AlertCircleIcon, CheckIcon, ChevronDownIcon, SpinnerIcon, WorkflowIcon, WrenchIcon, XIcon } from "./icons";
 
 /**
  * The live work trail — what the assistant is doing, in the owner's words.
@@ -48,6 +49,106 @@ function statusGlyph(status: string) {
   }
 }
 
+/**
+ * A provider fault, said calmly, with at most one action.
+ *
+ * Rendered OUTSIDE the collapsible trail and always visible: the reader should not
+ * have to expand an engine panel to learn that their key expired. One sentence
+ * (the backend's, never the provider's wire text) plus the link that this failure
+ * KIND earns — `auth` and `model_missing` go to the models form, everything else
+ * says its sentence and stops.
+ *
+ * RETRY IS A GRANT, NOT A GUESS. `card.retry` is TRUE only when the backend said
+ * so — a transient kind (rate limit, unreachable provider, unclassified) AND a turn
+ * in which no tool had applied anything yet. Nothing here reads the kind to decide,
+ * because re-sending a turn that half-succeeded is how you get a second page or a
+ * brand applied twice (the hazard StaleTurnRecovery exists for). When the grant is
+ * withheld for that reason the backend also hands over `note`, so the absence of the
+ * button is explained rather than mysterious.
+ *
+ * THREE LOCKS AGAINST A DOUBLE SEND, all needed:
+ *   1. It disarms on click and never re-arms — a card is the record of ONE past
+ *      failure, not a live control.
+ *   2. It is only armed on the newest turn. An old card scrolled back into view
+ *      would re-send a message whose work may since have landed.
+ *   3. It is disabled while a turn is running, so it cannot stack a second turn on
+ *      a held lock.
+ * The send itself is `thread.append` — the same path the composer, the interrupt
+ * widget and the data-table actions use. There is NO resume: it is a new turn
+ * carrying the same words.
+ */
+export function ProviderFailureNotice({ card }: { card: ProviderFailureCard }) {
+  const thread = useThreadRuntime();
+  const messageId = useMessage((m) => m.id);
+  const running = useThread((t) => t.isRunning);
+  const messages = useThread((t) => t.messages);
+  const [sent, setSent] = useState(false);
+
+  // Lock 2: only the newest turn may be re-sent, and only if we can still find
+  // the words the reader actually typed.
+  const index = messages.findIndex((m) => m.id === messageId);
+  const isNewest = index !== -1 && index === messages.length - 1;
+  const words = isNewest ? lastUserText(messages.slice(0, index)) : "";
+  const canRetry = card.retry === true && words !== "";
+
+  const retry = () => {
+    // Locks 1 and 3, re-checked at the moment of the click: `disabled` is a
+    // rendering, and a rendering can be one paint behind a running turn.
+    if (sent || running || !canRetry) return;
+    setSent(true);
+    thread.append({ role: "user", content: [{ type: "text", text: words }] });
+  };
+
+  return (
+    <div className="ain-provfail" data-kind={card.kind} role="status">
+      <AlertCircleIcon className="ain-provfail__glyph" />
+      <span className="ain-provfail__text">
+        {card.sentence}
+        {card.note && <span className="ain-provfail__note">{card.note}</span>}
+      </span>
+      {card.action && (
+        <a className="ain-provfail__action" href={card.action.href}>
+          {card.action.label}
+        </a>
+      )}
+      {canRetry && (
+        <button
+          type="button"
+          className="ain-provfail__retry"
+          onClick={retry}
+          disabled={sent || running}
+        >
+          {sent ? "Sending again…" : "Send again"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The text of the newest user message in `earlier`, or "" if there is none.
+ *
+ * Retry re-sends the reader's own words, so they come from the thread rather than
+ * from anything the failed turn stashed — nothing about a retry is remembered
+ * anywhere, which is the point: no attempt counter, no "am I a retry" flag.
+ */
+function lastUserText(earlier: readonly { role: string; content: readonly unknown[] }[]): string {
+  for (let i = earlier.length - 1; i >= 0; i--) {
+    const message = earlier[i];
+    if (message.role !== "user") continue;
+    const text = message.content
+      .filter((p): p is { type: "text"; text: string } => {
+        const part = p as { type?: unknown; text?: unknown };
+        return part.type === "text" && typeof part.text === "string";
+      })
+      .map((p) => p.text)
+      .join("\n")
+      .trim();
+    return text;
+  }
+  return "";
+}
+
 function ProgressTrail({ steps }: { steps: NodeStep[] }) {
   const running = useMessage((m) => m.status?.type === "running");
   // NULL = "the user hasn't decided" — a failed, finished trail then opens
@@ -58,23 +159,36 @@ function ProgressTrail({ steps }: { steps: NodeStep[] }) {
 
   const described = describeSteps(steps);
   const failures = described.filter((d) => d.step.status === "failed");
+  // A PROVIDER fault, if this run had one — the card below, not a red node.
+  const failure = providerFailureCard(steps);
   // Ephemeral while running (the wiring ticks too, so a long wait shows
   // movement), work-only once finished — see `visibleSteps`.
   const shown = visibleSteps(described, { running, technical });
 
   // Nothing worth reporting: the turn was a conversation the engine merely
-  // routed. Don't leave a workflow panel under a plain reply.
-  if (shown.length === 0) return null;
+  // routed. Don't leave a workflow panel under a plain reply — but DO say a
+  // provider fault, which is the one thing that must never be swallowed by the
+  // trail's quiet (the node that failed can easily be plumbing).
+  if (shown.length === 0) {
+    return failure ? <ProviderFailureNotice card={failure} /> : null;
+  }
 
   const latest = shown[shown.length - 1];
   const summary = summarizeSteps(steps);
-  const open = override ?? (!running && failures.length > 0);
+  // A provider fault does NOT force the engine panel open: the card above already
+  // says what happened, and expanding node machinery under it would re-stage the
+  // crash the card exists to replace. An explicit click still wins.
+  const open = override ?? (!running && failures.length > 0 && !failure);
 
   const title = running
     ? "Working"
-    : failures.length > 0
-      ? "Something went wrong"
-      : summary || "Done";
+    : failure
+      // Not "something went wrong": nothing in the flow did. The provider did not
+      // answer, and the card says so in full.
+      ? "Stopped early"
+      : failures.length > 0
+        ? "Something went wrong"
+        : summary || "Done";
   // The trailing note next to the title: the newest step while running, the
   // failing step once stopped. Never both, never a node count.
   const note = running
@@ -84,6 +198,8 @@ function ProgressTrail({ steps }: { steps: NodeStep[] }) {
       : "";
 
   return (
+    <>
+      {failure && <ProviderFailureNotice card={failure} />}
     <div className="ain-trail" data-running={running || undefined} data-technical={technical || undefined}>
       <button
         type="button"
@@ -124,12 +240,18 @@ function ProgressTrail({ steps }: { steps: NodeStep[] }) {
                   {step.elapsedMs >= 1000 ? `${(step.elapsedMs / 1000).toFixed(1)}s` : `${step.elapsedMs}ms`}
                 </span>
               )}
-              {step.error && <span className="ain-trail__error">{step.error}</span>}
+              {/* A provider fault's sentence belongs to the card, not to a red
+                  line inside the engine panel — showing both says it twice and
+                  puts the calm version next to the alarming one. */}
+              {step.error && !step.errorKind && (
+                <span className="ain-trail__error">{step.error}</span>
+              )}
             </li>
           ))}
         </ol>
       )}
     </div>
+    </>
   );
 }
 

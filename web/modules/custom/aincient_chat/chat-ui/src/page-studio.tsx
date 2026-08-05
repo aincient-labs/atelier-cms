@@ -1,7 +1,8 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useAssistantRuntime } from "@assistant-ui/react";
-import { offerWrapup, isThreadSealed, subscribeSeals } from "./thread-seal";
+import { offerWrapup } from "./thread-seal";
+import { useActiveThreadSealed } from "./thread-seal-hooks";
 import {
   getPageDraft,
   setPageDraft,
@@ -249,8 +250,11 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const [moderation, setModerationState] = useState<Moderation>(() => getModeration());
   // Whether the active thread is wrapped up (DECISIONS 0091) — a SECOND read-only
   // axis orthogonal to node access: a sealed thread freezes the studio even when
-  // the user still holds update access on the node.
-  const [sealed, setSealed] = useState(false);
+  // the user still holds update access on the node. DERIVED from (active thread
+  // id, seal store) on every render — never cached: a cached copy stayed `true`
+  // after a wrap-up switched us onto a fresh, unsealed thread, leaving the page
+  // permanently unsaveable. See thread-seal-hooks.ts.
+  const sealed = useActiveThreadSealed();
   // A stale-write conflict (HTTP 409): the page advanced since we loaded it, so a
   // save/publish would clobber newer work. Holds the server's current head vid;
   // the only way forward is Reload latest (rebase) — never a blind retry.
@@ -375,15 +379,6 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
       }),
     [],
   );
-
-  // Track the active thread's seal state (the second read-only axis). Recomputed
-  // whenever any thread's seal flips; the studio goes read-only the instant the
-  // current conversation is wrapped up.
-  useEffect(() => {
-    const sync = () => setSealed(isThreadSealed(runtime.threads.mainItem.getState().remoteId));
-    sync();
-    return subscribeSeals(sync);
-  }, [runtime]);
 
   // Load the section/prop catalog the editor renders from.
   useEffect(() => {

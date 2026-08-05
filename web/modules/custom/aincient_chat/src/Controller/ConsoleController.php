@@ -7,7 +7,8 @@ namespace Drupal\aincient_chat\Controller;
 use Drupal\aincient_chat\Account\ViewerCard;
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
 use Drupal\aincient_chat\Studio;
-use Drupal\aincient_core\ModelRoleResolver;
+use Drupal\aincient_core\CapabilitySet;
+use Drupal\aincient_core\InstallCapabilities;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -51,7 +52,7 @@ final class ConsoleController implements ContainerInjectionInterface {
     private readonly WorkflowCatalog $workflowCatalog,
     private readonly MenuLinkTreeInterface $menuTree,
     private readonly ConfigFactoryInterface $configFactory,
-    private readonly ModelRoleResolver $modelRoles,
+    private readonly InstallCapabilities $capabilities,
     private readonly ViewerCard $viewerCard,
     private readonly CsrfTokenGenerator $csrfToken,
   ) {}
@@ -64,7 +65,7 @@ final class ConsoleController implements ContainerInjectionInterface {
       $container->get('aincient_chat.workflow_catalog'),
       $container->get('menu.link_tree'),
       $container->get('config.factory'),
-      $container->get('aincient_core.model_role_resolver'),
+      $container->get('aincient_core.install_capabilities'),
       $container->get('aincient_chat.viewer_card'),
       $container->get('csrf_token'),
     );
@@ -150,6 +151,15 @@ HTML;
       // studios (Globals — no server agent, enabled client-side) are gated too,
       // not just the agent-bearing ones filtered out of `studios` above.
       'studioAccess' => $this->studioAccess(),
+      // What this install can DO, in three product verbs — Write / Describe /
+      // Draw — each either available or needs-setup, never a hedged third state.
+      // The chat rail renders these above the composer in EVERY room, always: the
+      // point is that a user learns "rooms have capabilities" on a healthy
+      // install, so a dimmed chip later reads as information, not alarm. Computed
+      // server-side ({@see InstallCapabilities}) because the same booleans also
+      // generate the agent's system-prompt capability block — recomputing them in
+      // the bundle is how a chip and a model come to disagree.
+      'capabilities' => $this->capabilities->chips(),
     ];
     // Let other modules (e.g. aincient_assistant_ui) contribute console config.
     $this->moduleHandler->alter('aincient_console_settings', $settings);
@@ -220,11 +230,12 @@ HTML;
    * The studio → agents catalog for the console shell.
    *
    * Each enabled studio carries its default agent id and the ordered list of
-   * agents it can run; every agent carries its label plus per-flow welcome
-   * presentation (welcome/description/sampleAsks/freeformOnly). Keyed by studio
-   * id so the front-end registry can map it to name/icon/editor components.
+   * agents it can run; every agent carries its label, the capability verbs its
+   * room spends, plus per-flow welcome presentation
+   * (welcome/description/sampleAsks/freeformOnly). Keyed by studio id so the
+   * front-end registry can map it to name/icon/editor components.
    *
-   * @return array<string, array{default: string, agents: list<array{id: string, label: string}>}>
+   * @return array<string, array{default: string, agents: list<array{id: string, label: string, verbs: list<string>}>}>
    */
   private function studioCatalog(): array {
     $out = [];
@@ -240,29 +251,66 @@ HTML;
       if ($this->hiddenByFeatureFlag($case)) {
         continue;
       }
-      // The Media studio's AGENT (Nano Banana) is OPTIONAL: it appears only when
-      // an image provider is configured (the `image` model role is bound). Absent
-      // that binding, drop the agent so `media` stays out of the catalog — the
-      // studio still surfaces as EDITOR-ONLY (its Studio/Preview components + the
-      // studioAccess list), exactly the "non-AI editor, no chat rail" state. The
-      // generate_image tool resolves through the SAME binding, so a lit rail and a
-      // working tool can never disagree.
-      if ($case === Studio::Media && $this->modelRoles->imageBinding() === NULL) {
-        continue;
-      }
+      // NO CAPABILITY GATE HERE. The Media studio's agent used to be dropped from
+      // this catalog whenever the `image` model role was unbound, which removed a
+      // working room to protect one tool inside it: a chat rail whose only
+      // capability is words still earns its place (filling a title and
+      // description from human input is a legitimate use). Capability now decides
+      // DISPLAY only — see the `capabilities` chips on this payload — and each
+      // tool reports its own failure at call time. Access is decided by
+      // permissions and feature flags above, and by nothing else.
       $agents = [];
       foreach ($studio['agents'] as $id => $label) {
         $agents[] = [
           'id' => $id,
           'label' => $label,
+          // Which capability chips this room shows — the verbs its own tools
+          // spend. The chips themselves (and their availability) stay
+          // install-wide on `capabilities`; this only says which of them are
+          // this room's business, so General stops advertising Draw for a
+          // picture it has no tool to make.
+          'verbs' => $this->workflowCatalog->verbs($id),
         ] + $this->workflowCatalog->presentation($id);
       }
       $out[$key] = [
         'default' => $studio['default'],
         'agents' => $agents,
+        // The studio's verbs: the union of its agents'. This decides which chips
+        // the room shows AT ALL — a studio that no agent draws in never raises
+        // the subject of pictures. Within that set an individual chip can still
+        // be dim, either because the install cannot do it or because the agent
+        // you happen to be talking to has no tool for it.
+        'verbs' => $this->unionVerbs($agents),
       ];
     }
     return $out;
+  }
+
+  /**
+   * The verbs a studio raises: every verb any of its agents can spend.
+   *
+   * Union rather than intersection on purpose — a studio where one agent draws
+   * IS a studio about drawing, and the chip goes dim (not absent) while you are
+   * talking to the agent that doesn't. Absence is reserved for subjects the
+   * whole studio never touches.
+   *
+   * @param list<array{verbs?: list<string>}> $agents
+   *   The studio's agent entries.
+   *
+   * @return list<string>
+   *   Verb ids in {@see CapabilitySet} display order.
+   */
+  private function unionVerbs(array $agents): array {
+    $seen = [];
+    foreach ($agents as $agent) {
+      foreach ($agent['verbs'] ?? [] as $verb) {
+        $seen[$verb] = TRUE;
+      }
+    }
+    return array_values(array_filter(
+      CapabilitySet::verbs(),
+      static fn(string $verb): bool => isset($seen[$verb]),
+    ));
   }
 
   /**

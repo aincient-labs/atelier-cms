@@ -3,7 +3,6 @@ services:
     class: Drupal\aincient_onboarding\ProviderConnector
     arguments:
       - '@state'
-      - '@entity_type.manager'
       - '@config.factory'
       - '@aincient_core.inference.provider_inventory'
       - '@aincient_core.model_role_resolver'

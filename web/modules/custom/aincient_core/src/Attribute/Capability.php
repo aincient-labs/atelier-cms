@@ -61,6 +61,15 @@ final class Capability extends Plugin {
    *   These are the single source of the tool's input schema: CapabilityTool
    *   reads them directly, so the signature the model sees cannot drift from
    *   the signature the code reads.
+   * @param array $verbs
+   *   Which install VERBS this capability spends — {@see \Drupal\aincient_core\CapabilitySet}
+   *   ids (`describe`, `draw`). DISPLAY ONLY, and only for the few capabilities
+   *   that need more than words: a room shows the Describe/Draw chip when one of
+   *   its wired tools declares that verb here, so General stops advertising
+   *   pictures it has no tool to make ({@see \Drupal\aincient_core\CapabilityVerbs}).
+   *   Empty for the overwhelming majority — a tool that reads and writes content
+   *   spends `write`, which every chat room has by definition. This does NOT
+   *   gate execution: each tool still reports its own failure at call time.
    */
   public function __construct(
     public readonly string $id,
@@ -68,6 +77,7 @@ final class Capability extends Plugin {
     public readonly string $name,
     public readonly ?string $description,
     public readonly array $context_definitions = [],
+    public readonly array $verbs = [],
   ) {}
 
 }

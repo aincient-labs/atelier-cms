@@ -7,6 +7,7 @@ ignored_config_entities:
   - aincient_pages.brand
   - aincient_pages.chrome
   - aincient_pages.identity
+  - 'key.key.*'
   - 'language.entity.*'
   - language.negotiation
   - system.site

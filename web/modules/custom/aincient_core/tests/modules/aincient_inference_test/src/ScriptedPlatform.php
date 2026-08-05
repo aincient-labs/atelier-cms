@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Drupal\aincient_inference_test;
 
 use Drupal\Core\State\StateInterface;
+use Symfony\AI\Platform\FinishReason\FinishReason;
+use Symfony\AI\Platform\FinishReason\FinishReasonCase;
 use Symfony\AI\Platform\Model;
 use Symfony\AI\Platform\ModelCatalog\ModelCatalogInterface;
 use Symfony\AI\Platform\PlainConverter;
@@ -70,6 +72,18 @@ final class ScriptedPlatform implements PlatformInterface {
         cacheCreationTokens: $usage['cache_creation'] ?? NULL,
         cacheReadTokens: $usage['cache_read'] ?? NULL,
         totalTokens: $usage['total'] ?? NULL,
+      ));
+    }
+
+    // The bridge's job, done here for the same reason token usage is: PlainConverter
+    // runs no converter of its own, so a kernel test can only exercise the
+    // truncation seam if the finish reason is filed under the key every real
+    // bridge's FinishReasonAwareTrait uses.
+    $finish = $this->state->get(ScriptedAdapter::FINISH_REASON_KEY);
+    if (is_array($finish) && isset($finish['case'])) {
+      $result->getMetadata()->add('finish_reason', new FinishReason(
+        FinishReasonCase::from((string) $finish['case']),
+        (string) ($finish['raw'] ?? $finish['case']),
       ));
     }
 

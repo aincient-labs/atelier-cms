@@ -189,7 +189,16 @@ final class OnboardingController extends ControllerBase {
       return new JsonResponse(['ok' => FALSE, 'error' => 'Choose a provider.'], 400);
     }
 
-    $this->connector->disconnect($provider);
+    if (!$this->connector->disconnect($provider)) {
+      // Connected, but not by anyone with a session here. Reported as a conflict
+      // rather than a 400: the request is well-formed and the operator did
+      // nothing wrong — the credential simply belongs to the deployment.
+      return new JsonResponse([
+        'ok' => FALSE,
+        'error' => 'This provider is configured by the deployment’s environment, so it can’t be disconnected here.',
+        'providers' => $this->catalog->providers(),
+      ], 409);
+    }
 
     return new JsonResponse([
       'ok' => TRUE,

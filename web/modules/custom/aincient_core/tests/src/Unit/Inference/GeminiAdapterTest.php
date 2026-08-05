@@ -138,16 +138,49 @@ final class GeminiAdapterTest extends TestCase {
   }
 
   /**
-   * Only the image id claims image capability.
+   * BOTH Google ids can draw, because the capability belongs to the key.
    *
-   * The type IS the capability answer the gateway checks, so `gemini` must not
-   * accidentally satisfy it by inheritance.
+   * `gemini` used to answer FALSE here, and the consequence was issue #12's second
+   * surprise: an operator who connected their Google key as `gemini` got an empty
+   * image picker, with no way to learn that a second id backed by the very same key
+   * was the missing piece.
    */
-  public function testOnlyTheImageIdIsImageCapable(): void {
-    $this->assertNotInstanceOf(ImageGenerationAdapterInterface::class, $this->gemini(NULL));
+  public function testBothGoogleIdsAreImageCapable(): void {
+    $gemini = $this->gemini(NULL);
+    $this->assertInstanceOf(ImageGenerationAdapterInterface::class, $gemini);
+    $this->assertTrue($gemini->supportsImageEditing());
+
     $nanoBanana = $this->nanoBanana(NULL);
     $this->assertInstanceOf(ImageGenerationAdapterInterface::class, $nanoBanana);
     $this->assertTrue($nanoBanana->supportsImageEditing());
+  }
+
+  /**
+   * A plain Gemini connection has a non-empty image pool. THE #12 FIX.
+   */
+  public function testPlainGeminiEnumeratesImageModels(): void {
+    $models = $this->gemini($this->catalogue())->listImageModels('k');
+    $this->assertSame([
+      'gemini-2.5-flash-image' => 'Nano Banana',
+      'nano-banana-pro-preview' => 'Nano Banana Pro',
+    ], $models);
+  }
+
+  /**
+   * The two pools stay disjoint, so nothing is offered twice.
+   *
+   * The subclass inherits both enumerations now, so a marker drifting out of
+   * `NON_TEXT_OUTPUT_MARKERS` would put a picture model into every chat select
+   * under two provider ids at once. Asserted as an intersection rather than a
+   * literal list, so it holds whatever Google's catalogue grows into.
+   */
+  public function testTheChatAndImagePoolsAreDisjoint(): void {
+    foreach ([$this->gemini($this->catalogue()), $this->nanoBanana($this->catalogue())] as $adapter) {
+      $this->assertSame([], array_intersect_key(
+        $adapter->listChatModels('k'),
+        $adapter->listImageModels('k'),
+      ));
+    }
   }
 
   /**

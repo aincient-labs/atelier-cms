@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { makeSafeAssistantToolUI } from "./error-boundary";
 import { setBrandOverride, setPendingFonts, resetBrandOverrides } from "./brand-state";
+import { brandPreviewCardText } from "./brand-preview-card";
 import { ensureStudio } from "./flow";
 import { consoleNav } from "./console-nav";
 
@@ -69,17 +70,14 @@ function BrandPreviewCard({ payload, toolCallId }: { payload: BrandPreviewPayloa
     consoleNav.adoptRoom({ kind: "studio", studio: "design_system" });
   }, [payload, toolCallId]);
 
-  const count = Object.keys(payload.tokens ?? {}).length + (payload.fonts?.length ?? 0);
-  const label = payload.reset
-    ? "Reverted the preview to the saved brand"
-    : `Applied to preview · ${count} change${count === 1 ? "" : "s"}`;
+  const { historical, label, note } = brandPreviewCardText(payload);
 
   return (
-    <div className="ain-brandprev">
+    <div className={`ain-brandprev${historical ? " is-historical" : ""}`}>
       <span className="ain-brandprev__dot" aria-hidden="true" />
       <div className="ain-brandprev__body">
         <span className="ain-brandprev__label">{label}</span>
-        <span className="ain-brandprev__hint">Preview only — Publish in the studio to apply it site-wide</span>
+        <span className="ain-brandprev__hint">{note}</span>
         {payload.rejected && payload.rejected.length > 0 && (
           <span className="ain-brandprev__rejected">Skipped invalid: {payload.rejected.join(", ")}</span>
         )}

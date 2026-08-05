@@ -84,6 +84,19 @@ final class ScriptedAdapter implements ImageGenerationAdapterInterface {
    */
   public const FAIL_KEY = 'aincient_inference_test.fail';
 
+  /**
+   * The State key holding the finish reason the platform reports, if any.
+   *
+   * UNSET BY DEFAULT for the same reason as {@see self::USAGE_KEY}: a provider
+   * that reports no finish reason is a real state, and it is the state that must
+   * keep behaving exactly as it did before truncation was detected at all.
+   *
+   * Shape: `['case' => <FinishReasonCase value>, 'raw' => <provider wording>]` —
+   * stored as strings because State is serialised, and the platform stands in for
+   * a bridge, which is the layer that does this mapping.
+   */
+  public const FINISH_REASON_KEY = 'aincient_inference_test.finish_reason';
+
   public function __construct(
     private readonly StateInterface $state,
   ) {}

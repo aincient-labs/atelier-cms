@@ -1,6 +1,7 @@
 import type { ChatModelAdapter, ChatModelRunResult, ThreadMessageLike } from "@assistant-ui/react";
 import { isAuditAgent, isBrandAgent, isChromeAgent, isMediaAgent, isPageAgent, rememberThreadWorkflow, selectedWorkflowId, threadWorkflow } from "./flow";
 import { findAgent, type StudioCatalog } from "./studios";
+import type { CapabilityChip } from "./capabilities";
 import { takeStagedInterruptAnswer } from "./interrupt-state";
 import { getBrandOverrides, getPendingFonts } from "./brand-state";
 import { getPageDraft, getPageLang, getPageMode, getPageNode } from "./page-state";
@@ -12,6 +13,7 @@ import { clearRunStatus, setRunStatus } from "./run-status";
 import { addSessionUsage, addUsage, EMPTY_USAGE, type UsageTotal } from "./usage-state";
 import { apiUrl, technicalDetail } from "./console-config";
 import { describeStep } from "./step-vocabulary";
+import { providerFailureFields } from "./provider-failure";
 
 /**
  * Adapters connect the assistant-ui runtime to a backend.
@@ -87,6 +89,13 @@ export type AincientSettings = {
    */
   studioAccess?: string[];
   /**
+   * What this install can DO, in three product verbs (Write / Describe / Draw),
+   * each available or needs-setup. Computed server-side, because the same
+   * booleans generate the agent's system-prompt capability block — so the chips
+   * and the model cannot disagree. Absent (older shell) ⇒ no row is rendered.
+   */
+  capabilities?: CapabilityChip[];
+  /**
    * First-run onboarding. Present (and `needed`) only on an unconfigured site;
    * when set, the console renders the full-screen wizard instead of the chat.
    * Injected server-side by aincient_onboarding (hook_aincient_console_settings_alter).
@@ -115,6 +124,14 @@ export type OnboardingProvider = {
   sponsored?: boolean;
   /** Already configured and ready to use (a key is stored). */
   usable?: boolean;
+  /**
+   * Configured by the deployment's environment rather than by an operator.
+   *
+   * Usable, but not manageable here: the server refuses a connect or disconnect
+   * for these, because it can neither out-rank the variable nor unset it. The
+   * row renders as settled instead of offering a form that would do nothing.
+   */
+  managed?: boolean;
   /**
    * Our curated guidance label — "recommended" | "tested" | "not-recommended",
    * or "" when we've said nothing. Distinct from `recommended` (the single
@@ -306,6 +323,26 @@ export type NodeStep = {
   nodeTypeId?: string;
   elapsedMs?: number;
   error?: string;
+  /**
+   * Present ONLY when this failure was a provider fault, as the machine-readable
+   * kind the backend classified it with (`auth`, `rate_limit`, `unavailable`,
+   * `model_missing`, `too_long`, `refused`, `rejected`, `unknown`). Its presence
+   * is what turns a red node into a calm card — see `provider-failure.ts`.
+   */
+  errorKind?: string;
+  /**
+   * The one action that kind earns, chosen server-side and already resolved to a
+   * URL (the models form, off Drupal's route table). Absent for the six kinds that
+   * offer nothing. NAVIGATION only — never a re-send.
+   */
+  errorAction?: { label: string; href: string };
+  /**
+   * TRUE when the backend GRANTED a re-send of this turn: a transient kind AND a
+   * turn in which no tool had yet applied anything. Never inferred client-side.
+   */
+  errorRetry?: boolean;
+  /** Why no Retry is offered, when the backend chose to say it out loud. */
+  errorNote?: string;
   /** TRUE when this step was a tool call (recorded as a pipeline job). */
   tool?: boolean;
 };
@@ -999,6 +1036,11 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
               ...(data.node_type_id ? { nodeTypeId: String(data.node_type_id) } : {}),
               ...(typeof data.elapsed_ms === "number" ? { elapsedMs: data.elapsed_ms } : {}),
               ...(data.error ? { error: String(data.error) } : {}),
+              // A provider fault (bad key, 429, missing model, truncated answer)
+              // arrives as a failed node too, but it is not a crash: the frame
+              // carries the classified kind and the one action it earns, and the
+              // trail renders a calm card instead of red engine text.
+              ...providerFailureFields(data),
               ...(data.tool ? { tool: true } : {}),
             };
             steps.push(step);

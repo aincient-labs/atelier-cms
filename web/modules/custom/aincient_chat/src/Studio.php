@@ -66,10 +66,12 @@ enum Studio: string {
   /**
    * The Media studio: edit ONE image-media item — its non-AI editor rail (name,
    * alt text, replace file) beside a preview of the image. Reached by opening an
-   * item from the Library shelf, not from the top nav. Editor-only in v1 (no chat
-   * agent → surfaced from its editor components alone, like Globals/Library); the
-   * OPTIONAL chat rail (Nano Banana image generation / editing) attaches here once
-   * an image provider is configured (plan `plans/media-studio.md`, DECISIONS 0144).
+   * item from the Library shelf, not from the top nav. The non-AI rail is always
+   * the human path (plan `plans/media-studio.md`, DECISIONS 0144); the chat rail
+   * beside it is now ALWAYS offered too — it used to appear only once an image
+   * provider was configured, which removed a room whose words-only capabilities
+   * (naming, alt text from human input) were worth having on their own. What the
+   * image binding decides is the "Draw" capability chip, not the room.
    */
   case Media = 'media';
 

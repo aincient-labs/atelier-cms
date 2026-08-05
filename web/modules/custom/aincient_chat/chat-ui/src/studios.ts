@@ -23,6 +23,12 @@ export type StudioCatalog = {
   default: string;
   /** The agents (FlowDrop workflows) this studio can run, with welcome metadata. */
   agents: WorkflowRef[];
+  /**
+   * The capability verbs this studio raises — the union of its agents'. Decides
+   * which chips the room shows AT ALL; see `capability-chips.tsx`. Absent from
+   * an un-rebuilt shell, which shows the whole row (the old behaviour).
+   */
+  verbs?: string[];
 };
 
 /** The studio → catalog map the shell injected (empty when FlowDrop is absent). */
@@ -61,6 +67,16 @@ export function isStudioAccessible(key: StudioKey | undefined): boolean {
 /** The agents a studio can run (empty for an unknown/disabled studio). */
 export function agentsForStudio(key: StudioKey | undefined): WorkflowRef[] {
   return key ? catalog()[key]?.agents ?? [] : [];
+}
+
+/**
+ * The capability verbs a studio raises, or UNDEFINED when the shell sent none
+ * (an un-rebuilt shell / dev harness) — which the chip row reads as "unscoped"
+ * and renders in full, rather than hiding chips from ignorance.
+ */
+export function studioVerbs(key: StudioKey | undefined): string[] | undefined {
+  const verbs = key ? catalog()[key]?.verbs : undefined;
+  return Array.isArray(verbs) ? verbs : undefined;
 }
 
 /** The default agent id a new chat in this studio pins (undefined if none). */

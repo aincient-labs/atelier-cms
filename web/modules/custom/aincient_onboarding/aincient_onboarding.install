@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * Install/update hooks for AIncient Onboarding.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Delete the orphaned per-provider API-key entities (credentials are untouched).
+ */
+function aincient_onboarding_update_10001(): string {
+  // Onboarding used to mint a `<provider>_default_key` Key entity beside each
+  // stored credential. Nothing has read one since inference moved to our own
+  // adapters, and the connector no longer creates them (DECISIONS 0337) — but
+  // existing sites keep whatever was minted, and nothing else will collect it:
+  // `key.key.*` is ignored on import (DECISIONS 0335), which is exactly what
+  // stops `cim` deleting the mail keys and therefore also stops it deleting
+  // these.
+  $storage = \Drupal::entityTypeManager()->getStorage('key');
+  $deleted = [];
+  foreach ($storage->loadMultiple() as $id => $key) {
+    // The `state` provider filter is what makes this safe in any order relative
+    // to the pre-migration rescue hooks (`aincient_core_update_11003`/`_11009`),
+    // which lift secrets out of OLD key entities into State. Those use the
+    // env/file/config providers and are skipped here. A state-provider entity
+    // by definition holds nothing State does not already hold, so deleting one
+    // can never destroy a credential.
+    if ((string) $key->get('key_provider') !== 'state') {
+      continue;
+    }
+    // Mail's secrets ARE read (by aincient_mail's Mailer) and its state key
+    // matches the same `aincient.*_api_key` convention — so the entity id is the
+    // discriminator. Ours are always "<provider>_default_key"; a Key entity an
+    // operator added for their own purposes is left alone.
+    if (!str_ends_with((string) $id, '_default_key') || str_starts_with((string) $id, 'mail_')) {
+      continue;
+    }
+    $stateKey = (string) (($key->get('key_provider_settings')['state_key']) ?? '');
+    if (!preg_match('/^aincient\.[a-z0-9_]+_api_key$/', $stateKey)) {
+      continue;
+    }
+    $key->delete();
+    $deleted[] = (string) $id;
+  }
+
+  if ($deleted === []) {
+    return 'No orphaned provider Key entities found.';
+  }
+  sort($deleted);
+  return sprintf(
+    'Deleted %d orphaned provider Key entities (the stored credentials in State are untouched): %s.',
+    count($deleted),
+    implode(', ', $deleted),
+  );
+}

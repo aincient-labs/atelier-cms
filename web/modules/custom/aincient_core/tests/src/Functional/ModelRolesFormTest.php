@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Functional;
 
+use Drupal\aincient_gateway_test\GatewayAdapter;
 use Drupal\aincient_inference_test\ScriptedAdapter;
 use Drupal\Tests\BrowserTestBase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -31,7 +32,12 @@ final class ModelRolesFormTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['key', 'aincient_core', 'aincient_inference_test'];
+  protected static $modules = [
+    'key',
+    'aincient_core',
+    'aincient_inference_test',
+    'aincient_gateway_test',
+  ];
 
   /**
    * {@inheritdoc}
@@ -78,6 +84,58 @@ final class ModelRolesFormTest extends BrowserTestBase {
     // write lost its last reader when the ai_provider_* modules went, and the
     // binding above is what the site resolves through.
     $this->assertNull($this->config('ai.settings')->get('default_providers'));
+  }
+
+  /**
+   * Stores the gateway's credential PAIR — both halves, or it is not connected.
+   */
+  private function connectGateway(): void {
+    $state = $this->container->get('state');
+    $state->set(GatewayAdapter::CREDENTIAL_KEY, 'sk-gateway');
+    $state->set(GatewayAdapter::ENDPOINT_KEY, 'https://gateway.example/v1');
+  }
+
+  /**
+   * A gateway-only install is TOLD why the image role is empty. ISSUE #12.
+   *
+   * The reported state: one connection, an aggregating LiteLLM endpoint. Chat
+   * works, the image role offers nothing, and the page used to say "no image
+   * providers are connected yet" — which reads as a contradiction to someone who
+   * just connected one, and leaves the wizard looking broken. The remedy shipped
+   * here is words, not a capability: the constraint is named, and so is a provider
+   * that satisfies it.
+   */
+  public function testAGatewayOnlyInstallIsToldWhyItCannotDraw(): void {
+    // Exactly the reported state: the only connected provider chats and cannot
+    // draw. (It reports isProxy() === FALSE, like a real LiteLLM endpoint reached
+    // as `openai_compatible` — so this also pins that the copy is not keyed off
+    // proxy detection.)
+    $this->container->get('state')->delete(ScriptedAdapter::CREDENTIAL_KEY);
+    $this->connectGateway();
+
+    $this->drupalGet(self::PATH);
+    $this->assertSession()->statusCodeEquals(200);
+    // Chat is genuinely on offer, which is what makes the image silence confusing.
+    $this->assertSession()->optionExists('roles[task]', GatewayAdapter::PROVIDER_ID . ':gateway-chat');
+    // Nothing is offered for images — no option is invented that would fail later.
+    $this->assertSession()->fieldNotExists('image_model');
+    // And the reason is on the page, with a provider named.
+    $this->assertSession()->pageTextContains('Nothing you have connected can make pictures');
+    $this->assertSession()->pageTextContains('pictures need a provider connected directly');
+    $this->assertSession()->pageTextContains('Google Gemini');
+  }
+
+  /**
+   * With a provider that CAN draw, the explanation is absent, not just quieter.
+   */
+  public function testTheGatewayExplanationIsAbsentWhenSomethingCanDraw(): void {
+    // setUp() connected the scripted provider, which draws.
+    $this->connectGateway();
+
+    $this->drupalGet(self::PATH);
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->optionExists('image_model', ScriptedAdapter::PROVIDER_ID . ':scripted-image');
+    $this->assertSession()->pageTextNotContains('Nothing you have connected can make pictures');
   }
 
   /**

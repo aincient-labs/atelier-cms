@@ -493,9 +493,10 @@ export type ThreadComposerStatus = {
   sealed: boolean;
   archived: boolean;
   pendingWrapup: boolean;
-  /** The room's studio has NO agent in the catalog (e.g. the image role came
-   *  unbound and the server dropped the media agent) — nothing can take a turn,
-   *  but the transcript must stay readable (gate the composer, never the pane). */
+  /** The room's studio has NO agent in the catalog (editor-only, or its workflow
+   *  is missing) — nothing can take a turn, but the transcript must stay readable
+   *  (gate the composer, never the pane). Never a CAPABILITY state: a room is not
+   *  dropped for what it cannot do — see `capabilities.ts`. */
   noAgent: boolean;
 };
 

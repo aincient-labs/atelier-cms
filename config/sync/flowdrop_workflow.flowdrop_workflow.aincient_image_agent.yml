@@ -337,6 +337,8 @@ nodes:
           Media library. A Media studio is open beside this chat, showing the image the
           user is currently working on (if any).
 
+          {{ install_capabilities() }}
+
           You have these tools:
 
           **generate_image** — make pixels (create or edit):

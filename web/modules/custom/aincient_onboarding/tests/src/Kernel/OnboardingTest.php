@@ -18,10 +18,10 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
  *
  * Validation against Anthropic is a live HTTP call, so it is NOT exercised
  * here (only the empty-key short-circuit is). Persistence is verified
- * end-to-end: the key lands in Drupal State, the key entity is flipped to the
- * state provider (so the secret never touches config), the chat model is
- * pinned, and the completion flag is set — together flipping needsOnboarding()
- * to FALSE.
+ * end-to-end: the key lands in Drupal State (the only place it lives — the
+ * secret never touches config, and no Key entity is minted for it), the chat
+ * model is pinned, and the completion flag is set — together flipping
+ * needsOnboarding() to FALSE.
  *
  * @group aincient
  */
@@ -52,18 +52,23 @@ final class OnboardingTest extends KernelTestBase {
   protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('user');
-    // persist() creates/flips a per-provider key entity ("<provider>_default_key").
-    // Pre-create the anthropic one with the env provider so persist() has a live
-    // entity to flip to the state provider.
-    $this->container->get('entity_type.manager')->getStorage('key')->create([
-      'id' => 'anthropic_default_key',
-      'label' => 'Anthropic Default Key',
-      'key_type' => 'authentication',
-      'key_provider' => 'env',
-      'key_provider_settings' => ['env_variable' => 'AINCIENT_TEST_NO_SUCH_ENV'],
-    ])->save();
+    // A leaked variable would make a sibling test resolve a credential it never
+    // set — the one failure mode of an environment-backed store.
+    putenv('ATELIER_ANTHROPIC_API_KEY');
+    putenv('ATELIER_DEFAULT_ANTHROPIC_API_KEY');
+    putenv('ATELIER_DEFAULT_OPENAI_COMPATIBLE_API_KEY');
     // A real (non-superuser) admin so the panel's permission check is honest.
     $this->setCurrentUser($this->createUser(['administer site configuration']));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function tearDown(): void {
+    putenv('ATELIER_ANTHROPIC_API_KEY');
+    putenv('ATELIER_DEFAULT_ANTHROPIC_API_KEY');
+    putenv('ATELIER_DEFAULT_OPENAI_COMPATIBLE_API_KEY');
+    parent::tearDown();
   }
 
   /**
@@ -446,9 +451,9 @@ final class OnboardingTest extends KernelTestBase {
   }
 
   /**
-   * Persisting a key stores it in State, flips the provider, and pins a model.
+   * Persisting a key stores it in State, mints no config, and pins a model.
    */
-  public function testPersistStoresKeyInStateAndFlipsProvider(): void {
+  public function testPersistStoresKeyInStateAndPinsModel(): void {
     $this->store()->persist('anthropic', 'sk-ant-test-key', 'claude-opus-4-1-20250805');
 
     $state = $this->container->get('state');
@@ -456,10 +461,13 @@ final class OnboardingTest extends KernelTestBase {
     $this->assertSame('sk-ant-test-key', $state->get('aincient.anthropic_api_key'));
     $this->assertTrue((bool) $state->get(ProviderConnector::STATE_COMPLETED));
 
-    // The key entity now reads from State.
-    $key = $this->container->get('entity_type.manager')->getStorage('key')->load('anthropic_default_key');
-    $this->assertSame('state', $key->getKeyProvider()->getPluginId());
-    $this->assertSame('sk-ant-test-key', $key->getKeyValue());
+    // State is the WHOLE credential store: connecting mints no config entity,
+    // because nothing reads one (DECISIONS 0337). A Key entity appearing here
+    // would be a per-provider config entity created for no reader.
+    $this->assertSame(
+      [],
+      $this->container->get('entity_type.manager')->getStorage('key')->loadMultiple(),
+    );
 
     // The chosen chat model is pinned by binding the default role.
     $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
@@ -472,11 +480,11 @@ final class OnboardingTest extends KernelTestBase {
   }
 
   /**
-   * Disconnecting removes the stored key, key entity, and unbinds its roles.
+   * Disconnecting removes the stored key and unbinds its roles.
    *
    * The inverse of connecting: after a provider is stored + bound, disconnect()
-   * must leave no trace — no State secret, no key entity, no `api_key` pointer,
-   * and no role (or framework default) still resolving against it.
+   * must leave no trace — no State secret, and no role (or framework default)
+   * still resolving against it.
    */
   public function testDisconnectRemovesKeyAndUnbindsRoles(): void {
     // Connect anthropic and bind two roles to it (task drives the chat default).
@@ -492,12 +500,8 @@ final class OnboardingTest extends KernelTestBase {
     // Disconnect.
     $this->store()->disconnect('anthropic');
 
-    // Both halves of the credential — the Key entity and the State value it
-    // names — are gone.
+    // The credential is gone from the one place it lives.
     $this->assertNull($state->get('aincient.anthropic_api_key'));
-    $this->assertNull(
-      $this->container->get('entity_type.manager')->getStorage('key')->load('anthropic_default_key')
-    );
 
     // Every role that pointed at anthropic is unbound.
     $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
@@ -734,6 +738,186 @@ final class OnboardingTest extends KernelTestBase {
     $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
     $this->assertSame('claude-task', $roles['task']['model_id']);
     $this->assertSame('balanced', $resolver->profile(), 'The tier survives a failed re-resolve.');
+  }
+
+  /**
+   * A deployment-supplied provider is refused, not silently accepted.
+   *
+   * The environment out-ranks State, so storing a key for such a provider would
+   * write a value the resolver never prefers: a connect that reports success and
+   * changes nothing. The wizard is told plainly instead, and the message names
+   * the variable, because the remedy is not in this UI.
+   */
+  public function testConnectIsRefusedForAnEnvironmentManagedProvider(): void {
+    putenv('ATELIER_ANTHROPIC_API_KEY=sk-from-environment');
+
+    $result = $this->store()->connectAndStore('anthropic', 'sk-typed-by-hand');
+
+    $this->assertFalse($result['ok']);
+    $this->assertStringContainsString('ATELIER_ANTHROPIC_API_KEY', $result['message']);
+    // Nothing was written: the typed key must not linger where a later read
+    // could pick it up if the variable is ever removed.
+    $this->assertNull($this->container->get('state')->get('aincient.anthropic_api_key'));
+  }
+
+  /**
+   * Disconnecting a deployment-supplied provider fails rather than half-works.
+   *
+   * This process cannot unset the variable, so unbinding the roles would leave
+   * the provider connected while the console claimed it was gone. It returns
+   * FALSE and touches nothing.
+   */
+  public function testDisconnectIsRefusedForAnEnvironmentManagedProvider(): void {
+    $resolver = $this->container->get('aincient_core.model_role_resolver');
+    $resolver->bind('task', 'anthropic', 'claude-task');
+    $resolver->project();
+
+    putenv('ATELIER_ANTHROPIC_API_KEY=sk-from-environment');
+
+    $this->assertFalse($this->store()->disconnect('anthropic'));
+
+    // The binding survives — a refused disconnect must not unbind.
+    $roles = $this->container->get('config.factory')->get('aincient_core.model_roles')->get('roles');
+    $this->assertSame('anthropic', $roles['task']['provider_id']);
+  }
+
+  /**
+   * The low-level write path refuses too, so no future caller can slip past.
+   *
+   * The public entry points turn this into a friendly message; this is the
+   * backstop underneath them.
+   */
+  public function testTheWritePathItselfRefusesAnEnvironmentManagedProvider(): void {
+    putenv('ATELIER_ANTHROPIC_API_KEY=sk-from-environment');
+
+    $this->expectException(\LogicException::class);
+    $this->store()->persist('anthropic', 'sk-typed-by-hand', 'claude-opus-4-1-20250805');
+  }
+
+  /**
+   * An environment-supplied provider satisfies the onboarding gate.
+   *
+   * A container that arrives with a key must not be nagged to connect one. The
+   * gate reads "is a bound provider connected?", and connectedness now includes
+   * the environment — so this needed no second code path, and the test exists to
+   * keep it that way.
+   */
+  public function testAnEnvironmentSuppliedProviderConfiguresTheSite(): void {
+    $resolver = $this->container->get('aincient_core.model_role_resolver');
+    $resolver->bind('task', 'anthropic', 'claude-task');
+    $resolver->project();
+
+    $this->assertFalse($this->store()->isConfigured());
+
+    putenv('ATELIER_ANTHROPIC_API_KEY=sk-from-environment');
+
+    $this->assertTrue($this->store()->isConfigured());
+    $this->assertFalse($this->store()->needsOnboarding());
+  }
+
+  /**
+   * A seed is copied into State once and then belongs to the operator.
+   *
+   * The difference from a policy variable, which is the whole reason both exist:
+   * this one lands in the credential store, so it can be rotated and — the point
+   * of the design — disconnected for good.
+   */
+  public function testASeedIsAppliedOnceIntoState(): void {
+    putenv('ATELIER_DEFAULT_ANTHROPIC_API_KEY=sk-seeded');
+
+    $this->assertSame(['anthropic' => 'seeded'], $this->store()->seedFromEnvironment());
+    $this->assertSame('sk-seeded', $this->container->get('state')->get('aincient.anthropic_api_key'));
+
+    // Second run is a no-op, not a re-write.
+    $this->assertSame(['anthropic' => 'already applied'], $this->store()->seedFromEnvironment());
+  }
+
+  /**
+   * A disconnect survives the next converge.
+   *
+   * THE failure this design exists to prevent: with "seed whenever State is
+   * empty", the operator removes the key, the container restarts, and the seed
+   * puts it back — a disconnect silently undone by an unrelated event. The
+   * marker makes the rule "once, ever" instead.
+   */
+  public function testSeedingDoesNotResurrectADisconnectedProvider(): void {
+    putenv('ATELIER_DEFAULT_ANTHROPIC_API_KEY=sk-seeded');
+    $this->store()->seedFromEnvironment();
+
+    $this->assertTrue($this->store()->disconnect('anthropic'));
+    $this->assertNull($this->container->get('state')->get('aincient.anthropic_api_key'));
+
+    // The next boot.
+    $this->store()->seedFromEnvironment();
+
+    $this->assertNull(
+      $this->container->get('state')->get('aincient.anthropic_api_key'),
+      'A seed must not undo a disconnect on the next converge.',
+    );
+  }
+
+  /**
+   * A site that was already configured is not re-provisioned behind its operator.
+   *
+   * The marker is set even when nothing is written, so a seed added to an
+   * existing deployment records "seen" rather than waiting for a future moment
+   * when State happens to be empty.
+   */
+  public function testASeedNeverOverwritesAnExistingCredential(): void {
+    $this->store()->persist('anthropic', 'sk-chosen-by-the-operator');
+    putenv('ATELIER_DEFAULT_ANTHROPIC_API_KEY=sk-seeded');
+
+    $this->assertSame(['anthropic' => 'skipped — already connected'], $this->store()->seedFromEnvironment());
+    $this->assertSame(
+      'sk-chosen-by-the-operator',
+      $this->container->get('state')->get('aincient.anthropic_api_key'),
+    );
+  }
+
+  /**
+   * A policy variable makes its provider's seed pointless, and it is skipped.
+   *
+   * Writing it would store a credential the resolver never reads, which is the
+   * silent-no-op class of bug this whole area keeps producing.
+   */
+  public function testASeedIsSkippedWhenAPolicyVariableSuppliesTheProvider(): void {
+    putenv('ATELIER_ANTHROPIC_API_KEY=sk-policy');
+    putenv('ATELIER_DEFAULT_ANTHROPIC_API_KEY=sk-seeded');
+
+    $report = $this->store()->seedFromEnvironment();
+
+    $this->assertStringContainsString('skipped', $report['anthropic']);
+    $this->assertNull($this->container->get('state')->get('aincient.anthropic_api_key'));
+  }
+
+  /**
+   * A seeded provider stays fully manageable — it is an ordinary credential.
+   *
+   * The seam between the two forms: `managed` marks the policy form only, so the
+   * console keeps its key field and its Disconnect for a seeded provider.
+   */
+  public function testASeededProviderIsNotEnvironmentManaged(): void {
+    putenv('ATELIER_DEFAULT_ANTHROPIC_API_KEY=sk-seeded');
+    $this->store()->seedFromEnvironment();
+
+    $inventory = $this->container->get('aincient_core.inference.provider_inventory');
+
+    $this->assertTrue($inventory->isConnected('anthropic'));
+    $this->assertFalse($inventory->isEnvironmentManaged('anthropic'));
+  }
+
+  /**
+   * Half of a two-field credential is not a seed.
+   *
+   * `openai_compatible` needs a key AND a base URL; storing one without the
+   * other would leave a configuration that cannot connect and a marker saying it
+   * had been handled.
+   */
+  public function testAHalfSuppliedSeedIsIgnored(): void {
+    putenv('ATELIER_DEFAULT_OPENAI_COMPATIBLE_API_KEY=sk-seeded');
+
+    $this->assertArrayNotHasKey('openai_compatible', $this->store()->seedFromEnvironment());
+    $this->assertNull($this->container->get('state')->get('aincient.openai_compatible_api_key'));
   }
 
 }

@@ -470,6 +470,21 @@ upgrade() {
   log "upgrade complete (healthy)"
 }
 
+# Apply any ATELIER_DEFAULT_<PROVIDER>_* credential seeds.
+#
+# Runs after both branches because a seed can be added to an EXISTING deployment,
+# not just a fresh one. The command is idempotent — each provider is seeded once,
+# ever, so an operator's Disconnect is not undone by the next restart — which is
+# what makes it safe to call unconditionally on every boot.
+#
+# Deliberately NOT fatal: a seed that cannot be applied leaves the site keyless,
+# and a keyless site shows the onboarding wizard. That is a worse start than
+# intended, but it is a working site, and refusing to boot over it would turn a
+# convenience default into a single point of failure.
+seed_credentials() {
+  $DRUSH aincient:seed-credentials || log "WARNING: credential seeding failed; the site will ask for a key in the wizard"
+}
+
 # --- Main -------------------------------------------------------------------
 main() {
   wait_for_db
@@ -488,6 +503,7 @@ main() {
     log "running health check"
     "$HEALTHCHECK_CMD" || { write_result install-failed; recovery_hint; die "post-install health check failed"; }
   fi
+  seed_credentials
   record_version
   write_result ok
   log "converge OK — site is on $($DRUSH status --field=drupal-version 2>/dev/null || echo '?')"

@@ -21,9 +21,14 @@ import { enabledStudioKeys, isStudioAccessible, type StudioKey } from "./studios
  * tokens), Globals (chrome — Brand identity / Header / Footer), and Content
  * (pages) bring a live-preview split-pane.
  *
- * A studio may be EDITOR-ONLY (Globals; Media when the image role is unbound):
- * it has editor components here but no agent in the server catalog, so it offers
- * no NEW chat. {@see enabledStudios} surfaces it from its editor presence alone;
+ * A studio may be EDITOR-ONLY (Globals): it has editor components here but no
+ * agent in the server catalog. Capability is NOT what makes a studio editor-only
+ * — Media used to lose its agent whenever the image role was unbound, and no
+ * longer does (see `capabilities.ts`): a rail that can only handle words still
+ * earns its place, and the chips say what is missing.
+ *
+ * An editor-only studio offers no NEW chat.
+ * {@see enabledStudios} surfaces it from its editor presence alone;
  * App gates the chat COMPOSER off when the active studio has no agent — the chat
  * column itself still renders wherever the section holds live conversations, so
  * history never becomes unreachable when an agent is dropped.

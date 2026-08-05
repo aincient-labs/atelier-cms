@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_chat\Unit;
 
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
+use Drupal\aincient_core\CapabilityVerbs;
+use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -35,6 +37,7 @@ final class WorkflowCatalogPresentationTest extends UnitTestCase {
     return new WorkflowCatalog(
       $configFactory,
       $this->createMock(EntityTypeManagerInterface::class),
+      new CapabilityVerbs($this->createMock(PluginManagerInterface::class)),
     );
   }
 

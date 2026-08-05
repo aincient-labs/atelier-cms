@@ -135,8 +135,16 @@ final class ProviderInventoryTest extends KernelTestBase {
 
     $this->assertArrayHasKey('nanobanana', $imagePool);
     $this->assertArrayHasKey(ScriptedAdapter::PROVIDER_ID, $imagePool);
+    // A plain Google key draws, so `gemini` is in the pool too — the same key
+    // under our two historical ids, both honest about what it can do (#12).
+    $this->assertArrayHasKey('gemini', $imagePool);
     $this->assertArrayNotHasKey('anthropic', $imagePool);
-    $this->assertArrayNotHasKey('gemini', $imagePool);
+    // Chat-only providers stay out, whatever their catalogue advertises: an
+    // aggregating gateway lists a picture model and still cannot serve one here.
+    foreach (['openai', 'mistral', 'ollama', 'openai_compatible'] as $id) {
+      $this->assertArrayNotHasKey($id, $imagePool, sprintf('%s does not draw.', $id));
+      $this->assertSame([], $this->inventory()->models($id, ProviderInventory::IMAGE));
+    }
 
     // And a text-only provider offers no image models even when it is connected
     // and happily lists chat ones.

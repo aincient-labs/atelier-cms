@@ -1,0 +1,63 @@
+uuid: b5b18186-38d5-46b6-a755-1d5f6b762c3c
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_workflow_executor
+id: flowdrop_workflow_executor_flowdrop_workflow_reason
+label: 'Run workflow: Reason'
+description: 'One tool-aware agent step with a shared recovery policy. Set operation_type per placement to pick the model tier (fast / task / reasoning) — one wrapper, no forked copies to drift.'
+category: ai
+icon: 'mdi:brain'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  loop_back:
+    configurable: false
+    connectable: true
+    exposed_by_default: false
+    required: false
+  messages:
+    configurable: false
+    connectable: true
+    exposed_by_default: true
+    required: false
+    default: {  }
+  operation_type:
+    configurable: true
+    connectable: false
+    required: false
+    default: 'aincient_role:task'
+  system_prompt:
+    configurable: false
+    connectable: true
+    exposed_by_default: true
+    required: false
+  tool:
+    configurable: false
+    connectable: true
+    exposed_by_default: true
+    required: false
+outputs:
+  assistant_message:
+    exposed: true
+    exposed_by_default: true
+  has_tool_calls:
+    exposed: true
+    exposed_by_default: true
+  text:
+    exposed: true
+    exposed_by_default: true
+  tool_calls:
+    exposed: true
+    exposed_by_default: true
+tags: {  }
+executor_plugin: 'flowdrop_workflow_executor:flowdrop_workflow:reason'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false
+reserved_port_exposure:
+  error: true

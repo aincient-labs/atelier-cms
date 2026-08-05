@@ -117,6 +117,9 @@ final class ProviderCatalog {
         // A stored credential, not the provider's opinion of itself: `isUsable()`
         // claimed three unkeyed providers were ready and denied one that was.
         'usable' => $row['connected'],
+        // Supplied by the deployment's environment: usable, but not the
+        // operator's to connect or disconnect from this step.
+        'managed' => $row['managed'],
       ];
     }
 
@@ -179,6 +182,7 @@ final class ProviderCatalog {
           'recommendation' => $this->recommendations->providerRecommendation($primary),
           'sponsored' => FALSE,
           'usable' => FALSE,
+          'managed' => FALSE,
         ];
       }
       // Capabilities accumulate ACROSS the group: one Google key gives the row
@@ -192,6 +196,11 @@ final class ProviderCatalog {
       // a key-group row lights up when any member is keyed.
       if ($row['connected']) {
         $rows[$primary]['usable'] = TRUE;
+      }
+      // Same accumulation, same reason: one environment variable can supply the
+      // whole group, and the row must say so however the group is registered.
+      if ($row['managed']) {
+        $rows[$primary]['managed'] = TRUE;
       }
     }
 

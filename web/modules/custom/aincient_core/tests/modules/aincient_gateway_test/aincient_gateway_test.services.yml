@@ -1,0 +1,7 @@
+services:
+  # Registered by the same tag every real adapter uses, so the inventory, the
+  # console and the wizard cannot tell it from a live gateway.
+  aincient_gateway_test.adapter:
+    class: Drupal\aincient_gateway_test\GatewayAdapter
+    tags:
+      - { name: aincient_core.inference_adapter }

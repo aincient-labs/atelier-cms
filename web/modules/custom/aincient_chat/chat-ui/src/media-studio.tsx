@@ -17,6 +17,7 @@ import {
   subscribeMedia,
 } from "./media-state";
 import { agentsForStudio } from "./studios";
+import { capabilityAvailable } from "./capabilities";
 import { CheckIcon, RotateCcwIcon, SpinnerIcon, TrashIcon, UploadIcon } from "./icons";
 
 /**
@@ -99,9 +100,15 @@ export function MediaStudio({ onClose: _onClose }: { onClose: () => void }) {
   const room = consoleNav.room();
   const isShelfRoom = room.kind === "shelf";
   const isNewImageRoom = room.kind === "media" && room.id == null;
-  // The shelf hint only offers the chat when the image agent actually exists
-  // (the server drops it while the image role is unbound).
-  const canGenerate = agentsForStudio("media").length > 0;
+  // The shelf hint only offers "ask the chat for a new image" when this install
+  // can actually DRAW. It used to ask whether the media agent existed at all —
+  // true while the server dropped that agent for an unbound image role, and
+  // wrong the moment it stopped (the room is now always in the catalog: a rail
+  // whose only capability is words still earns its place). The capability answer
+  // is the same one `generate_image` checks, so the invitation cannot outlive the
+  // tool.
+  const canGenerate =
+    agentsForStudio("media").length > 0 && capabilityAvailable("draw");
 
   const save = useCallback(async () => {
     if (!detail || !dirty) return;

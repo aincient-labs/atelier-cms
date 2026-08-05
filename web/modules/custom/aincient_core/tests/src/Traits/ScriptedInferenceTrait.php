@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_core\Traits;
 
 use Drupal\aincient_inference_test\ScriptedAdapter;
+use Symfony\AI\Platform\FinishReason\FinishReasonCase;
 
 /**
  * Wires the scripted inference provider into a kernel test.
@@ -54,6 +55,24 @@ trait ScriptedInferenceTrait {
    */
   private function scriptInferenceText(string $text): void {
     \Drupal::state()->set(ScriptedAdapter::TEXT_KEY, $text);
+  }
+
+  /**
+   * Scripts the finish reason the provider reports for the next call.
+   *
+   * Not called = the provider reports none, which is a real state and must keep
+   * behaving as a plain answer.
+   *
+   * @param \Symfony\AI\Platform\FinishReason\FinishReasonCase $case
+   *   The normalised case a bridge would have mapped the provider's wording onto.
+   * @param string $raw
+   *   The provider's own wording, e.g. `max_tokens`, `length`, `MAX_TOKENS`.
+   */
+  private function scriptInferenceFinishReason(FinishReasonCase $case, string $raw): void {
+    \Drupal::state()->set(ScriptedAdapter::FINISH_REASON_KEY, [
+      'case' => $case->value,
+      'raw' => $raw,
+    ]);
   }
 
   /**

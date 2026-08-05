@@ -278,6 +278,20 @@ export const ImageIcon = (p: IconProps) => (
   <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="1.5" /><path d="m21 15-4.5-4.5L7 20" /></Svg>
 );
 
+/**
+ * Pen/nib glyph — the "Write" capability chip (words in, words out).
+ */
+export const PenIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" /></Svg>
+);
+
+/**
+ * Eye glyph — the "Describe" capability chip (reads a picture you give it).
+ */
+export const EyeIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></Svg>
+);
+
 export const UploadIcon = (p: IconProps) => (
   <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M12 3v13" /><path d="m7 8 5-5 5 5" /></Svg>
 );
@@ -303,6 +317,20 @@ export const LockOpenIcon = (p: IconProps) => (
   <Svg {...p}>
     <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
     <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+  </Svg>
+);
+
+/**
+ * A circled "!" — used for a PROVIDER fault (an expired key, a rate limit), which
+ * is news the reader must act on but not a crash. Deliberately not the trail's
+ * `XIcon`: the whole point of the provider-failure card is that it does not look
+ * like a failed node.
+ */
+export const AlertCircleIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 8v4" />
+    <path d="M12 16h.01" />
   </Svg>
 );
 

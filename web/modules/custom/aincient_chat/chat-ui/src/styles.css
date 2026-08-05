@@ -895,6 +895,37 @@
   animation: ain-mic-pulse 1.2s ease-in-out infinite;
 }
 @keyframes ain-mic-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+/* Capability chips — the "what this room can do" row above the composer.
+   Present in EVERY room, always, so it has to be calm when everything is fine:
+   no fill, no border, dim text at composer-caption weight — the same visual
+   register as .ain-disclaimer below it. A needs-setup chip is the only one that
+   raises its voice, and only to underline itself as a link to the models form.
+   Two visual states only — lit, or dim-with-a-reason — but the dim state comes in
+   two FLAVOURS, because the reasons are not the same news:
+     .ain-cap--unused  this room's assistant has no tool for it. Struck through:
+                       a closed door, nothing to wait for, never a link.
+     .ain-cap--setup   the install has no provider behind it. Faded but intact —
+                       a "not yet" — and the only one that links anywhere. */
+.ain-caps {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
+  margin: 0 2px 6px; font-size: 11.5px; line-height: 1.3;
+}
+.ain-cap {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--ain-text-dim); text-decoration: none;
+}
+.ain-cap__glyph { font-size: 13px; flex: 0 0 auto; }
+.ain-cap--on { color: var(--ain-text-dim); }
+/* Needs setup: the glyph and label fade back, and the reason carries the link. */
+.ain-cap--setup { opacity: .62; }
+/* Not this room's job: struck out, and dimmer still — it is not an invitation. */
+.ain-cap--unused { opacity: .5; }
+.ain-cap--unused .ain-cap__label { text-decoration: line-through; text-decoration-thickness: 1px; }
+.ain-cap--unused .ain-cap__glyph { opacity: .7; }
+.ain-cap__hint { color: var(--ain-text-dim); }
+a.ain-cap--setup:hover { opacity: 1; }
+a.ain-cap--setup:hover .ain-cap__hint { text-decoration: underline; }
+a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-accent); outline-offset: 2px; border-radius: 3px; }
 .ain-disclaimer { text-align: center; color: var(--ain-text-dim); font-size: 11.5px; margin: 8px 0 0; }
 /* Composer frozen because the open page's editor lock is held elsewhere. */
 .ain-composer-locked {
@@ -1154,6 +1185,34 @@
    the real work still reads first in a debugging session. */
 .ain-trail__step[data-kind="plumbing"] .ain-trail__label { color: var(--ain-text-dim); }
 
+/* ---- Provider failure card ------------------------------------------------
+   A model provider that could not answer — an expired key, a rate limit, a
+   truncated response. Deliberately NOT danger-red and NOT the trail's failed-node
+   styling: this is a calm, readable statement plus at most one link, because in
+   most cases nothing is broken in the flow at all. Neutral surface, one dim rule,
+   the sentence at body weight; the action reads as a text link, never a button
+   (it is navigation to the models form — never a re-send). */
+.ain-provfail {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px;
+  margin: 4px 0 6px; padding: 10px 12px;
+  border: 1px solid var(--ain-border); border-left: 3px solid var(--ain-accent);
+  border-radius: var(--ain-radius); background: var(--ain-surface-2);
+}
+.ain-provfail__glyph { flex: 0 0 auto; align-self: center; color: var(--ain-accent); }
+.ain-provfail__text { flex: 1 1 200px; min-width: 0; color: var(--ain-text); font-size: 13px; line-height: 1.45; }
+.ain-provfail__action { flex: 0 0 auto; color: var(--ain-accent); font-size: 13px; text-decoration: underline; }
+.ain-provfail__action:hover { text-decoration: none; }
+.ain-provfail__note { display: block; margin-top: 4px; color: var(--ain-text-dim); font-size: 12px; line-height: 1.4; }
+/* Retry: an offered action, not a primary one — the reader may equally just wait. */
+.ain-provfail__retry {
+  flex: 0 0 auto; align-self: center; cursor: pointer;
+  padding: 4px 10px; font: inherit; font-size: 13px;
+  color: var(--ain-text); background: var(--ain-surface);
+  border: 1px solid var(--ain-border); border-radius: 6px;
+}
+.ain-provfail__retry:hover:not(:disabled) { border-color: var(--ain-accent); color: var(--ain-accent); }
+.ain-provfail__retry:disabled { cursor: default; opacity: 0.55; }
+
 /* ---- Tool activity line (fallback for unregistered tool parts) ------------
    Study 02, Plate 9: the studio's work renders as a QUIET MONO activity line —
    "✓ Generate alt text" — moss check, ink text, no card chrome. Never a third
@@ -1287,6 +1346,11 @@
 .ain-brandprev__label { font-size: 13px; color: var(--ain-text); }
 .ain-brandprev__hint { font-size: 11px; color: var(--ain-text-dim); }
 .ain-brandprev__rejected { font-size: 11px; color: var(--ain-accent-2); }
+/* A replayed (historical) card applies nothing and its in-memory draft is gone —
+   de-emphasise it so the transcript reads as a record, not as live state. */
+.ain-brandprev.is-historical { background: transparent; }
+.ain-brandprev.is-historical .ain-brandprev__label { color: var(--ain-text-dim); }
+.ain-brandprev.is-historical .ain-brandprev__dot { background: var(--ain-text-dim); }
 
 /* Brand status proposal — the HITL confirm card (the `brand_status_proposal`
    tool). "AI proposes, you approve": the agent never sets status directly. */

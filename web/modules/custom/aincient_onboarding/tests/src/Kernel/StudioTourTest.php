@@ -79,6 +79,106 @@ final class StudioTourTest extends KernelTestBase {
   }
 
   /**
+   * Naming ONE room narrows the map to it — the handoff case.
+   */
+  public function testRoomsArgumentNarrowsToOneRoom(): void {
+    $this->setCurrentUser($this->createUser(['use aincient operator console']));
+
+    $plugin = $this->tour();
+    $plugin->setContextValue('rooms', ['content']);
+    $plugin->execute();
+    $envelope = json_decode($plugin->getReadableOutput(), TRUE);
+
+    $this->assertSame(['content'], array_column($envelope['payload']['rooms'], 'key'));
+    // Still a status line: the one-card render is the same contract, not a
+    // second widget shape.
+    $this->assertArrayHasKey('status', $envelope['payload']['rooms'][0]);
+    $this->assertSame('studio_tour', $envelope['__widget__']);
+  }
+
+  /**
+   * A bare string (a looser provider, or a string port) is coerced to a list.
+   */
+  public function testRoomsArgumentAcceptsAStringOrJson(): void {
+    $this->setCurrentUser($this->createUser(['use aincient operator console']));
+
+    foreach (['globals', '["globals"]'] as $arg) {
+      $plugin = $this->tour();
+      $plugin->setContextValue('rooms', $arg);
+      $plugin->execute();
+      $envelope = json_decode($plugin->getReadableOutput(), TRUE);
+      $this->assertSame(['globals'], array_column($envelope['payload']['rooms'], 'key'), $arg);
+    }
+  }
+
+  /**
+   * The display names a model reaches for resolve to room keys; a subset keeps
+   * the canonical display order rather than the order the model listed.
+   */
+  public function testRoomsArgumentAcceptsDisplayNamesAndOrdersCanonically(): void {
+    $this->setCurrentUser($this->createUser(['use aincient operator console']));
+
+    $plugin = $this->tour();
+    $plugin->setContextValue('rooms', ['Globals', 'Pages', 'Library']);
+    $plugin->execute();
+    $envelope = json_decode($plugin->getReadableOutput(), TRUE);
+
+    $this->assertSame(
+      ['content', 'media', 'globals'],
+      array_column($envelope['payload']['rooms'], 'key')
+    );
+  }
+
+  /**
+   * Unknown keys are IGNORED; an argument naming nothing we know falls back to
+   * the whole map (a full map is truthful, an empty widget is a dead end).
+   */
+  public function testUnknownRoomsAreIgnoredAndDegradeToTheWholeMap(): void {
+    $this->setCurrentUser($this->createUser(['use aincient operator console']));
+
+    // One good key beside two inventions: the good one wins, alone.
+    $plugin = $this->tour();
+    $plugin->setContextValue('rooms', ['content', 'kitchen', ['nested']]);
+    $plugin->execute();
+    $envelope = json_decode($plugin->getReadableOutput(), TRUE);
+    $this->assertSame(['content'], array_column($envelope['payload']['rooms'], 'key'));
+
+    // Nothing recognisable at all → all four, exactly as the no-argument call.
+    $plugin = $this->tour();
+    $plugin->setContextValue('rooms', ['kitchen', 'garage']);
+    $plugin->execute();
+    $envelope = json_decode($plugin->getReadableOutput(), TRUE);
+    $this->assertSame(
+      ['content', 'media', 'design_system', 'globals'],
+      array_column($envelope['payload']['rooms'], 'key')
+    );
+
+    // An empty list is the same non-answer as omitting the argument.
+    $plugin = $this->tour();
+    $plugin->setContextValue('rooms', []);
+    $plugin->execute();
+    $envelope = json_decode($plugin->getReadableOutput(), TRUE);
+    $this->assertCount(4, $envelope['payload']['rooms']);
+  }
+
+  /**
+   * The `rooms` param is OPTIONAL and projects as an array in the tool schema —
+   * without both, the model either can't omit it or can't fill it.
+   */
+  public function testRoomsParamIsOptionalAndProjectsAsAnArray(): void {
+    $definitions = $this->tour()->getContextDefinitions();
+
+    $this->assertArrayHasKey('rooms', $definitions);
+    $this->assertFalse($definitions['rooms']->isRequired());
+    $this->assertSame('list', $definitions['rooms']->getDataType());
+    // The item shape several providers require for an array param.
+    $this->assertSame(
+      'string',
+      $definitions['rooms']->getConstraints()['SimpleToolItems']['type'] ?? NULL
+    );
+  }
+
+  /**
    * A configured tour video rides along in the payload.
    */
   public function testVideoBlockFromSettings(): void {

@@ -1,0 +1,8 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'AIncient gateway test provider'
+type: module
+description: 'TEST ONLY: a chat-only adapter shaped like an aggregating gateway (a LiteLLM/OpenRouter endpoint reached as an OpenAI-compatible one), so the console can be tested for what it says to an install that has connected only that.'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_core

@@ -1,0 +1,105 @@
+uuid: 3c9ef461-3f00-476e-8832-9423924cfb9a
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_reason
+id: reason
+label: Reason
+description: 'One tool-aware agent step, wrapped so every agent shares one recovery policy. The tier is a per-placement setting (operation_type) resolved through aincient_core.model_roles, so one wrapper serves the fast, task and reasoning tiers. The inner node''s error port is exposed and unwired: that seam is where semantic recovery belongs, but NOT a Delay loop-back — an interrupt node resumes on cron, so on a chat turn it renders a "Waiting until …" card instead of an answer and the next user message cancels the pending run. Same-second blips are already absorbed in PHP by ProviderCall; what is still owed here is a stop-and-report path that lets the run finish with the failure as its reply.'
+nodes:
+  -
+    id: aincient_reason.1
+    position:
+      x: 560
+      'y': 260
+    data:
+      label: 'Reason (agent step)'
+      config:
+        operation_type: 'aincient_role:task'
+        model: ''
+        temperature: 0
+        maxTokens: 8192
+        systemPrompt: ''
+        maxRetries: 0
+      metadata:
+        node_type_id: aincient_reason
+edges: {  }
+metadata:
+  createdAt: '2026-08-05T12:09:36.223Z'
+  updatedAt: '2026-08-05T12:13:33.486Z'
+created: 1785931770
+changed: 1785932703
+uid: 0
+input_ports:
+  -
+    name: operation_type
+    node_id: aincient_reason.1
+    port: operation_type
+  -
+    name: system_prompt
+    node_id: aincient_reason.1
+    port: systemPrompt
+  -
+    name: messages
+    node_id: aincient_reason.1
+    port: messages
+  -
+    name: tool
+    node_id: aincient_reason.1
+    port: tool
+  -
+    name: loop_back
+    node_id: aincient_reason.1
+    port: loop_back
+output_ports:
+  -
+    name: tool_calls
+    node_id: aincient_reason.1
+    port: tool_calls
+  -
+    name: text
+    node_id: aincient_reason.1
+    port: text
+  -
+    name: has_tool_calls
+    node_id: aincient_reason.1
+    port: has_tool_calls
+  -
+    name: assistant_message
+    node_id: aincient_reason.1
+    port: assistant_message
+parameter_schema:
+  type: object
+  properties:
+    operation_type:
+      type: string
+      description: 'Which tier of aincient_core.model_roles resolves this step: aincient_role:fast (cheap, nobody is waiting), aincient_role:task (the default) or aincient_role:reasoning (the user is watching, worth the wait).'
+      default: 'aincient_role:task'
+      required: false
+    system_prompt:
+      type: string
+      format: multiline
+      default: ''
+    messages:
+      type: array
+      default: {  }
+      required: false
+    tool:
+      type: tool
+      required: false
+    loop_back:
+      type: any
+      required: false
+output_schema:
+  type: object
+  properties:
+    tool_calls:
+      type: array
+    text:
+      type: string
+    has_tool_calls:
+      type: boolean
+    assistant_message:
+      type: json
+schema_version: 1.0.0

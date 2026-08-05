@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Plugin\AiCapability;
 
+use Drupal\aincient_core\CapabilitySet;
 use Drupal\aincient_core\Inference\AiGateway;
 use Drupal\aincient_core\Inference\ImageRef;
 use Drupal\aincient_core\ModelRoles;
@@ -59,6 +60,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
       required: FALSE,
     ),
   ],
+  // Spends the Describe verb — this is the one tool that reads a picture.
+  verbs: [CapabilitySet::DESCRIBE],
 )]
 final class GenerateAltText extends CapabilityBase implements ExecutableCapabilityInterface {
 

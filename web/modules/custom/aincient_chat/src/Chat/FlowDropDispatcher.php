@@ -28,7 +28,11 @@ use Psr\Log\LoggerInterface;
  *
  * A second turn while one is still running is refused by FlowDrop with a
  * typed ConcurrentTurnException — surfaced as a friendly error instead of the
- * old fresh-session fallback.
+ * old fresh-session fallback. That refusal is only right about a LIVE turn:
+ * FlowDrop's guard reads session status alone, so a turn whose process died
+ * mid-graph would refuse the thread forever. {@see StaleTurnRecovery} is
+ * consulted before giving up, and the turn is retried once if it released a
+ * dead lock (DECISIONS 0333).
  *
  * FlowDrop services are resolved lazily (not constructor-injected): the
  * aincient_chat kernel-test container does not enable FlowDrop, so a hard
@@ -112,6 +116,7 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
   public function __construct(
     private readonly LoggerInterface $logger,
     private readonly WorkflowCatalog $catalog,
+    private readonly StaleTurnRecovery $staleTurns,
   ) {}
 
   /**
@@ -169,8 +174,33 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
       );
     }
     catch (ConcurrentTurnException) {
-      yield ChatEvent::error('The operator is still working on your previous request — give it a moment and try again.');
-      return;
+      // The refusal is only correct while a turn is actually running. A turn
+      // whose process died mid-graph leaves the session RUNNING with nobody to
+      // clear it, and FlowDrop's guard cannot tell the two apart — so every
+      // later message in this thread is refused forever, while the wording
+      // promises a recovery that never arrives (DECISIONS 0333).
+      //
+      // Retrying is safe: the guard throws BEFORE the turn posts the user
+      // message, so nothing has been persisted and the second call is a clean
+      // first attempt rather than a duplicate.
+      if ($this->staleTurns->recoverIfStale((string) $session->id())) {
+        try {
+          $turn = $turns->executeTurn(
+            (string) $session->id(),
+            $message,
+            new TurnOptions(wait: TRUE, inputs: $clientContext),
+          );
+        }
+        catch (\Throwable $e) {
+          $this->logger->error('FlowDrop turn failed after releasing a stale lock: @m', ['@m' => $e->getMessage()]);
+          yield ChatEvent::error('The flow hit an unexpected error. Please try again.');
+          return;
+        }
+      }
+      else {
+        yield ChatEvent::error('The operator is still working on your previous request — give it a moment and try again.');
+        return;
+      }
     }
     catch (\Throwable $e) {
       // Wait-path execution failures propagate rather than folding into the

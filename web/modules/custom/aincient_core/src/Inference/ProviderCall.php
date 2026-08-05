@@ -41,6 +41,13 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
  * jitter, because a fleet of appliances retrying a shared proxy in lockstep is
  * how a rate limit becomes a rate limit again.
  *
+ * **The failure that arrives as a success.** One provider fault does not throw:
+ * a response truncated at the output token cap converts cleanly and looks like a
+ * finished turn. {@see self::answerOrFail()} reads the bridge-normalised finish
+ * reason on the way out and raises `too_long` rather than handing back an answer
+ * that stops mid-thought — a wrong answer presented as a right one is worse than
+ * any error card.
+ *
  * **What it says.** {@see self::describe()} turns the typed exception into a
  * sentence that says *whose* problem it is — a rejected key and an overloaded
  * provider need opposite responses from the reader, and both used to render as
@@ -50,8 +57,11 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
  * The machine-readable half of that judgement rides on the thrown
  * {@see AiProviderFailure} as its `kind`, so a surface that wants to offer
  * "reconnect your provider" versus "try again in a minute" has something to
- * branch on. Nothing branches on it yet; wiring the AI nodes' reserved `error`
- * port is the change that will (plans/current.md).
+ * branch on. The chat console now does: every raised failure is recorded in
+ * {@see ProviderFailureLog}, which is how the kind reaches the console's node
+ * frame (FlowDrop's job keeps only the message string), and the console renders a
+ * card whose action is chosen by kind. Wiring the AI nodes' reserved `error` port
+ * is a separate change that will feed the same card from inside the graph.
  */
 final class ProviderCall {
 
@@ -96,10 +106,17 @@ final class ProviderCall {
    * @param bool $sleepBetweenAttempts
    *   FALSE makes the backoff instantaneous. For tests only — the delay itself
    *   is what {@see self::waitSeconds()} exists to assert, separately.
+   * @param \Drupal\aincient_core\Inference\ProviderFailureLog|null $failures
+   *   Where a raised failure is left for the request's surfaces to find. The
+   *   FlowDrop job that carries this failure to the console keeps only the
+   *   message string, so the `kind` has to travel beside it
+   *   ({@see ProviderFailureLog}). NULL in the unit tests that only assert the
+   *   throw itself.
    */
   public function __construct(
     private readonly LoggerInterface $logger,
     private readonly bool $sleepBetweenAttempts = TRUE,
+    private readonly ?ProviderFailureLog $failures = NULL,
   ) {}
 
   /**
@@ -131,7 +148,7 @@ final class ProviderCall {
     while (TRUE) {
       $attempt++;
       try {
-        return $call();
+        $result = $call();
       }
       catch (\Throwable $e) {
         $lastAttempt = $attempt >= self::MAX_ATTEMPTS;
@@ -160,14 +177,101 @@ final class ProviderCall {
           '@message' => $e->getMessage(),
         ] + $logContext);
 
-        throw new AiProviderFailure(
+        throw $this->raise(
           $this->describe($e, $providerId, $modelId, $what, $attempt),
-          0,
           $e,
           $this->kind($e),
         );
       }
+
+      // OUTSIDE the catch on purpose: a truncated answer is not a thrown fault,
+      // and the failure it raises must not be caught here and retried.
+      return $this->answerOrFail($result, $providerId, $modelId, $what, $attempt, $logContext);
     }
+  }
+
+  /**
+   * The answer, unless the provider stopped at the output token cap.
+   *
+   * The one failure on this path that arrives as a SUCCESS. Every other provider
+   * fault throws, so it reaches the classifier above; a response truncated at the
+   * token cap converts cleanly and is indistinguishable from a finished one by
+   * shape alone — the sentence just stops, or the tool call the model was in the
+   * middle of writing is simply absent. Nothing asked, so the turn completed with
+   * `status: success` on every node and a wrong answer on screen, which is worse
+   * than any error card (atelier-cms#8).
+   *
+   * NOT retried, and this is the reason it does not sit in the loop above:
+   * repeating an identical request truncates identically, so a retry would only
+   * spend the reader's money and time to reach the same wrong place. It is
+   * classified `too_long` — the same kind {@see MaxOutputTokensException} already
+   * carries when a bridge does throw for this (Anthropic's stream, the Responses
+   * API), so both routes to the same condition land on one surface with one
+   * sentence.
+   *
+   * @param mixed $result
+   *   Whatever the call returned.
+   * @param string $providerId
+   *   Provider that answered.
+   * @param string $modelId
+   *   Model that answered.
+   * @param string $what
+   *   What the caller was doing, for the message.
+   * @param int $attempts
+   *   How many attempts it took to get this answer.
+   * @param array<string, string> $logContext
+   *   Extra placeholders for the log line.
+   *
+   * @return mixed
+   *   The result, when it is a complete one.
+   *
+   * @throws \Drupal\aincient_core\Exception\AiProviderFailure
+   *   When the provider truncated the response at the output token cap.
+   */
+  private function answerOrFail(mixed $result, string $providerId, string $modelId, string $what, int $attempts, array $logContext): mixed {
+    // Only a reported LENGTH finish reason counts. A provider or bridge that
+    // reports nothing behaves exactly as it did before this check existed —
+    // guessing a truncation would turn working turns into errors, which is the
+    // one regression worse than the silence (see ResultUnpacker).
+    $raw = is_object($result) ? ResultUnpacker::truncatedAtTokenCap($result) : NULL;
+    if ($raw === NULL) {
+      return $result;
+    }
+
+    $truncation = new MaxOutputTokensException(sprintf(
+      'The %s model "%s" stopped at the output token cap (finish reason: %s).',
+      $providerId,
+      $modelId,
+      $raw,
+    ));
+
+    $this->logger->error('Inference on @provider/@model was cut off at the output token cap after @n attempt(s) (finish reason: @reason).', [
+      '@provider' => $providerId,
+      '@model' => $modelId,
+      '@n' => $attempts,
+      '@reason' => $raw,
+    ] + $logContext);
+
+    throw $this->raise(
+      $this->describe($truncation, $providerId, $modelId, $what, $attempts),
+      $truncation,
+      self::KIND_TOO_LONG,
+    );
+  }
+
+  /**
+   * Builds the failure, recording it for this request's surfaces on the way out.
+   *
+   * The ONE place a failure is constructed, so the recording cannot be forgotten
+   * on one of the two throw paths — which is exactly the kind of omission that
+   * would leave a truncated turn rendering as a red node while an auth failure
+   * rendered as a card.
+   */
+  private function raise(string $message, \Throwable $previous, string $kind): AiProviderFailure {
+    $failure = new AiProviderFailure($message, 0, $previous, $kind);
+    $this->failures?->record($failure);
+
+    return $failure;
   }
 
   /**
@@ -252,13 +356,16 @@ final class ProviderCall {
       ),
 
       self::KIND_RATE_LIMIT => sprintf(
-        '%s is rate-limiting this key, so it refused the request.%s The limit is theirs, not Atelier\'s — wait a moment and try again, or connect a provider with more headroom.',
+        // No "try again" in the words: the card now carries an actual Retry
+        // button for this kind, and a sentence telling the reader to do what the
+        // button does reads like the button is not there.
+        '%s is rate-limiting this key, so it refused the request.%s The limit is theirs, not Atelier\'s — a moment\'s wait usually clears it, or connect a provider with more headroom.',
         ucfirst($providerId),
         $tries,
       ),
 
       self::KIND_UNAVAILABLE => sprintf(
-        '%s could not be reached, or answered with an error of their own.%s Nothing is wrong with your site — try again shortly.',
+        '%s could not be reached, or answered with an error of their own.%s Nothing is wrong with your site — it usually clears in a moment.',
         ucfirst($providerId),
         $tries,
       ),

@@ -6,12 +6,16 @@ dependencies:
     - aincient_flows
 id: aincient_flows_aincient_capability_studio_tour
 label: 'Capability: Studio tour'
-description: 'Show the user a visual map of the console: one card per area (Pages, Library, Design System, Globals) with what it is for, its current status, and a link that opens it. Call this when the user asks to be shown around, asks what they can do here, asks where to find or change something (pages, images, colours, fonts, logo, header, footer), or at the start of onboarding. Takes no arguments — it renders the map.'
+description: 'Show the user a visual map of the console — one card per area with what it is for, its current status, and a link that opens it. Call this when the user asks to be shown around, asks what they can do here, asks where to find or change something (pages, images, colours, fonts, logo, header, footer), or at the start of onboarding. Pass "rooms" with EXACTLY ONE room key when the ask maps to a single room, so the user gets one card that opens it instead of a menu they must re-read: content = Pages (build/edit pages, landing pages, posts), media = Library (images, uploads, image generation), design_system = Design System (colours, typography, mood), globals = Globals (header, footer, logo, site name). Omit "rooms" only for a genuine "show me around" / "what can I do here" — that renders all four.'
 category: processing
 icon: 'mdi:cog'
 plugin_version: 1.0.0
 enabled: true
-parameters: {  }
+parameters:
+  rooms:
+    configurable: true
+    connectable: true
+    required: false
 outputs:
   ok:
     exposed: true

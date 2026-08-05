@@ -105,16 +105,21 @@ final class ModelRoleResolver {
   }
 
   /**
-   * The EXPLICIT image-role binding, or NULL — the gate for the Media AI rail.
+   * The EXPLICIT image-role binding, or NULL — what image generation resolves to.
    *
    * Unlike {@see self::resolve()}, this deliberately has NO fallback chain: the
    * {@see ModelRoles::IMAGE} role is either bound to a concrete image provider or
-   * it is not. That binary IS the product gate — the Media studio's chat rail
-   * (Nano Banana) appears only when this returns a binding, so an unbound site is
-   * exactly the "no AI rail, non-AI editor only" state. Never resolve image
-   * generation through the op-default: more than one installed provider advertises
-   * `text_to_image`, so the op-default is ambiguous — this explicit binding is the
-   * single deterministic answer.
+   * it is not. Never resolve image generation through the op-default: more than
+   * one installed provider advertises `text_to_image`, so the op-default is
+   * ambiguous — this explicit binding is the single deterministic answer.
+   *
+   * IT IS NO LONGER A ROOM GATE. This binary used to remove the Media studio's
+   * agent from the console catalog outright, which answered a capability question
+   * as an access question and deleted a working chat rail to protect one tool
+   * inside it. Capability now decides DISPLAY only, through the "Draw" chip in
+   * {@see InstallCapabilities} — which asks {@see Inference\AiGateway::imageStatus()},
+   * the same question `generate_image` asks, so a lit chip and a working tool
+   * still cannot disagree.
    *
    * @return array{provider_id: string, model_id: string}|null
    */

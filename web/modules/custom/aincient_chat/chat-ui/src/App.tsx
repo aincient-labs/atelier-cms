@@ -24,6 +24,7 @@ import {
   flowVersion,
   selectAgent,
   setActiveStudio,
+  starterAsks,
   subscribe as subscribeFlows,
   useActiveStudio,
   useActiveThreadWorkflow,
@@ -31,9 +32,17 @@ import {
   useSelectedWorkflowId,
   type WorkflowRef,
 } from "./flow";
+import { CapabilityChips } from "./capability-chips";
+import { takeComposerPrefill } from "./composer-prefill";
 import { PanelBar } from "./panel-bar";
 import { AccountPane } from "./account-pane";
-import { agentsForStudio, serverDefaultStudio, type StudioKey } from "./studios";
+import {
+  agentsForStudio,
+  serverDefaultStudio,
+  studioOfAgent,
+  studioVerbs,
+  type StudioKey,
+} from "./studios";
 import { studioDef, studioHasEditor } from "./studio-registry";
 import { visibleTiers, visibleDestinationCount, type ResolvedGroup } from "./nav-model";
 import {
@@ -119,6 +128,7 @@ import {
   subscribeWrapup,
   threadPublished,
 } from "./thread-seal";
+import { useThreadRemoteId, useThreadSealed } from "./thread-seal-hooks";
 import { subscribeLock } from "./page-lock";
 import { composerMode } from "./console-machine";
 import { consoleBase } from "./console-config";
@@ -367,13 +377,6 @@ function AssistantMessage() {
 }
 
 /* ------------------------------------------------------------------ composer */
-/** Fallback sample asks (a flow's sampleAsks win). Exported for the onboarding
- *  wizard, which stages the first one in the composer as its landing act. */
-export const SUGGESTIONS = [
-  "Build a landing page for a cozy neighborhood coffee shop",
-  "Build a landing page announcing our new feature",
-  "Create a landing page for a SaaS analytics tool — bold and modern",
-];
 
 /**
  * The "did something settle elsewhere?" hook. An interrupt answered outside
@@ -416,6 +419,37 @@ function DictateButton() {
       <MicIcon />
     </button>
   );
+}
+
+/**
+ * The receiving half of the one-hop ask carry (see `composer-prefill.ts`).
+ *
+ * A one-room studio-tour card stages the user's own sentence for the room it
+ * hands off to; this drops it into that room's composer on arrival. Renders
+ * nothing, and sits OUTSIDE the composer-mode branches so it runs even where the
+ * composer is withheld (an editor-only room like Globals) — arriving anywhere
+ * clears the stage, which is what makes a stale sentence impossible rather than
+ * merely unlikely.
+ *
+ * The text is never sent: the user reads their own words and presses. The studio
+ * key is the trigger, so the fill lands after `enterRoom`'s thread switch has
+ * settled — the fresh thread's composer, not the one we left.
+ */
+function ComposerPrefill() {
+  const composer = useComposerRuntime();
+  const studio = useActiveStudio();
+  useEffect(() => {
+    // Takes unconditionally: a hop to a room OTHER than the staged one forgets
+    // the sentence instead of leaving it to surface on some later navigation.
+    const text = takeComposerPrefill(studio);
+    if (!text) return;
+    try {
+      composer.setText(text);
+    } catch {
+      /* composer not writable in this room — degrade to no prefill */
+    }
+  }, [studio, composer]);
+  return null;
 }
 
 /** Tallest the dictation height-lock will hold; matches the input's max-height. */
@@ -627,14 +661,10 @@ function useActiveThreadId(): string {
 }
 
 /** The active (main) thread's backend id, reactively — "" for a fresh/unsent
- *  thread. WIP rows compare against it to mark the one you're in. */
-function useActiveRemoteId(): string {
-  const runtime = useAssistantRuntime();
-  return useSyncExternalStore(
-    (cb) => runtime.threads.mainItem.subscribe(cb),
-    () => runtime.threads.mainItem.getState().remoteId ?? "",
-  );
-}
+ *  thread. WIP rows compare against it to mark the one you're in. Alias of the
+ *  shared binding in thread-seal-hooks.ts (one subscription shape, so the seal
+ *  verdict and "which thread am I in?" can never disagree). */
+const useActiveRemoteId = useThreadRemoteId;
 
 /** True on phone-width viewports (the sidebar overlays; the section menu
  *  collapses to a dropdown). Reactive to viewport changes. */
@@ -660,11 +690,8 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   // The active thread's backend id + wrapped-up state: a sealed thread swaps the
   // composer for the celebration end-state (read-only), and a just-published
   // thread shows the cancelable wrap-up offer in the same slot.
-  const remoteId = useSyncExternalStore(
-    (cb) => runtime.threads.mainItem.subscribe(cb),
-    () => runtime.threads.mainItem.getState().remoteId ?? "",
-  );
-  const sealed = useSyncExternalStore(subscribeSeals, () => isThreadSealed(remoteId));
+  const remoteId = useThreadRemoteId();
+  const sealed = useThreadSealed(remoteId);
   // An archived thread is read-only history (studio-navigation.md §4): opened to
   // read, never re-entered as live. Like a lock it swaps the composer for a
   // read-only pane — the way to continue is a fresh thread on the same resource.
@@ -688,9 +715,11 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const pendingWrapup = useSyncExternalStore(subscribeWrapup, getPendingWrapup);
   const pendingHere = pendingWrapup && pendingWrapup.threadId === remoteId ? pendingWrapup : null;
   const published = threadPublished(remoteId);
-  // No agent in this studio's catalog (e.g. the image role came unbound) — the
-  // transcript stays readable but nothing can take a turn.
-  const noAgent = agentsForStudio(useActiveStudio()).length === 0;
+  // No agent in this studio's catalog (an editor-only studio, or its workflow is
+  // missing) — the transcript stays readable but nothing can take a turn. NOT a
+  // capability state: a room is never dropped for what it cannot do.
+  const activeStudio = useActiveStudio();
+  const noAgent = agentsForStudio(activeStudio).length === 0;
   // The composer mode is a pure projection of thread status + the lock region
   // (INV‑4): sealed → archived → pendingWrapup → noAgent → lockElsewhere → live.
   const mode = composerMode({ sealed, archived, pendingWrapup: !!pendingHere, noAgent }, lockRegion);
@@ -714,14 +743,16 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   // that used to live in the global top bar now sit on the panel they act on.
   const chatTitle = useActiveThreadTitle();
   // The fresh-thread welcome follows the flow: a pinned thread's workflow if
-  // known, else the next-new-conversation pick. Empty fields fall back to the
-  // console defaults; a freeform-only flow (e.g. the brand agent) shows no chips.
+  // known, else the next-new-conversation pick. An empty welcome/description
+  // falls back to the console defaults; the CHIPS never fall back — they come
+  // only from the flow's configured `sample_asks` (see starterAsks), so a room
+  // with none configured shows none rather than another room's.
   const pinned = useActiveThreadWorkflow();
   const selected = useSelectedWorkflow();
   const flow = pinned ?? selected;
   const heading = flow?.welcomeText || "What would you like to create?";
   const body = flow?.description || "Pages, posts, whole sites — just say the word.";
-  const asks = flow?.freeformOnly ? [] : flow?.sampleAsks?.length ? flow.sampleAsks : SUGGESTIONS;
+  const asks = starterAsks(flow);
   return (
     <ThreadPrimitive.Root className="ain-thread">
       <PanelBar
@@ -803,6 +834,9 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
         {/* Renders only in the one moment it's earned — after the studio's first
             live build, and only if the owner has no name yet. See name-invite.ts. */}
         <NameInvite />
+        {/* Hands the user back the sentence that sent them here (never sends it).
+            Outside the branches below on purpose — see ComposerPrefill. */}
+        <ComposerPrefill />
         {mode === "sealed" ? (
           // Wrapped up (read-only) — history stays readable above; the composer
           // is gone so the finished conversation can't keep running.
@@ -864,6 +898,17 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           </div>
         ) : (
           <>
+            {/* What this room can DO — present in every room, always, so the row
+                is familiar from a healthy install and a dimmed chip later reads
+                as information rather than alarm. Scoped twice: the STUDIO decides
+                which verbs the room raises at all (General never mentions
+                pictures), the room's own AGENT decides which of those are live.
+                Display only: it gates nothing, and each tool still reports its
+                own failure. */}
+            <CapabilityChips
+              studioVerbs={studioVerbs(studioOfAgent(flow?.id) ?? activeStudio)}
+              agentVerbs={flow?.verbs}
+            />
             <Composer />
             <p className="ain-disclaimer">Atelier can make mistakes. Review important changes.</p>
           </>
@@ -1017,9 +1062,9 @@ function useThreadRows(): ThreadRow[] {
 /**
  * The workspace's chat column. Hidden for an editor-only studio (no agent in the
  * catalog) — UNLESS the section already holds live conversations: history must
- * stay reachable even when a studio's agent is dropped (e.g. the image role
- * coming unbound removes the media agent, but yesterday's image threads keep
- * their transcript). In that state the COMPOSER goes read-only (`noAgent` mode)
+ * stay reachable even when a studio's agent is dropped (its workflow removed or
+ * renamed, say — yesterday's threads keep their transcript). In that state the
+ * COMPOSER goes read-only (`noAgent` mode)
  * — the pane itself never disappears over someone's messages. Lives as its own
  * component (inside the AssistantRuntimeProvider) because the thread rows are
  * runtime-bound.
@@ -1066,7 +1111,7 @@ function WipRow() {
   const guardedSwitch = useGuardedSwitch();
   const activeRemote = useActiveRemoteId();
   useRoomTick();
-  const sealed = isThreadSealed(remoteId);
+  const sealed = useThreadSealed(remoteId);
   // Not switchable / not history / not this section → no row. A thread without a
   // backend id is the active fresh composition (shown in the chat panel), not a
   // WIP row.

@@ -9,7 +9,6 @@ use Drupal\aincient_core\Inference\ProviderInventory;
 use Drupal\aincient_core\ModelRoleResolver;
 use Drupal\aincient_core\ModelRoles;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\State\StateInterface;
 
 /**
@@ -67,7 +66,6 @@ final class ProviderConnector {
 
   public function __construct(
     private readonly StateInterface $state,
-    private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly ConfigFactoryInterface $configFactory,
     private readonly ProviderInventory $providerManager,
     private readonly ModelRoleResolver $resolver,
@@ -220,6 +218,9 @@ final class ProviderConnector {
    *   ok=TRUE with the pinned default model's label on success.
    */
   public function connect(string $providerId, string $credential, string $preferredModel = '', array $roleModels = [], string $endpoint = ''): array {
+    if ($this->isEnvironmentManaged($providerId)) {
+      return ['ok' => FALSE, 'message' => $this->managedMessage($providerId)];
+    }
     $probe = $this->probeModels($providerId, $credential, ProviderInventory::CHAT, $endpoint);
     if (!$probe['ok']) {
       return ['ok' => FALSE, 'message' => $probe['message']];
@@ -276,6 +277,14 @@ final class ProviderConnector {
     $credential = trim($credential);
     $endpoint = trim($endpoint);
     $empty = ['chat' => [], 'image' => []];
+    if ($this->isEnvironmentManaged($providerId)) {
+      return [
+        'ok' => FALSE,
+        'message' => $this->managedMessage($providerId),
+        'models' => $empty,
+        'suggested' => [],
+      ];
+    }
     if ($credential === '') {
       return [
         'ok' => FALSE,
@@ -322,7 +331,13 @@ final class ProviderConnector {
           $chatMemberModels = $chatProbe['models'];
         }
       }
-      if ($imageProbe['ok']) {
+      // ONE MEMBER DRAWS FOR THE GROUP. Both Google ids are image-capable now
+      // ({@see \Drupal\aincient_core\Inference\Adapter\GeminiAdapter}), and they
+      // enumerate the SAME models from the SAME key — so taking both would list
+      // every picture model twice under a row the wizard presents as one provider,
+      // the two copies distinguishable only by a prefix the operator never sees.
+      // First answering member wins, exactly as the chat side already does.
+      if ($imageProbe['ok'] && $image === []) {
         $image += $this->qualify($member, $imageProbe['models']);
       }
     }
@@ -429,7 +444,11 @@ final class ProviderConnector {
       // ungated read filled the image pool with models that cannot draw; image
       // capability is now a type the provider either has or does not.
       $chat += $this->qualify($member, $this->providerManager->models($member, ProviderInventory::CHAT));
-      $image += $this->qualify($member, $this->providerManager->models($member, ProviderInventory::IMAGE));
+      // One member draws for the group, for the reason connectAndStore() records:
+      // both Google ids enumerate the same picture models from the same key.
+      if ($image === []) {
+        $image += $this->qualify($member, $this->providerManager->models($member, ProviderInventory::IMAGE));
+      }
     }
     return ['chat' => $chat, 'image' => $image];
   }
@@ -437,42 +456,48 @@ final class ProviderConnector {
   /**
    * Remove a provider's (or key group's) stored credential and unbind its roles.
    *
-   * The inverse of connecting: deletes the secret (State value + the
-   * `<provider>_default_key` Key entity + the provider's `api_key` pointer, or
-   * the host URL for host providers), for every member of a key group. Any model
-   * role bound to a removed provider is unbound, the bindings are re-projected,
-   * and any framework default still pointing at a removed provider is swept — so
-   * the site is never left resolving against a deleted key. The completion flag
-   * is deliberately left untouched (an admin disconnecting in the wizard is mid-
+   * The inverse of connecting: deletes the secret (the State value, or the host
+   * URL for host providers), for every member of a key group. Any model role
+   * bound to a removed provider is unbound, the bindings are re-projected, and
+   * any framework default still pointing at a removed provider is swept — so the
+   * site is never left resolving against a deleted key. The completion flag is
+   * deliberately left untouched (an admin disconnecting in the wizard is mid-
    * reconfiguration, not resetting first-run).
+   *
+   * @return bool
+   *   FALSE when the credential comes from the environment and there is nothing
+   *   this process can remove; TRUE when the disconnect happened.
    */
-  public function disconnect(string $providerId): void {
+  public function disconnect(string $providerId): bool {
+    // A deployment-supplied credential is not ours to remove: this process does
+    // not own the variable, so unbinding the roles would leave the provider
+    // connected and the console would report a disconnect that did not happen.
+    if ($this->isEnvironmentManaged($providerId)) {
+      return FALSE;
+    }
     $removed = [];
     foreach (self::KEY_GROUPS[$providerId] ?? [$providerId] as $member) {
       $this->removeCredential($member);
       $removed[$member] = TRUE;
     }
     $this->unbindProviders($removed);
+
+    return TRUE;
   }
 
   /**
    * Delete a single provider's stored credential (key store or host config).
    *
    * The inverse of {@see self::persistCredential()}. Key providers lose their
-   * Key entity and their State value; host providers lose their saved endpoint.
-   * A provider that stores BOTH loses both — leaving the endpoint behind would
-   * make `isConnected()` say no while a disconnected provider still carried half
-   * a configuration for the next operator to be surprised by.
+   * State value; host providers lose their saved endpoint. A provider that
+   * stores BOTH loses both — leaving the endpoint behind would make
+   * `isConnected()` say no while a disconnected provider still carried half a
+   * configuration for the next operator to be surprised by.
    */
   private function removeCredential(string $providerId): void {
     if ($this->authType($providerId) === ProviderAdapterInterface::AUTH_HOST) {
       $this->state->delete($this->endpointKeyFor($providerId));
       return;
-    }
-    // The Key entity first, then the secret it pointed at.
-    $entity = $this->entityTypeManager->getStorage('key')->load($this->keyIdFor($providerId));
-    if ($entity !== NULL) {
-      $entity->delete();
     }
     $this->state->delete($this->stateKeyFor($providerId));
     if ($this->needsEndpoint($providerId)) {
@@ -569,6 +594,16 @@ final class ProviderConnector {
    *   The base URL, for a provider that needs one alongside its key.
    */
   private function persistCredential(string $providerId, string $credential, string $endpoint = ''): void {
+    // The one enforcement point. The public entry points turn this case into a
+    // friendly refusal before reaching here; this is the backstop that keeps a
+    // future caller from writing a credential the resolver would not prefer
+    // anyway — a write that appears to succeed and changes nothing.
+    if ($this->isEnvironmentManaged($providerId)) {
+      throw new \LogicException(sprintf(
+        'Provider "%s" is configured from the environment; its credential cannot be written.',
+        $providerId,
+      ));
+    }
     if ($this->authType($providerId) === ProviderAdapterInterface::AUTH_HOST) {
       // A host provider's whole credential is its base URL, and the registry reads
       // that from State ({@see PlatformRegistry::endpointFor()}) — so it is stored
@@ -647,35 +682,21 @@ final class ProviderConnector {
   }
 
   /**
-   * Store an API key via the Key module's State provider and wire the provider.
+   * Store an API key in Drupal State, under the convention the registry reads.
    *
    * The secret lives in Drupal State (the persistent volume in the appliance),
-   * never in config — so a later `drush cex` captures at most "key_provider:
-   * state", never the value. The (created-if-missing) Key entity is the named
-   * handle on it; {@see \Drupal\aincient_core\Inference\PlatformRegistry}
-   * resolves both by convention from the provider id, so there is no per-vendor
-   * config object pointing at either. There used to be one — the
-   * `ai_provider_<id>.settings: api_key` pointer the `drupal/ai` provider plugins
-   * read — and it went with those modules.
+   * never in config — so a later `drush cex` captures nothing at all.
+   * {@see \Drupal\aincient_core\Inference\PlatformRegistry} resolves it by
+   * convention from the provider id, so there is no per-vendor config object
+   * pointing at it. There used to be two: the `ai_provider_<id>.settings:
+   * api_key` pointer the `drupal/ai` provider plugins read, which went with
+   * those modules, and a `<provider>_default_key` Key entity that was the named
+   * handle on the State value. Nothing read the second one once inference moved
+   * to our own adapters, so it stopped being a handle and became a per-provider
+   * config entity minted for no reader (DECISIONS 0337).
    */
   private function storeApiKey(string $providerId, string $key): void {
-    $keyId = $this->keyIdFor($providerId);
-    $stateKey = $this->stateKeyFor($providerId);
-    $this->state->set($stateKey, trim($key));
-
-    $storage = $this->entityTypeManager->getStorage('key');
-    /** @var \Drupal\key\KeyInterface|null $entity */
-    $entity = $storage->load($keyId);
-    if ($entity === NULL) {
-      $entity = $storage->create([
-        'id' => $keyId,
-        'label' => ucfirst($providerId) . ' API key',
-        'key_type' => 'authentication',
-      ]);
-    }
-    $entity->set('key_provider', 'state');
-    $entity->set('key_provider_settings', ['state_key' => $stateKey]);
-    $entity->save();
+    $this->state->set($this->stateKeyFor($providerId), trim($key));
   }
 
   /**
@@ -806,10 +827,137 @@ final class ProviderConnector {
   }
 
   /**
-   * The key entity id used to store a provider's secret (one per provider).
+   * Apply every `ATELIER_DEFAULT_<PROVIDER>_…` seed that has not been applied yet.
+   *
+   * A SEED IS NOT A POLICY, and the two forms differ in more than precedence.
+   * `ATELIER_<PROVIDER>_API_KEY` is read on every request and never stored, so it
+   * cannot be changed from the console and never reaches the database.
+   * `ATELIER_DEFAULT_<PROVIDER>_API_KEY` is copied into State exactly once and is
+   * an ordinary credential from then on: the operator can rotate it, and — the
+   * whole point — a Disconnect stays disconnected.
+   *
+   * WHICH IS WHY THE MARKER EXISTS. "Apply when nothing is stored" would undo
+   * every disconnect on the next converge: the operator removes the key, the
+   * container restarts, the seed finds an empty State and puts it back. The
+   * marker makes the rule "once, ever" instead, and it is set even when a
+   * credential is already present — a site that was configured before a seed
+   * appeared must not be re-provisioned behind its operator's back.
+   *
+   * Consequently CHANGING a seed value later does nothing. That is correct for
+   * something called a default, and the escape hatch is deleting the marker
+   * (`drush state:delete aincient.<provider>_seeded`).
+   *
+   * @return array<string, string>
+   *   Provider id => what happened ("seeded", "already applied", …), for the
+   *   command that calls this to report. Providers with no seed are absent.
    */
-  private function keyIdFor(string $providerId): string {
-    return $providerId . '_default_key';
+  public function seedFromEnvironment(): array {
+    $report = [];
+    foreach (array_keys($this->providerManager->providers()) as $providerId) {
+      $seed = $this->environmentSeed($providerId);
+      if ($seed === NULL) {
+        continue;
+      }
+      if ((bool) $this->state->get($this->seededKeyFor($providerId), FALSE)) {
+        $report[$providerId] = 'already applied';
+        continue;
+      }
+      // The marker is set in every outcome below, including the ones that write
+      // nothing: "seen once" is what it records, not "written once".
+      $this->state->set($this->seededKeyFor($providerId), TRUE);
+
+      if ($this->providerManager->isEnvironmentManaged($providerId)) {
+        // A policy variable already supplies this provider at runtime. Writing
+        // the seed would store a credential nothing will ever read.
+        $report[$providerId] = 'skipped — set by ATELIER_' . strtoupper($providerId) . '_API_KEY';
+        continue;
+      }
+      if ($this->providerManager->isConnected($providerId)) {
+        $report[$providerId] = 'skipped — already connected';
+        continue;
+      }
+
+      $this->persistCredential($providerId, $seed['credential'], $seed['endpoint']);
+      $report[$providerId] = 'seeded';
+    }
+
+    return $report;
+  }
+
+  /**
+   * A provider's seed values from the environment, or NULL when none is set.
+   *
+   * Shaped by the provider's own auth: a host provider's whole credential is its
+   * URL, so its seed is `ATELIER_DEFAULT_<PROVIDER>_ENDPOINT`; a key provider's
+   * is `_API_KEY`; the two-field shape needs both, and half of one is not a
+   * credential — offering it would store a configuration that cannot connect.
+   *
+   * @return array{credential: string, endpoint: string}|null
+   *   The values to persist, or NULL when this provider has no usable seed.
+   */
+  private function environmentSeed(string $providerId): ?array {
+    $key = $this->environmentValue($providerId, 'API_KEY');
+    $endpoint = $this->environmentValue($providerId, 'ENDPOINT');
+
+    if ($this->authType($providerId) === ProviderAdapterInterface::AUTH_HOST) {
+      return $endpoint === '' ? NULL : ['credential' => $endpoint, 'endpoint' => ''];
+    }
+    if ($this->needsEndpoint($providerId)) {
+      return ($key === '' || $endpoint === '') ? NULL : ['credential' => $key, 'endpoint' => $endpoint];
+    }
+    return $key === '' ? NULL : ['credential' => $key, 'endpoint' => ''];
+  }
+
+  /**
+   * One half of a provider's SEED as supplied by the environment.
+   *
+   * `ATELIER_DEFAULT_<PROVIDER>_<SUFFIX>` — the policy convention with `DEFAULT_`
+   * in front. The prefix rather than a `_DEFAULT` suffix because
+   * `ATELIER_ANTHROPIC_API_KEY_DEFAULT` reads as "the default API key" (of
+   * what?), while this reads as English and keeps the `_API_KEY` / `_ENDPOINT`
+   * grammar intact.
+   */
+  private function environmentValue(string $providerId, string $suffix): string {
+    $raw = getenv('ATELIER_DEFAULT_' . strtoupper($providerId) . '_' . $suffix);
+
+    return $raw === FALSE ? '' : trim($raw);
+  }
+
+  /**
+   * The State flag recording that a provider's seed has been applied.
+   */
+  private function seededKeyFor(string $providerId): string {
+    return 'aincient.' . $providerId . '_seeded';
+  }
+
+  /**
+   * Whether this provider — or any member of its key group — comes from the env.
+   *
+   * Group-wide on purpose: one Google variable serves both `gemini` and
+   * `nanobanana`, and connecting the group would write over half of a credential
+   * the deployment already supplies.
+   */
+  private function isEnvironmentManaged(string $providerId): bool {
+    foreach (self::KEY_GROUPS[$providerId] ?? [$providerId] as $member) {
+      if ($this->providerManager->isEnvironmentManaged($member)) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * What to tell an operator who tried to manage a deployment-supplied provider.
+   *
+   * Names the variable, because the remedy is not in this UI: whoever runs the
+   * container changes it there and restarts.
+   */
+  private function managedMessage(string $providerId): string {
+    return sprintf(
+      '%s is configured by this deployment (ATELIER_%s_API_KEY), so it can’t be changed here. Update the environment variable and restart to change it.',
+      $this->labelFor($providerId),
+      strtoupper($providerId),
+    );
   }
 
   /**

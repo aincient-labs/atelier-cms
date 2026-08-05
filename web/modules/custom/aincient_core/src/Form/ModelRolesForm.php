@@ -220,7 +220,7 @@ final class ModelRolesForm extends ConfigFormBase {
     if ($this->flatCount($imageOptions) === 0) {
       $form['image']['image_none'] = [
         '#type' => 'item',
-        '#markup' => $this->t('No image providers are connected yet. Connect one that can draw (Nano Banana, from a Google AI Studio key) and its models will appear here.'),
+        '#markup' => $this->imageAbsenceNotice(),
       ];
     }
     else {
@@ -252,6 +252,47 @@ final class ModelRolesForm extends ConfigFormBase {
     }
 
     return parent::buildForm($form, $form_state);
+  }
+
+  /**
+   * What to say when the image role has nothing to offer.
+   *
+   * TWO DIFFERENT SILENCES, and telling them apart is the whole point (issue #12).
+   * An operator whose only connection is an aggregating gateway — a LiteLLM or
+   * OpenRouter endpoint reached as `openai_compatible`, the shape the Forge demo
+   * runs on — has connected something, seen chat work, and then finds an image
+   * section with no options and no next step. "Connect an image provider" reads as
+   * a contradiction to them: they DID connect a provider, and its catalogue even
+   * advertises a picture model. So the sentence has to name the actual constraint.
+   *
+   * WHY THE CONDITION IS NOT `isProxy()`. It cannot be: a LiteLLM or OpenRouter
+   * endpoint reached through `openai_compatible` reports `isProxy() === FALSE`
+   * (only the baked presets say TRUE), so keying the copy off it would stay silent
+   * for precisely the install that reported this. What IS knowable without a
+   * network call, for every provider, is the pair the inventory already publishes:
+   * is a credential stored, and does the adapter claim image capability. So the
+   * condition is "something is connected, and nothing connected can draw" — true
+   * of a gateway-only install, and equally true of a chat-only one, which needs the
+   * same sentence for the same reason.
+   *
+   * Nothing here promises a gateway will never draw. It says drawing needs a
+   * provider connected directly, which is what this build actually supports.
+   */
+  private function imageAbsenceNotice(): \Stringable|string {
+    $connected = array_filter(
+      $this->providerManager->providers(),
+      static fn (array $row): bool => !empty($row['connected']),
+    );
+    $canDraw = array_filter(
+      $connected,
+      static fn (array $row): bool => !empty($row['capabilities'][ProviderInventory::IMAGE]),
+    );
+
+    if ($connected !== [] && $canDraw === []) {
+      return $this->t('Nothing you have connected can make pictures. A shared gateway passes your words along to other services, and that works for writing and describing — but pictures need a provider connected directly. Add Google Gemini with a Google AI Studio key that has billing enabled, and picture models appear here.');
+    }
+
+    return $this->t('No image providers are connected yet. Connect one that can draw (Google Gemini, from a Google AI Studio key) and its models will appear here.');
   }
 
   /**

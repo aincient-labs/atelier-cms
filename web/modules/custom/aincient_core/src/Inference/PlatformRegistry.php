@@ -166,14 +166,68 @@ final class PlatformRegistry implements PlatformRegistryInterface {
   }
 
   /**
-   * Resolves a provider's secret from the Key entity it is wired to.
+   * Whether this provider's credential is supplied by the environment.
    *
-   * Mirrors ProviderConnector's storage scheme exactly: the provider's settings
-   * name an `api_key` Key entity, which resolves through the Key module's state
-   * provider to a value in Drupal State. Falls back to the conventional State
-   * key so a headlessly seeded install (`drush state:set`) also works.
+   * The question the WIZARD asks, and the reason this is public: a provider
+   * configured by the deployment must not be offered a "connect" form that would
+   * write a value nothing reads, nor a "disconnect" that cannot unset a variable
+   * this process does not own. Both used to succeed and change nothing.
+   *
+   * True when EITHER half is supplied from the environment, deliberately: a
+   * provider whose key is deployment-managed and whose base URL is not is still
+   * not a provider the wizard can honestly own, and half-managing one is how you
+   * get a disconnect that leaves a working credential behind.
+   */
+  public function isEnvironmentManaged(string $providerId): bool {
+    return $this->environmentValue($providerId, 'API_KEY') !== ''
+      || $this->environmentValue($providerId, 'ENDPOINT') !== '';
+  }
+
+  /**
+   * One half of a provider's credential as supplied by the environment.
+   *
+   * `ATELIER_<PROVIDER>_<SUFFIX>`, the provider id upper-cased — so
+   * `openai_compatible` reads `ATELIER_OPENAI_COMPATIBLE_API_KEY`. It mirrors the
+   * State convention (`aincient.<provider>_api_key` / `_endpoint`) exactly, one
+   * store over, and matches `ATELIER_VERSION` — the prefix this product already
+   * reads its own environment under. (`AINCIENT_*` is the appliance's shell
+   * namespace in `converge.sh`; nothing in PHP reads it.)
+   *
+   * An unset variable and an empty one are the same answer: a variable declared
+   * but not filled in — the ordinary shape of a compose file with a blank value
+   * — means "not supplied", never "supplied as empty".
+   */
+  private function environmentValue(string $providerId, string $suffix): string {
+    $raw = getenv('ATELIER_' . strtoupper($providerId) . '_' . $suffix);
+
+    return $raw === FALSE ? '' : trim($raw);
+  }
+
+  /**
+   * Resolves a provider's secret, environment first.
+   *
+   * Three stores, in precedence order:
+   *
+   * 1. `ATELIER_<PROVIDER>_API_KEY` in the environment. Deployment intent wins,
+   *    because it is the only one of the three that can be ROTATED without a
+   *    database write — an operator who changes the variable and restarts must
+   *    see the new value, not a stale copy something wrote to State once.
+   * 2. A Key entity named by `aincient.provider.<id>: api_key`. Kept because it
+   *    is how a secret reaches a container WITHOUT touching the database at all
+   *    (an `env`-provider Key entity resolves live, per request), which matters
+   *    when the database is dumped into a published image.
+   * 3. The conventional `aincient.<provider>_api_key` State key — what the
+   *    wizard writes, and what a headless `drush state:set` install writes.
+   *
+   * 1 and 2 express the same intent by different means; 1 exists so expressing
+   * it costs one variable instead of a Key entity plus a config pointer.
    */
   private function credentialFor(string $providerId): string {
+    $fromEnvironment = $this->environmentValue($providerId, 'API_KEY');
+    if ($fromEnvironment !== '') {
+      return $fromEnvironment;
+    }
+
     $keyId = (string) $this->configFactory
       ->get($this->settingsNameFor($providerId))
       ->get('api_key');
@@ -199,11 +253,18 @@ final class PlatformRegistry implements PlatformRegistryInterface {
   /**
    * A provider's configured base URL, or '' for the vendor default.
    *
-   * Reads both `endpoint` (our own key, and the contrib OpenAI-compatible
-   * module's) and `host_name` (the Ollama convention), so an operator's existing
-   * value is honoured whichever module wrote it.
+   * `ATELIER_<PROVIDER>_ENDPOINT` wins, for the same reason the credential's
+   * does. Then config — both `endpoint` (our own key, and the contrib
+   * OpenAI-compatible module's) and `host_name` (the Ollama convention), so an
+   * operator's existing value is honoured whichever module wrote it — and
+   * finally the State convention the wizard writes.
    */
   private function endpointFor(string $providerId): string {
+    $fromEnvironment = $this->environmentValue($providerId, 'ENDPOINT');
+    if ($fromEnvironment !== '') {
+      return $fromEnvironment;
+    }
+
     $settings = $this->configFactory->get($this->settingsNameFor($providerId));
     foreach (['endpoint', 'host_name'] as $key) {
       $value = trim((string) $settings->get($key));

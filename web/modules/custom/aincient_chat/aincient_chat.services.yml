@@ -26,6 +26,7 @@ services:
     arguments:
       - '@config.factory'
       - '@entity_type.manager'
+      - '@aincient_core.capability_verbs'
 
   # The console conversation store, backed by FlowDrop sessions (single lane).
   # The sidebar/history/archive/delete endpoints read threads from here.
@@ -53,6 +54,17 @@ services:
     arguments:
       - '@logger.channel.aincient_chat'
       - '@aincient_chat.workflow_catalog'
+      - '@aincient_chat.stale_turn_recovery'
+
+  # Releases a thread whose turn died without ending. FlowDrop's turn guard
+  # gates on session status alone, so a vanished process leaves the thread
+  # refusing every later message; cron's own recovery has a 600s threshold but
+  # runs on a 3-hour cadence on the appliance. Repairs at the door instead.
+  aincient_chat.stale_turn_recovery:
+    class: Drupal\aincient_chat\Chat\StaleTurnRecovery
+    arguments:
+      - '@entity_type.manager'
+      - '@logger.channel.aincient_chat'
 
   # Per-request side channel into the chat SSE stream: the controller arms it
   # inside the streamed-response callback; event subscribers push frames onto
@@ -68,6 +80,9 @@ services:
     class: Drupal\aincient_chat\EventSubscriber\NodeProgressSubscriber
     arguments:
       - '@aincient_chat.stream_relay'
+      # So a failed node that is really a PROVIDER fault carries its kind to the
+      # console and renders as a card, not a red crash (atelier-cms#8).
+      - '@aincient_core.inference.provider_failure_log'
     tags:
       - { name: event_subscriber }
 

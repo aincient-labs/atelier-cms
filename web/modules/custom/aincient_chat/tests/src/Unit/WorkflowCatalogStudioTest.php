@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_chat\Unit;
 
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
+use Drupal\aincient_core\CapabilityVerbs;
+use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Entity\EntityInterface;
@@ -54,7 +56,9 @@ final class WorkflowCatalogStudioTest extends UnitTestCase {
     $etm->method('hasDefinition')->with('flowdrop_workflow')->willReturn(TRUE);
     $etm->method('getStorage')->with('flowdrop_workflow')->willReturn($storage);
 
-    return new WorkflowCatalog($configFactory, $etm);
+    return new WorkflowCatalog($configFactory, $etm, new CapabilityVerbs(
+      $this->createMock(PluginManagerInterface::class),
+    ));
   }
 
   /**

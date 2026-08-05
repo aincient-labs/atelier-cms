@@ -26,6 +26,18 @@ services:
     class: Drupal\aincient_core\Inference\ProviderCall
     arguments:
       - '@logger.channel.aincient_core'
+      # Sleep between attempts. Spelled out because the failure log below is
+      # positional after it — only tests pass FALSE.
+      - true
+      - '@aincient_core.inference.provider_failure_log'
+
+  # Where a raised provider failure is left for this request's surfaces to find.
+  # FlowDrop hands a failed node's error to the console as a STRING, so the
+  # machine-readable `kind` cannot ride the exception all the way out; it rides
+  # here instead, and the chat relay matches on the sentence it recorded
+  # (atelier-cms#8).
+  aincient_core.inference.provider_failure_log:
+    class: Drupal\aincient_core\Inference\ProviderFailureLog
 
   # The containment boundary for the provider INVENTORY — which providers this
   # site can serve, what each can do, and which models it offers. The twin of the
@@ -351,6 +363,30 @@ services:
     arguments:
       - '@config.factory'
       - '@module_handler'
+  # What this install can DO, in three product verbs (Write / Describe / Draw) —
+  # computed ONCE here and rendered twice: the console's capability chips and the
+  # capability block appended to an agent's system prompt. One source, so a lit
+  # chip and a model claiming otherwise cannot happen.
+  aincient_core.install_capabilities:
+    class: Drupal\aincient_core\InstallCapabilities
+    arguments:
+      - '@aincient_core.inference.gateway'
+      - '@aincient_core.model_role_resolver'
+  # The per-ROOM half of the same answer: which verbs an agent's wired tools
+  # actually spend, so a room only shows the chips it can use (General stops
+  # advertising Draw). Derived from the capability plugins' own declarations.
+  aincient_core.capability_verbs:
+    class: Drupal\aincient_core\CapabilityVerbs
+    arguments:
+      - '@plugin.manager.aincient.capabilities'
+  # The `install_capabilities()` Twig function — the same answer, as instructions
+  # an agent's Prompt Template node can inline.
+  aincient_core.twig.install_capabilities:
+    class: Drupal\aincient_core\Twig\InstallCapabilitiesExtension
+    arguments:
+      - '@aincient_core.install_capabilities'
+    tags:
+      - { name: twig.extension }
   # Where the curated recommendation document comes from: the bundled snapshot,
   # or a document an operator explicitly fetched from aincient-labs.com.
   aincient_core.recommendation_source:

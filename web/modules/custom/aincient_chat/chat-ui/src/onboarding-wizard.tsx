@@ -264,6 +264,11 @@ function ProviderRow({
   const needsEndpoint = provider.auth === "api_key_endpoint";
   const keyHelp = isHost ? undefined : KEY_HELP[provider.id];
   const chip = providerChip(provider.recommendation);
+  // Supplied by the deployment: there is no form to open and nothing to remove,
+  // so the row states the fact and offers no controls. Offering them would be
+  // the dishonest half — the server refuses both, and a button that always
+  // errors is worse than no button.
+  const managed = !!provider.managed;
   return (
     <div
       className={`ain-wiz__provider${open ? " ain-wiz__provider--selected" : ""}${
@@ -272,7 +277,13 @@ function ProviderRow({
       data-provider={provider.id}
     >
       <div className="ain-wiz__provider-top">
-        <button type="button" className="ain-btn ain-wiz__provider-hit" onClick={onToggle} aria-expanded={open}>
+        <button
+          type="button"
+          className="ain-btn ain-wiz__provider-hit"
+          onClick={managed ? undefined : onToggle}
+          disabled={managed}
+          aria-expanded={managed ? undefined : open}
+        >
           <span
             className={`ain-wiz__provider-badge${Icon ? "" : " ain-wiz__provider-badge--empty"}`}
             style={{ color: PROVIDER_INK }}
@@ -304,12 +315,17 @@ function ProviderRow({
                   )}
                 </span>
               )}
+              {managed && (
+                // A whisper, not a warning (Law 02): nothing is wrong here — the
+                // key simply arrived with the container.
+                <span className="ain-wiz__chip">Set by this server</span>
+              )}
             </span>
             {provider.description && <span className="ain-wiz__provider-desc">{provider.description}</span>}
           </span>
         </button>
 
-        {connected && (
+        {connected && !managed && (
           <button
             type="button"
             className="ain-btn ain-wiz__provider-disconnect"
@@ -328,7 +344,7 @@ function ProviderRow({
         )}
       </div>
 
-      {open && (
+      {open && !managed && (
         <div className="ain-wiz__connect">
           {/* The base URL leads: it says WHICH service this is, and the key is
               meaningless without it. Its own row, no button — the Connect press

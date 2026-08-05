@@ -24,6 +24,41 @@ function fontHref(fonts: string[] | null): string {
   return parts.length ? `https://fonts.googleapis.com/css2?${parts.join("&")}&display=swap` : "";
 }
 
+/** Whether the staged draft differs from the saved brand (gates Compare). */
+export function draftHasDiff(overrides: BrandOverrides, fonts: string[] | null): boolean {
+  return Object.keys(overrides).length > 0 || !!fonts;
+}
+
+/**
+ * Bring a just-mounted preview up to date with a draft that was staged BEFORE it
+ * existed.
+ *
+ * The brand agent's `brand_preview` card writes its tokens into the shared store
+ * and only *then* calls `ensureStudio("design_system")`, which is what mounts this
+ * preview. So on the first brand turn of a session the staged tokens were emitted
+ * with no live subscriber: the card said "Applied to preview" while the frame kept
+ * rendering the saved brand. Every later turn emits into a subscriber, which is
+ * why it only ever misfired the first time.
+ *
+ * Applying (not merely counting) the existing draft on mount closes that window,
+ * whichever way the mount interleaves with the iframe's first `load`: if the
+ * document isn't parsed yet both writes bail and `onLoad` re-applies; if `load`
+ * already landed this is the apply that lands. Split out from the effect so the
+ * ordering contract is unit-testable in a DOM-less env.
+ */
+export function primePreviewFromDraft(deps: {
+  getOverrides: () => BrandOverrides;
+  getFonts: () => string[] | null;
+  apply: (overrides: BrandOverrides) => void;
+  syncFonts: () => void;
+  setHasDiff: (value: boolean) => void;
+}): void {
+  const overrides = deps.getOverrides();
+  deps.setHasDiff(draftHasDiff(overrides, deps.getFonts()));
+  deps.apply(overrides);
+  deps.syncFonts();
+}
+
 // Divider travel is clamped a little inside the edges so the handle always has a
 // sliver of each side to grab and neither label is fully covered.
 const MIN_POS = 2;
@@ -122,9 +157,16 @@ export function BrandPreview() {
   // the token overrides and the font link in sync with the draft — and tracks
   // whether there's any diff at all (the Compare toggle's enabled state).
   useEffect(() => {
-    const recompute = (ov: BrandOverrides) =>
-      setHasDiff(Object.keys(ov).length > 0 || !!getPendingFonts());
-    recompute(getBrandOverrides());
+    const recompute = (ov: BrandOverrides) => setHasDiff(draftHasDiff(ov, getPendingFonts()));
+    // A draft staged before this preview mounted had no subscriber to emit into,
+    // so adopt it now — flag AND paint (see primePreviewFromDraft).
+    primePreviewFromDraft({
+      getOverrides: getBrandOverrides,
+      getFonts: getPendingFonts,
+      apply,
+      syncFonts,
+      setHasDiff,
+    });
     return subscribeBrandOverrides((ov) => {
       apply(ov);
       syncFonts();

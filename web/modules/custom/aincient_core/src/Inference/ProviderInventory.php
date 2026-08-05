@@ -108,7 +108,7 @@ final class ProviderInventory {
    * rebuilding a map of its own, which is what the `HOST_PROVIDERS` and
    * capability maps in onboarding were.
    *
-   * @return array<string, array{id: string, label: string, description: string, auth: string, capabilities: array{chat: bool, image: bool}, connected: bool}>
+   * @return array<string, array{id: string, label: string, description: string, auth: string, capabilities: array{chat: bool, image: bool}, connected: bool, managed: bool}>
    *   Provider id => row.
    */
   public function providers(): array {
@@ -128,6 +128,10 @@ final class ProviderInventory {
           self::IMAGE => $adapter instanceof ImageGenerationAdapterInterface,
         ],
         'connected' => $this->registry->isConnected($id),
+        // Connected BY THE DEPLOYMENT, not by an operator — so the console can
+        // show it as settled rather than offering a form that would write a
+        // value the resolver will not prefer.
+        'managed' => $this->registry->isEnvironmentManaged($id),
       ];
     }
     ksort($rows);
@@ -146,7 +150,7 @@ final class ProviderInventory {
    * @param string $capability
    *   {@see self::CHAT} or {@see self::IMAGE}.
    *
-   * @return array<string, array{id: string, label: string, description: string, auth: string, capabilities: array{chat: bool, image: bool}, connected: bool}>
+   * @return array<string, array{id: string, label: string, description: string, auth: string, capabilities: array{chat: bool, image: bool}, connected: bool, managed: bool}>
    *   Provider id => row.
    */
   public function providersWith(string $capability): array {
@@ -201,6 +205,17 @@ final class ProviderInventory {
    */
   public function isConnected(string $providerId): bool {
     return $this->registry->isConnected($providerId);
+  }
+
+  /**
+   * Whether a provider's credential is supplied by the environment.
+   *
+   * Connected, but not the operator's to change: onboarding reads this to refuse
+   * a connect or disconnect it could not honour, rather than accepting one and
+   * silently changing nothing.
+   */
+  public function isEnvironmentManaged(string $providerId): bool {
+    return $this->registry->isEnvironmentManaged($providerId);
   }
 
   /**

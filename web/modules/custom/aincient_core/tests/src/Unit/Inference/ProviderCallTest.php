@@ -14,9 +14,13 @@ use Symfony\AI\Platform\Exception\AuthenticationException;
 use Symfony\AI\Platform\Exception\BadRequestException;
 use Symfony\AI\Platform\Exception\ContentFilterException;
 use Symfony\AI\Platform\Exception\ExceedContextSizeException;
+use Symfony\AI\Platform\Exception\MaxOutputTokensException;
 use Symfony\AI\Platform\Exception\ModelNotFoundException;
 use Symfony\AI\Platform\Exception\RateLimitExceededException;
 use Symfony\AI\Platform\Exception\ServerException;
+use Symfony\AI\Platform\FinishReason\FinishReason;
+use Symfony\AI\Platform\FinishReason\FinishReasonCase;
+use Symfony\AI\Platform\Result\TextResult;
 use Symfony\Component\HttpClient\Exception\TransportException;
 
 /**
@@ -282,6 +286,90 @@ final class ProviderCallTest extends UnitTestCase {
 
     // Whatever the curve says, the cap wins.
     $this->assertLessThanOrEqual(20, $call->waitSeconds($e, 12));
+  }
+
+  /**
+   * A truncated answer fails as `too_long`, and is NOT retried.
+   *
+   * The one provider fault that arrives as a success: the call returns, the text
+   * converts, and the turn used to be reported as complete (atelier-cms#8). Not
+   * retried on purpose — an identical request truncates identically, so a retry
+   * would spend money to reach the same wrong place.
+   */
+  public function testTruncatedAnswerFailsAndIsNotRetried(): void {
+    $calls = 0;
+    $truncated = new TextResult('Here are the three sections you asked for. The first one');
+    $truncated->getMetadata()->add('finish_reason', new FinishReason(FinishReasonCase::LENGTH, 'max_tokens'));
+
+    try {
+      $this->providerCall()->run(
+        function () use (&$calls, $truncated) {
+          $calls++;
+          return $truncated;
+        },
+        'anthropic',
+        'claude-sonnet-5',
+        'step',
+      );
+      $this->fail('A truncated answer was handed back as a complete one.');
+    }
+    catch (AiProviderFailure $e) {
+      $this->assertSame(1, $calls, 'A truncation must not be retried.');
+      $this->assertSame(ProviderCall::KIND_TOO_LONG, $e->getKind());
+      $this->assertStringContainsString('too long', $e->getMessage());
+      // Classified as the same condition the bridges throw for when they do
+      // throw, so both routes reach one surface with one sentence.
+      $this->assertInstanceOf(MaxOutputTokensException::class, $e->getPrevious());
+    }
+  }
+
+  /**
+   * A complete answer passes through untouched, whatever it says.
+   *
+   * The false-positive guard at this seam: the check runs on every provider call
+   * in the product, so a reason that is absent, clean or unrecognised must return
+   * the result unchanged — turning good turns into error cards would be a worse
+   * regression than the bug.
+   */
+  #[DataProvider('completeAnswers')]
+  public function testCompleteAnswersPassThrough(?FinishReason $reason): void {
+    $result = new TextResult('A complete answer.');
+    if ($reason !== NULL) {
+      $result->getMetadata()->add('finish_reason', $reason);
+    }
+
+    $returned = $this->providerCall()->run(
+      fn (): object => $result,
+      'anthropic',
+      'claude-sonnet-5',
+      'step',
+    );
+
+    $this->assertSame($result, $returned);
+  }
+
+  /**
+   * Finish reasons that leave the answer alone.
+   *
+   * @return iterable<string, array{0: \Symfony\AI\Platform\FinishReason\FinishReason|null}>
+   *   The reason a provider reported, or NULL for none at all.
+   */
+  public static function completeAnswers(): iterable {
+    yield 'unreported' => [NULL];
+    yield 'clean stop' => [new FinishReason(FinishReasonCase::STOP, 'end_turn')];
+    yield 'tool call' => [new FinishReason(FinishReasonCase::TOOL_CALL, 'tool_use')];
+    yield 'stop sequence' => [new FinishReason(FinishReasonCase::STOP_SEQUENCE, 'stop_sequence')];
+    yield 'unrecognised' => [new FinishReason(FinishReasonCase::OTHER, 'something_new')];
+  }
+
+  /**
+   * A non-object answer is returned as-is rather than inspected.
+   */
+  public function testNonObjectAnswerPassesThrough(): void {
+    $this->assertSame(
+      'plain',
+      $this->providerCall()->run(fn (): string => 'plain', 'ollama', 'llama3', 'step'),
+    );
   }
 
   /**

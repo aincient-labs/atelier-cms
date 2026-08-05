@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Plugin\AiCapability;
 
+use Drupal\aincient_core\CapabilitySet;
 use Drupal\aincient_core\ModelRoles;
 use Drupal\aincient_core\Inference\AiGateway;
 use Drupal\aincient_core\Inference\ImageRef;
@@ -61,6 +62,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
       required: FALSE,
     ),
   ],
+  // Spends the Draw verb: a room that wires this tool is a room that can make
+  // pictures, so it is the room whose chip row says so.
+  verbs: [CapabilitySet::DRAW],
 )]
 final class GenerateImage extends CapabilityBase implements ExecutableCapabilityInterface {
 

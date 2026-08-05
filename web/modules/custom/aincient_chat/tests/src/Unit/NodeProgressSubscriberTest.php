@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_chat\Unit;
 
+use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Tests\UnitTestCase;
 use Drupal\aincient_chat\Chat\StreamRelay;
 use Drupal\aincient_chat\Event\ChatEvent;
 use Drupal\aincient_chat\Event\ChatEventType;
 use Drupal\aincient_chat\EventSubscriber\NodeProgressSubscriber;
+use Drupal\aincient_core\Exception\AiProviderFailure;
+use Drupal\aincient_core\Inference\ProviderCall;
+use Drupal\aincient_core\Inference\ProviderFailureLog;
 use Drupal\flowdrop_job\FlowDropJobInterface;
 use Drupal\flowdrop_runtime\Event\JobCompletedEvent;
 
@@ -74,7 +79,7 @@ final class NodeProgressSubscriberTest extends UnitTestCase {
       'execution_time_us' => 1234567,
     ]);
 
-    (new NodeProgressSubscriber($this->relay))
+    (new NodeProgressSubscriber($this->relay, new ProviderFailureLog()))
       ->onJobCompleted(new JobCompletedEvent($job, [], 'exec-1'));
 
     $this->assertCount(1, $this->emitted);
@@ -98,7 +103,7 @@ final class NodeProgressSubscriberTest extends UnitTestCase {
   public function testFailedJobCarriesErrorAndFallbackLabel(): void {
     $job = $this->mockJob('invoke_capability', NULL, 'failed', [], 'The capability exploded.');
 
-    (new NodeProgressSubscriber($this->relay))
+    (new NodeProgressSubscriber($this->relay, new ProviderFailureLog()))
       ->onJobCompleted(new JobCompletedEvent($job, []));
 
     $data = $this->emitted[0]->data;
@@ -121,12 +126,192 @@ final class NodeProgressSubscriberTest extends UnitTestCase {
     ]);
     $plain = $this->mockJob('agent_reason', 'Reason', 'completed');
 
-    $subscriber = new NodeProgressSubscriber($this->relay);
+    $subscriber = new NodeProgressSubscriber($this->relay, new ProviderFailureLog());
     $subscriber->onJobCompleted(new JobCompletedEvent($tool, []));
     $subscriber->onJobCompleted(new JobCompletedEvent($plain, []));
 
     $this->assertTrue($this->emitted[0]->data['tool']);
     $this->assertArrayNotHasKey('tool', $this->emitted[1]->data);
+  }
+
+  /**
+   * A failed node whose error is a PROVIDER failure carries the kind — and the
+   * engine's "Node execution failed for …" wrapper is replaced by the sentence.
+   *
+   * `rate_limit` on purpose: it is the kind that offers no action, so this asserts
+   * the classification alone without needing a route table for the link (see
+   * ProviderFailureSurfaceTest for the kind→action split).
+   *
+   * @covers ::onJobCompleted
+   */
+  public function testProviderFailureCarriesItsKindAndCleanSentence(): void {
+    $log = new ProviderFailureLog();
+    $sentence = 'Anthropic is rate-limiting this key, so it refused the request.';
+    $log->record(new AiProviderFailure($sentence, 0, NULL, ProviderCall::KIND_RATE_LIMIT));
+
+    $job = $this->mockJob(
+      'agent_reason',
+      'Reason',
+      'failed',
+      [],
+      'Node execution failed for agent_reason: ' . $sentence,
+    );
+    (new NodeProgressSubscriber($this->relay, $log))
+      ->onJobCompleted(new JobCompletedEvent($job, []));
+
+    $data = $this->emitted[0]->data;
+    $this->assertSame($sentence, $data['error']);
+    $this->assertSame('rate_limit', $data['error_kind']);
+    // No action for this kind: the limit is the provider's, and a link to our
+    // settings would blame the reader for someone else's quota.
+    $this->assertArrayNotHasKey('error_action', $data);
+    // Nothing ran before it, so the reader may simply send the turn again.
+    $this->assertTrue($data['error_retry']);
+    $this->assertArrayNotHasKey('error_note', $data);
+  }
+
+  /**
+   * A tool that already ran in this turn withholds Retry from a later fault.
+   *
+   * GATE 2, end to end. The signal is this subscriber having SEEN a tool job go by
+   * in the same request (ScopedToolInvoker records every tool call as a pipeline
+   * job that dispatches this event). A rate limit that lands after `create_content`
+   * has run is the StaleTurnRecovery hazard wearing a friendly button: re-sending
+   * the same words would make a second page. The card says so instead.
+   *
+   * @covers ::onJobCompleted
+   */
+  public function testAToolAlreadyRunWithholdsRetry(): void {
+    $log = new ProviderFailureLog();
+    $sentence = 'Anthropic is rate-limiting this key, so it refused the request.';
+    $log->record(new AiProviderFailure($sentence, 0, NULL, ProviderCall::KIND_RATE_LIMIT));
+
+    $tool = $this->mockJob('create_1', 'Create content', 'completed', [
+      'node_type_id' => 'create_content',
+      'tool_invocation' => TRUE,
+    ]);
+    $failed = $this->mockJob('agent_reason', 'Reason', 'failed', [], 'Node execution failed for agent_reason: ' . $sentence);
+
+    $subscriber = new NodeProgressSubscriber($this->relay, $log);
+    $subscriber->onJobCompleted(new JobCompletedEvent($tool, []));
+    $subscriber->onJobCompleted(new JobCompletedEvent($failed, []));
+
+    $data = $this->emitted[1]->data;
+    $this->assertSame('rate_limit', $data['error_kind']);
+    $this->assertArrayNotHasKey('error_retry', $data);
+    $this->assertStringContainsString('already took effect', $data['error_note']);
+  }
+
+  /**
+   * A tool that FAILED still withholds Retry — it may have applied half its work.
+   *
+   * The conservative direction, on purpose: "the tool errored, so nothing landed"
+   * is an assumption no capability guarantees.
+   *
+   * @covers ::onJobCompleted
+   */
+  public function testAFailedToolAlsoWithholdsRetry(): void {
+    $log = new ProviderFailureLog();
+    $sentence = 'Anthropic could not be reached, or answered with an error of their own.';
+    $log->record(new AiProviderFailure($sentence, 0, NULL, ProviderCall::KIND_UNAVAILABLE));
+
+    $tool = $this->mockJob('create_1', 'Create content', 'failed', [
+      'tool_invocation' => TRUE,
+    ], 'Half of it saved, then this.');
+    $failed = $this->mockJob('agent_reason', 'Reason', 'failed', [], $sentence);
+
+    $subscriber = new NodeProgressSubscriber($this->relay, $log);
+    $subscriber->onJobCompleted(new JobCompletedEvent($tool, []));
+    $subscriber->onJobCompleted(new JobCompletedEvent($failed, []));
+
+    $this->assertArrayNotHasKey('error_retry', $this->emitted[1]->data);
+  }
+
+  /**
+   * An `auth` fault never offers Retry, clean turn or not — it offers the link.
+   *
+   * @covers ::onJobCompleted
+   */
+  public function testAuthNeverOffersRetry(): void {
+    // `auth` resolves the models URL, so the route table must be there.
+    $generator = $this->createMock(UrlGeneratorInterface::class);
+    $generator->method('generateFromRoute')->willReturn('/admin/config/aincient/models');
+    $container = new ContainerBuilder();
+    $container->set('url_generator', $generator);
+    \Drupal::setContainer($container);
+
+    $log = new ProviderFailureLog();
+    $sentence = 'Anthropic rejected the key Atelier has for it.';
+    $log->record(new AiProviderFailure($sentence, 0, NULL, ProviderCall::KIND_AUTH));
+
+    $job = $this->mockJob('agent_reason', 'Reason', 'failed', [], $sentence);
+    (new NodeProgressSubscriber($this->relay, $log))
+      ->onJobCompleted(new JobCompletedEvent($job, []));
+
+    $data = $this->emitted[0]->data;
+    $this->assertArrayNotHasKey('error_retry', $data);
+    // And no note: there was never a button here to explain the absence of.
+    $this->assertArrayNotHasKey('error_note', $data);
+  }
+
+  /**
+   * An `auth` failure's frame carries the models link, off the route table.
+   *
+   * The end-to-end wiring of the one thing this slice adds beyond a sentence: the
+   * URL is never spelled in the frame's source, it is generated — the console's IA
+   * has already moved once (/aincient → /atelier).
+   *
+   * @covers ::onJobCompleted
+   */
+  public function testAuthFailureFrameCarriesTheModelsLink(): void {
+    $generator = $this->createMock(UrlGeneratorInterface::class);
+    $generator->method('generateFromRoute')->willReturn('/admin/config/aincient/models');
+    $container = new ContainerBuilder();
+    $container->set('url_generator', $generator);
+    \Drupal::setContainer($container);
+
+    $log = new ProviderFailureLog();
+    $sentence = 'Anthropic rejected the key Atelier has for it.';
+    $log->record(new AiProviderFailure($sentence, 0, NULL, ProviderCall::KIND_AUTH));
+
+    $job = $this->mockJob('agent_reason', 'Reason', 'failed', [], 'Node execution failed for agent_reason: ' . $sentence);
+    (new NodeProgressSubscriber($this->relay, $log))
+      ->onJobCompleted(new JobCompletedEvent($job, []));
+
+    $data = $this->emitted[0]->data;
+    $this->assertSame('auth', $data['error_kind']);
+    $this->assertSame(
+      ['label' => 'Reconnect provider', 'url' => '/admin/config/aincient/models'],
+      $data['error_action'],
+    );
+  }
+
+  /**
+   * An UNRELATED node failure never inherits the recorded provider kind.
+   *
+   * The whole safety property of matching on the sentence. Without it, a graph
+   * mistake that happens after a provider hiccup in the same request would tell
+   * the reader to reconnect a provider that is working fine.
+   *
+   * @covers ::onJobCompleted
+   */
+  public function testUnrelatedFailureIsNotClassifiedAsAProviderFault(): void {
+    $log = new ProviderFailureLog();
+    $log->record(new AiProviderFailure(
+      'Anthropic rejected the key Atelier has for it.',
+      0,
+      NULL,
+      ProviderCall::KIND_AUTH,
+    ));
+
+    $job = $this->mockJob('invoke_capability', 'Create content', 'failed', [], 'The capability exploded.');
+    (new NodeProgressSubscriber($this->relay, $log))
+      ->onJobCompleted(new JobCompletedEvent($job, []));
+
+    $data = $this->emitted[0]->data;
+    $this->assertSame('The capability exploded.', $data['error']);
+    $this->assertArrayNotHasKey('error_kind', $data);
+    $this->assertArrayNotHasKey('error_action', $data);
   }
 
   /**
@@ -138,7 +323,7 @@ final class NodeProgressSubscriberTest extends UnitTestCase {
     $this->relay->disarm();
     $job = $this->mockJob('chat_output', 'Chat Output', 'completed');
 
-    (new NodeProgressSubscriber($this->relay))
+    (new NodeProgressSubscriber($this->relay, new ProviderFailureLog()))
       ->onJobCompleted(new JobCompletedEvent($job, []));
 
     $this->assertSame([], $this->emitted);

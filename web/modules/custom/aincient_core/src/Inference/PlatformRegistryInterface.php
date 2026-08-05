@@ -68,6 +68,21 @@ interface PlatformRegistryInterface {
   public function isConnected(string $providerId): bool;
 
   /**
+   * Whether this provider's credential comes from the environment.
+   *
+   * Such a provider is connected but not MANAGEABLE: the wizard cannot write a
+   * credential the resolver will prefer over the variable, and cannot unset a
+   * variable this process does not own.
+   *
+   * @param string $providerId
+   *   The provider id.
+   *
+   * @return bool
+   *   TRUE when either half of the credential is supplied by the environment.
+   */
+  public function isEnvironmentManaged(string $providerId): bool;
+
+  /**
    * Builds a platform for a provider from its stored credential.
    *
    * @param string $providerId

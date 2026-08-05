@@ -65,6 +65,13 @@ export function isThreadSealed(threadId: string | undefined): boolean {
   return threadId ? sealedThreads.get(threadId) === true : false;
 }
 
+/** Drop all recorded seals (tests only — the store is a module singleton). */
+export function resetSealsForTests(): void {
+  sealedThreads.clear();
+  publishedRefs.clear();
+  version = 0;
+}
+
 /** The published page a wrapped-up thread produced, when known. */
 export function threadPublished(threadId: string | undefined): PublishedRef | undefined {
   return threadId ? publishedRefs.get(threadId) : undefined;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Inference\Adapter;
 
 use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
-use Drupal\aincient_core\Inference\ProviderAdapterInterface;
+use Drupal\aincient_core\Inference\ImageGenerationAdapterInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
 use Symfony\AI\Platform\Bridge\Gemini\Factory as GeminiFactory;
@@ -22,16 +22,22 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * offers `gemini`, and binding it threw `ProviderConfigurationException` because
  * no adapter claimed the id.
  *
+ * A GOOGLE KEY DRAWS, so this adapter says so. It used to claim chat only, and
+ * image capability lived exclusively on {@see NanoBananaAdapter} — with the result
+ * that an operator who connected their Google key as `gemini` got an empty image
+ * picker and no hint that a SECOND provider id, backed by the very same key, was
+ * the missing piece (issue #12). The capability is a property of the credential,
+ * not of which of our two historical ids it was stored under, so it belongs here.
+ *
  * WHY TWO CLASSES, NOT ONE SERVICE TWICE. Atelier persists two provider ids that
  * both mean "a Google API key": `gemini` for chat/vision and `nanobanana` for
  * image generation ({@see NanoBananaAdapter}). They share every byte of transport,
- * so the shared work lives here and the image id extends it — but they must not be
- * the same *type*, because only one of them may answer
- * {@see \Drupal\aincient_core\Inference\ImageGenerationAdapterInterface}. A single
- * class parametrised by id would either claim image capability for `gemini` (wrong
- * — nothing binds the image role to it, and the old `drupal/ai` split did not) or
- * push the capability question back into a per-id map on the caller's side, which
- * is the pattern this whole contract exists to delete.
+ * so the shared work lives here and the image id extends it. `nanobanana` stays a
+ * registered provider of its own because installs have their image role bound to
+ * that id and their key stored under it — retiring it is a migration, not a
+ * cleanup. What is left on the subclass is therefore only its identity and the
+ * fact that it must not be OFFERED for chat ({@see self::servesChat()}), which
+ * would show one Google catalogue twice.
  *
  * Model enumeration goes over the wire (`GET /v1beta/models?key=…`) rather than
  * reading the bridge's bundled `ModelCatalog`, for the same reason as
@@ -40,7 +46,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * is also materially behind what Google serves, which is what
  * {@see LiveModelCatalog} is for.
  */
-class GeminiAdapter implements ProviderAdapterInterface {
+class GeminiAdapter implements ImageGenerationAdapterInterface {
 
   /**
    * The default base URL, matching the bridge's own default.
@@ -201,6 +207,27 @@ class GeminiAdapter implements ProviderAdapterInterface {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function listImageModels(string $credential, string $endpoint = ''): array {
+    // The same round-trip as chat, sliced the other way — and disjoint from it,
+    // because `image` is one of the NON_TEXT_OUTPUT_MARKERS. No model is offered
+    // in both pools, so nothing here double-lists.
+    return $this->enumerate($credential, $endpoint, imageOutput: TRUE);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function supportsImageEditing(): bool {
+    // Gemini's image models take image parts as input as readily as text, so
+    // editing a source image is the same `generateContent` call with one more
+    // part. This was the `ImageToImageInterface` half of the old drupal/ai
+    // provider and it still holds.
+    return TRUE;
+  }
+
+  /**
    * The base URL to talk to, honouring an override.
    *
    * Gemini is AUTH_KEY, so an endpoint is never required — but the registry still
@@ -215,9 +242,8 @@ class GeminiAdapter implements ProviderAdapterInterface {
   /**
    * Enumerates the credential's models, filtered to one output modality.
    *
-   * Shared by {@see self::listChatModels()} and
-   * {@see NanoBananaAdapter::listImageModels()} — one round-trip shape, one place
-   * where a Google response is read.
+   * Shared by {@see self::listChatModels()} and {@see self::listImageModels()} —
+   * one round-trip shape, one place where a Google response is read.
    *
    * @param string $credential
    *   The Google API key.

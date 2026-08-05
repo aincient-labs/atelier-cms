@@ -7,6 +7,101 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.5.0] — 2026-08-06
+
+- **Fixed: a provider that cannot answer now says so in one sentence, instead of turning the room
+  red.** An expired key, a rate limit and a model that is no longer there all arrived the same way:
+  a failed step in the work trail wearing the provider's own error text, with the engine's "Node
+  execution failed for agent_reason:" in front of it. Nothing in that said whose problem it was or
+  what to do — and a key you could replace in thirty seconds should never look like a crash. The
+  chat now shows one calm line and at most one action, chosen by what actually went wrong: a
+  rejected key offers **Reconnect provider**, a missing model offers **Change model**. A rate limit
+  or an outage says the limit is theirs, with nothing to click, because there is nothing on your
+  side to fix. Failures that are *not* the provider's — a broken flow, a tool that threw — read
+  exactly as before, so the two are never confused for each other.
+- **New: a failure you can simply send again.** Where the provider was rate-limiting, unreachable,
+  or failed for a reason we could not name, the card now offers **Send again**, which re-sends your
+  last message as a fresh turn. Never automatic, and it disarms the moment you press it. It is
+  deliberately withheld where repeating cannot help, and withheld again whenever part of the turn
+  had already taken effect — a page created, a brand staged, a picture made. Sending those words
+  twice would do that work twice, so the card explains the absence rather than risking it.
+- **Fixed: an answer the model was cut off in the middle of is reported as a failure, not served as
+  the answer.** When a turn hit the model's output limit, the provider handed back what it managed
+  to write — a sentence stopping mid-thought, or a tool call it never finished emitting, which then
+  simply never ran. Nothing asked whether the turn had finished, so you could get half an answer, or
+  a confident reply about work that was never done, with every step marked successful. Atelier now
+  reads the provider's own finish reason and names it: "this turn was too long — start a new
+  conversation, or ask for it in smaller pieces." Nothing is inferred from an answer's length, so a
+  provider that reports nothing behaves exactly as before.
+- **Fixed: a conversation no longer gets stuck saying the operator is still working.** If the
+  process running a turn died part-way through — the model had answered, but the work after it never
+  happened — the thread went on believing that turn was in progress and refused every later message,
+  permanently, while telling you to give it a moment. The refusal now checks whether any work is
+  genuinely in flight rather than trusting a flag: if nothing is running, the thread is released and
+  your message goes through. A turn that really is still working is untouched, however long it takes.
+  Recovery previously waited on a maintenance task that runs every few hours.
+- **New: every room says what it can do — and the Media room is no longer taken away.** A small row
+  above the composer names things in plain words: **Write** (titles, descriptions, copy), **Describe**
+  (reads a picture you give it), **Draw** (makes one that didn't exist). Each room shows only the
+  verbs its own assistant can spend, so the General studio no longer advertises pictures it has no
+  tool to make. A chip you cannot use dims and says why, and the two reasons read differently: this
+  chat has no tool for it (nothing to fix), or the site has no provider behind it — which, for an
+  administrator, links to the setup wizard, where a key and a model are actually captured. The Media
+  room used to vanish entirely when no image provider was connected, which removed a working
+  conversation to protect one tool inside it; naming an image or writing its alt text from your own
+  words needs no image provider at all. It now always opens, and the assistant is told the same
+  facts the chips show, from the same source, so it cannot offer you a picture this install can't make.
+- **Fixed: a Google key now draws on its own, and an install that can't draw is told why.**
+  Connecting a Google AI Studio key as Gemini gave you chat and vision and an empty image picker —
+  picture models were reachable only under a second provider entry, backed by the very same key, with
+  nothing on the page saying so. Gemini now offers its own picture models, so one key turns on the
+  Media studio's AI rail without connecting anything else. Separately, when the only thing connected
+  is a shared gateway forwarding to other services, the image role no longer sits empty and silent:
+  it says pictures need a provider connected directly, and names one. (Google's picture models need
+  billing enabled on the key; a free key lists them and refuses at use time — which now arrives as
+  one calm line rather than a red room.)
+- **Fixed: asking the General room to build a landing page opens the right room, carrying your
+  sentence with it.** Its most prominent starter ask answered with four cards and "pick a room to
+  open it" — and picking Pages landed you on an empty composer, where you retyped what you had just
+  written. A specific ask now gets a single card naming the room it belongs to, and opening it hands
+  your own sentence back to you in that room's composer, ready to edit and send. Never sent for you,
+  used once and gone. "Show me around" still shows the whole map.
+- **Fixed: the first rebrand of a session actually repaints the preview.** Asking the design
+  assistant for a new look from outside the Design System studio produced a run of "Applied to
+  preview" cards over a preview still showing the old brand; reloading and asking again worked. The
+  new tokens were staged before the preview existed to receive them — it now adopts whatever is
+  already staged the moment it opens. A replayed card from an earlier session reads as a record
+  ("staged earlier — no longer active") rather than as live state.
+- **Fixed: accepting "Start a new thread" after Publish no longer leaves the page unsaveable.**
+  Publishing and taking the offer of a fresh conversation froze the studio — Discard, Save draft and
+  Publish all dead, only Archive alive — while it still claimed the conversation was wrapped up,
+  right after you had started a new one. The verdict was cached and refreshed only when a
+  conversation *got* wrapped up, never when you moved to a different one. It is now read from the
+  conversation you are actually in, which fixes the same staleness on every other way of leaving a
+  wrapped-up thread: the sidebar, a link, archiving then switching.
+- **New: a provider's credential can come from the environment.** Set `ATELIER_<PROVIDER>_API_KEY`
+  (and `ATELIER_<PROVIDER>_ENDPOINT` where a base URL is needed) and Atelier uses it — nothing is
+  written to the database, so the secret appears in no dump and no backup, and rotates by changing
+  the variable and restarting. Such a provider shows in the wizard as **Set by this server**, with
+  no key field and no Disconnect, since this process cannot unset a variable it does not own; both
+  actions previously reported success and changed nothing. A second form,
+  `ATELIER_DEFAULT_<PROVIDER>_API_KEY`, is a *default rather than a rule*: it is copied into the
+  credential store once, on the first boot after it is set, and is an ordinary key from then on —
+  the owner can replace it, and a Disconnect stays disconnected across restarts. The variable's name
+  is the whole configuration surface; there is nothing else to set.
+- **Fixed: your email API key survives an update.** The appliance re-imports configuration on every
+  boot, and that import deleted any stored key not present in the shipped configuration — including
+  the mail key, leaving outgoing email with an empty credential after every update. Stored
+  credentials are now treated as the runtime state they are, and are neither exported nor deleted.
+- **Changed: three unused modules are gone.** Layout Builder, the Views UI and Views data export are
+  uninstalled. None was used by anything Atelier ships, and Layout Builder in particular is a second,
+  contradictory page-building model sitting in the admin UI next to the one the product is built on.
+- **Changed: a room's starter suggestions come from its own configuration and nowhere else.** The
+  console also carried a hardcoded fallback list, so which suggestions a room offered depended on
+  which of the two happened to resolve — and they said different things. A room's chips are its own
+  promise, so a room with none configured now shows none rather than borrowing asks it cannot
+  fulfil. The composer still takes any request, and the room's welcome still says what it does.
+
 ## [0.4.2] — 2026-08-05
 
 - **Fixed: chat did not work at all in 0.4.1 — if you are on that version, update.** A

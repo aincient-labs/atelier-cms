@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Drupal\aincient_chat\Chat;
 
 use Drupal\aincient_chat\Studio;
+use Drupal\aincient_core\CapabilityVerbs;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
@@ -30,9 +32,17 @@ final class WorkflowCatalog {
    */
   public const FALLBACK_WORKFLOW = 'aincient_operator_agent_loop';
 
+  /**
+   * Every workflow entity, keyed by id — loaded at most once per request.
+   *
+   * @var array<string, \Drupal\Core\Entity\EntityInterface>|null
+   */
+  private ?array $workflows = NULL;
+
   public function __construct(
     private readonly ConfigFactoryInterface $configFactory,
     private readonly EntityTypeManagerInterface $entityTypeManager,
+    private readonly CapabilityVerbs $capabilityVerbs,
   ) {}
 
   /**
@@ -177,16 +187,57 @@ final class WorkflowCatalog {
   }
 
   /**
+   * The verbs an agent's room can spend — Write, plus whatever its tools add.
+   *
+   * A room only shows the capability chips it could actually use: the General
+   * studio has no image tool wired, so it says nothing about pictures either
+   * way. Derived from the workflow's own placed capability nodes
+   * ({@see CapabilityVerbs}), never from a studio → verbs table.
+   *
+   * An unknown id (or a site without FlowDrop) answers Write alone rather than
+   * nothing: a room that exists takes words.
+   *
+   * @return list<string>
+   *   Verb ids in {@see \Drupal\aincient_core\CapabilitySet} display order.
+   */
+  public function verbs(string $id): array {
+    $workflow = $this->workflows()[$id] ?? NULL;
+    $dependencies = $workflow instanceof ConfigEntityInterface
+      ? array_map('strval', (array) ($workflow->getDependencies()['config'] ?? []))
+      : [];
+    return $this->capabilityVerbs->forDependencies(array_values($dependencies));
+  }
+
+  /**
    * All FlowDrop workflows as id => label.
    *
    * @return array<string, string>
    */
   private function workflowLabels(): array {
     $labels = [];
-    foreach ($this->entityTypeManager->getStorage('flowdrop_workflow')->loadMultiple() as $workflow) {
-      $labels[(string) $workflow->id()] = (string) $workflow->label();
+    foreach ($this->workflows() as $id => $workflow) {
+      $labels[$id] = (string) $workflow->label();
     }
     return $labels;
+  }
+
+  /**
+   * Every flowdrop_workflow entity, keyed by id — loaded once per request.
+   *
+   * @return array<string, \Drupal\Core\Entity\EntityInterface>
+   */
+  private function workflows(): array {
+    if ($this->workflows !== NULL) {
+      return $this->workflows;
+    }
+    if (!$this->entityTypeManager->hasDefinition('flowdrop_workflow')) {
+      return $this->workflows = [];
+    }
+    $out = [];
+    foreach ($this->entityTypeManager->getStorage('flowdrop_workflow')->loadMultiple() as $workflow) {
+      $out[(string) $workflow->id()] = $workflow;
+    }
+    return $this->workflows = $out;
   }
 
   /**
