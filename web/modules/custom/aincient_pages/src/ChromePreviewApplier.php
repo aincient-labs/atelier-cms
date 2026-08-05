@@ -58,9 +58,16 @@ final class ChromePreviewApplier {
       }
       $guidelines = [];
       foreach ($decoded as $key => $value) {
-        if (!is_string($value)) {
+        // Coerce, don't drop. These are all prose fields so a model nearly
+        // always quotes them — but `{"name": 2026}` is valid JSON, and a bare
+        // is_string() gate discarded it without even naming it in `rejected`
+        // (the same silent loss fixed in BrandPreviewApplier; see DECISIONS
+        // 0327). A value that can't be text at all is now reported by name.
+        if (!is_scalar($value)) {
+          $rejected[] = 'identity.' . (string) $key;
           continue;
         }
+        $value = (string) $value;
         if (in_array($key, SiteIdentity::GUIDELINE_KEYS, TRUE)) {
           $guidelines[$key] = trim($value);
         }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
+use Drupal\aincient_pages\BrandPreviewApplier;
 use Drupal\aincient_pages\DesignTokens;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
@@ -88,7 +89,11 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
     foreach ($tokens as $name => $value) {
       $name = (string) $name;
       // Non-string values (e.g. a bare number for shadow_strength) — coerce to
-      // string for validation, the applier reads strings too.
+      // string for validation, and pass the raw value on: the applier coerces
+      // numbers the same way ({@see BrandPreviewApplier::scalarToCss}). It did
+      // NOT until 2026-08-04 — it required is_string(), so a token accepted
+      // here was silently dropped at apply and the agent claimed a change the
+      // preview never made.
       $strValue = is_scalar($value) ? (string) $value : '';
       $reason = $this->designTokens->rejectionReason($name, $strValue);
       if ($reason === NULL) {
@@ -140,7 +145,13 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
       return NULL;
     }
     // An empty object is a deliberate no-op — nothing to validate.
-    return $data === [] ? NULL : $data;
+    if ($data === []) {
+      return NULL;
+    }
+    // Repair a stringified tokens_json/presets_json before the is_array() gates
+    // below strip it. This node parses the slice first, so it has to be the
+    // first place the shape is normalised, not just decodeSlice().
+    return BrandPreviewApplier::normalizeSliceShape($data);
   }
 
   /**

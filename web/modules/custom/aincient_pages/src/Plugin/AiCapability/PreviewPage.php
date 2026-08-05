@@ -114,6 +114,12 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
     $valid = [];
     $rejected = [];
     foreach ($decoded as $op) {
+      // Repair a stringified `props` object BEFORE validating or linting: the
+      // repaired op is what travels in the payload and comes back to
+      // PageStore::applyOps, and the linter below only sees an array props.
+      if (is_array($op)) {
+        $op = PageStore::normalizeOpShape($op);
+      }
       $reason = $this->structuralError($op);
       if ($reason === NULL) {
         $valid[] = $op;
@@ -226,6 +232,14 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
         return sprintf('set_meta does not accept "%s" — teaser fields go on a separate set_teaser op (flat: {"op":"set_teaser","title":…}).', $key);
       }
       return sprintf('%s does not accept "%s" (allowed: %s).', $type, $key, implode(', ', $allowed));
+    }
+
+    // `props` must be an object. normalizeOpShape() has already decoded a
+    // stringified one by the time we get here, so anything still not an array
+    // is unusable — and used to be swapped for `[]`, adding a blank section
+    // while the agent reported the content it believed it had sent.
+    if (array_key_exists('props', $op) && $op['props'] !== NULL && !is_array($op['props'])) {
+      return sprintf('%s "props" must be an object of prop values, got %s — send props as JSON, not as a string.', $type, get_debug_type($op['props']));
     }
 
     // Per-op requirements.

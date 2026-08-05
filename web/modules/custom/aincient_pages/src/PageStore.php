@@ -484,14 +484,24 @@ final class PageStore {
     $rejected = [];
     foreach ($ops as $i => $op) {
       $type = is_array($op) ? (string) ($op['op'] ?? '') : '';
+      if (is_array($op)) {
+        $op = self::normalizeOpShape($op);
+      }
       try {
         switch ($type) {
           case 'set_meta':
             if (isset($op['type']) && in_array($op['type'], ['landing', 'blog'], TRUE)) {
               $work['type'] = $op['type'];
             }
-            if (isset($op['title']) && is_string($op['title']) && trim($op['title']) !== '') {
-              $work['title'] = trim($op['title']);
+            // is_scalar, not is_string: a numeric-looking title
+            // ({"title": 2026}) arrives as a JSON number and used to fall back
+            // to the default page title silently — while the SEO/meta keys
+            // right below it coerce scalars.
+            $title = isset($op['title']) && is_scalar($op['title'])
+              ? trim((string) $op['title'])
+              : '';
+            if ($title !== '') {
+              $work['title'] = $title;
             }
             // SEO/meta overrides ride flat on the op alongside title (one staging
             // path): a present key sets that override, an explicit null / blank
@@ -572,7 +582,7 @@ final class PageStore {
             $new = [
               'id' => $this->slotId(NULL, $used),
               'component' => $name,
-              'props' => is_array($op['props'] ?? NULL) ? $op['props'] : [],
+              'props' => self::opProps($op, 'add_section'),
             ];
             if (($op['after'] ?? NULL) === NULL) {
               $work['sections'][] = $new;
@@ -586,7 +596,7 @@ final class PageStore {
           case 'update_section':
             $idx = $this->resolveIndex($op, $work['sections']);
             $merged = $work['sections'][$idx]['props'];
-            foreach (is_array($op['props'] ?? NULL) ? $op['props'] : [] as $k => $v) {
+            foreach (self::opProps($op, 'update_section') as $k => $v) {
               if ($v === NULL) {
                 unset($merged[$k]);
               }
@@ -631,6 +641,68 @@ final class PageStore {
     }
 
     return ['schema' => $this->validate($work), 'rejected' => $rejected];
+  }
+
+  /**
+   * Repair the value shapes a model writes into an op, before it is applied.
+   *
+   * `props` is an OBJECT by contract, but the agent writing it is a language
+   * model and the tool param it rides on is a list of loosely-typed objects, so
+   * a stringified props (`"props": "{\"heading\":\"…\"}"`) turns up. Every
+   * consumer gated on is_array() and replaced it with `[]`, so the section was
+   * added carrying nothing but its component defaults — and because
+   * {@see \Drupal\aincient_pages\Plugin\AiCapability\PreviewPage} gates its
+   * structural linter on is_array() too, the agent got no warning either and
+   * reported a section it had really left blank. Decoding it here, at the one
+   * point both the tool and the studio's apply endpoint pass through, makes the
+   * repaired props visible to the linter as well.
+   *
+   * Only `props` is repaired: a stringified `reorder` order was already a NAMED
+   * rejection ("reorder needs an order array"), not a silent one, so it is not
+   * part of this bug class and is left to be reported as before.
+   *
+   * @param array<string, mixed> $op
+   *   One decoded op.
+   *
+   * @return array<string, mixed>
+   *   The op with a stringified `props` object decoded. A `props` that is not a
+   *   JSON object is left untouched, for opProps() to reject it by name.
+   */
+  public static function normalizeOpShape(array $op): array {
+    if (is_string($op['props'] ?? NULL)) {
+      $decoded = json_decode(trim($op['props']), TRUE);
+      if (is_array($decoded)) {
+        $op['props'] = $decoded;
+      }
+    }
+    return $op;
+  }
+
+  /**
+   * The `props` map from an op, or a named rejection if it isn't one.
+   *
+   * An absent props is legitimately empty (add a section, fill it later). A
+   * props that is PRESENT but not an object — after normalizeOpShape() has
+   * had its go at a stringified one — is a mistake worth surfacing: silently
+   * substituting `[]` is what let a blank section render while the agent
+   * reported the content it thought it had sent.
+   *
+   * @throws \InvalidArgumentException
+   *   When props is present and unusable (caught by applyOps → `rejected`).
+   */
+  private static function opProps(array $op, string $opName): array {
+    if (!array_key_exists('props', $op) || $op['props'] === NULL) {
+      return [];
+    }
+    if (!is_array($op['props'])) {
+      throw new \InvalidArgumentException(sprintf(
+        '%s "props" must be an object of prop values, got %s — send props as '
+        . 'JSON, not as a string.',
+        $opName,
+        get_debug_type($op['props']),
+      ));
+    }
+    return $op['props'];
   }
 
   /**
@@ -792,12 +864,71 @@ final class PageStore {
     else {
       $node->set('field_page_structure', '');
     }
+    // The page TYPE, projected onto a real indexed field. The schema stays
+    // canonical — this is a derived mirror, written here because writeSchema
+    // is the single write path — and exists solely so an entity query can
+    // filter on it: the type lives inside the structure JSON, where a query
+    // cannot reach it (DECISIONS 0329). Language-independent like the
+    // structure it comes from, so it writes onto the source translation.
+    $this->writePageType($node, $clean['type']);
+    // A blog post's authored date likewise mirrors onto the node's own
+    // `created` — the sort axis a listing needs, and what "Authored on" means.
+    if ($clean['type'] === 'blog') {
+      $this->writePostDate($node, (string) ($clean['date'] ?? ''));
+    }
     // SEO/meta is per-language content (like field_page_content), so it always
     // writes onto THIS translation — the override the studio staged.
     $this->writeMeta($node, $clean['meta'] ?? []);
     // The teaser is likewise per-language content — persists onto THIS
     // translation's dedicated teaser fields.
     $this->writeTeaser($node, $clean['teaser'] ?? []);
+  }
+
+  /**
+   * Mirror the schema's page type onto the derived `field_page_type` index.
+   *
+   * The type (`landing|blog`) is canonically a key inside the structure JSON,
+   * which an entity query cannot filter or sort on — so a listing would have
+   * to load every node and filter in PHP. This projection is what makes
+   * `collection` listings queryable (DECISIONS 0329). Derived, never an
+   * editing surface: hidden in both the form and view display, and rewritten
+   * from the schema on every save, so it cannot drift.
+   *
+   * Written on the UNTRANSLATED node — the field is language-independent, like
+   * the structure it mirrors, and a symmetric translation carries no structure
+   * of its own. No-op on a bundle without the field (e.g. a global block), so
+   * writeSchema stays universal.
+   */
+  private function writePageType(ContentEntityInterface $node, string $type): void {
+    if (!$node->hasField('field_page_type')) {
+      return;
+    }
+    $node->getUntranslated()->set('field_page_type', $type);
+  }
+
+  /**
+   * Mirror a blog post's authored date onto the node's own `created` timestamp.
+   *
+   * The schema's `date` is free-text the author types and `article-header`
+   * renders verbatim — it stays the editing surface and the canonical value.
+   * But a listing has to SORT by it, and a string inside the content JSON is
+   * not a sort axis, so the parsed value lands on `created` ("Authored on"),
+   * which is exactly what that base field means (DECISIONS 0329).
+   *
+   * Deliberately conservative: an empty or unparseable date leaves `created`
+   * alone rather than resetting it to now. A post whose date the author has
+   * not filled in keeps its real creation time and still sorts sensibly, and
+   * a typo can never silently reorder the blog.
+   */
+  private function writePostDate(ContentEntityInterface $node, string $date): void {
+    if ($date === '' || !$node->hasField('created')) {
+      return;
+    }
+    $parsed = strtotime($date);
+    if ($parsed === FALSE) {
+      return;
+    }
+    $node->getUntranslated()->set('created', $parsed);
   }
 
   /**

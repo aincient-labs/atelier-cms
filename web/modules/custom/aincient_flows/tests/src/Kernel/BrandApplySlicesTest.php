@@ -162,6 +162,58 @@ final class BrandApplySlicesTest extends KernelTestBase {
   /**
    * @covers ::process
    *
+   * A shape slice whose `number` tokens are UNQUOTED still applies.
+   *
+   * The "brand studio sometimes fails to apply preview" bug, end to end at the
+   * level the user feels it: `shadow_strength` is `type: number`, so a model
+   * emitting `0` instead of `"0"` was accepted by the specialist's validation
+   * and then dropped by the applier's is_string() gate — leaving this node with
+   * nothing to apply, so it emitted NO widget while the agent's prose claimed
+   * the change had landed. Colour slices were unaffected (colours are always
+   * quoted), which is why it read as intermittent.
+   */
+  public function testUnquotedNumberTokensInSliceStillApply(): void {
+    $messages = [
+      ['role' => 'user', 'content' => 'flatten the shadows and tighten it up'],
+      $this->toolResult('c1', '{"tokens_json":{"shadow_strength":0,"density":0.85}}'),
+    ];
+
+    $result = $this->node()->process(new ParameterBag(['messages' => $messages]));
+    $env = $this->widget($result);
+
+    $this->assertNotNull($env, 'An unquoted number must not silence the whole merge.');
+    $this->assertSame('0', $env['payload']['tokens']['shadow-strength']);
+    $this->assertSame('0.85', $env['payload']['tokens']['density']);
+    $this->assertSame([], $env['payload']['rejected']);
+    $this->assertSame(2, $result['applied']);
+  }
+
+  /**
+   * @covers ::process
+   *
+   * A slice that stringified its `tokens_json` object still merges.
+   *
+   * Same silent-drop family: the key is an object by slice contract but a JSON
+   * string in the tool-arg contract it's named after, and this node gates on
+   * is_array() — so a stringified one used to vanish. Repaired in the shared
+   * decoder ({@see \Drupal\aincient_pages\BrandPreviewApplier::normalizeSliceShape}).
+   */
+  public function testStringifiedTokensJsonInSliceStillApplies(): void {
+    $messages = [
+      ['role' => 'user', 'content' => 'warmer primary'],
+      $this->toolResult('c1', (string) json_encode([
+        'tokens_json' => json_encode(['brand_primary' => 'oklch(0.55 0.22 30)']),
+      ])),
+    ];
+
+    $env = $this->widget($this->node()->process(new ParameterBag(['messages' => $messages])));
+    $this->assertNotNull($env);
+    $this->assertSame('oklch(0.55 0.22 30)', $env['payload']['tokens']['brand-primary']);
+  }
+
+  /**
+   * @covers ::process
+   *
    * A brand_picker widget result (not a slice) is ignored by the merge.
    */
   public function testNonSliceToolResultIsIgnored(): void {

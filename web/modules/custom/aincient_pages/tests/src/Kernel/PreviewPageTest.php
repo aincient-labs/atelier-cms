@@ -102,6 +102,75 @@ final class PreviewPageTest extends KernelTestBase {
     $this->assertStringContainsString('Fix and re-send', $envelope['summary']);
   }
 
+  /**
+   * A stringified `props` is repaired, and the REPAIRED props is what ships.
+   *
+   * This tool's linter was gated on is_array($op['props']), so a stringified
+   * props escaped the structural lint as well as the apply — the doubly-silent
+   * half of the bug: no warning here, empty props at PageStore, and an agent
+   * reporting a section it had really left blank (DECISIONS 0327).
+   */
+  public function testStringifiedPropsIsRepairedInTheEnvelope(): void {
+    $out = $this->runPreview((string) json_encode([
+      [
+        'op' => 'add_section',
+        'component' => 'hero',
+        'props' => (string) json_encode(['heading' => 'Hello there', 'variant' => 'split']),
+      ],
+    ]));
+    $envelope = json_decode($out, TRUE);
+
+    $this->assertSame('page_preview', $envelope['__widget__']);
+    $this->assertSame([], $envelope['payload']['rejected']);
+    // The op that travels to the client (and back into applyOps) carries a real
+    // object, so the studio applies the props the agent actually wrote.
+    $this->assertSame(
+      ['heading' => 'Hello there', 'variant' => 'split'],
+      $envelope['payload']['ops'][0]['props'],
+    );
+  }
+
+  /**
+   * The repaired props is visible to the LINTER too, so advisories still fire.
+   *
+   * Proves the repair happens before the lint rather than only at apply time: a
+   * stringified props carrying a misnamed row field must still earn its warning.
+   */
+  public function testLinterSeesRepairedProps(): void {
+    $out = $this->runPreview((string) json_encode([
+      [
+        'op' => 'add_section',
+        'component' => 'testimonials',
+        'props' => (string) json_encode([
+          'heading' => 'Loved by cooks',
+          'testimonials' => [['quote' => 'Great!', 'author' => 'Sam']],
+        ]),
+      ],
+    ]));
+    $envelope = json_decode($out, TRUE);
+
+    $this->assertCount(1, $envelope['payload']['ops']);
+    $this->assertNotEmpty($envelope['payload']['warnings'], 'The lint must see through the repair.');
+    $this->assertStringContainsString('quotes', implode(' ', $envelope['payload']['warnings']));
+  }
+
+  /**
+   * A `props` that is not a JSON object is rejected by name, before it applies.
+   */
+  public function testUnusablePropsIsRejectedWithReason(): void {
+    $out = $this->runPreview((string) json_encode([
+      ['op' => 'add_section', 'component' => 'hero', 'props' => 'not json at all'],
+      ['op' => 'add_section', 'component' => 'cta', 'props' => ['tone' => 'brand']],
+    ]));
+    $envelope = json_decode($out, TRUE);
+
+    // The good op survives; the bad one is named, not silently emptied.
+    $this->assertCount(1, $envelope['payload']['ops']);
+    $this->assertSame('cta', $envelope['payload']['ops'][0]['component']);
+    $this->assertCount(1, $envelope['payload']['rejected']);
+    $this->assertStringContainsString('props', $envelope['payload']['rejected'][0]);
+  }
+
   public function testRejectsUnknownOpsAndComponentsButKeepsValid(): void {
     $out = $this->runPreview(json_encode([
       ['op' => 'add_section', 'component' => 'malware'],

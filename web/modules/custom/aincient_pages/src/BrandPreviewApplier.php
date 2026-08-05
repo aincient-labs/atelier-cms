@@ -81,6 +81,7 @@ final class BrandPreviewApplier {
 
     // ── 2. Parse the explicit token map; it LAYERS OVER the presets ──────────
     $explicit = [];
+    $uncastable = [];
     $raw = trim((string) ($args['tokens_json'] ?? ''));
     if ($raw !== '') {
       $decoded = json_decode($raw, TRUE);
@@ -88,16 +89,22 @@ final class BrandPreviewApplier {
         return ['error' => 'Error: tokens must be a JSON object of {token_name: css_value}.'];
       }
       foreach ($decoded as $name => $value) {
-        if (is_string($value)) {
-          $explicit[(string) $name] = trim($value);
+        $css = self::scalarToCss($value);
+        // An object/array value can't be a CSS token value at all. Name it in
+        // `rejected` rather than dropping it silently — a dropped token the
+        // agent believes it set is the failure mode this whole path guards.
+        if ($css === NULL) {
+          $uncastable[] = (string) $name;
+          continue;
         }
+        $explicit[(string) $name] = $css;
       }
     }
 
     // ── 3. Merge (explicit over presets) + validate every token ──────────────
     $tokens = [];
     $byName = [];
-    $rejected = [];
+    $rejected = $uncastable;
     foreach ($explicit + $presetTokens as $name => $value) {
       if ($this->designTokens->validate((string) $name, $value)) {
         $value = $this->designTokens->normalize((string) $name, $value);
@@ -225,8 +232,69 @@ final class BrandPreviewApplier {
       return $this->decodeSlice($data['slice']);
     }
     // A bare slice object: keep only the keys apply() understands.
-    $slice = array_intersect_key($data, array_flip(['tokens_json', 'presets_json', 'fonts']));
+    $slice = array_intersect_key(self::normalizeSliceShape($data), array_flip(['tokens_json', 'presets_json', 'fonts']));
     return $slice !== [] ? $slice : NULL;
+  }
+
+  /**
+   * Un-stringify a slice's `tokens_json`/`presets_json` if a model nested them.
+   *
+   * Both keys are OBJECTS in a slice, but the tool-arg contract they're named
+   * after declares them as JSON *strings* ({@see \Drupal\aincient_brand\Plugin\AiCapability\PreviewBrand}'s
+   * ContextDefinitions), so a specialist stringifies the nested object often
+   * enough to matter. Every consumer gates on is_array() — the merge node, the
+   * live streamer, and the specialist's own ValidateSlice — so a stringified
+   * one was dropped exactly as silently as an unquoted number was
+   * ({@see self::scalarToCss}). This is the one place that shape is repaired;
+   * ValidateSlice calls it too, since it parses the raw slice BEFORE either of
+   * the other two see it and would otherwise strip the key first.
+   *
+   * @param array<string, mixed> $data
+   *   A decoded slice object.
+   *
+   * @return array<string, mixed>
+   *   The same slice with either key re-decoded to an array where it was a
+   *   JSON-object string. Anything else is returned untouched.
+   */
+  public static function normalizeSliceShape(array $data): array {
+    foreach (['tokens_json', 'presets_json'] as $key) {
+      if (is_string($data[$key] ?? NULL)) {
+        $inner = json_decode(trim($data[$key]), TRUE);
+        if (is_array($inner)) {
+          $data[$key] = $inner;
+        }
+      }
+    }
+    return $data;
+  }
+
+  /**
+   * Coerce a decoded JSON token value to its CSS string, or NULL if it can't be.
+   *
+   * Token values ARE strings by contract, but the writers are language models
+   * and JSON has a number type: a `number`-typed token (shadow_strength,
+   * density, the weight/leading scales) is regularly emitted unquoted — `0.9`
+   * rather than `"0.9"`. Every stage upstream accepts that (the specialist's
+   * ValidateSlice coerces to string to validate, then keeps the raw value; the
+   * merge node re-encodes it as a number), so a strict is_string() gate here
+   * dropped the token silently — and when it was the turn's only token, apply()
+   * returned an error, the merge emitted no widget, and the agent reported a
+   * change the preview never made. Numbers are the CSS value they print as, so
+   * coerce them; bools become "true"/"false" so they fail validation loudly in
+   * `rejected` instead of vanishing.
+   */
+  private static function scalarToCss(mixed $value): ?string {
+    if (is_string($value)) {
+      return trim($value);
+    }
+    if (is_int($value) || is_float($value)) {
+      // PHP 8 casts floats locale-independently, so this is always "0.25".
+      return (string) $value;
+    }
+    if (is_bool($value)) {
+      return $value ? 'true' : 'false';
+    }
+    return NULL;
   }
 
   /**

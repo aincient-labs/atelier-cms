@@ -7,6 +7,22 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.4.2] — 2026-08-05
+
+- **Fixed: chat did not work at all in 0.4.1 — if you are on that version, update.** A
+  wiring mistake meant Atelier could not assemble the part of itself that talks to AI providers, so
+  every message failed immediately, before any model was reached — including the retry handling 0.4.1
+  was released to add, which never actually ran. Nothing was wrong with your provider, your key or
+  your model choice. Our tests could not see it: they built that component a different way than the
+  running product does, so they passed while the release could not answer a single message. They now
+  check the way the product itself does it.
+- **Fixed: the studios no longer silently ignore a value and report success.** When the assistant
+  wrote a number, a true/false or a piece of structure in a slightly different shape than expected,
+  brand tokens and page sections could be dropped without a word — and the reply would still say the
+  change had been made. Sizes, weights and spacing were the usual casualties, which is why it looked
+  intermittent: colours are always written the one accepted way. Values are now accepted in the forms
+  a model actually writes, and anything genuinely unusable is named as skipped instead of vanishing.
+
 ## [0.4.1] — 2026-08-04
 
 - **Fixed: a busy or briefly unavailable AI provider no longer throws away your whole request.**

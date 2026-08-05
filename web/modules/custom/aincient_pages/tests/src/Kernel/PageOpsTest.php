@@ -216,6 +216,92 @@ final class PageOpsTest extends KernelTestBase {
     $this->assertSame('Kept', $result['schema']['sections'][0]['props']['heading']);
   }
 
+  /**
+   * A stringified `props` object is repaired, not swapped for an empty section.
+   *
+   * The pages half of the silent-drop family fixed in DECISIONS 0327: `props` is
+   * an object by contract, but a model may send it as a JSON string, and the
+   * is_array() gate here replaced it with `[]` — adding a section carrying only
+   * its component defaults, with NOTHING in `rejected`, while the agent reported
+   * the content it thought it had sent.
+   */
+  public function testStringifiedPropsAreRepaired(): void {
+    $result = $this->store()->applyOps([], [
+      [
+        'op' => 'add_section',
+        'component' => 'hero',
+        'props' => (string) json_encode(['heading' => 'Hello there', 'subheading' => 'Sub']),
+      ],
+    ]);
+
+    $this->assertSame([], $result['rejected']);
+    $props = $result['schema']['sections'][0]['props'];
+    $this->assertSame('Hello there', $props['heading']);
+    $this->assertSame('Sub', $props['subheading']);
+  }
+
+  /**
+   * A stringified props on update_section merges like a real object.
+   */
+  public function testStringifiedPropsAreRepairedOnUpdate(): void {
+    $built = $this->store()->applyOps([], [
+      ['op' => 'add_section', 'component' => 'hero', 'props' => ['heading' => 'Old']],
+    ])['schema'];
+
+    $result = $this->store()->applyOps($built, [
+      [
+        'op' => 'update_section',
+        'id' => $built['sections'][0]['id'],
+        'props' => (string) json_encode(['heading' => 'New']),
+      ],
+    ]);
+
+    $this->assertSame([], $result['rejected']);
+    $this->assertSame('New', $result['schema']['sections'][0]['props']['heading']);
+  }
+
+  /**
+   * A `props` that ISN'T a JSON object is rejected BY NAME, not quietly emptied.
+   *
+   * The op is dropped whole rather than adding a blank section: a half-built
+   * section the agent believes is populated is the failure this guards, so the
+   * agent gets a reason it can act on instead of a page that looks done.
+   */
+  public function testUnusablePropsIsRejectedNotSilentlyEmptied(): void {
+    $result = $this->store()->applyOps([], [
+      ['op' => 'add_section', 'component' => 'hero', 'props' => 'not json at all'],
+    ]);
+
+    $this->assertSame([], $result['schema']['sections'], 'No blank section is added.');
+    $this->assertCount(1, $result['rejected']);
+    $this->assertSame('add_section', $result['rejected'][0]['op']);
+    $this->assertStringContainsString('props', $result['rejected'][0]['reason']);
+  }
+
+  /**
+   * An absent props is still legitimately empty (add now, fill later).
+   */
+  public function testAbsentPropsIsNotAnError(): void {
+    $result = $this->store()->applyOps([], [['op' => 'add_section', 'component' => 'hero']]);
+
+    $this->assertSame([], $result['rejected']);
+    $this->assertCount(1, $result['schema']['sections']);
+  }
+
+  /**
+   * A numeric page title applies instead of falling back to the default.
+   *
+   * `{"title": 2026}` is valid JSON and the SEO/meta keys on the same op already
+   * coerced scalars — only `title` required a string, so it silently kept the
+   * default "AIncient page".
+   */
+  public function testNumericTitleIsCoercedNotDropped(): void {
+    $result = $this->store()->applyOps([], [['op' => 'set_meta', 'title' => 2026]]);
+
+    $this->assertSame('2026', $result['schema']['title']);
+    $this->assertSame([], $result['rejected']);
+  }
+
   public function testSetMetaSetsMergesAndClearsSeoOverrides(): void {
     // set_meta carries SEO overrides flat alongside title. A first op sets the
     // page title + a description + canonical; a second merges an OG tag on top

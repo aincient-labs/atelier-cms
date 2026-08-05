@@ -58,6 +58,12 @@ class AincientCoreServiceProvider extends ServiceProviderBase {
         // regression this argument repairs.
         new Reference('aincient_core.usage_recorder'),
         new Reference('logger.channel.aincient_core'),
+        // The retrying call wrapper. Same rule again, and this time the omission
+        // actually shipped: added to the .yml definition and not here, it made
+        // every live agent turn a TypeError — the dispatcher below landed in the
+        // ProviderCall slot — while the tests, which build from the .yml, stayed
+        // green. Positional arguments cannot be trusted to fail loudly here.
+        new Reference('aincient_core.inference.provider_call'),
         // The event dispatcher, for InferenceStartedEvent. Same rule as the
         // recorder above: THIS list is the live agent-turn wiring, so leaving it
         // out here would mean the one call that takes ~50s announces itself in

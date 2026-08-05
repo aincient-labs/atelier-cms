@@ -1,0 +1,19 @@
+uuid: 6c8e06a8-2385-433b-bae0-032690c743f7
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_page_type
+    - node.type.aincient_page
+id: node.aincient_page.field_page_type
+field_name: field_page_type
+entity_type: node
+bundle: aincient_page
+label: 'Page type (derived)'
+description: 'Derived index of the page schema type (landing|blog). Written by PageStore on save — never edit by hand; the schema in field_page_structure is canonical.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

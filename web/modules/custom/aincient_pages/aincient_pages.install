@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\node\NodeInterface;
+
 /**
  * Define the editor-lock table (one live editor per node + language).
  *
@@ -313,7 +317,7 @@ function aincient_pages_update_10012(): void {
 
   foreach (array_keys($vids) as $vid) {
     $node = $storage->loadRevision($vid);
-    if (!$node instanceof \Drupal\node\NodeInterface) {
+    if (!$node instanceof NodeInterface) {
       continue;
     }
     $changed = FALSE;
@@ -368,4 +372,76 @@ function aincient_pages_update_10013(): void {
     'neutral_ink' => 'oklch(0.20 0.02 270)',
     'card' => 'var(--neutral-subtle)',
   ])->save();
+}
+
+/**
+ * Create + backfill `field_page_type`, the derived page-type index.
+ *
+ * DECISIONS 0329: the page type (`landing|blog`) is canonically a key inside
+ * the `field_page_structure` JSON, which an entity query can neither filter
+ * nor sort on — so a `collection` listing would have to load every node and
+ * filter in PHP. This projects it onto a real indexed field, written by
+ * {@see \Drupal\aincient_pages\PageStore::writeSchema} on every save.
+ *
+ * Creates the field HERE rather than leaving it to config import, because
+ * the appliance converges with `updatedb` BEFORE `config:import` (see
+ * docker/converge.sh) — the backfill below would otherwise run against a
+ * field that does not exist yet. Config import then converges the same
+ * definition harmlessly.
+ *
+ * Idempotent: existing storage/instance are left alone, and only nodes
+ * missing a value are written (so a re-run costs one query and no saves).
+ */
+function aincient_pages_update_10014(): void {
+  if (!FieldStorageConfig::loadByName('node', 'field_page_type')) {
+    FieldStorageConfig::create([
+      'field_name' => 'field_page_type',
+      'entity_type' => 'node',
+      'type' => 'string',
+      'cardinality' => 1,
+      'translatable' => FALSE,
+      'settings' => ['max_length' => 32, 'case_sensitive' => FALSE, 'is_ascii' => TRUE],
+      // A plain column index — NOT a prefix index. On PostgreSQL a
+      // substr()-based prefix index is a FUNCTIONAL index the planner will not
+      // use for `value = 'blog'`, which is the only query this field exists for.
+      'indexes' => ['value' => ['value']],
+    ])->save();
+  }
+  if (!FieldConfig::loadByName('node', 'aincient_page', 'field_page_type')) {
+    FieldConfig::create([
+      'field_name' => 'field_page_type',
+      'entity_type' => 'node',
+      'bundle' => 'aincient_page',
+      'label' => 'Page type (derived)',
+      'description' => 'Derived index of the page schema type (landing|blog). Written by PageStore on save — never edit by hand; the schema in field_page_structure is canonical.',
+      'required' => FALSE,
+      'translatable' => FALSE,
+    ])->save();
+  }
+
+  // Backfill from the canonical source: the structure JSON of each page. Read
+  // the field directly rather than through PageStore, so the backfill does not
+  // depend on the read path's translation/merge rules — the type is written on
+  // the untranslated node and is language-independent.
+  /** @var \Drupal\node\NodeStorageInterface $storage */
+  $storage = \Drupal::entityTypeManager()->getStorage('node');
+  $nids = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'aincient_page')
+    ->notExists('field_page_type')
+    ->execute();
+  if (!$nids) {
+    return;
+  }
+  foreach ($storage->loadMultiple($nids) as $node) {
+    $structure = json_decode((string) $node->get('field_page_structure')->value, TRUE);
+    $type = is_array($structure) && ($structure['type'] ?? '') === 'blog' ? 'blog' : 'landing';
+    $node->set('field_page_type', $type);
+    // A backfill is not an editorial event: no new revision, so the page's
+    // history is not polluted with a row nobody made.
+    if ($node instanceof NodeInterface) {
+      $node->setNewRevision(FALSE);
+    }
+    $node->save();
+  }
 }

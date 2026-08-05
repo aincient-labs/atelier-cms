@@ -7,6 +7,7 @@ dependencies:
     - field.field.node.aincient_page.field_metatag
     - field.field.node.aincient_page.field_page_content
     - field.field.node.aincient_page.field_page_structure
+    - field.field.node.aincient_page.field_page_type
     - field.field.node.aincient_page.field_revision_coauthors
     - field.field.node.aincient_page.field_teaser_description
     - field.field.node.aincient_page.field_teaser_image
@@ -41,6 +42,7 @@ hidden:
   field_layout_mode: true
   field_page_content: true
   field_page_structure: true
+  field_page_type: true
   field_revision_coauthors: true
   field_teaser_description: true
   field_teaser_image: true

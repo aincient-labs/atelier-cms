@@ -112,6 +112,31 @@ final class BrandSliceStreamTest extends KernelTestBase {
   /**
    * @covers ::onJobCompleted
    *
+   * A shape slice with UNQUOTED number tokens still produces a live frame.
+   *
+   * `shadow_strength` is `type: number`, so a model may emit it unquoted; the
+   * applier used to require is_string() and drop it, leaving this subscriber
+   * with an `error` envelope and the studio preview frozen mid-turn for the one
+   * dimension the user had just asked about.
+   */
+  public function testUnquotedNumberSliceStillProducesFrame(): void {
+    $job = $this->mockJob(
+      'flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape',
+      'completed',
+      ['slice' => '{"tokens_json":{"shadow_strength":0.5,"density":0.85}}', 'status' => 'success'],
+    );
+
+    $this->subscriber()->onJobCompleted(new JobCompletedEvent($job, [], 'exec-1'));
+
+    $this->assertCount(1, $this->emitted);
+    $tokens = $this->emitted[0]->data['arguments']['tokens'];
+    $this->assertSame('0.5', $tokens['shadow-strength']);
+    $this->assertSame('0.85', $tokens['density']);
+  }
+
+  /**
+   * @covers ::onJobCompleted
+   *
    * A non-specialist node (e.g. reason) produces no frame.
    */
   public function testNonSpecialistNodeProducesNoFrame(): void {

@@ -9,6 +9,7 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\Entity\NodeType;
+use Drupal\node\NodeInterface;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
@@ -84,6 +85,22 @@ final class PageStoreTest extends KernelTestBase {
         'translatable' => TRUE,
       ])->save();
     }
+
+    // The derived page-type index (DECISIONS 0329) — non-translatable, because
+    // it mirrors the language-independent structure.
+    FieldStorageConfig::create([
+      'field_name' => 'field_page_type',
+      'entity_type' => 'node',
+      'type' => 'string',
+      'translatable' => FALSE,
+    ])->save();
+    FieldConfig::create([
+      'field_name' => 'field_page_type',
+      'entity_type' => 'node',
+      'bundle' => 'aincient_page',
+      'label' => 'Page type (derived)',
+      'translatable' => FALSE,
+    ])->save();
 
     $this->setUpEditorialWorkflow(['aincient_page']);
   }
@@ -502,6 +519,109 @@ final class PageStoreTest extends KernelTestBase {
     $this->store()->saveDraft(['type' => 'landing', 'title' => 'Provenance'], $id, NULL, NULL, NULL);
     $node = $this->container->get('aincient_pages.moderation')->loadLatestRevision($id, 'aincient_page');
     $this->assertCount(0, $node->getUntranslated()->get('field_revision_coauthors'));
+  }
+
+  /**
+   * The page type is mirrored onto the derived index field on every write.
+   *
+   * DECISIONS 0329: the type is canonically a key inside the structure JSON,
+   * which no entity query can reach — this projection is what makes `collection`
+   * listings queryable at all.
+   */
+  public function testPageTypeMirrorsOntoDerivedField(): void {
+    $blog = $this->store()->store(['type' => 'blog', 'title' => 'Post', 'body_md' => 'hi']);
+    $landing = $this->store()->store(['type' => 'landing', 'title' => 'Home', 'sections' => []]);
+
+    $this->assertSame('blog', $this->load($blog)->get('field_page_type')->value);
+    $this->assertSame('landing', $this->load($landing)->get('field_page_type')->value);
+  }
+
+  /**
+   * A type flip rewrites the mirror — it can never drift from the schema.
+   */
+  public function testDerivedTypeFollowsATypeFlip(): void {
+    $id = $this->store()->store(['type' => 'blog', 'title' => 'Post', 'body_md' => 'hi']);
+    $this->assertSame('blog', $this->load($id)->get('field_page_type')->value);
+
+    $this->store()->update($id, ['type' => 'landing', 'title' => 'Post', 'sections' => []]);
+    $this->assertSame('landing', $this->load($id)->get('field_page_type')->value);
+  }
+
+  /**
+   * The derived field is what an entity query filters on — the whole point.
+   */
+  public function testListingsCanQueryByDerivedType(): void {
+    $blog = $this->store()->store(['type' => 'blog', 'title' => 'Post', 'body_md' => 'hi']);
+    $this->store()->store(['type' => 'landing', 'title' => 'Home', 'sections' => []]);
+
+    $found = $this->container->get('entity_type.manager')->getStorage('node')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('type', 'aincient_page')
+      ->condition('field_page_type', 'blog')
+      ->execute();
+
+    $this->assertSame([$blog], array_values($found), 'Only the blog post matches the listing query.');
+  }
+
+  /**
+   * A blog post's authored date mirrors onto `created`, the listing sort axis.
+   */
+  public function testPostDateMirrorsOntoCreated(): void {
+    $id = $this->store()->store([
+      'type' => 'blog',
+      'title' => 'Post',
+      'date' => '2024-03-09',
+      'body_md' => 'hi',
+    ]);
+
+    $this->assertSame('2024-03-09', date('Y-m-d', (int) $this->load($id)->getCreatedTime()));
+  }
+
+  /**
+   * An unparseable or absent date leaves `created` alone.
+   *
+   * Deliberately conservative: a typo must never silently reorder the blog, and
+   * a post with no date typed in yet keeps its real creation time.
+   */
+  public function testUnusableDateLeavesCreatedAlone(): void {
+    $id = $this->store()->store([
+      'type' => 'blog',
+      'title' => 'Post',
+      'date' => '2024-03-09',
+      'body_md' => 'hi',
+    ]);
+    $stamped = (int) $this->load($id)->getCreatedTime();
+
+    $this->store()->update($id, [
+      'type' => 'blog',
+      'title' => 'Post',
+      'date' => 'sometime last spring',
+      'body_md' => 'hi',
+    ]);
+    $this->assertSame($stamped, (int) $this->load($id)->getCreatedTime(), 'An unparseable date is ignored, not reset to now.');
+
+    $this->store()->update($id, ['type' => 'blog', 'title' => 'Post', 'body_md' => 'hi']);
+    $this->assertSame($stamped, (int) $this->load($id)->getCreatedTime(), 'An absent date is ignored too.');
+  }
+
+  /**
+   * A landing page never touches `created` — only a post carries an author date.
+   */
+  public function testLandingPageDoesNotTouchCreated(): void {
+    $id = $this->store()->store(['type' => 'landing', 'title' => 'Home', 'sections' => []]);
+    $stamped = (int) $this->load($id)->getCreatedTime();
+
+    $this->store()->update($id, ['type' => 'landing', 'title' => 'Home', 'date' => '1999-01-01', 'sections' => []]);
+    $this->assertSame($stamped, (int) $this->load($id)->getCreatedTime());
+  }
+
+  /**
+   * Load a page node fresh from storage (past the static cache).
+   */
+  private function load(string $id): NodeInterface {
+    $storage = $this->container->get('entity_type.manager')->getStorage('node');
+    $storage->resetCache([(int) $id]);
+    return $storage->load($id);
   }
 
 }

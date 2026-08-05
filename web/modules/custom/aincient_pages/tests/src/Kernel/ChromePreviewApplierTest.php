@@ -89,6 +89,38 @@ final class ChromePreviewApplierTest extends KernelTestBase {
     $this->assertArrayNotHasKey('logo_position', $payload['layout']['header'] ?? []);
   }
 
+  /**
+   * A scalar identity value is coerced to text rather than silently dropped.
+   *
+   * The chrome instance of the silent-drop family (DECISIONS 0327): the fields
+   * are all prose, so a model nearly always quotes them — but `{"name": 2026}`
+   * is valid JSON, and a bare is_string() gate discarded it without even naming
+   * it in `rejected`.
+   */
+  public function testScalarIdentityValueIsCoerced(): void {
+    $env = $this->applier()->apply([
+      'identity_json' => json_encode(['name' => 2026, 'tagline' => 'Real tagline']),
+    ]);
+
+    $payload = $env['payload'];
+    $this->assertSame('2026', $payload['identity']['guidelines']['name']);
+    $this->assertSame('Real tagline', $payload['identity']['guidelines']['tagline']);
+    $this->assertSame([], $payload['rejected']);
+  }
+
+  /**
+   * An identity value that can't be text at all is reported by name.
+   */
+  public function testUncastableIdentityValueIsReported(): void {
+    $env = $this->applier()->apply([
+      'identity_json' => json_encode(['name' => ['nested'], 'tagline' => 'Kept']),
+    ]);
+
+    $this->assertSame('Kept', $env['payload']['identity']['guidelines']['tagline']);
+    $this->assertContains('identity.name', $env['payload']['rejected']);
+    $this->assertArrayNotHasKey('name', $env['payload']['identity']['guidelines']);
+  }
+
   public function testReset(): void {
     $env = $this->applier()->apply(['reset' => TRUE]);
     $this->assertSame('chrome_preview', $env['__widget__']);
