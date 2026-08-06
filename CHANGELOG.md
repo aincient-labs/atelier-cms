@@ -7,6 +7,39 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.5.1] — 2026-08-07
+
+- **Fixed: the appliance can no longer reinstall itself over your site.** When a site could not
+  start on a new image — most often because that release no longer ships a module the site still
+  had installed — the boot-time convergence read "Drupal is not answering" as "there is nothing
+  installed here" and set up a fresh site over the existing database. It then reported success, so
+  nothing rolled it back, and it happened again on the next restart, which destroyed restored
+  backups too. The decision now turns on whether the database is **empty**, which is a different
+  question: an empty database installs, a working site upgrades as before, and a database with data
+  in it that cannot start **refuses to do anything at all** and says why, leaving the data exactly
+  where it is. Managed updates re-pin the previous image automatically when that happens. The
+  install step also re-checks that the database is empty immediately before it runs, so no future
+  change can reintroduce this.
+- **Fixed: pre-upgrade snapshots no longer overwrite each other.** Every upgrade wrote the same
+  file, so a run of restarts — precisely what happens when something is wrong — left only the most
+  recent copy. Each is now timestamped, and the last five are kept.
+- **Changed: unreleased "edge" builds now have a place in the version order.** An edge build called
+  itself `edge+` a short code, which is not a version — so the check that stops a release from
+  migrating a site that is too old could never apply to one, and edge installs were the ones most
+  exposed to it. A build off main now reports as the release it descends from plus the build code
+  (`v0.5.1+edge.a1b2c3d`), so the same protections apply to it as to everyone else. Nothing changes
+  for released versions, and older edge builds keep working exactly as they did.
+- **New: an image now advertises the modules it contains, so an update can be refused before it is
+  downloaded.** The appliance already refuses to start on an image that is missing code your site
+  has installed. That refusal arrives late — after the download, at boot. Each image now publishes
+  the list, and the Manager checks it against your site *before pulling anything*, so the answer
+  comes as "uninstall these two modules first" while you are still on the version that has them.
+
+- **Fixed: a refusal caused by missing module code now happens before anything else.** The check
+  that names the modules a release has dropped could previously only run on sites that were already
+  able to start, which is the opposite of when it is needed. It now runs first, so the site that
+  cannot start is told exactly which modules to uninstall, on the version that still has them.
+
 ## [0.5.0] — 2026-08-06
 
 - **Fixed: a provider that cannot answer now says so in one sentence, instead of turning the room

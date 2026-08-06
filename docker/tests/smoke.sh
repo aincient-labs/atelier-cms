@@ -22,7 +22,20 @@ bad()  { echo "  ✗ $1"; fail=$((fail+1)); }
 drush() { "${COMPOSE[@]}" exec -T app /opt/drupal/vendor/bin/drush --root=/opt/drupal/web "$@"; }
 http()  { docker run --rm --network "$NET" curlimages/curl:latest -s -o /dev/null -w '%{http_code}' "$1" 2>/dev/null; }
 
-cleanup() { echo "== teardown =="; "${COMPOSE[@]}" down -v >/dev/null 2>&1 || true; }
+# SMOKE_NO_TEARDOWN leaves the stack up so a FAILING run can be inspected while
+# it is still broken. Added 2026-08-07: a reachability failure here proved
+# impossible to diagnose because the trap destroyed the container at exit, and
+# every attempt to recreate the state by hand came back clean — the evidence only
+# exists inside the run. Mirrors E2E_NO_TEARDOWN in the sibling e2e scripts.
+cleanup() {
+  if [ -n "${SMOKE_NO_TEARDOWN:-}" ]; then
+    echo "== teardown SKIPPED (SMOKE_NO_TEARDOWN) — stack left up =="
+    echo "   inspect: docker compose -p atelier_smoke -f $DOCKER_DIR/compose.yaml exec app sh"
+    echo "   remove:  docker compose -p atelier_smoke -f $DOCKER_DIR/compose.yaml down -v"
+    return 0
+  fi
+  echo "== teardown =="; "${COMPOSE[@]}" down -v >/dev/null 2>&1 || true
+}
 trap cleanup EXIT
 
 echo "== build image =="
@@ -137,7 +150,7 @@ for _ in $(seq 1 80); do
   sleep 3
 done
 # Assert the snapshot ARTIFACT (the rollback safety net) independently of outcome.
-if "${COMPOSE[@]}" exec -T app test -f /opt/drupal/private/snapshots/pre-converge.sql.gz; then ok "upgrade snapshotted the DB"; else bad "no snapshot on upgrade"; fi
+if "${COMPOSE[@]}" exec -T app sh -c 'ls /opt/drupal/private/snapshots/pre-converge-*.sql.gz >/dev/null 2>&1'; then ok "upgrade snapshotted the DB"; else bad "no snapshot on upgrade"; fi
 if [ "$result" = "ok" ]; then
   ok "upgrade converged healthy"
 else

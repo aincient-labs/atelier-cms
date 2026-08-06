@@ -137,7 +137,13 @@ jobs:
           # path, so arm64 builds at native speed and is smoke-tested for real.
           - { arch: arm64, platform: linux/arm64, runner: ubuntu-24.04-arm }
     steps:
+      # fetch-depth: 0 is load-bearing, not caution. A rolling build stamps itself
+      # with the release it descends from (`git describe --tags` below), and a
+      # shallow clone carries no tags — the stamp would silently fall back to
+      # 0.0.0 and every edge install would look older than every floor.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # No setup-qemu-action: each arch builds on its own native silicon.
       - name: Set up Docker Buildx
@@ -165,6 +171,29 @@ jobs:
           AINCIENT_BUILD_CACHE: gha
           AINCIENT_BUILD_CACHE_SCOPE: appliance-${{ matrix.arch }}
         run: bash docker/tests/smoke.sh
+
+      # The extension list stamped as dev.atelier.extensions (see the end of
+      # docker/Dockerfile). Read out of the image smoke.sh just built, because
+      # only the built image knows what it actually ships — composer decides,
+      # not the repository. Non-core only: the whole tree is ~850 names / 18 KB
+      # of metadata, and core extensions don't disappear between our releases
+      # without a Drupal major, which the upgrade floor already gates.
+      #
+      # Cheap and non-fatal in shape: an empty value stamps an empty label, which
+      # the manager reads as "unknown" and stands aside on — never as "this image
+      # ships nothing", which would condemn every module on every site.
+      - name: Collect the shipped extension list
+        run: |
+          set -euo pipefail
+          EXT="$(docker run --rm --entrypoint sh aincient/cms:smoke -c \
+            "find /opt/drupal/web -name '*.info.yml' -not -path '/opt/drupal/web/core/*' \
+             | sed -e 's|.*/||' -e 's/\.info\.yml\$//' | sort -u | paste -sd, -")"
+          if [ -z "$EXT" ]; then
+            echo "no extensions found in the built image — refusing to stamp an empty list" >&2
+            exit 1
+          fi
+          echo "ATELIER_EXTENSIONS=${EXT}" >> "$GITHUB_ENV"
+          echo "stamping $(printf '%s' "$EXT" | tr ',' '\n' | wc -l) shipped extensions" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -202,14 +231,26 @@ jobs:
           IMAGE="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
           # The build stamp baked into the image (ENV + OCI labels; see the end of
           # docker/Dockerfile). Mirrors the tag logic in the merge job below: a
-          # tagged release is stamped with the tag a user can actually pull, and a
-          # rolling build is stamped edge+<sha7> so an :edge bug report is still
-          # locatable to an exact commit. Deliberately the SAME string a user
-          # sees on /admin/reports/status.
+          # tagged release is stamped with the tag a user can actually pull.
+          #
+          # A ROLLING BUILD IS STAMPED `<last release tag>+edge.<sha7>` — semver
+          # build metadata on the newest release tag reachable from this commit.
+          # It used to be `edge+<sha7>`, which has no position in the version
+          # order, so the upgrade floor structurally could not gate an edge
+          # install — the exact population most exposed to a release that drops a
+          # module (DECISIONS 0353, plans/channel-hardening.md). This form is
+          # comparable and conservative: the build provably contains everything
+          # its base release shipped, and the unreleased work on top counts for
+          # nothing. The sha7 survives, so an :edge bug report is still locatable
+          # to an exact commit. Deliberately the SAME string a user sees on
+          # /admin/reports/status.
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             ATELIER_VERSION="${{ github.ref_name }}"
           else
-            ATELIER_VERSION="edge+${GITHUB_SHA::7}"
+            # No reachable tag (a fork, or before the first release) → v0.0.0,
+            # which is below every floor and so fails safe rather than passing one.
+            BASE="$(git describe --tags --match 'v[0-9]*' --abbrev=0 2>/dev/null || echo v0.0.0)"
+            ATELIER_VERSION="${BASE}+edge.${GITHUB_SHA::7}"
           fi
           echo "stamping ATELIER_VERSION=${ATELIER_VERSION}" >> "$GITHUB_STEP_SUMMARY"
           # The upgrade floor, READ FROM THE FILE rather than typed here. The
@@ -225,17 +266,19 @@ jobs:
             exit 1
           fi
           echo "stamping ATELIER_UPGRADE_FLOOR=${ATELIER_UPGRADE_FLOOR}" >> "$GITHUB_STEP_SUMMARY"
-          # These three build-args are the ONLY inputs that differ from the
+          # These four build-args are the ONLY inputs that differ from the
           # smoke-validated build above, and they feed zero-byte metadata layers
           # at the very end of the Dockerfile — so every substantive layer still
           # cache-hits from smoke.sh and the published bytes remain the
-          # smoke-validated bytes.
+          # smoke-validated bytes. ATELIER_EXTENSIONS was itself read out of that
+          # same smoke image, so the list describes the bytes being published.
           docker buildx build \
             --secret "id=composer_github_token,env=GITHUB_TOKEN" \
             --cache-from "type=gha,scope=appliance-${{ matrix.arch }}" \
             --build-arg "ATELIER_VERSION=${ATELIER_VERSION}" \
             --build-arg "ATELIER_REVISION=${GITHUB_SHA}" \
             --build-arg "ATELIER_UPGRADE_FLOOR=${ATELIER_UPGRADE_FLOOR}" \
+            --build-arg "ATELIER_EXTENSIONS=${ATELIER_EXTENSIONS}" \
             -f docker/Dockerfile \
             --output "type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true,rewrite-timestamp=true" \
             --metadata-file /tmp/meta.json \

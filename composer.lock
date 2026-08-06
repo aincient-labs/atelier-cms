@@ -2058,17 +2058,17 @@
         },
         {
             "name": "drupal/flowdrop",
-            "version": "2.0.0-alpha14",
+            "version": "2.0.0",
             "source": {
                 "type": "git",
                 "url": "https://git.drupalcode.org/project/flowdrop.git",
-                "reference": "2.0.0-alpha14"
+                "reference": "2.0.0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0-alpha14.zip",
-                "reference": "2.0.0-alpha14",
-                "shasum": "c85972daecf1a98ff5777207877c35409bfd986e"
+                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.0.0.zip",
+                "reference": "2.0.0",
+                "shasum": "df8d23d6f2b8ce60dafc7edc7bfefacfa190a0d3"
             },
             "require": {
                 "d34dman/vanilla-icon-picker": "^1.4",
@@ -2077,7 +2077,7 @@
                 "drupal/flowdrop_ui_components": "*",
                 "league/html-to-markdown": "^5.1",
                 "loilo/jsonpath": "^0.3.1",
-                "php": ">=8.2",
+                "php": ">=8.3",
                 "symfony/expression-language": "^7.0 || ^8.0",
                 "symfony/property-access": "^7.0 || ^8.0"
             },
@@ -2125,11 +2125,11 @@
             "type": "drupal-module",
             "extra": {
                 "drupal": {
-                    "version": "2.0.0-alpha14",
-                    "datestamp": "1785542727",
+                    "version": "2.0.0",
+                    "datestamp": "1785810829",
                     "security-coverage": {
-                        "status": "not-covered",
-                        "message": "Alpha releases are not covered by Drupal security advisories."
+                        "status": "covered",
+                        "message": "Covered by Drupal's security advisory policy"
                     }
                 }
             },
@@ -2165,6 +2165,7 @@
                     "Drupal\\Tests\\flowdrop_node_processor\\": "modules/flowdrop_node_processor/tests/src/",
                     "Drupal\\Tests\\flowdrop_node_type\\": "modules/flowdrop_node_type/tests/src/",
                     "Drupal\\Tests\\flowdrop_orchestration\\": "modules/flowdrop_orchestration/tests/src/",
+                    "Drupal\\Tests\\flowdrop_orchestration_connector\\": "modules/flowdrop_orchestration_connector/tests/src/",
                     "Drupal\\Tests\\flowdrop_pipeline\\": "modules/flowdrop_pipeline/tests/src/",
                     "Drupal\\Tests\\flowdrop_playground\\": "modules/flowdrop_playground/tests/src/",
                     "Drupal\\Tests\\flowdrop_runtime\\": "modules/flowdrop_runtime/tests/src/",

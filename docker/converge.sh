@@ -6,6 +6,15 @@
 #   - Empty database      → fresh install from the baked-in config/sync.
 #   - Existing database   → snapshot → run pending updates → rebuild → health
 #                           check → roll back to the snapshot if anything fails.
+#   - Populated database that cannot bootstrap → REFUSE. Never install.
+#
+# That third state is not a nicety. Until 2026-08-06 the branch was binary and
+# asked `drush status` — "can Drupal boot right now?" — so a populated database
+# whose site could not boot (e.g. an installed module whose code this image no
+# longer ships) was read as "there is no site here" and reinstalled over. It
+# reported success, so nothing rolled it back, and it repeated on every restart,
+# destroying restored snapshots too. The question that decides this branch must
+# be "is the database EMPTY?", which is what database_state() asks.
 #
 # This is the Drupal-side of the appliance upgrade story. It does NOT pull new
 # code — new PHP arrives only as a new image + restart (see docker/README.md).
@@ -23,6 +32,8 @@ ADMIN_USER="${AINCIENT_ADMIN_USER:-admin}"
 ADMIN_PASS="${AINCIENT_ADMIN_PASS:-}"
 INSTALL_PROFILE="${AINCIENT_INSTALL_PROFILE:-minimal}"
 DB_MAX_WAIT="${AINCIENT_DB_MAX_WAIT:-60}"
+# How many pre-converge snapshots to retain (see take_snapshot).
+SNAPSHOT_KEEP="${AINCIENT_SNAPSHOT_KEEP:-5}"
 # Overridable so tests can stub the health gate.
 HEALTHCHECK_CMD="${HEALTHCHECK_CMD:-$(dirname "$0")/healthcheck.sh}"
 # The oldest site version this image will migrate a database from, and where that
@@ -56,8 +67,11 @@ recovery_hint() {
   log "----------------------------------------------------------------"
 }
 
-# Record the convergence outcome (ok|rolledback|install-failed) on the shared
-# volume, if one is mounted. No-op otherwise (e.g. the slim curl topology).
+# Record the convergence outcome (ok|rolledback|install-failed|too-old|
+# missing-code|unbootable) on the shared volume, if one is mounted. No-op
+# otherwise (e.g. the slim curl topology). Anything that is not `ok` makes the
+# updater sidecar re-pin the previous image, which is the correct response to
+# every refusal here.
 write_result() {
   [ -d "$SHARED_DIR" ] || return 0
   printf '%s' "$1" > "${SHARED_DIR}/converge.result" 2>/dev/null || true
@@ -69,8 +83,55 @@ write_result() {
 db_ready() { $DRUSH sql:query 'SELECT 1;' >/dev/null 2>&1; }
 
 # True once Drupal is installed and bootstraps cleanly.
+#
+# NOTE what this is and is not. It answers "can Drupal boot?", which is the right
+# question for "may we run updatedb" and the WRONG question for "may we install".
+# A populated database whose code is missing answers false here. Never branch to
+# anything destructive on this predicate — use database_state().
 site_installed() {
   $DRUSH status --field=bootstrap 2>/dev/null | grep -qi 'Successful'
+}
+
+# --- Is there data here? ------------------------------------------------------
+#
+# The only question allowed to authorise an install. Bootstrap-free by necessity:
+# the state we most need to detect (data present, site unbootable) is exactly the
+# state in which nothing that boots Drupal can answer anything.
+
+# Echo the number of tables in the site's schema, or fail when the question can't
+# be answered. `information_schema.tables` is SQL-standard, so this is the same
+# query on PostgreSQL and MySQL/MariaDB; the excluded schemas are the server's own
+# catalogs, which MySQL would otherwise count as the site's.
+table_count() {
+  local out
+  out="$($DRUSH sql:query \
+    "SELECT COUNT(*) FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema NOT IN ('pg_catalog', 'information_schema', 'mysql', 'sys', 'performance_schema');" \
+    2>/dev/null)" || return 1
+  out="$(printf '%s' "$out" | grep -oE '[0-9]+' | head -1)"
+  [ -n "$out" ] || return 1
+  printf '%s' "$out"
+}
+
+# Echo `empty` or `populated`. Never anything else: an install decision cannot be
+# deferred, so the fallbacks are chosen to fail towards "populated" (refuse), the
+# direction that cannot destroy data.
+#
+# If information_schema is unavailable (an exotic driver — SQLite has none), ask
+# instead for a row from `key_value`, a table every installed Drupal site has and
+# no empty database does. That is strictly more information than the old boolean
+# had, and it answers the incident case correctly: that database still had its
+# key_value table even though the site could not boot.
+database_state() {
+  local n
+  if n="$(table_count)"; then
+    if [ "$n" -eq 0 ]; then printf 'empty'; else printf 'populated'; fi
+    return 0
+  fi
+  if $DRUSH sql:query 'SELECT 1 FROM key_value LIMIT 1;' >/dev/null 2>&1; then
+    printf 'populated'
+  else
+    printf 'empty'
+  fi
 }
 
 wait_for_db() {
@@ -200,8 +261,29 @@ check_installed_code_present() {
 }
 
 # --- Branch 1: fresh install ------------------------------------------------
+#
+# `site:install` DROPS EVERY TABLE. This function is the whole blast radius of
+# this script, so it re-asks the only question that authorises it rather than
+# trusting its caller — a caller can be rewritten, and the 2026-08-06 incident is
+# precisely a caller that asked the wrong question. Nothing here is expected to
+# fire; if it ever does, someone has reintroduced the bug and the die() is the
+# difference between a bug report and a destroyed site.
+#
+# There is deliberately no snapshot on this path. A snapshot is what you take
+# before a destructive step you intend to run; here the destructive step is
+# refused outright unless there is provably nothing to lose.
 fresh_install() {
-  log "no site found → fresh install"
+  if [ "$(database_state)" != "empty" ]; then
+    log "----------------------------------------------------------------"
+    log "  ABORTING — asked to install over a database that is not empty."
+    log "  This is a bug in converge.sh, not a state you can be in legitimately."
+    log "  Nothing has been changed. Report this with the log above."
+    log "----------------------------------------------------------------"
+    write_result unbootable
+    die "refusing to install over a non-empty database"
+  fi
+
+  log "empty database → fresh install"
 
   # Never ship a known default credential. If the operator did not pin
   # AINCIENT_ADMIN_PASS, mint a random one and surface it (log + a private file)
@@ -293,11 +375,22 @@ recorded_version() {
   $DRUSH state:get "$VERSION_STATE_KEY" --format=string 2>/dev/null | tr -d '[:space:]'
 }
 
-# Echo $1 as a bare comparable release (leading `v` dropped), or nothing at all
-# when it isn't one. `dev` and `edge+<sha>` are deliberately NOT releases: they
-# have no position in the version order, so no floor can be checked against them.
+# Echo $1 as a bare comparable release (leading `v` dropped, `+build.metadata`
+# stripped), or nothing at all when it isn't one.
+#
+# The build metadata is what makes an EDGE build comparable. A rolling build is
+# stamped `<last release tag>+edge.<sha7>` (e.g. `v0.5.1+edge.a1b2c3d`): it is
+# built from a commit descended from v0.5.1, so it provably contains everything
+# 0.5.1 shipped, and comparing it AS 0.5.1 is truthful and conservative — the
+# unreleased work on top simply doesn't count towards a floor. Before this, edge
+# stamps read `edge+<sha7>`, which has no position in the version order at all,
+# so no floor could gate the very installs most exposed to one (see
+# plans/channel-hardening.md).
+#
+# `dev` and an unstamped build still have no position, which is correct.
 release_version() {
   local v="${1#v}"
+  v="${v%%+*}"
   case "$v" in
     '' | *[!0-9.]*) return 0 ;;
   esac
@@ -382,11 +475,29 @@ check_upgrade_floor() {
 }
 
 # --- Branch 2: upgrade existing site ----------------------------------------
+# Snapshot to a TIMESTAMPED file, keeping the last SNAPSHOT_KEEP. It used to be a
+# single fixed `pre-converge.sql.gz`, overwritten by every converge — so during an
+# incident, where the user restarts repeatedly, each attempt destroyed the copy
+# taken before the previous one. The one file you want is the oldest.
 take_snapshot() {
   mkdir -p "$SNAPSHOT_DIR"
-  SNAPSHOT_FILE="${SNAPSHOT_DIR}/pre-converge.sql.gz"
+  SNAPSHOT_FILE="${SNAPSHOT_DIR}/pre-converge-$(date -u +%Y%m%d-%H%M%S).sql.gz"
   log "snapshotting database → ${SNAPSHOT_FILE}"
   $DRUSH sql:dump --gzip --result-file="${SNAPSHOT_FILE%.gz}" >/dev/null
+  prune_snapshots
+}
+
+# Keep the newest SNAPSHOT_KEEP pre-converge dumps; delete older ones. Names sort
+# chronologically (UTC, fixed width), so `ls` order is age order. Best-effort:
+# failing to prune must never fail a converge.
+prune_snapshots() {
+  local old
+  old="$(ls -1 "$SNAPSHOT_DIR"/pre-converge-*.sql.gz 2>/dev/null \
+    | sort -r | tail -n +"$((SNAPSHOT_KEEP + 1))")" || return 0
+  [ -n "$old" ] || return 0
+  printf '%s\n' "$old" | while IFS= read -r f; do
+    [ -n "$f" ] && rm -f "$f" && log "pruned old snapshot $(basename "$f")"
+  done
 }
 
 restore_snapshot() {
@@ -399,14 +510,11 @@ restore_snapshot() {
 
 upgrade() {
   log "existing site → upgrade"
-  # BEFORE the snapshot: a refusal must cost nothing, not even a dump. Two
-  # refusals, asking different questions — the floor asks whether this state is
-  # too OLD to migrate, the code check asks whether this image is missing
-  # something the state depends on. A site can fail the second while passing the
-  # first (an `edge` build has no comparable version at all), which is exactly
-  # why both run.
+  # BEFORE the snapshot: a refusal must cost nothing, not even a dump. The floor
+  # asks whether this state is too OLD to migrate. Its sibling question — is this
+  # image missing code the state depends on — is asked by main() before the branch
+  # is even chosen, because a site in that condition cannot reach this function.
   check_upgrade_floor
-  check_installed_code_present
   take_snapshot
 
   # From here, any failure rolls the database back to the snapshot AND records
@@ -485,14 +593,64 @@ seed_credentials() {
   $DRUSH aincient:seed-credentials || log "WARNING: credential seeding failed; the site will ask for a key in the wizard"
 }
 
+# --- Branch 3: data present, site unbootable → refuse -------------------------
+#
+# The state that used to be silently reinstalled over. We know there is data and
+# we know Drupal cannot start on this image; check_installed_code_present() has
+# already run and found nothing missing, so we cannot name the cause — but not
+# knowing why is not a licence to install. Refuse, leave everything untouched,
+# and hand over a recovery path. The updater sidecar re-pins the previous image
+# on any non-`ok` result, so an update that lands here reverts by itself.
+refuse_unbootable() {
+  log "----------------------------------------------------------------"
+  log "  REFUSING TO CONTINUE — your site's database is not empty, but"
+  log "  Drupal cannot start on this image."
+  log ""
+  log "  This is NOT an empty install, so nothing here will reinstall over it."
+  log "  YOUR DATABASE HAS NOT BEEN TOUCHED."
+  log ""
+  log "  Go back to the image you were running before — it will start and"
+  log "  converge normally:"
+  log ""
+  log "      AINCIENT_IMAGE=<the previous image> docker compose up -d"
+  log ""
+  log "  With the manager, an update that lands here re-pins the previous"
+  log "  image for you. If you are switching images by hand, do not run a"
+  log "  newer one again until the site starts on the old one."
+  log ""
+  log "  The reason is in the container log above this message."
+  log "----------------------------------------------------------------"
+  write_result unbootable
+  die "refusing to touch a populated database that cannot bootstrap"
+}
+
 # --- Main -------------------------------------------------------------------
+#
+# THREE states, not two. The branch turns on whether the database is EMPTY —
+# never on whether Drupal can boot, which is a different question with the same
+# answer only on a healthy site (see the header).
 main() {
   wait_for_db
   ensure_pgvector
-  if site_installed; then
-    # upgrade() runs its own health check under the rollback trap; on failure it
-    # writes result=rolledback and exits non-zero before we reach here.
-    upgrade
+
+  local db_state
+  db_state="$(database_state)"
+  log "database is ${db_state}"
+
+  if [ "$db_state" = "populated" ]; then
+    # BEFORE the branch decision, because this is the check that can NAME the
+    # cause of an unbootable site, and it is bootstrap-free precisely so it can
+    # run here. It used to live inside upgrade(), i.e. only ever reachable by
+    # sites that could already boot — unreachable in the one case it exists for.
+    check_installed_code_present
+
+    if site_installed; then
+      # upgrade() runs its own health check under the rollback trap; on failure it
+      # writes result=rolledback and exits non-zero before we reach here.
+      upgrade
+    else
+      refuse_unbootable
+    fi
   else
     fresh_install
     # No snapshot on a fresh DB — nothing to roll back to, so just gate. The

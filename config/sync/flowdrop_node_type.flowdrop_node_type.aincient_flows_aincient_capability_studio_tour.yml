@@ -32,3 +32,4 @@ supported_visual_types:
 unified_input_exposed: false
 unified_output_exposed: false
 tool_exposed: true
+reserved_port_exposure: {  }

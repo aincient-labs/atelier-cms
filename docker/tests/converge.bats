@@ -43,6 +43,90 @@ line_of() { grep -n -- "$1" "$DRUSH_LOG" | head -1 | cut -d: -f1; }
   ! grep -q "sql:dump"  "$DRUSH_LOG"            # nothing to snapshot on a fresh DB
 }
 
+# --- The three-state branch -------------------------------------------------
+# The 2026-08-06 data-loss defect: the branch asked "can Drupal boot?" and read
+# "no" as "there is no site here". These tests pin the question to "is the
+# database EMPTY?" — the only one that may authorise site:install.
+
+@test "populated DB + unbootable site → REFUSED, nothing installed, result not ok" {
+  export MOCK_INSTALLED=0        # cannot bootstrap…
+  export MOCK_TABLE_COUNT=42     # …but the database is full of data
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"   # nothing missing to blame
+  run bash "$CONVERGE"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"REFUSING TO CONTINUE"* ]]
+  [[ "$output" == *"HAS NOT BEEN TOUCHED"* ]]
+  # The whole incident, asserted: no install, no migration, no drop.
+  ! grep -q "site:install" "$DRUSH_LOG"
+  ! grep -q "updatedb"     "$DRUSH_LOG"
+  ! grep -q "sql:drop"     "$DRUSH_LOG"
+  [ "$(result)" = "unbootable" ]   # → the updater re-pins the previous image
+  [ "$(result)" != "ok" ]
+}
+
+@test "the incident shape: populated DB, unbootable, module code missing → names the module" {
+  # ee6a1cf → v0.4.2. Fourteen installed modules the new image no longer ships,
+  # so the site cannot boot. This used to reinstall over it and report success.
+  export MOCK_INSTALLED=0
+  export MOCK_TABLE_COUNT=180
+  stage_docroot node aincient_core
+  export MOCK_CORE_EXTENSION="$(core_extension node aincient_core ai ai_agents)"
+  run bash "$CONVERGE"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"missing code your site uses"* ]]
+  [[ "$output" == *"ai_agents"* ]]
+  ! grep -q "site:install" "$DRUSH_LOG"
+  [ "$(result)" = "missing-code" ]
+}
+
+@test "restart on an affected image is refused again — restored data survives repetition" {
+  # The property that turned a bug into an incident: the destructive branch was
+  # stable under repetition, so a restored snapshot was destroyed by the next
+  # boot, every time. Three converges, three refusals, no install ever.
+  export MOCK_INSTALLED=0
+  export MOCK_TABLE_COUNT=180
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  for _ in 1 2 3; do
+    run bash "$CONVERGE"
+    [ "$status" -ne 0 ]
+  done
+  ! grep -q "site:install" "$DRUSH_LOG"
+  ! grep -q "sql:drop"     "$DRUSH_LOG"
+}
+
+@test "information_schema unavailable → key_value fallback still refuses a populated DB" {
+  export MOCK_INSTALLED=0
+  export MOCK_TABLE_COUNT=42
+  export MOCK_TABLE_COUNT_FAIL=1     # forces the fallback probe
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  run bash "$CONVERGE"
+  [ "$status" -ne 0 ]
+  ! grep -q "site:install" "$DRUSH_LOG"
+  [ "$(result)" = "unbootable" ]
+}
+
+@test "information_schema unavailable on a truly empty DB → fresh install still works" {
+  export MOCK_INSTALLED=0
+  export MOCK_TABLE_COUNT=0
+  export MOCK_TABLE_COUNT_FAIL=1
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "site:install" "$DRUSH_LOG"
+  [ "$(result)" = "ok" ]
+}
+
+@test "a bootstrapping site upgrades even if the table count is unreadable" {
+  export MOCK_INSTALLED=1
+  export MOCK_TABLE_COUNT_FAIL=1
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "updatedb" "$DRUSH_LOG"
+  [ "$(result)" = "ok" ]
+}
+
 @test "existing DB → upgrade snapshots BEFORE running updatedb" {
   export MOCK_INSTALLED=1
   run bash "$CONVERGE"
@@ -51,6 +135,32 @@ line_of() { grep -n -- "$1" "$DRUSH_LOG" | head -1 | cut -d: -f1; }
   grep -q "updatedb" "$DRUSH_LOG"
   [ "$(line_of sql:dump)" -lt "$(line_of updatedb)" ]
   ! grep -q "site:install" "$DRUSH_LOG"        # don't reinstall an existing site
+}
+
+@test "fresh_install refuses a non-empty database even when called directly" {
+  # The assertion inside the blast radius: no future caller can reintroduce the
+  # 2026-08-06 branch bug without tripping this.
+  export MOCK_TABLE_COUNT=42
+  run bash -c "source '$CONVERGE'; fresh_install"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"non-empty database"* ]]
+  ! grep -q "site:install" "$DRUSH_LOG"
+}
+
+@test "snapshots are timestamped and pruned to the retention count" {
+  # They used to be one fixed pre-converge.sql.gz, overwritten every converge —
+  # so during an incident each restart destroyed the previous attempt's copy.
+  export MOCK_INSTALLED=1
+  export AINCIENT_SNAPSHOT_KEEP=2
+  for i in 1 2 3 4 5; do
+    : > "$AINCIENT_SNAPSHOT_DIR/pre-converge-2026010${i}-000000.sql.gz"
+  done
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [ "$(ls -1 "$AINCIENT_SNAPSHOT_DIR"/pre-converge-*.sql.gz | wc -l)" -eq 2 ]
+  # The dump this run took is one of the survivors, and the oldest is gone.
+  [ ! -e "$AINCIENT_SNAPSHOT_DIR/pre-converge-20260101-000000.sql.gz" ]
+  [ -e "$AINCIENT_SNAPSHOT_DIR/pre-converge-20260105-000000.sql.gz" ]
 }
 
 @test "upgrade runs config:import AFTER updatedb (config_ignore keeps site config safe)" {
@@ -170,7 +280,31 @@ line_of() { grep -n -- "$1" "$DRUSH_LOG" | head -1 | cut -d: -f1; }
   grep -q "updatedb" "$DRUSH_LOG"
 }
 
-@test "an edge build has no position in the version order → warns, upgrades" {
+@test "an edge build compares as the release it descends from — floor MET" {
+  # `v0.5.1+edge.a1b2c3d` is built from a commit descended from v0.5.1, so it
+  # contains everything 0.5.1 shipped and satisfies a 0.3.0 floor.
+  export MOCK_INSTALLED=1
+  export AINCIENT_UPGRADE_FLOOR=0.3.0
+  export MOCK_STATE_aincient_appliance_version="v0.5.1+edge.a1b2c3d"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"unreleased build"* ]]
+  grep -q "updatedb" "$DRUSH_LOG"
+}
+
+@test "an edge build below the floor is REFUSED like any other site" {
+  # The whole point of the stamp change: edge installs used to be ungateable.
+  export MOCK_INSTALLED=1
+  export AINCIENT_UPGRADE_FLOOR=0.6.0
+  export MOCK_STATE_aincient_appliance_version="v0.5.1+edge.a1b2c3d"
+  run bash "$CONVERGE"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"REFUSING TO UPGRADE"* ]]
+  [ "$(result)" = "too-old" ]
+}
+
+@test "the OLD edge stamp still has no position in the version order → warns, upgrades" {
+  # Installs stamped before the change. They must not be stranded.
   export MOCK_INSTALLED=1
   export AINCIENT_UPGRADE_FLOOR=0.3.0
   export MOCK_STATE_aincient_appliance_version="edge+f8bdcb9"
@@ -290,8 +424,10 @@ core_extension() {
   [[ "$output" == *"could not read the installed module list"* ]]
 }
 
-@test "the floor is checked BEFORE the missing-code scan, and either alone refuses" {
-  # Both fail here; the floor speaks first because it's the cheaper question.
+@test "the missing-code scan runs BEFORE the branch decision, so it speaks first" {
+  # Both refusals apply here. Missing code wins: it runs before the branch is
+  # chosen (that's the fix — it has to be reachable by a site that can't boot),
+  # and it is the more specific diagnosis, naming the module to uninstall.
   export MOCK_INSTALLED=1
   export AINCIENT_UPGRADE_FLOOR=0.3.0
   export MOCK_STATE_aincient_appliance_version=0.1.1
@@ -299,8 +435,22 @@ core_extension() {
   export MOCK_CORE_EXTENSION="$(core_extension node ai)"
   run bash "$CONVERGE"
   [ "$status" -ne 0 ]
+  [[ "$output" == *"missing code your site uses"* ]]
+  [ "$(result)" = "missing-code" ]
+  ! grep -q "sql:dump" "$DRUSH_LOG"
+}
+
+@test "the floor alone still refuses, before the database is touched" {
+  export MOCK_INSTALLED=1
+  export AINCIENT_UPGRADE_FLOOR=0.3.0
+  export MOCK_STATE_aincient_appliance_version=0.1.1
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  run bash "$CONVERGE"
+  [ "$status" -ne 0 ]
   [[ "$output" == *"REFUSING TO UPGRADE"* ]]
   [ "$(result)" = "too-old" ]
+  ! grep -q "sql:dump" "$DRUSH_LOG"
 }
 
 @test "a fresh install skips both refusals (there is no state to be wrong about)" {

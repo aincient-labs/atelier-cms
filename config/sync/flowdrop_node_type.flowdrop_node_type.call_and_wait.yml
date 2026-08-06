@@ -1,0 +1,67 @@
+uuid: 4152de95-df10-4c92-85ca-34488633f630
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_interrupt
+_core:
+  default_config_hash: uOuYBu335ShVPBuIeOPtCi6urTsrhZT2Y15wT_VXNA4
+id: call_and_wait
+label: 'Call and Wait'
+description: 'Calls an external system and pauses the workflow until it calls back'
+category: tools
+icon: 'mdi:webhook'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  allow_internal_requests:
+    configurable: true
+    connectable: false
+    required: false
+    default: false
+  expires_in:
+    configurable: true
+    connectable: false
+    required: false
+    default: 3600
+  headers:
+    configurable: true
+    connectable: false
+    exposed_by_default: false
+    required: false
+    default: {  }
+  payload:
+    configurable: true
+    connectable: true
+    required: false
+    default: {  }
+  timeout:
+    configurable: true
+    connectable: false
+    exposed_by_default: false
+    required: false
+    default: 30
+  url:
+    configurable: true
+    connectable: true
+    required: true
+outputs:
+  interrupt_id:
+    exposed: true
+    exposed_by_default: false
+  response:
+    exposed: true
+  response_time:
+    exposed: true
+    exposed_by_default: false
+tags:
+  - interrupt
+  - integration
+executor_plugin: 'flowdrop_interrupt:call_and_wait'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false
+reserved_port_exposure: {  }

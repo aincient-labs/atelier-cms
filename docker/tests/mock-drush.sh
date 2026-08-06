@@ -12,6 +12,13 @@
 #   MOCK_CORE_EXTENSION   serialized core.extension blob returned for the
 #                         installed-extension read (unset = query returns nothing)
 #   MOCK_CORE_EXTENSION_FAIL=1  that query fails outright
+#   MOCK_TABLE_COUNT      how many tables the database holds — what decides the
+#                         install/upgrade/refuse branch. Defaults to 0 when
+#                         MOCK_INSTALLED=0 and 42 when it's 1, so the ordinary
+#                         cases need only the one variable; set it explicitly to
+#                         build the dangerous state (data present, site down).
+#   MOCK_TABLE_COUNT_FAIL=1  information_schema is unavailable, forcing the
+#                         key_value fallback in database_state()
 #
 # On sql:dump it writes a real .gz so restore_snapshot's `[ -f ]` + zcat work.
 #
@@ -32,6 +39,24 @@ case "$*" in
     # must treat as unknown rather than as an empty install.
     printf '%s' "${MOCK_CORE_EXTENSION:-}"
     exit "${MOCK_CORE_EXTENSION_FAIL:-0}" ;;
+  *information_schema.tables*)
+    # The table count that decides the branch. Default from MOCK_INSTALLED so the
+    # existing cases keep meaning what they say.
+    [ "${MOCK_TABLE_COUNT_FAIL:-0}" = "1" ] && exit 1
+    if [ -n "${MOCK_TABLE_COUNT:-}" ]; then
+      printf '%s\n' "$MOCK_TABLE_COUNT"
+    elif [ "${MOCK_INSTALLED:-0}" = "1" ]; then
+      printf '42\n'
+    else
+      printf '0\n'
+    fi
+    exit 0 ;;
+  *"FROM key_value LIMIT"*)
+    # The fallback probe: does an installed Drupal's key_value table exist?
+    if [ "${MOCK_TABLE_COUNT:-$([ "${MOCK_INSTALLED:-0}" = "1" ] && echo 42 || echo 0)}" -gt 0 ]; then
+      exit 0
+    fi
+    exit 1 ;;
   "sql:query"*)                     exit "${MOCK_DB_READY:-0}" ;;
   "status --field=bootstrap"*)      [ "${MOCK_INSTALLED:-0}" = "1" ] && echo "Successful" ; exit 0 ;;
   "status --field=drupal-version"*) echo "11.3.10" ; exit 0 ;;

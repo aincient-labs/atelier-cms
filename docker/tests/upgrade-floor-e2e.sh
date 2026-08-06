@@ -148,7 +148,7 @@ direct_converge() { # image
     --entrypoint /usr/local/bin/converge.sh app 2>&1
 }
 
-no_snapshot() { in_app "test ! -e /opt/drupal/private/snapshots/pre-converge.sql.gz"; }
+no_snapshot() { in_app "! ls /opt/drupal/private/snapshots/pre-converge-*.sql.gz >/dev/null 2>&1"; }
 
 # Assert a refusal was contained: the expected result value, the app back on the
 # previous image, and the site still serving.

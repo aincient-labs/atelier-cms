@@ -27,13 +27,30 @@ idempotent:
   appliance's desired state: config/sync ships the full site incl. the branded
   `aincient_theme` as the default front end, whereas the recipe leaves Olivero default +
   unbranded and is now **dev/demo-only**. See `.dev` DECISIONS 2026-06-16.
-- **Existing database** → **snapshot** → `drush updatedb` (runs this image's
-  `hook_update_N` / `hook_post_update`) → `drush config:import` (re-asserts this
-  image's `config/sync`) → `cache:rebuild` → **health check** → **roll back to the
-  snapshot** if anything fails.
+- **Existing database, site bootstraps** → **snapshot** → `drush updatedb` (runs this
+  image's `hook_update_N` / `hook_post_update`) → `drush config:import` (re-asserts
+  this image's `config/sync`) → `cache:rebuild` → **health check** → **roll back to
+  the snapshot** if anything fails.
+- **Existing database, site cannot bootstrap** → **refuse.** Nothing is installed,
+  nothing is migrated, the database is not touched, and `converge.result` is
+  `missing-code` (when a module's code is gone — the usual cause, named in the log)
+  or `unbootable`. The updater sidecar re-pins the previous image on either.
+
+**Three states, and the branch turns on "is the database empty?"** — never on "can
+Drupal boot?", which is a different question that happens to share an answer only on
+a healthy site. Reading the second as the first is what destroyed a user's site on
+2026-08-06 (DECISIONS 0348/0349): a populated database whose site could not boot was
+read as "no site here" and reinstalled over, reported `ok`, and repeated on every
+restart — so restored snapshots were destroyed too. `site:install` is now reachable
+only from a database proven empty, and asserts that again on entry.
 
 So restarting on a new image *is* the upgrade — there is no separate migrate step to
 remember, and a failed upgrade leaves the previous database intact.
+
+Pre-upgrade snapshots land in `private/snapshots/pre-converge-<UTC timestamp>.sql.gz`,
+the newest `AINCIENT_SNAPSHOT_KEEP` (default 5) retained. They used to share one fixed
+filename, so during an incident — exactly when restarts come in bursts — each attempt
+overwrote the copy taken before the previous one.
 
 > **The migration engine is still Drupal's.** Converge doesn't replace
 > `hook_update_N` — it automates invoking it and wraps it in a snapshot + health
@@ -56,6 +73,9 @@ raise it). One file, read twice:
 | `/etc/atelier/upgrade-floor` (file) | `converge.sh`, inside the container | **enforcement**                  |
 | `dev.atelier.upgrade.min-from` (OCI label) | the manager, **from the registry** | **planning, before pulling** |
 
+(A third label, `dev.atelier.extensions`, carries the non-core extensions the image ships — the
+same registry-before-pull idea applied to the *other* refusal below.)
+
 The label is stamped by the release workflow *from the file*, so the enforced floor
 and the advertised one can't disagree.
 
@@ -69,15 +89,22 @@ outcome and re-pins the previous image for.
 
 A site with **no** recorded version (it converged before this recording existed)
 warns and proceeds under the snapshot rather than being refused — refusing every
-unrecorded site would strand installs that are perfectly current. An `edge` build
-records `edge+<sha>`, which has no position in the version order, so it is
-unverifiable in the same way.
+unrecorded site would strand installs that are perfectly current.
+
+**Edge builds are gated too, since 2026-08-06.** A rolling build is stamped
+`<last release tag>+edge.<sha7>` (e.g. `v0.5.1+edge.a1b2c3d`) and `release_version()`
+strips the build metadata, so it compares as `0.5.1` — truthful (it contains everything
+0.5.1 shipped) and conservative (unreleased work on top counts for nothing). The older
+`edge+<sha>` stamp had no position in the version order, so no floor could gate the
+population most exposed to one; those installs still read as unverifiable, and still
+proceed under the snapshot. See `plans/channel-hardening.md`.
 
 ### The other refusal: code this image no longer ships
 
-The floor compares **versions**, and the sites most exposed to a package removal are on `edge`
-builds whose `edge+<sha>` stamp has no position in the version order at all — nothing
-version-shaped can gate them. So converge runs a second, version-free check.
+The floor compares **versions**, and a version is the wrong instrument for this: a release can
+drop a module at any point in the version order, and the site that has it installed is at no
+particular version. So converge runs a second, version-free check. (It is also what covered
+`edge` installs entirely before their stamps became comparable.)
 
 If a module is **installed** but its code isn't in the image, Drupal cannot boot: it resolves
 every installed extension's path when the service container is compiled and fatals on the
@@ -93,7 +120,16 @@ rollback are still there.
 
 This is what protects a site that never ran the `drupal/ai` uninstall from the release that
 dropped those packages, and it generalises: every future release that removes a module is
-covered without anyone predicting which one.
+covered without anyone predicting which one. It runs **before the branch decision** — a site in
+this condition cannot boot, so a check that only ran on the upgrade branch was unreachable in
+the case it exists for. That was root cause 2 of the 2026-08-06 data loss (DECISIONS 0353).
+
+**The manager asks the same question first, from outside.** Images stamp the non-core extensions
+they ship as `dev.atelier.extensions`, a registry-readable label, and the manager diffs it against
+the site's installed set **before pulling** — so the answer arrives as "uninstall these two modules
+first", on the version that still has them, instead of as a refusal at boot. The label excludes
+core and is absent on older images, so converge's filesystem check stays the authority; the label
+is the early warning.
 
 **Planning.** Enforcement alone leaves the operator to work the route out by hand,
 so `atelier app update` reads these labels from the registry (no pull), walks them

@@ -205,6 +205,24 @@ COPY web/themes/custom /opt/drupal/web/themes/custom
 COPY config /opt/drupal/config
 COPY web/modules/custom /opt/drupal/web/modules/custom
 
+# The application code must be READABLE BY www-data, whatever the build host's
+# file modes were. `COPY` preserves the context's permissions, so a checkout with
+# a restrictive umask (or any tool that leaves 600/700 behind) produces an image
+# whose modules Apache cannot read — while root, and therefore every `drush`
+# command converge runs, reads them fine.
+#
+# That failure is vicious out of proportion to its cause. Drupal resolves every
+# extension by scanning for `*.info.yml`; an unreadable one makes
+# InfoParserDynamic parse `false` and die on `array_keys(null)`, so ANY request
+# that compiles the service container 500s — while `/` keeps serving 200 from
+# the page cache, and converge (running as root) reports a healthy site. It cost
+# a full session to diagnose on 2026-08-07, because CI checks out fresh at 644
+# and never reproduces it; only a developer's working copy does.
+#
+# a+rX, not a blanket chmod: `X` sets the execute bit on directories and on files
+# that already have one, so traversal works without making every YAML executable.
+RUN chmod -R a+rX /opt/drupal
+
 # Writable state dirs; the webserver owns files, root runs converge/install.
 # After every COPY above — the remainder tier creates web/sites.
 RUN mkdir -p /opt/drupal/private/snapshots /opt/drupal/web/sites/default/files \
@@ -255,6 +273,29 @@ LABEL org.opencontainers.image.title="Atelier by AIncient Labs" \
 # manager reads absence as "declares no floor" and plans a single hop.
 ARG ATELIER_UPGRADE_FLOOR=
 LABEL dev.atelier.upgrade.min-from="${ATELIER_UPGRADE_FLOOR}"
+
+# The non-core extensions this image SHIPS, comma-separated — the second thing
+# the manager needs to know before pulling. The floor answers "is this site too
+# old?"; this answers "does this image still contain the code this site has
+# installed?", which is the question that took a user's site down on 2026-08-06:
+# fourteen installed modules the new release no longer carried, so Drupal could
+# not resolve their paths and could not boot (DECISIONS 0348/0353).
+#
+# Read from the REGISTRY without pulling, for the same reason as the floor —
+# by the time the ~500 MB image is local, the doomed update is the cheap part.
+# The manager diffs it against the site's installed extensions and refuses
+# BEFORE the pull, naming the modules to uninstall while their code still
+# exists. converge.sh asks the same question inside the container against the
+# real filesystem and REMAINS THE AUTHORITY: this label is absent on older
+# images, excludes core (~700 more names for 18 KB of metadata, and core
+# extensions don't vanish between our releases without a Drupal major, which
+# the floor gates), and describes the image rather than the running site.
+#
+# Stamped by the release workflow, which extracts the list from the
+# smoke-validated image it just built. Empty on a local build → "unknown", never
+# "ships nothing". See plans/channel-hardening.md.
+ARG ATELIER_EXTENSIONS=
+LABEL dev.atelier.extensions="${ATELIER_EXTENSIONS}"
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
   CMD /usr/local/bin/healthcheck.sh || exit 1
