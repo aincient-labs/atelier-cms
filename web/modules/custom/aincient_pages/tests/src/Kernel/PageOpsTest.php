@@ -25,7 +25,7 @@ final class PageOpsTest extends KernelTestBase {
 
   use EditorialWorkflowTestTrait;
 
-  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_pages'];
+  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
 
   protected function setUp(): void {
     parent::setUp();

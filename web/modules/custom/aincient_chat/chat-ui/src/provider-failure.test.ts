@@ -151,8 +151,23 @@ describe("providerFailureCard", () => {
     expect(card?.sentence).toBe("First fault.");
   });
 
-  it("ignores a kind on a step that did not fail", () => {
-    expect(providerFailureCard([{ status: "completed", errorKind: "auth" }])).toBeNull();
+  it("reads a stop-and-reported fault off a COMPLETED step (DECISIONS 0366)", () => {
+    // The reason node catches a provider failure and COMPLETES carrying the
+    // kind, so the run ends cleanly with the failure as its reply. The card must
+    // render off the kind, not off a failed status it no longer has.
+    const card = providerFailureCard([
+      {
+        status: "completed",
+        error: "Openai_compatible could not be reached.",
+        errorKind: "unavailable",
+        errorRetry: true,
+      },
+    ]);
+    expect(card).toEqual({
+      sentence: "Openai_compatible could not be reached.",
+      kind: "unavailable",
+      retry: true,
+    });
   });
 
   it("never renders an empty card", () => {

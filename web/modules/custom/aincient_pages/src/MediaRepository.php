@@ -10,6 +10,7 @@ use Drupal\Core\File\FileExists;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Utility\Token;
+use Drupal\aincient_core\File\ImageUploadValidator;
 use Drupal\file\FileInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -46,6 +47,7 @@ final class MediaRepository {
     private readonly FileSystemInterface $fileSystem,
     private readonly Token $token,
     private readonly FileUrlGeneratorInterface $fileUrlGenerator,
+    private readonly ImageUploadValidator $imageValidator,
   ) {}
 
   /**
@@ -355,41 +357,25 @@ final class MediaRepository {
   }
 
   /**
-   * Validate an uploaded image against the field's limits and save it as a file.
+   * Validate an uploaded image and land its re-encoded bytes as a file.
    *
    * The shared bytes-to-file path behind both {@see createFromUpload} (new item)
-   * and {@see replaceFile} (swap an existing item's file): checks extension + max
-   * size against the media type's own source-field settings, lands the bytes in
-   * the field's token-resolved upload directory, and returns the saved file entity.
+   * and {@see replaceFile} (swap an existing item's file): delegates the actual
+   * validation — extension + max size against the media type's own source-field
+   * settings, image-type sniffing, pixel-bomb ceiling, and GD re-encoding — to
+   * the shared {@see \Drupal\aincient_core\File\ImageUploadValidator}, then
+   * reuses {@see self::saveImageBytes} to land the normalized bytes exactly like
+   * the AI-generation path does.
    */
   private function saveUploadedImage(UploadedFile $upload): FileInterface {
-    if (!$upload->isValid()) {
-      throw new \RuntimeException('The upload did not complete.');
-    }
     $settings = $this->sourceFieldSettings();
-    $extensions = preg_split('/\s+/', trim((string) ($settings['file_extensions'] ?? 'png gif jpg jpeg webp')));
-    $ext = strtolower((string) $upload->getClientOriginalExtension());
-    if ($ext === '' || !in_array($ext, $extensions, TRUE)) {
-      throw new \RuntimeException(sprintf('Unsupported file type ".%s" — allowed: %s.', $ext, implode(', ', $extensions)));
-    }
-    $maxBytes = $this->maxBytes($settings['max_filesize'] ?? NULL);
-    if ($maxBytes > 0 && $upload->getSize() > $maxBytes) {
-      throw new \RuntimeException('The file is larger than the allowed maximum.');
-    }
-
-    // Land the bytes in the media type's configured upload directory.
-    $directory = $this->uploadDirectory($settings);
-    $this->fileSystem->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
-    $basename = basename($upload->getClientOriginalName());
-    $destination = $this->fileSystem->createFilename($basename, $directory);
-    $uri = $this->fileSystem->move($upload->getRealPath(), $destination, FileExists::Rename);
-
-    $file = $this->entityTypeManager->getStorage('file')->create([
-      'uri' => $uri,
-      'status' => 1,
-    ]);
-    $file->save();
-    return $file;
+    $valid = $this->imageValidator->validate(
+      $upload,
+      (string) ($settings['file_extensions'] ?? 'png gif jpg jpeg webp'),
+      $settings['max_filesize'] ?? NULL,
+    );
+    $stem = pathinfo(basename($upload->getClientOriginalName()), PATHINFO_FILENAME);
+    return $this->saveImageBytes($valid->bytes, ($stem !== '' ? $stem : 'image') . '.' . $valid->extension);
   }
 
   /**
@@ -487,19 +473,6 @@ final class MediaRepository {
     }
     $dir = trim($dir, '/');
     return $scheme . '://' . ($dir !== '' ? $dir : 'media');
-  }
-
-  /**
-   * Resolve a field max-filesize setting (e.g. "8 MB", or '' for unlimited).
-   */
-  private function maxBytes(?string $setting): int {
-    if ($setting === NULL || trim($setting) === '') {
-      return 0;
-    }
-    // Drupal ships a Bytes helper; fall back to 0 (unlimited) if unavailable.
-    return class_exists('\Drupal\Component\Utility\Bytes')
-      ? (int) \Drupal\Component\Utility\Bytes::toNumber($setting)
-      : 0;
   }
 
 }

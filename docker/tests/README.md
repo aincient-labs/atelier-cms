@@ -68,6 +68,37 @@ E2E_BASE_IMAGE=aincient/cms:dev ./upgrade-floor-e2e.sh  # reuse a prebuilt image
 > The base image must carry the **current** `converge.sh` — a prebuilt image from before the
 > guards exists will pass scenario 3 and silently skip the refusals.
 
+## Integration — `published-hops-e2e.sh` (the incident, on REAL published images)
+
+The only suite that builds **nothing**. It pulls actual tags from GHCR, because what
+it tests is what the shipped artifacts do to each other's databases. Needs network;
+not part of the push gate. Run it when the converge branch logic changes, or before
+sending a recovery route to an affected user.
+
+Three scenarios, each on its **own volume set** — the withdrawn scenario 5 of
+`upgrade-floor-e2e.sh` failed precisely because it leaked `/shared` and `private`
+between scenarios:
+
+1. **`sha-ee6a1cf` → `v0.4.2`** — the defect, reproduced: `no site found → fresh
+   install`, database wiped, `converge.result=ok`. **Observational, never counted** —
+   `v0.4.2` is published and unchangeable. It is the *control*: if it ever stops
+   wiping, scenario 2 is refusing a state that was never dangerous.
+2. **`sha-ee6a1cf` → `v0.5.1`** — the fix refuses (`missing-code`), names the modules,
+   and leaves the marker row and all 111 tables untouched.
+3. **`sha-ee6a1cf` → `v0.2.0` → `v0.5.1`** — the recovery route. `v0.2.0` is the one
+   published release that still *ships* the fourteen modules while requiring none of
+   them and omitting all fourteen from `config/sync/core.extension.yml`, so the
+   database takes the **upgrade** branch and `config:import` performs the uninstalls.
+
+```bash
+./published-hops-e2e.sh                    # ~10 min; needs network + Docker
+HOP_NO_TEARDOWN=1 ./published-hops-e2e.sh  # leave the last stack up to inspect
+```
+
+> This is what finally covered `refuse_unbootable`'s sibling guard on a **real**
+> database. Background: DECISIONS 0348/0349/0353/0356,
+> `plans/converge-branch-guard.md`.
+
 ## CI
 
 `.github/workflows/ci.yml` runs all three suites as parallel jobs on push / PR to

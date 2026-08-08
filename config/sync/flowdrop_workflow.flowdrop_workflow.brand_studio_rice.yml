@@ -6,7 +6,9 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_brand_picker
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_preview_brand
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_propose_brand_status
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_propose_design_tokens
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_reset_preview
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_route_logo_image
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_conversation_append
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_conversation_read
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_invoke
@@ -65,7 +67,7 @@ nodes:
           previousNodeId: aincient_reason.1
     measured:
       width: 280
-      height: 762
+      height: 1002
   -
     id: boolean_gateway.1
     position:
@@ -103,7 +105,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 582
+      height: 642
   -
     id: chat_output.1
     position:
@@ -141,7 +143,7 @@ nodes:
           hiddenPorts: {  }
     measured:
       width: 280
-      height: 882
+      height: 942
   -
     id: aincient_flows_aincient_conversation_read.1
     position:
@@ -182,7 +184,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 882
+      height: 942
   -
     id: aincient_flows_aincient_conversation_append.3
     position:
@@ -203,7 +205,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 882
+      height: 942
   -
     id: flowdrop_node_processor_toolbox.1
     position:
@@ -329,6 +331,24 @@ nodes:
             supplied inputs rather than exploring; propose **polish** (optionally **locked**) when
             the brand is settling and only small, surgical tweaks remain. Give a short rationale,
             and don't propose every turn — only on a genuine shift, and never the current status.
+          - When the user ATTACHES a design/token FILE — its contents appear above this message as
+            fenced DATA labelled with the filename — and it carries concrete design-token values
+            (colours, fonts, radii, spacing…), call **propose_design_tokens** with what you read
+            from it: tokens_json = {token_name: css_value}, optional presets_json / fonts, and
+            source_filename = the file's name. It shows the user a "N tokens found" confirm card
+            with a Preview button — you apply NOTHING yourself, and the card has no publish button:
+            the user Previews it and then Publishes from the studio (the one global write). Do NOT
+            also delegate those same tokens to a specialist. Use this ONLY for an attached
+            token/brief FILE; for a conversational look request with no attached file, delegate to
+            the specialists as usual.
+          - When the operator ATTACHES an IMAGE — a logo, brand mark, wordmark, or favicon (its
+            description appears above as fenced DATA) — and wants it USED as the site logo/favicon,
+            you CANNOT place it: an image can't be set from chat, its bytes aren't kept, and you
+            have no tool that writes a logo/favicon image. Do NOT pretend you set it, and do NOT
+            treat the described picture as design tokens. Call **route_logo_image** (asset="logo",
+            or "favicon" when they meant the browser-tab icon) — it shows a card that opens
+            Identity → Logo where they drop the file into the picker. Then say, in one short line,
+            that images are placed there, not from chat.
 
           REJECTIONS — a specialist result may include a "rejected" list of changes that
           FAILED validation ({token, value, reason}). This is the ONE thing you must read in a
@@ -387,6 +407,12 @@ nodes:
         instanceTitle: 'Typography specialist'
         ask: ''
         maxRetries: 0
+        ports:
+          inputs: {  }
+          outputs:
+            -
+              id: tool
+              exposed: true
       metadata:
         node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography
       extensions:
@@ -407,6 +433,12 @@ nodes:
         instanceTitle: 'Colour specialist'
         ask: ''
         maxRetries: 0
+        ports:
+          inputs: {  }
+          outputs:
+            -
+              id: tool
+              exposed: true
       metadata:
         node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour
       extensions:
@@ -427,6 +459,12 @@ nodes:
         instanceTitle: 'Shape specialist'
         ask: ''
         maxRetries: 0
+        ports:
+          inputs: {  }
+          outputs:
+            -
+              id: tool
+              exposed: true
       metadata:
         node_type_id: flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape
       extensions:
@@ -484,6 +522,36 @@ nodes:
     measured:
       width: 280
       height: 382
+  -
+    id: aincient_flows_aincient_capability_propose_design_tokens.1
+    position:
+      x: -1480
+      'y': -320
+    data:
+      label: 'Capability: Propose design tokens'
+      config:
+        nodeType: tool
+        maxRetries: 0
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_propose_design_tokens
+    measured:
+      width: 280
+      height: 100
+  -
+    id: aincient_flows_aincient_capability_route_logo_image.1
+    position:
+      x: -1480
+      'y': -440
+    data:
+      label: 'Capability: Route logo image to Identity'
+      config:
+        nodeType: tool
+        maxRetries: 0
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_route_logo_image
+    measured:
+      width: 280
+      height: 100
 edges:
   -
     id: xy-edge__flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
@@ -1017,11 +1085,49 @@ edges:
       height: 14
       color: var(--fd-edge-loopback)
     class: flowdrop--edge--loopback
+  -
+    id: xy-edge__aincient_flows_aincient_capability_propose_design_tokens.1aincient_flows_aincient_capability_propose_design_tokens.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_propose_design_tokens.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_propose_design_tokens.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+  -
+    id: xy-edge__aincient_flows_aincient_capability_route_logo_image.1aincient_flows_aincient_capability_route_logo_image.1-output-tool-flowdrop_node_processor_toolbox.1flowdrop_node_processor_toolbox.1-input-tool
+    source: aincient_flows_aincient_capability_route_logo_image.1
+    target: flowdrop_node_processor_toolbox.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_route_logo_image.1-output-tool
+    targetHandle: flowdrop_node_processor_toolbox.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-07-21T17:18:01.769Z'
+  updatedAt: '2026-08-08T04:04:47.279Z'
 created: 1782316908
-changed: 1785014539
+changed: 1786161887
 uid: 1
 input_ports:
   -

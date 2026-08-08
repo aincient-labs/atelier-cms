@@ -22,7 +22,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 #[RunTestsInSeparateProcesses]
 final class PageRouteSubscriberTest extends KernelTestBase {
 
-  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_pages'];
+  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
 
   public function testSubscribesToAlterAfterDefaultPriority(): void {
     // Default RouteSubscriberBase priority is 0; we must run later (negative)

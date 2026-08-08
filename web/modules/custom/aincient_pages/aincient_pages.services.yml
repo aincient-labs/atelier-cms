@@ -50,7 +50,7 @@ services:
     arguments: ['@entity_type.manager', '@file_url_generator', '@entity.repository', '@?plugin.manager.rift_picture_view_modes', '@config.factory']
   aincient_pages.media:
     class: Drupal\aincient_pages\MediaRepository
-    arguments: ['@entity_type.manager', '@aincient_pages.embed_resolver', '@file_system', '@token', '@file_url_generator']
+    arguments: ['@entity_type.manager', '@aincient_pages.embed_resolver', '@file_system', '@token', '@file_url_generator', '@aincient_core.image_upload_validator']
   # The unified reference layer: a catalog over tagged per-type providers. One
   # SEARCH + one DESCRIBE for media / nodes / blocks (Users/Brand drop in as new
   # tagged providers). Backs the studio's ReferenceField and the agent find tool.

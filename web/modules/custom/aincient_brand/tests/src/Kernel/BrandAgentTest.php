@@ -125,6 +125,43 @@ final class BrandAgentTest extends KernelTestBase {
     $this->assertStringNotContainsString('__widget__', $out);
   }
 
+  /**
+   * An attached-logo turn routes to Identity → Logo — not a silent drop.
+   *
+   * The loud dead end (DECISIONS 0372, Phase 3): a chat turn cannot place an
+   * image as the logo, so the agent hands off with a `logo_handoff` card. The
+   * capability must PLACE nothing — reversible + internal, i.e. taint-safe.
+   */
+  public function testRouteLogoImageEmitsHandoffWidget(): void {
+    $out = $this->runCapability('aincient_brand:route_logo_image');
+    $envelope = json_decode($out, TRUE);
+    $this->assertIsArray($envelope);
+    $this->assertSame('logo_handoff', $envelope['__widget__']);
+    $this->assertNotEmpty($envelope['summary']);
+    // Defaults to the logo; the widget resolves the field anchor client-side.
+    $this->assertSame('logo', $envelope['payload']['asset']);
+    // It routes only — no apply/publish/media URL of any kind rides the payload.
+    $this->assertArrayNotHasKey('applyUrl', $envelope['payload']);
+    $this->assertArrayNotHasKey('media', $envelope['payload']);
+  }
+
+  public function testRouteLogoImageHonoursFaviconAsset(): void {
+    $out = $this->runCapability('aincient_brand:route_logo_image', ['asset' => 'FavIcon']);
+    $envelope = json_decode($out, TRUE);
+    $this->assertSame('logo_handoff', $envelope['__widget__']);
+    $this->assertSame('favicon', $envelope['payload']['asset']);
+    // Anything that isn't the favicon falls back to the logo.
+    $other = json_decode($this->runCapability('aincient_brand:route_logo_image', ['asset' => 'banner']), TRUE);
+    $this->assertSame('logo', $other['payload']['asset']);
+  }
+
+  public function testRouteLogoImageRefusesWithoutPermission(): void {
+    $this->setCurrentUser($this->createUser());
+    $out = $this->runCapability('aincient_brand:route_logo_image');
+    $this->assertStringStartsWith('Error:', $out);
+    $this->assertStringNotContainsString('__widget__', $out);
+  }
+
   public function testPreviewBrandEmitsCssVarEnvelopeAndPersistsNothing(): void {
     $before = $this->brand()->tokens();
     $out = $this->runCapability('aincient_brand:preview_brand', [
@@ -337,6 +374,47 @@ final class BrandAgentTest extends KernelTestBase {
   public function testProposeBrandStatusRefusesWithoutPermission(): void {
     $this->setCurrentUser($this->createUser());
     $out = $this->runCapability('aincient_brand:propose_brand_status', ['stage' => 'polish']);
+    $this->assertStringStartsWith('Error:', $out);
+    $this->assertStringNotContainsString('__widget__', $out);
+  }
+
+  public function testProposeDesignTokensEmitsAdmissionEnvelope(): void {
+    $before = $this->brand()->tokens();
+    $out = $this->runCapability('aincient_brand:propose_design_tokens', [
+      // One valid token + one bogus value + one unknown name.
+      'tokens_json' => json_encode([
+        'neutral_surface' => 'oklch(0.15 0.02 270)',
+        'brand_primary' => 'not-a-colour',
+        'no_such_token' => '#fff',
+      ]),
+      'fonts' => 'Poppins',
+      'source_filename' => 'design.md',
+    ]);
+    $envelope = json_decode($out, TRUE);
+    $this->assertIsArray($envelope);
+    $this->assertSame('design_token_admission', $envelope['__widget__']);
+    $payload = $envelope['payload'];
+
+    // css_var-keyed tokens drive the preview draft (there is no publish path on
+    // the card — the human Publishes from the studio, DECISIONS 0369).
+    $this->assertSame(['neutral-surface' => 'oklch(0.15 0.02 270)'], $payload['tokens']);
+    // Count = valid tokens + valid fonts (1 + 1).
+    $this->assertSame(2, $payload['count']);
+    $this->assertSame('Poppins', implode(',', $payload['fonts']));
+    // Invalid entries are named back, and the source file is carried for the card.
+    $this->assertContains('brand_primary', $payload['rejected']);
+    $this->assertContains('no_such_token', $payload['rejected']);
+    $this->assertSame('design.md', $payload['source_filename']);
+    $this->assertStringContainsString('token', $envelope['summary']);
+    // Proposal-only: persists NOTHING.
+    $this->assertSame($before, $this->brand()->tokens());
+  }
+
+  public function testProposeDesignTokensRefusesWithoutPermission(): void {
+    $this->setCurrentUser($this->createUser());
+    $out = $this->runCapability('aincient_brand:propose_design_tokens', [
+      'tokens_json' => json_encode(['neutral_surface' => 'oklch(0.15 0.02 270)']),
+    ]);
     $this->assertStringStartsWith('Error:', $out);
     $this->assertStringNotContainsString('__widget__', $out);
   }

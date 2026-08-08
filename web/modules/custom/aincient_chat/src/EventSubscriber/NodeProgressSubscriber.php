@@ -7,6 +7,7 @@ namespace Drupal\aincient_chat\EventSubscriber;
 use Drupal\aincient_chat\Chat\ProviderFailureSurface;
 use Drupal\aincient_chat\Chat\StreamRelay;
 use Drupal\aincient_chat\Event\ChatEvent;
+use Drupal\aincient_core\Inference\ProviderCall;
 use Drupal\aincient_core\Inference\ProviderFailureLog;
 use Drupal\aincient_core\InstallCapabilities;
 use Drupal\flowdrop_runtime\Event\JobCompletedEvent;
@@ -90,40 +91,33 @@ final class NodeProgressSubscriber implements EventSubscriberInterface {
       // tool node itself counts its own possible side effects.
       $this->toolRan = TRUE;
     }
+    // A PROVIDER fault is not a crash, and it should not read like one — the
+    // console renders it as a calm card with the one action its kind earns
+    // (atelier-cms#8). There are now two shapes it can arrive in:
+    //
+    // 1. STOP-AND-REPORTED (the agent path). Our own reason node catches the
+    //    failure and ends its step as a COMPLETED node carrying the structured
+    //    account on its `error_detail` output port — kind included, no string
+    //    round-trip. This is the primary path for every agent turn.
+    // 2. A FAILED node (one-shot callers — AiGateway, ChatCompleter — that do
+    //    not run through the reason node, and local misconfigurations). Here the
+    //    typed exception is gone by the time FlowDrop dispatches this event (it
+    //    keeps only the message string), so the kind travels beside it in the
+    //    request-scoped ProviderFailureLog, matched by the sentence. Deliberately
+    //    NOT parsed back out of the text: matching our own copy means one
+    //    rewording turns every failure into `unknown`.
+    $detail = $this->providerFailureDetail($job);
     $error = $job->getErrorMessage();
-    if ($error !== '') {
+    if ($detail !== NULL) {
+      $extra['error'] = (string) ($detail['message'] ?? '');
+      $this->applyFailureCard($extra, (string) ($detail['kind'] ?? ProviderCall::KIND_UNKNOWN));
+    }
+    elseif ($error !== '') {
       $extra['error'] = $error;
-      // A PROVIDER fault is not a crash, and it should not read like one. When
-      // this node's error is the sentence a provider failure raised, replace the
-      // engine's "Node execution failed for <node>: …" wrapper with that sentence
-      // and add the machine-readable kind, so the console can render a calm card
-      // with the one action that kind actually earns (atelier-cms#8).
-      //
-      // The kind cannot ride the exception here — FlowDrop keeps only the string
-      // (see ProviderFailureLog) — and it is deliberately not parsed back out of
-      // the text: matching our own copy means one rewording turns every failure
-      // into `unknown`.
       $failure = $this->failures->matching($error);
       if ($failure !== NULL) {
         $extra['error'] = $failure->getMessage();
-        $extra['error_kind'] = $failure->getKind();
-        $action = ProviderFailureSurface::action(
-          $failure->getKind(),
-          static fn(): string => InstallCapabilities::setupUrl(),
-        );
-        if ($action !== NULL) {
-          $extra['error_action'] = $action;
-        }
-        // Whether the reader may re-send this turn, decided server-side from the
-        // kind AND from whether anything already took effect. The console renders
-        // what it is granted and never derives this for itself.
-        if (ProviderFailureSurface::retry($failure->getKind(), $this->toolRan)) {
-          $extra['error_retry'] = TRUE;
-        }
-        $note = ProviderFailureSurface::note($failure->getKind(), $this->toolRan);
-        if ($note !== NULL) {
-          $extra['error_note'] = $note;
-        }
+        $this->applyFailureCard($extra, $failure->getKind());
       }
     }
 
@@ -133,6 +127,62 @@ final class NodeProgressSubscriber implements EventSubscriberInterface {
       $job->getStatus(),
       $extra,
     ));
+  }
+
+  /**
+   * The structured failure a stop-and-reported node carried, if any.
+   *
+   * Our reason node ends a provider failure as a COMPLETED node whose
+   * `error_detail` output port carries the struct
+   * ({@see \Drupal\aincient_core\Exception\AiProviderFailure::toDetail()}); every
+   * other node leaves it NULL (or absent). Reading it here is what lets the card
+   * be driven by the machine-readable `kind` with no exception and no string
+   * match — the deterministic path.
+   *
+   * @param \Drupal\flowdrop_job\FlowDropJobInterface $job
+   *   The completed job.
+   *
+   * @return array<string, mixed>|null
+   *   The `{kind, provider, model, message, retryable}` struct, or NULL when
+   *   this node did not stop-and-report a provider failure.
+   */
+  private function providerFailureDetail($job): ?array {
+    $detail = $job->getOutputData()['error_detail'] ?? NULL;
+    return is_array($detail) && $detail !== [] ? $detail : NULL;
+  }
+
+  /**
+   * Decorate the node frame with the calm card a provider `kind` earns.
+   *
+   * The single place both failure shapes (the stop-and-reported struct and the
+   * FAILED-job fallback) turn a kind into the console's card grant — the action,
+   * whether the reader may re-send, and the note — so the two paths cannot drift
+   * into rendering the same fault two different ways.
+   *
+   * @param array<string, mixed> $extra
+   *   The node frame's extra payload, decorated in place.
+   * @param string $kind
+   *   The provider failure kind, one of {@see ProviderCall}'s `KIND_*`.
+   */
+  private function applyFailureCard(array &$extra, string $kind): void {
+    $extra['error_kind'] = $kind;
+    $action = ProviderFailureSurface::action(
+      $kind,
+      static fn(): string => InstallCapabilities::setupUrl(),
+    );
+    if ($action !== NULL) {
+      $extra['error_action'] = $action;
+    }
+    // Whether the reader may re-send this turn, decided server-side from the kind
+    // AND from whether anything already took effect. The console renders what it
+    // is granted and never derives this for itself.
+    if (ProviderFailureSurface::retry($kind, $this->toolRan)) {
+      $extra['error_retry'] = TRUE;
+    }
+    $note = ProviderFailureSurface::note($kind, $this->toolRan);
+    if ($note !== NULL) {
+      $extra['error_note'] = $note;
+    }
   }
 
 }

@@ -11,7 +11,6 @@ use Drupal\aincient_core\Usage\UsageRecorder;
 use Drupal\flowdrop\DTO\Reason\ModelChoices;
 use Drupal\flowdrop\DTO\Reason\ReasonRequest;
 use Drupal\flowdrop\DTO\Reason\ReasonResult;
-use Drupal\flowdrop\Service\Reasoning\ChatReasonerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
@@ -37,7 +36,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  * upstream fault here is wrapped in {@see AiProviderFailure} with the provider
  * and model named, so the console can render something a person can act on.
  */
-final class SymfonyAiReasoner implements ChatReasonerInterface {
+final class SymfonyAiReasoner implements AincientReasonerInterface {
 
   /**
    * Output discipline, appended to the system prompt of every TOOL-AWARE turn.
@@ -95,6 +94,10 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
     private readonly UsageRecorder $usage,
     private readonly LoggerInterface $logger,
     private readonly ProviderCall $providerCall,
+    // Trust-the-wire tool-call recovery: when the config-selected bridge parsed
+    // no tool call but the raw body carries one (a lying BYOK gateway), re-read
+    // it from the shape it really is. Only consulted on the no-tool-calls path.
+    private readonly ToolCallCodec $codec,
     // Announces that a call is going out, so the console can say so while it is
     // in flight ({@see InferenceStartedEvent} for why nobody else can tell it).
     // OPTIONAL on purpose: this class is constructed directly in unit tests and
@@ -105,8 +108,22 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
 
   /**
    * {@inheritdoc}
+   *
+   * The narrow engine contract: the same inference `reasonRich()` runs,
+   * projected down to FlowDrop's four-field DTO. Everything that speaks only
+   * `ChatReasonerInterface` — the engine's own reason node — is served here
+   * unchanged; only Atelier's own node calls `reasonRich()` for the raw body,
+   * codec and structured error the wider result carries.
    */
   public function reason(ReasonRequest $request): ReasonResult {
+    $rich = $this->reasonRich($request);
+    return new ReasonResult($rich->getText(), $rich->getToolCalls());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function reasonRich(ReasonRequest $request): AincientReasonResult {
     // Resolution order (explicit provider:model → the node's AIncient role → the
     // `task` tier) lives in ModelTargetResolver because the brand specialists'
     // simple-chat node stores the identical two fields and must resolve them the
@@ -198,7 +215,73 @@ final class SymfonyAiReasoner implements ChatReasonerInterface {
     // carries the full account of that outage; it lives there rather than here
     // because an image turn hits the identical trap.
     [$text, $toolCalls] = $this->unpacker->textAndToolCalls($result);
-    return new ReasonResult($text, $toolCalls);
+
+    // The un-parsed wire body, carried through on `raw_result` for any surface
+    // that wants to inspect the actual response. Capturing it must never fail a
+    // turn ({@see self::rawBody()} swallows to []).
+    $raw = $this->rawBody($result);
+
+    // TRUST THE WIRE. The bridge that parsed $toolCalls above was chosen by the
+    // CONFIGURED provider id, which a BYOK gateway lies about — so when that
+    // parse found NO tool call, the answer may not be tool-less at all: the
+    // gateway may have returned a call in a shape (or under a finish_reason) the
+    // config bridge does not read and silently dropped. Re-read the raw body as
+    // the dialect it actually is. This runs ONLY on the suspected-mismatch path
+    // (no tool calls parsed): a clean parse short-circuits it, so the happy path
+    // pays nothing but a single array check. `codec` records the detected
+    // dialect so the recovery is visible; it stays '' on the happy path, meaning
+    // "the config-trusted parse held". A false positive is not possible — detect
+    // returns '' unless the raw body genuinely carries tool-call markers the
+    // parse missed.
+    $codec = '';
+    if ($toolCalls === []) {
+      $detected = $this->codec->detect($raw);
+      if ($detected !== '') {
+        $recovered = $this->codec->decode($raw, $detected);
+        if ($recovered !== []) {
+          $toolCalls = $recovered;
+          $codec = $detected;
+          $this->logger->warning('Recovered @n tool call(s) the @provider/@model bridge dropped, re-read from the wire as @codec.', [
+            '@n' => count($recovered),
+            '@provider' => $providerId,
+            '@model' => $modelId,
+            '@codec' => $detected,
+          ]);
+        }
+      }
+    }
+
+    return new AincientReasonResult($text, $toolCalls, $raw, $codec);
+  }
+
+  /**
+   * The provider's un-parsed response body, or `[]` if it cannot be read.
+   *
+   * `DeferredResult::getResult()` guarantees the raw result is populated, so on
+   * the success path this is present — but this runs on every turn and its only
+   * consumer is an optional recovery path, so any shape the bridge does not
+   * expose as an array is swallowed to `[]` rather than allowed to turn a good
+   * answer into an error.
+   *
+   * @param mixed $result
+   *   Whatever the provider call returned (a symfony/ai ResultInterface).
+   *
+   * @return array<string, mixed>
+   *   The decoded wire body, or `[]`.
+   */
+  private function rawBody(mixed $result): array {
+    if (!is_object($result) || !method_exists($result, 'getRawResult')) {
+      return [];
+    }
+    try {
+      $raw = $result->getRawResult();
+      $data = $raw?->getData();
+      return is_array($data) ? $data : [];
+    }
+    catch (\Throwable $e) {
+      $this->logger->warning('Could not capture the raw provider body: @m', ['@m' => $e->getMessage()]);
+      return [];
+    }
   }
 
   /**

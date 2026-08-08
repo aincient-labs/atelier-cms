@@ -11,20 +11,27 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * Pins the shipped `reason` wrapper's two load-bearing config choices.
+ * Pins the shipped reason node's (and wrapper's) load-bearing config choices.
  *
- * The wrapper is the one place an agent step is authored, so both of the
- * choices this test guards are choices about EVERY agent:
+ * Every agent places the `aincient_reason` node directly, so the choices this
+ * test guards are choices about EVERY agent. (The `reason` wrapper workflow also
+ * exists and is pinned here, but the STOP-AND-REPORT recovery is no longer
+ * authored inside it — it lives in the node's own PHP, {@see
+ * \Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\AincientReason}, which
+ * catches a provider failure and ends the step on its `error_detail` output. The
+ * wrapper's per-tier contract stays guarded for any placement that still uses
+ * it.)
  *
  * 1. THE ERROR PORT IS EXPOSED. A provider that says "come back later" is not
- *    the same failure as a bug, and the recovery for it is semantic — authored
- *    per agent, visible in the editor. FlowDrop injects a reserved `error`
- *    output port on every executable node but ships it HIDDEN, so the seam
- *    exists and nobody can see it. `reserved_port_exposure['error'] = TRUE`
- *    reveals it. That flag is UI-facing, which is exactly why a YAML assertion
- *    would prove nothing: this test drives the real NodeMetadataResolver
- *    through NodesController and reads the built port list the canvas gets.
- *    (Mirrors upstream's ErrorPortInjectionTest.)
+ *    the same failure as a bug. The node handles the common case in PHP
+ *    (stop-and-report), but the reserved `error` output port stays exposed so an
+ *    agent can still author an OPTIONAL semantic recovery step of its own around
+ *    it, visible in the editor. FlowDrop injects that port on every executable
+ *    node but ships it HIDDEN, so the seam exists and nobody can see it.
+ *    `reserved_port_exposure['error'] = TRUE` reveals it. That flag is UI-facing,
+ *    which is exactly why a YAML assertion would prove nothing: this test drives
+ *    the real NodeMetadataResolver through NodesController and reads the built
+ *    port list the canvas gets. (Mirrors upstream's ErrorPortInjectionTest.)
  *
  * 2. THE TIER IS ONE CONFIGURABLE PARAM, NOT THREE WORKFLOWS. `reason`, `task`
  *    and `fast` were byte-identical but for `operation_type`. Three copies of
@@ -56,9 +63,9 @@ final class ReasonWrapperContractTest extends KernelTestBase {
   /**
    * The node types whose error port must be revealed, and why each one is.
    *
-   * The inner one so the retry path can be authored INSIDE the wrapper, once,
-   * for every agent that places it; the wrapper's own so an agent can still
-   * add a recovery step of its own around the whole step.
+   * The node itself so an agent can author an optional semantic recovery around
+   * the step the node already stop-and-reports in PHP; the wrapper's own so a
+   * placement that still uses the wrapper keeps the same seam.
    */
   private const ERROR_PORT_NODE_TYPES = [
     'aincient_reason',
@@ -147,6 +154,40 @@ final class ReasonWrapperContractTest extends KernelTestBase {
       $this->assertArrayNotHasKey('exposedByDefault', $errorPorts[0],
         "$nodeTypeId: the error port is still hidden, so no author can wire a "
         . 'recovery path to it. Set reserved_port_exposure.error = true.');
+    }
+  }
+
+  /**
+   * The reason node is OURS — our executor, and it emits the three extra ports.
+   *
+   * Owning the node (ADR 0365) is what lets the structured error contract and
+   * the trust-the-wire codec ship with no upstream FlowDrop change: our
+   * processor returns `raw_result`, `codec` and `error_detail`, none of which
+   * the engine's four-field `ReasonResult` DTO could carry. Two ways this
+   * silently regresses — the executor gets repointed back at the engine plugin,
+   * or one of the three ports loses its `exposed: true` and stops rendering on
+   * the canvas (so no author can wire it) — and this pins both from the shipped
+   * config. (The processor actually EMITTING the three is pinned separately by
+   * the unit AincientReasonTest; a canvas port needs both the config exposure
+   * asserted here AND the processor's output schema, and the executor plugin
+   * that carries that schema is not constructable under this test's minimal
+   * module set — which is exactly why builtOutputPortsFor swaps in a nop.)
+   */
+  public function testOwnedReasonNodeExecutorAndExtraPorts(): void {
+    $nodeType = $this->shipped('flowdrop_node_type.flowdrop_node_type.aincient_reason');
+    $this->assertSame(
+      'aincient_flows:aincient_reason',
+      $nodeType['executor_plugin'] ?? NULL,
+      'The reason node must run our own processor, not the engine plugin — the '
+      . 'richer result contract lives there (ADR 0365).',
+    );
+
+    foreach (['raw_result', 'codec', 'error_detail'] as $extra) {
+      $this->assertTrue(
+        ($nodeType['outputs'][$extra]['exposed'] ?? FALSE) === TRUE,
+        "aincient_reason must declare the '$extra' output exposed, or the codec / "
+        . 'structured-error wiring has no canvas seam to read.',
+      );
     }
   }
 

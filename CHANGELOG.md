@@ -7,6 +7,27 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.6.0] — 2026-08-08
+
+- **Attach images to a chat, and the assistant can see them.** Drop an image into the
+  composer and the assistant works from what is actually in the picture instead of a
+  description of it. Uploads are checked and stored privately to your own site.
+- **Turn a design file into brand tokens.** Attach a design document (Markdown or plain
+  text) and the assistant reads it, then proposes matching brand tokens you can preview in
+  the Design system studio. Nothing touches your brand until you publish it yourself.
+- **Hand the assistant a brief.** Attach a brief and the assistant applies what it
+  describes — while treating any instructions written inside the file as content to work
+  from, never as commands to obey.
+- **Globals, reorganized into three clearer studios.** The single Globals area is now
+  Identity (logo, colours, type), Navigation & Pages, and Settings (email, consent), so
+  each thing you manage has an obvious home.
+- **Clearer provider errors, and threads that stop getting stuck.** When an AI provider
+  fails mid-turn, the chat now shows a plain card explaining what happened instead of
+  stalling, and interrupted sessions recover on their own far sooner.
+- **A roomier chat composer.** The message box keeps its full width on its own row, with a
+  dedicated control for attaching images.
+- **Security updates.** Refreshed bundled libraries with their latest fixes.
+
 ## [0.5.1] — 2026-08-07
 
 - **Fixed: the appliance can no longer reinstall itself over your site.** When a site could not

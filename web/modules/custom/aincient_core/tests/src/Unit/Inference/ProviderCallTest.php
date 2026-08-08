@@ -14,6 +14,7 @@ use Symfony\AI\Platform\Exception\AuthenticationException;
 use Symfony\AI\Platform\Exception\BadRequestException;
 use Symfony\AI\Platform\Exception\ContentFilterException;
 use Symfony\AI\Platform\Exception\ExceedContextSizeException;
+use Symfony\AI\Platform\Exception\MalformedToolCallException;
 use Symfony\AI\Platform\Exception\MaxOutputTokensException;
 use Symfony\AI\Platform\Exception\ModelNotFoundException;
 use Symfony\AI\Platform\Exception\RateLimitExceededException;
@@ -239,6 +240,11 @@ final class ProviderCallTest extends UnitTestCase {
       ProviderCall::KIND_REJECTED,
       'fault on our side',
     ];
+    yield 'malformed tool call' => [
+      new MalformedToolCallException('could not decode tool arguments'),
+      ProviderCall::KIND_TOOL_MALFORMED,
+      'could not read',
+    ];
     yield 'something else entirely' => [
       new \RuntimeException('who knows'),
       ProviderCall::KIND_UNKNOWN,
@@ -370,6 +376,66 @@ final class ProviderCallTest extends UnitTestCase {
       'plain',
       $this->providerCall()->run(fn (): string => 'plain', 'ollama', 'llama3', 'step'),
     );
+  }
+
+  /**
+   * The raised failure carries the structured account a branch reads.
+   *
+   * `toDetail()` is the shape our reason node emits on `error_detail` and the
+   * console card is driven from. A transient fault (a rate limit that outlived
+   * its retries) names its provider and model and is marked `retryable` — the
+   * same predicate the loop trusted to retry it — so a surface can offer "try
+   * again" from the struct rather than re-deriving it from the sentence.
+   */
+  public function testTransientFailureCarriesRetryableDetail(): void {
+    try {
+      $this->providerCall()->run(
+        function () {
+          throw new RateLimitExceededException(NULL, 'quota exhausted');
+        },
+        'openai',
+        'gpt-5',
+        'step',
+      );
+      $this->fail('Expected an AiProviderFailure.');
+    }
+    catch (AiProviderFailure $e) {
+      $detail = $e->toDetail();
+      $this->assertSame(ProviderCall::KIND_RATE_LIMIT, $detail['kind']);
+      $this->assertSame('openai', $detail['provider']);
+      $this->assertSame('gpt-5', $detail['model']);
+      $this->assertSame($e->getMessage(), $detail['message']);
+      $this->assertTrue($detail['retryable'], 'A rate limit is transient in nature.');
+    }
+  }
+
+  /**
+   * A hard fault is marked NOT retryable — trying again cannot clear it.
+   *
+   * `retryable` is about the fault, not attempts left: a rejected key fails on
+   * the first answer and stays false, so a surface does not offer a pointless
+   * retry. The truncation path (`too_long`) is the same judgement from the other
+   * throw site — a truncated turn is deterministic, so it is not retryable.
+   */
+  public function testHardFaultDetailIsNotRetryable(): void {
+    try {
+      $this->providerCall()->run(
+        function () {
+          throw new AuthenticationException('Missing Authentication header');
+        },
+        'anthropic',
+        'claude-sonnet-5',
+        'step',
+      );
+      $this->fail('Expected an AiProviderFailure.');
+    }
+    catch (AiProviderFailure $e) {
+      $detail = $e->toDetail();
+      $this->assertSame(ProviderCall::KIND_AUTH, $detail['kind']);
+      $this->assertSame('anthropic', $detail['provider']);
+      $this->assertSame('claude-sonnet-5', $detail['model']);
+      $this->assertFalse($detail['retryable'], 'A rejected key is not cleared by retrying.');
+    }
   }
 
   /**

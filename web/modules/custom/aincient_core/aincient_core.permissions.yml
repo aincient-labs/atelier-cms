@@ -18,3 +18,7 @@
   title: 'View the Atelier AI usage report'
   description: 'See what AI calls this site has made and what they cost, broken down by call site, model and editor — and export the same rows. Reveals what every editor has been doing with the assistant.'
   restrict access: true
+
+'administer aincient context store':
+  title: 'Administer the private context store'
+  restrict access: true

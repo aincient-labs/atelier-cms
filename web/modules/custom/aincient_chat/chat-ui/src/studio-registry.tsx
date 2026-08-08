@@ -1,8 +1,9 @@
 import type { ComponentType, SVGProps } from "react";
-import { PaletteIcon, DocumentIcon, ChatBubbleIcon, LayoutIcon, LibraryIcon, ShieldCheckIcon } from "./icons";
-import { BrandStudio } from "./brand-studio";
+import { PaletteIcon, DocumentIcon, ChatBubbleIcon, LayoutIcon, LibraryIcon, ShieldCheckIcon, WrenchIcon } from "./icons";
+import { IdentityStudio } from "./brand-studio";
 import { BrandPreview } from "./brand-preview";
 import { GlobalsStudio } from "./globals-studio";
+import { SettingsStudio } from "./settings-studio";
 import { GlobalsPreview } from "./globals-preview";
 import { PageStudio } from "./page-studio";
 import { PagePreview } from "./page-preview";
@@ -53,8 +54,19 @@ export type StudioDef = {
 
 export const STUDIO_REGISTRY: Record<StudioKey, StudioDef> = {
   general: { name: "General", Icon: ChatBubbleIcon },
-  design_system: { name: "Design System", Icon: PaletteIcon, Studio: BrandStudio, Preview: BrandPreview },
-  globals: { name: "Globals", Icon: LayoutIcon, Studio: GlobalsStudio, Preview: GlobalsPreview },
+  // Identity — the whole brand: design tokens + name/tagline/voice/imagery +
+  // the WHOLE logo (image · size · position) + favicon + footer note. Keeps the
+  // stable `design_system` machine id (DECISIONS 0372); its Publish is compound
+  // (brand/save tokens + chrome/save identity slice). Preview is the token
+  // showcase (BrandPreview); the identity fields publish as drafts too.
+  design_system: { name: "Identity", Icon: PaletteIcon, Studio: IdentityStudio, Preview: BrandPreview },
+  // Navigation & Pages — main + footer menus, front/404/403 routing, and the
+  // header/footer arrangement knobs. Keeps the stable `globals` machine id; the
+  // identity half moved to Identity, email + privacy to Settings.
+  globals: { name: "Navigation & Pages", Icon: LayoutIcon, Studio: GlobalsStudio, Preview: GlobalsPreview },
+  // Settings — site email + privacy/consent (font delivery). A NEW editor-only
+  // studio (DECISIONS 0372); persists through the shared chrome endpoints.
+  settings: { name: "Settings", Icon: WrenchIcon, Studio: SettingsStudio, Preview: GlobalsPreview },
   // The site OUTPUT surface — a visitor-facing page. Display name is "Pages"
   // (the IA's Tier-1 daily peer); the enum key + URL slug stay `content`.
   content: { name: "Pages", Icon: DocumentIcon, Studio: PageStudio, Preview: PagePreview },

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Unit\Inference;
 
+use Drupal\aincient_core\Inference\AincientReasonResult;
 use Drupal\aincient_core\Inference\Adapter\AnthropicAdapter;
 use Drupal\aincient_core\Inference\Adapter\GeminiAdapter;
 use Drupal\aincient_core\Inference\MessageMapper;
@@ -13,6 +14,7 @@ use Drupal\aincient_core\Inference\ProviderAdapterInterface;
 use Drupal\aincient_core\Inference\ProviderCall;
 use Drupal\aincient_core\Inference\ResultUnpacker;
 use Drupal\aincient_core\Inference\SymfonyAiReasoner;
+use Drupal\aincient_core\Inference\ToolCallCodec;
 use Drupal\aincient_core\Inference\ToolSchema;
 use Drupal\aincient_core\ModelRoleResolver;
 use Drupal\flowdrop\DTO\Reason\ReasonMessage;
@@ -53,6 +55,7 @@ use Symfony\AI\Platform\Result\ToolCallResult;
  */
 #[CoversClass(SymfonyAiReasoner::class)]
 #[CoversClass(ResultUnpacker::class)]
+#[CoversClass(ToolCallCodec::class)]
 final class SymfonyAiReasonerTest extends TestCase {
 
   use UnmeteredInferenceTrait;
@@ -92,6 +95,17 @@ final class SymfonyAiReasonerTest extends TestCase {
        */
       public array|string|object|null $input = NULL;
 
+      /**
+       * The raw wire body the DeferredResult should carry.
+       *
+       * The trust-the-wire recovery reads this, not the converted result: a
+       * lying gateway is precisely a mismatch between the two, so the tests that
+       * pin recovery set a raw body whose tool call the converted result omits.
+       *
+       * @var array<string, mixed>
+       */
+      public array $rawData = [];
+
       public function invoke(string|Model $model, array|string|object $input, array $options = []): DeferredResult {
         $this->model = $model;
         $this->input = $input;
@@ -99,7 +113,7 @@ final class SymfonyAiReasonerTest extends TestCase {
 
         return new DeferredResult(
           new PlainConverter($this->result ?? new TextResult('done')),
-          new InMemoryRawResult(),
+          new InMemoryRawResult($this->rawData),
         );
       }
 
@@ -455,17 +469,188 @@ final class SymfonyAiReasonerTest extends TestCase {
   }
 
   /**
+   * A tool call the config bridge dropped is recovered from the raw wire.
+   *
+   * THE PHASE 4 OUTAGE. The OpenAI-compatible bridge only reads
+   * `message.tool_calls` when `finish_reason === 'tool_calls'`; a BYOK gateway
+   * that returns a tool call under `finish_reason: stop` therefore has the whole
+   * call discarded by the bridge — no exception, a plain-looking text answer,
+   * and the agent never acts. The converted result here is exactly that
+   * (TextResult, no calls); the raw body still carries the call, and trust-the-
+   * wire recovery must re-read it. The preamble text must survive alongside it —
+   * dropping it would be the DECISIONS 0278/0279 empty-message mode again.
+   */
+  public function testDroppedOpenAiToolCallIsRecoveredFromTheWire(): void {
+    $rich = $this->reasonRich(
+      $this->request(temperature: 0.0),
+      new TextResult('Let me look that up.'),
+      [
+        'choices' => [
+          [
+            'finish_reason' => 'stop',
+            'message' => [
+              'role' => 'assistant',
+              'content' => 'Let me look that up.',
+              'tool_calls' => [
+                [
+                  'id' => 'call_9',
+                  'type' => 'function',
+                  'function' => [
+                    'name' => 'aincient_list_pages',
+                    'arguments' => '{"limit": 5}',
+                  ],
+                ],
+              ],
+            ],
+          ],
+        ],
+      ],
+    );
+
+    self::assertSame('Let me look that up.', $rich->getText(), 'The preamble must survive the recovery.');
+    self::assertTrue($rich->hasToolCalls(), 'The dropped tool call must be recovered.');
+    self::assertCount(1, $rich->getToolCalls());
+    self::assertSame('aincient_list_pages', $rich->getToolCalls()[0]['name']);
+    self::assertSame(['limit' => 5], $rich->getToolCalls()[0]['args']);
+    self::assertSame('call_9', $rich->getToolCalls()[0]['tool_call_id']);
+    self::assertSame(ToolCallCodec::OPENAI, $rich->getCodec(), 'The detected dialect is recorded on the result.');
+  }
+
+  /**
+   * A gateway lying about which PROVIDER answered is still recovered.
+   *
+   * The config names an Anthropic model, but the gateway fell back and answered
+   * in Gemini's shape — a body the Anthropic bridge cannot read (it would find
+   * no `content` blocks). Detection is by the SHAPE of the wire, never the
+   * configured id, so the `functionCall` part is found and decoded regardless of
+   * what the request was labelled.
+   */
+  public function testCrossDialectFallbackIsRecoveredByShape(): void {
+    $rich = $this->reasonRich(
+      $this->request(temperature: 0.0),
+      new TextResult(''),
+      [
+        'candidates' => [
+          [
+            'content' => [
+              'parts' => [
+                ['functionCall' => ['name' => 'aincient_preview_page', 'args' => ['id' => 7]]],
+              ],
+            ],
+            'finishReason' => 'STOP',
+          ],
+        ],
+      ],
+    );
+
+    self::assertTrue($rich->hasToolCalls());
+    self::assertSame('aincient_preview_page', $rich->getToolCalls()[0]['name']);
+    self::assertSame(['id' => 7], $rich->getToolCalls()[0]['args']);
+    self::assertNotSame('', $rich->getToolCalls()[0]['tool_call_id'], 'A synthesised id keeps the call pairable.');
+    self::assertSame(ToolCallCodec::GEMINI, $rich->getCodec());
+  }
+
+  /**
+   * A clean parse short-circuits detection — the happy path pays nothing.
+   *
+   * When the config bridge already produced a tool call, the raw body is never
+   * fingerprinted (there is nothing to recover), so `codec` stays '' meaning
+   * "the config-trusted parse held". The stray raw body here would decode to a
+   * DIFFERENT call if detection ran; that it does not proves the short-circuit.
+   */
+  public function testCleanParseLeavesCodecUnsetAndDoesNotRedecode(): void {
+    $rich = $this->reasonRich(
+      $this->request(temperature: 0.0),
+      new ToolCallResult([new ToolCall('toolu_clean', 'aincient_list_pages', ['limit' => 1])]),
+      [
+        'choices' => [
+          [
+            'finish_reason' => 'stop',
+            'message' => [
+              'tool_calls' => [
+            ['id' => 'ghost', 'type' => 'function', 'function' => ['name' => 'should_not_appear', 'arguments' => '{}']],
+              ],
+            ],
+          ],
+        ],
+      ],
+    );
+
+    self::assertCount(1, $rich->getToolCalls());
+    self::assertSame('aincient_list_pages', $rich->getToolCalls()[0]['name'], 'The clean parse must win — no re-decode.');
+    self::assertSame('', $rich->getCodec(), 'A clean parse leaves the codec unset.');
+  }
+
+  /**
+   * A genuine text answer recovers nothing and leaves the codec unset.
+   *
+   * The false-positive guard: detection must fire ONLY on a real dropped call.
+   * A tool-less answer whose raw body carries no tool-call markers must pass
+   * through untouched — inventing a call here would be worse than the bug.
+   */
+  public function testGenuineTextAnswerRecoversNothing(): void {
+    $rich = $this->reasonRich(
+      $this->request(temperature: 0.0),
+      new TextResult('Your site has three pages.'),
+      [
+        'choices' => [
+          ['finish_reason' => 'stop', 'message' => ['role' => 'assistant', 'content' => 'Your site has three pages.']],
+        ],
+      ],
+    );
+
+    self::assertSame('Your site has three pages.', $rich->getText());
+    self::assertFalse($rich->hasToolCalls());
+    self::assertSame('', $rich->getCodec());
+  }
+
+  /**
    * Runs one turn through a reasoner wired to the recording platform.
    *
    * @param \Drupal\flowdrop\DTO\Reason\ReasonRequest $request
    *   The request to run.
    * @param \Symfony\AI\Platform\Result\ResultInterface|null $result
    *   The result the platform should yield, or NULL for the default TextResult.
+   * @param \Drupal\aincient_core\Inference\ProviderAdapterInterface|null $adapter
+   *   The adapter under test, or NULL for the real Anthropic one.
    *
    * @return \Drupal\flowdrop\DTO\Reason\ReasonResult
    *   What the reasoner made of it.
    */
   private function reason(ReasonRequest $request, ?ResultInterface $result = NULL, ?ProviderAdapterInterface $adapter = NULL): ReasonResult {
+    return $this->reasonerFor($result, $adapter)->reason($request);
+  }
+
+  /**
+   * Runs one turn through the richer contract, for the codec-recovery cases.
+   *
+   * @param \Drupal\flowdrop\DTO\Reason\ReasonRequest $request
+   *   The request to run.
+   * @param \Symfony\AI\Platform\Result\ResultInterface|null $result
+   *   The CONVERTED result the config-selected bridge produced.
+   * @param array<string, mixed> $rawData
+   *   The raw wire body the DeferredResult carries — where recovery reads from.
+   *
+   * @return \Drupal\aincient_core\Inference\AincientReasonResult
+   *   The full account, including the detected codec.
+   */
+  private function reasonRich(ReasonRequest $request, ?ResultInterface $result = NULL, array $rawData = []): AincientReasonResult {
+    $this->platform->rawData = $rawData;
+    return $this->reasonerFor($result)->reasonRich($request);
+  }
+
+  /**
+   * Builds a reasoner wired to the recording platform, over real collaborators.
+   *
+   * @param \Symfony\AI\Platform\Result\ResultInterface|null $result
+   *   The result the platform should yield, or NULL for the default TextResult.
+   * @param \Drupal\aincient_core\Inference\ProviderAdapterInterface|null $adapter
+   *   The adapter under test, or NULL for the real Anthropic one.
+   *
+   * @return \Drupal\aincient_core\Inference\SymfonyAiReasoner
+   *   The reasoner.
+   */
+  private function reasonerFor(?ResultInterface $result = NULL, ?ProviderAdapterInterface $adapter = NULL): SymfonyAiReasoner {
     $this->platform->result = $result;
 
     $registry = $this->createMock(PlatformRegistryInterface::class);
@@ -477,7 +662,7 @@ final class SymfonyAiReasonerTest extends TestCase {
       $adapter ?? (new \ReflectionClass(AnthropicAdapter::class))->newInstanceWithoutConstructor()
     );
 
-    $reasoner = new SymfonyAiReasoner(
+    return new SymfonyAiReasoner(
       $registry,
       // The real target resolver over a ModelRoleResolver built without its
       // constructor: role resolution must not be consulted here — every request
@@ -493,9 +678,10 @@ final class SymfonyAiReasonerTest extends TestCase {
       new NullLogger(),
       // Sleepless — see AiGatewayTest for why.
       new ProviderCall(new NullLogger(), sleepBetweenAttempts: FALSE),
+      // The real codec, because trust-the-wire recovery is exactly what several
+      // cases below pin — a stub would pin nothing.
+      new ToolCallCodec(),
     );
-
-    return $reasoner->reason($request);
   }
 
   /**
@@ -508,6 +694,7 @@ final class SymfonyAiReasonerTest extends TestCase {
    * @param array<int, array<string, mixed>> $tools
    *   Tool definitions the model may call.
    */
+
   /**
    * The system prompt that actually reached the platform.
    *

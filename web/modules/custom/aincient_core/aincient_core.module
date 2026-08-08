@@ -198,3 +198,57 @@ function aincient_core_preprocess_top_bar_page_actions(array &$variables): void 
     },
   );
 }
+
+/**
+ * Implements hook_file_download().
+ *
+ * The single owner-scoped chokepoint for the private context store. Drupal's
+ * private delivery denies by default; this is the only place that grants, and
+ * only to the entry's owner (or a store administrator). Everything under our
+ * directory that isn't a live ledger file — an orphan, someone else's
+ * attachment — is denied. The context store is a private, forensic scratchpad
+ * (DECISIONS 0347/0350/0359): a thumbnail must never be cached by a proxy in
+ * front of the appliance, hence Cache-Control: private, no-store.
+ *
+ * @see \Drupal\aincient_core\Context\ContextStore
+ */
+function aincient_core_file_download($uri) {
+  // Not ours — let default-deny / other modules decide.
+  if (!is_string($uri) || !str_starts_with($uri, 'private://atelier-context/')) {
+    return NULL;
+  }
+
+  $entry = \Drupal::service('aincient_core.context_store')->entryForUri($uri);
+  // An orphan under our directory is not servable.
+  if ($entry === NULL) {
+    return -1;
+  }
+
+  $account = \Drupal::currentUser();
+  $isOwner = (int) $entry->getOwnerId() === (int) $account->id();
+  if (!$isOwner && !$account->hasPermission('administer aincient context store')) {
+    return -1;
+  }
+
+  /** @var \Drupal\file\FileInterface|null $file */
+  $file = $entry->get('file')->entity;
+  $filemime = ($file && $file->getFileUri() === $uri)
+    ? $file->getMimeType()
+    : NULL;
+  if ($filemime === NULL || $filemime === '') {
+    // The derivative is always WebP; fall back to that.
+    $filemime = 'image/webp';
+  }
+
+  $size = @filesize($uri);
+
+  $headers = [
+    'Content-Type' => $filemime,
+    // Never let a caching proxy hold a private thumbnail.
+    'Cache-Control' => 'private, no-store',
+  ];
+  if ($size !== FALSE) {
+    $headers['Content-Length'] = (string) $size;
+  }
+  return $headers;
+}

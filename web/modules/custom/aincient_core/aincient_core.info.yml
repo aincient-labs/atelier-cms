@@ -13,3 +13,10 @@ core_version_requirement: ^11
 # AincientCoreServiceProvider binds `flowdrop.chat_reasoner` to our reasoner: the
 # bind is guarded by hasDefinition(), so aincient_core stays installable (and
 # unit-testable) without it. In the distribution it is always present.
+# `file` IS a hard dependency, unlike the above: the private context store's
+# ledger entity (ContextLedgerEntry) references File entities, so the module is
+# not installable without it, and token/pathauto walk its fields on any node
+# save. It is a core module (always present via media) — this only makes the
+# real coupling explicit so the installer enables it and tests resolve it.
+dependencies:
+  - drupal:file

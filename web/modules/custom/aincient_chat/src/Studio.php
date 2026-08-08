@@ -49,6 +49,15 @@ enum Studio: string {
   case Globals = 'globals';
 
   /**
+   * The Settings studio: site-wide operator settings that belong to neither the
+   * brand IDENTITY nor the NAVIGATION surface — site email + privacy/consent
+   * (font delivery). An EDITOR-ONLY studio like Globals (no chat agent); it
+   * persists through the shared chrome endpoints (the `mail` + `font_delivery`
+   * slices). Split out of the old Globals studio (DECISIONS 0372).
+   */
+  case Settings = 'settings';
+
+  /**
    * The Content studio: the live page composer + preview split-pane (pages,
    * and later structured content). (Was "Page".)
    */
@@ -95,8 +104,12 @@ enum Studio: string {
   public function label(): string {
     return match ($this) {
       self::General => 'General',
-      self::DesignSystem => 'Design System',
-      self::Globals => 'Globals',
+      // The front-end registry owns the console display names; these admin
+      // labels track them so the permissions page reads the same (DECISIONS
+      // 0372 split Globals → Identity · Navigation & Pages · Settings).
+      self::DesignSystem => 'Identity',
+      self::Globals => 'Navigation & Pages',
+      self::Settings => 'Settings',
       self::Content => 'Content',
       self::Library => 'Library',
       self::Media => 'Media',

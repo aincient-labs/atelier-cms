@@ -134,6 +134,11 @@ services:
     class: Drupal\aincient_core\Inference\ToolSchema
   aincient_core.inference.message_mapper:
     class: Drupal\aincient_core\Inference\MessageMapper
+  # Trust-the-wire tool-call recovery. Dependency-free (like the two above): it
+  # only reads a raw body the reasoner already holds, so a lying BYOK gateway's
+  # dropped tool call is re-read from the shape it really is. See the class.
+  aincient_core.inference.tool_call_codec:
+    class: Drupal\aincient_core\Inference\ToolCallCodec
   # The one reader of symfony/ai's result union, shared by the reasoner (text +
   # tool calls) and the gateway (text, and an image's bytes). One class because
   # two half-readers of that union is how a successful turn reached the screen as
@@ -307,6 +312,7 @@ services:
       - '@aincient_core.usage_recorder'
       - '@logger.channel.aincient_core'
       - '@aincient_core.inference.provider_call'
+      - '@aincient_core.inference.tool_call_codec'
       # Announces InferenceStartedEvent: the agent's reasoning call is the
       # longest wait in a turn and the only one that can report it starting.
       - '@event_dispatcher'
@@ -406,3 +412,24 @@ services:
     arguments:
       - '@aincient_core.recommendation_source'
       - '@config.factory'
+  # The single image-upload gate every console upload path shares — see the
+  # class docblock for why a second, drifted copy is exactly the bug this
+  # replaces.
+  aincient_core.image_upload_validator:
+    class: Drupal\aincient_core\File\ImageUploadValidator
+
+  aincient_core.document_upload_validator:
+    class: Drupal\aincient_core\File\DocumentUploadValidator
+
+  # The private, forensic context store: an operator's chat-turn image and
+  # text-document attachments land here (ledger row + one normalized
+  # derivative), never in the media library and never publicly reachable
+  # (DECISIONS 0347/0350/0359).
+  aincient_core.context_store:
+    class: Drupal\aincient_core\Context\ContextStore
+    arguments:
+      - '@entity_type.manager'
+      - '@file_system'
+      - '@aincient_core.image_upload_validator'
+      - '@aincient_core.document_upload_validator'
+      - '@logger.channel.aincient_core'

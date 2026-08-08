@@ -1,0 +1,5 @@
+# Schema for the configuration files of the Atelier theme.
+
+aincient_theme.settings:
+  type: theme_settings
+  label: 'Atelier theme settings'

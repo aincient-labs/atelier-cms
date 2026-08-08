@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_chat\Kernel;
 
 use Drupal\aincient_chat\Controller\AccountController;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
@@ -38,6 +41,7 @@ final class AccountControllerTest extends KernelTestBase {
     'text',
     'node',
     'file',
+    'image',
     'key',
     'aincient_core',
     'workflows',
@@ -54,9 +58,36 @@ final class AccountControllerTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('user_role');
     $this->installEntitySchema('file');
+    // The saved-file path in saveAvatarFile() creates a File entity, whose
+    // save() unconditionally checks file_usage — needed even though no
+    // upload path here actually registers usage.
+    $this->installSchema('file', ['file_usage']);
     // The earned display name lives in user.data (study 02, Plate 15).
     $this->installSchema('user', ['users_data']);
     $this->installConfig(['user']);
+    // The avatar upload endpoint targets the standard profile's `user_picture`
+    // image field, which a bare kernel install doesn't ship — install it the
+    // same way profiles/standard/config/install does (field.storage +
+    // field.field), so `$account->hasField('user_picture')` is true.
+    FieldStorageConfig::create([
+      'field_name' => 'user_picture',
+      'entity_type' => 'user',
+      'type' => 'image',
+      'settings' => ['uri_scheme' => 'public'],
+    ])->save();
+    FieldConfig::create([
+      'field_name' => 'user_picture',
+      'entity_type' => 'user',
+      'bundle' => 'user',
+      'label' => 'Picture',
+      'settings' => [
+        'file_directory' => 'pictures',
+        'file_extensions' => 'png gif jpg jpeg webp',
+        'max_filesize' => '',
+        'max_resolution' => '',
+        'min_resolution' => '',
+      ],
+    ])->save();
     // Burn uid 1: the first user is the permission-bypassing superuser, which
     // would make every hasPermission() true and mask the current-password gate.
     // Subsequent createUser() calls then mint ordinary users.
@@ -221,6 +252,107 @@ final class AccountControllerTest extends KernelTestBase {
     $this->assertSame(200, $status);
     $this->assertTrue($body['ok']);
     $this->assertSame('nick@shield.example.com', $this->reloadUser((int) $admin->id())->getEmail());
+  }
+
+  /**
+   * A valid image upload succeeds and is re-encoded through GD: a `.jpeg`
+   * source lands as a canonical `.jpg` on disk (proves re-encoding ran, not
+   * a byte-for-byte copy of the upload).
+   */
+  public function testAvatarUploadSucceedsAndReencodes(): void {
+    // 'access content' is what EntityReferenceSupportsValidReferencesConstraint
+    // needs to view the newly-saved public file when validating the
+    // user_picture reference — not a real product requirement, just what the
+    // public file-access handler checks.
+    $account = $this->createUser(['access content'], 'ripley', FALSE);
+    $this->setCurrentUser($account);
+
+    $path = $this->createTempImage('jpeg');
+    $upload = new UploadedFile($path, 'me.jpeg', 'image/jpeg', NULL, TRUE);
+    $request = new Request([], [], [], [], ['file' => $upload]);
+
+    $response = $this->controller()->uploadAvatar($request);
+    $body = json_decode($response->getContent(), TRUE);
+
+    $this->assertSame(200, $response->getStatusCode());
+    $this->assertTrue($body['ok']);
+    $this->assertNotEmpty($body['avatarUrl']);
+
+    $reloaded = $this->reloadUser((int) $account->id());
+    $file = \Drupal\file\Entity\File::load($reloaded->get('user_picture')->target_id);
+    $this->assertNotNull($file, 'The uploaded avatar was saved as a managed file.');
+    $this->assertSame('jpg', pathinfo($file->getFileUri(), PATHINFO_EXTENSION), 'A .jpeg source is re-encoded to the canonical .jpg extension.');
+
+    unlink($path);
+  }
+
+  /**
+   * A non-image upload is rejected with a per-field 422, never stored.
+   */
+  public function testAvatarUploadRejectsNonImage(): void {
+    $account = $this->createUser([], 'weyland', FALSE);
+    $this->setCurrentUser($account);
+
+    $path = $this->fileSystemTempFile('png');
+    file_put_contents($path, 'this is not an image');
+    $upload = new UploadedFile($path, 'fake.png', 'image/png', NULL, TRUE);
+    $request = new Request([], [], [], [], ['file' => $upload]);
+
+    $response = $this->controller()->uploadAvatar($request);
+    $body = json_decode($response->getContent(), TRUE);
+
+    $this->assertSame(422, $response->getStatusCode());
+    $this->assertArrayHasKey('avatar', $body['errors']);
+    $this->assertNotEmpty($body['errors']['avatar']);
+
+    $reloaded = $this->reloadUser((int) $account->id());
+    $this->assertTrue($reloaded->get('user_picture')->isEmpty(), 'A rejected upload never lands on the account.');
+
+    unlink($path);
+  }
+
+  /**
+   * No multipart `file` at all is a 400, not a validator error.
+   */
+  public function testAvatarUploadMissingFileIs400(): void {
+    $account = $this->createUser([], 'bishop', FALSE);
+    $this->setCurrentUser($account);
+
+    $response = $this->controller()->uploadAvatar(new Request());
+
+    $this->assertSame(400, $response->getStatusCode());
+  }
+
+  /**
+   * A site with no `user_picture` field on the account is a 404, not a crash.
+   */
+  public function testAvatarUploadNoFieldIs404(): void {
+    FieldConfig::loadByName('user', 'user', 'user_picture')->delete();
+
+    $account = $this->createUser([], 'hicks', FALSE);
+    $this->setCurrentUser($account);
+
+    $response = $this->controller()->uploadAvatar(new Request());
+
+    $this->assertSame(404, $response->getStatusCode());
+  }
+
+  /**
+   * Builds a real, valid image on disk via GD and returns its path.
+   */
+  private function createTempImage(string $format): string {
+    $path = $this->fileSystemTempFile($format);
+    $im = imagecreatetruecolor(16, 16);
+    imagejpeg($im, $path);
+    imagedestroy($im);
+    return $path;
+  }
+
+  /**
+   * A throwaway temp file path with the given extension.
+   */
+  private function fileSystemTempFile(string $extension): string {
+    return sys_get_temp_dir() . '/' . uniqid('avatar-test-', TRUE) . '.' . $extension;
   }
 
   /**

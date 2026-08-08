@@ -10,6 +10,7 @@ use Symfony\AI\Platform\Exception\AuthenticationException;
 use Symfony\AI\Platform\Exception\BadRequestException;
 use Symfony\AI\Platform\Exception\ContentFilterException;
 use Symfony\AI\Platform\Exception\ExceedContextSizeException;
+use Symfony\AI\Platform\Exception\MalformedToolCallException;
 use Symfony\AI\Platform\Exception\MaxOutputTokensException;
 use Symfony\AI\Platform\Exception\ModelNotFoundException;
 use Symfony\AI\Platform\Exception\RateLimitExceededException;
@@ -96,6 +97,7 @@ final class ProviderCall {
   public const KIND_TOO_LONG = 'too_long';
   public const KIND_REFUSED = 'refused';
   public const KIND_REJECTED = 'rejected';
+  public const KIND_TOOL_MALFORMED = 'tool_malformed';
   public const KIND_UNKNOWN = 'unknown';
 
   /**
@@ -181,6 +183,8 @@ final class ProviderCall {
           $this->describe($e, $providerId, $modelId, $what, $attempt),
           $e,
           $this->kind($e),
+          $providerId,
+          $modelId,
         );
       }
 
@@ -256,6 +260,8 @@ final class ProviderCall {
       $this->describe($truncation, $providerId, $modelId, $what, $attempts),
       $truncation,
       self::KIND_TOO_LONG,
+      $providerId,
+      $modelId,
     );
   }
 
@@ -265,10 +271,36 @@ final class ProviderCall {
    * The ONE place a failure is constructed, so the recording cannot be forgotten
    * on one of the two throw paths — which is exactly the kind of omission that
    * would leave a truncated turn rendering as a red node while an auth failure
-   * rendered as a card.
+   * rendered as a card. It is also the one place that knows every field of the
+   * structured account ({@see AiProviderFailure::toDetail()}): the classified
+   * kind, the provider and model, and — from {@see self::isTransient()}, the
+   * same predicate the retry loop trusts — whether the fault was transient.
+   *
+   * @param string $message
+   *   The already-classified sentence for the reader.
+   * @param \Throwable $previous
+   *   The provider's own exception, always — also what `retryable` reads.
+   * @param string $kind
+   *   One of the `KIND_*` constants.
+   * @param string $provider
+   *   The provider that failed.
+   * @param string $model
+   *   The model being called.
    */
-  private function raise(string $message, \Throwable $previous, string $kind): AiProviderFailure {
-    $failure = new AiProviderFailure($message, 0, $previous, $kind);
+  private function raise(string $message, \Throwable $previous, string $kind, string $provider, string $model): AiProviderFailure {
+    $failure = new AiProviderFailure(
+      $message,
+      0,
+      $previous,
+      $kind,
+      $provider,
+      $model,
+      // The struct's `retryable` is about the FAULT's nature, decided by the
+      // same predicate the loop used to retry it — not about attempts left (by
+      // here they are spent) nor about whether the reader may re-send (that
+      // also weighs side effects, and lives in ProviderFailureSurface).
+      $this->isTransient($previous),
+    );
     $this->failures?->record($failure);
 
     return $failure;
@@ -331,6 +363,7 @@ final class ProviderCall {
       $e instanceof ModelNotFoundException => self::KIND_MODEL_MISSING,
       $e instanceof ExceedContextSizeException, $e instanceof MaxOutputTokensException => self::KIND_TOO_LONG,
       $e instanceof ContentFilterException => self::KIND_REFUSED,
+      $e instanceof MalformedToolCallException => self::KIND_TOOL_MALFORMED,
       $e instanceof BadRequestException => self::KIND_REJECTED,
       default => self::KIND_UNKNOWN,
     };
@@ -389,6 +422,11 @@ final class ProviderCall {
       self::KIND_REJECTED => sprintf(
         '%s would not accept the request Atelier sent for "%s". This is a fault on our side, not yours — the details are in the log.',
         ucfirst($providerId),
+        $modelId,
+      ),
+
+      self::KIND_TOOL_MALFORMED => sprintf(
+        '"%s" returned a tool call Atelier could not read — its arguments came back malformed. That is the model, not your site; try again, or use a more capable model for this role.',
         $modelId,
       ),
 

@@ -24,7 +24,7 @@ final class SiteDestinationsTest extends KernelTestBase {
     'link',
     'menu_link_content',
     'node',
-    'workflows', 'content_moderation', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
   ];
 
   protected function setUp(): void {

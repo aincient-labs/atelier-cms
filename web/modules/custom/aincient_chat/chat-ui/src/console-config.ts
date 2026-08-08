@@ -17,7 +17,7 @@
  * depend on it without a cycle. Keep it dependency-free.
  */
 
-type UrlSettings = { basePath?: string; apiBase?: string; technicalDetail?: boolean };
+type UrlSettings = { basePath?: string; apiBase?: string; technicalDetail?: boolean; chatReach?: string[] };
 
 function urlSettings(): UrlSettings {
   const w = window as unknown as {
@@ -61,6 +61,31 @@ export function apiBase(): string {
  */
 export function technicalDetail(): boolean {
   return urlSettings().technicalDetail === true;
+}
+
+/**
+ * The set of studio fields the chat agent can actually WRITE, as namespaced keys
+ * ("identity.name", "chrome.header.logo_size", …). Injected by the shell
+ * (ConsoleController::chatReach) and DERIVED there from the very whitelists the
+ * preview tools enforce (SiteIdentity::GUIDELINE_KEYS + footer_note,
+ * ChromeRepository::REGISTRY) — so the console's hands-on marker can never drift
+ * from what the agent does. The frontend keeps NO reachable list of its own; it
+ * only reads this. Empty in a dev harness with no injected settings — which
+ * safely marks every human-only field as hands-on (see {@link isChatReachable}).
+ */
+export function chatReach(): string[] {
+  const r = urlSettings().chatReach;
+  return Array.isArray(r) ? r : [];
+}
+
+/**
+ * Whether the agent can reach a given studio field key (see {@link chatReach}).
+ * A field NOT in the set is human-only → it earns the "set directly" marker. When
+ * a field later becomes chat-reachable, the backend adds its key here and the
+ * marker disappears for free — no frontend change (DECISIONS 0372).
+ */
+export function isChatReachable(key: string): boolean {
+  return chatReach().includes(key);
 }
 
 /**

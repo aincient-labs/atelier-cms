@@ -127,6 +127,8 @@ final class ConsoleCapabilityCatalogTest extends KernelTestBase {
       $this->container->get('aincient_core.install_capabilities'),
       $this->container->get('aincient_chat.viewer_card'),
       $this->container->get('csrf_token'),
+      $this->container->get('aincient_core.model_role_resolver'),
+      $this->container->get('aincient_core.inference.registry'),
     );
   }
 

@@ -11,9 +11,9 @@ use Drupal\aincient_core\Inference\ProviderCall;
 /**
  * Tests the kind → surface decision for a provider failure.
  *
- * The reason the eight kinds exist: an expired key is a thirty-second fix, a 429
- * is somebody else's minute. Every kind is pinned here, including the six that
- * offer NOTHING — "no affordance" is a decision, and an accidental link on
+ * The reason the nine kinds exist: an expired key is a thirty-second fix, a 429
+ * is somebody else's minute. Every kind is pinned here, including the seven that
+ * offer no link — "no affordance" is a decision, and an accidental link on
  * `rate_limit` would tell a reader they misconfigured a provider that is fine.
  *
  * @coversDefaultClass \Drupal\aincient_chat\Chat\ProviderFailureSurface
@@ -57,6 +57,10 @@ final class ProviderFailureSurfaceTest extends UnitTestCase {
       // The provider made a decision. Repeating it is noise.
       'refused is a sentence alone' => [ProviderCall::KIND_REFUSED, NULL, FALSE],
       'rejected is a sentence alone' => [ProviderCall::KIND_REJECTED, NULL, FALSE],
+      // A garbled tool call is stochastic: the identical request may come back
+      // well-formed, so the reader may re-send. No link — the honest fix ("a
+      // more capable model") is guidance, not a one-click action.
+      'tool_malformed may be re-sent' => [ProviderCall::KIND_TOOL_MALFORMED, NULL, TRUE],
     ];
   }
 
@@ -128,7 +132,7 @@ final class ProviderFailureSurfaceTest extends UnitTestCase {
   }
 
   /**
-   * All eight kinds are covered — a ninth kind must fail this test, not slip
+   * All nine kinds are covered — a tenth kind must fail this test, not slip
    * through as "sentence only" nobody chose.
    *
    * @covers ::action

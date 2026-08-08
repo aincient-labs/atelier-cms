@@ -16,7 +16,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 #[RunTestsInSeparateProcesses]
 final class BrandRepositoryTest extends KernelTestBase {
 
-  protected static $modules = ['system', 'workflows', 'content_moderation', 'aincient_pages'];
+  protected static $modules = ['system', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
 
   protected function setUp(): void {
     parent::setUp();

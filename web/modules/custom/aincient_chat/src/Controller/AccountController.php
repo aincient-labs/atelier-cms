@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_chat\Controller;
 
 use Drupal\aincient_chat\Account\ViewerCard;
-use Drupal\Component\Utility\Bytes;
+use Drupal\aincient_core\File\ImageUploadValidator;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Datetime\TimeZoneFormHelper;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -14,8 +14,10 @@ use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Password\PasswordInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Utility\Token;
+use Drupal\file\FileInterface;
 use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
@@ -50,6 +52,7 @@ final class AccountController implements ContainerInjectionInterface {
     private readonly FileSystemInterface $fileSystem,
     private readonly Token $token,
     private readonly ViewerCard $viewerCard,
+    private readonly ImageUploadValidator $imageValidator,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -60,6 +63,7 @@ final class AccountController implements ContainerInjectionInterface {
       $container->get('file_system'),
       $container->get('token'),
       $container->get('aincient_chat.viewer_card'),
+      $container->get('aincient_core.image_upload_validator'),
     );
   }
 
@@ -259,34 +263,28 @@ final class AccountController implements ContainerInjectionInterface {
   }
 
   /**
-   * Validates + persists an uploaded avatar, mirroring MediaRepository's manual
-   * approach (extension + size against the field settings, land in the field's
-   * configured directory). Returns the saved File entity.
+   * Validates + persists an uploaded avatar.
+   *
+   * Validation, the pixel-bomb guard and re-encoding all live in the shared
+   * `ImageUploadValidator` (one gate for every console upload path); this
+   * method only lands the returned, already-re-encoded bytes in the
+   * `user_picture` field's configured directory. Returns the saved File
+   * entity.
    */
-  private function saveAvatarFile(UserInterface $account, $upload) {
-    if (!$upload->isValid()) {
-      throw new \RuntimeException('The upload did not complete.');
-    }
+  private function saveAvatarFile(UserInterface $account, UploadedFile $upload): FileInterface {
     $settings = $account->get('user_picture')->getSettings();
-    $extensions = preg_split('/\s+/', trim((string) ($settings['file_extensions'] ?? 'png gif jpg jpeg webp')));
-    $ext = strtolower((string) $upload->getClientOriginalExtension());
-    if ($ext === '' || !in_array($ext, $extensions, TRUE)) {
-      throw new \RuntimeException(sprintf('Unsupported file type “.%s” — allowed: %s.', $ext, implode(', ', $extensions)));
-    }
-    $maxBytes = $this->maxBytes($settings['max_filesize'] ?? NULL);
-    if ($maxBytes > 0 && $upload->getSize() > $maxBytes) {
-      throw new \RuntimeException('The image is larger than the allowed maximum.');
-    }
-    if (@getimagesize($upload->getRealPath()) === FALSE) {
-      throw new \RuntimeException('That file is not a valid image.');
-    }
+    $valid = $this->imageValidator->validate(
+      $upload,
+      (string) ($settings['file_extensions'] ?? 'png gif jpg jpeg webp'),
+      $settings['max_filesize'] ?? NULL,
+    );
 
     $scheme = (string) ($settings['uri_scheme'] ?? 'public');
     $directory = $scheme . '://' . $this->token->replace((string) ($settings['file_directory'] ?? ''));
     $this->fileSystem->prepareDirectory($directory, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
-    $basename = basename($upload->getClientOriginalName());
-    $destination = $this->fileSystem->createFilename($basename, $directory);
-    $uri = $this->fileSystem->move($upload->getRealPath(), $destination, FileExists::Rename);
+    $stem = pathinfo(basename($upload->getClientOriginalName()), PATHINFO_FILENAME);
+    $destination = $this->fileSystem->createFilename(($stem !== '' ? $stem : 'avatar') . '.' . $valid->extension, $directory);
+    $uri = $this->fileSystem->saveData($valid->bytes, $destination, FileExists::Rename);
 
     $file = $this->entityTypeManager->getStorage('file')->create([
       'uri' => $uri,
@@ -294,16 +292,6 @@ final class AccountController implements ContainerInjectionInterface {
     ]);
     $file->save();
     return $file;
-  }
-
-  /**
-   * A field's `max_filesize` setting ("2 MB", "500 KB", …) in bytes; 0 if unset.
-   */
-  private function maxBytes(?string $setting): int {
-    if ($setting === NULL || trim($setting) === '') {
-      return 0;
-    }
-    return (int) Bytes::toNumber($setting);
   }
 
   /**

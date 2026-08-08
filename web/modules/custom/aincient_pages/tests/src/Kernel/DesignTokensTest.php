@@ -16,7 +16,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 #[RunTestsInSeparateProcesses]
 final class DesignTokensTest extends KernelTestBase {
 
-  protected static $modules = ['system', 'workflows', 'content_moderation', 'aincient_pages'];
+  protected static $modules = ['system', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
 
   private function tokens(): DesignTokens {
     return $this->container->get('aincient_pages.design_tokens');

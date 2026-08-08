@@ -65,6 +65,7 @@ export function ReferenceField({
   createLabel = "New",
   dirty = false,
   revert,
+  adornment,
   compact = false,
   hideLabel = false,
 }: {
@@ -88,6 +89,8 @@ export function ReferenceField({
   dirty?: boolean;
   /** The pre-built per-field revert marker, shown beside the label when dirty. */
   revert?: ReactNode;
+  /** A static badge shown beside the label (e.g. the hands-on marker). */
+  adornment?: ReactNode;
   /** Drop the raw-token chip / manual-entry row — for narrow hosts (e.g. the
    *  menu-editor rail) where the token is noise and would collapse to "e…". */
   compact?: boolean;
@@ -162,6 +165,7 @@ export function ReferenceField({
     <div className="ain-field ain-media" data-dirty={dirty || undefined} title={meaning}>
       {!hideLabel && (
         <span className="ain-field__label">
+          {adornment}
           <span className="ain-field__labeltext">{label}</span>
           {revert}
         </span>

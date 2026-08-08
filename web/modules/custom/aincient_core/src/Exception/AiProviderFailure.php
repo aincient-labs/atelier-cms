@@ -45,12 +45,29 @@ final class AiProviderFailure extends \Exception {
    *   from the reader; this is the machine-readable half of telling them apart
    *   (atelier-cms#8). Defaults to `unknown` for the call sites that raise this
    *   without going through {@see \Drupal\aincient_core\Inference\ProviderCall}.
+   * @param string $provider
+   *   The provider whose call this failure belongs to, or '' when the raising
+   *   site did not name one. Part of the structured account a downstream branch
+   *   reads off {@see self::toDetail()} instead of re-deriving.
+   * @param string $model
+   *   The model being called, or '' when unnamed. See `$provider`.
+   * @param bool $retryable
+   *   Whether the underlying fault is transient in nature — a rate limit, a 5xx
+   *   or a transport blip that a later attempt might clear — as opposed to a
+   *   hard fault (a rejected key, a missing model, a malformed tool call) where
+   *   retrying only spends time. The machine-readable half of "try again" versus
+   *   "fix something first"; distinct from whether the READER may re-send a turn
+   *   ({@see \Drupal\aincient_chat\Chat\ProviderFailureSurface}), which also
+   *   weighs whether the turn already took effect.
    */
   public function __construct(
     string $message,
     int $code = 0,
     ?\Throwable $previous = NULL,
     private readonly string $kind = ProviderCall::KIND_UNKNOWN,
+    private readonly string $provider = '',
+    private readonly string $model = '',
+    private readonly bool $retryable = FALSE,
   ) {
     parent::__construct($message, $code, $previous);
   }
@@ -63,6 +80,30 @@ final class AiProviderFailure extends \Exception {
    */
   public function getKind(): string {
     return $this->kind;
+  }
+
+  /**
+   * The structured account of this failure, for a downstream branch to read.
+   *
+   * The shape our own reason node emits on its `error_detail` output port and
+   * the shape the console card is driven from — `kind` selects the action,
+   * `provider`/`model` name what failed, `message` is the already-classified
+   * sentence (never the upstream's raw text), and `retryable` says whether a
+   * later attempt might clear it. Assembled here, in one place, so both the
+   * in-graph consumer and the request-scoped {@see ProviderFailureLog} read an
+   * identical struct rather than each re-deriving fields from the message.
+   *
+   * @return array{kind: string, provider: string, model: string, message: string, retryable: bool}
+   *   The structured failure.
+   */
+  public function toDetail(): array {
+    return [
+      'kind' => $this->kind,
+      'provider' => $this->provider,
+      'model' => $this->model,
+      'message' => $this->getMessage(),
+      'retryable' => $this->retryable,
+    ];
   }
 
 }

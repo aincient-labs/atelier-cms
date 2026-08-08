@@ -198,6 +198,20 @@ aincient_chat.thread_archive:
   options:
     _auth: ['cookie', 'basic_auth']
 
+# Ingest one composer image attachment into the private context store. A
+# multipart POST, so _disable_route_normalizer keeps a redirect module from
+# 301-ing it and dropping the body (same reasoning as account_save / page_save).
+aincient_chat.context_attach:
+  path: '/atelier/chat/thread/{thread_id}/attach'
+  defaults:
+    _controller: 'Drupal\aincient_chat\Controller\ContextController::attach'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient operator console'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
 aincient_chat.thread_lock:
   path: '/atelier/chat/thread/{thread_id}/lock'
   defaults:

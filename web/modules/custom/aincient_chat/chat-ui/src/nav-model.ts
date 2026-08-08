@@ -68,7 +68,7 @@ const NAV_MODEL: NavTierRef[] = [
         id: "site_information",
         name: "Site",
         Icon: WrenchIcon,
-        children: ["design_system", "globals"],
+        children: ["design_system", "globals", "settings"],
       },
     ],
   },

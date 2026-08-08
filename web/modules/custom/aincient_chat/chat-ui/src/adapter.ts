@@ -6,6 +6,7 @@ import { takeStagedInterruptAnswer } from "./interrupt-state";
 import { getBrandOverrides, getPendingFonts } from "./brand-state";
 import { getPageDraft, getPageLang, getPageMode, getPageNode } from "./page-state";
 import { getMediaDetail } from "./media-state";
+import { clearAttachments, getAttachments } from "./attachment-state";
 import { getChromeDraft } from "./globals-state";
 import { rememberThreadActivity, rememberThreadTitle } from "./thread-meta";
 import { rememberThreadWorkingNode, threadWorkingNode } from "./thread-working-node";
@@ -101,6 +102,14 @@ export type AincientSettings = {
    * Injected server-side by aincient_onboarding (hook_aincient_console_settings_alter).
    */
   onboarding?: OnboardingSettings;
+  /**
+   * Human-readable name of the provider an attached image is sent to (e.g.
+   * "Anthropic"), so the composer consent line can name it instead of the generic
+   * "your connected AI provider". Server-resolved from the VISION role (where the
+   * image bytes go — the pre-describe seam). Null/absent ⇒ nothing resolvable, and
+   * the consent line stays generic. A consent affordance, not a security control.
+   */
+  provider?: string | null;
 };
 
 /** An AI provider (or key group) offered in the wizard's multi-connect picker. */
@@ -841,6 +850,10 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
     const workingNode = homingNode
       ? { nid: homingNode, ...(getPageLang() ? { langcode: getPageLang() } : {}) }
       : undefined;
+    // Image attachments staged in the composer — folded into the turn as
+    // `context:<id>` refs the backend pre-describes. One-shot per turn (cleared
+    // below after dispatch); only on the normal send path, never on interrupt-resume.
+    const refs = getAttachments().map((a) => a.ref);
 
     const res = await fetch(
       stagedAnswer
@@ -864,6 +877,7 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
                 ...(mediaContext ? { media_context: mediaContext } : {}),
                 ...(siteContext ? { site_context: true } : {}),
                 ...(workingNode ? { working_node: workingNode } : {}),
+                ...(refs.length ? { context_refs: refs } : {}),
               },
         ),
         signal: abortSignal,
@@ -875,6 +889,9 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
     // /threads refresh; the listing's server truth overwrites it later.
     if (!stagedAnswer) {
       rememberThreadActivity(threadId, Math.floor(Date.now() / 1000));
+      // Attachments are one-shot per turn: the refs are in the body now, so
+      // clear the staging store before the next message.
+      clearAttachments();
     }
     // First message of a new thread pins its flow — record it right away so
     // the speaker caption and the top-bar picker reflect it without waiting

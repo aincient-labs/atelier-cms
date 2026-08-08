@@ -128,3 +128,15 @@ services:
       - '@aincient_chat.router'
       - '@aincient_chat.flow_dispatcher'
       - '@logger.channel.aincient_chat'
+
+  # The vision seam: turns `context:<id>` image attachments into fenced,
+  # pre-described text injected into the user turn (DECISIONS 0347). Uses the
+  # independently-bindable vision role via the gateway and degrades gracefully —
+  # a bad/foreign/undescribable ref becomes "as if no attachment".
+  aincient_chat.attachment_turn_preparer:
+    class: Drupal\aincient_chat\Chat\AttachmentTurnPreparer
+    arguments:
+      - '@entity_type.manager'
+      - '@aincient_core.inference.gateway'
+      - '@file_system'
+      - '@logger.channel.aincient_chat'

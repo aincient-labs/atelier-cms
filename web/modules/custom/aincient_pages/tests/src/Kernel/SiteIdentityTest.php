@@ -25,7 +25,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 final class SiteIdentityTest extends KernelTestBase {
 
   protected static $modules = [
-    'system', 'field', 'text', 'file', 'image', 'media', 'user', 'workflows', 'content_moderation', 'aincient_pages',
+    'system', 'field', 'text', 'file', 'image', 'media', 'user', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
   ];
 
   protected function setUp(): void {

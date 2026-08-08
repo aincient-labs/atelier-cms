@@ -25,7 +25,7 @@ final class SiteInformationOverrideTest extends KernelTestBase {
 
   protected static $modules = [
     'system', 'field', 'text', 'file', 'image', 'media', 'user', 'node',
-    'workflows', 'content_moderation', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
   ];
 
   /** The shipped system.site baseline the overrides layer onto. */

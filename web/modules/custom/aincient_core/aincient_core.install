@@ -558,3 +558,18 @@ function aincient_core_update_11010(): void {
 
   $config->set('models', $kept)->save();
 }
+
+/**
+ * Install the private context store's ledger entity on existing sites.
+ *
+ * Fresh installs get it on module install; this brings existing installs up to
+ * date (the appliance converge path runs `drush updatedb`). No data migration —
+ * the store starts empty and only fills once an operator attaches an image.
+ */
+function aincient_core_update_11011(): void {
+  $manager = \Drupal::entityDefinitionUpdateManager();
+  if (!$manager->getEntityType('aincient_context_entry')) {
+    $type = \Drupal::entityTypeManager()->getDefinition('aincient_context_entry');
+    $manager->installEntityType($type);
+  }
+}

@@ -29,7 +29,7 @@ final class ReferenceCatalogTest extends KernelTestBase {
   use EditorialWorkflowTestTrait;
 
   protected static $modules = [
-    'system', 'user', 'field', 'text', 'file', 'image', 'media', 'node', 'workflows', 'content_moderation', 'aincient_pages',
+    'system', 'user', 'field', 'text', 'file', 'image', 'media', 'node', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
   ];
 
   private int $mediaId;

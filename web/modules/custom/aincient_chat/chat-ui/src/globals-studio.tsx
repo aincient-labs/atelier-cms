@@ -3,10 +3,11 @@ import { useAssistantRuntime } from "@assistant-ui/react";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { offerWrapup } from "./thread-seal";
 import { PanelBar } from "./panel-bar";
-import { XIcon, CheckIcon, ShieldCheckIcon } from "./icons";
+import { XIcon, CheckIcon } from "./icons";
 import { MenuEditor } from "./menu-editor";
 import { ReferenceField } from "./reference-field";
-import { apiUrl } from "./console-config";
+import { HandsOnMarker } from "./hands-on-marker";
+import { fieldAnchorId, focusStudioField, requestedFieldAnchor } from "./studio-field-anchor";
 import {
   setChromeDraft,
   getChromeDraft,
@@ -14,174 +15,69 @@ import {
   subscribeChromeDraft,
   subscribeChromeReset,
   type ChromeDraft,
-  type ChromeLayout,
   type ChromeMenuLink,
 } from "./globals-state";
+import {
+  seedChromeDraft,
+  cloneChromeDraft,
+  titleCase,
+  type ChromeManifest,
+  type RegistrySetting,
+} from "./chrome-shared";
+import { apiUrl } from "./console-config";
 
 /**
- * The Globals studio: site-wide chrome, edited as a live, preview-only draft and
- * published deliberately — the chrome parallel of the Brand (Design System) and
- * Page (Content) studios. Three tabs:
+ * The Navigation & Pages studio (machine id `globals`; DECISIONS 0372).
  *
- *  - Brand identity — name, tagline, description, tone, logo, footer note
- *    (the brand IDENTITY that moved out of the Design System / token rail).
- *  - Header — logo position / sticky / nav alignment + the `main` menu (inline).
- *  - Footer — layout / show tagline + the `footer` menu (inline).
+ * What's left of the old Globals studio after the identity half moved to Identity
+ * (design_system) and email/privacy to Settings: the two chrome MENUS (main +
+ * footer), the front/404/403 page ROUTING, and the header/footer ARRANGEMENT
+ * knobs (sticky, nav alignment, footer layout, show tagline/credit). The logo
+ * layout knobs (`logo_position`, `logo_size`) went WITH the logo to Identity, so
+ * they're filtered out of the arrangement lists here.
  *
  * One rail, one draft: every edit writes the whole draft into globals-state, which
- * the live preview (a server re-render — chrome is markup, not CSS vars) subscribes
- * to. Nothing is live until Publish (POST /atelier/chrome/save), exactly like the
- * other studios.
- *
- * The chrome AGENT (step 2b) writes the same draft via the `chrome_preview` widget,
- * so this studio also SUBSCRIBES to external draft writes (to mirror an agent edit
- * into the rail fields + the unsaved-change count) and to reset requests (the
- * agent's `reset` op → revert to the saved baseline). To avoid a feedback loop we
- * ignore notifications for the very draft this rail just pushed.
+ * the live preview (a server re-render) subscribes to. Nothing is live until
+ * Publish, which sends ONLY this surface's slice to /atelier/chrome/save — the
+ * save merges by provided key, so the omitted identity/logo/settings fields the
+ * other two surfaces own are never touched.
  */
 
 const MANIFEST_URL = apiUrl("/chrome/manifest");
 const SAVE_URL = apiUrl("/chrome/save");
 
-/** One header/footer layout setting as the manifest describes it for the rail. */
-type RegistrySetting = {
-  key: string;
-  label: string;
-  type: "enum" | "bool";
-  enum: string[] | null;
-  default: string | boolean;
+/** The header/footer arrangement keys THIS surface owns (the logo knobs
+ *  `logo_position` / `logo_size` moved to Identity). */
+const NAV_LAYOUT_KEYS: Record<"header" | "footer", string[]> = {
+  header: ["sticky", "nav_alignment"],
+  footer: ["layout", "show_tagline", "show_credit"],
 };
 
-/** The chrome state + editing vocabulary the studio renders from. Identity/chrome/
- *  privacy/menus share the shape Publish returns, so one seed builder covers both. */
-type ChromeManifest = {
-  chrome: ChromeLayout;
-  registry: { header: RegistrySetting[]; footer: RegistrySetting[] };
-  identity: {
-    guidelines: {
-      name: string;
-      tagline: string;
-      description: string;
-      tone: string;
-      imagery_style: string;
-      imagery_avoid: string;
-    };
-    footer_note: string;
-    /** `media:<id>` tokens (or '' for none) — the unified picker's value. */
-    logo: string;
-    favicon: string;
-    /** Site information (mail + front/403/404 `entity:node:<id>` tokens; '' =
-     *  the shipped system.site default). Overrides system.site at runtime. */
-    site: { mail: string; front: string; page_403: string; page_404: string };
-  };
-  privacy: {
-    font_delivery: string;
-    /** The delivery modes the backend accepts, in display order. */
-    options: string[];
-    /** Whether the SAVED state shows a consent banner (a cross-check for the rail). */
-    banner_active: boolean;
-  };
-  menus: { main: ChromeMenuLink[]; footer: ChromeMenuLink[] };
-};
+/** The page-routing slots this surface owns (front/404/403 — NOT `mail`). */
+const ROUTING_KEYS = ["front", "page_404", "page_403"] as const;
 
-type Tab = "identity" | "site" | "header" | "footer" | "privacy";
+type Tab = "header" | "footer" | "pages";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "identity", label: "Brand identity" },
-  { id: "site", label: "Site" },
   { id: "header", label: "Header" },
   { id: "footer", label: "Footer" },
-  { id: "privacy", label: "Privacy" },
+  { id: "pages", label: "Pages" },
 ];
 
-/** The site-information keys (mirrors SiteIdentity::SITE_KEYS). */
-const SITE_KEYS = ["mail", "front", "page_403", "page_404"] as const;
-
-/** The two font-delivery modes (must match BrandRepository::DELIVERY_*). */
-const DELIVERY_SELFHOST = "selfhost";
-const DELIVERY_GOOGLE = "google";
-
-/** Operator-facing copy for each delivery mode (label + the privacy consequence). */
-const DELIVERY_COPY: Record<string, { label: string; desc: string }> = {
-  [DELIVERY_SELFHOST]: {
-    label: "Self-host (private)",
-    desc: "Brand fonts are served from your own origin. No third-party request, so no consent banner is shown.",
-  },
-  [DELIVERY_GOOGLE]: {
-    label: "Load from Google Fonts",
-    desc: "Visitors are asked for consent first (a banner appears). Until they accept, the system font is shown and nothing is sent to Google.",
-  },
-};
-
-/** A plain-JSON deep clone — the draft is pure data, so this is safe + cheap. */
-const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
-
-/** Title-case a raw enum value ("nav_alignment" → "Nav alignment", "left" → "Left"). */
-function titleCase(s: string): string {
-  const t = s.replace(/[_-]+/g, " ").trim();
-  return t.charAt(0).toUpperCase() + t.slice(1);
-}
-
-/** Build a working draft from the manifest (or the save response — same shape). */
-function seedFrom(data: Pick<ChromeManifest, "chrome" | "identity" | "privacy" | "menus">): ChromeDraft {
-  const g = data.identity?.guidelines ?? {};
-  return {
-    chrome: clone(data.chrome ?? { header: {}, footer: {} }),
-    identity: {
-      guidelines: {
-        name: String(g.name ?? ""),
-        tagline: String(g.tagline ?? ""),
-        description: String(g.description ?? ""),
-        tone: String(g.tone ?? ""),
-        imagery_style: String(g.imagery_style ?? ""),
-        imagery_avoid: String(g.imagery_avoid ?? ""),
-      },
-      footer_note: String(data.identity?.footer_note ?? ""),
-      logo: String(data.identity?.logo ?? ""),
-      favicon: String(data.identity?.favicon ?? ""),
-      site: {
-        mail: String(data.identity?.site?.mail ?? ""),
-        front: String(data.identity?.site?.front ?? ""),
-        page_403: String(data.identity?.site?.page_403 ?? ""),
-        page_404: String(data.identity?.site?.page_404 ?? ""),
-      },
-    },
-    privacy: {
-      font_delivery: String(data.privacy?.font_delivery ?? DELIVERY_GOOGLE),
-    },
-    menus: {
-      main: clone(data.menus?.main ?? []),
-      footer: clone(data.menus?.footer ?? []),
-    },
-  };
-}
-
-/** The number of changed fields vs the saved baseline (drives the dirty badge). */
+/** The number of changed fields vs the saved baseline (drives the dirty badge).
+ *  Scoped to THIS surface: arrangement knobs, menus, and the routing slots. */
 function countDirty(base: ChromeDraft, draft: ChromeDraft): number {
   let n = 0;
-  const g = draft.identity.guidelines;
-  const gb = base.identity.guidelines;
-  for (const k of ["name", "tagline", "description", "tone", "imagery_style", "imagery_avoid"] as const) {
-    if ((g[k] ?? "") !== (gb[k] ?? "")) n++;
-  }
-  if ((draft.identity.footer_note ?? "") !== (base.identity.footer_note ?? "")) n++;
-  // Logo/favicon are `media:<id>` tokens now — a changed token (incl. cleared) is
-  // one changed field, compared against the saved baseline like the text fields.
-  if ((draft.identity.logo ?? "") !== (base.identity.logo ?? "")) n++;
-  if ((draft.identity.favicon ?? "") !== (base.identity.favicon ?? "")) n++;
-  for (const k of SITE_KEYS) {
-    if ((draft.identity.site?.[k] ?? "") !== (base.identity.site?.[k] ?? "")) n++;
-  }
-  for (const sec of ["header", "footer"] as const) {
-    const a = draft.chrome[sec] ?? {};
-    const b = base.chrome[sec] ?? {};
-    for (const key of Object.keys(a)) {
-      if (a[key] !== b[key]) n++;
+  for (const section of ["header", "footer"] as const) {
+    for (const key of NAV_LAYOUT_KEYS[section]) {
+      if ((draft.chrome[section]?.[key]) !== (base.chrome[section]?.[key])) n++;
     }
   }
   if (JSON.stringify(draft.menus.main) !== JSON.stringify(base.menus.main)) n++;
   if (JSON.stringify(draft.menus.footer) !== JSON.stringify(base.menus.footer)) n++;
-  if (draft.privacy.font_delivery !== base.privacy.font_delivery) n++;
+  for (const key of ROUTING_KEYS) {
+    if ((draft.identity.site?.[key] ?? "") !== (base.identity.site?.[key] ?? "")) n++;
+  }
   return n;
 }
 
@@ -195,7 +91,6 @@ function LayoutControl({
   value: string | boolean | undefined;
   onChange: (v: string | boolean) => void;
 }) {
-  // Hoisted above the bool branch: hooks cannot sit behind an early return.
   const id = useId();
   if (def.type === "bool") {
     return (
@@ -210,8 +105,6 @@ function LayoutControl({
       </label>
     );
   }
-  // Wired by id for the same reason as TextField below: the checkbox branch
-  // above wraps its control and is fine, but this branch's label is a sibling.
   return (
     <div className="ain-field">
       <label className="ain-field__label" htmlFor={id}>
@@ -233,87 +126,30 @@ function LayoutControl({
   );
 }
 
-/** A labelled single-line / multi-line identity text field. */
-function TextField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  multiline?: boolean;
-}) {
-  // The label is a SIBLING of the control here (the multiline branch means we
-  // cannot simply wrap, the way the page studio's fields do), so it has to be
-  // wired by id — an `ain-field__label` floating next to an input associates
-  // with nothing, and a screen reader announces a bare "edit text".
-  const id = useId();
-  return (
-    <div className="ain-field">
-      <label className="ain-field__label" htmlFor={id}>
-        {label}
-      </label>
-      {multiline ? (
-        <textarea
-          id={id}
-          className="ain-field__input ain-field__textarea ain-globals__textarea"
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      ) : (
-        <input
-          id={id}
-          className="ain-field__input"
-          type="text"
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )}
-    </div>
-  );
-}
-
 export function GlobalsStudio({ onClose }: { onClose: () => void }) {
   const { closeSheets } = useStudioUI();
-  // Read only to resolve the active thread's backend id when a Publish wraps the
-  // conversation up (the celebration offer; see offerWrapup).
   const runtime = useAssistantRuntime();
   const [manifest, setManifest] = useState<ChromeManifest | null>(null);
   const [baseline, setBaseline] = useState<ChromeDraft | null>(null);
   const [draft, setDraft] = useState<ChromeDraft | null>(null);
-  const [tab, setTab] = useState<Tab>("identity");
+  const [tab, setTab] = useState<Tab>("header");
   const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // The last draft THIS rail pushed to the shared store — so the draft subscriber
-  // (which also fires for the agent's writes) can ignore our own echoes.
   const lastPushed = useRef<ChromeDraft | null>(null);
 
-  // Push a working draft to the shared store (→ live preview + agent context),
-  // tracking it so our own subscription doesn't treat the echo as external.
   const pushChrome = useCallback((next: ChromeDraft) => {
     lastPushed.current = next;
     setChromeDraft(next);
   }, []);
 
-  // Fetch the chrome manifest and seed the baseline + working draft. Pushing the
-  // seed into globals-state immediately lets the preview render the saved chrome.
-  // If the agent already staged a draft before this rail mounted (it calls
-  // ensureStudio("globals") + writes the store), ADOPT that as the working draft
-  // (baseline stays the saved manifest, so the agent's edits read as unsaved).
   useEffect(() => {
     let live = true;
     fetch(MANIFEST_URL, { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data: ChromeManifest) => {
         if (!live) return;
-        const seed = seedFrom(data);
+        const seed = seedChromeDraft(data);
         setManifest(data);
         setBaseline(seed);
         const existing = getChromeDraft();
@@ -321,7 +157,7 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
           setDraft(existing);
           lastPushed.current = existing;
         } else {
-          const working = clone(seed);
+          const working = cloneChromeDraft(seed);
           setDraft(working);
           pushChrome(working);
         }
@@ -332,12 +168,18 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
     };
   }, [pushChrome]);
 
+  // Land the operator ON a requested field (Phase 3 deep-link `?field=menus.main`).
+  useEffect(() => {
+    if (!draft) return;
+    const key = requestedFieldAnchor();
+    if (key) focusStudioField(key);
+  }, [draft]);
+
   const dirty = useMemo(
     () => (baseline && draft ? countDirty(baseline, draft) : 0),
     [baseline, draft],
   );
 
-  // Commit a new draft to both local state and the shared store (→ live preview).
   const update = useCallback(
     (next: ChromeDraft) => {
       setNotice(null);
@@ -349,60 +191,21 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
 
   const setLayout = (section: "header" | "footer", key: string, value: string | boolean) => {
     if (!draft) return;
-    const next = clone(draft);
+    const next = cloneChromeDraft(draft);
     next.chrome[section] = { ...next.chrome[section], [key]: value };
-    update(next);
-  };
-
-  const setGuideline = (key: keyof ChromeDraft["identity"]["guidelines"], value: string) => {
-    if (!draft) return;
-    const next = clone(draft);
-    next.identity.guidelines[key] = value;
-    update(next);
-  };
-
-  const setFooterNote = (value: string) => {
-    if (!draft) return;
-    const next = clone(draft);
-    next.identity.footer_note = value;
     update(next);
   };
 
   const setMenu = (menu: "main" | "footer", links: ChromeMenuLink[]) => {
     if (!draft) return;
-    const next = clone(draft);
+    const next = cloneChromeDraft(draft);
     next.menus[menu] = links;
     update(next);
   };
 
-  const setFontDelivery = (mode: string) => {
+  const setRouting = (key: (typeof ROUTING_KEYS)[number], value: string) => {
     if (!draft) return;
-    const next = clone(draft);
-    next.privacy.font_delivery = mode;
-    update(next);
-  };
-
-  // Logo/favicon are `media:<id>` tokens now — set from the unified picker
-  // (which handles search / upload itself). An empty string clears.
-  const setLogoToken = (token: string) => {
-    if (!draft) return;
-    const next = clone(draft);
-    next.identity.logo = token;
-    update(next);
-  };
-
-  const setFaviconToken = (token: string) => {
-    if (!draft) return;
-    const next = clone(draft);
-    next.identity.favicon = token;
-    update(next);
-  };
-
-  // Site information: mail is plain text; the three page slots are
-  // `entity:node:<id>` tokens from the unified picker ('' = shipped default).
-  const setSiteField = (key: (typeof SITE_KEYS)[number], value: string) => {
-    if (!draft) return;
-    const next = clone(draft);
+    const next = cloneChromeDraft(draft);
     next.identity.site = { ...next.identity.site, [key]: value };
     update(next);
   };
@@ -413,16 +216,21 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
     setError(null);
     setNotice(null);
     try {
+      // Only this surface's slice — arrangement knobs (never the logo knobs),
+      // the two menus, and the routing slots (never `mail`). The chrome save
+      // merges by provided key, so the identity/logo/settings fields are safe.
+      const pick = (section: "header" | "footer") =>
+        Object.fromEntries(
+          NAV_LAYOUT_KEYS[section]
+            .filter((k) => k in (draft.chrome[section] ?? {}))
+            .map((k) => [k, draft.chrome[section][k]]),
+        );
+      const site = Object.fromEntries(
+        ROUTING_KEYS.map((k) => [k, draft.identity.site[k]]),
+      );
       const body = {
-        chrome: draft.chrome,
-        identity: {
-          guidelines: draft.identity.guidelines,
-          footer_note: draft.identity.footer_note,
-          logo: draft.identity.logo,
-          favicon: draft.identity.favicon,
-          site: draft.identity.site,
-        },
-        privacy: { font_delivery: draft.privacy.font_delivery },
+        chrome: { header: pick("header"), footer: pick("footer") },
+        identity: { site },
         menus: draft.menus,
       };
       const res = await fetch(SAVE_URL, {
@@ -433,18 +241,13 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-      // Re-seed the baseline + draft from the saved state (server-assigned menu
-      // ids, resolved logo URL, no staged fid) so the studio opens clean.
-      const seed = seedFrom(data);
-      const working = clone(seed);
+      const seed = seedChromeDraft(data);
+      const working = cloneChromeDraft(seed);
       setBaseline(seed);
       setDraft(working);
       pushChrome(working);
       setNotice("Published to the live site.");
       reloadPreview();
-      // A site-wide chrome publish wraps the conversation up too (DECISIONS
-      // 0093) — no single page to view, so the celebration just offers a fresh
-      // thread. Only when there's a backend thread to lock.
       offerWrapup(runtime.threads.mainItem.getState().remoteId);
     } catch (e) {
       setError(`Couldn’t publish: ${e instanceof Error ? e.message : e}`);
@@ -455,17 +258,13 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
 
   const discard = useCallback(() => {
     if (!baseline) return;
-    const seed = clone(baseline);
+    const seed = cloneChromeDraft(baseline);
     setDraft(seed);
     pushChrome(seed);
     setNotice(null);
     setError(null);
   }, [baseline, pushChrome]);
 
-  // Mirror the chrome AGENT's writes into the rail: when the `chrome_preview`
-  // widget merges into the shared draft, adopt it here so the editor fields +
-  // the unsaved-change count reflect it. Ignore our own pushes (lastPushed).
-  // The agent's `reset` op routes through subscribeChromeReset → discard.
   useEffect(() => {
     const unsubDraft = subscribeChromeDraft((incoming) => {
       if (incoming && incoming !== lastPushed.current) {
@@ -481,10 +280,13 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
     };
   }, [discard]);
 
+  // The arrangement defs THIS surface renders, in registry order, minus the logo
+  // knobs that moved to Identity.
+  const layoutDefs = (section: "header" | "footer"): RegistrySetting[] =>
+    (manifest?.registry[section] ?? []).filter((d) => NAV_LAYOUT_KEYS[section].includes(d.key));
+
   return (
     <div className="ain-studio__rail" data-testid="studio-rail" data-studio="globals">
-      {/* Primary actions live in the top bar so they survive the rail collapsing
-          to a sheet on narrow screens (the brand/page studio idiom). */}
       <StudioActionsPortal>
         {dirty > 0 && (
           <span
@@ -513,15 +315,15 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
         <button
           className="ain-btn ain-iconbtn ain-topbar__leave"
           onClick={onClose}
-          aria-label="Close globals studio"
-          title="Leave globals studio"
+          aria-label="Close navigation & pages studio"
+          title="Leave navigation & pages studio"
         >
           <XIcon />
         </button>
       </StudioActionsPortal>
 
       <PanelBar
-        title="Globals"
+        title="Navigation & Pages"
         actions={
           <button
             className="ain-btn ain-iconbtn ain-studio__sheetclose"
@@ -553,7 +355,7 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
 
       {manifest && draft && (
         <>
-          <div className="ain-globals__tabs" role="tablist" aria-label="Globals sections">
+          <div className="ain-globals__tabs" role="tablist" aria-label="Navigation & Pages sections">
             {TABS.map((t) => (
               <button
                 key={t.id}
@@ -569,114 +371,9 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="ain-studio__groups">
-            {tab === "identity" && (
-              <div className="ain-globals__panel">
-                <TextField
-                  label="Site name"
-                  value={draft.identity.guidelines.name}
-                  onChange={(v) => setGuideline("name", v)}
-                  placeholder="Atelier"
-                />
-                <TextField
-                  label="Tagline"
-                  value={draft.identity.guidelines.tagline}
-                  onChange={(v) => setGuideline("tagline", v)}
-                  placeholder="A short line under the name"
-                />
-                <TextField
-                  label="Description"
-                  value={draft.identity.guidelines.description}
-                  onChange={(v) => setGuideline("description", v)}
-                  placeholder="What the site is about (for meta + the agent)"
-                  multiline
-                />
-                <TextField
-                  label="Voice / tone"
-                  value={draft.identity.guidelines.tone}
-                  onChange={(v) => setGuideline("tone", v)}
-                  placeholder="e.g. warm, precise, playful"
-                />
-                <TextField
-                  label="Imagery style"
-                  value={draft.identity.guidelines.imagery_style}
-                  onChange={(v) => setGuideline("imagery_style", v)}
-                  placeholder="Art direction for images — light, palette, mood, subjects (e.g. soft natural light, muted tones, real moments)"
-                  multiline
-                />
-                <TextField
-                  label="Imagery to avoid"
-                  value={draft.identity.guidelines.imagery_avoid}
-                  onChange={(v) => setGuideline("imagery_avoid", v)}
-                  placeholder="Clichés to steer clear of (e.g. generic stock photos, glowing-brain AI tropes)"
-                  multiline
-                />
-
-                <ReferenceField
-                  label="Logo"
-                  meaning="Pick from the Library or upload a new image."
-                  value={draft.identity.logo}
-                  onChange={(v) => setLogoToken(typeof v === "string" ? v : "")}
-                  types={["media"]}
-                  allowUpload
-                />
-
-                <ReferenceField
-                  label="Favicon"
-                  meaning="The little icon in the browser tab — a square PNG works best."
-                  value={draft.identity.favicon}
-                  onChange={(v) => setFaviconToken(typeof v === "string" ? v : "")}
-                  types={["media"]}
-                  allowUpload
-                />
-
-                <TextField
-                  label="Footer note"
-                  value={draft.identity.footer_note}
-                  onChange={setFooterNote}
-                  placeholder="© 2026 Atelier (defaults to © year + name)"
-                />
-              </div>
-            )}
-
-            {tab === "site" && (
-              <div className="ain-globals__panel">
-                <p className="ain-studio__groupnote">
-                  Core site details. Anything left empty falls back to the shipped
-                  default — set only what you want to own.
-                </p>
-                <TextField
-                  label="Site email"
-                  value={draft.identity.site.mail}
-                  onChange={(v) => setSiteField("mail", v)}
-                  placeholder="Where system mail (password resets, notifications) comes from"
-                />
-                <ReferenceField
-                  label="Front page"
-                  meaning="The page shown at your site’s root URL. Empty = the default front page."
-                  value={draft.identity.site.front}
-                  onChange={(v) => setSiteField("front", typeof v === "string" ? v : "")}
-                  types={["node"]}
-                />
-                <ReferenceField
-                  label="Not-found page (404)"
-                  meaning="Shown when a visitor hits a URL that doesn’t exist."
-                  value={draft.identity.site.page_404}
-                  onChange={(v) => setSiteField("page_404", typeof v === "string" ? v : "")}
-                  types={["node"]}
-                />
-                <ReferenceField
-                  label="Access-denied page (403)"
-                  meaning="Shown when a visitor isn’t allowed to see a page."
-                  value={draft.identity.site.page_403}
-                  onChange={(v) => setSiteField("page_403", typeof v === "string" ? v : "")}
-                  types={["node"]}
-                />
-              </div>
-            )}
-
             {tab === "header" && (
               <div className="ain-globals__panel">
-                {manifest.registry.header.map((def) => (
+                {layoutDefs("header").map((def) => (
                   <LayoutControl
                     key={def.key}
                     def={def}
@@ -684,8 +381,11 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
                     onChange={(v) => setLayout("header", def.key, v)}
                   />
                 ))}
-                <div className="ain-studio__subgroup">
-                  <h4 className="ain-studio__subtitle">Navigation</h4>
+                <div className="ain-studio__subgroup" id={fieldAnchorId("menus.main")}>
+                  <h4 className="ain-studio__subtitle">
+                    <HandsOnMarker reachKey="menus.main" />
+                    Navigation
+                  </h4>
                   <p className="ain-studio__groupnote">
                     The header menu (Drupal&apos;s <code>main</code> menu).
                   </p>
@@ -701,7 +401,7 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
 
             {tab === "footer" && (
               <div className="ain-globals__panel">
-                {manifest.registry.footer.map((def) => (
+                {layoutDefs("footer").map((def) => (
                   <LayoutControl
                     key={def.key}
                     def={def}
@@ -709,8 +409,11 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
                     onChange={(v) => setLayout("footer", def.key, v)}
                   />
                 ))}
-                <div className="ain-studio__subgroup">
-                  <h4 className="ain-studio__subtitle">Navigation</h4>
+                <div className="ain-studio__subgroup" id={fieldAnchorId("menus.footer")}>
+                  <h4 className="ain-studio__subtitle">
+                    <HandsOnMarker reachKey="menus.footer" />
+                    Navigation
+                  </h4>
                   <p className="ain-studio__groupnote">
                     The footer menu (Drupal&apos;s <code>footer</code> menu).
                   </p>
@@ -724,46 +427,42 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
               </div>
             )}
 
-            {tab === "privacy" && (
+            {tab === "pages" && (
               <div className="ain-globals__panel">
                 <p className="ain-studio__groupnote">
-                  How brand fonts reach your public pages — the one setting that decides
-                  whether visitors see a GDPR consent banner.
+                  Which page answers each special URL. Anything left empty falls back
+                  to the shipped default — set only what you want to own.
                 </p>
-                {/* A caption over a SET of radios, not a control label — a
-                    <label> here would associate with nothing. Named group. */}
-                <div className="ain-field" role="radiogroup" aria-labelledby="ain-font-delivery">
-                  <span className="ain-field__label" id="ain-font-delivery">
-                    Font delivery
-                  </span>
-                  {manifest.privacy.options.map((mode) => {
-                    const copy = DELIVERY_COPY[mode] ?? { label: mode, desc: "" };
-                    return (
-                      <label key={mode} className="ain-field ain-field--radio">
-                        <input
-                          className="ain-field__radio"
-                          type="radio"
-                          name="font_delivery"
-                          checked={draft.privacy.font_delivery === mode}
-                          onChange={() => setFontDelivery(mode)}
-                        />
-                        <span className="ain-field__radiobody">
-                          <span className="ain-field__label">{copy.label}</span>
-                          <span className="ain-field__hint">{copy.desc}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
+                <div id={fieldAnchorId("site.front")}>
+                  <ReferenceField
+                    label="Front page"
+                    meaning="The page shown at your site’s root URL. Empty = the default front page."
+                    value={draft.identity.site.front}
+                    onChange={(v) => setRouting("front", typeof v === "string" ? v : "")}
+                    types={["node"]}
+                    adornment={<HandsOnMarker reachKey="site.front" />}
+                  />
                 </div>
-                <p
-                  className="ain-globals__consent-status"
-                  data-active={draft.privacy.font_delivery === DELIVERY_GOOGLE || undefined}
-                >
-                  <ShieldCheckIcon />{" "}
-                  {draft.privacy.font_delivery === DELIVERY_GOOGLE
-                    ? "Consent banner shown — visitors are asked before any font loads from Google."
-                    : "No consent banner — nothing third-party loads from your public pages."}
-                </p>
+                <div id={fieldAnchorId("site.page_404")}>
+                  <ReferenceField
+                    label="Not-found page (404)"
+                    meaning="Shown when a visitor hits a URL that doesn’t exist."
+                    value={draft.identity.site.page_404}
+                    onChange={(v) => setRouting("page_404", typeof v === "string" ? v : "")}
+                    types={["node"]}
+                    adornment={<HandsOnMarker reachKey="site.page_404" />}
+                  />
+                </div>
+                <div id={fieldAnchorId("site.page_403")}>
+                  <ReferenceField
+                    label="Access-denied page (403)"
+                    meaning="Shown when a visitor isn’t allowed to see a page."
+                    value={draft.identity.site.page_403}
+                    onChange={(v) => setRouting("page_403", typeof v === "string" ? v : "")}
+                    types={["node"]}
+                    adornment={<HandsOnMarker reachKey="site.page_403" />}
+                  />
+                </div>
               </div>
             )}
           </div>

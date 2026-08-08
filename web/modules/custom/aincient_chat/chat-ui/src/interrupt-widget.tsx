@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import { settings } from "./adapter";
 import { stageInterruptAnswer } from "./interrupt-state";
 import { CheckIcon, CircleQuestionIcon, ShieldCheckIcon, XIcon } from "./icons";
+import { MarkdownImage } from "./markdown-image";
 
 /**
  * Human-in-the-loop request card.
@@ -172,7 +173,9 @@ function ChoiceWidget({ uuid, prompt, schema, threadId, status, resolved, answer
       {/* The prompt is agent prose — render it as markdown (entities decode,
           **emphasis** works) instead of printing raw source at the owner. */}
       <div className="ain-hitl__prompt">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{prompt}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: MarkdownImage }}>
+          {prompt}
+        </ReactMarkdown>
       </div>
 
       {state === "pending" && confirmation && (

@@ -7,6 +7,7 @@ namespace Drupal\aincient_chat\Controller;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\State\StateInterface;
+use Drupal\aincient_chat\Chat\AttachmentTurnPreparer;
 use Drupal\aincient_chat\Chat\ChatProcessorInterface;
 use Drupal\aincient_chat\Chat\SessionThreadStore;
 use Drupal\aincient_chat\Chat\StreamRelay;
@@ -46,6 +47,7 @@ final class ChatController extends ControllerBase {
     private readonly StateInterface $state,
     private readonly ThreadNamer $threadNamer,
     private readonly ModelRoleResolver $roleResolver,
+    private readonly AttachmentTurnPreparer $attachmentPreparer,
   ) {}
 
   /**
@@ -60,6 +62,7 @@ final class ChatController extends ControllerBase {
       $container->get('state'),
       $container->get('aincient_chat.thread_namer'),
       $container->get('aincient_core.model_role_resolver'),
+      $container->get('aincient_chat.attachment_turn_preparer'),
     );
   }
 
@@ -127,6 +130,17 @@ final class ChatController extends ControllerBase {
     }
 
     $uid = (int) $this->currentUser()->id();
+
+    // The vision seam (DECISIONS 0347): image attachments arrive as
+    // `context:<id>` refs the composer POSTs in `context_refs`. Pre-describe
+    // each into fenced text folded into the user message BEFORE it enters the
+    // stream — that augmented string is what gets persisted and read by the
+    // reason node. Absent/empty = a plain turn, unchanged. Owner-checked and
+    // fail-soft inside the preparer, so a bad ref never breaks the turn.
+    $refs = $payload['context_refs'] ?? [];
+    if (is_array($refs) && $refs !== []) {
+      $message = $this->attachmentPreparer->augment($message, array_values($refs), $uid);
+    }
 
     // Wrapped-up guard: a locked thread is finished (its page is published) and
     // accepts no new turns — the console hides the composer, but a crafted

@@ -96,14 +96,23 @@ export function providerFailureFields(data: {
 /**
  * The card for this run, or NULL when nothing in it was a provider fault.
  *
- * The FIRST such failure wins: a turn stops at the fault that ended it, and any
- * later one is a consequence, not news. A step that is not `failed` is ignored
- * even if it somehow carries a kind — the card is about a turn that stopped.
+ * The FIRST step carrying an `errorKind` wins: a turn stops at the fault that
+ * ended it, and any later one is a consequence, not news. Selection is on the
+ * KIND, not the status, on purpose. A provider fault reaches the trail two ways
+ * now: a one-shot caller (`AiGateway`, `ChatCompleter`) that bypasses the reason
+ * node still fails its node, but the reason node itself STOP-AND-REPORTS — it
+ * catches the fault and COMPLETES carrying the classified kind on its output, so
+ * the run ends cleanly with the failure as its reply (aincient_flows
+ * `AincientReason`; DECISIONS 0366). Gating on `status === "failed"` would drop
+ * that completed-but-failed case and lose the card, its Retry and its note. The
+ * kind is the authoritative signal either way: the backend sets `error_kind`
+ * only for a classified provider fault, never for a graph mistake or a plain bug,
+ * which keep rendering as the failed nodes they are.
  */
 export function providerFailureCard(
   steps: readonly FailureStepLike[],
 ): ProviderFailureCard | null {
-  const step = steps.find((s) => s.status === "failed" && s.errorKind);
+  const step = steps.find((s) => Boolean(s.errorKind));
   if (!step) return null;
   const sentence = (step.error ?? "").trim();
 

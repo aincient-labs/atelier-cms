@@ -157,25 +157,31 @@
   flex: none; display: flex; flex-direction: column; gap: 4px;
   padding: 10px 8px 8px; border-bottom: 1px solid var(--ain-border);
 }
-/* An entry-point pin — same left-aligned row idiom as a WIP row, but carrying the
-   pixel-card lift so it reads as an action, not a conversation. */
+/* An entry-point pin — the same left-aligned, borderless row idiom as the WIP
+   conversations below, so the flyout reads as one quiet list. Hierarchy comes
+   from tint, not from an outline: "New page" carries a soft accent wash (the
+   one create action); "Browse" stays a ghost row that fills when it's the room
+   we're in. No border, no card shadow — those read as generic form controls. */
 .ain-wipaction {
-  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
   cursor: pointer; color: var(--ain-text);
-  background: var(--ain-surface); border: 1px solid var(--ain-border);
-  border-radius: var(--ain-radius); padding: 6px 10px;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--ain-radius); padding: 8px 10px;
   font: inherit; font-size: 13.5px; line-height: 16px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
-  transition: border-color .12s, background .12s, box-shadow .08s, transform .08s;
+  transition: color .12s, background .12s, border-color .12s;
 }
 .ain-wipaction:hover { background: var(--ain-surface-2); }
-.ain-wipaction:active { transform: translateY(1px); box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-shadow) 30%, transparent); }
 .ain-wipaction:focus-visible { outline: 2px solid var(--ain-accent); outline-offset: 2px; }
 .ain-wipaction svg { flex: none; font-size: 15px; color: var(--ain-text-dim); }
-/* Browse pages, when it's the room we're in, reads as selected (accent glyph). */
-.ain-wipaction[data-active] { border-color: var(--ain-accent); font-weight: 600; }
+/* Browse, when it's the room we're in, reads as selected (fill + accent glyph). */
+.ain-wipaction[data-active] {
+  background: var(--ain-surface-2); font-weight: 600;
+  border-color: color-mix(in oklch, var(--ain-accent) 22%, var(--ain-border));
+}
 .ain-wipaction[data-active] svg { color: var(--ain-accent); }
-/* New page leads with the accent so "create" pops against "browse". */
+/* New page is a quiet nav pin too — the solid cinnabar CTA in the listing is
+   the one primary "create". Here the accent lives only in the leading glyph, so
+   it reads as "create" without competing with, or duplicating, that button. */
 .ain-wipaction--new svg { color: var(--ain-accent); }
 
 /* The section's conversations, beneath the pins. */
@@ -505,24 +511,36 @@
 /* conversation controls grouped by the brand (left side of the top bar) */
 .ain-topbar__controls { display: inline-flex; align-items: center; gap: 10px; margin-left: 10px; min-width: 0; }
 
-/* user menu — account flyout. The trigger is a 30px icon button like its
-   neighbors (theme toggle); inside sits an avatar chip with the user's
-   initial (person glyph when anonymous), so no chevron is needed. */
+/* user menu — account flyout. A ghost pill (avatar chip + dim chevron caret)
+   like the neighbouring icon buttons: transparent at rest, fills to surface-2
+   on hover/open. The caret is the dropdown affordance; it flips when open. */
 .ain-usermenu { position: relative; }
-/* let the trigger shrink-wrap the avatar instead of the 30px icon-button box,
-   so the avatar reads at full size rather than floating in button padding */
-.ain-usermenu__trigger { min-width: 0; height: auto; padding: 0; border: 0; background: transparent; }
-.ain-usermenu .ain-usermenu__trigger:not(:disabled):hover { background: transparent; border-color: transparent; }
-.ain-usermenu__trigger[data-open] { color: var(--ain-text); background: transparent; border-color: transparent; }
+.ain-usermenu__trigger {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-width: 0; height: 30px; padding: 0 6px 0 5px;
+  border: 1px solid transparent; background: transparent;
+  border-radius: var(--ain-radius);
+  transition: border-color .12s, background .12s;
+}
+.ain-usermenu .ain-usermenu__trigger:not(:disabled):hover,
+.ain-usermenu__trigger[data-open] {
+  color: var(--ain-text); background: var(--ain-surface-2); border-color: var(--ain-border);
+}
 .ain-usermenu__avatar {
-  display: inline-grid; place-items: center; width: 32px; height: 32px;
-  font-family: var(--ain-font-display); font-size: 12px; line-height: 1;
+  flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px;
+  font-family: var(--ain-font-display); font-size: 11px; line-height: 1;
   color: var(--ain-text);
   background: color-mix(in oklch, var(--ain-accent-2) 22%, var(--ain-surface));
   border: 1px solid color-mix(in oklch, var(--ain-accent-2) 55%, transparent);
-  border-radius: var(--ain-radius);
+  border-radius: calc(var(--ain-radius) - 2px);
 }
 .ain-usermenu__avatar--img { object-fit: cover; }
+/* caret — same dim chevron as .ain-crumb__caret; flips open */
+.ain-usermenu__caret {
+  flex: none; width: 13px; height: 13px; color: var(--ain-text-dim);
+  transition: transform .14s, color .12s;
+}
+.ain-usermenu__trigger[data-open] .ain-usermenu__caret { color: var(--ain-text); transform: rotate(180deg); }
 .ain-usermenu__menu {
   position: absolute; top: calc(100% + 6px); right: 0; left: auto;
   transform: none; min-width: 240px;
@@ -838,9 +856,9 @@
 .ain-composer-dock { padding: 12px 20px 18px; max-width: var(--ain-max); margin: 0 auto; width: 100%; }
 .ain-composer {
   position: relative; z-index: 0;
-  display: flex; align-items: flex-end; gap: 8px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
   background: var(--ain-surface); border: 1px solid var(--ain-border);
-  border-radius: var(--ain-radius); padding: 8px 8px 8px 16px;
+  border-radius: var(--ain-radius); padding: 10px 12px 8px;
   box-shadow: 0 4px 12px -4px color-mix(in oklch, var(--ain-shadow) 30%, transparent);
   transition: border-color .12s, box-shadow .12s;
 }
@@ -856,7 +874,22 @@
     0 0 0 3px color-mix(in oklch, var(--ain-accent) 10%, transparent),
     0 8px 20px -8px color-mix(in oklch, var(--ain-shadow) 45%, transparent);
 }
-.ain-composer__input { flex: 1; resize: none; border: 0; outline: 0; background: transparent; color: var(--ain-text); font: inherit; line-height: 1.5; max-height: 200px; padding: 6px 0; }
+.ain-composer__input { width: 100%; resize: none; border: 0; outline: 0; background: transparent; color: var(--ain-text); font: inherit; line-height: 1.5; max-height: 200px; padding: 4px 2px; }
+/* Action toolbar — the second row. Buttons stay their fixed 36px; the spacer
+   pushes send to the trailing edge. Wraps if a narrow dock can't hold the row. */
+.ain-composer__toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ain-composer__spacer { flex: 1 1 auto; }
+/* Convo-toggle (docked/phone only) shares the attach/mic footprint so the
+   toolbar reads as one set — .ain-iconbtn's 30px box + hover border would
+   otherwise make it the odd one out. */
+.ain-composer__convotoggle {
+  min-width: 36px; width: 36px; height: 36px; padding: 0;
+  font-size: 18px; background: var(--ain-surface-2);
+  border: 0; border-radius: 4px; color: var(--ain-text-dim);
+}
+.ain-composer__convotoggle:not(:disabled):hover {
+  background: var(--ain-surface-2); border: 0; color: var(--ain-text);
+}
 .ain-composer__input::placeholder { color: var(--ain-text-faint); transition: opacity 120ms ease; }
 .ain-composer__input:focus::placeholder { opacity: 0; }
 /* send button sleeps as a ghost while there is nothing to send, and wakes
@@ -895,6 +928,70 @@
   animation: ain-mic-pulse 1.2s ease-in-out infinite;
 }
 @keyframes ain-mic-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+/* attach / image-upload toggle — ghosts alongside the mic; shows a spinner
+   while an upload is in flight. Same footprint + resting colours as the mic. */
+.ain-composer__attach {
+  flex: 0 0 auto; width: 36px; height: 36px; border: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--ain-text-dim); font-size: 18px; line-height: 1;
+  background: var(--ain-surface-2);
+  border-radius: 4px;
+  transition: background .15s, color .15s, transform .05s;
+}
+.ain-composer__attach:not(:disabled):hover { color: var(--ain-text); }
+.ain-composer__attach:not(:disabled):active { transform: translateY(1px); }
+.ain-composer__attach--busy { cursor: default; color: var(--ain-text-faint); }
+.ain-spin { animation: ain-spin .9s linear infinite; }
+/* Upload failure — full-width line above the input, in the alert register. */
+.ain-composer__attach-error {
+  width: 100%; order: -1; margin: 0 2px 4px;
+  font-size: 11.5px; line-height: 1.3; color: var(--ain-danger, var(--ain-accent));
+}
+/* Pending-attachment tray — a full-width block above the composer input. */
+.ain-composer__attachments { width: 100%; margin: 0 2px 4px; }
+.ain-attach-chips {
+  list-style: none; margin: 0 0 4px; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.ain-attach-chip {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 220px;
+  padding: 3px 4px 3px 3px;
+  background: var(--ain-surface-2); border: 1px solid var(--ain-border);
+  border-radius: 6px;
+}
+.ain-attach-chip__thumb {
+  flex: 0 0 auto; width: 28px; height: 28px; object-fit: cover;
+  border-radius: 4px; display: block;
+}
+.ain-attach-chip__name {
+  min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; color: var(--ain-text);
+}
+.ain-attach-chip__remove {
+  flex: 0 0 auto; display: inline-grid; place-items: center;
+  width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px;
+  cursor: pointer; color: var(--ain-text-dim); background: transparent; font-size: 13px;
+  transition: color .12s, background .12s;
+}
+.ain-attach-chip__remove:hover { color: var(--ain-text); background: var(--ain-surface); }
+.ain-attach-chip__icon {
+  flex: 0 0 auto; display: inline-grid; place-items: center;
+  width: 28px; height: 28px; border-radius: 4px;
+  background: var(--ain-surface); color: var(--ain-text-dim);
+}
+.ain-attach-chip__icon svg { width: 16px; height: 16px; }
+.ain-attach-chip__size { flex: 0 0 auto; font-size: 11px; color: var(--ain-text-faint); }
+.ain-attach-consent { margin: 0 2px; font-size: 11px; line-height: 1.3; color: var(--ain-text-dim); }
+/* Remote (third-party) image in assistant/agent markdown: never auto-loaded (exfil
+   cut, DECISIONS 0347) — rendered as an inert click-to-open citation instead. */
+.ain-remote-image {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  padding: 1px 6px; border: 1px solid var(--ain-border); border-radius: 6px;
+  color: var(--ain-text-dim); text-decoration: none; vertical-align: baseline;
+}
+.ain-remote-image:hover { color: var(--ain-text); background: var(--ain-surface); }
+.ain-remote-image__icon { flex: none; }
+.ain-remote-image__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Capability chips — the "what this room can do" row above the composer.
    Present in EVERY room, always, so it has to be calm when everything is fine:
    no fill, no border, dim text at composer-caption weight — the same visual
@@ -1382,6 +1479,59 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-accent); outline-o
 .ain-statusprop__result[data-ok] svg { width: 14px; height: 14px; color: var(--ain-jade); }
 .ain-statusprop__err { font-size: 12px; color: var(--ain-danger); margin: 0; }
 .ain-statusprop__actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Design-token admission card (design_token_admission) — the confirm seam for an
+   attached design file. Mirrors the status-proposal card's chrome. */
+.ain-tokenadmit {
+  margin: 6px 2px 4px 0; padding: 12px 14px;
+  border: 1px solid var(--ain-border); border-radius: var(--ain-radius);
+  background: var(--ain-surface-2); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-shadow) 25%, transparent);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.ain-tokenadmit[data-state="applied"], .ain-tokenadmit[data-state="dismissed"] {
+  box-shadow: none; border-color: var(--ain-border);
+}
+.ain-tokenadmit[data-historical] { box-shadow: none; }
+.ain-tokenadmit__head { display: flex; align-items: center; gap: 9px; }
+.ain-tokenadmit__ico {
+  display: inline-grid; place-items: center; flex: 0 0 auto;
+  width: 30px; height: 30px; border-radius: 6px;
+  background: var(--ain-surface); color: var(--ain-text-dim);
+}
+.ain-tokenadmit__ico svg { width: 16px; height: 16px; }
+.ain-tokenadmit__heading { display: flex; flex-direction: column; min-width: 0; }
+.ain-tokenadmit__title {
+  font-size: 13px; font-weight: 600; color: var(--ain-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ain-tokenadmit__count { font-size: 12px; color: var(--ain-text-dim); }
+.ain-tokenadmit__rejected { font-size: 12px; color: var(--ain-text-dim); margin: 0; }
+.ain-tokenadmit__result { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ain-text-dim); margin: 0; }
+.ain-tokenadmit__result[data-ok] svg { width: 14px; height: 14px; color: var(--ain-jade); }
+.ain-tokenadmit__err { font-size: 12px; color: var(--ain-danger); margin: 0; }
+.ain-tokenadmit__actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.ain-tokenadmit__actions .ain-topbtn svg { width: 14px; height: 14px; }
+
+/* Logo handoff card (DECISIONS 0372, Phase 3): route an attached image to
+   Identity → Logo. Shares the admission card's visual language. */
+.ain-logohandoff {
+  margin: 6px 2px 4px 0; padding: 12px 14px;
+  border: 1px solid var(--ain-border); border-radius: var(--ain-radius);
+  background: var(--ain-surface-2); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-shadow) 25%, transparent);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.ain-logohandoff__head { display: flex; align-items: center; gap: 9px; }
+.ain-logohandoff__ico {
+  display: inline-grid; place-items: center; flex: 0 0 auto;
+  width: 30px; height: 30px; border-radius: 6px;
+  background: var(--ain-surface); color: var(--ain-text-dim);
+}
+.ain-logohandoff__ico svg { width: 16px; height: 16px; }
+.ain-logohandoff__heading { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.ain-logohandoff__title { font-size: 13px; font-weight: 600; color: var(--ain-text); }
+.ain-logohandoff__sub { font-size: 12px; color: var(--ain-text-dim); }
+.ain-logohandoff__actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.ain-logohandoff__actions .ain-topbtn svg { width: 14px; height: 14px; }
 
 .ain-brandpick__colors { display: flex; gap: 18px; }
 .ain-brandpick__color { position: relative; display: flex; align-items: center; gap: 8px; }
@@ -3501,3 +3651,37 @@ select.ain-field__input { cursor: pointer; appearance: auto; }
 .ain-teasercard__more { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 600; color: var(--ain-jade); }
 
 @media (max-width: 640px) { .ain-presence { padding: 14px 12px; } }
+
+/* ---- Hands-on marker -------------------------------------------------------
+   Flags a studio field the chat agent CANNOT reach, so a human-only field never
+   reads as one the agent can help with. Positive framing ("set directly"), not a
+   slash-AI prohibition — the minority is marked, absence carries the default.
+   Themes off the tokens (dark default, light under [data-ain-theme]); the
+   focus-visible ring keeps the focusable badge keyboard-discoverable. */
+.ain-handson {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ain-accent-2);
+  cursor: default;
+  vertical-align: middle;
+  border-radius: 4px;
+}
+.ain-handson__icon { font-size: 14px; flex: none; }
+.ain-handson__text {
+  min-width: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ain-text-dim);
+}
+.ain-handson:focus-visible {
+  outline: 2px solid var(--ain-accent);
+  outline-offset: 2px;
+  color: var(--ain-text);
+}
+
+/* The base-palette heading row inside the colour picker carries a single
+   hands-on marker for the whole immutable Tier-0 foundation. */
+.ain-pop__basehead { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.ain-pop__basehead .ain-pop__heading { margin: 0; }

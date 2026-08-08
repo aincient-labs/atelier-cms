@@ -3,7 +3,7 @@ langcode: en
 status: true
 dependencies:
   module:
-    - flowdrop_node_processor
+    - aincient_flows
 id: aincient_reason
 label: 'Reason (agent step)'
 description: 'One tool-aware LLM inference: emits the next tool_calls or a final answer (executes nothing). The agent loop is authored around it.'
@@ -52,7 +52,13 @@ parameters:
 outputs:
   assistant_message:
     exposed: true
+  codec:
+    exposed: true
+  error_detail:
+    exposed: true
   has_tool_calls:
+    exposed: true
+  raw_result:
     exposed: true
   text:
     exposed: true
@@ -61,7 +67,7 @@ outputs:
 tags:
   - aincient
   - agent
-executor_plugin: 'flowdrop_node_processor:reason'
+executor_plugin: 'aincient_flows:aincient_reason'
 visual_type: default
 supported_visual_types:
   - default

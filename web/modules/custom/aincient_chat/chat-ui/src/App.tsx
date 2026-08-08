@@ -14,6 +14,7 @@ import {
   useMessage,
   useThreadList,
   useThreadListItem,
+  useThreadListItemRuntime,
   useThreadRuntime,
   WebSpeechDictationAdapter,
 } from "@assistant-ui/react";
@@ -81,6 +82,8 @@ import { WeatherCardToolUI } from "./weather-widget";
 import { BrandPickerToolUI } from "./brand-picker";
 import { BrandStatusProposalToolUI } from "./brand-status-proposal";
 import { BrandPreviewToolUI } from "./brand-preview-tool";
+import { DesignTokenAdmissionToolUI } from "./design-token-admission";
+import { LogoHandoffToolUI } from "./logo-handoff";
 import { OnboardingToolUI } from "./onboarding";
 import { StudioTourToolUI } from "./studio-tour";
 import { PagePreviewToolUI } from "./page-preview-tool";
@@ -111,7 +114,11 @@ import {
   CheckIcon,
   XIcon,
   ArrowDownIcon,
+  PaperclipIcon,
+  SpinnerIcon,
+  DocumentIcon,
 } from "./icons";
+import { MarkdownImage } from "./markdown-image";
 import { StudioUIContext, useStudioUI } from "./studio-ui";
 import { NewPageForm } from "./new-page-form";
 import { isPageDirty } from "./page-dirty";
@@ -131,7 +138,13 @@ import {
 import { useThreadRemoteId, useThreadSealed } from "./thread-seal-hooks";
 import { subscribeLock } from "./page-lock";
 import { composerMode } from "./console-machine";
-import { consoleBase } from "./console-config";
+import { consoleBase, apiUrl } from "./console-config";
+import {
+  addAttachment,
+  getAttachments,
+  removeAttachment,
+  subscribeAttachments,
+} from "./attachment-state";
 
 /* -------------------------------------------------------------- switch guard */
 /**
@@ -178,7 +191,12 @@ function ChatLink({ href, children, ...rest }: React.AnchorHTMLAttributes<HTMLAn
 
 function MarkdownText() {
   // remark-gfm autolinks bare URLs ("https://…") the agent emits as plain text.
-  return <MarkdownTextPrimitive remarkPlugins={[remarkGfm]} components={{ a: ChatLink }} />;
+  return (
+    <MarkdownTextPrimitive
+      remarkPlugins={[remarkGfm]}
+      components={{ a: ChatLink, img: MarkdownImage }}
+    />
+  );
 }
 
 /* ------------------------------------------------------------------- messages */
@@ -421,6 +439,151 @@ function DictateButton() {
   );
 }
 
+/** File types the attach picker accepts — mirrors the server's allow-list. */
+const ATTACH_ACCEPT =
+  "image/png,image/gif,image/jpeg,image/webp,image/avif,text/markdown,text/plain,.md,.txt";
+
+/**
+ * Attach a file to the next turn. Uploads the pick to this thread's `/attach`
+ * endpoint (which stores it privately and prepares it at send time — an image is
+ * pre-described by a vision model, a text document's contents are folded in as
+ * fenced DATA), then stages the returned `context:<id>` ref in the attachment
+ * store — the composer chip row renders it and the send adapter folds it into
+ * the turn.
+ *
+ * A brand-new never-sent thread has no backend id yet; we `initialize()` it at
+ * attach time (the endpoint tolerates a fresh thread id) so the upload has a
+ * home — the same thread-id resolution the send adapter uses (runtime.tsx).
+ */
+function AttachButton() {
+  const item = useThreadListItemRuntime();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const upload = useCallback(
+    async (file: File) => {
+      setUploading(true);
+      setError(null);
+      try {
+        const state = item.getState();
+        let threadId = state.remoteId;
+        if (!threadId) {
+          const r = await item.initialize();
+          threadId = r.remoteId;
+        }
+        const body = new FormData();
+        body.append("file", file);
+        const res = await fetch(apiUrl("/chat/thread/" + encodeURIComponent(threadId) + "/attach"), {
+          method: "POST",
+          credentials: "same-origin",
+          body,
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.item?.ref) throw new Error(data?.error ?? `HTTP ${res.status}`);
+        addAttachment({
+          ref: data.item.ref,
+          filename: data.item.filename,
+          kind: data.item.kind === "document" ? "document" : "image",
+          thumb: data.item.thumb,
+          size: data.item.size,
+        });
+      } catch (e) {
+        setError(`Couldn’t attach that file: ${e instanceof Error ? e.message : e}`);
+      } finally {
+        setUploading(false);
+      }
+    },
+    [item],
+  );
+
+  return (
+    <>
+      {error ? <p className="ain-composer__attach-error">{error}</p> : null}
+      <button
+        type="button"
+        className={"ain-btn ain-composer__attach" + (uploading ? " ain-composer__attach--busy" : "")}
+        aria-label="Attach a file"
+        title="Attach an image or a design file (.md, .txt)"
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+      >
+        {uploading ? <SpinnerIcon className="ain-spin" /> : <PaperclipIcon />}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ATTACH_ACCEPT}
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void upload(file);
+          e.target.value = "";
+        }}
+      />
+    </>
+  );
+}
+
+/**
+ * The pending-attachment chip row + consent line, rendered above the composer
+ * input. Driven by the attachment store; renders nothing until a file is
+ * attached. An image chip previews the thumbnail; a document chip shows a file
+ * icon and its size. Each names the file and offers a remove button; the consent
+ * line reminds the user the attachment leaves for the AI provider (naming the
+ * bound provider for images, where the server resolved the vision provider).
+ */
+function AttachmentChips() {
+  const attachments = useSyncExternalStore(subscribeAttachments, getAttachments);
+  const provider = settings().provider;
+  if (attachments.length === 0) return null;
+  const hasDocument = attachments.some((a) => a.kind === "document");
+  return (
+    <div className="ain-composer__attachments">
+      <ul className="ain-attach-chips">
+        {attachments.map((a) => (
+          <li key={a.ref} className="ain-attach-chip">
+            {a.kind === "document" ? (
+              <span className="ain-attach-chip__icon" aria-hidden="true">
+                <DocumentIcon />
+              </span>
+            ) : (
+              <img className="ain-attach-chip__thumb" src={a.thumb} alt="" width={28} height={28} />
+            )}
+            <span className="ain-attach-chip__name">{a.filename}</span>
+            {a.kind === "document" && a.size ? (
+              <span className="ain-attach-chip__size">{formatBytes(a.size)}</span>
+            ) : null}
+            <button
+              type="button"
+              className="ain-attach-chip__remove"
+              aria-label={"Remove " + a.filename}
+              onClick={() => removeAttachment(a.ref)}
+            >
+              <XIcon />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="ain-attach-consent">
+        {hasDocument
+          ? "The attached file’s contents will be sent to your connected AI provider."
+          : provider
+            ? `This image will be sent to ${provider}.`
+            : "This image will be sent to your connected AI provider."}
+      </p>
+    </div>
+  );
+}
+
+/** Compact human byte size for a document chip, e.g. "1.2 KB". */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
 /**
  * The receiving half of the one-hop ask carry (see `composer-prefill.ts`).
  *
@@ -498,19 +661,8 @@ function Composer() {
   const { convoOpen, toggleConvo } = useStudioUI();
   return (
     <ComposerPrimitive.Root className="ain-composer">
-      {/* Lift/drop the conversation over the preview canvas. Only shown when the
-          chat is docked to the bottom (editor studio, phone width) — CSS gates
-          it; inert everywhere else. */}
-      <button
-        type="button"
-        className="ain-btn ain-iconbtn ain-composer__convotoggle"
-        onClick={toggleConvo}
-        aria-pressed={convoOpen}
-        aria-label={convoOpen ? "Hide conversation" : "Show conversation"}
-        title={convoOpen ? "Hide conversation" : "Show conversation"}
-      >
-        {convoOpen ? <ChevronDownIcon /> : <ChevronUpIcon />}
-      </button>
+      {/* Pending image attachments + the provider-consent line, above the input. */}
+      <AttachmentChips />
       <ComposerPrimitive.Input
         ref={inputRef}
         className="ain-composer__input"
@@ -520,13 +672,34 @@ function Composer() {
         onFocus={checkExternal}
         onInput={checkExternal}
       />
-      <DictateButton />
-      <ThreadPrimitive.If running={false}>
-        <ComposerPrimitive.Send className="ain-btn ain-composer__send" aria-label="Send"><SendIcon /></ComposerPrimitive.Send>
-      </ThreadPrimitive.If>
-      <ThreadPrimitive.If running>
-        <ComposerPrimitive.Cancel className="ain-btn ain-composer__send ain-composer__send--stop" aria-label="Stop"><StopIcon /></ComposerPrimitive.Cancel>
-      </ThreadPrimitive.If>
+      {/* Action toolbar — its own row beneath the input, so the text field keeps
+          the full width however many controls the composer grows (two-row
+          layout). Convo-toggle + attach + dictate sit at the leading edge; send
+          is pushed to the trailing edge by the spacer. */}
+      <div className="ain-composer__toolbar">
+        {/* Lift/drop the conversation over the preview canvas. Only shown when the
+            chat is docked to the bottom (editor studio, phone width) — CSS gates
+            it; inert everywhere else. */}
+        <button
+          type="button"
+          className="ain-btn ain-iconbtn ain-composer__convotoggle"
+          onClick={toggleConvo}
+          aria-pressed={convoOpen}
+          aria-label={convoOpen ? "Hide conversation" : "Show conversation"}
+          title={convoOpen ? "Hide conversation" : "Show conversation"}
+        >
+          {convoOpen ? <ChevronDownIcon /> : <ChevronUpIcon />}
+        </button>
+        <AttachButton />
+        <DictateButton />
+        <span className="ain-composer__spacer" />
+        <ThreadPrimitive.If running={false}>
+          <ComposerPrimitive.Send className="ain-btn ain-composer__send" aria-label="Send"><SendIcon /></ComposerPrimitive.Send>
+        </ThreadPrimitive.If>
+        <ThreadPrimitive.If running>
+          <ComposerPrimitive.Cancel className="ain-btn ain-composer__send ain-composer__send--stop" aria-label="Stop"><StopIcon /></ComposerPrimitive.Cancel>
+        </ThreadPrimitive.If>
+      </div>
     </ComposerPrimitive.Root>
   );
 }
@@ -1813,7 +1986,7 @@ function UserMenu() {
     <div className="ain-usermenu" ref={rootRef}>
       <button
         ref={btnRef}
-        className="ain-btn ain-iconbtn ain-usermenu__trigger"
+        className="ain-btn ain-usermenu__trigger"
         data-open={open || undefined}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={onTriggerKeyDown}
@@ -1826,8 +1999,9 @@ function UserMenu() {
         ) : initial ? (
           <span className="ain-usermenu__avatar" aria-hidden>{initial}</span>
         ) : (
-          <PersonIcon />
+          <span className="ain-usermenu__avatar" aria-hidden><PersonIcon /></span>
         )}
+        <ChevronDownIcon className="ain-usermenu__caret" aria-hidden />
       </button>
       {open && (
         <div
@@ -2234,6 +2408,10 @@ export function App() {
       <BrandStatusProposalToolUI />
       {/* Registers the live brand preview applier (the `brand_preview` generative-UI tool). */}
       <BrandPreviewToolUI />
+      {/* Registers the design-token admission card (the `design_token_admission` tool). */}
+      <DesignTokenAdmissionToolUI />
+      {/* Registers the logo-handoff card (the `logo_handoff` tool → Identity → Logo). */}
+      <LogoHandoffToolUI />
       {/* Registers the live page preview applier (the `page_preview` generative-UI tool). */}
       <PagePreviewToolUI />
       {/* Registers the live chrome preview applier (the `chrome_preview` generative-UI tool). */}

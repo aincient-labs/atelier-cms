@@ -10,7 +10,7 @@ use Drupal\aincient_core\Inference\ProviderCall;
 /**
  * Which action a provider failure offers the reader, chosen by its kind.
  *
- * The whole reason {@see ProviderCall}'s eight kinds exist. A rejected key and an
+ * The whole reason {@see ProviderCall}'s nine kinds exist. A rejected key and an
  * overloaded provider read identically as a red failed node, and they need
  * opposite responses: one is something the reader can fix in thirty seconds, the
  * other is somebody else's minute to wait out. This class is the one table that
@@ -28,9 +28,10 @@ use Drupal\aincient_core\Inference\ProviderCall;
  * Everything else is a sentence alone. `rate_limit` and `unavailable` are the
  * provider's own weather — a link to our settings would suggest the reader
  * misconfigured something they did not. `too_long` is a shape the run hit, not a
- * setting. `refused`, `rejected` and `unknown` have no action we can name
- * honestly, and an affordance offered on a guess costs more trust than the
- * silence does.
+ * setting. `tool_malformed` is the model garbling a tool call — the honest fix is
+ * "a more capable model", guidance not a one-click action. `refused`, `rejected`
+ * and `unknown` have no action we can name honestly, and an affordance offered on
+ * a guess costs more trust than the silence does.
  *
  * THE LINK IS NAVIGATION, never a re-send. Re-sending is a SEPARATE decision,
  * {@see self::retry()}, and it is gated twice because a careless re-send after a
@@ -38,10 +39,13 @@ use Drupal\aincient_core\Inference\ProviderCall;
  * brand twice — the hazard StaleTurnRecovery exists for, which is precisely why
  * that recovery does not resume either.
  *
- * RETRY IS OFFERED FOR THREE KINDS AND ONLY WHEN THE TURN APPLIED NOTHING:
+ * RETRY IS OFFERED FOR FOUR KINDS AND ONLY WHEN THE TURN APPLIED NOTHING:
  *   - `rate_limit`, `unavailable`, `unknown` — a transient no from the provider;
  *     the identical request may well succeed a minute later. The reader IS the
  *     retry mechanism: a button they choose to press, never a timer.
+ *   - `tool_malformed` — the model garbled its tool call; generation is
+ *     stochastic, so the identical request may well come back well-formed. Same
+ *     reader-driven retry, no link.
  *   - `auth` and `model_missing` keep their link instead — repeating a request
  *     does not fix a credential or a binding.
  *   - `too_long` is excluded because an identical request truncates identically;
@@ -69,6 +73,7 @@ final class ProviderFailureSurface {
     ProviderCall::KIND_RATE_LIMIT,
     ProviderCall::KIND_UNAVAILABLE,
     ProviderCall::KIND_UNKNOWN,
+    ProviderCall::KIND_TOOL_MALFORMED,
   ];
 
   /**

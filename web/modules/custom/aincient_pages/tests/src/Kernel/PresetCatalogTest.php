@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 #[RunTestsInSeparateProcesses]
 final class PresetCatalogTest extends KernelTestBase {
 
-  protected static $modules = ['system', 'workflows', 'content_moderation', 'aincient_pages'];
+  protected static $modules = ['system', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
 
   private function presets(): PresetCatalog {
     return $this->container->get('aincient_pages.preset_catalog');

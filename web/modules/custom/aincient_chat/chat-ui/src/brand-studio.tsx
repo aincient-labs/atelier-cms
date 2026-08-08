@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode, RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useAssistantRuntime } from "@assistant-ui/react";
@@ -12,13 +12,30 @@ import {
   setPendingFonts,
   reloadPreview,
 } from "./brand-state";
-import { CheckIcon, XIcon, ChevronDownIcon, LockIcon, LockOpenIcon } from "./icons";
+import { CheckIcon, XIcon, ChevronDownIcon, LockIcon, LockOpenIcon, SparkleIcon } from "./icons";
 import { emitBrandStatus, subscribeBrandStatus } from "./brand-status-state";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { PanelBar } from "./panel-bar";
 import { FieldRevert } from "./field-revert";
+import { HandsOnMarker } from "./hands-on-marker";
+import { ReferenceField } from "./reference-field";
 import { apiUrl } from "./console-config";
 import { consoleNav } from "./console-nav";
+import { fieldAnchorId, focusStudioField, requestedFieldAnchor } from "./studio-field-anchor";
+import {
+  setChromeDraft,
+  getChromeDraft,
+  subscribeChromeDraft,
+  subscribeChromeReset,
+  type ChromeDraft,
+} from "./globals-state";
+import {
+  seedChromeDraft,
+  cloneChromeDraft,
+  titleCase,
+  type ChromeManifest,
+  type RegistrySetting,
+} from "./chrome-shared";
 
 /** One token, as returned by /atelier/brand/manifest. */
 type TokenDef = {
@@ -313,8 +330,46 @@ function labelList(rejected: unknown, tokens: TokenDef[] | null): string {
  * "set brand" tool). Discard drops the draft and reverts to the saved brand.
  */
 const SAVE_URL = apiUrl("/brand/save");
+/** The Identity half persists its slice through the shared chrome endpoints. */
+const CHROME_MANIFEST_URL = apiUrl("/chrome/manifest");
+const CHROME_SAVE_URL = apiUrl("/chrome/save");
 
-export function BrandStudio({ onClose }: { onClose: () => void }) {
+/** The identity fields whose changes count toward this surface's dirty badge. */
+const IDENTITY_GUIDELINE_KEYS = [
+  "name",
+  "tagline",
+  "description",
+  "tone",
+  "imagery_style",
+  "imagery_avoid",
+] as const;
+
+/** The logo LAYOUT knobs the whole-logo move pulled into Identity (DECISIONS
+ *  0372): header logo position + size, footer logo size. */
+const LOGO_LAYOUT: { section: "header" | "footer"; key: string }[] = [
+  { section: "header", key: "logo_position" },
+  { section: "header", key: "logo_size" },
+  { section: "footer", key: "logo_size" },
+];
+
+/** The changed-field count for the Identity slice (prose + logo/favicon + knobs). */
+function countIdentityDirty(base: ChromeDraft, draft: ChromeDraft): number {
+  let n = 0;
+  const g = draft.identity.guidelines;
+  const gb = base.identity.guidelines;
+  for (const k of IDENTITY_GUIDELINE_KEYS) {
+    if ((g[k] ?? "") !== (gb[k] ?? "")) n++;
+  }
+  if ((draft.identity.footer_note ?? "") !== (base.identity.footer_note ?? "")) n++;
+  if ((draft.identity.logo ?? "") !== (base.identity.logo ?? "")) n++;
+  if ((draft.identity.favicon ?? "") !== (base.identity.favicon ?? "")) n++;
+  for (const { section, key } of LOGO_LAYOUT) {
+    if (draft.chrome[section]?.[key] !== base.chrome[section]?.[key]) n++;
+  }
+  return n;
+}
+
+export function IdentityStudio({ onClose }: { onClose: () => void }) {
   const { closeSheets } = useStudioUI();
   // Read only to resolve the active thread's backend id when a Publish seals the
   // conversation (auto-archives it; see the publish handler).
@@ -347,6 +402,122 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
         return next;
       }),
     [],
+  );
+
+  // ── The Identity slice (DECISIONS 0372) ──────────────────────────────────
+  // Identity absorbed the brand IDENTITY (name/tagline/voice/imagery/footer note)
+  // + the WHOLE logo (image · favicon · position · size) from the old Globals
+  // studio. It persists through the shared chrome endpoints, so this studio's
+  // Publish is COMPOUND: brand/save (tokens) + chrome/save (this slice). The
+  // draft rides the shared chrome store (agent mirror parity); we render + count
+  // + publish only the identity/logo fields, never the menus/routing/settings the
+  // other two surfaces own.
+  const [chromeManifest, setChromeManifest] = useState<ChromeManifest | null>(null);
+  const [idBase, setIdBase] = useState<ChromeDraft | null>(null);
+  const [idDraft, setIdDraft] = useState<ChromeDraft | null>(null);
+  const lastPushedChrome = useRef<ChromeDraft | null>(null);
+
+  const pushChrome = useCallback((next: ChromeDraft) => {
+    lastPushedChrome.current = next;
+    setChromeDraft(next);
+  }, []);
+
+  useEffect(() => {
+    let live = true;
+    fetch(CHROME_MANIFEST_URL, { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((data: ChromeManifest) => {
+        if (!live) return;
+        const seed = seedChromeDraft(data);
+        setChromeManifest(data);
+        setIdBase(seed);
+        const existing = getChromeDraft();
+        if (existing) {
+          setIdDraft(existing);
+          lastPushedChrome.current = existing;
+        } else {
+          const working = cloneChromeDraft(seed);
+          setIdDraft(working);
+          pushChrome(working);
+        }
+      })
+      .catch(() => {
+        // The chrome half is best-effort: a manifest failure leaves the token
+        // rail fully usable; the identity card just doesn't render.
+      });
+    return () => {
+      live = false;
+    };
+  }, [pushChrome]);
+
+  // Land the operator ON a requested field (Phase 3 deep-link `?field=identity.logo`).
+  useEffect(() => {
+    if (!idDraft) return;
+    const key = requestedFieldAnchor();
+    if (key) focusStudioField(key);
+  }, [idDraft]);
+
+  const identityDirty = useMemo(
+    () => (idBase && idDraft ? countIdentityDirty(idBase, idDraft) : 0),
+    [idBase, idDraft],
+  );
+
+  const updateIdentity = useCallback(
+    (next: ChromeDraft) => {
+      setIdDraft(next);
+      pushChrome(next);
+    },
+    [pushChrome],
+  );
+
+  const setGuideline = useCallback(
+    (key: (typeof IDENTITY_GUIDELINE_KEYS)[number], value: string) => {
+      if (!idDraft) return;
+      const next = cloneChromeDraft(idDraft);
+      next.identity.guidelines[key] = value;
+      updateIdentity(next);
+    },
+    [idDraft, updateIdentity],
+  );
+
+  const setFooterNote = useCallback(
+    (value: string) => {
+      if (!idDraft) return;
+      const next = cloneChromeDraft(idDraft);
+      next.identity.footer_note = value;
+      updateIdentity(next);
+    },
+    [idDraft, updateIdentity],
+  );
+
+  const setLogoToken = useCallback(
+    (token: string) => {
+      if (!idDraft) return;
+      const next = cloneChromeDraft(idDraft);
+      next.identity.logo = token;
+      updateIdentity(next);
+    },
+    [idDraft, updateIdentity],
+  );
+
+  const setFaviconToken = useCallback(
+    (token: string) => {
+      if (!idDraft) return;
+      const next = cloneChromeDraft(idDraft);
+      next.identity.favicon = token;
+      updateIdentity(next);
+    },
+    [idDraft, updateIdentity],
+  );
+
+  const setLogoLayout = useCallback(
+    (section: "header" | "footer", key: string, value: string) => {
+      if (!idDraft) return;
+      const next = cloneChromeDraft(idDraft);
+      next.chrome[section] = { ...next.chrome[section], [key]: value };
+      updateIdentity(next);
+    },
+    [idDraft, updateIdentity],
   );
 
   // Fetch the manifest and reset the baseline to its saved values. The working
@@ -452,69 +623,107 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
     setPendingFonts(fontsDirty ? desiredFonts : null);
   }, [manifest, fontsDirty, desiredFonts]);
 
+  // The Identity half of the compound Publish: persist the identity slice + the
+  // logo layout knobs through the shared chrome endpoint. Only this surface's
+  // keys are sent — the chrome save merges by provided key, so the menus/routing/
+  // settings the other surfaces own are never touched. Re-seeds from the saved
+  // response so the studio opens clean.
+  const publishIdentity = useCallback(async () => {
+    if (!idDraft) return;
+    const body = {
+      identity: {
+        guidelines: idDraft.identity.guidelines,
+        footer_note: idDraft.identity.footer_note,
+        logo: idDraft.identity.logo,
+        favicon: idDraft.identity.favicon,
+      },
+      chrome: {
+        header: {
+          logo_position: idDraft.chrome.header?.logo_position,
+          logo_size: idDraft.chrome.header?.logo_size,
+        },
+        footer: { logo_size: idDraft.chrome.footer?.logo_size },
+      },
+    };
+    const res = await fetch(CHROME_SAVE_URL, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+    const seed = seedChromeDraft(data);
+    const working = cloneChromeDraft(seed);
+    setIdBase(seed);
+    setIdDraft(working);
+    pushChrome(working);
+  }, [idDraft, pushChrome]);
+
+  // The single compound Publish: one button, both writes — brand tokens
+  // (brand/save) AND the identity slice (chrome/save). Enabled when EITHER half
+  // is dirty; each half is skipped when clean so a lone identity edit doesn't
+  // POST an empty token diff. A clean, complete publish seals the thread once.
   const publish = useCallback(async () => {
+    const tokenDirty = changed.length > 0 || fontsDirty;
+    const idDirty = identityDirty > 0;
+    if (!tokenDirty && !idDirty) return;
     setPublishing(true);
     setError(null);
     setNotice(null);
+    let rejected = "";
+    let contrastNote = "";
     try {
-      const body = {
-        tokens: Object.fromEntries(
-          changed.map((t) => [t.name, values[t.css_var] ?? ""]),
-        ),
-        ...(fontsDirty ? { fonts: desiredFonts } : {}),
-      };
-      const res = await fetch(SAVE_URL, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const result = await res.json().catch(() => null);
-      if (!res.ok) {
-        // 422 = every change was rejected (nothing valid to publish). Name the
-        // offending tokens rather than a bare status code.
-        const bad = labelList(result?.rejected, tokens);
-        throw new Error(bad ? `invalid values for ${bad}` : (result?.error ?? `HTTP ${res.status}`));
+      if (tokenDirty) {
+        const body = {
+          tokens: Object.fromEntries(
+            changed.map((t) => [t.name, values[t.css_var] ?? ""]),
+          ),
+          ...(fontsDirty ? { fonts: desiredFonts } : {}),
+        };
+        const res = await fetch(SAVE_URL, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const result = await res.json().catch(() => null);
+        if (!res.ok) {
+          // 422 = every change was rejected (nothing valid to publish). Name the
+          // offending tokens rather than a bare status code.
+          const bad = labelList(result?.rejected, tokens);
+          throw new Error(bad ? `invalid values for ${bad}` : (result?.error ?? `HTTP ${res.status}`));
+        }
+        // Valid tokens (and fonts) are now saved → that becomes the new baseline.
+        setPendingFonts(null);
+        const saved = await load();
+        // Drop every preview override that now equals the saved brand (it just
+        // published) so the draft no longer reports a published value as unsaved.
+        for (const [cssVar, value] of Object.entries(getBrandOverrides())) {
+          if ((saved[cssVar] ?? "") === value) setBrandOverride(cssVar, "");
+        }
+        reloadPreview();
+        rejected = labelList(result?.rejected, tokens);
+        const lowContrast = Array.isArray(result?.contrast_warnings) ? result.contrast_warnings.length : 0;
+        contrastNote = lowContrast
+          ? ` · ⚠ ${lowContrast} low-contrast pair${lowContrast === 1 ? "" : "s"}`
+          : "";
       }
-      // Valid tokens (and fonts) are now saved → that becomes the new baseline.
-      // Clear pending fonts and refetch the saved values.
-      setPendingFonts(null);
-      const saved = await load();
-      // Drop every preview override that now equals the saved brand (it just
-      // published) so the draft — and the per-turn context the brand agent
-      // receives — no longer reports a published value as an unsaved change
-      // (the stale-draft loop). Any token the server REJECTED still differs from
-      // saved, so its override is kept and stays dirty rather than vanishing.
-      for (const [cssVar, value] of Object.entries(getBrandOverrides())) {
-        if ((saved[cssVar] ?? "") === value) setBrandOverride(cssVar, "");
+
+      // The identity slice — after the tokens so a token rejection surfaces first.
+      if (idDirty) {
+        await publishIdentity();
       }
-      // Reload the preview iframe so it re-pulls the freshly-saved brand from
-      // the server instead of showing the old saved brand under a stale overlay.
-      reloadPreview();
-      const rejected = labelList(result?.rejected, tokens);
-      // Advisory: the server returns any saved surface/on pair below AA. We
-      // publish regardless (pairing is enforced by name, not blocked), but flag
-      // it so the user knows a pairing reads poorly.
-      const lowContrast = Array.isArray(result?.contrast_warnings) ? result.contrast_warnings.length : 0;
-      const contrastNote = lowContrast
-        ? ` · ⚠ ${lowContrast} low-contrast pair${lowContrast === 1 ? "" : "s"}`
-        : "";
+
       if (rejected) {
-        // Partial publish — the rest is live, but say what was refused (and why
-        // it's still dirty) instead of silently dropping it.
+        // Partial token publish — the rest is live, but say what was refused (and
+        // why it's still dirty) instead of silently dropping it.
         setError(`Published the rest — couldn’t apply ${rejected} (invalid value). Fix or discard.`);
       } else {
-        setNotice(`Brand published${contrastNote}`);
-        // A clean, site-wide brand publish is the conversation's "done" beat
-        // (DECISIONS 0093), so we SEAL the thread right away — read-only +
-        // auto-archived (server lock() flips both flags). This stops the finished
-        // thread from taking more turns and, crucially, from being re-opened live
-        // via its ?thr= deep link. Sealing in place (not consoleNav.seal) keeps
-        // the thread active but read-only: the flip is picked up by the composer's
-        // seal store, which swaps in the celebration end-state ("Start a new
-        // thread"); there's no single page to view (site-wide), so no View link.
-        // Skipped on a partial publish (rejected tokens) — we ask the user to fix
-        // or discard first.
+        setNotice(`Identity published${contrastNote}`);
+        // A clean, site-wide publish is the conversation's "done" beat (DECISIONS
+        // 0093) — SEAL the thread (read-only + auto-archived). Skipped on a partial
+        // (rejected) token publish. Only when there's a backend thread to lock.
         const sealedId = runtime.threads.mainItem.getState().remoteId;
         if (sealedId) {
           try {
@@ -522,7 +731,6 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
             rememberThreadSeal(sealedId, true);
           } catch {
             // Publish already landed; a failed seal just leaves the thread live.
-            // Not worth surfacing as a publish error.
           }
         }
       }
@@ -531,7 +739,7 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
     } finally {
       setPublishing(false);
     }
-  }, [changed, values, fontsDirty, desiredFonts, load, tokens, runtime]);
+  }, [changed, values, fontsDirty, desiredFonts, load, tokens, runtime, identityDirty, publishIdentity]);
 
   // Resolve any token value to a literal (oklch/hex/…) by walking var() chains
   // through the working values + the Tier 0 palette. This is what lets swatches
@@ -594,6 +802,12 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
   const discard = () => {
     resetBrandOverrides();
     setValues({ ...baseline });
+    // Snap the identity half back to its saved baseline too (the compound draft).
+    if (idBase) {
+      const seed = cloneChromeDraft(idBase);
+      setIdDraft(seed);
+      pushChrome(seed);
+    }
     setNotice(null);
     setError(null);
     // The live thread's backend id comes from the assistant-ui runtime (the same
@@ -605,6 +819,29 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
     }
     consoleNav.newThread();
   };
+
+  // Mirror an agent's chrome-draft writes into the identity card (parity with the
+  // other chrome rails), and route its reset op back to the identity baseline.
+  // Ignore our own pushes (lastPushedChrome).
+  useEffect(() => {
+    const unsubDraft = subscribeChromeDraft((incoming) => {
+      if (incoming && incoming !== lastPushedChrome.current) {
+        lastPushedChrome.current = incoming;
+        setIdDraft(incoming);
+      }
+    });
+    const unsubReset = subscribeChromeReset(() => {
+      if (idBase) {
+        const seed = cloneChromeDraft(idBase);
+        setIdDraft(seed);
+        pushChrome(seed);
+      }
+    });
+    return () => {
+      unsubDraft();
+      unsubReset();
+    };
+  }, [idBase, pushChrome]);
 
   // Toggle the design-intent status. Writes IMMEDIATELY (a MODE, not draft
   // content — never rides Publish); optimistic with a revert on failure. A
@@ -729,6 +966,10 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
     [nameToVar, resolve, values],
   );
 
+  // The compound dirty count: brand token edits + identity-slice edits. One
+  // button publishes both, so both feed the badge and the disabled gate.
+  const totalDirty = dirty + identityDirty;
+
   return (
     <div className="ain-studio__rail" data-testid="studio-rail" data-studio="design_system">
       {/* Primary actions live in the top bar (so they survive the rail
@@ -736,11 +977,11 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
           title and a sheet-dismiss ✕ that's only shown when the rail is a
           sheet — CSS gates it; on desktop the rail is always in view. */}
       <StudioActionsPortal>
-        {dirty > 0 && <span className="ain-studio-actions__dirty" title={`${dirty} unsaved change${dirty === 1 ? "" : "s"}`}>{dirty}</span>}
+        {totalDirty > 0 && <span className="ain-studio-actions__dirty" title={`${totalDirty} unsaved change${totalDirty === 1 ? "" : "s"}`}>{totalDirty}</span>}
         <button
           className="ain-btn ain-topbtn"
           onClick={discard}
-          disabled={dirty === 0 || publishing}
+          disabled={totalDirty === 0 || publishing}
           title="Discard draft — revert the preview to the saved brand and start a fresh chat"
         >
           Discard
@@ -748,17 +989,17 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
         <button
           className="ain-btn ain-topbtn ain-topbtn--primary"
           onClick={() => void publish()}
-          disabled={dirty === 0 || publishing}
+          disabled={totalDirty === 0 || publishing}
           title="Publish the draft to the live site"
         >
           {publishing ? "Publishing…" : "Publish"}
         </button>
-        <button className="ain-btn ain-iconbtn ain-topbar__leave" onClick={onClose} aria-label="Close brand studio" title="Leave brand studio">
+        <button className="ain-btn ain-iconbtn ain-topbar__leave" onClick={onClose} aria-label="Close identity studio" title="Leave identity studio">
           <XIcon />
         </button>
       </StudioActionsPortal>
       <PanelBar
-        title="Brand studio"
+        title="Identity"
         actions={
           <button className="ain-btn ain-iconbtn ain-studio__sheetclose" onClick={closeSheets} aria-label="Hide editor" title="Hide editor">
             <XIcon />
@@ -771,17 +1012,17 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
       {manifest && <StatusControl status={status} saving={statusSaving} onChange={updateStatus} />}
 
       {/* The draft state: nothing is live until Publish. */}
-      <p className="ain-studio__status" data-dirty={dirty > 0 || undefined}>
-        {dirty > 0 ? (
+      <p className="ain-studio__status" data-dirty={totalDirty > 0 || undefined}>
+        {totalDirty > 0 ? (
           <>
-            {dirty} unsaved change{dirty === 1 ? "" : "s"} · preview only
+            {totalDirty} unsaved change{totalDirty === 1 ? "" : "s"} · preview only
             {fontsDirty && <> · fonts apply on publish</>}
             {/* fonts now render in the preview too; they still only persist on publish */}
           </>
         ) : notice ? (
           <><CheckIcon /> {notice}</>
         ) : (
-          <>Matches the saved brand</>
+          <>Matches the saved identity</>
         )}
       </p>
 
@@ -789,6 +1030,19 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
       {!manifest && !error && <p className="ain-studio__hint">Loading tokens…</p>}
 
       <div className="ain-studio__groups">
+        {/* The identity slice — the brand's concrete content + the whole logo.
+            Published together with the tokens by the one compound Publish. */}
+        {chromeManifest && idDraft && (
+          <IdentityCard
+            manifest={chromeManifest}
+            draft={idDraft}
+            onGuideline={setGuideline}
+            onFooterNote={setFooterNote}
+            onLogo={setLogoToken}
+            onFavicon={setFaviconToken}
+            onLogoLayout={setLogoLayout}
+          />
+        )}
         {(() => {
           // Render props every control shares.
           const shared: SharedProps = { tokens: tokens ?? [], palette, referable, resolve, fontOptions, onChange: change, dirtyVars, onRevert: revert };
@@ -961,6 +1215,236 @@ export function BrandStudio({ onClose }: { onClose: () => void }) {
         })()}
       </div>
     </div>
+  );
+}
+
+/* ───────────────────────────────────────────────────────── identity card */
+
+/** A labelled single-line / multi-line identity text field. */
+function IdentityTextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  multiline,
+  anchorKey,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  /** The field key whose stable deep-link anchor id wraps this field. */
+  anchorKey?: string;
+}) {
+  const id = useId();
+  return (
+    <div className="ain-field" id={anchorKey ? fieldAnchorId(anchorKey) : undefined}>
+      <label className="ain-field__label" htmlFor={id}>
+        {label}
+      </label>
+      {multiline ? (
+        <textarea
+          id={id}
+          className="ain-field__input ain-field__textarea ain-globals__textarea"
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      ) : (
+        <input
+          id={id}
+          className="ain-field__input"
+          type="text"
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** One logo layout knob (an enum select), sourced from the chrome registry. */
+function LogoLayoutControl({
+  def,
+  value,
+  onChange,
+}: {
+  def: RegistrySetting;
+  value: string | boolean | undefined;
+  onChange: (v: string) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="ain-field">
+      <label className="ain-field__label" htmlFor={id}>
+        {def.label}
+      </label>
+      <select
+        id={id}
+        className="ain-field__input"
+        value={String(value ?? def.default)}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {(def.enum ?? []).map((opt) => (
+          <option key={opt} value={opt}>
+            {titleCase(opt)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/**
+ * The Identity card at the head of the Identity studio (DECISIONS 0372): the
+ * brand's concrete content (name/tagline/voice/imagery/footer note) and the
+ * WHOLE logo — image + favicon + the layout knobs (position + size) that used to
+ * live in the Header/Footer tabs. Edits stage into the shared chrome draft and
+ * publish through the studio's one compound Publish; nothing is live until then.
+ * Collapsible like the token cards, default open (identity leads the rail).
+ */
+function IdentityCard({
+  manifest,
+  draft,
+  onGuideline,
+  onFooterNote,
+  onLogo,
+  onFavicon,
+  onLogoLayout,
+}: {
+  manifest: ChromeManifest;
+  draft: ChromeDraft;
+  onGuideline: (key: (typeof IDENTITY_GUIDELINE_KEYS)[number], value: string) => void;
+  onFooterNote: (value: string) => void;
+  onLogo: (token: string) => void;
+  onFavicon: (token: string) => void;
+  onLogoLayout: (section: "header" | "footer", key: string, value: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const bodyId = "ain-studio-card-identity";
+  const knob = (section: "header" | "footer", key: string): RegistrySetting | undefined =>
+    manifest.registry[section]?.find((d) => d.key === key);
+  const logoPosition = knob("header", "logo_position");
+  const headerLogoSize = knob("header", "logo_size");
+  const footerLogoSize = knob("footer", "logo_size");
+  return (
+    <section className="ain-card">
+      <button
+        type="button"
+        className="ain-btn ain-card__head"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={bodyId}
+      >
+        <ChevronDownIcon className="ain-card__chev" />
+        <span className="ain-card__ico" aria-hidden="true"><SparkleIcon /></span>
+        <span className="ain-card__ct">
+          <span className="ain-card__h">Identity</span>
+          <span className="ain-card__sub">Name, voice, logo &amp; favicon</span>
+        </span>
+      </button>
+      {open && (
+        <div className="ain-card__body" id={bodyId}>
+          <IdentityTextField
+            label="Site name"
+            value={draft.identity.guidelines.name}
+            onChange={(v) => onGuideline("name", v)}
+            placeholder="Atelier"
+            anchorKey="identity.name"
+          />
+          <IdentityTextField
+            label="Tagline"
+            value={draft.identity.guidelines.tagline}
+            onChange={(v) => onGuideline("tagline", v)}
+            placeholder="A short line under the name"
+          />
+          <IdentityTextField
+            label="Description"
+            value={draft.identity.guidelines.description}
+            onChange={(v) => onGuideline("description", v)}
+            placeholder="What the site is about (for meta + the agent)"
+            multiline
+          />
+          <IdentityTextField
+            label="Voice / tone"
+            value={draft.identity.guidelines.tone}
+            onChange={(v) => onGuideline("tone", v)}
+            placeholder="e.g. warm, precise, playful"
+          />
+          <IdentityTextField
+            label="Imagery style"
+            value={draft.identity.guidelines.imagery_style}
+            onChange={(v) => onGuideline("imagery_style", v)}
+            placeholder="Art direction for images — light, palette, mood, subjects"
+            multiline
+          />
+          <IdentityTextField
+            label="Imagery to avoid"
+            value={draft.identity.guidelines.imagery_avoid}
+            onChange={(v) => onGuideline("imagery_avoid", v)}
+            placeholder="Clichés to steer clear of (e.g. generic stock photos)"
+            multiline
+          />
+
+          <div className="ain-studio__subgroup">
+            <h4 className="ain-studio__subtitle">Logo</h4>
+            <div id={fieldAnchorId("identity.logo")}>
+              <ReferenceField
+                label="Logo image"
+                meaning="Pick from the Library or upload a new image."
+                value={draft.identity.logo}
+                onChange={(v) => onLogo(typeof v === "string" ? v : "")}
+                types={["media"]}
+                allowUpload
+                adornment={<HandsOnMarker reachKey="identity.logo" />}
+              />
+            </div>
+            {logoPosition && (
+              <LogoLayoutControl
+                def={logoPosition}
+                value={draft.chrome.header?.logo_position}
+                onChange={(v) => onLogoLayout("header", "logo_position", v)}
+              />
+            )}
+            {headerLogoSize && (
+              <LogoLayoutControl
+                def={{ ...headerLogoSize, label: "Header logo size" }}
+                value={draft.chrome.header?.logo_size}
+                onChange={(v) => onLogoLayout("header", "logo_size", v)}
+              />
+            )}
+            {footerLogoSize && (
+              <LogoLayoutControl
+                def={{ ...footerLogoSize, label: "Footer logo size" }}
+                value={draft.chrome.footer?.logo_size}
+                onChange={(v) => onLogoLayout("footer", "logo_size", v)}
+              />
+            )}
+          </div>
+
+          <div id={fieldAnchorId("identity.favicon")}>
+            <ReferenceField
+              label="Favicon"
+              meaning="The little icon in the browser tab — a square PNG works best."
+              value={draft.identity.favicon}
+              onChange={(v) => onFavicon(typeof v === "string" ? v : "")}
+              types={["media"]}
+              allowUpload
+              adornment={<HandsOnMarker reachKey="identity.favicon" />}
+            />
+          </div>
+
+          <IdentityTextField
+            label="Footer note"
+            value={draft.identity.footer_note}
+            onChange={onFooterNote}
+            placeholder="© 2026 Atelier (defaults to © year + name)"
+          />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1505,6 +1989,19 @@ function ColorControl({ token, value, tokens, palette, referable, resolve, popAl
               </div>
             )}
 
+            {tailwind && palette.length > 0 && (
+              <div className="ain-pop__basehead">
+                <span className="ain-pop__heading">Base palette</span>
+                {/* The Tier-0 Tailwind foundation is immutable and human-only —
+                    the agent recolours by RE-POINTING tokens at these steps, it
+                    never edits the steps themselves. No reachKey: it can never
+                    become chat-reachable. */}
+                <HandsOnMarker
+                  label="Fixed foundation — set directly, not editable through chat"
+                  text="Set directly"
+                />
+              </div>
+            )}
             {tailwind &&
               palette.map((g) => (
                 <div className="ain-pop__section" key={g.hue}>

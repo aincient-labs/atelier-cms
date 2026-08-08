@@ -64,6 +64,12 @@ class AincientCoreServiceProvider extends ServiceProviderBase {
         // ProviderCall slot — while the tests, which build from the .yml, stayed
         // green. Positional arguments cannot be trusted to fail loudly here.
         new Reference('aincient_core.inference.provider_call'),
+        // Trust-the-wire tool-call recovery. Same rule as the recorder and
+        // ProviderCall above: THIS list is the live agent-turn wiring, so a
+        // codec added to the .yml and not here would recover dropped tool calls
+        // in tests and nowhere else — the lying-gateway silence back in
+        // production while the suite stays green.
+        new Reference('aincient_core.inference.tool_call_codec'),
         // The event dispatcher, for InferenceStartedEvent. Same rule as the
         // recorder above: THIS list is the live agent-turn wiring, so leaving it
         // out here would mean the one call that takes ~50s announces itself in

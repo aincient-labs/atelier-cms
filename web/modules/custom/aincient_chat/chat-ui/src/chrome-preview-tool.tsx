@@ -22,7 +22,7 @@ import { consoleNav } from "./console-nav";
  * write stays the studio's Publish button.
  *
  * The payload is a true PARTIAL (only the fields the agent set):
- *   identity — { guidelines?: { name?, tagline?, description?, tone? }, footer_note? }
+ *   identity — { guidelines?: { name?, tagline?, description?, tone?, imagery_style?, imagery_avoid? }, footer_note? }
  *   layout   — { header?: { logo_position?, logo_size?, sticky?, nav_alignment? },
  *               footer?: { layout?, logo_size?, show_tagline? } }
  *   reset    — revert the whole draft to the saved chrome
@@ -83,7 +83,7 @@ function applyOps(payload: ChromePreviewPayload): void {
 
   const g = payload.identity?.guidelines;
   if (g) {
-    for (const k of ["name", "tagline", "description", "tone"] as const) {
+    for (const k of ["name", "tagline", "description", "tone", "imagery_style", "imagery_avoid"] as const) {
       if (typeof g[k] === "string") next.identity.guidelines[k] = g[k] as string;
     }
   }

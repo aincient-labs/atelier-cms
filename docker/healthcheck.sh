@@ -57,7 +57,41 @@ if [ "$front_status" -ge 400 ]; then
   fail "front page returns HTTP $front_status for an anonymous visitor (page.front = ${front}) — the site has no working front door"
 fi
 
-# 5. A model is bound for the default role (warns rather than fails — a site may
+# 5. A DYNAMIC route renders. `/` is the one URL on the site that is always warm:
+#    it is anonymously page-cacheable, so a site whose every uncached route throws
+#    can still serve check 4 from cache and be certified healthy. That is exactly
+#    the WSOD reported in manager#2 — the console was announced ready, and every
+#    route the user then clicked was a 500. `/user/login` is uncacheable (it carries
+#    a form token), so rendering it exercises routing, the theme and the container
+#    for real. Same internal-subrequest mechanism as check 4, and for the same
+#    reason: it has to work during converge, before the web server is up.
+#
+#    NOT YET COVERED, deliberately: this still runs as root, so a site whose code
+#    the WEB USER cannot read passes — the failure mode that cost a day in the
+#    0.5.1 gate (431 files mode 600). The unprivileged fix is a real HTTP request
+#    as www-data, which needs a Host the site will accept; `trusted_host_patterns`
+#    is operator-configured (AINCIENT_TRUSTED_HOSTS), so a `localhost` probe can
+#    legitimately return 400 and would fail healthy sites. Tracked separately.
+login_status="$($DRUSH php:eval '
+  $switcher = \Drupal::service("account_switcher");
+  $switcher->switchTo(new \Drupal\Core\Session\AnonymousUserSession());
+  try {
+    $request = \Symfony\Component\HttpFoundation\Request::create("/user/login");
+    $response = \Drupal::service("http_kernel")->handle($request);
+    print "DYNROUTE=" . $response->getStatusCode();
+  } finally {
+    $switcher->switchBack();
+  }
+' 2>/dev/null | sed -n 's/.*DYNROUTE=\([0-9]\{1,\}\).*/\1/p' | tail -1)"
+case "$login_status" in
+  ''|*[!0-9]*)
+    fail "dynamic route did not render — Drupal returned no status for an anonymous request to /user/login" ;;
+esac
+if [ "$login_status" -ge 500 ]; then
+  fail "/user/login returns HTTP $login_status for an anonymous visitor — the site serves its cached front page but no dynamic route works"
+fi
+
+# 6. A model is bound for the default role (warns rather than fails — a site may
 #    be mid-setup before a provider is connected). Provider-neutral: we ask
 #    whether the DEFAULT ROLE resolves to a provider+model, not whether any
 #    vendor-specific key exists.

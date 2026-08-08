@@ -37,6 +37,7 @@ final class StudioAccessTest extends UnitTestCase {
   public function testSpecialisedPermissions(): void {
     $this->assertSame('use aincient studio design_system', Studio::DesignSystem->permission());
     $this->assertSame('use aincient studio globals', Studio::Globals->permission());
+    $this->assertSame('use aincient studio settings', Studio::Settings->permission());
     $this->assertSame('use aincient studio content', Studio::Content->permission());
     $this->assertSame('use aincient studio library', Studio::Library->permission());
     $this->assertSame('use aincient studio media', Studio::Media->permission());
@@ -73,6 +74,7 @@ final class StudioAccessTest extends UnitTestCase {
       [
         'use aincient studio design_system',
         'use aincient studio globals',
+        'use aincient studio settings',
         'use aincient studio content',
         'use aincient studio library',
         'use aincient studio media',

@@ -177,6 +177,20 @@ export const PersonIcon = (p: IconProps) => (
   <Svg {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Svg>
 );
 
+/** A person — the "set directly by you, not the chat agent" marker for a field
+ *  the agent can't reach (so it doesn't read as one it can). Deliberately NOT a
+ *  pen/pencil: that glyph is the Write capability ({@link PenIcon}, the agent
+ *  authoring), so a writing tool here would invert the meaning. A person is the
+ *  true opposite — you, a human, set this. Its own glyph, distinct from the
+ *  account-menu {@link PersonIcon} (this is a field annotation, not account
+ *  chrome). Positive, not a ban. */
+export const HumanSetIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="8" r="3.6" />
+    <path d="M4.8 20a7.5 7.5 0 0 1 14.4 0" />
+  </Svg>
+);
+
 export const MoreHorizontalIcon = (p: IconProps) => (
   <Svg fill="currentColor" stroke="none" {...p}>
     <circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" />
@@ -294,6 +308,13 @@ export const EyeIcon = (p: IconProps) => (
 
 export const UploadIcon = (p: IconProps) => (
   <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="M12 3v13" /><path d="m7 8 5-5 5 5" /></Svg>
+);
+
+/** Paperclip — the "attach an image" affordance in the composer. */
+export const PaperclipIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+  </Svg>
 );
 
 /** Tool/wrench glyph — tool-call steps and tool-usage cards. */

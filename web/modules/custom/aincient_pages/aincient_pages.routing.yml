@@ -95,11 +95,15 @@ aincient_pages.brand_status:
     _disable_route_normalizer: 'TRUE'
     _auth: ['cookie', 'basic_auth']
 
-# ── Globals studios API (chat console) ──────────────────────────────────────
-# The chrome parallel of the brand/page studio API: the Header/Footer/Brand-
-# identity studios edit a preview-only draft (chrome layout + identity + the two
-# chrome menus); preview renders it without persisting; save is the one
-# deliberate write (layout + identity + menu reconciliation). Gated like brand.
+# ── Chrome studios API (chat console) ───────────────────────────────────────
+# Shared persistence for the three surfaces the old Globals studio split into
+# (DECISIONS 0372): Identity (design_system) writes the identity slice + logo
+# layout knobs, Navigation & Pages (globals) the menus/routing/arrangement, and
+# Settings (settings) the site email + privacy. All three edit a preview-only
+# draft; preview renders it without persisting; save is the one deliberate write
+# and MERGES by provided key, so each surface safely sends only its own slice.
+# The `+` permission is OR: any of the three studios may reach these endpoints
+# (the save logic is one shared merge, not re-cut per surface).
 
 # Current chrome state + the editing vocabulary (layout enums, identity, menus).
 aincient_pages.chrome_manifest:
@@ -108,7 +112,7 @@ aincient_pages.chrome_manifest:
     _controller: '\Drupal\aincient_pages\Controller\ChromeController::manifest'
   methods: [GET]
   requirements:
-    _permission: 'use aincient studio globals'
+    _permission: 'use aincient studio globals+use aincient studio design_system+use aincient studio settings'
   options:
     _disable_route_normalizer: 'TRUE'
     _auth: ['cookie', 'basic_auth']
@@ -120,7 +124,7 @@ aincient_pages.chrome_preview:
     _controller: '\Drupal\aincient_pages\Controller\ChromeController::preview'
   methods: [POST]
   requirements:
-    _permission: 'use aincient studio globals'
+    _permission: 'use aincient studio globals+use aincient studio design_system+use aincient studio settings'
   options:
     _disable_route_normalizer: 'TRUE'
     _auth: ['cookie', 'basic_auth']
@@ -132,7 +136,7 @@ aincient_pages.chrome_save:
     _controller: '\Drupal\aincient_pages\Controller\ChromeController::save'
   methods: [POST]
   requirements:
-    _permission: 'use aincient studio globals'
+    _permission: 'use aincient studio globals+use aincient studio design_system+use aincient studio settings'
   options:
     _disable_route_normalizer: 'TRUE'
     _auth: ['cookie', 'basic_auth']

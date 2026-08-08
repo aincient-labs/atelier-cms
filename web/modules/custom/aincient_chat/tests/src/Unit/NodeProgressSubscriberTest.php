@@ -57,13 +57,14 @@ final class NodeProgressSubscriberTest extends UnitTestCase {
    * @param array $metadata
    *   The job metadata (node_type_id, execution_time_us, …).
    */
-  private function mockJob(string $nodeId, ?string $label, string $status, array $metadata = [], string $error = ''): FlowDropJobInterface {
+  private function mockJob(string $nodeId, ?string $label, string $status, array $metadata = [], string $error = '', array $outputData = []): FlowDropJobInterface {
     $job = $this->createMock(FlowDropJobInterface::class);
     $job->method('getNodeId')->willReturn($nodeId);
     $job->method('label')->willReturn($label);
     $job->method('getStatus')->willReturn($status);
     $job->method('getMetadata')->willReturn($metadata);
     $job->method('getErrorMessage')->willReturn($error);
+    $job->method('getOutputData')->willReturn($outputData);
     return $job;
   }
 
@@ -168,6 +169,73 @@ final class NodeProgressSubscriberTest extends UnitTestCase {
     // Nothing ran before it, so the reader may simply send the turn again.
     $this->assertTrue($data['error_retry']);
     $this->assertArrayNotHasKey('error_note', $data);
+  }
+
+  /**
+   * A stop-and-reported node (COMPLETED, carrying `error_detail`) drives the
+   * SAME card as a failed one — off the struct, with no string round-trip.
+   *
+   * This is the agent path after the reason node started catching provider
+   * failures: the node completes rather than failing, and the kind rides its
+   * `error_detail` output. No ProviderFailureLog entry is needed — the struct is
+   * self-describing — so this asserts the card is built without one recorded.
+   *
+   * @covers ::onJobCompleted
+   */
+  public function testStopAndReportedNodeDrivesTheCardFromErrorDetail(): void {
+    $sentence = 'Anthropic is rate-limiting this key, so it refused the request.';
+    $job = $this->mockJob('agent_reason', 'Reason', 'completed', [], '', [
+      'error_detail' => [
+        'kind' => ProviderCall::KIND_RATE_LIMIT,
+        'provider' => 'anthropic',
+        'model' => 'claude-sonnet-5',
+        'message' => $sentence,
+        'retryable' => TRUE,
+      ],
+    ]);
+
+    (new NodeProgressSubscriber($this->relay, new ProviderFailureLog()))
+      ->onJobCompleted(new JobCompletedEvent($job, []));
+
+    $data = $this->emitted[0]->data;
+    $this->assertSame('completed', $data['status']);
+    $this->assertSame($sentence, $data['error']);
+    $this->assertSame('rate_limit', $data['error_kind']);
+    // Nothing ran before it, so the reader may simply send the turn again.
+    $this->assertTrue($data['error_retry']);
+  }
+
+  /**
+   * The struct path wins over the FAILED-string path when both are present.
+   *
+   * A defensive precedence: a node that stop-and-reported should never ALSO be
+   * classified from a stale ProviderFailureLog entry left by an earlier hiccup —
+   * its own `error_detail` is the authoritative, self-describing account.
+   *
+   * @covers ::onJobCompleted
+   */
+  public function testErrorDetailTakesPrecedenceOverTheLog(): void {
+    $log = new ProviderFailureLog();
+    // A stale, UNRELATED auth failure recorded earlier in the same request.
+    $log->record(new AiProviderFailure('Anthropic rejected the key.', 0, NULL, ProviderCall::KIND_AUTH));
+
+    $sentence = 'This turn was too long for "gpt-5" to finish.';
+    $job = $this->mockJob('agent_reason', 'Reason', 'completed', [], '', [
+      'error_detail' => [
+        'kind' => ProviderCall::KIND_TOO_LONG,
+        'provider' => 'openai',
+        'model' => 'gpt-5',
+        'message' => $sentence,
+        'retryable' => FALSE,
+      ],
+    ]);
+
+    (new NodeProgressSubscriber($this->relay, $log))
+      ->onJobCompleted(new JobCompletedEvent($job, []));
+
+    $data = $this->emitted[0]->data;
+    $this->assertSame('too_long', $data['error_kind'], 'The struct, not the stale log, classifies this frame.');
+    $this->assertSame($sentence, $data['error']);
   }
 
   /**

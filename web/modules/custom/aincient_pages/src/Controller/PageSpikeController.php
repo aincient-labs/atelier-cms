@@ -110,13 +110,18 @@ final class PageSpikeController implements ContainerInjectionInterface {
       '#template' => <<<TWIG
         <main class="mx-auto max-w-7xl px-6 py-20">
           <p class="text-sm font-semibold uppercase tracking-wide text-primary">Preview</p>
-          <h1 class="mt-3 font-display text-4xl font-bold tracking-tight text-foreground">Your site, framed by its chrome</h1>
-          <p class="mt-4 max-w-2xl text-lg text-muted-foreground">Placeholder page content, so you can see how the header and footer wrap a real page. Edit them on the left — this preview updates live.</p>
+          <h1 class="mt-3 font-display text-4xl font-bold tracking-tight text-foreground">Welcome — your site, top to bottom</h1>
+          <p class="mt-4 max-w-2xl text-lg text-muted-foreground">This stand-in page sits between your header and footer, so you can see how they wrap a real one. Shape the menus, layout, and routing in the editor panel, and this preview follows along as you go.</p>
+          {% set cards = [
+            { 'title': 'A warm hello', 'body': 'Where your story opens — a few lines about who you are and the work you make.' },
+            { 'title': 'What visitors find', 'body': 'The pages, the words, the everyday updates. Everything someone came here to see.' },
+            { 'title': 'Come say hi', 'body': 'A clear way to reach you, so a first visit can turn into a conversation.' }
+          ] %}
           <div class="mt-12 grid gap-4 sm:grid-cols-3">
-            {% for i in 1..3 %}
+            {% for card in cards %}
               <div class="rounded-[var(--card-radius)] border border-[color:var(--card-border)] bg-card p-6 text-card-foreground shadow-[var(--card-shadow)]">
-                <p class="font-display text-lg font-semibold">Section {{ i }}</p>
-                <p class="mt-2 text-sm text-muted-foreground">A card of body content to give the page some weight.</p>
+                <p class="font-display text-lg font-semibold">{{ card.title }}</p>
+                <p class="mt-2 text-sm text-muted-foreground">{{ card.body }}</p>
               </div>
             {% endfor %}
           </div>

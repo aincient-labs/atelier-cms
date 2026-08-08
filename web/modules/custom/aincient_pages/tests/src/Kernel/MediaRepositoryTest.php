@@ -24,7 +24,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 final class MediaRepositoryTest extends KernelTestBase {
 
   protected static $modules = [
-    'system', 'user', 'field', 'text', 'file', 'image', 'media', 'workflows', 'content_moderation', 'aincient_pages',
+    'system', 'user', 'field', 'text', 'file', 'image', 'media', 'workflows', 'content_moderation',
+    'aincient_core', 'aincient_pages',
   ];
 
   protected function setUp(): void {
@@ -135,8 +136,11 @@ final class MediaRepositoryTest extends KernelTestBase {
 
   public function testCreateFromUploadMakesMediaWithAlt(): void {
     $tmp = $this->container->get('file_system')->realpath('temporary://') . '/' . uniqid('upl') . '.png';
+    // A GD-decodable PNG — the upload path now re-encodes through GD
+    // ({@see \Drupal\aincient_core\File\ImageUploadValidator}), so a fixture
+    // whose header sniffs as PNG but fails full decode is correctly rejected.
     file_put_contents($tmp, base64_decode(
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWP4z8AAAAMBAQCc479ZAAAAAElFTkSuQmCC'
     ));
     $upload = new UploadedFile($tmp, 'logo.png', 'image/png', NULL, TRUE);
     $row = $this->repo()->createFromUpload($upload, 'Our logo');
@@ -149,8 +153,9 @@ final class MediaRepositoryTest extends KernelTestBase {
 
   public function testCreateFromUploadResolvesDateTokens(): void {
     $tmp = $this->container->get('file_system')->realpath('temporary://') . '/' . uniqid('upl') . '.png';
+    // A GD-decodable PNG (see the same note in testCreateFromUploadMakesMediaWithAlt).
     file_put_contents($tmp, base64_decode(
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAADElEQVQImWP4z8AAAAMBAQCc479ZAAAAAElFTkSuQmCC'
     ));
     $upload = new UploadedFile($tmp, 'logo.png', 'image/png', NULL, TRUE);
     $row = $this->repo()->createFromUpload($upload);

@@ -63,6 +63,11 @@ final class AincientCoreServiceProviderTest extends TestCase {
       // 0326 and NOT here, which shipped a v0.4.1 whose reasoner could not be
       // constructed at all (DECISIONS 0331).
       'aincient_core.inference.provider_call',
+      // The trust-the-wire codec (Phase 4): re-reads a tool call the config
+      // bridge dropped from a lying gateway's raw body. Same hazard as the
+      // recorder and ProviderCall — wired here because THIS list is the live
+      // agent loop, so an omission would recover in tests and nowhere else.
+      'aincient_core.inference.tool_call_codec',
       // The dispatcher that announces InferenceStartedEvent. Wired here as well
       // as in the .yml because THIS list is the live agent loop: without it the
       // one call that takes ~50s would report itself starting in tests only,
@@ -130,7 +135,7 @@ final class AincientCoreServiceProviderTest extends TestCase {
 
     $arguments = $container->getDefinition('flowdrop.chat_reasoner')->getArguments();
     $this->assertNotContains(new Reference('some.other.service'), $arguments);
-    $this->assertCount(9, $arguments);
+    $this->assertCount(10, $arguments);
   }
 
   /**

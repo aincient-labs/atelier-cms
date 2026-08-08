@@ -113,6 +113,9 @@ aincient_pages.chrome:
         show_tagline:
           type: boolean
           label: 'Show the tagline under the footer name'
+        show_credit:
+          type: boolean
+          label: 'Show the "Built with Atelier" credit line'
 
 aincient_pages.settings:
   type: config_object
