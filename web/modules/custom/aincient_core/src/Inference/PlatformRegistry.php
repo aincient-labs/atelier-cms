@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Inference;
 
 use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
-use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\State\StateInterface;
 use Symfony\AI\Platform\PlatformInterface;
 
@@ -17,11 +15,14 @@ use Symfony\AI\Platform\PlatformInterface;
  * jobs: hold the adapter set ({@see ProviderAdapterInterface}) and resolve the
  * stored credential each adapter needs.
  *
- * CREDENTIAL STORAGE IS UNCHANGED. It deliberately reads the SAME Key entity →
- * State chain that {@see \Drupal\aincient_onboarding\ProviderConnector} already
- * writes (`<provider>_default_key` backed by `aincient.<provider>_api_key`), so
- * this can serve traffic on a site that was onboarded before the migration and
- * an operator never re-enters a key. Onboarding is not touched in this phase.
+ * Credentials resolve from exactly two stores, environment first: the
+ * `ATELIER_<PROVIDER>_API_KEY` / `_ENDPOINT` variables a deployment supplies,
+ * then the `aincient.<provider>_api_key` / `_endpoint` State keys that
+ * {@see \Drupal\aincient_onboarding\ProviderConnector} writes. The Key-entity +
+ * `aincient.provider.<id>` config-pointer branch, and the legacy `ai_provider_*`
+ * / `gemini_provider.settings` fallback, are gone (DECISIONS 0341): those config
+ * objects left with their modules, and the Forge demo now supplies its trial key
+ * through the environment, so nothing wrote or read them any longer.
  */
 final class PlatformRegistry implements PlatformRegistryInterface {
 
@@ -39,8 +40,6 @@ final class PlatformRegistry implements PlatformRegistryInterface {
   public function __construct(
     iterable $adapters,
     private readonly StateInterface $state,
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly ConfigFactoryInterface $configFactory,
   ) {
     foreach ($adapters as $adapter) {
       $this->adapters[$adapter->id()] = $adapter;
@@ -206,45 +205,22 @@ final class PlatformRegistry implements PlatformRegistryInterface {
   /**
    * Resolves a provider's secret, environment first.
    *
-   * Three stores, in precedence order:
+   * Two stores, in precedence order:
    *
    * 1. `ATELIER_<PROVIDER>_API_KEY` in the environment. Deployment intent wins,
-   *    because it is the only one of the three that can be ROTATED without a
-   *    database write — an operator who changes the variable and restarts must
-   *    see the new value, not a stale copy something wrote to State once.
-   * 2. A Key entity named by `aincient.provider.<id>: api_key`. Kept because it
-   *    is how a secret reaches a container WITHOUT touching the database at all
-   *    (an `env`-provider Key entity resolves live, per request), which matters
-   *    when the database is dumped into a published image.
-   * 3. The conventional `aincient.<provider>_api_key` State key — what the
+   *    because it is the only one that can be ROTATED without a database write —
+   *    an operator who changes the variable and restarts must see the new value,
+   *    not a stale copy something wrote to State once. It is also how a secret
+   *    reaches a container WITHOUT touching the database at all, which matters
+   *    when the database is dumped into a published image (the Forge demo's
+   *    per-container trial key travels this way).
+   * 2. The conventional `aincient.<provider>_api_key` State key — what the
    *    wizard writes, and what a headless `drush state:set` install writes.
-   *
-   * 1 and 2 express the same intent by different means; 1 exists so expressing
-   * it costs one variable instead of a Key entity plus a config pointer.
    */
   private function credentialFor(string $providerId): string {
     $fromEnvironment = $this->environmentValue($providerId, 'API_KEY');
     if ($fromEnvironment !== '') {
       return $fromEnvironment;
-    }
-
-    $keyId = (string) $this->configFactory
-      ->get($this->settingsNameFor($providerId))
-      ->get('api_key');
-
-    if ($keyId !== '') {
-      try {
-        $entity = $this->entityTypeManager->getStorage('key')->load($keyId);
-        if ($entity !== NULL) {
-          $value = (string) $entity->getKeyValue();
-          if ($value !== '') {
-            return $value;
-          }
-        }
-      }
-      catch (\Throwable) {
-        // Fall through to the State convention below.
-      }
     }
 
     return trim((string) $this->state->get('aincient.' . $providerId . '_api_key', ''));
@@ -254,10 +230,10 @@ final class PlatformRegistry implements PlatformRegistryInterface {
    * A provider's configured base URL, or '' for the vendor default.
    *
    * `ATELIER_<PROVIDER>_ENDPOINT` wins, for the same reason the credential's
-   * does. Then config — both `endpoint` (our own key, and the contrib
-   * OpenAI-compatible module's) and `host_name` (the Ollama convention), so an
-   * operator's existing value is honoured whichever module wrote it — and
-   * finally the State convention the wizard writes.
+   * does. Then the `aincient.<provider>_endpoint` State convention the wizard
+   * writes — the only other place an endpoint is ever stored, for both host
+   * providers (whose whole credential is the URL) and OpenAI-compatible ones
+   * ({@see \Drupal\aincient_onboarding\ProviderConnector::persistCredential()}).
    */
   private function endpointFor(string $providerId): string {
     $fromEnvironment = $this->environmentValue($providerId, 'ENDPOINT');
@@ -265,44 +241,7 @@ final class PlatformRegistry implements PlatformRegistryInterface {
       return $fromEnvironment;
     }
 
-    $settings = $this->configFactory->get($this->settingsNameFor($providerId));
-    foreach (['endpoint', 'host_name'] as $key) {
-      $value = trim((string) $settings->get($key));
-      if ($value !== '') {
-        return $value;
-      }
-    }
     return trim((string) $this->state->get('aincient.' . $providerId . '_endpoint', ''));
-  }
-
-  /**
-   * The settings config object holding a provider's credential pointer.
-   *
-   * Our own providers use `aincient.provider.<id>`; the historical
-   * `drupal/ai` names are read as a fallback so a pre-migration install keeps
-   * resolving without a re-connect. The `gemini_provider` special case is the
-   * one module that broke the `ai_provider_<id>.settings` convention.
-   *
-   * THE FALLBACK IS NOW DEAD ON EVERY SUPPORTED VERSION, and is kept only
-   * because deleting credential-resolution code deserves its own change rather
-   * than riding along with a composer cleanup. Those config objects belonged to
-   * the `ai_provider_*` and `gemini_provider` modules, so they left with the
-   * uninstall in v0.1.0 — verified absent from the active store, and they are not
-   * `config_ignore`d, so nothing preserved them. A site old enough to still hold
-   * them is old enough that `docker/converge.sh` refuses to upgrade it at all
-   * (its module code is gone from the image; see the missing-code guard there).
-   * `Config::get()` on an absent object returns NULL, so the branch is a
-   * harmless no-op rather than an error.
-   */
-  private function settingsNameFor(string $providerId): string {
-    $own = 'aincient.provider.' . $providerId;
-    if ($this->configFactory->get($own)->get('api_key') !== NULL) {
-      return $own;
-    }
-    return match ($providerId) {
-      'gemini', 'nanobanana' => 'gemini_provider.settings',
-      default => 'ai_provider_' . $providerId . '.settings',
-    };
   }
 
 }

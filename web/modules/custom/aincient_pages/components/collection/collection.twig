@@ -1,0 +1,77 @@
+{#
+/**
+ * @file
+ * Collection — a live listing of real content, rendered as article-teaser tiles.
+ *
+ * Content in the HTML, filter state in JS (DECISIONS 0329): the tiles below are
+ * server-rendered from a real entity query, so the list is correct and crawlable
+ * with no JavaScript. `mode: index` gets progressive enhancement (the island
+ * attaches by the data-collection hook, added in a later phase); `mode: strip`
+ * ships zero JavaScript and only ever offers a "View all →" link.
+ *
+ * Colours/spacing resolve to brand design tokens, the same system every other
+ * section uses, so editing the brand reskins the listing with no rebuild.
+ */
+#}
+{% set tone_class = {
+  default: 'bg-background text-foreground',
+  muted: 'bg-muted text-muted-foreground',
+  brand: 'bg-primary text-primary-foreground',
+  inverted: 'bg-foreground text-background',
+}[tone|default('default')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
+{% set cols = {
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-2 lg:grid-cols-3',
+  4: 'sm:grid-cols-2 lg:grid-cols-4',
+}[columns|default(3)] %}
+
+{% set is_index = mode == 'index' %}
+{% if is_index and json_url %}
+  {# Prefetch the JSON index at IDLE priority so it never competes with the LCP
+     image; the island's later fetch() then hits the HTTP cache. #}
+  <link rel="prefetch" href="{{ json_url }}" as="fetch" crossorigin>
+{% endif %}
+<section class="{{ tone_class }}"{% if is_index %} data-collection="index" data-collection-hash="{{ hash }}" data-collection-src="{{ json_url }}" data-collection-per-page="{{ per_page|default(12) }}" data-collection-total="{{ total|default(0) }}"{% endif %}>
+  <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
+    {% if eyebrow or heading or subheading %}
+      <div class="mb-12 max-w-2xl">
+        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? 'opacity-90' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
+        {% if heading %}<h2 class="mt-3 font-display text-3xl sm:text-4xl [font-weight:var(--heading-weight)] tracking-tight">{{ heading }}</h2>{% endif %}
+        {% if subheading %}<p class="mt-4 text-lg opacity-70">{{ subheading|inline_md }}</p>{% endif %}
+      </div>
+    {% endif %}
+
+    {% if articles is not empty %}
+      <div class="grid gap-6 {{ cols }}" data-collection-list>
+        {% for a in articles %}
+          {{ include('aincient_pages:article-teaser', a|merge({on_dark: on_dark}), with_context = false) }}
+        {% endfor %}
+      </div>
+      {% if is_index and archive_url %}
+        {# The archive is ALWAYS a real link — the no-JS "see everything" path and
+           the crawler's complete link graph. The island upgrades it to "Load more". #}
+        <div class="mt-10" data-collection-more>
+          <a href="{{ archive_url }}" class="inline-flex items-center gap-1.5 text-sm font-semibold {{ on_dark ? 'opacity-90' : 'text-primary-on-surface' }} no-underline hover:underline">
+            View all {{ total }} posts<span aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+      {% endif %}
+    {% elseif empty %}
+      {# Studio-preview only: a strip that resolves to nothing must not silently
+         vanish — show why, so "where did my section go?" is not a support ticket. #}
+      <div class="rounded-[var(--card-radius)] border border-dashed border-[color:var(--card-border)] p-8 text-center opacity-70">
+        <p class="font-medium">No posts to list yet</p>
+        <p class="mt-1 text-sm">This collection will fill in as posts are published.</p>
+      </div>
+    {% endif %}
+
+    {% if mode == 'strip' and cta_url and cta_label %}
+      <div class="mt-10">
+        <a href="{{ cta_url }}" class="inline-flex items-center gap-1.5 text-sm font-semibold {{ on_dark ? 'opacity-90' : 'text-primary-on-surface' }} no-underline hover:underline">
+          {{ cta_label }}<span aria-hidden="true">&rarr;</span>
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</section>

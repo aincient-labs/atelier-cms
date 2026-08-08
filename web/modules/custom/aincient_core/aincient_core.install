@@ -221,14 +221,15 @@ function aincient_core_update_11002(): void {
  *
  * The six `drupal/ai` provider modules are uninstalled in this release, and a
  * module uninstall deletes its config objects. Those objects held a POINTER —
- * `ai_provider_<id>.settings: api_key` naming a Key entity — and
- * {@see \Drupal\aincient_core\Inference\PlatformRegistry::credentialFor()} reads
- * it before falling back to the State key `aincient.<id>_api_key`. On every
- * install onboarded since 2026-07-06 the pointer and the fallback resolve to the
- * same State value, so the fallback alone would do; on an older one, wired to a
- * Key entity backed by anything else, deleting the pointer silently unbinds a
- * working key. So resolve the pointer NOW, while the config still exists, and
- * write the VALUE to the durable State key.
+ * `ai_provider_<id>.settings: api_key` naming a Key entity — that the inference
+ * path once read before falling back to the State key `aincient.<id>_api_key`.
+ * (That config branch has since been deleted; State is now the only store the
+ * registry reads besides the environment — DECISIONS 0341.) On every install
+ * onboarded since 2026-07-06 the pointer and the State key resolve to the same
+ * value, so the State key alone would do; on an older one, wired to a Key entity
+ * backed by anything else, deleting the pointer silently unbinds a working key.
+ * So resolve the pointer NOW, while the config still exists, and write the VALUE
+ * to the durable State key.
  *
  * Endpoints get the same treatment: Ollama's `host_name` and the
  * OpenAI-compatible `endpoint` are equally load-bearing and equally about to be
@@ -446,12 +447,15 @@ function aincient_core_update_11008(): void {
  * uninstalling takes `gemini_provider.settings` with it.
  *
  * That config is load-bearing in a way its module is not. `gemini_provider` is
- * the one module that broke the `ai_provider_<id>.settings` convention, so
- * PlatformRegistry::settingsNameFor() special-cases BOTH `gemini` and
- * `nanobanana` onto it — one config object is the pointer for two providers.
- * Note 11003 listed `nanobanana` but read `ai_provider_nanobanana.settings`,
- * which has not been that provider's pointer since the Key entities were
- * unified; this hook reads the object that actually holds it.
+ * the one module that broke the `ai_provider_<id>.settings` convention: one
+ * config object, `gemini_provider.settings`, was the pointer for BOTH `gemini`
+ * and `nanobanana`. (The inference path's config-pointer branch that once read
+ * it has since been deleted — State is now the only store besides the
+ * environment, DECISIONS 0341 — but the migration still has to rescue the value
+ * before the config leaves.) Note 11003 listed `nanobanana` but read
+ * `ai_provider_nanobanana.settings`, which has not been that provider's pointer
+ * since the Key entities were unified; this hook reads the object that actually
+ * holds it.
  *
  * On a site connected through onboarding this is a no-op: `storeApiKey()` runs
  * per key-group member, so both State keys are already written and the

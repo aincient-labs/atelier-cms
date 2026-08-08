@@ -109,6 +109,30 @@ final class PageStoreTest extends KernelTestBase {
     return $this->container->get('aincient_pages.store');
   }
 
+  public function testCollectionClampsQueryKnobsToTheGrammar(): void {
+    $clean = $this->store()->validate([
+      'type' => 'landing',
+      'title' => 'Home',
+      'sections' => [
+        ['component' => 'collection', 'props' => [
+          'mode' => 'sideways', 'source' => 'wiki', 'sort' => 'random',
+          'limit' => '999', 'per_page' => '-4', 'heading' => 'Latest',
+          'ghost' => 'dropped',
+        ]],
+      ],
+    ]);
+    $props = $clean['sections'][0]['props'];
+    // Bad enums clamp to their default; counts coerce to the bounded range.
+    $this->assertSame('strip', $props['mode']);
+    $this->assertSame('blog', $props['source']);
+    $this->assertSame('newest', $props['sort']);
+    $this->assertSame(48, $props['limit']);
+    $this->assertSame(1, $props['per_page']);
+    // A prop the collection doesn't declare is dropped; a real one is kept.
+    $this->assertArrayNotHasKey('ghost', $props);
+    $this->assertSame('Latest', $props['heading']);
+  }
+
   public function testLandingDropsUnknownComponentsAndCoercesEnums(): void {
     $clean = $this->store()->validate([
       'type' => 'landing',

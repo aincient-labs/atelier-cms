@@ -32,3 +32,7 @@ props:
     more_label:
       type: string
       description: 'Read-more link label.'
+    on_dark:
+      type: boolean
+      default: false
+      description: 'Set by the parent collection when its tone is brand/inverted: drops the opaque light card for a translucent surface and swaps accent text for an opacity of the inherited on-colour, so tiles stay legible on a dark section. Injected by the renderer — not authored.'

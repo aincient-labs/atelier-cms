@@ -1,7 +1,7 @@
 services:
   aincient_export.path_inventory:
     class: Drupal\aincient_export\PathInventory
-    arguments: ['@entity_type.manager', '@config.factory']
+    arguments: ['@entity_type.manager', '@config.factory', '@?aincient_pages.collection_inventory']
   aincient_export.derivative_warmer:
     class: Drupal\aincient_export\DerivativeWarmer
     arguments: ['@entity_type.manager', '@image.factory']

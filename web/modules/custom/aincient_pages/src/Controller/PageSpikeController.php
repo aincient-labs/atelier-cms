@@ -6,14 +6,18 @@ namespace Drupal\aincient_pages\Controller;
 
 use Drupal\aincient_pages\BlockStore;
 use Drupal\aincient_pages\BrandRepository;
+use Drupal\aincient_pages\CollectionInventory;
+use Drupal\aincient_pages\CollectionResolver;
 use Drupal\aincient_pages\ComponentCatalog;
 use Drupal\aincient_pages\ConsentSettings;
 use Drupal\aincient_pages\EntityEmbedResolver;
 use Drupal\aincient_pages\MarkdownRenderer;
 use Drupal\aincient_pages\PageStore;
 use Drupal\aincient_pages\SiteIdentity;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\DependencyInjection\ClassResolverInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Url;
 use Drupal\aincient_pages\SiteChrome;
 use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Render\RendererInterface;
@@ -51,6 +55,8 @@ final class PageSpikeController implements ContainerInjectionInterface {
     private readonly MarkdownRenderer $markdown,
     private readonly ConsentSettings $consent,
     private readonly SiteIdentity $identity,
+    private readonly CollectionResolver $collections,
+    private readonly CollectionInventory $collectionInventory,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -66,6 +72,8 @@ final class PageSpikeController implements ContainerInjectionInterface {
       $container->get('aincient_pages.markdown'),
       $container->get('aincient_pages.consent'),
       $container->get('aincient_pages.site_identity'),
+      $container->get('aincient_pages.collection_resolver'),
+      $container->get('aincient_pages.collection_inventory'),
     );
   }
 
@@ -204,6 +212,16 @@ final class PageSpikeController implements ContainerInjectionInterface {
 
     $path = $this->moduleList->getPath('aincient_pages');
     $css = base_path() . $path . '/assets/aincient-pages.css?v=' . @filemtime("$path/assets/aincient-pages.css");
+    // Collection island — progressive enhancement over the already-correct list
+    // (DECISIONS 0329). Loaded ONLY when an index-mode collection actually
+    // rendered (the data hook is in the markup) and only on a real canonical
+    // render, never the stateless studio preview whose unsaved hash has no JSON
+    // yet. The bespoke shell bypasses #attached, so link the self-contained,
+    // deferred script directly — the consent.js precedent.
+    if ($node !== NULL && str_contains($content, 'data-collection="index"')) {
+      $islandSrc = htmlspecialchars(base_path() . $path . '/js/collection.js?v=' . @filemtime("$path/js/collection.js"), ENT_QUOTES);
+      $content .= "\n<script src=\"$islandSrc\" defer></script>";
+    }
     // The site brand: a :root override injected after the stylesheet, so the
     // design tokens reskin every component with no rebuild.
     $brandCss = $this->brand->cssVariables();
@@ -279,7 +297,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
           continue;
         }
         foreach ($inner as $innerSection) {
-          $b = $this->renderSection($innerSection, $langcode);
+          $b = $this->renderSection($innerSection, $langcode, $identify);
           if ($b !== NULL) {
             $build[] = $b;
           }
@@ -291,7 +309,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
       if (!isset($section['props']['tone']) && in_array($name, ['features', 'stats'], TRUE)) {
         $section['props']['tone'] = $rhythm[$r++ % 2];
       }
-      $b = $this->renderSection($section, $langcode);
+      $b = $this->renderSection($section, $langcode, $identify);
       if ($b !== NULL) {
         $build[] = $identify ? $this->identifySection($b, (string) ($section['id'] ?? '')) : $b;
       }
@@ -331,10 +349,18 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * SLOT — the entity-general path (Phase 4b), kept separate from the string-prop
    * path because a rendered entity is a render array, not a typed string. A `block`
    * is never passed here (it is expanded by the caller).
+   *
+   * $preview is the studio-canvas flag (the same seam as composeLanding's
+   * $identify): it only widens what renders — an empty `collection` strip shows
+   * a placeholder on the canvas instead of vanishing — never what a live page emits.
    */
-  private function renderSection(array $section, ?string $langcode = NULL): ?array {
+  private function renderSection(array $section, ?string $langcode = NULL, bool $preview = FALSE): ?array {
     $name = (string) ($section['component'] ?? '');
     $props = $section['props'] ?? [];
+
+    if ($name === 'collection') {
+      return $this->renderCollection($props, $langcode, $preview);
+    }
 
     if ($name === 'markdown') {
       // The authored `markdown` source becomes the SDC's sanitised `html` prop
@@ -375,6 +401,81 @@ final class PageSpikeController implements ContainerInjectionInterface {
     }
 
     return $this->component($name, $this->clean($props), $langcode);
+  }
+
+  /**
+   * Render a `collection` — a live listing resolved server-side into
+   * article-teaser tiles (DECISIONS 0329; plans/collection-listings.md).
+   *
+   * Content in the HTML: the tiles are rendered from a real entity query, so
+   * the list is correct and crawlable with no JavaScript. A `strip` shows up to
+   * `limit` tiles and an optional "View all" link; an `index` shows the first
+   * `per_page` tiles (the island's "Load more" and the archive complete the set
+   * in a later phase). An empty live strip skips the band entirely; on the
+   * studio canvas ($preview) it renders a placeholder instead of vanishing.
+   *
+   * The listing's cache metadata (node_list + every listed node's tags) rides
+   * on the render array, so publishing a post invalidates the pages that list it.
+   */
+  private function renderCollection(array $props, ?string $langcode, bool $preview): ?array {
+    $mode = ($props['mode'] ?? 'strip') === 'index' ? 'index' : 'strip';
+    $spec = [
+      'source' => $props['source'] ?? NULL,
+      'sort' => $props['sort'] ?? NULL,
+    ];
+    $limit = $mode === 'index'
+      ? (int) ($props['per_page'] ?? 12)
+      : (int) ($props['limit'] ?? 3);
+
+    $resolved = $this->collections->resolve($spec, $langcode, max(1, $limit));
+    $articles = array_map(
+      static fn (array $r) => CollectionResolver::teaserProps($r),
+      $resolved['records'],
+    );
+
+    // A live strip that lists nothing shows nothing; on the canvas it keeps a
+    // placeholder so "where did my section go?" is never a support question.
+    if ($articles === [] && $mode === 'strip' && !$preview) {
+      return NULL;
+    }
+
+    $bag = $this->clean([
+      'tone' => $props['tone'] ?? NULL,
+      'eyebrow' => $props['eyebrow'] ?? NULL,
+      'heading' => $props['heading'] ?? NULL,
+      'subheading' => $props['subheading'] ?? NULL,
+      'cta_label' => $props['cta_label'] ?? NULL,
+      'cta_url' => $props['cta_url'] ?? NULL,
+    ]);
+    $bag['mode'] = $mode;
+    $bag['columns'] = (int) ($props['columns'] ?? 3);
+    $bag['articles'] = $articles;
+    $bag['total'] = $resolved['total'];
+    $bag['empty'] = $preview && $articles === [];
+
+    // Index mode addresses its JSON index + archive by the query's content hash
+    // — the same hash the route and the export inventory resolve against — and
+    // hands the island its prefetch source + page size.
+    if ($mode === 'index') {
+      $hash = $this->collectionInventory->specHash($spec);
+      $bag['hash'] = $hash;
+      $bag['per_page'] = $limit;
+      $bag['json_url'] = $this->routeUrl('aincient_pages.collection_data', ['file' => $hash . '.json'], $resolved['cacheability']);
+      $bag['archive_url'] = $this->routeUrl('aincient_pages.collection_archive', ['hash' => $hash], $resolved['cacheability']);
+    }
+
+    $build = $this->component('collection', $bag, $langcode);
+    $resolved['cacheability']->applyTo($build);
+    return $build;
+  }
+
+  /**
+   * A routed URL string, with its (route-only) cacheability bubbled into $into.
+   */
+  private function routeUrl(string $route, array $params, CacheableMetadata $into): string {
+    $generated = Url::fromRoute($route, $params)->toString(TRUE);
+    $into->addCacheableDependency($generated);
+    return $generated->getGeneratedUrl();
   }
 
   /**

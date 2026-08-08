@@ -1,0 +1,51 @@
+name: Collection
+status: experimental
+group: 'AIncient Content'
+description: 'A live listing of real content (blog posts), resolved server-side into article-teaser tiles. `mode` strip is a bounded homepage strip; index is the full list page. Content in the HTML, filter state in JS.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    subheading: { type: string }
+    columns:
+      type: integer
+      enum: [2, 3, 4]
+      default: 3
+    mode:
+      type: string
+      enum: [strip, index]
+      default: strip
+      description: 'strip = bounded, no filters, no JS; index = the full list (at most one per page).'
+    articles:
+      type: array
+      description: 'Server-resolved article-teaser prop bags. Injected by the renderer — never authored.'
+    total:
+      type: integer
+      description: 'Total matching posts (index mode shows "N of total").'
+    per_page:
+      type: integer
+      description: 'Index mode: how many tiles render before "Load more" (the island chunk size).'
+    hash:
+      type: string
+      description: 'Index mode: the collection query content hash — addresses its JSON index + archive.'
+    json_url:
+      type: string
+      description: 'Index mode: URL of the prefetched JSON index the island re-renders from.'
+    archive_url:
+      type: string
+      description: 'Index mode: URL of the flat archive page (the no-JS + crawler "see everything" link).'
+    cta_url:
+      type: string
+      description: '"View all" target (strip mode) — a page reference token, path, or URL.'
+    cta_label:
+      type: string
+      description: '"View all" label.'
+    empty:
+      type: boolean
+      default: false
+      description: 'Studio-preview placeholder flag — TRUE renders an empty-state note so a strip that resolves to nothing does not simply vanish on the canvas.'

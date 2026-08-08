@@ -267,6 +267,20 @@ final class ComponentCatalog {
         'ref' => '',
       ],
     ],
+    'collection' => [
+      'use' => 'A LIVE listing of the site\'s own content — resolved from real posts, never typed. mode "strip" is a bounded preview of recent posts for a homepage/landing section ("show recent posts", "latest from the blog"): no filters, ships zero JavaScript, may appear several times on one page — give it a limit and an optional "View all" via cta_url/cta_label. mode "index" is the FULL list page with filtering ("build me a blog page", "a page that lists every post"): AT MOST ONE per page, sized by per_page. Reach for strip when a section previews posts, index when the page IS the list.',
+      'props' => [
+        'tone' => '',
+        'eyebrow' => '', 'heading' => '', 'subheading' => '',
+        'columns' => '2|3|4',
+        'mode' => 'strip|index',
+        'source' => 'blog',
+        'sort' => 'newest|oldest',
+        'limit' => 'integer',
+        'per_page' => 'integer',
+        'cta_label' => '', 'cta_url' => '',
+      ],
+    ],
   ];
 
   /**
@@ -341,6 +355,11 @@ final class ComponentCatalog {
     'tone' => 'surface/mood enum: default | muted | brand | inverted.',
     'variant' => 'named arrangement of a component (enumerated per component).',
     'columns' => 'column count for a grid of fluid children (integer).',
+    'mode' => 'collection listing mode: strip (a bounded preview, no filters, no JavaScript) | index (the full list page; at most one per page).',
+    'source' => 'which content set a collection lists: blog.',
+    'sort' => 'listing order: newest | oldest (by the post\'s authored date).',
+    'limit' => 'the maximum number of tiles a strip-mode collection shows (integer).',
+    'per_page' => 'how many tiles an index-mode collection shows before "Load more" (integer).',
     'eyebrow' => 'short kicker line above a heading.',
     'heading' => 'section heading.',
     'subheading' => 'supporting line under the heading. Accepts inline Markdown (links, **bold**, *italic*, `code`).',

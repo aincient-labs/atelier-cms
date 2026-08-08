@@ -51,6 +51,16 @@ services:
   aincient_pages.media:
     class: Drupal\aincient_pages\MediaRepository
     arguments: ['@entity_type.manager', '@aincient_pages.embed_resolver', '@file_system', '@token', '@file_url_generator', '@aincient_core.image_upload_validator']
+  # Collection listings (DECISIONS 0329): the inventory owns a query spec →
+  # content hash + finds every placed index-mode collection; the resolver turns
+  # a spec into pre-resolved article-teaser records, one code path for the live
+  # render and the static export.
+  aincient_pages.collection_inventory:
+    class: Drupal\aincient_pages\CollectionInventory
+    arguments: ['@entity_type.manager']
+  aincient_pages.collection_resolver:
+    class: Drupal\aincient_pages\CollectionResolver
+    arguments: ['@entity_type.manager', '@entity.repository', '@aincient_pages.embed_resolver', '@date.formatter', '@aincient_pages.collection_inventory']
   # The unified reference layer: a catalog over tagged per-type providers. One
   # SEARCH + one DESCRIBE for media / nodes / blocks (Users/Brand drop in as new
   # tagged providers). Backs the studio's ReferenceField and the agent find tool.

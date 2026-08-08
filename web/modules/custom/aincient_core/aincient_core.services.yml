@@ -294,8 +294,6 @@ services:
     arguments:
       - !tagged_iterator aincient_core.inference_adapter
       - '@state'
-      - '@entity_type.manager'
-      - '@config.factory'
 
   # The reasoning backend itself. The LIVE binding is not this definition:
   # AincientCoreServiceProvider re-points `flowdrop.chat_reasoner` at this class

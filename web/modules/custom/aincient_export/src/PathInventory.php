@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_export;
 
+use Drupal\aincient_pages\CollectionInventory;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Url;
 
 /**
  * Enumerates the public paths of the site.
@@ -20,6 +22,10 @@ final class PathInventory {
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly ConfigFactoryInterface $configFactory,
+    // OPTIONAL (@?): null when aincient_pages is not installed, so this module
+    // stays independently testable. In the distribution the two always ship
+    // together and the collection JSON + archive paths are enumerated below.
+    private readonly ?CollectionInventory $collectionInventory = NULL,
   ) {}
 
   /**
@@ -50,6 +56,17 @@ final class PathInventory {
         ->execute();
       foreach ($term_storage->loadMultiple($tids) as $term) {
         $paths[] = $term->toUrl()->toString();
+      }
+    }
+
+    // Collection listings (DECISIONS 0329): every DISTINCT index-mode collection
+    // contributes two public routes — its content-addressed JSON index and its
+    // flat archive page. Enumerated from the same inventory the routes resolve
+    // against, so a hash the exporter writes is exactly a hash the route serves.
+    if ($this->collectionInventory !== NULL) {
+      foreach (array_keys($this->collectionInventory->indexCollections()) as $hash) {
+        $paths[] = Url::fromRoute('aincient_pages.collection_data', ['file' => $hash . '.json'])->toString();
+        $paths[] = Url::fromRoute('aincient_pages.collection_archive', ['hash' => $hash])->toString();
       }
     }
 

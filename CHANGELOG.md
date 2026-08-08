@@ -7,6 +7,15 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.7.0] — 2026-08-08
+
+- **Show a collection of posts as a set of tiles.** Drop a collection onto a page and your
+  posts render as teaser cards — either a short strip or a full, paginated index — with a
+  matching archive page. The tiles are built on the server, so they show up even before any
+  scripts load, and the index can load more as the reader scrolls.
+- **Tiles that read well on dark backgrounds.** Teaser cards and their links now adapt their
+  accent colour to the surrounding tone, so a collection stays legible on a dark section.
+
 ## [0.6.0] — 2026-08-08
 
 - **Attach images to a chat, and the assistant can see them.** Drop an image into the

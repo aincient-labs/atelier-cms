@@ -246,6 +246,28 @@ final class PageStore {
         unset($props['ref']);
       }
     }
+    // collection: a live listing (DECISIONS 0329). Clamp the query knobs to the
+    // grammar so a hallucinated value can never trip the SDC's `mode` enum (a
+    // 500) or produce a nonsense query. `mode`/`source`/`sort` clamp to their
+    // allow-list default (the resolver would clamp again, but a clean stored
+    // value keeps the schema honest); `limit`/`per_page` coerce to a bounded
+    // positive integer so a runaway value can't page the whole site into one HTML.
+    if ($name === 'collection') {
+      if (isset($props['mode']) && !in_array($props['mode'], ['strip', 'index'], TRUE)) {
+        $props['mode'] = 'strip';
+      }
+      if (isset($props['source']) && !in_array($props['source'], CollectionInventory::SOURCES, TRUE)) {
+        $props['source'] = CollectionInventory::DEFAULT_SOURCE;
+      }
+      if (isset($props['sort']) && !in_array($props['sort'], CollectionInventory::SORTS, TRUE)) {
+        $props['sort'] = CollectionInventory::DEFAULT_SORT;
+      }
+      foreach (['limit', 'per_page'] as $count) {
+        if (isset($props[$count])) {
+          $props[$count] = max(1, min((int) $props[$count], 48));
+        }
+      }
+    }
     // accordion: the first heterogeneous container.
     if ($name === 'accordion') {
       // `exclusive` is a typed SDC boolean — coerce ALWAYS (independent of

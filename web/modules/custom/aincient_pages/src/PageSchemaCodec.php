@@ -43,7 +43,7 @@ final class PageSchemaCodec {
    * — it's content, so a translation may embed its own entity (an empty overlay
    * inherits the source token), mirroring how media tokens live in content.
    */
-  public const STRUCTURAL_PROPS = ['tone', 'variant', 'columns', 'ref'];
+  public const STRUCTURAL_PROPS = ['tone', 'variant', 'columns', 'ref', 'mode', 'source', 'sort', 'limit', 'per_page'];
 
   /**
    * Split a merged page-schema into its structure + content layers.

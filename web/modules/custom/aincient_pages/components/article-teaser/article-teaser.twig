@@ -7,9 +7,22 @@
  * --radius-2xl), shadow (shadow-sm → --shadow-sm) and the display font all
  * resolve to tokens, so editing the brand reskins every teaser with no rebuild
  * — the same system the page builder uses.
+ *
+ * `on_dark` mirrors the sibling sections' tone handling (see features/
+ * testimonials/team): on a `brand`/`inverted` collection the tile drops the
+ * opaque light card surface for a translucent lightening of the dark ground,
+ * and every accent-text hop (meta, title hover, read-more) swaps the derived
+ * `primary_on_surface` — which darkens toward the page ink and so goes
+ * illegible on a dark surface — for an opacity of the inherited on-colour.
  */
 #}
-<article class="group flex flex-col overflow-hidden border bg-card text-card-foreground transition rounded-[var(--card-radius)] border-[color:var(--card-border)] shadow-[var(--card-shadow)] hover:border-[color:var(--primary)] hover:shadow-[var(--shadow-md)]">
+{% set on_dark = on_dark|default(false) %}
+{% set card_surface = on_dark ? 'bg-background/5' : 'bg-card text-card-foreground' %}
+{% set title_color = on_dark ? '' : 'text-foreground' %}
+{% set title_hover = on_dark ? 'group-hover:opacity-80' : 'group-hover:text-primary-on-surface' %}
+{% set meta_color = on_dark ? 'opacity-80' : 'text-muted-foreground' %}
+{% set accent = on_dark ? 'opacity-90' : 'text-primary-on-surface' %}
+<article class="group flex flex-col overflow-hidden border {{ card_surface }} transition rounded-[var(--card-radius)] border-[color:var(--card-border)] shadow-[var(--card-shadow)] hover:border-[color:var(--primary)] hover:shadow-[var(--shadow-md)]">
   {% if image %}
     <a href="{{ url }}" class="block aspect-[16/9] overflow-hidden bg-muted" tabindex="-1" aria-hidden="true">
       <img src="{{ image }}" alt="{{ image_alt }}" loading="lazy" class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
@@ -17,7 +30,7 @@
   {% endif %}
   <div class="flex flex-col p-6 sm:p-7">
   {% if author or date %}
-    <div class="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+    <div class="mb-3 flex flex-wrap items-center gap-2 text-sm {{ meta_color }}">
       {% if author %}<span class="font-medium">{{ author }}</span>{% endif %}
       {% if author and date %}<span aria-hidden="true">&middot;</span>{% endif %}
       {% if date %}<time>{{ date }}</time>{% endif %}
@@ -25,7 +38,7 @@
   {% endif %}
 
   <h2 class="font-display text-2xl [font-weight:var(--heading-weight)] leading-snug tracking-tight">
-    <a href="{{ url }}" class="text-foreground no-underline transition group-hover:text-primary-on-surface">{{ title }}</a>
+    <a href="{{ url }}" class="{{ title_color }} no-underline transition {{ title_hover }}">{{ title }}</a>
   </h2>
 
   {% if summary %}
@@ -33,7 +46,7 @@
   {% endif %}
 
   {% if more_url %}
-    <a href="{{ more_url }}" class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-on-surface no-underline hover:underline">
+    <a href="{{ more_url }}" class="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold {{ accent }} no-underline hover:underline">
       {{ more_label|default('Read more') }}<span aria-hidden="true">&rarr;</span>
     </a>
   {% endif %}

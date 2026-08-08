@@ -281,12 +281,14 @@ final class ModelRoles {
         self::FAST => ['ministral', 'mistral-small'],
       ],
       // OpenRouter aggregates many vendors; ids are namespaced (e.g.
-      // "anthropic/claude-opus-4", "openai/gpt-4o-mini"), so the needles favour
-      // a strong frontier model for reasoning and a cheap one for fast.
+      // "anthropic/claude-opus-5", "openai/gpt-5-mini"), so the needles favour
+      // a strong frontier model for reasoning and a cheap one for fast. The
+      // OpenAI needles mirror the `openai` entry above (gpt-5 families), which
+      // replaced the GPT-4/o-series generation retired 2026-07-25.
       'openrouter' => [
-        self::REASONING => ['opus', 'o3', 'o1', 'gpt-4o', 'gemini-2.5-pro', 'pro'],
-        self::TASK => ['sonnet', 'gpt-4o', 'gpt-4.1', 'gemini-2.5-flash'],
-        self::FAST => ['haiku', 'gpt-4o-mini', 'mini', 'flash'],
+        self::REASONING => ['opus', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5', 'gemini-2.5-pro', 'pro'],
+        self::TASK => ['sonnet', 'gpt-5.6-luna', 'gpt-5', 'gemini-2.5-flash'],
+        self::FAST => ['haiku', 'nano', 'mini', 'flash'],
       ],
       // Both multi-vendor ids share ONE needle set, defined above as
       // $multiVendor — they used to be two identical literals kept in sync by

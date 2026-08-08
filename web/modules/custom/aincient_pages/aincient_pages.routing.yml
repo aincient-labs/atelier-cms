@@ -656,3 +656,32 @@ aincient_pages.brand_restore:
   requirements:
     _permission: 'administer aincient pages'
     revision: '\d+'
+
+# Collection listings (DECISIONS 0329). Content-addressed by query hash; served
+# live and replayed into the static export. The JSON MUST stay cacheable
+# (CacheableJsonResponse) or the page cache silently refuses it.
+aincient_pages.collection_data:
+  # The .json is part of the {file} VALUE, not a static path suffix: Drupal's
+  # route-provider outline matching can't find a placeholder combined with a
+  # static suffix in one segment (unlike a whole-segment placeholder). The
+  # controller strips it back to the hash.
+  path: '/_data/collections/{file}'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\CollectionDataController::data'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+    file: '[0-9a-f]{16}\.json'
+  options:
+    _disable_route_normalizer: 'TRUE'
+aincient_pages.collection_archive:
+  path: '/collections/{hash}/archive'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\CollectionDataController::archive'
+    _title: 'Archive'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+    hash: '[0-9a-f]{16}'
+  options:
+    _disable_route_normalizer: 'TRUE'
