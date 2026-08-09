@@ -7,6 +7,23 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.8.0] — 2026-08-09
+
+- **Workflows can now ask for your approval before acting.** With the updated workflow
+  engine (FlowDrop 2.2.0), a step that has side effects — saving content, sending a
+  message, calling an external service — can pause and wait for you to approve or decline
+  that exact action, whether it runs from a wired-up workflow or is invoked by the AI
+  assistant mid-conversation. Approving allows one execution of exactly what you saw;
+  declining tells the assistant "no" and the conversation carries on.
+- **You decide what needs approval.** Each workflow building block carries a governance
+  setting — always ask, never ask, or follow whether the step has side effects — plus
+  controls over whether workflow authors may waive or demand the gate, all behind a
+  dedicated permission. New side-effecting blocks default to asking; the steps the
+  built-in assistants rely on keep running unattended, so nothing you use today pauses.
+- Safety details: unanswered approval questions expire instead of holding a run open
+  forever, secrets never appear in approval prompts, and one approval can never authorize
+  two executions.
+
 ## [0.7.0] — 2026-08-08
 
 - **Show a collection of posts as a set of tiles.** Drop a collection onto a page and your

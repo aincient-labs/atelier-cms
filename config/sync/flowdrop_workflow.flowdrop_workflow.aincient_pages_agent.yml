@@ -58,12 +58,12 @@ nodes:
           hiddenPorts: {  }
     measured:
       width: 280
-      height: 202
+      height: 502
   -
     id: aincient_reason.2
     position:
-      x: -200
-      'y': -840
+      x: -240
+      'y': -960
     data:
       label: 'Reason (agent step)'
       config:
@@ -81,12 +81,12 @@ nodes:
           previousNodeId: aincient_reason.1
     measured:
       width: 280
-      height: 762
+      height: 1002
   -
     id: boolean_gateway.1
     position:
-      x: 820
-      'y': -480
+      x: 840
+      'y': -520
     data:
       label: 'Boolean Gateway'
       config:
@@ -174,12 +174,12 @@ nodes:
         node_type_id: chat_output
     measured:
       width: 280
-      height: 542
+      height: 242
   -
     id: confirmation.1
     position:
       x: 2180
-      'y': -1120
+      'y': -1040
     data:
       label: Confirmation
       config:
@@ -252,7 +252,7 @@ nodes:
           hiddenPorts: {  }
     measured:
       width: 280
-      height: 282
+      height: 522
   -
     id: aincient_flows_aincient_conversation_read.1
     position:
@@ -293,7 +293,7 @@ nodes:
           hiddenPorts: {  }
     measured:
       width: 280
-      height: 702
+      height: 402
   -
     id: aincient_flows_aincient_conversation_append.2
     position:
@@ -427,7 +427,7 @@ nodes:
     id: aincient_flows_aincient_conversation_append.4
     position:
       x: 2660
-      'y': -640
+      'y': -660
     data:
       label: 'Append declined results'
       config:
@@ -811,7 +811,7 @@ nodes:
         node_type_id: boolean_gateway
     measured:
       width: 280
-      height: 382
+      height: 322
   -
     id: boolean_gateway.3
     position:
@@ -1354,9 +1354,9 @@ edges:
     class: flowdrop--edge--loopback
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-07-28T14:38:37.647Z'
+  updatedAt: '2026-08-08T01:43:16.060Z'
 created: 1781612612
-changed: 1785249517
+changed: 1786153396
 uid: 1
 input_ports:
   -
