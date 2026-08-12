@@ -7,7 +7,7 @@
       {% if logo_url %}<img src="{{ logo_url }}" alt="{{ name|default('AIncient') }}" class="{{ logo_height }} w-auto">{% endif %}
       <div>
         <p class="font-display text-lg font-bold">{{ name|default('AIncient') }}</p>
-        {% if tagline and (show_tagline ?? true) %}<p class="mt-1 text-sm opacity-70">{{ tagline }}</p>{% endif %}
+        {% if tagline and (show_tagline ?? true) %}<p class="mt-1 text-sm">{{ tagline }}</p>{% endif %}
       </div>
     </div>
     {% if nav %}
@@ -17,7 +17,7 @@
     {% endif %}
   </div>
   <div class="border-t border-background/15">
-    <div class="mx-auto max-w-7xl px-6 py-4 text-xs opacity-60 flex flex-col gap-1 {{ stacked ? 'items-center text-center' : 'sm:flex-row sm:items-center sm:justify-between' }}">
+    <div class="mx-auto max-w-7xl px-6 py-4 text-xs flex flex-col gap-1 {{ stacked ? 'items-center text-center' : 'sm:flex-row sm:items-center sm:justify-between' }}">
       <span>{{ note|default('AIncient') }}</span>
       {% if (show_credit ?? true) and credit and credit.label %}
         <span>Made with <span aria-hidden="true">♥</span> using

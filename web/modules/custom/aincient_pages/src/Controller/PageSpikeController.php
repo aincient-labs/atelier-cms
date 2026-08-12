@@ -185,8 +185,18 @@ final class PageSpikeController implements ContainerInjectionInterface {
       ? $this->composeBlog($data)
       : $this->composeLanding($data, $langcode, $node === NULL);
 
-    // Wrap every page in the brand header + footer (the site chrome).
-    $build = array_merge([$this->siteHeader()], $inner, [$this->siteFooter()]);
+    // Wrap every page in the brand header + footer (the site chrome), with the
+    // page's own sections inside a <main> landmark (a11y: landmark-one-main).
+    $build = array_merge(
+      [$this->siteHeader()],
+      [[
+        '#type' => 'html_tag',
+        '#tag' => 'main',
+        '#attributes' => ['id' => 'main-content'],
+        'content' => $inner,
+      ]],
+      [$this->siteFooter()],
+    );
 
     $content = (string) $this->renderer->renderInIsolation($build);
 
@@ -270,6 +280,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
    */
   private function composeLanding(array $data, ?string $langcode = NULL, bool $identify = FALSE): array {
     $build = [];
+    $this->lcpImagePending = TRUE;
     // Tone rhythm: when a section doesn't pin a tone, alternate so stacked
     // sections don't blur together. (A guardrail the agent gets for free.)
     $rhythm = ['default', 'muted'];
@@ -523,6 +534,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
    */
   private function composeBlog(array $data): array {
     $build = [];
+    $this->lcpImagePending = TRUE;
     $build[] = $this->component('article-header', $this->clean([
       'eyebrow' => $data['category'] ?? NULL,
       'title' => $data['title'] ?? '',
@@ -607,6 +619,20 @@ final class PageSpikeController implements ContainerInjectionInterface {
   private const CONTAINER_QUERY = [];
 
   /**
+   * TRUE until the page's first image slot renders — the LCP candidate.
+   *
+   * Set by the compose entry points ({@see composeLanding}, {@see composeBlog}),
+   * consumed in section order by {@see component} and {@see rowPictures}: the
+   * first image-bearing section gets `fetchpriority="high"` on its <img> (an
+   * eager plain <img> on the no-rift fallback), every later image slot gets
+   * `loading="lazy"`. Selectivity is the point of the hint — promoting every
+   * hero would defeat it. A repeatable first section (grid/gallery) claims the
+   * slot WITHOUT promoting: its many images must not all compete, but they must
+   * not be lazy either.
+   */
+  private bool $lcpImagePending = FALSE;
+
+  /**
    * Repeatables whose per-ROW image renders as a container-query Rift picture.
    *
    * SDC slots are flat top-level regions — they can't nest per array row, so a
@@ -651,24 +677,31 @@ final class PageSpikeController implements ContainerInjectionInterface {
       if (!is_string($value) || $value === '') {
         continue;
       }
+      // LCP seam: the page's first image slot is the LCP candidate — promote
+      // it; every later one lazy-loads (Rift emits no `loading` on its own).
+      $lcp = $this->lcpImagePending;
+      $imgAttributes = $lcp ? ['fetchpriority' => 'high'] : ['loading' => 'lazy'];
       if ($this->embed->isToken($value)) {
-        $picture = $this->embed->picture($value, $viewMode, $langcode, $this->containerQuery($name, $prop));
+        $picture = $this->embed->picture($value, $viewMode, $langcode, $this->containerQuery($name, $prop), $imgAttributes);
         if ($picture !== NULL) {
           $slots[$prop] = $picture;
+          $this->lcpImagePending = FALSE;
         }
         else {
           // No rift (or no buildable picture) → fall back to a plain <img> from
           // the token's image-style URL + alt, so the slot still shows the image.
           $url = $this->embed->url($value, $this->imageStyleFor($name, $prop));
           if (is_string($url) && $url !== '') {
-            $slots[$prop] = $this->imgSlot($url, (string) $this->embed->alt($value));
+            $slots[$prop] = $this->imgSlot($url, (string) $this->embed->alt($value), $lcp);
+            $this->lcpImagePending = FALSE;
           }
         }
       }
       else {
         // Back-compat: a raw image URL (spike briefs) → a plain <img> in the
         // slot, so non-token values still render after the prop→slot move.
-        $slots[$prop] = $this->imgSlot($value, '');
+        $slots[$prop] = $this->imgSlot($value, '', $lcp);
+        $this->lcpImagePending = FALSE;
       }
     }
     // Repeatable rows (grid cards, gallery images): pre-render each cell's image
@@ -705,6 +738,11 @@ final class PageSpikeController implements ContainerInjectionInterface {
     if ($map === NULL || !is_array($props[$map['rows']] ?? NULL)) {
       return $props;
     }
+    // LCP seam: a repeatable that IS the page's first image-bearing section
+    // claims the LCP slot without promoting — its many images must not all
+    // compete for priority, but they must not lazy-load either. Later
+    // repeatables lazy-load every row.
+    $imgAttributes = $this->lcpImagePending ? [] : ['loading' => 'lazy'];
     foreach ($props[$map['rows']] as $i => $row) {
       $token = is_array($row) ? ($row[$map['image']] ?? NULL) : NULL;
       if (!is_string($token) || !$this->embed->isToken($token)) {
@@ -712,9 +750,10 @@ final class PageSpikeController implements ContainerInjectionInterface {
       }
       $picture = $this->embed->picture($token, $map['view_mode'], $langcode, [
         'rift_container_query' => ['enable_container_queries' => TRUE],
-      ]);
+      ], $imgAttributes);
       if ($picture !== NULL) {
         $props[$map['rows']][$i][$map['image'] . '_html'] = (string) $this->renderer->renderInIsolation($picture);
+        $this->lcpImagePending = FALSE;
       }
     }
     return $props;
@@ -727,12 +766,17 @@ final class PageSpikeController implements ContainerInjectionInterface {
       : [];
   }
 
-  /** A plain <img> render array for an image slot (rift-absent / raw-URL path). */
-  private function imgSlot(string $src, string $alt): array {
+  /**
+   * A plain <img> render array for an image slot (rift-absent / raw-URL path).
+   *
+   * $lcp marks the page's first image slot: eager + fetchpriority="high" (a
+   * lazy LCP image is the classic anti-pattern); everything else lazy-loads.
+   */
+  private function imgSlot(string $src, string $alt, bool $lcp = FALSE): array {
     return [
       '#type' => 'inline_template',
-      '#template' => '<img src="{{ src }}" alt="{{ alt }}" loading="lazy">',
-      '#context' => ['src' => $src, 'alt' => $alt],
+      '#template' => '<img src="{{ src }}" alt="{{ alt }}"{% if lcp %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>',
+      '#context' => ['src' => $src, 'alt' => $alt, 'lcp' => $lcp],
     ];
   }
 
@@ -833,12 +877,19 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // Drupal's <head> pipeline (so hook_page_attachments_alter never runs here),
     // so emit the <link rel="icon"> directly, mirroring the themed render path.
     $favicon = $this->identity->faviconLink();
-    $faviconLink = '';
     if ($favicon !== NULL) {
       $href = htmlspecialchars($favicon['href'], ENT_QUOTES);
       $type = htmlspecialchars($favicon['type'], ENT_QUOTES);
-      $faviconLink = "\n  <link rel=\"icon\" href=\"$href\" type=\"$type\">";
     }
+    else {
+      // Fall back to the bundled neutral default so the tab icon and the
+      // literal /favicon.ico request (FaviconController) agree. Link the module
+      // asset directly — a plain static file every webserver serves — rather
+      // than /favicon.ico, which stock .htaccess exempts from the rewrite.
+      $href = htmlspecialchars("$modulePath/images/favicon.ico", ENT_QUOTES);
+      $type = 'image/x-icon';
+    }
+    $faviconLink = "\n  <link rel=\"icon\" href=\"$href\" type=\"$type\">";
     // The GDPR consent banner — same files as the themed library, linked
     // directly (raw HTML can't #attach a library). Emitted only when something
     // third-party is active (today: Google-delivered fonts); the config rides in

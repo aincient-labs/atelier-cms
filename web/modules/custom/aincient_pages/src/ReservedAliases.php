@@ -15,7 +15,8 @@ namespace Drupal\aincient_pages;
  * '/sites', '/robots.txt' … need no entry here. This is only the machine
  * namespaces that are NOT routed but must still never be claimed by content:
  * 'aincient' (the machine namespace) and 'atelier' (the public product/console
- * base — kept reserved even if its route ever moves).
+ * base — kept reserved even if its route ever moves), plus 'favicon.ico'
+ * (routed, but a manual alias must never shadow the icon every browser fetches).
  *
  * Enforced on both alias vectors: auto-generated aliases via
  * {@see aincient_pages_pathauto_is_alias_reserved()} (pathauto then suffixes
@@ -27,7 +28,7 @@ final class ReservedAliases {
   /**
    * Reserved leading path segments (no leading slash).
    */
-  public const SEGMENTS = ['aincient', 'atelier'];
+  public const SEGMENTS = ['aincient', 'atelier', 'favicon.ico'];
 
   /**
    * The reserved leading segment $alias would occupy, or NULL if it is free.

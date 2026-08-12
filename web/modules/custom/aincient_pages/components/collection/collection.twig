@@ -36,9 +36,9 @@
   <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
     {% if eyebrow or heading or subheading %}
       <div class="mb-12 max-w-2xl">
-        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? 'opacity-90' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
+        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? '' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
         {% if heading %}<h2 class="mt-3 font-display text-3xl sm:text-4xl [font-weight:var(--heading-weight)] tracking-tight">{{ heading }}</h2>{% endif %}
-        {% if subheading %}<p class="mt-4 text-lg opacity-70">{{ subheading|inline_md }}</p>{% endif %}
+        {% if subheading %}<p class="mt-4 text-lg {{ on_dark ? '' : 'text-muted-foreground' }}">{{ subheading|inline_md }}</p>{% endif %}
       </div>
     {% endif %}
 
@@ -52,7 +52,7 @@
         {# The archive is ALWAYS a real link — the no-JS "see everything" path and
            the crawler's complete link graph. The island upgrades it to "Load more". #}
         <div class="mt-10" data-collection-more>
-          <a href="{{ archive_url }}" class="inline-flex items-center gap-1.5 text-sm font-semibold {{ on_dark ? 'opacity-90' : 'text-primary-on-surface' }} no-underline hover:underline">
+          <a href="{{ archive_url }}" class="inline-flex items-center gap-1.5 text-sm font-semibold {{ on_dark ? '' : 'text-primary-on-surface' }} no-underline hover:underline">
             View all {{ total }} posts<span aria-hidden="true">&rarr;</span>
           </a>
         </div>
@@ -60,7 +60,7 @@
     {% elseif empty %}
       {# Studio-preview only: a strip that resolves to nothing must not silently
          vanish — show why, so "where did my section go?" is not a support ticket. #}
-      <div class="rounded-[var(--card-radius)] border border-dashed border-[color:var(--card-border)] p-8 text-center opacity-70">
+      <div class="rounded-[var(--card-radius)] border border-dashed border-[color:var(--card-border)] p-8 text-center {{ on_dark ? '' : 'text-muted-foreground' }}">
         <p class="font-medium">No posts to list yet</p>
         <p class="mt-1 text-sm">This collection will fill in as posts are published.</p>
       </div>
@@ -68,7 +68,7 @@
 
     {% if mode == 'strip' and cta_url and cta_label %}
       <div class="mt-10">
-        <a href="{{ cta_url }}" class="inline-flex items-center gap-1.5 text-sm font-semibold {{ on_dark ? 'opacity-90' : 'text-primary-on-surface' }} no-underline hover:underline">
+        <a href="{{ cta_url }}" class="inline-flex items-center gap-1.5 text-sm font-semibold {{ on_dark ? '' : 'text-primary-on-surface' }} no-underline hover:underline">
           {{ cta_label }}<span aria-hidden="true">&rarr;</span>
         </a>
       </div>

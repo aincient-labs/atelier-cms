@@ -146,12 +146,14 @@
   border-radius: var(--button-radius, 8px);
   border: 1px solid var(--border, rgba(26, 25, 22, 0.14));
   background: var(--card, #fff);
+  /* Quiet = the muted token at FULL strength — never opacity-dimmed (DECISIONS
+   * 0376): muted-foreground sits at the AA threshold by design, so any further
+   * dim sinks it below 4.5:1. Hover steps up to the full ink instead. */
   color: var(--muted-foreground, #6b675f);
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.12s ease;
+  transition: color 0.12s ease;
 }
-.aincient-consent-reopen:hover { opacity: 1; }
+.aincient-consent-reopen:hover { color: var(--foreground, #1a1916); }
 .aincient-consent-reopen[hidden] { display: none; }
 
 @media (prefers-reduced-motion: no-preference) {

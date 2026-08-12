@@ -39,6 +39,22 @@ aincient_pages.brand_demo:
   requirements:
     _access: 'TRUE'
 
+# The literal /favicon.ico every browser requests unconditionally: the
+# operator-uploaded favicon if one is set (Globals studio), else the module's
+# bundled neutral default — either way a cacheable 200 instead of the console-
+# error 404. NOTE: reaching this route depends on the webserver forwarding a
+# missing /favicon.ico to Drupal (DDEV nginx does; the appliance Dockerfile
+# drops stock .htaccess's favicon exemption so Apache does too).
+aincient_pages.favicon:
+  path: '/favicon.ico'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\FaviconController::icon'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+  options:
+    _disable_route_normalizer: 'TRUE'
+
 # NOTE: aincient_page nodes render chrome-less at their OWN node canonical
 # (/node/{nid} + pathauto alias) via PageRouteSubscriber, so metatag/pathauto
 # apply natively. There is no separate /page route. Pages are edited through

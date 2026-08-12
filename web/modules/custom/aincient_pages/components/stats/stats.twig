@@ -4,6 +4,7 @@
   brand: 'bg-primary text-primary-foreground',
   inverted: 'bg-foreground text-background',
 }[tone|default('muted')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
 
 <section class="{{ tone_class }}">
   <div class="mx-auto max-w-7xl px-6 py-14">
@@ -11,7 +12,7 @@
       {% for item in items %}
         <div class="min-w-[8rem]">
           <dt class="font-display text-4xl sm:text-5xl [font-weight:var(--stats-value-weight)] tracking-[var(--stats-value-tracking)]">{{ item.value }}</dt>
-          <dd class="mt-2 text-sm font-medium uppercase tracking-wider opacity-70">{{ item.label }}</dd>
+          <dd class="mt-2 text-sm font-medium uppercase tracking-wider {{ on_dark ? '' : 'text-muted-foreground' }}">{{ item.label }}</dd>
         </div>
       {% endfor %}
     </dl>

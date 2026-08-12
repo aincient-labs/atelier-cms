@@ -11,9 +11,9 @@
   <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
     {% if eyebrow or heading or subheading %}
       <div class="mb-12 max-w-2xl">
-        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? 'opacity-90' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
+        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? '' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
         {% if heading %}<h2 class="mt-3 font-display text-3xl sm:text-4xl [font-weight:var(--heading-weight)] tracking-tight">{{ heading }}</h2>{% endif %}
-        {% if subheading %}<p class="mt-4 text-lg opacity-70">{{ subheading|inline_md }}</p>{% endif %}
+        {% if subheading %}<p class="mt-4 text-lg {{ on_dark ? '' : 'text-muted-foreground' }}">{{ subheading|inline_md }}</p>{% endif %}
       </div>
     {% endif %}
     <div class="grid gap-6 {{ cols }}">
@@ -24,7 +24,7 @@
             {% if t.avatar %}<img src="{{ t.avatar }}" alt="{{ t.author }}" class="h-10 w-10 rounded-full object-cover">{% endif %}
             <div>
               <div class="text-sm font-semibold">{{ t.author }}</div>
-              {% if t.role %}<div class="text-xs opacity-60">{{ t.role }}</div>{% endif %}
+              {% if t.role %}<div class="text-xs {{ on_dark ? '' : 'text-muted-foreground' }}">{{ t.role }}</div>{% endif %}
             </div>
           </figcaption>
         </figure>

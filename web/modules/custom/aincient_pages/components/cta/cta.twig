@@ -10,7 +10,7 @@
 <section class="{{ tone_class }}">
   <div class="mx-auto max-w-5xl px-6 py-20 text-center">
     <h2 class="font-display text-3xl sm:text-4xl [font-weight:var(--cta-heading-weight)] tracking-[var(--cta-heading-tracking)]">{{ heading }}</h2>
-    {% if subheading %}<p class="mt-4 text-lg opacity-80 max-w-2xl mx-auto">{{ subheading|inline_md }}</p>{% endif %}
+    {% if subheading %}<p class="mt-4 text-lg {{ on_dark ? '' : 'text-muted-foreground' }} max-w-2xl mx-auto">{{ subheading|inline_md }}</p>{% endif %}
     {% if cta_label %}
       <div class="mt-8">
         <a href="{{ cta_url|default('#') }}" class="inline-flex items-center rounded-[var(--button-radius)] px-8 py-4 text-sm [font-weight:var(--button-weight)] shadow-[var(--button-shadow)] border-solid border-[length:var(--button-border-width)] border-[color:var(--button-border)] transition {{ btn }}">{{ cta_label }}</a>

@@ -7,6 +7,20 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.8.1] — 2026-08-12
+
+- **Published pages now pass an accessibility audit cleanly.** Muted text is a checked
+  colour rather than a dimmed one, so it keeps its contrast; every published page and every
+  sign-in screen wraps its content in a main landmark, which also gives the theme's
+  skip-to-content link somewhere to land.
+- **Pages show their main image sooner.** The first image on a page is fetched at high
+  priority and images further down wait until you scroll to them.
+- Fix: `/favicon.ico` no longer returns a not-found error — it serves your site's icon, or a
+  neutral default if you haven't set one.
+- Licensing is now stated where tools can read it: `LICENSE` holds the GNU General Public
+  License version 2 text verbatim and `COPYRIGHT.txt` holds our grant (GPL-2.0-or-later,
+  with the chat interface's MIT exception noted). The terms are unchanged.
+
 ## [0.8.0] — 2026-08-09
 
 - **Workflows can now ask for your approval before acting.** With the updated workflow

@@ -7,6 +7,7 @@ namespace Drupal\aincient_pages;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Routing\RouteBuilderInterface;
+use Drupal\file\FileInterface;
 
 /**
  * The site's BRAND IDENTITY — name, tagline, voice, logo, footer note.
@@ -160,7 +161,7 @@ final class SiteIdentity {
    * the `<link>` carries the right `type`.
    */
   public function faviconLink(): ?array {
-    $file = $this->embed->mediaFile($this->favicon());
+    $file = $this->faviconFile();
     if ($file === NULL) {
       return NULL;
     }
@@ -168,6 +169,11 @@ final class SiteIdentity {
       'href' => $this->fileUrlGenerator->generateString($file->getFileUri()),
       'type' => $file->getMimeType() ?: 'image/png',
     ];
+  }
+
+  /** The favicon's source file entity (raw bytes for /favicon.ico), or NULL. */
+  public function faviconFile(): ?FileInterface {
+    return $this->embed->mediaFile($this->favicon());
   }
 
   /** Public URL of the favicon (the raw source file), or '' if none. */

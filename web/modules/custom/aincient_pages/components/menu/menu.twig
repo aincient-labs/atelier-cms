@@ -43,7 +43,7 @@
       {% set kids = item.below|default([]) %}
       {% set has_children = kids is not empty and (max_depth == 0 or depth + 1 < max_depth) %}
       <li class="relative {{ has_children ? groups[depth]|default('group/m2') : '' }}">
-        <a href="{{ item.url|default('#') }}"{{ has_children ? ' aria-haspopup="true"' : '' }} class="{{ depth == 0 ? 'inline-flex items-center gap-1 py-2 opacity-75 hover:opacity-100 transition' : 'flex items-center justify-between gap-3 rounded px-3 py-1.5 opacity-75 hover:opacity-100 hover:bg-foreground/5 transition' }}">
+        <a href="{{ item.url|default('#') }}"{{ has_children ? ' aria-haspopup="true"' : '' }} class="{{ depth == 0 ? 'inline-flex items-center gap-1 py-2 transition hover:opacity-80' : 'flex items-center justify-between gap-3 rounded px-3 py-1.5 hover:bg-foreground/5 transition' }}">
           <span>{{ item.label }}</span>
           {% if has_children %}
             <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3 w-3 shrink-0 opacity-60">
@@ -74,7 +74,7 @@
       {% set kids = item.below|default([]) %}
       {% set has_children = kids is not empty and (max_depth == 0 or depth + 1 < max_depth) %}
       <li class="{{ depth == 0 and has_children ? 'flex flex-col' : '' }}">
-        <a href="{{ item.url|default('#') }}" class="{{ depth == 0 and has_children ? 'font-semibold opacity-100 hover:opacity-80 transition' : 'opacity-75 hover:opacity-100 transition' }}">{{ item.label }}</a>
+        <a href="{{ item.url|default('#') }}" class="{{ depth == 0 and has_children ? 'font-semibold opacity-100 hover:opacity-80 transition' : 'hover:opacity-80 transition' }}">{{ item.label }}</a>
         {% if has_children %}
           {{ menu.footer_level(kids, depth + 1, max_depth, '') }}
         {% endif %}

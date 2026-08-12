@@ -11,10 +11,10 @@
   <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
     <div class="grid items-center gap-12 lg:gap-16 {{ has_image ? 'lg:grid-cols-2' : '' }}">
       <div class="{{ has_image and variant == 'image-left' ? 'lg:order-2' : '' }} {{ not has_image ? 'mx-auto max-w-3xl text-center' : '' }}">
-        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? 'opacity-90' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
+        {% if eyebrow %}<p class="text-sm font-semibold uppercase tracking-wider {{ on_dark ? '' : 'text-muted-foreground' }}">{{ eyebrow }}</p>{% endif %}
         {% if heading %}<h2 class="mt-3 font-display text-3xl sm:text-4xl [font-weight:var(--heading-weight)] tracking-tight">{{ heading }}</h2>{% endif %}
-        {% if subheading %}<p class="mt-4 text-lg opacity-70">{{ subheading|inline_md }}</p>{% endif %}
-        {% if body %}<div class="mt-5 text-base leading-relaxed opacity-80">{{ body|inline_md(true) }}</div>{% endif %}
+        {% if subheading %}<p class="mt-4 text-lg {{ on_dark ? '' : 'text-muted-foreground' }}">{{ subheading|inline_md }}</p>{% endif %}
+        {% if body %}<div class="mt-5 text-base leading-relaxed {{ on_dark ? '' : 'text-muted-foreground' }}">{{ body|inline_md(true) }}</div>{% endif %}
         {% if cta_label %}
           <div class="mt-8 {{ not has_image ? 'flex justify-center' : '' }}">
             <a href="{{ cta_url|default('#') }}" class="inline-flex items-center rounded-[var(--button-radius)] px-6 py-3 text-sm [font-weight:var(--button-weight)] shadow-[var(--button-shadow)] border-solid border-[length:var(--button-border-width)] border-[color:var(--button-border)] transition {{ on_dark ? 'bg-background text-foreground' : 'bg-primary text-primary-foreground' }} hover:opacity-90">{{ cta_label }}</a>

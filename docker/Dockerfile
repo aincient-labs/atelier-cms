@@ -37,6 +37,14 @@ RUN --mount=type=secret,id=composer_github_token \
     composer install --no-dev --no-interaction --no-progress --prefer-dist --ignore-platform-reqs \
       --optimize-autoloader
 
+# Stock scaffold .htaccess EXEMPTS /favicon.ico from the index.php rewrite, so
+# Apache 404s it before Drupal's /favicon.ico route (aincient_pages.favicon —
+# operator icon or bundled default) can answer. Drop the exemption; grep -c
+# fails the build if a future core scaffold rewords the line and the sed
+# silently stops matching.
+RUN test "$(grep -c '!=/favicon\.ico' web/.htaccess)" = 1 \
+    && sed -i '/!=\/favicon\.ico/d' web/.htaccess
+
 # --- Partition the resolved tree into cache tiers ---------------------------
 # The four big trees composer just materialised change at very different rates,
 # but a single `COPY --from=vendor /app` put them in ONE 216 MB layer — so the

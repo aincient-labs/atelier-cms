@@ -318,7 +318,7 @@ final class EntityEmbedResolver {
    * filter does the actual work, so the picture builds lazily at render with the
    * media entity's cache metadata bubbled up.
    */
-  public function picture(string $token, string $viewMode, ?string $langcode = NULL, array $thirdPartySettings = []): ?array {
+  public function picture(string $token, string $viewMode, ?string $langcode = NULL, array $thirdPartySettings = [], array $attributes = []): ?array {
     // Soft integration: no rift → no responsive picture (caller falls back).
     if ($this->riftViewModes === NULL) {
       return NULL;
@@ -340,6 +340,11 @@ final class EntityEmbedResolver {
     if ($thirdPartySettings !== []) {
       $config['third_party_settings'] = $thirdPartySettings;
     }
+    // Extra <img> attributes (fetchpriority/loading — the LCP seam): merged over
+    // the view mode's own, and rendered by Rift's processAttribute().
+    if ($attributes !== []) {
+      $config['attributes'] = $attributes + ($config['attributes'] ?? []);
+    }
 
     return [
       '#type' => 'inline_template',
@@ -352,7 +357,11 @@ final class EntityEmbedResolver {
         ),
         'contexts' => $media->getCacheContexts(),
         'max-age' => $media->getCacheMaxAge(),
-        'keys' => ['entity_view', 'media', (string) $media->id(), $viewMode],
+        // The attribute variant is part of the identity: the same media+view
+        // mode renders differently as the LCP candidate (fetchpriority=high)
+        // vs a below-the-fold placement (loading=lazy) — without this key the
+        // first render would be served to both.
+        'keys' => ['entity_view', 'media', (string) $media->id(), $viewMode, $attributes === [] ? 'noattr' : substr(md5((string) json_encode($attributes)), 0, 8)],
       ],
     ];
   }

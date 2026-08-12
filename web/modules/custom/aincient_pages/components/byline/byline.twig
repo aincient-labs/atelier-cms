@@ -4,7 +4,7 @@
       <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-lg font-bold text-primary-on-surface">{{ author|slice(0, 1)|upper }}</div>
       <div>
         <p class="font-semibold">{{ author }}</p>
-        {% if bio %}<p class="mt-1 text-sm opacity-70">{{ bio|inline_md }}</p>{% endif %}
+        {% if bio %}<p class="mt-1 text-sm text-muted-foreground">{{ bio|inline_md }}</p>{% endif %}
       </div>
     </div>
   </div>

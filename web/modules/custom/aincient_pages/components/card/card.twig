@@ -7,7 +7,7 @@
   <div class="flex flex-1 flex-col p-6">
     {% if icon %}<div class="flex h-11 w-11 items-center justify-center rounded-[var(--card-radius)] bg-primary/10 text-2xl">{{ icon }}</div>{% endif %}
     {% if title %}<h3 class="{{ icon ? 'mt-4' : '' }} font-display text-lg [font-weight:var(--subheading-weight)]">{{ title }}</h3>{% endif %}
-    {% if body %}<p class="mt-2 text-sm leading-relaxed opacity-70">{{ body|inline_md }}</p>{% endif %}
+    {% if body %}<p class="mt-2 text-sm leading-relaxed {{ on_dark ? '' : 'text-muted-foreground' }}">{{ body|inline_md }}</p>{% endif %}
     {% if cta_label %}<a href="{{ cta_url|default('#') }}" class="mt-4 inline-flex items-center text-sm font-semibold {{ on_dark ? '' : 'text-primary-on-surface' }} transition hover:opacity-80">{{ cta_label }} &rarr;</a>{% endif %}
   </div>
 </div>

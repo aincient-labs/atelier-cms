@@ -5,6 +5,7 @@
   brand: 'bg-primary text-primary-foreground',
   inverted: 'bg-foreground text-background',
 }[tone|default('default')] %}
+{% set on_dark = tone in ['brand', 'inverted'] %}
 
 {# `bare` (set by the renderer for nested blocks, e.g. an accordion panel) drops
    the section band + outer padding so the parent owns the surface and spacing.
@@ -16,6 +17,6 @@
        yet, so the placed section is visible in the studio preview). Alt
        rides inside the picture; the caption is decorative copy below. #}
     <div class="ain-img flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-[var(--card-radius)] bg-muted text-muted-foreground shadow-[var(--shadow-lg)] ring-1 ring-border">{% block image %}{{ image }}{% endblock %}</div>
-    {% if caption %}<figcaption class="mt-3 text-center text-sm opacity-70">{{ caption|inline_md }}</figcaption>{% endif %}
+    {% if caption %}<figcaption class="mt-3 text-center text-sm {{ on_dark ? '' : 'text-muted-foreground' }}">{{ caption|inline_md }}</figcaption>{% endif %}
   </figure>
 {% if not bare %}</div></section>{% endif %}

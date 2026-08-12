@@ -261,8 +261,9 @@ history here tracks *shipped states* rather than day-to-day development.
 
 ## License
 
-- The codebase is **GPL-2.0-or-later** — see [LICENSE](LICENSE). Atelier is free software:
-  built on Drupal and distributed under the same license.
+- The codebase is **GPL-2.0-or-later** — our grant is in [COPYRIGHT.txt](COPYRIGHT.txt), the full
+  GPL version 2 text in [LICENSE](LICENSE). Atelier is free software: built on Drupal and
+  distributed under the same license.
 - The operator console's React app,
   [`web/modules/custom/aincient_chat/chat-ui/`](web/modules/custom/aincient_chat/chat-ui/), is
   licensed separately under the permissive **MIT license** — it's browser-side code, not a

@@ -42,6 +42,18 @@ lives in `config/sync/rift.settings.yml` under `view_modes:`. The six modes
 (`hero` 4x3, `cover` 2x1, `content` 4x3, `gallery` 4x3, `card` 16x9, `avatar` 1x1)
 match the component slots.
 
+## LCP priority (`$lcpImagePending`)
+
+The renderer marks the page's **first** image-bearing section as the LCP
+candidate: its `<img>` gets `fetchpriority="high"`, every later image slot gets
+`loading="lazy"` (Rift emits no `loading` on its own). Never blanket-promote —
+the hint works by being selective. A repeatable first section (grid/gallery)
+claims the slot **without** promoting its many images. The attributes ride
+`EntityEmbedResolver::picture($attributes)` → Rift's `attributes` config; our
+`ImgAttributeRelocatingBuilder` (a `RiftBuilder` plugin, priority 10) moves
+img-scoped attributes from `<picture>` — where upstream Rift puts them, inert —
+onto the inner `<img>`. Delete the plugin when Rift fixes this upstream.
+
 ## Wiring a NEW image slot
 
 A **single** image (renders as `<picture>`):

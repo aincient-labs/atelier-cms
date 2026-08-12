@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Master for images/favicon.ico — the NEUTRAL default favicon served when the
+     operator has not uploaded one (see FaviconController). Deliberately generic
+     (a dot in a rounded square), NOT the Atelier brand mark: a client site must
+     not silently wear our brand. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect x="32" y="32" width="448" height="448" rx="120" fill="#52525b"/>
+  <circle cx="256" cy="256" r="88" fill="#fafaf9"/>
+</svg>
