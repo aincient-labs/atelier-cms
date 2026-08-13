@@ -20,10 +20,12 @@ parameters:
   content:
     configurable: false
     connectable: true
+    exposed_by_default: true
     required: false
   declined_tool_calls:
     configurable: false
     connectable: true
+    exposed_by_default: false
     required: false
   key:
     configurable: true
@@ -38,10 +40,12 @@ parameters:
   message:
     configurable: false
     connectable: true
+    exposed_by_default: false
     required: false
   messages:
     configurable: false
     connectable: true
+    exposed_by_default: false
     required: false
   role:
     configurable: true
@@ -53,21 +57,28 @@ parameters:
     connectable: false
     required: false
     default: session
-  trigger:
-    configurable: false
-    connectable: true
-    required: false
 outputs:
   appended:
     exposed: true
+    exposed_by_default: false
   appended_any:
     exposed: true
+    exposed_by_default: false
   count:
     exposed: true
+    exposed_by_default: false
+  key:
+    exposed: true
+    exposed_by_default: true
   messages:
     exposed: true
+    exposed_by_default: true
   resolved_scope_id:
     exposed: true
+    exposed_by_default: false
+  scope:
+    exposed: true
+    exposed_by_default: false
 tags: {  }
 executor_plugin: 'aincient_flows:aincient_conversation_append'
 visual_type: default
@@ -82,4 +93,6 @@ confirmation:
     - waive
     - require
   dynamic_controls: {  }
-reserved_port_exposure: {  }
+reserved_port_exposure:
+  trigger_input: false
+  trigger_output: false

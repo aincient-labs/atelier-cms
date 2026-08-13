@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { makeSafeAssistantToolUI } from "./error-boundary";
-import { setBrandOverride, setPendingFonts, resetBrandOverrides } from "./brand-state";
+import { applyBrandPreviewOps, type BrandPreviewPayload } from "./brand-preview-ops";
 import { brandPreviewCardText } from "./brand-preview-card";
 import { ensureStudio } from "./flow";
 import { consoleNav } from "./console-nav";
@@ -30,31 +30,10 @@ import { consoleNav } from "./console-nav";
  * published brand rather than a draft reconstructed from chat scrollback.
  */
 
-export type BrandPreviewPayload = {
-  tokens?: Record<string, string>;
-  fonts?: string[];
-  reset?: boolean;
-  rejected?: string[];
-  /** A one-line framing sentence (also sent as the tool summary). */
-  summary?: string;
-  /** Set by the adapter on cards replayed from storage — read-only, applies nothing. */
-  __historical?: boolean;
-};
+export type { BrandPreviewPayload };
 
 /** Tool calls whose ops we've already applied this page-session (de-dupe). */
 const applied = new Set<string>();
-
-/** Apply one preview op to the shared draft store. Idempotent per cssVar. */
-function applyOps(payload: BrandPreviewPayload): void {
-  if (payload.reset) resetBrandOverrides();
-  for (const [cssVar, value] of Object.entries(payload.tokens ?? {})) {
-    if (typeof value === "string") setBrandOverride(cssVar, value);
-  }
-  // Only touch the staged fonts when the op carries some, so a token-only op
-  // doesn't wipe fonts a previous op (or the studio) staged. A reset already
-  // cleared them above.
-  if (payload.fonts && payload.fonts.length) setPendingFonts(payload.fonts);
-}
 
 function BrandPreviewCard({ payload, toolCallId }: { payload: BrandPreviewPayload; toolCallId: string }) {
   // Apply once per tool call; opening the studio ensures the preview is visible.
@@ -64,7 +43,7 @@ function BrandPreviewCard({ payload, toolCallId }: { payload: BrandPreviewPayloa
     if (payload.__historical) return;
     if (applied.has(toolCallId)) return;
     applied.add(toolCallId);
-    applyOps(payload);
+    applyBrandPreviewOps(payload);
     ensureStudio("design_system");
     // Catch the machine up to the studio the agent yanked to (no thread switch).
     consoleNav.adoptRoom({ kind: "studio", studio: "design_system" });

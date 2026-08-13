@@ -15,6 +15,15 @@ enum ChatEventType: string {
   case TOKEN = 'token';
   case TOOL_CALL = 'tool_call';
   case TOOL_RESULT = 'tool_result';
+  // A transient repaint of a studio's live preview while the turn is still
+  // working — NOT a transcript entry. Same payload shape as TOOL_CALL
+  // (name + arguments), different meaning: the console applies it to the
+  // studio's draft store and renders no card, because the authoritative
+  // widget arrives at end-of-turn and is the one that persists. Sending
+  // these as TOOL_CALL is what put two identical "Applied to preview"
+  // cards on every brand turn: one type, two meanings, and the console
+  // had no way to tell them apart (DECISIONS 0381).
+  case PREVIEW = 'preview';
   // One workflow node finished executing (FlowDrop's JobCompletedEvent,
   // relayed mid-run by NodeProgressSubscriber). Carries the node's
   // label/type/status so the console can render a live execution trail

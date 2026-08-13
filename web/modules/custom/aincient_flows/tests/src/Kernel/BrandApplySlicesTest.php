@@ -84,8 +84,14 @@ final class BrandApplySlicesTest extends KernelTestBase {
   /**
    * @covers ::process
    *
-   * Three specialist slices (fenced + bare) merge into ONE envelope carrying
-   * colour, font and shape tokens; pre-turn slices are excluded.
+   * Three specialist slices merge into ONE envelope carrying colour, font and
+   * shape tokens; pre-turn slices are excluded.
+   *
+   * Every slice here is well-formed JSON because that is now what crosses the
+   * tool boundary: each specialist runs the engine's tolerant parser before its
+   * validator, so a fence never reaches this node. Fenced fixtures used to pass
+   * because this path stripped fences itself — with a regex that silently failed
+   * whenever the model added a rationale after the closing fence.
    */
   public function testMergesThreeDimensionsIntoOneEnvelope(): void {
     $messages = [
@@ -94,15 +100,15 @@ final class BrandApplySlicesTest extends KernelTestBase {
       $this->toolResult('old', '{"tokens_json":{"neutral_muted_foreground":"oklch(0.011 0 0)"}}'),
       // THIS turn.
       ['role' => 'user', 'content' => 'warm sunset palette, editorial fonts, rounded + lifted'],
-      // Colour (fenced) — only brand_primary + neutral_surface so neutral_muted_foreground
+      // Colour — only brand_primary + neutral_surface so neutral_muted_foreground
       // can only come from the excluded prior slice.
-      $this->toolResult('c1', "```json\n{\"tokens_json\":{\"brand_primary\":\"oklch(0.48 0.18 50)\",\"neutral_surface\":\"oklch(0.97 0.02 60)\"}}\n```"),
-      // Typography (bare) — a pairing preset + fonts.
+      $this->toolResult('c1', '{"tokens_json":{"brand_primary":"oklch(0.48 0.18 50)","neutral_surface":"oklch(0.97 0.02 60)"}}'),
+      // Typography — a pairing preset + fonts.
       $this->toolResult('c2', '{"presets_json":{"pairing":"editorial"},"fonts":"Playfair Display, Lora"}'),
-      // Shape (fenced) — roundness + a shadow axis. (DECISIONS 0066 retired the
+      // Shape — roundness + a shadow axis. (DECISIONS 0066 retired the
       // monolithic `depth` bundle; shadows are now dialled via decoupled axes
       // like `direction`, which writes the shadow_dir_* tokens.)
-      $this->toolResult('c3', "```json\n{\"presets_json\":{\"roundness\":\"rounded\",\"direction\":\"bottom_right\"}}\n```"),
+      $this->toolResult('c3', '{"presets_json":{"roundness":"rounded","direction":"bottom_right"}}'),
     ];
 
     $result = $this->node()->process(new ParameterBag(['messages' => $messages]));

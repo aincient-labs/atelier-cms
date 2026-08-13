@@ -33,14 +33,27 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * only stores {role ∈ user|assistant|system, content}. Upstream ask #10 is to
  * extend it; this node retires when that lands.
  *
- * One placed instance per writer in the loop, each using ONE input style:
- * - `content` (+ configured role)  — chat_input.message → the user turn.
- * - `message`                      — reason.assistant_message (incl. tool_calls).
- * - `messages`                     — invoke.tool_messages (tool-role results).
- * - `declined_tool_calls`          — reason.tool_calls on the guardrail's
+ * One placed instance per writer in the loop, each using ONE input style —
+ * and each pointed, by CONFIG, at the tier whose lifetime its messages have
+ * (DECISIONS 0379; the addresses are in {@see Scratchpad}):
+ * - `content` (+ role `user`) — chat_input.message → the user turn.
+ *   TIER A: scope `session`, key `conversation`.
+ * - `content` (+ role `assistant`) — reason.text → the agent's prose answer.
+ *   TIER A. Gate its `trigger` on the loop's terminal branch so only the FINAL
+ *   answer is recorded, not every mid-loop aside.
+ * - `message` — reason.assistant_message (incl. tool_calls).
+ *   TIER B: scope `pipeline`, key `scratchpad`.
+ * - `messages` — invoke.tool_messages (tool-role results). TIER B.
+ * - `declined_tool_calls` — reason.tool_calls on the guardrail's
  *   decline branch: synthesizes one "Not executed: the user declined…"
  *   tool-role message per call, so the buffer stays well-formed BY TOPOLOGY
- *   (no in-node CONTENT healing anywhere).
+ *   (no in-node CONTENT healing anywhere). TIER B.
+ *
+ * The tier split is configuration, not code, because `scope`/`key` already name
+ * the store a writer touches. What the split forbids is a durable message that
+ * carries a STATE SNAPSHOT: tool args and results describe the world at the
+ * moment they ran, and the user edits that world between turns, so they belong
+ * to the turn and die with it (cms#29). Prose survives; payloads do not.
  *
  * Message CONTENT is still trusted to topology, but the writer is idempotent
  * on tool results: a tool_call_id already present in the buffer is never
@@ -335,8 +348,8 @@ class ConversationAppend extends AbstractFlowDropNodeProcessor implements Execut
         'role' => [
           'type' => 'string',
           'title' => 'Role',
-          'description' => 'Role for the plain-text `content` input.',
-          'enum' => ['user', 'system'],
+          'description' => 'Role for the plain-text `content` input. Use `assistant` with reason.text to record the agent\'s prose in the durable transcript — the full assistant_message belongs in the per-turn scratchpad instead, because it carries tool_calls.',
+          'enum' => ['user', 'assistant', 'system'],
           'default' => 'user',
         ],
         'message' => [
@@ -366,14 +379,14 @@ class ConversationAppend extends AbstractFlowDropNodeProcessor implements Execut
         'scope' => [
           'type' => 'string',
           'title' => 'Scope',
-          'description' => 'The memory scope (scope ID auto-resolves from the execution context).',
+          'description' => 'The memory scope (scope ID auto-resolves from the execution context). `session` = the durable transcript, for prose. `pipeline` = this turn only, for tool calls and tool results — they describe a world the user edits between turns, so they must not outlive the turn.',
           'enum' => ['global', 'workflow', 'pipeline', 'execution', 'session'],
           'default' => 'session',
         ],
         'key' => [
           'type' => 'string',
           'title' => 'Key',
-          'description' => 'Memory key of the conversation buffer.',
+          'description' => 'Memory key. `conversation` for the durable transcript; `scratchpad` (with scope `pipeline`) for this turn\'s tool traffic. The read node reads both.',
           'default' => 'conversation',
         ],
         'backend' => [

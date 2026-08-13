@@ -15,11 +15,12 @@ parameters:
   slice:
     configurable: false
     connectable: true
+    exposed_by_default: true
     required: true
-    default: ''
 outputs:
   slice:
     exposed: true
+    exposed_by_default: true
 tags: {  }
 executor_plugin: 'aincient_flows:brand_validate_slice'
 visual_type: default
@@ -28,3 +29,11 @@ supported_visual_types:
 unified_input_exposed: false
 unified_output_exposed: false
 tool_exposed: false
+confirmation:
+  author_controls:
+    - waive
+    - require
+  dynamic_controls: {  }
+reserved_port_exposure:
+  trigger_input: false
+  trigger_output: false

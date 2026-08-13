@@ -6,7 +6,9 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_brand_validate_slice
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.data_to_json
     - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+    - flowdrop_node_type.flowdrop_node_type.json_to_data
     - flowdrop_node_type.flowdrop_node_type.prompt_template
 id: aincient_brand_specialist_typography
 label: 'Brand specialist: Typography'
@@ -15,12 +17,44 @@ nodes:
   -
     id: chat_input.1
     position:
-      x: -40
-      'y': 0
+      x: -560
+      'y': -20
     data:
       label: 'Chat Input'
       config:
         nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: message
+            -
+              id: history
+            -
+              id: sessionId
+            -
+              id: messageId
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
       metadata:
         node_type_id: chat_input
       extensions:
@@ -28,12 +62,12 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 202
+      height: 441
   -
     id: prompt_template.1
     position:
-      x: -40
-      'y': 260
+      x: -560
+      'y': 460
     data:
       label: 'Typography system prompt'
       config:
@@ -81,6 +115,29 @@ nodes:
           {{ live_preview_state }}
           {% endif %}
         nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: prompt
+            -
+              id: template
+              exposed: false
+            -
+              id: variables
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: variables
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
       metadata:
         node_type_id: prompt_template
       extensions:
@@ -88,12 +145,12 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 502
+      height: 501
   -
     id: simple_chat.1
     position:
-      x: 360
-      'y': 0
+      x: -80
+      'y': 220
     data:
       label: 'Typography reasoning'
       config:
@@ -109,18 +166,44 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 420
+      height: 501
   -
     id: chat_output.1
     position:
-      x: 760
-      'y': 0
+      x: 1420
+      'y': 660
     data:
       label: 'Chat Output'
       config:
         format: text
         showTimestamp: false
         nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: format
+              exposed: false
+            -
+              id: timestamp
+              exposed: false
+            -
+              id: metadata
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: message
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
       metadata:
         node_type_id: chat_output
       extensions:
@@ -128,20 +211,69 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 182
+      height: 541
   -
-    id: brand_validate_slice.1
+    id: data_to_json.1
     position:
-      x: 580
-      'y': 240
+      x: 1020
+      'y': 580
+    data:
+      label: 'Data to JSON'
+      config:
+        maxRetries: 0
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: data_to_json
+    measured:
+      width: 280
+      height: 261
+  -
+    id: json_to_data.1
+    position:
+      x: 280
+      'y': 460
+    data:
+      label: 'JSON to Data'
+      config:
+        parse_mode: tolerant
+        nodeType: default
+        maxRetries: 0
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: json_to_data
+    measured:
+      width: 280
+      height: 261
+  -
+    id: aincient_flows_brand_validate_slice.1
+    position:
+      x: 640
+      'y': 500
     data:
       label: 'Validate brand slice'
-      config: {  }
+      config:
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          outputs:
+            -
+              id: slice
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: slice
+            -
+              id: trigger
+              exposed: false
       metadata:
         node_type_id: aincient_flows_brand_validate_slice
     measured:
       width: 280
-      height: 360
+      height: 281
 edges:
   -
     id: xy-edge__chat_input.1chat_input.1-output-message-simple_chat.1simple_chat.1-input-message
@@ -182,17 +314,17 @@ edges:
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
   -
-    id: xy-edge__simple_chat.1simple_chat.1-output-response-brand_validate_slice.1brand_validate_slice.1-input-slice
+    id: xy-edge__simple_chat.1simple_chat.1-output-response-json_to_data.1json_to_data.1-input-json
     source: simple_chat.1
-    target: brand_validate_slice.1
+    target: json_to_data.1
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: data
       metadata:
         edgeType: data
         sourcePortDataType: string
     sourceHandle: simple_chat.1-output-response
-    targetHandle: brand_validate_slice.1-input-slice
+    targetHandle: json_to_data.1-input-json
     style: 'stroke: var(--fd-edge-data);'
     markerEnd:
       type: arrowclosed
@@ -201,8 +333,46 @@ edges:
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
   -
-    id: xy-edge__brand_validate_slice.1brand_validate_slice.1-output-slice-chat_output.1chat_output.1-input-message
-    source: brand_validate_slice.1
+    id: xy-edge__json_to_data.1json_to_data.1-output-data-aincient_flows_brand_validate_slice.1aincient_flows_brand_validate_slice.1-input-slice
+    source: json_to_data.1
+    target: aincient_flows_brand_validate_slice.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: json_to_data.1-output-data
+    targetHandle: aincient_flows_brand_validate_slice.1-input-slice
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__aincient_flows_brand_validate_slice.1aincient_flows_brand_validate_slice.1-output-slice-data_to_json.1data_to_json.1-input-data
+    source: aincient_flows_brand_validate_slice.1
+    target: data_to_json.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: data
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: aincient_flows_brand_validate_slice.1-output-slice
+    targetHandle: data_to_json.1-input-data
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__data_to_json.1data_to_json.1-output-json-chat_output.1chat_output.1-input-message
+    source: data_to_json.1
     target: chat_output.1
     data:
       targetNodeType: universalNode
@@ -210,7 +380,7 @@ edges:
       metadata:
         edgeType: data
         sourcePortDataType: string
-    sourceHandle: brand_validate_slice.1-output-slice
+    sourceHandle: data_to_json.1-output-json
     targetHandle: chat_output.1-input-message
     style: 'stroke: var(--fd-edge-data);'
     markerEnd:
@@ -219,9 +389,11 @@ edges:
       height: 16
       color: var(--fd-edge-data)
     class: flowdrop--edge--data
-metadata: {  }
+metadata:
+  createdAt: '2026-08-13T16:58:27.912Z'
+  updatedAt: '2026-08-13T17:08:38.858Z'
 created: 1782300000
-changed: 1785014086
+changed: 1786640918
 uid: 1
 input_ports:
   -

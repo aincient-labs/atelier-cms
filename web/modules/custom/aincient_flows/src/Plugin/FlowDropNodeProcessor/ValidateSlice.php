@@ -16,13 +16,32 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Validates a brand-specialist's raw slice and reports what was rejected.
  *
- * Sits INSIDE each brand specialist sub-workflow, between the model
- * (`simple_chat`) and `chat_output` (simple_chat → HERE → chat_output). The
- * model emits a JSON slice ({tokens_json, presets_json, fonts}); this node
- * deterministically re-validates every token against the design-token registry
+ * Sits INSIDE each brand specialist sub-workflow, in the middle of a chain that
+ * separates PARSING from VALIDATION:
+ *
+ *   simple_chat → JSON to Data (tolerant) → HERE → Data to JSON → chat_output
+ *
+ * It takes a DECODED slice ({tokens_json, presets_json, fonts}), deterministically
+ * re-validates every token against the design-token registry
  * ({@see \Drupal\aincient_pages\DesignTokens::validate}), STRIPS the invalid
  * ones, and re-emits the cleaned slice with a `rejected` block of
  * {token, value, reason} entries.
+ *
+ * Why it no longer parses. It used to take the model's raw response and strip a
+ * ```-fence itself — with a regex that assumed the fence wrapped the WHOLE
+ * string. Specialists emit fenced JSON followed by a rationale about half the
+ * time, and on those turns the closing fence sat mid-string: the decode failed,
+ * the node passed the text through as an "intentional no-op", the merge applied
+ * nothing, and the orchestrator told the user their palette was ready. A coin
+ * flip between working and silently doing nothing.
+ *
+ * The engine already solved that problem — `json_to_data` in tolerant mode
+ * extracts the first fenced block and reports `success` — so parsing moved to
+ * the graph, where a failure is a JOB with recorded input and output rather than
+ * a NULL returned inside PHP that leaves no trace. This node is now a pure
+ * validator over structured data: no formats to guess, and every branch is unit
+ * testable. All consumers are in this repo (three call sites, all ours), so the
+ * leniency was deleted outright rather than kept for compatibility.
  *
  * Why here, and why it matters for cheap models (Haiku):
  *  - The old failure was silent: invalid tokens (raw colours for sub-palette
@@ -75,12 +94,12 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
    * {@inheritdoc}
    */
   public function process(ParameterBagInterface $params): array {
-    $raw = trim($params->getString('slice', ''));
-    $decoded = $this->parse($raw);
-    // Not a JSON slice (the model returned {} or prose) — pass through verbatim
-    // so an intentional no-op stays a no-op.
-    if ($decoded === NULL) {
-      return ['slice' => $raw];
+    $decoded = BrandPreviewApplier::normalizeSliceShape($params->getArray('slice', []));
+    // An empty object is a deliberate no-op (the model chose to change nothing),
+    // and so is anything that carries none of the three slice keys. Nothing to
+    // validate, nothing to reject.
+    if ($decoded === []) {
+      return ['slice' => []];
     }
 
     $rejected = [];
@@ -121,37 +140,7 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
       $out['rejected'] = $rejected;
     }
 
-    return ['slice' => (string) json_encode($out, JSON_UNESCAPED_SLASHES)];
-  }
-
-  /**
-   * Parse a model slice (optionally ```-fenced) into its decoded array, or NULL
-   * when the content isn't a JSON object (prose / empty / a `{}` no-op).
-   *
-   * @return array<string, mixed>|null
-   */
-  private function parse(string $content): ?array {
-    if ($content === '') {
-      return NULL;
-    }
-    if (str_starts_with($content, '```')) {
-      $content = trim((string) preg_replace('/^```[a-zA-Z0-9_-]*\s*|\s*```$/', '', $content));
-    }
-    if ($content === '' || $content[0] !== '{') {
-      return NULL;
-    }
-    $data = json_decode($content, TRUE);
-    if (!is_array($data)) {
-      return NULL;
-    }
-    // An empty object is a deliberate no-op — nothing to validate.
-    if ($data === []) {
-      return NULL;
-    }
-    // Repair a stringified tokens_json/presets_json before the is_array() gates
-    // below strip it. This node parses the slice first, so it has to be the
-    // first place the shape is normalised, not just decodeSlice().
-    return BrandPreviewApplier::normalizeSliceShape($data);
+    return ['slice' => $out];
   }
 
   /**
@@ -169,10 +158,9 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
       'type' => 'object',
       'properties' => [
         'slice' => [
-          'type' => 'string',
+          'type' => 'object',
           'title' => 'Slice',
-          'description' => "The specialist model's raw JSON slice — wire the simple_chat node's response here.",
-          'default' => '',
+          'description' => "The specialist's DECODED slice {tokens_json, presets_json, fonts} — wire a tolerant JSON to Data node's `data` output here, never the model's raw response. Models fence their JSON and add a rationale after it about half the time; the engine's tolerant parser handles that, and this node then only validates.",
           'required' => TRUE,
         ],
       ],
@@ -187,8 +175,8 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
       'type' => 'object',
       'properties' => [
         'slice' => [
-          'type' => 'string',
-          'description' => 'The validated slice (invalid tokens stripped) with a `rejected` block of {token, value, reason}.',
+          'type' => 'object',
+          'description' => 'The validated slice (invalid tokens stripped) with a `rejected` block of {token, value, reason}. Wire a Data to JSON node between this and chat_output — the sub-workflow returns a string across the tool boundary.',
         ],
       ],
     ];

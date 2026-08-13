@@ -215,12 +215,16 @@ final class BrandPreviewApplier {
     if ($content === '') {
       return NULL;
     }
-    // Strip a leading ```lang fence and trailing ``` (same idiom as
-    // WidgetEnvelope) — specialists emit fenced JSON about half the time.
-    if (str_starts_with($content, '```')) {
-      $content = trim((string) preg_replace('/^```[a-zA-Z0-9_-]*\s*|\s*```$/', '', $content));
-    }
-    if ($content === '' || $content[0] !== '{') {
+    // No fence stripping here, deliberately. This used to strip a ```lang fence
+    // with a regex anchored at both ends, which silently failed whenever a
+    // specialist put its rationale AFTER the closing fence — the decode failed,
+    // the slice was dropped, and the agent reported a change that never applied.
+    // Parsing model output is now the graph's job: each specialist runs the
+    // engine's tolerant `json_to_data` before its validator, so what crosses the
+    // tool boundary is always well-formed JSON. A fenced payload arriving here
+    // means a producer skipped that node, and failing to decode it is the signal
+    // that says so. See the ValidateSlice docblock.
+    if ($content[0] !== '{') {
       return NULL;
     }
     $data = json_decode($content, TRUE);

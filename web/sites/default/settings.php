@@ -907,6 +907,7 @@ $settings['config_exclude_modules'] = [
   'aincient_demo',
   // Local development tooling.
   'devel',
+  'dblog',
   'coffee',
   'devel_generate',
   'webprofiler',

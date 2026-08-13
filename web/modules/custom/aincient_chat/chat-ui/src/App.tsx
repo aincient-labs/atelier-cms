@@ -121,6 +121,7 @@ import {
 import { MarkdownImage } from "./markdown-image";
 import { StudioUIContext, useStudioUI } from "./studio-ui";
 import { NewPageForm } from "./new-page-form";
+import { subscribeNewPageRequest } from "./new-page-request";
 import { isPageDirty } from "./page-dirty";
 import { ErrorBoundary } from "./error-boundary";
 import { ThreadEndState } from "./thread-end-state";
@@ -1422,6 +1423,10 @@ function Sidebar({
   // homes to the node on its first turn (adapter stamps working_node), so the
   // List stays clean: content threads are born on a node, never in limbo.
   const [creating, setCreating] = useState(false);
+  // The content browser's own "New page" opens this same form (it can't render it
+  // — it's a distant sibling), so the TYPE question is asked on every path that
+  // starts a page, not just the `+` here. See new-page-request.ts.
+  useEffect(() => subscribeNewPageRequest(() => setCreating(true)), []);
   const onCreated = (nid: string, langcode: string | null, title: string) => {
     setCreating(false);
     onEnterRoom({ kind: "node", doc: "page", nid: Number(nid), langcode, title }, rows);

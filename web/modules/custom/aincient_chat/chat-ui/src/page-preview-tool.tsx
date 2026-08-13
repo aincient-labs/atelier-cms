@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { makeSafeAssistantToolUI } from "./error-boundary";
-import { getPageDraft, setPageDraft, EMPTY_PAGE, type PageSchema } from "./page-state";
+import { getPageDraft, getPageNode, setPageDraft, EMPTY_PAGE, type PageSchema } from "./page-state";
 import { activeStudioKey, ensureStudio } from "./flow";
 import { consoleNav, deriveRoomFromStores } from "./console-nav";
 import { markSomethingMade } from "./name-invite-state";
@@ -63,22 +63,38 @@ const applied = new Set<string>();
 /** Serialises applies so ops land in thread order even if a POST is slow. */
 let chain: Promise<unknown> = Promise.resolve();
 
-/** POST the ops against the current draft and write the validated result back. */
-async function applyOps(ops: PageOp[]): Promise<void> {
-  if (!ops || ops.length === 0) return;
+/** One op the server refused, with the reason it names back to the agent. */
+type Rejection = { op?: string; reason?: string };
+
+/**
+ * POST the ops against the current draft and write the validated result back.
+ *
+ * The open node's id rides along: a page that already exists has its type locked
+ * at birth (DECISIONS 0378), so the server refuses a landing⇄blog flip by name
+ * instead of staging it. Returns the server's rejections so the card can show
+ * them — they used to be dropped on the floor here.
+ */
+async function applyOps(ops: PageOp[]): Promise<Rejection[]> {
+  if (!ops || ops.length === 0) return [];
   const schema = getPageDraft() ?? EMPTY_PAGE;
   const res = await fetch(APPLY_URL, {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ schema, ops }),
+    body: JSON.stringify({ schema, ops, node_id: getPageNode() }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = (await res.json()) as { schema?: PageSchema };
+  const data = (await res.json()) as { schema?: PageSchema; rejected?: Rejection[] };
   if (data.schema) setPageDraft(data.schema);
+  return Array.isArray(data.rejected) ? data.rejected : [];
 }
 
 function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload; toolCallId: string }) {
+  // Ops the SERVER refused (a locked type flip, a blog op on a landing page).
+  // Shown next to the capability's own structural rejections: a refused op
+  // changes nothing, and the user has to be able to see that — the failure this
+  // whole lock exists to stop was an edit that reported success and vanished.
+  const [refused, setRefused] = useState<Rejection[]>([]);
   // Apply once per tool call; opening a page studio ensures the preview is
   // visible. Keep the current page-editing studio — the Checks repair agent
   // stages into the SAME shared draft, so switching it to Content would yank the
@@ -103,7 +119,8 @@ function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload;
     // where replaying these ops is what rebuilds the draft).
     chain = chain
       .then(() => applyOps(payload.ops ?? []))
-      .then(() => {
+      .then((rejections) => {
+        setRefused(rejections);
         // The studio just built something, live, in front of the owner — the
         // moment the name invite waits for (see name-invite.ts). Gated on LIVE
         // only: a historical card replaying from a reloaded thread would fire
@@ -114,8 +131,14 @@ function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload;
       .catch(() => {});
   }, [payload, toolCallId]);
 
-  const count = payload.ops?.length ?? 0;
-  const label = `Applied to preview · ${count} edit${count === 1 ? "" : "s"}`;
+  // Count what LANDED, not what was sent: a refused op changed nothing, so
+  // counting it here would reprint the agent's own false "done" on the card.
+  const sent = payload.ops?.length ?? 0;
+  const count = Math.max(0, sent - refused.length);
+  const label =
+    count === 0 && refused.length > 0
+      ? "Nothing applied"
+      : `Applied to preview · ${count} edit${count === 1 ? "" : "s"}`;
 
   return (
     <div className="ain-brandprev">
@@ -123,6 +146,11 @@ function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload;
       <div className="ain-brandprev__body">
         <span className="ain-brandprev__label">{label}</span>
         <span className="ain-brandprev__hint">Preview only — Publish in the studio to save the page</span>
+        {refused.length > 0 && (
+          <span className="ain-brandprev__rejected">
+            Refused: {refused.map((r) => r.reason ?? r.op ?? "unusable op").join(" ")}
+          </span>
+        )}
         {payload.rejected && payload.rejected.length > 0 && (
           <span className="ain-brandprev__rejected">Skipped: {payload.rejected.join(" ")}</span>
         )}

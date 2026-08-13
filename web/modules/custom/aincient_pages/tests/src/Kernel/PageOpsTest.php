@@ -394,6 +394,76 @@ final class PageOpsTest extends KernelTestBase {
     $this->assertArrayNotHasKey('teaser', $cleared);
   }
 
+  /**
+   * set_content on a landing page is REFUSED, not silently discarded.
+   *
+   * The bug this closes: the agent wrote a whole blog post onto a landing page,
+   * applyOps staged every field, validate() then dropped all of them (they only
+   * exist in the blog regime), and NOTHING was reported — so the agent said
+   * "done" and the studio rail still showed an empty Sections stack. The user
+   * saw a page type that had apparently been set and a body that had vanished.
+   */
+  public function testSetContentOnALandingPageIsRejectedNotSilentlyDropped(): void {
+    $base = ['type' => 'landing', 'title' => 'Home', 'sections' => []];
+    $result = $this->store()->applyOps($base, [
+      ['op' => 'set_content', 'body_md' => 'A whole article that would have vanished.'],
+    ]);
+
+    $this->assertCount(1, $result['rejected']);
+    $this->assertSame('set_content', $result['rejected'][0]['op']);
+    $this->assertStringContainsString('landing page', $result['rejected'][0]['reason']);
+    $this->assertArrayNotHasKey('body_md', $result['schema']);
+  }
+
+  /**
+   * The type may be chosen on an UNBORN draft — that is the birth choice, and
+   * it is what keeps "write me a blog post" working in chat.
+   */
+  public function testAnUnbornDraftMayStillChooseItsType(): void {
+    $result = $this->store()->applyOps([], [
+      ['op' => 'set_meta', 'type' => 'blog', 'title' => 'First post'],
+      ['op' => 'set_content', 'body_md' => 'Hello.', 'author' => 'Ada'],
+    ]);
+
+    $this->assertSame([], $result['rejected']);
+    $this->assertSame('blog', $result['schema']['type']);
+    $this->assertSame('Hello.', $result['schema']['body_md']);
+    $this->assertSame('Ada', $result['schema']['author']);
+  }
+
+  /**
+   * On a page that already EXISTS the type is locked (DECISIONS 0378): the flip
+   * is refused by name so the agent learns it cannot convert pages, rather than
+   * staging an edit the save would silently pin back.
+   */
+  public function testTypeFlipIsRefusedOnAnExistingPage(): void {
+    $base = ['type' => 'landing', 'title' => 'Home', 'sections' => []];
+    $result = $this->store()->applyOps($base, [
+      ['op' => 'set_meta', 'type' => 'blog', 'title' => 'Home'],
+    ], TRUE);
+
+    $this->assertCount(1, $result['rejected']);
+    $this->assertSame('set_meta', $result['rejected'][0]['op']);
+    $this->assertStringContainsString('fixed at creation', $result['rejected'][0]['reason']);
+    $this->assertSame('landing', $result['schema']['type']);
+  }
+
+  /**
+   * Restating the type a locked page ALREADY has changes nothing, so it is not
+   * an error — only a real flip is. The agent routinely echoes the current type
+   * back on a set_meta that is really about the title.
+   */
+  public function testRestatingTheSameTypeOnALockedPageIsNotAnError(): void {
+    $base = ['type' => 'blog', 'title' => 'Post', 'body_md' => 'hi'];
+    $result = $this->store()->applyOps($base, [
+      ['op' => 'set_meta', 'type' => 'blog', 'title' => 'Post, retitled'],
+    ], TRUE);
+
+    $this->assertSame([], $result['rejected']);
+    $this->assertSame('blog', $result['schema']['type']);
+    $this->assertSame('Post, retitled', $result['schema']['title']);
+  }
+
   public function testUpdateRevisesExistingNode(): void {
     $id = $this->store()->store(['type' => 'landing', 'title' => 'V1', 'sections' => []]);
     $ok = $this->store()->update($id, ['type' => 'landing', 'title' => 'V2', 'sections' => [['component' => 'hero', 'props' => ['variant' => 'centered']]]]);

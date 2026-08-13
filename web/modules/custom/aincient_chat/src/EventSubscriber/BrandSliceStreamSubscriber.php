@@ -106,10 +106,13 @@ final class BrandSliceStreamSubscriber implements EventSubscriberInterface {
       return;
     }
 
-    // A transient widget frame on the open stream. The frontend mints a fresh
-    // toolCallId per tool_call frame, so this live frame and the end-of-turn
-    // merged frame both apply (layered idempotently per cssVar).
-    $this->relay->emit(ChatEvent::toolCall(
+    // A PREVIEW frame, not a tool call: the console applies it to the studio
+    // draft and renders nothing. Sent as a tool_call this used to mint a fresh
+    // toolCallId and therefore a fresh card — so a one-specialist turn showed
+    // two identical "Applied to preview" cards (this one and the end-of-turn
+    // merge), and a three-specialist turn showed four, while exactly one was
+    // persisted. Live and reloaded views disagreed (DECISIONS 0381).
+    $this->relay->emit(ChatEvent::preview(
       (string) $envelope['__widget__'],
       $envelope['payload'],
     ));

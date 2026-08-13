@@ -4,6 +4,7 @@ import { findAgent, type StudioCatalog } from "./studios";
 import type { CapabilityChip } from "./capabilities";
 import { takeStagedInterruptAnswer } from "./interrupt-state";
 import { getBrandOverrides, getPendingFonts } from "./brand-state";
+import { applyBrandPreviewOps } from "./brand-preview-ops";
 import { getPageDraft, getPageLang, getPageMode, getPageNode } from "./page-state";
 import { getMediaDetail } from "./media-state";
 import { clearAttachments, getAttachments } from "./attachment-state";
@@ -22,7 +23,7 @@ import { providerFailureFields } from "./provider-failure";
  * Two adapters live here:
  *  - `mockAdapter`  — client-side canned reply, no network (frontend-first dev).
  *  - `httpAdapter`  — POSTs to Drupal's `/atelier/chat` and parses the typed SSE
- *                     event protocol (status/token/tool_call/tool_result/result/
+ *                     event protocol (status/token/tool_call/tool_result/preview/result/
  *                     error/done) into cumulative assistant-ui content.
  *
  * Swap is a config flag: `drupalSettings.aincientChat.mock = false` → real backend.
@@ -975,6 +976,20 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
             break;
           }
   
+          case "preview": {
+            // A transient repaint, not a transcript entry: apply it to the
+            // studio draft so the preview animates while the turn works, and
+            // render NOTHING. The authoritative widget lands at end-of-turn as
+            // a `tool_call` and is the only one persisted — which is what keeps
+            // the live view and a reloaded thread showing the same cards
+            // (DECISIONS 0381). No `yield` on purpose: there is no content
+            // change to snapshot.
+            if (String(data.name ?? "") === "brand_preview") {
+              applyBrandPreviewOps((data.arguments as JsonObject) ?? {});
+            }
+            break;
+          }
+
           case "tool_result": {
             const name = String(data.name ?? "tool");
             const idx = toolIndexByName.get(name);

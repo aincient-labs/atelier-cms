@@ -138,19 +138,32 @@ final class BrandPreviewApplierTest extends KernelTestBase {
   }
 
   /**
-   * The object shape (what a well-behaved model emits) is untouched, fenced or
-   * bare, and through the workflow-executor envelope.
+   * The object shape is untouched, bare or through the executor envelope.
+   *
+   * Fenced input is deliberately NOT accepted any more. Each specialist runs the
+   * engine's tolerant parser before its validator, so what crosses the tool
+   * boundary is well-formed JSON; a fence arriving here means a producer skipped
+   * that node, and decoding it anyway would hide the mis-wiring.
    */
   public function testDecodeSliceKeepsObjectShape(): void {
     $bare = $this->applier()->decodeSlice('{"tokens_json":{"brand_primary":"oklch(0.48 0.18 50)"}}');
     $this->assertSame(['brand_primary' => 'oklch(0.48 0.18 50)'], $bare['tokens_json']);
 
     $wrapped = $this->applier()->decodeSlice((string) json_encode([
-      'slice' => "```json\n{\"tokens_json\":{\"shadow_strength\":0.4}}\n```",
+      'slice' => '{"tokens_json":{"shadow_strength":0.4}}',
       'status' => 'success',
     ]));
     // Numbers survive the decode as numbers; apply() is what coerces them.
     $this->assertSame(['shadow_strength' => 0.4], $wrapped['tokens_json']);
+  }
+
+  /**
+   * A fenced slice no longer decodes — the graph is where fences are handled.
+   */
+  public function testDecodeSliceRejectsFencedInput(): void {
+    $this->assertNull($this->applier()->decodeSlice(
+      "```json\n{\"tokens_json\":{\"shadow_strength\":0.4}}\n```",
+    ));
   }
 
   /**

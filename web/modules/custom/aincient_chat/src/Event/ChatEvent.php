@@ -39,6 +39,17 @@ final class ChatEvent {
     return new self(ChatEventType::TOOL_CALL, ['name' => $name, 'arguments' => $arguments]);
   }
 
+  /**
+   * A transient live-preview repaint (no card, nothing persisted).
+   *
+   * Deliberately mirrors {@see self::toolCall()}'s payload so a console can
+   * reuse the same widget payload decoding — what differs is the CONTRACT, not
+   * the shape: this one is applied to the studio draft and then forgotten.
+   */
+  public static function preview(string $name, array $arguments = []): self {
+    return new self(ChatEventType::PREVIEW, ['name' => $name, 'arguments' => $arguments]);
+  }
+
   public static function toolResult(string $name, string $output): self {
     return new self(ChatEventType::TOOL_RESULT, ['name' => $name, 'output' => $output]);
   }

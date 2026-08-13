@@ -603,9 +603,11 @@
 .ain-newpage { width: 380px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 14px; }
 .ain-newpage__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ain-newpage__title { margin: 0; font-family: var(--ain-font-display); font-size: 15px; color: var(--ain-text); }
-/* The type field is a single-option contract card for v1 (landing only) — a
-   read-only tile naming the composition contract the page is born under. It
-   becomes a <select> here once the ratified type set grows (see PAGE_TYPES). */
+/* The type field: a <select> once more than one type is ratified (landing +
+   blog today), falling back to a read-only contract tile when only one exists.
+   Either way it names the composition contract the page is born under — and
+   that contract is permanent (DECISIONS 0378), so the hint rides along under
+   the select too. */
 .ain-newpage__type {
   display: flex; flex-direction: column; gap: 2px; padding: 8px 10px;
   border: 1px solid var(--ain-border); border-radius: var(--ain-radius);
@@ -613,6 +615,8 @@
 }
 .ain-newpage__typename { font-size: 13.5px; font-weight: 600; color: var(--ain-text); }
 .ain-newpage__typehint { font-size: 12px; color: var(--ain-text-dim); line-height: 1.4; }
+/* Under the <select> (not inside the tile, whose flex gap already spaces it). */
+.ain-field > .ain-newpage__typehint { margin-top: 4px; }
 .ain-newpage__note { margin: 4px 0 0; font-size: 11.5px; color: var(--ain-text-dim); font-style: italic; }
 .ain-newpage__error { margin: 0; font-size: 12.5px; color: var(--ain-danger); }
 
@@ -2446,6 +2450,17 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-accent); outline-o
 
 /* Per-tier helper note under the group title. */
 .ain-studio__groupnote { margin: -2px 0 8px; font-size: 11px; line-height: 1.4; color: var(--ain-text-faint); }
+
+/* The page TYPE, stated as a read-only fact in the Page group (fixed at
+   creation — DECISIONS 0378). Reads as a value, not a disabled control: there
+   is no editing affordance to suppress, because there is no edit. */
+.ain-studio__typeline {
+  margin: 0; display: flex; flex-direction: column; gap: 2px; padding: 7px 9px;
+  border: 1px solid var(--ain-border); border-radius: var(--ain-radius);
+  background: var(--ain-surface-2);
+}
+.ain-studio__typename { font-size: 13px; font-weight: 600; color: var(--ain-text); }
+.ain-studio__typehint { font-size: 11px; line-height: 1.4; color: var(--ain-text-dim); }
 
 /* Component knobs are divided per component (Button, Card, …) — a hairline-led
    sub-heading sets each group off without competing with the tier title. */

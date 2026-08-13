@@ -9,6 +9,7 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\State\StateInterface;
 use Drupal\aincient_chat\Chat\AttachmentTurnPreparer;
 use Drupal\aincient_chat\Chat\ChatProcessorInterface;
+use Drupal\aincient_chat\Chat\ContextPolicy;
 use Drupal\aincient_chat\Chat\SessionThreadStore;
 use Drupal\aincient_chat\Chat\StreamRelay;
 use Drupal\aincient_chat\Chat\ThreadNamer;
@@ -115,6 +116,13 @@ final class ChatController extends ControllerBase {
     if (!empty($payload['site_context'])) {
       $variables = ($variables ?? []) + $this->siteContextVariables();
     }
+    // Every agent, every turn, whether or not it has any live state: the rule
+    // that live state outranks the conversation, and that the absence of an
+    // earlier tool call proves nothing (DECISIONS 0379). Unconditional because
+    // a turn with no draft still has a conversation to reason about — and
+    // because the moment it becomes conditional, the one workflow that forgot
+    // it is the one that reverts a user's edit.
+    $variables = ($variables ?? []) + ['context_policy' => ContextPolicy::TEXT];
     $clientContext = array_filter([
       'variables' => $variables,
     ], static fn($v): bool => $v !== NULL && $v !== '' && $v !== []);

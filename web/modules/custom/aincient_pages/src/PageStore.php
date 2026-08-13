@@ -455,18 +455,25 @@ final class PageStore {
    *   - reorder        {order: [id|int,…]}           permutation of all slots
    *
    * The section ops target the landing section list; set_content targets the blog
-   * body. set_meta flips type between the two regimes, after which the other
-   * regime's ops are inert (validate() drops off-regime fields).
+   * body. The two regimes never mix: an op belonging to the other regime is
+   * REJECTED by name (never silently dropped), and set_meta may only choose the
+   * type while the page is still unborn — see $typeLocked.
    *
    * @param array $schema
    *   The current working schema (may be empty for a fresh page).
    * @param array $ops
    *   The ordered ops to apply.
+   * @param bool $typeLocked
+   *   Whether the draft belongs to a page that already EXISTS, whose type was
+   *   fixed at birth (DECISIONS 0378). TRUE refuses a set_meta type flip by
+   *   name. FALSE is the unborn draft — an agent composing a page in chat that
+   *   has never been saved — where choosing the type IS the birth choice and
+   *   must stay possible.
    *
    * @return array{schema: array, rejected: array<int, array{op: string, reason: string}>}
    *   The clamped result schema and the list of skipped ops with reasons.
    */
-  public function applyOps(array $schema, array $ops): array {
+  public function applyOps(array $schema, array $ops, bool $typeLocked = FALSE): array {
     $work = [
       'type' => in_array($schema['type'] ?? '', ['landing', 'blog'], TRUE) ? $schema['type'] : 'landing',
       'title' => (string) ($schema['title'] ?? 'AIncient page'),
@@ -513,6 +520,20 @@ final class PageStore {
         switch ($type) {
           case 'set_meta':
             if (isset($op['type']) && in_array($op['type'], ['landing', 'blog'], TRUE)) {
+              // The type is chosen at birth and locked (DECISIONS 0378). On a
+              // page that already exists, a flip is REFUSED by name rather than
+              // staged-then-silently-pinned by writeSchema: the agent has to
+              // learn it cannot switch regimes, or it will keep "converting"
+              // pages and reporting success. A no-op restatement of the current
+              // type is harmless, so only a real change is rejected.
+              if ($typeLocked && $op['type'] !== $work['type']) {
+                throw new \InvalidArgumentException(sprintf(
+                  'the page type is fixed at creation — this page is a %s and cannot become a %s. Create a new %s page instead.',
+                  $work['type'],
+                  $op['type'],
+                  $op['type'],
+                ));
+              }
               $work['type'] = $op['type'];
             }
             // is_scalar, not is_string: a numeric-looking title
@@ -580,8 +601,19 @@ final class PageStore {
             // The blog recipe's body fields (title lives on set_meta; category,
             // lead, author, author_bio, date, cover, and the Markdown body_md).
             // Stages like set_meta: each allow-listed key rides flat on the op, a
-            // present value sets it, an explicit null / blank clears it. Only
-            // meaningful for a blog page — validate() drops these on a landing.
+            // present value sets it, an explicit null / blank clears it.
+            //
+            // Refuse it outright on a landing page. These fields only exist in
+            // the blog regime, so validate() drops every one of them at the end
+            // of this method — which USED to happen with no rejection at all:
+            // the agent wrote a whole post, was told nothing, and reported
+            // success while the studio rail still showed an empty Sections
+            // stack. That silent discard is the bug this names.
+            if (($work['type'] ?? '') !== 'blog') {
+              throw new \InvalidArgumentException(
+                'set_content writes a BLOG post, but this page is a landing page — its body is built from sections (add_section), not blog fields. The page type is fixed at creation, so create a new blog page instead.'
+              );
+            }
             foreach (self::BLOG_CONTENT_KEYS as $key) {
               if (!array_key_exists($key, $op)) {
                 continue;
@@ -872,6 +904,14 @@ final class PageStore {
    * own structure instead. Content is always per-language. Does NOT save.
    */
   public function writeSchema(ContentEntityInterface $node, array $schema): void {
+    // The page TYPE is fixed at birth (DECISIONS 0378). A page is born landing
+    // or blog in the create form, and no later write may flip it: the two types
+    // are different content regimes, so a flip silently DISCARDS the other
+    // regime's work (validate() drops sections on a blog, blog fields on a
+    // landing). Pinning here — the single write path — is what makes the lock
+    // authoritative: the client badge and the agent-facing rejection in
+    // applyOps() are legibility, this is the fence.
+    $schema['type'] = $this->pinnedType($node, $schema['type'] ?? NULL);
     $clean = $this->validate($schema);
     $split = PageSchemaCodec::split($clean);
     // The entity's own label key: `title` for a page node, `name` for a block
@@ -921,6 +961,25 @@ final class PageStore {
    * of its own. No-op on a bundle without the field (e.g. a global block), so
    * writeSchema stays universal.
    */
+  /**
+   * The type a write is allowed to use: the one the page was BORN with.
+   *
+   * A page that already exists keeps its stored `field_page_type` no matter what
+   * the incoming schema says — the hard lock (DECISIONS 0378). A brand-new node
+   * (or a bundle without the field, e.g. a global block) has nothing to be
+   * pinned to, so the requested type stands and birth is the one moment the
+   * choice is made. An existing node with an empty field predates the mirror;
+   * fall back to the requested type rather than forcing it to landing.
+   */
+  private function pinnedType(ContentEntityInterface $node, mixed $requested): string {
+    $want = in_array($requested, ['landing', 'blog'], TRUE) ? $requested : 'landing';
+    if ($node->isNew() || !$node->hasField('field_page_type')) {
+      return $want;
+    }
+    $stored = (string) ($node->getUntranslated()->get('field_page_type')->value ?? '');
+    return in_array($stored, ['landing', 'blog'], TRUE) ? $stored : $want;
+  }
+
   private function writePageType(ContentEntityInterface $node, string $type): void {
     if (!$node->hasField('field_page_type')) {
       return;

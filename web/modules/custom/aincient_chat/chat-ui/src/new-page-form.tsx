@@ -25,9 +25,17 @@ import { apiUrl } from "./console-config";
 type Lang = { id: string; label: string; default: boolean };
 type Manifest = { translation?: { languages?: Lang[]; multilingual?: boolean } };
 
-/** The page types the birth form offers (the contract selector). */
+/**
+ * The page types the birth form offers (the contract selector).
+ *
+ * This is the ONE moment the type is chosen: it is fixed at creation and cannot
+ * be changed afterwards (DECISIONS 0378), because landing and blog are separate
+ * content regimes — a landing page's body is its section stack, a blog post's is
+ * its flat article fields — so a later flip could only discard one of them.
+ */
 const PAGE_TYPES: { id: string; label: string; hint: string }[] = [
   { id: "landing", label: "Landing page", hint: "A composed page — hero, sections, and calls to action." },
+  { id: "blog", label: "Blog post", hint: "A written article — headline, body, and byline, in a fixed reading layout." },
 ];
 
 export function NewPageForm({
@@ -148,24 +156,32 @@ export function NewPageForm({
             <span className="ain-field__labeltext">Type</span>
           </span>
           {PAGE_TYPES.length > 1 ? (
-            <select
-              className="ain-field__input"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-            >
-              {PAGE_TYPES.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                className="ain-field__input"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              >
+                {PAGE_TYPES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              {/* The chosen type's hint stays visible under the select — the
+                  choice is permanent, so it is made with its consequence in
+                  view rather than from a bare label. */}
+              <span className="ain-newpage__typehint">{activeType.hint}</span>
+            </>
           ) : (
             <div className="ain-newpage__type">
               <span className="ain-newpage__typename">{activeType.label}</span>
               <span className="ain-newpage__typehint">{activeType.hint}</span>
             </div>
           )}
-          <p className="ain-newpage__note">More page types arrive with design templates.</p>
+          <p className="ain-newpage__note">
+            The type is fixed once the page is created — it decides how the page is built.
+          </p>
         </div>
 
         {multilingual && langs.length > 0 && (

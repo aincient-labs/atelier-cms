@@ -58,7 +58,7 @@ nodes:
           hiddenPorts: {  }
     measured:
       width: 280
-      height: 502
+      height: 501
   -
     id: aincient_reason.2
     position:
@@ -81,7 +81,7 @@ nodes:
           previousNodeId: aincient_reason.1
     measured:
       width: 280
-      height: 1002
+      height: 1001
   -
     id: boolean_gateway.1
     position:
@@ -101,7 +101,7 @@ nodes:
         node_type_id: boolean_gateway
     measured:
       width: 280
-      height: 382
+      height: 381
   -
     id: aincient_flows_aincient_invoke.2
     position:
@@ -138,7 +138,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 402
+      height: 401
   -
     id: chat_output.1
     position:
@@ -174,7 +174,7 @@ nodes:
         node_type_id: chat_output
     measured:
       width: 280
-      height: 242
+      height: 241
   -
     id: confirmation.1
     position:
@@ -202,7 +202,7 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 382
+      height: 381
   -
     id: aincient_flows_aincient_conversation_append.1
     position:
@@ -218,6 +218,7 @@ nodes:
         max_messages: 60
         maxRetries: 0
         ports:
+          inputs: {  }
           outputs:
             -
               id: messages
@@ -242,6 +243,7 @@ nodes:
               exposed: false
             -
               id: trigger
+              exposed: true
             -
               id: error
       metadata:
@@ -252,7 +254,7 @@ nodes:
           hiddenPorts: {  }
     measured:
       width: 280
-      height: 522
+      height: 281
   -
     id: aincient_flows_aincient_conversation_read.1
     position:
@@ -264,6 +266,7 @@ nodes:
         key: conversation
         scope: session
         backend: entity
+        instanceTitle: "Read conversation + this turn's scratchpad"
         maxRetries: 0
         ports:
           outputs:
@@ -293,7 +296,7 @@ nodes:
           hiddenPorts: {  }
     measured:
       width: 280
-      height: 402
+      height: 461
   -
     id: aincient_flows_aincient_conversation_append.2
     position:
@@ -303,12 +306,28 @@ nodes:
       label: 'Append assistant turn'
       config:
         role: user
-        scope: session
-        key: conversation
+        scope: pipeline
+        key: scratchpad
         backend: entity
         max_messages: 60
         maxRetries: 0
         ports:
+          inputs:
+            -
+              id: content
+              exposed: false
+            -
+              id: message
+              exposed: true
+            -
+              id: messages
+              exposed: false
+            -
+              id: declined_tool_calls
+              exposed: false
+            -
+              id: trigger
+              exposed: false
           outputs:
             -
               id: messages
@@ -336,21 +355,7 @@ nodes:
               exposed: false
             -
               id: error
-          inputs:
-            -
-              id: content
-              exposed: false
-            -
-              id: message
-            -
-              id: messages
-              exposed: false
-            -
-              id: declined_tool_calls
-              exposed: false
-            -
-              id: trigger
-              exposed: false
+        requiresConfirmation: ''
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -358,7 +363,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 222
+      height: 221
   -
     id: aincient_flows_aincient_conversation_append.3
     position:
@@ -368,12 +373,28 @@ nodes:
       label: 'Append tool results'
       config:
         role: user
-        scope: session
-        key: conversation
+        scope: pipeline
+        key: scratchpad
         backend: entity
         max_messages: 60
         maxRetries: 0
         ports:
+          inputs:
+            -
+              id: content
+              exposed: false
+            -
+              id: message
+              exposed: false
+            -
+              id: messages
+              exposed: true
+            -
+              id: declined_tool_calls
+              exposed: false
+            -
+              id: trigger
+              exposed: false
           outputs:
             -
               id: messages
@@ -386,6 +407,7 @@ nodes:
               exposed: false
             -
               id: appended_any
+              exposed: true
             -
               id: key
               exposed: false
@@ -400,21 +422,7 @@ nodes:
               exposed: false
             -
               id: error
-          inputs:
-            -
-              id: content
-              exposed: false
-            -
-              id: message
-              exposed: false
-            -
-              id: messages
-            -
-              id: declined_tool_calls
-              exposed: false
-            -
-              id: trigger
-              exposed: false
+        requiresConfirmation: ''
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -422,7 +430,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 282
+      height: 281
   -
     id: aincient_flows_aincient_conversation_append.4
     position:
@@ -432,8 +440,8 @@ nodes:
       label: 'Append declined results'
       config:
         role: user
-        scope: session
-        key: conversation
+        scope: pipeline
+        key: scratchpad
         backend: entity
         max_messages: 60
         maxRetries: 0
@@ -450,8 +458,10 @@ nodes:
               exposed: false
             -
               id: declined_tool_calls
+              exposed: true
             -
               id: trigger
+              exposed: true
           outputs:
             -
               id: messages
@@ -464,6 +474,7 @@ nodes:
               exposed: false
             -
               id: appended_any
+              exposed: true
             -
               id: key
               exposed: false
@@ -478,6 +489,7 @@ nodes:
               exposed: false
             -
               id: error
+        requiresConfirmation: ''
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -485,7 +497,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 342
+      height: 341
   -
     id: flowdrop_node_processor_toolbox.1
     position:
@@ -498,7 +510,7 @@ nodes:
         node_type_id: flowdrop_node_processor_toolbox
     measured:
       width: 280
-      height: 382
+      height: 381
   -
     id: data_extractor.1
     position:
@@ -549,7 +561,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 262
+      height: 261
   -
     id: switch_gateway.1
     position:
@@ -573,7 +585,7 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 402
+      height: 401
   -
     id: aincient_flows_aincient_capability_preview_page.1
     position:
@@ -753,6 +765,8 @@ nodes:
           {% endif %}
           Call ONE tool at a time. When a tool result contains a `__widget__` field, reply
           with a single short framing sentence — do not restate the page. Keep replies brief. If a tool result also contains `warnings`, the section will not render as intended (e.g. an empty content array or a prop under the wrong name) — CORRECT it with another preview_page call BEFORE replying to the user.
+
+          {{ context_policy }}
         nodeType: default
         maxRetries: 0
         ports:
@@ -776,6 +790,7 @@ nodes:
             -
               id: trigger
               exposed: false
+        requiresConfirmation: ''
       metadata:
         node_type_id: prompt_template
       extensions:
@@ -783,7 +798,7 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 262
+      height: 261
   -
     id: boolean_gateway.2
     position:
@@ -811,7 +826,7 @@ nodes:
         node_type_id: boolean_gateway
     measured:
       width: 280
-      height: 322
+      height: 321
   -
     id: boolean_gateway.3
     position:
@@ -839,7 +854,40 @@ nodes:
         node_type_id: boolean_gateway
     measured:
       width: 280
-      height: 322
+      height: 321
+  -
+    id: aincient_flows_aincient_conversation_append.5
+    position:
+      x: 1380
+      'y': -20
+    data:
+      label: 'Conversation append'
+      config:
+        role: assistant
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          inputs:
+            -
+              id: content
+            -
+              id: message
+            -
+              id: messages
+            -
+              id: declined_tool_calls
+            -
+              id: trigger
+              exposed: true
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+    measured:
+      width: 280
+      height: 401
 edges:
   -
     id: xy-edge__aincient_reason.1aincient_reason.1-output-has_tool_calls-boolean_gateway.1boolean_gateway.1-input-value
@@ -1352,11 +1400,49 @@ edges:
       height: 14
       color: var(--fd-edge-loopback)
     class: flowdrop--edge--loopback
+  -
+    id: xy-edge__boolean_gateway.1boolean_gateway.1-output-False-aincient_flows_aincient_conversation_append.5aincient_flows_aincient_conversation_append.5-input-trigger
+    source: boolean_gateway.1
+    target: aincient_flows_aincient_conversation_append.5
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: boolean_gateway.1-output-False
+    targetHandle: aincient_flows_aincient_conversation_append.5-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+  -
+    id: xy-edge__aincient_reason.2aincient_reason.2-output-text-aincient_flows_aincient_conversation_append.5aincient_flows_aincient_conversation_append.5-input-content
+    source: aincient_reason.2
+    target: aincient_flows_aincient_conversation_append.5
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: aincient_reason.2-output-text
+    targetHandle: aincient_flows_aincient_conversation_append.5-input-content
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-08-08T01:43:16.060Z'
+  updatedAt: '2026-08-13T20:08:57.500Z'
 created: 1781612612
-changed: 1786153396
+changed: 1786651738
 uid: 1
 input_ports:
   -

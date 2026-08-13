@@ -9,7 +9,6 @@ import {
   getPageKind,
   getPageNode,
   getAuthoringNew,
-  startNewPage,
   setSelectedSection,
   getSelectedSection,
   subscribeSelectedSection,
@@ -28,7 +27,8 @@ import { ContentBrowser } from "./content-browser";
 import { PresencePreview } from "./presence-preview";
 import { useFacet } from "./page-facet";
 import { activeStudioKey } from "./flow";
-import { consoleNav, deriveRoomFromStores } from "./console-nav";
+import { consoleNav } from "./console-nav";
+import { requestNewPage } from "./new-page-request";
 import { openPageInPlace } from "./url-sync";
 import { apiUrl } from "./console-config";
 
@@ -283,11 +283,13 @@ export function PagePreview() {
               // the draft + switches to the room's thread).
               onPick={(id) => openPageInPlace(undefined, id)}
               onNew={() => {
-                // Seed a fresh node-less draft, then adopt the room the stores now
-                // imply (the draft room, thread-addressed) so the machine + URL
-                // move to /content/draft[/<thread>], off the listing's URL.
-                startNewPage();
-                consoleNav.adoptRoom(deriveRoomFromStores());
+                // Open the birth form (title + TYPE) rather than seeding a draft
+                // here. The type is fixed for the life of the page (DECISIONS
+                // 0378), so it has to be ASKED — this button used to call
+                // startNewPage(), which silently births a landing draft, making
+                // a blog post uncreatable for anyone who didn't happen to use
+                // the sidebar's `+`. The form mints the node and enters its room.
+                requestNewPage();
               }}
             />
           )

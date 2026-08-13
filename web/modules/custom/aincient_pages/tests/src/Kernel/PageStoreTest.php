@@ -561,14 +561,49 @@ final class PageStoreTest extends KernelTestBase {
   }
 
   /**
-   * A type flip rewrites the mirror — it can never drift from the schema.
+   * The type is fixed at birth: a later write CANNOT flip it (DECISIONS 0378).
+   *
+   * Landing and blog are separate content regimes, so a flip can only ever
+   * discard the other regime's work — validate() drops sections on a blog and
+   * blog fields on a landing. writeSchema is the single write path, so pinning
+   * there is what makes the lock authoritative no matter who asks.
    */
-  public function testDerivedTypeFollowsATypeFlip(): void {
+  public function testPageTypeIsFixedAtCreation(): void {
     $id = $this->store()->store(['type' => 'blog', 'title' => 'Post', 'body_md' => 'hi']);
     $this->assertSame('blog', $this->load($id)->get('field_page_type')->value);
 
     $this->store()->update($id, ['type' => 'landing', 'title' => 'Post', 'sections' => []]);
-    $this->assertSame('landing', $this->load($id)->get('field_page_type')->value);
+
+    $this->assertSame('blog', $this->load($id)->get('field_page_type')->value, 'The stored type survives a write that asked for the other type.');
+    $this->assertSame('blog', $this->store()->load($id)['type'] ?? NULL, 'The schema the page loads back with is still a blog.');
+  }
+
+  /**
+   * The pin keeps a blog post in its own regime across an ordinary edit: the
+   * body still round-trips, and a `sections` array that rode in on the write is
+   * dropped rather than converting the page.
+   *
+   * The pin fences the TYPE, not the body — a write that omits the blog fields
+   * still clears them, exactly as a write that omits a section clears it. That
+   * is only reachable by a caller that hand-builds an off-regime schema: both
+   * UI paths send the page's true draft, and the flip that used to produce one
+   * is now refused up front in applyOps().
+   */
+  public function testAnEditKeepsABlogPostInItsRegime(): void {
+    $id = $this->store()->store(['type' => 'blog', 'title' => 'Post', 'body_md' => 'the article']);
+
+    $this->store()->update($id, [
+      'type' => 'landing',
+      'title' => 'Post, edited',
+      'body_md' => 'the article',
+      'sections' => [['component' => 'hero', 'props' => ['variant' => 'centered']]],
+    ]);
+
+    $loaded = $this->store()->load($id);
+    $this->assertSame('blog', $loaded['type']);
+    $this->assertSame('the article', $loaded['body_md'] ?? NULL);
+    $this->assertSame('Post, edited', $loaded['title']);
+    $this->assertArrayNotHasKey('sections', $loaded, 'A blog post never grows a section stack.');
   }
 
   /**

@@ -166,7 +166,7 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
       // PromptTemplate node. Already filtered to non-empty by the controller.
       // It lives only in turn state — the persisted conversation buffer is
       // untouched, and no value leaks onto an ambient side channel.
-      $inputs = $clientContext;
+      $inputs = $this->offerableInputs($workflow, $clientContext);
       $turn = $turns->executeTurn(
         (string) $session->id(),
         $message,
@@ -188,7 +188,7 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
           $turn = $turns->executeTurn(
             (string) $session->id(),
             $message,
-            new TurnOptions(wait: TRUE, inputs: $clientContext),
+            new TurnOptions(wait: TRUE, inputs: $inputs),
           );
         }
         catch (\Throwable $e) {
@@ -367,6 +367,52 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     }
     $this->persistTurnWidgets($sessionId, $widgets, []);
     yield from $this->resultEvents($this->finalAssistantText($sessions, $sessionId));
+  }
+
+  /**
+   * The client context narrowed to what this workflow actually declares.
+   *
+   * Per-turn client context is OFFERED by the platform, not demanded by the
+   * caller: `variables` carries the studio's draft plus the context policy
+   * (DECISIONS 0379), and a workflow opts in by declaring the port. FlowDrop's
+   * launcher is strict — an undeclared key is a hard refusal — which is right
+   * for a real parameter (`location` on the weather flow) and wrong for ambient
+   * context: it turned every workflow that declares no inputs (onboarding, the
+   * first-run path; any hand-authored flow) into a dead chat with "The flow hit
+   * an unexpected error".
+   *
+   * Dropping is logged, never silent. A workflow that was SUPPOSED to carry the
+   * policy and lost it is the 0379 bug back with no symptom, so the drop has to
+   * leave a trace somewhere a human looks. The build-time half of the contract
+   * is {@see \Drupal\Tests\aincient_chat\Kernel\ContextPolicyReachesAgentsTest}.
+   *
+   * @param object $workflow
+   *   The resolved workflow entity.
+   * @param array<string, mixed> $clientContext
+   *   The offered inputs.
+   *
+   * @return array<string, mixed>
+   *   Only the offers this workflow declares a port for.
+   */
+  private function offerableInputs(object $workflow, array $clientContext): array {
+    if ($clientContext === []) {
+      return [];
+    }
+    $declared = [];
+    foreach ((array) $workflow->getInputPorts() as $port) {
+      if (is_array($port) && isset($port['name'])) {
+        $declared[] = (string) $port['name'];
+      }
+    }
+    $accepted = array_intersect_key($clientContext, array_flip($declared));
+    $dropped = array_keys(array_diff_key($clientContext, $accepted));
+    if ($dropped !== []) {
+      $this->logger->warning(
+        'Workflow @id declares no input port for @keys, so that context was not offered to the agent.',
+        ['@id' => (string) ($workflow->id() ?? '(new)'), '@keys' => implode(', ', $dropped)],
+      );
+    }
+    return $accepted;
   }
 
   /**

@@ -155,11 +155,31 @@ nodes:
         format: text
         showTimestamp: false
         nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: format
+              exposed: false
+            -
+              id: timestamp
+              exposed: false
+            -
+              id: metadata
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+        requiresConfirmation: ''
       metadata:
         node_type_id: chat_output
     measured:
       width: 280
-      height: 542
+      height: 301
   -
     id: aincient_flows_aincient_conversation_append.1
     position:
@@ -175,6 +195,21 @@ nodes:
         max_messages: 60
         maxRetries: 0
         ports:
+          inputs:
+            -
+              id: content
+            -
+              id: message
+              exposed: false
+            -
+              id: messages
+              exposed: false
+            -
+              id: declined_tool_calls
+              exposed: false
+            -
+              id: trigger
+              exposed: false
           outputs:
             -
               id: messages
@@ -196,23 +231,9 @@ nodes:
               exposed: false
             -
               id: trigger
+              exposed: true
             -
               id: error
-          inputs:
-            -
-              id: content
-            -
-              id: message
-              exposed: false
-            -
-              id: messages
-              exposed: false
-            -
-              id: declined_tool_calls
-              exposed: false
-            -
-              id: trigger
-              exposed: false
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -233,6 +254,7 @@ nodes:
         key: conversation
         scope: session
         backend: entity
+        instanceTitle: "Read conversation + this turn's scratchpad"
       metadata:
         node_type_id: aincient_flows_aincient_conversation_read
       extensions:
@@ -251,10 +273,18 @@ nodes:
       label: 'Append assistant turn'
       config:
         role: user
-        scope: session
-        key: conversation
+        scope: pipeline
+        key: scratchpad
         backend: entity
         max_messages: 60
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          inputs:
+            -
+              id: message
+              exposed: true
+          outputs: {  }
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -272,10 +302,21 @@ nodes:
       label: 'Append tool results'
       config:
         role: user
-        scope: session
-        key: conversation
+        scope: pipeline
+        key: scratchpad
         backend: entity
         max_messages: 60
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          inputs:
+            -
+              id: messages
+              exposed: true
+          outputs:
+            -
+              id: appended_any
+              exposed: true
       metadata:
         node_type_id: aincient_flows_aincient_conversation_append
       extensions:
@@ -370,13 +411,14 @@ nodes:
           - You cannot edit pages, brand, or settings from this room — the specialised studios do that, each with its own assistant. Never pretend otherwise; walk the user to the right room instead.
           - If you don't know something or lack the tool to check it, say so plainly and offer what you CAN do. Never guess or invent site facts.
           - If a tool call is declined or fails, don't retry it — ask what they'd like instead.
+
+          {{ context_policy }}
         nodeType: simple
         maxRetries: 0
         ports:
           inputs:
             -
               id: variables
-              exposed: false
             -
               id: trigger
               exposed: false
@@ -394,6 +436,7 @@ nodes:
               exposed: false
             -
               id: error
+        requiresConfirmation: ''
       metadata:
         node_type_id: prompt_template
     measured:
@@ -402,8 +445,8 @@ nodes:
   -
     id: chat_output.2
     position:
-      x: 200
-      'y': -40
+      x: 600
+      'y': 380
     data:
       label: 'Chat Output'
       config:
@@ -419,8 +462,8 @@ nodes:
   -
     id: prompt_template.2
     position:
-      x: -180
-      'y': 0
+      x: 220
+      'y': 240
     data:
       label: 'Prompt Template'
       config:
@@ -467,6 +510,60 @@ nodes:
     measured:
       width: 280
       height: 382
+  -
+    id: aincient_flows_aincient_conversation_append.4
+    position:
+      x: 1360
+      'y': 240
+    data:
+      label: 'Conversation append'
+      config:
+        role: assistant
+        scope: session
+        key: conversation
+        backend: entity
+        max_messages: 60
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          inputs:
+            -
+              id: content
+            -
+              id: message
+            -
+              id: messages
+            -
+              id: declined_tool_calls
+            -
+              id: trigger
+              exposed: true
+          outputs:
+            -
+              id: messages
+              exposed: false
+            -
+              id: count
+            -
+              id: appended
+            -
+              id: appended_any
+            -
+              id: key
+              exposed: false
+            -
+              id: scope
+            -
+              id: resolved_scope_id
+            -
+              id: trigger
+            -
+              id: error
+      metadata:
+        node_type_id: aincient_flows_aincient_conversation_append
+    measured:
+      width: 280
+      height: 281
 edges:
   -
     id: xy-edge__aincient_reason.1aincient_reason.1-output-has_tool_calls-boolean_gateway.1boolean_gateway.1-input-value
@@ -829,14 +926,61 @@ edges:
       height: 14
       color: var(--fd-edge-loopback)
     class: flowdrop--edge--loopback
+  -
+    id: xy-edge__boolean_gateway.1boolean_gateway.1-output-False-aincient_flows_aincient_conversation_append.4aincient_flows_aincient_conversation_append.4-input-trigger
+    source: boolean_gateway.1
+    target: aincient_flows_aincient_conversation_append.4
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: trigger
+        sourcePortDataType: trigger
+    sourceHandle: boolean_gateway.1-output-False
+    targetHandle: aincient_flows_aincient_conversation_append.4-input-trigger
+    style: 'stroke: var(--fd-edge-trigger); stroke-width: var(--fd-edge-trigger-width);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-trigger)
+    class: flowdrop--edge--trigger
+  -
+    id: xy-edge__aincient_reason.2aincient_reason.2-output-text-aincient_flows_aincient_conversation_append.4aincient_flows_aincient_conversation_append.4-input-content
+    source: aincient_reason.2
+    target: aincient_flows_aincient_conversation_append.4
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: aincient_reason.2-output-text
+    targetHandle: aincient_flows_aincient_conversation_append.4-input-content
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-06-29T00:47:58.493Z'
+  updatedAt: '2026-08-13T20:13:44.645Z'
 created: 1780495095
-changed: 1785014539
+changed: 1786652025
 uid: 0
-input_ports: null
+input_ports:
+  -
+    name: variables
+    node_id: prompt_template.1
+    port: variables
 output_ports: null
-parameter_schema: null
+parameter_schema:
+  type: object
+  properties:
+    variables:
+      type: mixed
+      default: {  }
 output_schema: null
-schema_version: 0.0.0
+schema_version: 1.0.0

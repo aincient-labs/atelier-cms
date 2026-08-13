@@ -47,12 +47,20 @@ final class PageController implements ContainerInjectionInterface {
   /**
    * POST /atelier/page/apply — apply the agent's ops to the working draft.
    *
-   * Body: `{ "schema": {…current draft…}, "ops": [ {op:…}, … ] }`. Runs the ops
-   * through {@see PageStore::applyOps} (the single source of ops + clamp logic)
-   * and returns `{ schema, rejected }`. The page_preview widget calls this when
-   * the agent emits ops — the browser holds the authoritative draft (a capability
-   * tool can't read turn state), so the apply happens here, not in the tool, and
-   * the result feeds back into the studio draft. Stateless: nothing is stored.
+   * Body: `{ "schema": {…current draft…}, "ops": [ {op:…}, … ], "node_id"?: … }`.
+   * Runs the ops through {@see PageStore::applyOps} (the single source of ops +
+   * clamp logic) and returns `{ schema, rejected }`. The page_preview widget
+   * calls this when the agent emits ops — the browser holds the authoritative
+   * draft (a capability tool can't read turn state), so the apply happens here,
+   * not in the tool, and the result feeds back into the studio draft. Stateless:
+   * nothing is stored.
+   *
+   * `node_id` says the draft belongs to a page that already exists, whose type
+   * is locked (DECISIONS 0378) — so a type flip is refused here with a reason
+   * the agent reads, rather than staged and then silently pinned by the save.
+   * Its absence is an unborn draft, where choosing the type is still legal. This
+   * endpoint stages a preview and persists nothing, so the client's word is
+   * enough; the authoritative fence is {@see PageStore::writeSchema}.
    */
   public function apply(Request $request): JsonResponse {
     $data = json_decode((string) $request->getContent(), TRUE);
@@ -60,7 +68,8 @@ final class PageController implements ContainerInjectionInterface {
       return new JsonResponse(['error' => 'Expected { "schema": {…}, "ops": [ … ] }.'], 400);
     }
     $schema = is_array($data['schema'] ?? NULL) ? $data['schema'] : [];
-    $result = $this->store->applyOps($schema, $data['ops']);
+    $locked = ($data['node_id'] ?? NULL) !== NULL && $data['node_id'] !== '';
+    $result = $this->store->applyOps($schema, $data['ops'], $locked);
     return new JsonResponse([
       'schema' => $result['schema'],
       'rejected' => $result['rejected'],

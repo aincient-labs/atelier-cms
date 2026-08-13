@@ -95,14 +95,20 @@ final class BrandSliceStreamTest extends KernelTestBase {
     $job = $this->mockJob(
       'flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour',
       'completed',
-      ['slice' => "```json\n{\"tokens_json\":{\"brand_primary\":\"oklch(0.48 0.18 50)\",\"neutral_surface\":\"oklch(0.97 0.02 60)\"}}\n```", 'status' => 'success'],
+      // Well-formed JSON: the specialist's Data to JSON node emits the validated
+      // slice, so nothing fenced crosses this boundary any more.
+      ['slice' => '{"tokens_json":{"brand_primary":"oklch(0.48 0.18 50)","neutral_surface":"oklch(0.97 0.02 60)"}}', 'status' => 'success'],
     );
 
     $this->subscriber()->onJobCompleted(new JobCompletedEvent($job, [], 'exec-1'));
 
     $this->assertCount(1, $this->emitted);
     $event = $this->emitted[0];
-    $this->assertSame(ChatEventType::TOOL_CALL, $event->type);
+    // PREVIEW, never TOOL_CALL: a live frame repaints the studio and renders no
+    // card. Sent as a tool call it minted a second, identical "Applied to
+    // preview" card beside the end-of-turn merge — two cards live, one
+    // persisted (DECISIONS 0381).
+    $this->assertSame(ChatEventType::PREVIEW, $event->type);
     $this->assertSame('brand_preview', $event->data['name']);
     // The frame carries a VALIDATED css-var token map, not raw tokens_json.
     $this->assertArrayHasKey('brand-primary', $event->data['arguments']['tokens']);

@@ -1297,6 +1297,28 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                 spellCheck={false}
               />
             </label>
+            {/* The page TYPE, stated as a read-only fact. It is chosen at
+                creation and locked (DECISIONS 0378), so there is nothing to
+                edit — but it was previously shown NOWHERE, readable only by
+                noticing which body editor the rail had swapped to. A page whose
+                type you cannot see is a page whose type you cannot trust. */}
+            {kind === "page" && (
+              <div className="ain-field">
+                <span className="ain-field__label">
+                  <span className="ain-field__labeltext">Type</span>
+                </span>
+                <p className="ain-studio__typeline">
+                  <span className="ain-studio__typename">
+                    {draft.type === "blog" ? "Blog post" : "Landing page"}
+                  </span>
+                  <span className="ain-studio__typehint">
+                    {draft.type === "blog"
+                      ? "A written article — fixed reading layout."
+                      : "A composed page — built from sections."}
+                  </span>
+                </p>
+              </div>
+            )}
           </section>
 
           {/* Body: the blog post editor (a locked article recipe — no sections),

@@ -7,6 +7,31 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.8.2] — 2026-08-13
+
+- **Blog posts can be created again, and a page's type is settled up front.** The New page
+  form now asks whether you are making a landing page or a blog post, and the studio says
+  which one you are looking at. Previously only landing pages could be started, and asking
+  the assistant for a blog post produced a confident reply about a post that was never
+  written. A page keeps the type it was born with; the assistant will now say so plainly
+  instead of quietly dropping work it cannot apply.
+- **The assistant no longer overwrites edits you made earlier in a conversation.** On a long
+  thread it could reach back to a stale copy of your page from an earlier message and
+  rebuild a list of items from that, undoing changes nobody asked it to touch — sometimes
+  with small corruptions, like a name losing its last letter. Each turn now works from the
+  live page and the conversation so far, not from a growing pile of earlier snapshots.
+- **Brand changes now apply every time you ask for one.** A palette or typography change
+  applied about half the time: when the assistant explained its reasoning alongside the
+  change, the change itself was discarded and you were still told it had been applied. The
+  result often appeared a turn later, which looked like lag rather than a failure. Changes
+  now land when they are made, and a change that cannot be read is reported instead of
+  silently dropped.
+- Fix: applying a brand change no longer leaves two identical "Applied to preview" cards in
+  the thread, with the count changing on reload.
+- Fix: clicking a call-to-action that has no link set yet no longer loads the whole console
+  inside the page preview. Placeholder buttons now do nothing, and in-page jump links scroll
+  to their target as expected.
+
 ## [0.8.1] — 2026-08-12
 
 - **Published pages now pass an accessibility audit cleanly.** Muted text is a checked

@@ -17,12 +17,15 @@ parameters:
   data:
     configurable: false
     connectable: true
+    exposed_by_default: true
     required: false
 outputs:
   json:
     exposed: true
+    exposed_by_default: true
   success:
     exposed: true
+    exposed_by_default: false
 tags: {  }
 executor_plugin: 'flowdrop_node_processor:data_to_json'
 visual_type: default
@@ -31,3 +34,11 @@ supported_visual_types:
 unified_input_exposed: false
 unified_output_exposed: false
 tool_exposed: false
+confirmation:
+  author_controls:
+    - waive
+    - require
+  dynamic_controls: {  }
+reserved_port_exposure:
+  trigger_input: false
+  trigger_output: false

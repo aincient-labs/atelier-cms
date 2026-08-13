@@ -11,23 +11,43 @@ label: 'JSON to Data'
 description: 'Convert JSON string to structured data (array/object)'
 category: data
 icon: 'mdi:code-json'
-plugin_version: 1.0.0
+plugin_version: 2.0.0
 enabled: true
 parameters:
   json:
     configurable: false
     connectable: true
+    exposed_by_default: true
     required: false
+  parse_mode:
+    configurable: true
+    connectable: false
+    required: false
+    default: strict
 outputs:
   data:
     exposed: true
+    exposed_by_default: true
+  parse_source:
+    exposed: true
+    exposed_by_default: false
   success:
     exposed: true
+    exposed_by_default: false
 tags: {  }
 executor_plugin: 'flowdrop_node_processor:json_to_data'
 visual_type: default
 supported_visual_types:
   - default
+  - simple
 unified_input_exposed: false
 unified_output_exposed: false
 tool_exposed: false
+confirmation:
+  author_controls:
+    - waive
+    - require
+  dynamic_controls: {  }
+reserved_port_exposure:
+  trigger_input: false
+  trigger_output: false

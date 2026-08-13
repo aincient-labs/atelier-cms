@@ -31,9 +31,17 @@ export function subscribeBlockedLink(cb: (href: string) => void): () => void {
 /**
  * Cancel link navigation inside a preview iframe document and report it.
  * Capture phase so it wins before the page's own handlers; returns a cleanup
- * fn. In-page fragment jumps (`#…`) and `javascript:` links are left alone —
- * they don't navigate the frame away, so blocking them would just break the
- * preview's own behaviour.
+ * fn. `javascript:` links are left alone — they don't navigate the frame away.
+ *
+ * Fragment hrefs (`#…`) are NOT left alone. In a `srcdoc` document there is no
+ * document URL of its own, so the browser resolves `#pricing` — and a bare `#`,
+ * which every SDC emits for a CTA with no URL yet (`cta_url|default('#')`) —
+ * against the PARENT's URL. Clicking one therefore navigates the frame to
+ * `/atelier/content/node/N`, i.e. loads the whole console inside the preview.
+ * So we cancel them too and do the in-page jump ourselves: scroll to the target
+ * if this document has one, otherwise swallow the click (a placeholder CTA has
+ * nowhere to go, and the blocked-link modal's "open in a new tab" would be
+ * nonsense for it).
  */
 export function interceptPreviewLinks(doc: Document | null | undefined): () => void {
   if (!doc) return () => {};
@@ -41,9 +49,18 @@ export function interceptPreviewLinks(doc: Document | null | undefined): () => v
     const anchor = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
     if (!anchor) return;
     const raw = anchor.getAttribute("href") ?? "";
-    if (!raw || raw.startsWith("#") || raw.startsWith("javascript:")) return;
+    if (raw.startsWith("javascript:")) return;
     e.preventDefault();
     e.stopPropagation();
+    // Fragment (or empty) href → in-page jump at most, never a frame navigation.
+    if (!raw || raw.startsWith("#")) {
+      const id = raw.slice(1);
+      if (!id) return;
+      const target =
+        doc.getElementById(id) ?? doc.querySelector(`a[name="${CSS.escape(id)}"]`);
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     notifyBlockedLink(anchor.href || raw);
   };
   doc.addEventListener("click", onClick, true);
