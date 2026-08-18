@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: WLjtq7YU13TWcjOWdmGHej19PldS3NrS0Nw5uShd7Bg
 id: data
-enabled: true
 label: Data
 description: 'Store, retrieve, and manage structured data including databases, key-value stores, and persistent storage solutions.'
 icon: 'mdi:database'

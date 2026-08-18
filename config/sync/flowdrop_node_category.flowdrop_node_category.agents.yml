@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: AR9WAfN3IeioMpUtacIoon_0UANhOlvDDcV2LDom9_E
 id: agents
-enabled: true
 label: Agents
 description: 'Build intelligent AI agents that can reason, plan, use tools, and autonomously complete complex multi-step tasks.'
 icon: 'mdi:face-agent'

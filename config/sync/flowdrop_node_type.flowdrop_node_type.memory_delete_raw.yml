@@ -42,5 +42,10 @@ supported_visual_types:
 unified_input_exposed: false
 unified_output_exposed: false
 tool_exposed: false
-confirmation: {  }
+confirmation:
+  policy: skip
+  author_controls:
+    - waive
+    - require
+  dynamic_controls: {  }
 reserved_port_exposure: {  }

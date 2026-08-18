@@ -173,7 +173,7 @@ class BrandApplySlices extends AbstractFlowDropNodeProcessor {
         'messages' => [
           'type' => 'array',
           'title' => 'Messages',
-          'description' => 'The conversation buffer ([{role, content, …}]) — wire a ConversationRead node\'s messages output here. The node reads this turn\'s specialist tool results.',
+          'description' => 'The conversation buffer ([{role, content, …}]) — wire the conversation_buffer node\'s messages output here. The node reads this turn\'s specialist tool results.',
           'default' => [],
           'required' => FALSE,
         ],

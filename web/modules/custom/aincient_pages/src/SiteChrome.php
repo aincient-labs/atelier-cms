@@ -33,8 +33,10 @@ final class SiteChrome {
   /**
    * The default-on product attribution shown in the footer note bar.
    *
-   * Uses the canonical PRODUCT name — "Atelier by AIncient Labs" — not the
-   * distribution/"CMS" phrasing. This is AIncient's OWN brand (never the
+   * Uses the canonical PRODUCT name in full — "Atelier CMS by AIncient Labs" —
+   * never the short form "Atelier" alone, because this credit is the one brand
+   * surface that ships on every self-hosted site and is what people then search
+   * for. This is AIncient's OWN brand (never the
    * operator's), so it lives here as a constant, not in the operator-editable
    * identity/chrome config; operators toggle only its VISIBILITY via the footer
    * `show_credit` setting ({@see ChromeRepository}).
@@ -45,7 +47,7 @@ final class SiteChrome {
    * reads the query param). The path currently 302s to the homepage, forwarding
    * the query string, until a real product page exists.
    */
-  public const CREDIT_LABEL = 'Atelier by AIncient Labs';
+  public const CREDIT_LABEL = 'Atelier CMS by AIncient Labs';
   public const CREDIT_URL = 'https://aincient-labs.com/product/atelier?ref=built-with';
 
   /** The footer attribution credit as an SDC prop `{label, href}`. */

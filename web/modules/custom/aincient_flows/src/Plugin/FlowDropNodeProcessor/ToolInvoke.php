@@ -26,7 +26,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Behaviourally the upstream `flowdrop_node_processor:tool_invoke` (same ports,
  * same `tool_availability` allow-list, same tool-role output), plus a run-scoped
  * EXECUTION LEDGER — the sibling of the idempotency guard in
- * {@see ConversationAppend}, moved one step earlier so a repeat never reaches
+ * the retired fork ConversationAppend, moved one step earlier so a repeat never reaches
  * the tool at all.
  *
  * WHY. The stategraph schedules a node once per predecessor that routes to it,
@@ -47,15 +47,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * already put one in the buffer, and re-emitting it would only be dropped
  * downstream). An empty batch then leaves the conversation untouched, which is
  * what stops the phantom wave from advancing the loop — see the
- * `appended_any` output port on {@see ConversationAppend} and the Boolean
- * Gateway each agent loop wires it into.
+ * `appended_any` output port the retired fork ConversationAppend exposed and
+ * the Boolean Gateway each agent loop wires the equivalent signal into.
  *
  * The ledger is scoped to the PIPELINE (one console turn), so it survives a
  * pause/resume of the same run — where the re-fire actually happens — while a
  * genuinely new turn always starts empty.
  *
  * @see \Drupal\flowdrop_node_processor\Plugin\FlowDropNodeProcessor\ToolInvoke
- * @see \Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\ConversationAppend
  */
 #[FlowDropNodeProcessor(
   id: 'aincient_tool_invoke',
@@ -187,6 +186,10 @@ final class ToolInvoke extends AbstractFlowDropNodeProcessor implements ToolsAwa
       'tool_messages' => $messages,
       'tool_results' => $results,
       'ok' => $ok,
+      // The loop-progress signal: gateways take a strict boolean, and `ok`
+      // is the wrong signal there — a failed tool still produces an error
+      // message the model must see, so the loop must continue.
+      'produced_any' => $messages !== [],
       'skipped' => $skipped,
     ];
   }
@@ -358,6 +361,10 @@ final class ToolInvoke extends AbstractFlowDropNodeProcessor implements ToolsAwa
         'ok' => [
           'type' => 'boolean',
           'description' => 'TRUE if every executed tool call succeeded.',
+        ],
+        'produced_any' => [
+          'type' => 'boolean',
+          'description' => 'TRUE when any tool message was produced (success or error) — the loop-progress signal for gateways.',
         ],
         'skipped' => [
           'type' => 'array',

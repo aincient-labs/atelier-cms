@@ -31,11 +31,9 @@ use Psr\Log\LoggerInterface;
  * console: the appliance runs Drupal's automated cron every **3 hours**, and
  * only on a page request, so a 600-second threshold is honoured up to 18×
  * later than it reads. This service is that same repair, moved to the door —
- * the read-path repair that BufferNormalizer already performs on a damaged
- * conversation buffer (DECISIONS 0270), applied here to the lock that would
- * otherwise stop the buffer repair from ever running.
- *
- * @see \Drupal\aincient_flows\Conversation\BufferNormalizer
+ * the read-path repair the native `conversation_normalize` node already
+ * performs on a damaged conversation buffer (DECISIONS 0270), applied here to
+ * the lock that would otherwise stop the buffer repair from ever running.
  *
  * It deliberately does NOT resume the dead turn. Resuming means re-entering a
  * partially-run graph, and a job left RUNNING by a vanished owner cannot be

@@ -68,10 +68,18 @@
 /* The .ain-topbtn anatomy: raised paper + hairline + soft diffuse shadow is
    the secondary default; primary is the ONE cinnabar fill per view; hover
    stays achromatic (the pigment belongs to primary + active, not to every
-   button the pointer crosses). Press settles 1px into the paper. */
+   button the pointer crosses). Press settles 1px into the paper.
+
+   The bare `button` selector carries a `:where(:not(…))` guard: the element
+   selector is the one that reaches into a contrib island's OWN markup (see
+   "contrib islands" at the foot of this file), where a <button> is often a bare
+   text trigger, not a control that should look pressable. `:where()` adds NO
+   specificity, so the guard changes nothing about how this rule ranks against
+   the primary/danger voices below — which is the point: the ordering those
+   comments describe still holds exactly as written. */
 
 .sb-content .button,
-.sb-content button,
+.sb-content button:where(:not(.revision-graph-wrapper *)),
 .sb-content input[type="submit"],
 .sb-content input[type="button"],
 .sb-content input[type="reset"],
@@ -94,21 +102,21 @@
   transition: border-color 0.12s, background 0.12s, box-shadow 0.08s, transform 0.08s;
 }
 .sb-content .button:not(:disabled):hover,
-.sb-content button:not(:disabled):hover,
+.sb-content button:where(:not(.revision-graph-wrapper *)):not(:disabled):hover,
 .sb-content input[type="submit"]:not(:disabled):hover,
 .sb-content input[type="button"]:not(:disabled):hover {
   background: var(--ain-surface-2);
   text-decoration: none;
 }
 .sb-content .button:not(:disabled):active,
-.sb-content button:not(:disabled):active,
+.sb-content button:where(:not(.revision-graph-wrapper *)):not(:disabled):active,
 .sb-content input[type="submit"]:not(:disabled):active {
   transform: translateY(1px);
   box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-shadow) 30%, transparent);
 }
 /* Focus = the accent TINT ring — never a glow, never the browser blue. */
 .sb-content .button:focus-visible,
-.sb-content button:focus-visible,
+.sb-content button:where(:not(.revision-graph-wrapper *)):focus-visible,
 .sb-content input[type="submit"]:focus-visible,
 .sb-content .action-links a:focus-visible {
   outline: 3px solid color-mix(in oklch, var(--ain-accent) 30%, transparent);
@@ -116,7 +124,7 @@
 }
 /* Disabled = dimmed in place: same shape, shadow removed (no dry-firing). */
 .sb-content .button:disabled,
-.sb-content button:disabled,
+.sb-content button:where(:not(.revision-graph-wrapper *)):disabled,
 .sb-content input[type="submit"]:disabled {
   cursor: default;
   opacity: 0.45;
@@ -1171,4 +1179,71 @@
 .sb-backend .ui-widget-overlay {
   background: color-mix(in oklch, var(--ain-shadow) 40%, transparent);
   opacity: 1;
+}
+
+/* ======================================================== contrib islands === */
+/* An island is a contrib surface that renders its OWN complete anatomy into the
+   content column — its own BEM classes, its own layout, its own token set — and
+   is therefore themed by re-pointing its tokens, never by restyling its markup.
+   Two rules apply:
+   - the kit keeps out (the `:where(:not(…))` guards above and on `.sb-backend a`
+     in studio-backend.css), because our button/link voices land on markup that
+     was never meant to carry them;
+   - we declare no colour here, only the mapping. Every value is an --ain-*
+     token, so light/dark follow the theme automatically and the island can
+     never drift from the palette.
+
+   revision_graph (/node/N/revision_graph) — a git-style revision rail, a branch
+   per language. Its fallbacks are Claro's (absolutezero blue, cool greys),
+   which is what made it read as a foreign page. The set is declared three times
+   because the module declares it twice — once on the outer wrapper (footer,
+   "load more", errors) and once on the rail — and a value set on the rail would
+   otherwise win over one inherited from the wrapper. NOTE: the lane/branch
+   colours are NOT tokens: they are config, at
+   /admin/config/content/revision-graph. */
+
+.sb-content .revision-graph-wrapper,
+.sb-content .revision-graph,
+.sb-content .revision-graph__rail {
+  --rg-ground: var(--ain-surface);
+  --rg-surface: var(--ain-surface-2);
+  --rg-surface-alt: color-mix(in oklch, var(--ain-text) 8%, var(--ain-surface));
+  --rg-border: var(--ain-border);
+  --rg-hairline: color-mix(in oklch, var(--ain-border) 55%, transparent);
+  --rg-ink: var(--ain-text);
+  --rg-muted: var(--ain-text-dim);
+  /* The island spends `faint` on 10–11.5px mono (column heads, timestamps),
+     where the token itself measures 3.5:1 — so it is deepened toward the ink
+     until small text clears AA. Muting is a colour decision, never opacity. */
+  --rg-faint: color-mix(in oklch, var(--ain-text-faint) 78%, var(--ain-text));
+  --rg-on-ink: var(--ain-surface);
+  --rg-accent: var(--ain-jade);
+  /* Chips are whispers (Law 02): ochre ink deepened toward the bistre so the
+     label clears AA on its own tint, a tint ground, a hairline edge. */
+  --rg-warn-ink: color-mix(in oklch, var(--ain-accent-2) 55%, var(--ain-text));
+  --rg-warn-bg: color-mix(in oklch, var(--ain-accent-2) 12%, var(--ain-surface));
+  --rg-warn-edge: color-mix(in oklch, var(--ain-accent-2) 35%, var(--ain-border));
+  --rg-danger: var(--ain-danger);
+  --rg-danger-bg: color-mix(in oklch, var(--ain-danger) 8%, var(--ain-surface));
+  --rg-danger-edge: color-mix(in oklch, var(--ain-danger) 30%, var(--ain-border));
+  --rg-font: var(--ain-font);
+  --rg-mono: var(--ain-mono);
+}
+
+/* The card takes the kit's panel anatomy — 10px radius (cards) and the soft
+   diffuse lift — so it sits on the gesso ground like every other panel. The
+   module already draws the hairline and the ground from the tokens above; only
+   the radius and the lift are ours. `overflow: hidden` keeps the rail's own
+   sideways scroll inside the rounded corner. */
+.sb-content .revision-graph-wrapper {
+  border-radius: 10px;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+  overflow: hidden;
+}
+
+/* Focus is the kit's accent TINT ring, not the island's hard accent outline —
+   the ring is a whole-backend convention, so it wins over the island's. */
+.sb-content .revision-graph-wrapper :focus-visible {
+  outline: 3px solid color-mix(in oklch, var(--ain-accent) 30%, transparent);
+  outline-offset: 1px;
 }

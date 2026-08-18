@@ -8,7 +8,6 @@ dependencies:
 _core:
   default_config_hash: uK1bpJe9ZHZj7oXJyv2FExng5_5w8A4YmG5_VjK2rm0
 id: stategraph
-enabled: null
 label: StateGraph
 description: 'Nodes for stateful graph execution including iteration, state storage, and loop control.'
 icon: |-

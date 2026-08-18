@@ -26,7 +26,9 @@ describe("describeStep", () => {
       "prompt_template",
       "boolean_gateway",
       "flowdrop_node_processor_toolbox",
-      "aincient_flows_aincient_conversation_append",
+      "conversation_buffer",
+      "conversation_normalize",
+      "message_assemble",
       "aincient_flows_aincient_invoke",
     ]) {
       expect(isWork({ label: "Whatever", status: "completed", nodeTypeId })).toBe(false);

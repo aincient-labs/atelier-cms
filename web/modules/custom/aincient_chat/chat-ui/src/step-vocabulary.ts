@@ -3,7 +3,7 @@
  *
  * The backend relays one `node` frame per executed FlowDrop job (see
  * NodeProgressSubscriber), which is the ENGINE's own job list: it includes the
- * wiring (chat_input, prompt_template, boolean_gateway, conversation_append) and
+ * wiring (chat_input, prompt_template, boolean_gateway, conversation_buffer) and
  * carries machine ids. Shown raw that reads as "Chat input, chat_input" — the
  * machinery narrating itself, which is exactly what the craftsman's voice
  * forbids (brand.md §7: name outcomes, not machinery).
@@ -64,8 +64,9 @@ const PLUMBING_PHRASES: Record<string, [present: string, past: string]> = {
   if_else: ["Deciding what is next", "Decided what is next"],
   confirmation: ["Waiting for you", "Waited for you"],
   flowdrop_node_processor_toolbox: ["Gathering its tools", "Gathered its tools"],
-  aincient_flows_aincient_conversation_read: ["Reading the conversation", "Read the conversation"],
-  aincient_flows_aincient_conversation_append: ["Saving the conversation", "Saved the conversation"],
+  conversation_buffer: ["Saving the conversation", "Saved the conversation"],
+  conversation_normalize: ["Tidying the conversation", "Tidied the conversation"],
+  message_assemble: ["Preparing the messages", "Prepared the messages"],
   aincient_flows_aincient_invoke: ["Using its tools", "Used its tools"],
   aincient_flows_brand_state: ["Reading the brand", "Read the brand"],
 };

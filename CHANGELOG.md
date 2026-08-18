@@ -1,11 +1,31 @@
 # Changelog
 
-Notable changes to **Atelier by AIncient Labs**, newest first. Each entry is a
+Notable changes to **Atelier CMS by AIncient Labs**, newest first. Each entry is a
 public snapshot published from the development source.
 
 > Maintainers: this file is the public-facing changelog and is layered on via
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
+
+## [0.9.0] — 2026-08-18
+
+- **Upgrading now applies everything the new version ships.** Two faults are fixed. A release's new
+  screens could arrive without the addresses that reach them — 0.8.2 hit this, and an administrator
+  saw an error logged on every page of the console — because Drupal keeps a parsed copy of those
+  addresses in a cache designed to outlive any cache clear, judging staleness by file timestamp, and
+  our images stamp every file with the same fixed timestamp so that identical content rebuilds to an
+  identical download. A changed file therefore looked unchanged. Upgrades now clear that cache
+  outright, so new addresses and changed styles take effect. Separately, an update step that assumed
+  data no release had shipped could abort an upgrade and roll it back; the shipped configuration is
+  the update, and that step is gone.
+- **The product now names itself Atelier CMS by AIncient Labs**, in the console, the site credit and
+  the documentation.
+- **Agent conversations run on the engine's own conversation layer** — FlowDrop 2.3, the first stable
+  release on that line. Context carries across requests, one turn's working notes stay out of the
+  next, and a tool step that fails no longer ends an agent's work early. Approval prompts stay
+  reserved for the actions that genuinely need your say.
+- **The revision history page is styled like the rest of the backend.** It previously rendered as a
+  mix of Atelier's styling and Drupal's defaults, with an expand control that overran its column.
 
 ## [0.8.2] — 2026-08-13
 

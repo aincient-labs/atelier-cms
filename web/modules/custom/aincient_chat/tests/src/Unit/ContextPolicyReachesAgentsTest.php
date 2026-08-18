@@ -40,7 +40,7 @@ final class ContextPolicyReachesAgentsTest extends TestCase {
    * The agents that reason over a conversation, so all of them owe the policy.
    */
   private const AGENTS = [
-    'brand_studio_rice',
+    'brand_studio',
     'aincient_pages_agent',
     'aincient_audit_agent',
     'aincient_chrome_agent',

@@ -85,7 +85,12 @@ RUN mkdir -p /split /app/web/modules/contrib /app/web/modules/engine \
 # re-download ~75 MB it already has. Pinning to a fixed epoch makes identical
 # content → identical layer, independent of when it was built. (-h so symlinks are
 # stamped in place; -t <YYYYMMDDhhmm> is busybox-portable — this is Alpine.) The
-# runtime image's opcache runs validate_timestamps=0, so these mtimes are inert.
+# runtime image's opcache runs validate_timestamps=0, so these mtimes are inert
+# for PHP. They are NOT inert for Drupal: since 11.4 the `file_parsing` cache bin
+# (parsed *.routing.yml / *.libraries.yml) survives cache clears and invalidates on
+# filemtime alone, so a fixed mtime makes a changed YAML file look unchanged across
+# an image swap. converge.sh truncates that bin on every upgrade to compensate —
+# do not drop that truncate while this normalisation stands.
 RUN find /app /split -exec touch -h -t 202401010000 {} +
 
 # --- Stage 2: runtime -------------------------------------------------------
@@ -265,7 +270,7 @@ RUN mkdir -p /opt/drupal/private/snapshots /opt/drupal/web/sites/default/files \
 ARG ATELIER_VERSION=dev
 ARG ATELIER_REVISION=dev
 ENV ATELIER_VERSION=${ATELIER_VERSION}
-LABEL org.opencontainers.image.title="Atelier by AIncient Labs" \
+LABEL org.opencontainers.image.title="Atelier CMS by AIncient Labs" \
       org.opencontainers.image.version="${ATELIER_VERSION}" \
       org.opencontainers.image.revision="${ATELIER_REVISION}" \
       org.opencontainers.image.source="https://github.com/aincient-labs/atelier-cms" \

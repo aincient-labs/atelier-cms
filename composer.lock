@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2e6af242cc351dd902f2ae16d4fdb747",
+    "content-hash": "ebc6e54c5687ca1d35bac891aab80ba2",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -2058,17 +2058,17 @@
         },
         {
             "name": "drupal/flowdrop",
-            "version": "2.2.0",
+            "version": "2.3.0",
             "source": {
                 "type": "git",
                 "url": "https://git.drupalcode.org/project/flowdrop.git",
-                "reference": "2.2.0"
+                "reference": "2.3.0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.2.0.zip",
-                "reference": "2.2.0",
-                "shasum": "f1e59bfbc61d5a762c52a76a6b1e986ee13f88b6"
+                "url": "https://ftp.drupal.org/files/projects/flowdrop-2.3.0.zip",
+                "reference": "2.3.0",
+                "shasum": "08ce625f1f4d6da6b7c9718a624951208fb404ff"
             },
             "require": {
                 "d34dman/vanilla-icon-picker": "^1.4",
@@ -2125,8 +2125,8 @@
             "type": "drupal-module",
             "extra": {
                 "drupal": {
-                    "version": "2.2.0",
-                    "datestamp": "1786306489",
+                    "version": "2.3.0",
+                    "datestamp": "1787086803",
                     "security-coverage": {
                         "status": "covered",
                         "message": "Covered by Drupal's security advisory policy"
@@ -2898,29 +2898,29 @@
         },
         {
             "name": "drupal/revision_graph",
-            "version": "3.1.1",
+            "version": "4.0.0",
             "source": {
                 "type": "git",
                 "url": "https://git.drupalcode.org/project/revision_graph.git",
-                "reference": "3.1.1"
+                "reference": "4.0.0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://ftp.drupal.org/files/projects/revision_graph-3.1.1.zip",
-                "reference": "3.1.1",
-                "shasum": "8b4c167b6fafb14339c658ba298a2adbd4908023"
+                "url": "https://ftp.drupal.org/files/projects/revision_graph-4.0.0.zip",
+                "reference": "4.0.0",
+                "shasum": "d0c30d8f37943adc0cabc014ab5662d30057d19c"
             },
             "require": {
-                "drupal/core": "^10 || ^11"
+                "drupal/core": "^11 || ^12"
             },
             "require-dev": {
-                "drupol/drupal-conventions": "^2.0"
+                "drush/drush": "*"
             },
             "type": "drupal-module",
             "extra": {
                 "drupal": {
-                    "version": "3.1.1",
-                    "datestamp": "1745698708",
+                    "version": "4.0.0",
+                    "datestamp": "1786816222",
                     "security-coverage": {
                         "status": "covered",
                         "message": "Covered by Drupal's security advisory policy"

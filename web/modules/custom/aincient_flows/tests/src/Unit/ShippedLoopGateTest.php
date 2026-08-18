@@ -146,9 +146,22 @@ final class ShippedLoopGateTest extends TestCase {
   }
 
   /**
-   * The gate reads "did the append write anything", not something weaker.
+   * The gate reads "did this step actually produce anything", never weaker.
+   *
+   * On the fork nodes the signal was the append's `appended_any`. The native
+   * `conversation_buffer` publishes no such port, so since the Phase 6
+   * migration the same signal comes from the step that PRODUCED the messages:
+   * the invoke node's `tool_messages` (BooleanGateway's plain (bool) cast —
+   * a non-empty list is progress) on the tool-results loop, and the decline
+   * synthesizer's `synthesized_any` on the guardrail's decline loop. Anything
+   * else — a raw trigger, has_tool_calls, a constant — would re-enter the
+   * loop without evidence of progress and re-create the doubled-page bug.
    */
-  public function testLoopGatewaysAreFedByAppendedAny(): void {
+  public function testLoopGatewaysAreFedByAProgressSignal(): void {
+    // Gateways type-check `value` as a strict boolean at parameter
+    // resolution, before BooleanGateway's own cast — so the progress signal
+    // must be a boolean output, never a messages array.
+    $progressPorts = ['produced_any', 'synthesized_any'];
     foreach ($this->workflows() as $id => $config) {
       $gateways = [];
       foreach ($config['edges'] ?? [] as $edge) {
@@ -173,11 +186,12 @@ final class ShippedLoopGateTest extends TestCase {
           $fed,
           "$id: loop gateway $gateway has nothing wired into its value input.",
         );
-        $this->assertStringEndsWith(
-          '-output-appended_any',
-          $fed[$gateway],
-          "$id: loop gateway $gateway must be driven by a conversation "
-          . "append's appended_any port; got {$fed[$gateway]}.",
+        $port = preg_replace('/^.*-output-/', '', (string) $fed[$gateway]);
+        $this->assertContains(
+          $port,
+          $progressPorts,
+          "$id: loop gateway $gateway must be driven by a progress signal ("
+          . implode(' or ', $progressPorts) . "); got {$fed[$gateway]}.",
         );
       }
     }

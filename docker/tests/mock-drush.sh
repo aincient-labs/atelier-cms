@@ -19,6 +19,8 @@
 #                         build the dangerous state (data present, site down).
 #   MOCK_TABLE_COUNT_FAIL=1  information_schema is unavailable, forcing the
 #                         key_value fallback in database_state()
+#   MOCK_SQL_FAIL_PATTERN  a sql:query whose text contains this substring fails
+#                         (e.g. cache_file_parsing → the bin's table is absent)
 #
 # On sql:dump it writes a real .gz so restore_snapshot's `[ -f ]` + zcat work.
 #
@@ -57,7 +59,13 @@ case "$*" in
       exit 0
     fi
     exit 1 ;;
-  "sql:query"*)                     exit "${MOCK_DB_READY:-0}" ;;
+  "sql:query"*)
+    # An individual statement can be made to fail (a table that does not exist on
+    # this site) without pretending the whole database is unreachable.
+    if [ -n "${MOCK_SQL_FAIL_PATTERN:-}" ]; then
+      case "$*" in *"$MOCK_SQL_FAIL_PATTERN"*) exit 1 ;; esac
+    fi
+    exit "${MOCK_DB_READY:-0}" ;;
   "status --field=bootstrap"*)      [ "${MOCK_INSTALLED:-0}" = "1" ] && echo "Successful" ; exit 0 ;;
   "status --field=drupal-version"*) echo "11.3.10" ; exit 0 ;;
   "site:install"*)                  exit 0 ;;

@@ -548,6 +548,37 @@ upgrade() {
   $DRUSH sql:query "TRUNCATE cache_container; DELETE FROM key_value WHERE collection = 'state' AND name = 'system.module.files';" \
     || die "could not invalidate the extension-path caches"
 
+  # Drop the parsed-YAML cache too — it is the one bin a cache rebuild CANNOT
+  # clear, and an image swap is exactly when it goes wrong.
+  #
+  # Since 11.4 Drupal reads every *.routing.yml and *.libraries.yml through
+  # YamlCacheCollector into the `file_parsing` bin, which core deliberately
+  # leaves untagged as a cache bin so it SURVIVES cache clears
+  # (core.services.yml, `cache.file_parsing`); it invalidates on filemtime
+  # instead. Our image stamps every file with a fixed mtime for reproducible
+  # builds (docker/Dockerfile, `touch -h -t 202401010000`), so the new image's
+  # routing.yml is byte-different but mtime-identical
+  # to the old one — the check says "unchanged" and Drupal keeps serving the
+  # PREVIOUS image's parse. A release's new routes then do not exist at runtime
+  # while the code that calls them does: v0.8.2 shipped
+  # aincient_onboarding.refresh_recommendations and every console page load by
+  # an admin threw RouteNotFoundException from Url::fromRoute(). Changed asset
+  # libraries stale the same way, through the same bin.
+  #
+  # `drush cache:rebuild` below is powerless here by design, so this has to be an
+  # explicit truncate, and pre-bootstrap so updatedb/config:import/the router
+  # rebuild all read the shipped YAML. Cheap and idempotent — every upgrade, not
+  # special-cased to one release.
+  #
+  # Deliberately advisory, and it cannot be otherwise: `drush sql:query` exits 0
+  # and prints nothing even when the statement fails, so a missing table (the bin
+  # is created lazily on first write, so a site that never wrote to it has none)
+  # is indistinguishable from success. `|| true` states that rather than implying
+  # a check we cannot perform. Nothing downstream depends on the outcome: a stale
+  # parse costs a wrong route, an absent bin costs nothing.
+  log "invalidating the parsed-YAML cache (routes + libraries)"
+  $DRUSH sql:query 'TRUNCATE cache_file_parsing;' >/dev/null 2>&1 || true
+
   # The migration engine: runs every pending hook_update_N / hook_post_update
   # (schema changes, data migrations, anything config:import can't express).
   $DRUSH updatedb -y --no-cache-clear

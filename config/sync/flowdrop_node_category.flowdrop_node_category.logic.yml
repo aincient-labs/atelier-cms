@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: ltoYLM5LRaQl9kXP8DE803AnjolVWLc0kMQdJoW_pqk
 id: logic
-enabled: true
 label: Logic
 description: 'Control your workflow with conditional branching, loops, switches, and other decision-making nodes that determine which path to follow.'
 icon: 'mdi:source-branch'

@@ -1,0 +1,35 @@
+uuid: b33f9371-323c-465b-affb-25313c77f9ed
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+id: message_assemble
+label: 'Assemble Messages'
+description: 'Combine several message-list inputs into one ordered list, in declared port order'
+category: processing
+icon: 'mdi:message-plus-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  dynamicInputs:
+    configurable: true
+    connectable: false
+    required: false
+    default: {  }
+outputs:
+  messages:
+    exposed: true
+tags:
+  - messages
+  - memory
+  - agent
+executor_plugin: 'flowdrop_node_processor:message_assemble'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true
+confirmation: {  }
+reserved_port_exposure: {  }

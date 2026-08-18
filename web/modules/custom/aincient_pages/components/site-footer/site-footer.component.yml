@@ -32,4 +32,4 @@ props:
     show_credit:
       type: boolean
       default: true
-      description: 'Show the "Made with ♥ using Atelier by AIncient Labs" attribution credit in the note bar.'
+      description: 'Show the "Made with ♥ using Atelier CMS by AIncient Labs" attribution credit in the note bar.'

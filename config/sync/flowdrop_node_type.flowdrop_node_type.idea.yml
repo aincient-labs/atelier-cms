@@ -11,7 +11,7 @@ label: Idea
 description: 'Conceptual idea node for BPMN-like flow diagrams. Chain ideas together without committing to specific implementations.'
 category: helpers
 icon: 'mdi:lightbulb-outline'
-plugin_version: 1.0.0
+plugin_version: 1.1.0
 enabled: true
 parameters:
   color:
@@ -19,11 +19,6 @@ parameters:
     connectable: false
     required: false
     default: '#6366f1'
-  description:
-    configurable: true
-    connectable: false
-    required: false
-    default: 'Describe your idea here...'
   enableBottomPort:
     configurable: true
     connectable: false
@@ -49,15 +44,18 @@ parameters:
     connectable: false
     required: false
     default: 'mdi:lightbulb-outline'
-  title:
+  instanceDescription:
+    configurable: true
+    connectable: false
+    required: false
+    default: 'Describe your idea here...'
+  instanceTitle:
     configurable: true
     connectable: false
     required: false
     default: 'New Idea'
 outputs:
   color:
-    exposed: false
-  description:
     exposed: false
   enableBottomPort:
     exposed: false
@@ -70,8 +68,6 @@ outputs:
   icon:
     exposed: false
   message:
-    exposed: false
-  title:
     exposed: false
 tags:
   - idea

@@ -24,8 +24,6 @@ use PHPUnit\Framework\Attributes\Group;
  *
  * No Drupal bootstrap: it reads plugin sources off disk, so container state
  * cannot defeat it.
- *
- * @see \Drupal\aincient_flows\Conversation\Scratchpad
  */
 #[Group('aincient_flows')]
 final class NestedPipelineGuardTest extends UnitTestCase {

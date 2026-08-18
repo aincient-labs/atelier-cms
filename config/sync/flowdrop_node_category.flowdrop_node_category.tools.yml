@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: ICG9gHi5uBzNeuYbodWefk_L2rByR01Lb98zCiWBDn4
 id: tools
-enabled: true
 label: Tools
 description: 'Extend your workflow capabilities with external tools, APIs, calculators, web scrapers, and other specialized utilities.'
 icon: 'mdi:wrench'

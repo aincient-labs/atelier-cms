@@ -3,7 +3,6 @@ langcode: en
 status: true
 dependencies: {  }
 id: timing
-enabled: true
 label: Timing
 description: 'Pause workflow execution for a duration or until a point in time, resuming automatically.'
 icon: 'mdi:timer-outline'

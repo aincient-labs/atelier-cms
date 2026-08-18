@@ -1,6 +1,27 @@
 tokens:
-  neutral_surface: '#fcfaf7'
-  neutral_subtle: 'oklch(1 0 0)'
-  neutral_muted_foreground: 'oklch(0.45 0 0)'
-  neutral_ink: 'oklch(0.20 0.02 270)'
+  neutral_surface: 'oklch(0.98 0 0)'
+  neutral_subtle: 'oklch(0.92 0 0)'
+  neutral_muted_foreground: 'oklch(0.35 0 0)'
+  neutral_ink: 'oklch(0.10 0 0)'
   card: var(--neutral-subtle)
+  brand_primary: 'oklch(0.12 0 0)'
+  brand_primary_foreground: 'oklch(0.98 0 0)'
+  brand_accent: 'oklch(0.40 0.04 270)'
+  brand_accent_foreground: 'oklch(0.98 0 0)'
+  neutral_border: 'oklch(0.85 0 0)'
+  font_family_base: '"Inter", ui-sans-serif, system-ui, sans-serif'
+  font_family_display: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif'
+  shadow_blur: 8px
+  shadow_strength: '0.08'
+  shadow_dir_y: '0'
+  display_weight: var(--weight-extrabold)
+  heading_weight: var(--weight-bold)
+  subheading_weight: var(--weight-semibold)
+  button_radius: var(--radius-md)
+  card_radius: var(--radius-md)
+  popover_radius: var(--radius-md)
+  input_radius: var(--radius-md)
+  tabs_radius: var(--radius-sm)
+font_families:
+  - 'Space Grotesk'
+  - Inter

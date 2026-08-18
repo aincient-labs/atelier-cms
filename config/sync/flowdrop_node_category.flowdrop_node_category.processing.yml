@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: F6dse-NCB8M_84IEngtO1rv8tbcaygCpwE3EZJnOYjo
 id: processing
-enabled: true
 label: Processing
 description: 'Transform, filter, parse, and manipulate data as it flows through your workflow to prepare it for the next step.'
 icon: 'mdi:application-braces-outline'

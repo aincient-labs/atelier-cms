@@ -1,0 +1,194 @@
+uuid: 9f4b67ef-12d8-49f1-88b3-c2e59aefc2c1
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+id: workshop_one_ai_call
+label: 'Workshop — one AI call'
+description: 'Recording asset for The Workshop episode "What one AI call actually looks like". One stateless inference with NO tools, NO memory and NO loop: the conversation is typed by hand as JSON so the exact payload sent to the model is visible on screen. Deliberately avoids the convenience chat steps, which hide it. Lives on branch workshop/one-ai-call and must never be merged — it is a teaching artifact, not product config.'
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: 220
+      'y': 420
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          inputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+          outputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+      metadata:
+        node_type_id: chat_input
+    measured:
+      width: 280
+      height: 741
+  -
+    id: chat_output.1
+    position:
+      x: 1020
+      'y': 560
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: format
+              exposed: false
+            -
+              id: timestamp
+              exposed: false
+            -
+              id: metadata
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: message
+            -
+              id: trigger
+              exposed: false
+      metadata:
+        node_type_id: chat_output
+    measured:
+      width: 280
+      height: 241
+  -
+    id: flowdrop_ai_provider_simple_chat.1
+    position:
+      x: 620
+      'y': 480
+    data:
+      label: 'Simple Chat'
+      config:
+        model: ''
+        operation_type: 'aincient_role:task'
+        temperature: 0.7
+        maxTokens: 1000
+        systemPrompt: 'You are a pirate!'
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          inputs:
+            -
+              id: message
+            -
+              id: systemPrompt
+              exposed: false
+            -
+              id: history
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+          outputs:
+            -
+              id: response
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+      metadata:
+        node_type_id: flowdrop_ai_provider_simple_chat
+    measured:
+      width: 280
+      height: 501
+edges:
+  -
+    id: xy-edge__chat_input.1chat_input.1-output-message-flowdrop_ai_provider_simple_chat.1flowdrop_ai_provider_simple_chat.1-input-message
+    source: chat_input.1
+    target: flowdrop_ai_provider_simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: flowdrop_ai_provider_simple_chat.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__flowdrop_ai_provider_simple_chat.1flowdrop_ai_provider_simple_chat.1-output-response-chat_output.1chat_output.1-input-message
+    source: flowdrop_ai_provider_simple_chat.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: flowdrop_ai_provider_simple_chat.1-output-response
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+metadata:
+  createdAt: '2026-08-13T00:00:00.000Z'
+  updatedAt: '2026-08-12T23:50:28.459Z'
+created: 1786579200
+changed: 1786578628
+uid: 0
+input_ports: {  }
+output_ports: {  }
+parameter_schema: {  }
+output_schema: {  }
+schema_version: 1.0.0

@@ -25,7 +25,7 @@ describe("starterAsks", () => {
   });
 
   it("renders nothing for a room with no configured asks — never another room's", () => {
-    const bare: WorkflowRef = { id: "brand_studio_rice", label: "Brand" };
+    const bare: WorkflowRef = { id: "brand_studio", label: "Brand" };
     expect(starterAsks(bare)).toEqual([]);
     expect(starterAsks({ ...bare, sampleAsks: [] })).toEqual([]);
   });

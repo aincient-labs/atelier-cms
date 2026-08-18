@@ -1,0 +1,38 @@
+uuid: 77977169-063f-48c1-bf2d-b7efab45dc04
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+id: conversation_normalize
+label: 'Normalize Conversation'
+description: 'Enforce provider sequence rules over an assembled message list: shape coercion, tool-pairing repair, leading-only system messages'
+category: processing
+icon: 'mdi:message-check-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  messages:
+    configurable: false
+    connectable: true
+    required: false
+    default: {  }
+outputs:
+  dropped:
+    exposed: true
+    exposed_by_default: false
+  messages:
+    exposed: true
+tags:
+  - messages
+  - memory
+  - agent
+executor_plugin: 'flowdrop_node_processor:conversation_normalize'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: true
+confirmation: {  }
+reserved_port_exposure: {  }

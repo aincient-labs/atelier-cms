@@ -820,8 +820,8 @@ final class SessionThreadStore {
    *
    * The operator's conversation is replayed into the orchestrator every turn
    * from a flowdrop_memory record (scope=session, key=conversation, entity
-   * backend — written by ConversationAppend, read by ConversationRead in
-   * aincient_flows). Deleting it makes the agent genuinely forget the thread's
+   * backend — written and read by the native conversation_buffer nodes in
+   * the agent graphs). Deleting it makes the agent genuinely forget the thread's
    * history. No-op (FALSE) when FlowDrop's memory service is absent.
    */
   private function clearConversation(object $session): bool {

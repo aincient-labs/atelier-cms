@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: EQevZbb1nAvl_QSjzRyerZgL39iyI_yuKuK7HuZjGnk
 id: human_in_loop
-enabled: true
 label: 'Human in Loop'
 description: 'Pause workflow execution to request user input, confirmations, choices, or form submissions before continuing.'
 icon: 'mdi:account-clock'

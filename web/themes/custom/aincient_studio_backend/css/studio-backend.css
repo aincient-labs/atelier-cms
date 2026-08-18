@@ -85,10 +85,15 @@ body.sb-backend {
   -webkit-font-smoothing: antialiased;
 }
 
-.sb-backend a { color: var(--ain-jade); text-decoration: none; }
+/* The `:where(:not(…))` guard keeps this off self-contained contrib surfaces
+   that ship their own anatomy and colour their own links (see admin-kit.css
+   "contrib islands"). `:where()` contributes NO specificity, so the guard
+   excludes the island without shifting this rule's weight against anything
+   else on the page. */
+.sb-backend a:where(:not(.revision-graph-wrapper *)) { color: var(--ain-jade); text-decoration: none; }
 /* Interactive affordance is a quiet colour shift, never an underline — the
    console (chat-ui) never underlines on hover, so the backend matches it. */
-.sb-backend a:hover { color: color-mix(in oklch, var(--ain-jade) 78%, var(--ain-text)); }
+.sb-backend a:where(:not(.revision-graph-wrapper *)):hover { color: color-mix(in oklch, var(--ain-jade) 78%, var(--ain-text)); }
 
 .sb-backend h1, .sb-backend h2, .sb-backend h3,
 .sb-backend h4, .sb-backend h5 {

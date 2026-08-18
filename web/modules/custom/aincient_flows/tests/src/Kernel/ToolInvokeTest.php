@@ -154,7 +154,9 @@ final class ToolInvokeTest extends KernelTestBase {
     // And it emits NOTHING: the first execution's tool message is already
     // paired to the call in the buffer, so an empty batch here is what leaves
     // the conversation untouched — which is what stops the phantom wave from
-    // advancing the agent loop (see ConversationAppend's stall flag).
+    // advancing the agent loop (the stall-flag pattern the retired fork
+    // ConversationAppend introduced; see the native decline_synthesize node's
+    // synthesized_any).
     $this->assertSame([], $second['tool_messages']);
     $this->assertSame([], $second['tool_results']);
     $this->assertSame(['call_a'], $second['skipped']);

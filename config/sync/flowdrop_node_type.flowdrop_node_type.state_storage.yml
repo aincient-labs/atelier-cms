@@ -1,0 +1,64 @@
+uuid: 918ab13c-dde0-4c98-8b58-5cdbc30f4c63
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_stategraph
+id: state_storage
+label: 'State Storage'
+description: 'Store and retrieve values in the graph state for use across nodes'
+category: logic
+icon: 'mdi:database-cog'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  __data__:
+    configurable: false
+    connectable: false
+    required: false
+  amount:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+    default: 1
+  default:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+  key:
+    configurable: true
+    connectable: true
+    required: false
+  operation:
+    configurable: true
+    connectable: false
+    required: true
+    default: get
+  value:
+    configurable: true
+    connectable: true
+    required: false
+outputs:
+  exists:
+    exposed: true
+  key:
+    exposed: true
+  operation:
+    exposed: true
+  state_update:
+    exposed: true
+    exposed_by_default: false
+  value:
+    exposed: true
+tags: {  }
+executor_plugin: 'flowdrop_stategraph:state_storage'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false
+confirmation: {  }
+reserved_port_exposure: {  }

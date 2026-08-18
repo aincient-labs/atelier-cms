@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: RmKgyeFvvV2BI_cSVfkCk1b3NRKVzLCpCS96K2DUlfk
 id: memories
-enabled: true
 label: Memories
 description: 'Give your AI workflows memory by storing and recalling conversation history, context, and important information across interactions.'
 icon: 'mdi:chip'

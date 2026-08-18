@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: CfR0iCpxETgxwFiCYlGMTFb9welc4I5-QmW7qpEeGQc
 id: prompts
-enabled: true
 label: Prompts
 description: 'Create and manage text prompts, templates, and instructions that guide AI models to produce better results.'
 icon: 'mdi:message-text'

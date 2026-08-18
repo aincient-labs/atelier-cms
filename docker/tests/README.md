@@ -68,6 +68,35 @@ E2E_BASE_IMAGE=aincient/cms:dev ./upgrade-floor-e2e.sh  # reuse a prebuilt image
 > The base image must carry the **current** `converge.sh` — a prebuilt image from before the
 > guards exists will pass scenario 3 and silently skip the refusals.
 
+## Integration — `upgrade-from-released.sh` (a REAL old site upgrading to this build)
+
+The gap every other upgrade suite has by construction: `smoke.sh` upgrades an image to
+itself and `upgrade-e2e.sh` swaps two images built from the **same tree**, so the database
+the migration runs against was written by the code under test. A migration that assumes
+unreleased state passes all of them. Real installs carry only what the last **release**
+shipped.
+
+This installs with the released baseline (`:latest`, not `:edge` — edge carries exactly the
+unreleased state whose absence is the point) and upgrades onto the candidate build against
+the same DB volume.
+
+The load-bearing assertion is **`config:status`**, not "the migration ran": whichever route
+a release takes — `post_update`, `config:import`, or both — a converged site must end
+matching the `config/sync` it shipped with. That holds the invariant without naming any one
+release's migration, so it needs no editing next release. It also asserts the six agent
+workflows survive the config **deletes** (cim deletes before it creates, so a retired node
+type goes while workflows still declare it as a dependency).
+
+```bash
+NEW_IMAGE=aincient/cms:dev ./upgrade-from-released.sh
+OLD_IMAGE=ghcr.io/aincient-labs/atelier-cms:v0.8.1 NEW_IMAGE=aincient/cms:dev ./upgrade-from-released.sh
+```
+
+> Written after the Phase 6 `post_update` aborted `updatedb` on a genuine `v0.8.x` site: it
+> rewired workflows by node id, authored against a dev database that had already taken an
+> unreleased commit's config. Converge rolled back, so every appliance would have refused to
+> move — and the full gate was green. DECISIONS 0390.
+
 ## Integration — `published-hops-e2e.sh` (the incident, on REAL published images)
 
 The only suite that builds **nothing**. It pulls actual tags from GHCR, because what
@@ -109,3 +138,13 @@ composer test            # php-tests       — agent loop + Commands (Kernel, sq
 docker/tests/run.sh      # converge-unit   — converge logic (bats, mock drush)
 docker/tests/smoke.sh    # appliance-smoke — real container: install/upgrade/rollback
 ```
+
+**Release lane, not the push gate.** `upgrade-from-released.sh` needs a published baseline
+and network, so it belongs where a release is cut, not on every push:
+
+```
+docker/tests/upgrade-from-released.sh   # last released image → this build
+```
+
+Run it before `bin/deploy-atelier` on any release that migrates config or adds a
+`post_update`. A green push gate cannot answer the question it asks.

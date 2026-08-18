@@ -27,10 +27,11 @@ idempotent:
   appliance's desired state: config/sync ships the full site incl. the branded
   `aincient_theme` as the default front end, whereas the recipe leaves Olivero default +
   unbranded and is now **dev/demo-only**. See `.dev` DECISIONS 2026-06-16.
-- **Existing database, site bootstraps** → **snapshot** → `drush updatedb` (runs this
-  image's `hook_update_N` / `hook_post_update`) → `drush config:import` (re-asserts
-  this image's `config/sync`) → `cache:rebuild` → **health check** → **roll back to
-  the snapshot** if anything fails.
+- **Existing database, site bootstraps** → **snapshot** → invalidate the caches an
+  image swap makes stale (extension paths, and the parsed-YAML bin — see below) →
+  `drush updatedb` (runs this image's `hook_update_N` / `hook_post_update`) →
+  `drush config:import` (re-asserts this image's `config/sync`) → `cache:rebuild` →
+  **health check** → **roll back to the snapshot** if anything fails.
 - **Existing database, site cannot bootstrap** → **refuse.** Nothing is installed,
   nothing is migrated, the database is not touched, and `converge.result` is
   `missing-code` (when a module's code is gone — the usual cause, named in the log)
@@ -51,6 +52,31 @@ Pre-upgrade snapshots land in `private/snapshots/pre-converge-<UTC timestamp>.sq
 the newest `AINCIENT_SNAPSHOT_KEEP` (default 5) retained. They used to share one fixed
 filename, so during an incident — exactly when restarts come in bursts — each attempt
 overwrote the copy taken before the previous one.
+
+### Two caches an image swap makes stale, and why `cache:rebuild` isn't enough
+
+The database is a mounted volume that outlives the image, so it carries caches
+describing the code of the image that wrote them. Two of those cannot be fixed by a
+normal cache clear, so converge drops both **pre-bootstrap** — before anything loads
+the container:
+
+- **Extension paths** (`cache_container`, `system.module.files` state). Drupal resolves
+  a module's path once, at container-compile time, and persists it. A release that
+  MOVES a module on disk would otherwise load the old path and fatal before `updatedb`
+  could run. This is not hypothetical: flowdrop moved from `modules/contrib` to
+  `modules/engine`.
+- **Parsed YAML** (the `file_parsing` bin: every `*.routing.yml` and `*.libraries.yml`).
+  Since 11.4 Drupal reads these through `YamlCacheCollector`, and core intentionally
+  keeps this bin out of the cache-bin registry so it **survives `cache:rebuild`**,
+  invalidating on **file mtime** instead. Our image stamps a fixed mtime on every file
+  so its layers stay byte-stable across rebuilds, so post-swap a changed YAML file is
+  mtime-identical to the old one: core's only signal says "unchanged" and the site keeps
+  serving the previous image's parse — new routes and changed asset libraries simply do
+  not exist at runtime, permanently. `0.8.2` shipped that way (DECISIONS 0392): a route
+  present in the file was absent from the router while the code linking to it threw
+  `RouteNotFoundException` on every admin page load. If you ever drop the mtime
+  normalisation in the `Dockerfile`, this truncate becomes redundant — until then it is
+  load-bearing, and each side's comment says so.
 
 > **The migration engine is still Drupal's.** Converge doesn't replace
 > `hook_update_N` — it automates invoking it and wraps it in a snapshot + health

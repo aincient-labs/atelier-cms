@@ -72,15 +72,15 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     // This is a runaway BACKSTOP, not the everyday terminator: the loop's
     // normal exit is the boolean_gateway on `has_tool_calls` (agent is done).
     // @todo Replace this opaque wave-cap backstop with an explicit loop-count
-    //   exit in the graph: extract the buffer `count` (ConversationAppend
-    //   emits it, and it grows per loop, so it's a monotonic per-loop counter)
+    //   exit in the graph: extract the buffer `count` (the conversation_buffer
+    //   node emits it, and it grows per loop, so it's a monotonic per-loop counter)
     //   via a Data Extractor → compare `count >= N` → boolean_gateway → END.
     //   That counts real agent loops (not waves) and is inspectable in the
     //   editor. Build it via the editor's Console/AI Assistant (don't hand-edit
     //   the workflow YAML); then this cap can drop back to a low safety value.
     'max_iterations' => 300,
     // Request-local checkpointer, EXPLICITLY: the operator's conversation
-    // lives in the VISIBLE memory-backed buffer (the ConversationAppend
+    // lives in the VISIBLE memory-backed buffer (the conversation_buffer
     // nodes / memory_read), not in a stategraph state channel — and job
     // outputs are entity-persisted — so a HITL resume needs no graph-state
     // restore. A persisted checkpoint would actively hurt: the orchestrator

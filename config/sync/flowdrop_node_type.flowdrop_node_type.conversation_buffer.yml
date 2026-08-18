@@ -11,13 +11,18 @@ label: 'Conversation Buffer'
 description: 'Append a message to the conversation buffer. Scope ID is automatically derived from the execution context.'
 category: memory
 icon: 'mdi:message-plus'
-plugin_version: 1.0.0
+plugin_version: 1.1.0
 enabled: true
 parameters:
+  backend:
+    configurable: true
+    connectable: false
+    required: false
+    default: static
   content:
     configurable: false
     connectable: true
-    required: true
+    required: false
   key:
     configurable: true
     connectable: true
@@ -28,16 +33,23 @@ parameters:
     connectable: false
     required: false
     default: 0
+  message:
+    configurable: false
+    connectable: true
+    required: false
   role:
     configurable: true
     connectable: true
-    required: true
+    required: false
   scope:
     configurable: true
     connectable: false
     required: false
     default: session
 outputs:
+  appended:
+    exposed: true
+    exposed_by_default: false
   count:
     exposed: true
   key:
@@ -56,5 +68,10 @@ supported_visual_types:
 unified_input_exposed: false
 unified_output_exposed: false
 tool_exposed: false
-confirmation: {  }
+confirmation:
+  policy: skip
+  author_controls:
+    - waive
+    - require
+  dynamic_controls: {  }
 reserved_port_exposure: {  }

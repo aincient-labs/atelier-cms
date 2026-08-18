@@ -24,6 +24,8 @@ parameters:
 outputs:
   ok:
     exposed: true
+  produced_any:
+    exposed: true
   tool_messages:
     exposed: true
   tool_results:

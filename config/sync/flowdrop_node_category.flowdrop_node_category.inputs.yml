@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: 8XK2ko5IbB9iIsHtaSPL_LIzkOsJyExihVkVqbRygEc
 id: inputs
-enabled: true
 label: Inputs
 description: 'Bring data into your workflow from various sources like text fields, file uploads, API endpoints, or user interactions.'
 icon: 'mdi:arrow-down-circle'

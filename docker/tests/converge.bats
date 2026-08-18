@@ -163,6 +163,29 @@ line_of() { grep -n -- "$1" "$DRUSH_LOG" | head -1 | cut -d: -f1; }
   [ -e "$AINCIENT_SNAPSHOT_DIR/pre-converge-20260105-000000.sql.gz" ]
 }
 
+@test "upgrade truncates the parsed-YAML cache BEFORE updatedb" {
+  # The `file_parsing` bin (parsed *.routing.yml / *.libraries.yml) survives cache
+  # clears by core's design and invalidates on filemtime alone — and the image
+  # stamps a fixed mtime, so across an image swap a changed YAML file looks
+  # unchanged and the site keeps the old image's parse. v0.8.2 shipped a route
+  # that existed on disk and not in the router. cache:rebuild cannot fix it, so
+  # the truncate must happen, and before anything bootstraps.
+  export MOCK_INSTALLED=1
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "TRUNCATE cache_file_parsing" "$DRUSH_LOG"
+  [ "$(line_of 'TRUNCATE cache_file_parsing')" -lt "$(line_of updatedb)" ]
+}
+
+@test "a missing file_parsing bin does not fail the upgrade" {
+  # The bin is created lazily on first write, so a site that never populated it
+  # has no table — the truncate must be advisory, never fatal.
+  export MOCK_INSTALLED=1 MOCK_SQL_FAIL_PATTERN=cache_file_parsing
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [ "$(result)" = "ok" ]
+}
+
 @test "upgrade runs config:import AFTER updatedb (config_ignore keeps site config safe)" {
   export MOCK_INSTALLED=1
   run bash "$CONVERGE"

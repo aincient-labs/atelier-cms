@@ -1,0 +1,45 @@
+uuid: c849dc5b-fed9-4379-8bd3-877104562821
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_interrupt
+_core:
+  default_config_hash: iO_I7HoRbmeHf9GxaVSJKWD6C3aNaMTGKVjpyci8tv0
+id: decline_synthesize
+label: 'Decline Synthesize'
+description: 'Synthesizes one refusal tool-result message per declined tool call'
+category: human_in_loop
+icon: 'mdi:cancel'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  decline_message:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+  tool_calls:
+    configurable: true
+    connectable: true
+    required: false
+outputs:
+  messages:
+    exposed: true
+  synthesized_any:
+    exposed: true
+tags:
+  - human-in-loop
+  - interrupt
+  - decline
+  - tool-pairing
+executor_plugin: 'flowdrop_interrupt:decline_synthesize'
+visual_type: default
+supported_visual_types:
+  - default
+  - simple
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false
+confirmation: {  }
+reserved_port_exposure: {  }

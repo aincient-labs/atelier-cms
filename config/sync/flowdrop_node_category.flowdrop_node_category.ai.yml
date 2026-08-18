@@ -5,7 +5,6 @@ dependencies: {  }
 _core:
   default_config_hash: tcnbKGOoNzodZb5IqKdx9Xu7wXUB_UafqSQNOPu5ogE
 id: ai
-enabled: true
 label: AI
 description: 'General-purpose AI nodes for tasks like classification, summarization, sentiment analysis, and other intelligent operations.'
 icon: 'mdi:shimmer'
