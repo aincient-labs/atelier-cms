@@ -97,8 +97,24 @@ RUN find /app /split -exec touch -h -t 202401010000 {} +
 FROM php:8.4-apache AS runtime
 
 # PHP extensions Drupal needs plus ImageMagick compiled with explicit AVIF support.
-# We build ImageMagick from source to avoid Debian Bookworm's minimalist stock package,
-# ensuring the libheif-plugin-aomenc encoder is linked to eliminate Error 1.
+# We build ImageMagick from source to guarantee the libheif-plugin-aomenc encoder is
+# linked (config/sync pins the imagemagick toolkit and every image style runs
+# image_convert_avif, so an ImageMagick that can't ENCODE avif breaks every derivative).
+#
+# --disable-static and the doc/header removal below matter more than they look: this is
+# the single largest layer we own, and every appliance re-downloads it whenever it
+# changes. Measured on the published v0.9.0 layer, 51% of its bytes were .a archives
+# nothing opens at runtime, plus 12.4 MB of ImageMagick HTML docs. Dropping them took
+# the layer from 159 MB to 93 MB uncompressed with AVIF rw+ intact (verified: magick
+# -list format, plus a real encode).
+#
+# NOTE: the source build is also the one non-reproducible step in this image — autotools
+# bakes configure-time state into the binaries, so a cache MISS republishes this layer
+# under a new digest even when nothing changed. That is survivable only while the GHA
+# build cache actually works (it silently did not until cms d783ee3). Debian trixie's
+# packaged ImageMagick can encode AVIF (the Forge demo proves it: apt-get install
+# imagemagick libheif-plugin-aomenc), so swapping to it would make this layer both
+# smaller and deterministic — evaluate before adding anything else to this RUN.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpng-dev libjpeg-dev libfreetype6-dev libwebp-dev libzip-dev libpq-dev postgresql-client unzip \
         tar gzip \
@@ -107,16 +123,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.2-27.tar.gz -O ImageMagick.tar.gz \
     && tar xzf ImageMagick.tar.gz \
     && cd ImageMagick-7.1.2-27 \
-    && ./configure --with-heic=yes --with-avif=yes --with-gslib=no \
+    && ./configure --disable-static --with-heic=yes --with-avif=yes --with-gslib=no \
     && make -j"$(nproc)" \
     && make install \
+    && rm -rf /usr/local/share/doc/ImageMagick-7 /usr/local/include/ImageMagick-7 \
     && ldconfig /usr/local/lib \
     && cd /tmp && rm -rf ImageMagick* \
     && apt-get purge -y --auto-remove build-essential wget \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" gd opcache pdo_pgsql zip \
     && a2enmod rewrite headers \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && magick -list format | grep -qE '^[[:space:]]*AVIF[[:space:]]+rw' \
+    && magick -size 8x8 xc:red /tmp/avif-probe.avif && rm /tmp/avif-probe.avif
 
 ENV DRUPAL_ROOT=/opt/drupal/web
 WORKDIR /opt/drupal

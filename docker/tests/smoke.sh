@@ -62,17 +62,34 @@ fi
 # cache-hits this build. Left unset locally → a plain single-arch build, exactly
 # as before.
 #
-# ignore-error=true: the cache export is a pure optimization. When the GHA cache
-# backend has an outage (HTTP 400 "services aren't available"), a fatal export
-# error would otherwise kill an otherwise-green build. Treat a failed write as a
-# cache miss, not a build failure.
+# ignore-error=true STAYS: the cache is a pure optimization, and a backend outage
+# must not turn an otherwise-green release red. What it must not do is fail in
+# SILENCE — it did exactly that from the v1 cache service's retirement until cms
+# d783ee3, and every build in between paid ~8 minutes recompiling ImageMagick and
+# re-resolving Composer while looking perfectly healthy. So: tolerate the failure,
+# but surface it as a GitHub annotation on the run, and make the build log the
+# evidence rather than throwing it away with >/dev/null.
 if [ -n "${AINCIENT_BUILD_CACHE:-}" ]; then
   build_scope="${AINCIENT_BUILD_CACHE_SCOPE:-appliance}"
-  docker buildx build --load \
+  build_log="$(mktemp)"
+  if ! docker buildx build --load \
     --cache-from "type=${AINCIENT_BUILD_CACHE},scope=${build_scope}" \
     --cache-to "type=${AINCIENT_BUILD_CACHE},scope=${build_scope},mode=max,ignore-error=true" \
     "${build_secret[@]}" \
-    -f "$DOCKER_DIR/Dockerfile" -t "$AINCIENT_IMAGE" "$DOCKER_DIR/.." >/dev/null
+    -f "$DOCKER_DIR/Dockerfile" -t "$AINCIENT_IMAGE" "$DOCKER_DIR/.." > "$build_log" 2>&1; then
+    cat "$build_log" >&2
+    exit 1
+  fi
+  # A cache-layer ERROR is not fatal to the build, so grep for it explicitly.
+  cache_err="$(grep -iE '^#[0-9]+ ERROR: .*(cache|failed to parse error response)' "$build_log" | head -3 || true)"
+  if [ -n "$cache_err" ]; then
+    echo "::warning title=Build cache degraded::buildx could not use the ${AINCIENT_BUILD_CACHE} cache — this build was cold. ${cache_err//$'\n'/ | }"
+    echo "!! build cache DEGRADED (build was cold):" >&2
+    echo "$cache_err" >&2
+  else
+    echo "  ✓ build cache reachable ($(grep -c '^#[0-9]* CACHED' "$build_log" || true) layers cached)"
+  fi
+  rm -f "$build_log"
 else
   DOCKER_BUILDKIT=1 docker build "${build_secret[@]}" \
     -f "$DOCKER_DIR/Dockerfile" -t "$AINCIENT_IMAGE" "$DOCKER_DIR/.." >/dev/null

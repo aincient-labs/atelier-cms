@@ -184,13 +184,23 @@ class SimpleChat extends AbstractFlowDropNodeProcessor {
           'step' => '0.01',
           'format' => 'range',
         ],
+        // NO maximum, matching the reason nodes (which declare `minimum` only).
+        // A ceiling here is not a safety rail: the provider bills the tokens it
+        // actually generates, so headroom is free, while a cap that is under what
+        // the bound model needs converts a working turn into a `too_long` card —
+        // a thinking model spends thousands of tokens before its first output
+        // token, and the brand specialists' 2048 became exactly that failure
+        // (atelier-cms#9). The real ceiling is the provider's: `max_tokens` above
+        // a model's own output limit comes back a 400, which is worse than
+        // truncation because it fails every turn rather than the long ones. We
+        // hold no per-model output limits to clamp against, so the value stays a
+        // per-node judgement.
         'maxTokens' => [
           'type' => 'integer',
           'title' => 'Max Tokens',
-          'description' => 'Maximum tokens to generate.',
+          'description' => 'Maximum tokens to generate. Reasoning models spend most of this before their first output token — 8192 is the value the reason nodes ship.',
           'default' => 1000,
           'minimum' => 1,
-          'maximum' => 4000,
         ],
         'systemPrompt' => [
           'type' => 'string',

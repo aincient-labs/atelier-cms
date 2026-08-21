@@ -7,6 +7,19 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.9.1] — 2026-08-22
+
+- **Asking the brand studio to change a colour works again.** Every colour, shape or typography
+  request came back as "this turn was too long to finish" — about a turn that was not long. The
+  brand specialists were held to a fraction of the room the rest of the assistant gets, and a
+  model that thinks before it answers spent that room reasoning and was cut off mid-sentence. The
+  three specialists now get the same allowance as every other agent step, and no step in that path
+  carries a ceiling below what its model needs.
+- **The appliance image is smaller to download and to update.** The image-processing layer shipped
+  35 MB of link-time archives and 12 MB of HTML manuals that nothing reads at runtime; dropping
+  them takes that layer from 159 MB to 93 MB. Image handling is unchanged — AVIF support is now
+  asserted during the build, so a future slimming cannot quietly remove it.
+
 ## [0.9.0] — 2026-08-18
 
 - **Upgrading now applies everything the new version ships.** Two faults are fixed. A release's new

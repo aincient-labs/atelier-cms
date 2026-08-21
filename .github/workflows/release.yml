@@ -156,28 +156,8 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // ACTIONS_RESULTS_URL + ACTIONS_CACHE_SERVICE_V2 are what select the v2
-            // cache service. Without them BuildKit falls back to the RETIRED v1
-            // endpoint (artifactcache.actions.githubusercontent.com), which answers
-            // with an HTML error page; the import dies on "failed to parse error
-            // response 400: <h2>Our services aren't available right now</h2>" and
-            // --cache-to's ignore-error=true swallows the export failure. Result:
-            // every build was a cold build. Verified on release run 32186515829 —
-            // zero CACHED steps, ImageMagick recompiled from source each time.
-            for (const name of [
-              'ACTIONS_CACHE_URL',
-              'ACTIONS_CACHE_SERVICE_V2',
-              'ACTIONS_RESULTS_URL',
-              'ACTIONS_RUNTIME_TOKEN',
-            ]) {
-              core.exportVariable(name, process.env[name] || '');
-            }
-            // Warn (don't fail — forked-PR runs legitimately lack these) so the
-            // next time GitHub moves the endpoint it shows up in the run summary
-            // instead of costing eight minutes a build in silence.
-            if (!process.env.ACTIONS_RESULTS_URL) {
-              core.warning('ACTIONS_RESULTS_URL is unset — buildx will fall back to the retired v1 cache service and every layer will rebuild.');
-            }
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       # Builds aincient/cms:smoke for THIS arch (gha-cached, per-arch scope) and
       # runs install → upgrade → rollback against a real container on native
