@@ -12,6 +12,7 @@ use Drupal\aincient_pages\ComponentCatalog;
 use Drupal\aincient_pages\ConsentSettings;
 use Drupal\aincient_pages\EntityEmbedResolver;
 use Drupal\aincient_pages\MarkdownRenderer;
+use Drupal\aincient_pages\PageMetatags;
 use Drupal\aincient_pages\PageStore;
 use Drupal\aincient_pages\SiteIdentity;
 use Drupal\Core\Cache\CacheableMetadata;
@@ -57,6 +58,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
     private readonly SiteIdentity $identity,
     private readonly CollectionResolver $collections,
     private readonly CollectionInventory $collectionInventory,
+    private readonly PageMetatags $metatags,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -74,6 +76,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
       $container->get('aincient_pages.site_identity'),
       $container->get('aincient_pages.collection_resolver'),
       $container->get('aincient_pages.collection_inventory'),
+      $container->get('aincient_pages.metatags'),
     );
   }
 
@@ -251,7 +254,11 @@ final class PageSpikeController implements ContainerInjectionInterface {
       return '';
     }
     $manager = \Drupal::service('metatag.manager');
-    $tags = $manager->tagsFromEntityWithDefaults($node);
+    // PageMetatags, not the manager's entity helper directly: the FRONT page's
+    // defaults live in a branch of the manager only its own page pipeline
+    // reaches, so the shell used to canonicalise the home page to /node/<id>
+    // (issue #29). See PageMetatags for the precedence it restores.
+    $tags = $this->metatags->tags($node);
     // Fire hook_metatags_alter() — the same override seam the standard route
     // render (metatag_get_tags_from_route) provides. The chrome-less page builds
     // its head straight off the manager, so without this an alter like the

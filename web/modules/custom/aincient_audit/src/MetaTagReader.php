@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_audit;
 
+use Drupal\aincient_pages\PageMetatags;
 use Drupal\metatag\MetatagManagerInterface;
 use Drupal\node\NodeInterface;
 
@@ -23,6 +24,7 @@ class MetaTagReader {
 
   public function __construct(
     private readonly MetatagManagerInterface $metatagManager,
+    private readonly PageMetatags $pageMetatags,
   ) {}
 
   /**
@@ -34,7 +36,11 @@ class MetaTagReader {
    * @return array<string, string>
    */
   public function tags(NodeInterface $node): array {
-    $tags = $this->metatagManager->tagsFromEntityWithDefaults($node);
+    // Through PageMetatags, not the manager's entity helper: the front page's
+    // defaults are in a branch of the manager only its own page pipeline
+    // reaches, so reading the entity chain here would make the audit judge a
+    // canonical URL the site does not actually render (issue #29).
+    $tags = $this->pageMetatags->tags($node);
     $elements = $this->metatagManager->generateRawElements($tags, $node);
     $out = [];
     // generateRawElements returns [$tag_name => $render_element]; the resolved

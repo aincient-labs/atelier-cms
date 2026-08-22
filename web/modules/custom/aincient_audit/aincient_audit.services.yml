@@ -3,7 +3,7 @@ services:
   # read_meta_tags capability so "what tags do I have" and the audit agree.
   aincient_audit.meta_reader:
     class: Drupal\aincient_audit\MetaTagReader
-    arguments: ['@metatag.manager']
+    arguments: ['@metatag.manager', '@aincient_pages.metatags']
 
   # Shipped default-policy checks (DECISIONS 0129). Tagged so AuditEngine (and,
   # next, PolicyEvaluator) collect them in report order via priority — higher

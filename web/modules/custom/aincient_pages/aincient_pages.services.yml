@@ -107,6 +107,17 @@ services:
   aincient_pages.chrome:
     class: Drupal\aincient_pages\SiteChrome
     arguments: ['@menu.link_tree', '@aincient_pages.brand', '@aincient_pages.site_identity', '@aincient_pages.chrome_repository', '@language_manager', '@path.matcher']
+  # The metatag tag set for one rendered page. The chrome-less shell builds its
+  # own <head>, so it resolves tags here — including the front-page defaults
+  # metatag only applies from its own page pipeline (issue #29).
+  aincient_pages.metatags:
+    class: Drupal\aincient_pages\PageMetatags
+    # Both trailing refs are OPTIONAL (@?): metatag.manager is null when metatag
+    # is uninstalled (the page then renders with no meta tags rather than
+    # fataling), and path_alias.manager is null in any kernel test that does not
+    # list `path_alias` — a hard ref there fails container compile. See the
+    # constructor for what each null costs.
+    arguments: ['@config.factory', '@entity_type.manager', '@?path_alias.manager', '@?metatag.manager']
   # Markdown -> sanitised HTML for the `markdown` placeable section (CommonMark
   # + Xss::filterAdmin). A plain library wrapper — no Drupal deps to inject.
   aincient_pages.markdown:

@@ -7,6 +7,17 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.9.2] — 2026-08-23
+
+- **Sharing your home page now links to your home page.** Its canonical address — the one search
+  engines index and social networks read when someone posts the link — pointed at the page's
+  internal address instead of your site root, so a shared home page could surface as
+  `example.com/node/1`. Every other page was correct; only the front page was affected, and the
+  same wrong address went into a static export. Setting a site address when exporting never
+  helped, because the host was already right and only the path was wrong. Front pages now
+  canonicalise to your site root, a translated front page to that language's root, and a page's
+  own SEO override still wins where you set one.
+
 ## [0.9.1] — 2026-08-22
 
 - **Asking the brand studio to change a colour works again.** Every colour, shape or typography
