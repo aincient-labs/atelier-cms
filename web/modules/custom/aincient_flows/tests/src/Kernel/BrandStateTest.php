@@ -62,6 +62,7 @@ final class BrandStateTest extends KernelTestBase {
       [],
       $this->container->get('aincient_pages.brand'),
       $this->container->get('aincient_pages.site_identity'),
+      $this->container->get('aincient_pages.color_contrast'),
     );
   }
 

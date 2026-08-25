@@ -133,6 +133,12 @@ nodes:
             current value is a Tailwind palette reference (e.g. var(--color-yellow-400)),
             resolve it to that hue/lightness and adjust from there — keep the same hue unless
             asked otherwise.
+          - OKLCH NEUTRALS: a neutral (white / grey / black / "plain" background or
+            text) MUST use chroma EXACTLY 0 — e.g. oklch(0.98 0 0). In oklch any
+            chroma above 0 activates the hue axis even at extreme lightness:
+            oklch(0.98 0.01 0) is NOT white, it renders #FFF6F8 — visibly pink. Hue 0
+            means pink/red, not "no hue". Only give a neutral chroma > 0 when a tint
+            is deliberately asked for, and then choose the hue on purpose.
           - COLOUR PAIRS: every surface has a paired on-colour. Set a surface and its
             on-colour TOGETHER and keep them ≥4.5:1 (WCAG AA). Pairs: background/foreground,
             primary/primary_foreground, accent/accent_foreground, muted/muted_foreground,

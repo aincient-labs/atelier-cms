@@ -7,6 +7,17 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.10.1] — 2026-08-25
+
+**Brand agent colour fixes.** The design-system agent could write a subtly tinted "white"
+(a low-chroma oklch colour) and then struggle to see or correct it. Colour values echoed back
+to the agent now carry their hex equivalents, contrast warnings are checked against the draft
+you are actually previewing instead of the last published brand, and the colour specialist
+knows neutrals must carry no hue.
+
+- Image-generation usage with a shared Google key is priced correctly again.
+- Security: bumped a chat-UI dependency (nanoid) past two denial-of-service advisories.
+
 ## [0.10.0] — 2026-08-25
 
 **Component packs: bring your own components into the page agent's palette.** Until now the

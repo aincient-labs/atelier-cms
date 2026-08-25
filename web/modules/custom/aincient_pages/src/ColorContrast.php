@@ -307,4 +307,36 @@ final class ColorContrast {
     return 0.2126 * $rgb[0] + 0.7152 * $rgb[1] + 0.0722 * $rgb[2];
   }
 
+  /**
+   * A #rrggbb approximation of a non-hex colour literal, or NULL.
+   *
+   * Grounding aid for the agent: models recognise a tint in hex far more
+   * reliably than in oklch() (oklch(0.98 0.01 0) reads as "white" to a model
+   * but renders #FFF6F8 — pink), so everywhere we echo brand state back into a
+   * prompt we annotate non-hex colours with their hex equivalent. Returns NULL
+   * for values that are already hex (nothing to add), var() references
+   * (resolve them first if you need a literal), and anything unparseable.
+   */
+  public function hexApproximation(string $value): ?string {
+    $value = trim($value);
+    if ($value === '' || $value[0] === '#' || stripos($value, 'var(') === 0) {
+      return NULL;
+    }
+    $linear = $this->parse($value);
+    if ($linear === NULL) {
+      return NULL;
+    }
+    $hex = '#';
+    foreach ($linear as $channel) {
+      $hex .= str_pad(dechex((int) round($this->linearToSrgb($channel) * 255)), 2, '0', STR_PAD_LEFT);
+    }
+    return strtoupper($hex);
+  }
+
+  /** Linear-light channel (0..1) → gamma-encoded sRGB (0..1). */
+  private function linearToSrgb(float $c): float {
+    $c = max(0.0, min(1.0, $c));
+    return $c <= 0.0031308 ? $c * 12.92 : 1.055 * $c ** (1 / 2.4) - 0.055;
+  }
+
 }

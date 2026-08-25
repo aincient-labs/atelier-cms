@@ -178,4 +178,37 @@ final class BrandPreviewApplierTest extends KernelTestBase {
     $this->assertNull($this->applier()->decodeSlice('{"rejected":[{"token":"radius_rounded"}]}'));
   }
 
+  /**
+   * Contrast advisories grade against the staged studio draft, not just saved.
+   *
+   * The regression: an incremental preview (one unrelated token) used to be
+   * contrast-checked against the SAVED brand alone, so warnings reported a
+   * palette the user had already previewed away and missed the one on screen.
+   * With a draft staged, the advisory must reflect draft-over-saved.
+   */
+  public function testContrastAdvisoryGradesAgainstStagedDraft(): void {
+    $applier = $this->applier();
+
+    // Without a draft: an unrelated token over the (passing) saved defaults
+    // raises no accent warning.
+    $out = $applier->apply(['tokens_json' => (string) json_encode(['neutral_border' => '#e5e5e5'])]);
+    $pairs = array_map(static fn(array $f): string => $f['surface'] . '/' . $f['on'], $out['payload']['contrast_warnings']);
+    $this->assertNotContains('brand_accent/brand_accent_foreground', $pairs);
+
+    // Stage a draft that breaks the accent pairing (≈1.8:1), then apply the
+    // same unrelated token: the warning must now surface from the draft.
+    $applier->setDraftBaseline([
+      'brand-accent' => '#00d4a4',
+      'brand-accent-foreground' => '#ffffff',
+    ]);
+    $out = $applier->apply(['tokens_json' => (string) json_encode(['neutral_border' => '#e5e5e5'])]);
+    $pairs = array_map(static fn(array $f): string => $f['surface'] . '/' . $f['on'], $out['payload']['contrast_warnings']);
+    $this->assertContains('brand_accent/brand_accent_foreground', $pairs);
+
+    // This call's own tokens still win over the staged draft.
+    $out = $applier->apply(['tokens_json' => (string) json_encode(['brand_accent_foreground' => '#0a0a0a'])]);
+    $pairs = array_map(static fn(array $f): string => $f['surface'] . '/' . $f['on'], $out['payload']['contrast_warnings']);
+    $this->assertNotContains('brand_accent/brand_accent_foreground', $pairs);
+  }
+
 }

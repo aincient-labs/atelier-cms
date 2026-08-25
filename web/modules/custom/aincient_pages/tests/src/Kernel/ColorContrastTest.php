@@ -101,6 +101,23 @@ final class ColorContrastTest extends KernelTestBase {
   }
 
   /**
+   * The hex echo grounds an oklch literal — including the hue-0 pink trap.
+   *
+   * oklch(0.98 0.01 0) reads as "white" to a model but is #FFF6F8 (pink);
+   * the approximation is what lets the agent see its own tint. Hex input and
+   * var() references return NULL (nothing to add / not a literal).
+   */
+  public function testHexApproximationGroundsColourLiterals(): void {
+    $c = $this->contrast();
+    $this->assertSame('#FFF6F8', $c->hexApproximation('oklch(0.98 0.01 0)'));
+    $this->assertSame('#FFFFFF', $c->hexApproximation('rgb(255 255 255)'));
+    $this->assertNull($c->hexApproximation('#ffffff'));
+    $this->assertNull($c->hexApproximation('var(--brand-primary)'));
+    $this->assertNull($c->hexApproximation('not-a-colour'));
+    $this->assertNull($c->hexApproximation(''));
+  }
+
+  /**
    * Pull a single pair from a report by surface name.
    */
   private function pair(array $report, string $surface): array {

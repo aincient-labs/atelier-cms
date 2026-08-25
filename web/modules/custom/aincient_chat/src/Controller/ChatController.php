@@ -267,10 +267,27 @@ final class ChatController extends ControllerBase {
     $lines = [];
     $overrides = $brandContext['overrides'] ?? NULL;
     if (is_array($overrides)) {
+      // Grounding: annotate non-hex colour literals with their hex equivalent.
+      // The model reads oklch(0.98 0.01 0) as "white" but SEES #FFF6F8 as pink
+      // — the hex echo is what lets it catch its own tinted colours.
+      $contrast = \Drupal::hasService('aincient_pages.color_contrast')
+        ? \Drupal::service('aincient_pages.color_contrast')
+        : NULL;
+      $draft = [];
       foreach ($overrides as $cssVar => $value) {
         if (is_string($value) && trim($value) !== '') {
-          $lines[] = '- ' . (string) $cssVar . ' = ' . trim($value);
+          $value = trim($value);
+          $draft[(string) $cssVar] = $value;
+          $hex = $contrast?->hexApproximation($value);
+          $lines[] = '- ' . (string) $cssVar . ' = ' . $value . ($hex !== NULL ? ' (≈ ' . $hex . ')' : '');
         }
+      }
+      // Stage the draft as this turn's contrast baseline: the preview applier
+      // grades its WCAG advisories against draft-over-saved instead of just
+      // saved, so an incremental token update isn't warned against a stale
+      // published palette the user is no longer looking at.
+      if ($draft !== [] && \Drupal::hasService('aincient_pages.preview_applier')) {
+        \Drupal::service('aincient_pages.preview_applier')->setDraftBaseline($draft);
       }
     }
     $fonts = $brandContext['fonts'] ?? NULL;

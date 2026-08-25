@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
 use Drupal\aincient_pages\BrandRepository;
+use Drupal\aincient_pages\ColorContrast;
 use Drupal\aincient_pages\SiteIdentity;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
@@ -61,6 +62,7 @@ class BrandState extends AbstractFlowDropNodeProcessor {
     mixed $plugin_definition,
     private readonly BrandRepository $brand,
     private readonly SiteIdentity $identity,
+    private readonly ColorContrast $contrast,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -75,6 +77,7 @@ class BrandState extends AbstractFlowDropNodeProcessor {
       $plugin_definition,
       $container->get('aincient_pages.brand'),
       $container->get('aincient_pages.site_identity'),
+      $container->get('aincient_pages.color_contrast'),
     );
   }
 
@@ -153,7 +156,10 @@ class BrandState extends AbstractFlowDropNodeProcessor {
       // hue in the brief (neutral_ink) instead of a lighter Cinnabar (0236).
       $value = $this->brand->effectiveValue($key);
       if ($value !== '') {
-        $palette[] = "$label $value";
+        // Hex echo for non-hex literals: the model grounds a tint in hex far
+        // better than in oklch() (same rationale as the live-draft lines).
+        $hex = $this->contrast->hexApproximation($value);
+        $palette[] = "$label $value" . ($hex !== NULL ? " (≈ $hex)" : '');
       }
     }
     if ($palette !== []) {

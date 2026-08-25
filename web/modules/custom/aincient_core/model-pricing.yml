@@ -131,8 +131,16 @@ models:
     input_per_mtok: 0.3
     output_per_mtok: 30.0
     source: 'https://ai.google.dev/gemini-api/docs/pricing'
-    checked: '2026-08-02'
-    note: 'Output is the image-token rate. No free tier for this model.'
+    checked: '2026-08-25'
+    note: 'Output is the image-token rate ($30/Mtok; ~1290 tokens = $0.039 per image up to 1024px). No free tier for this model.'
+  -
+    provider: gemini
+    model: gemini-2.5-flash-image
+    input_per_mtok: 0.3
+    output_per_mtok: 30.0
+    source: 'https://ai.google.dev/gemini-api/docs/pricing'
+    checked: '2026-08-25'
+    note: 'Same model as the nanobanana entry, listed under BOTH provider ids because matching is exact on provider: a site whose image role is bound through the shared-key gemini provider records rows as gemini:gemini-2.5-flash-image, and the nanobanana entry can never match those.'
   -
     provider: ollama
     model: '*'

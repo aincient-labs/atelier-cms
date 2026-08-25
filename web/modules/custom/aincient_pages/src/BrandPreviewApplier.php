@@ -40,6 +40,43 @@ final class BrandPreviewApplier {
   ) {}
 
   /**
+   * The turn's unsaved studio draft (token name => value), contrast baseline.
+   *
+   * @var array<string, string>
+   */
+  private array $draftBaseline = [];
+
+  /**
+   * Stage the studio's unsaved draft as this request's contrast baseline.
+   *
+   * Without it, an incremental preview (one or two tokens) is contrast-graded
+   * against the SAVED brand — so the advisory warns about pairings from a
+   * palette the user already previewed away, and stays silent about the draft
+   * they are actually looking at. The chat controller stages the same
+   * `brand_context` draft it injects into the prompt; per-request turn state
+   * only, never persisted. Keys may be css_var names (as the client sends
+   * them) or token names — both are mapped to token names here.
+   *
+   * @param array<string, string> $overrides
+   *   css_var (or token name) => CSS value.
+   */
+  public function setDraftBaseline(array $overrides): void {
+    $byCssVar = [];
+    foreach ($this->designTokens->all() as $name => $def) {
+      $byCssVar[$def['css_var']] = $name;
+    }
+    $baseline = [];
+    foreach ($overrides as $key => $value) {
+      if (!is_string($value) || trim($value) === '') {
+        continue;
+      }
+      $name = $byCssVar[$key] ?? (isset($byCssVar[ltrim((string) $key, '-')]) ? $byCssVar[ltrim((string) $key, '-')] : (string) $key);
+      $baseline[$name] = trim($value);
+    }
+    $this->draftBaseline = $baseline;
+  }
+
+  /**
    * Build a brand-preview widget envelope from raw preview args.
    *
    * @param array{presets_json?: string|null, tokens_json?: string|null, fonts?: string|null, reset?: bool|string|null} $args
@@ -141,12 +178,13 @@ final class BrandPreviewApplier {
       $summary .= ' (Unknown presets: ' . implode(', ', $badPresets) . '.)';
     }
 
-    // Advisory contrast feedback on the draft (this call's tokens layered over
-    // the saved brand). A warning baked into the summary, not a block.
+    // Advisory contrast feedback on the draft: this call's tokens layered over
+    // the studio's unsaved draft (when the turn staged one), then the saved
+    // brand. A warning baked into the summary, not a block.
     $contrast = [];
     $accent = [];
     if (!$reset && $byName) {
-      $draft = $byName + $this->brand->tokens();
+      $draft = $byName + $this->draftBaseline + $this->brand->tokens();
       foreach ($this->colorContrast->failures($draft) as $f) {
         $contrast[] = [
           'surface' => $f['surface'],
