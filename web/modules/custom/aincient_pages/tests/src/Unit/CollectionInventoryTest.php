@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
+use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\CollectionInventory;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -21,8 +22,12 @@ final class CollectionInventoryTest extends TestCase {
 
   private function inventory(): CollectionInventory {
     // normalize()/specHash() never touch the entity-type manager; a bare double
-    // is enough for the pure query-identity logic under test.
-    return new CollectionInventory($this->createMock(EntityTypeManagerInterface::class));
+    // is enough for the pure query-identity logic under test. The catalog
+    // double answers the one question normalize() asks it — which kinds a
+    // collection may list — with the shipped default.
+    $catalog = $this->createMock(ComponentCatalogInterface::class);
+    $catalog->method('collectionSources')->willReturn(['blog']);
+    return new CollectionInventory($this->createMock(EntityTypeManagerInterface::class), $catalog);
   }
 
   public function testNormalizeClampsUnknownSourceAndSortToDefaults(): void {

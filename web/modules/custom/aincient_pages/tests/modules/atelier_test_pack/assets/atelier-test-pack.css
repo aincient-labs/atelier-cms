@@ -1,0 +1,8 @@
+/* The fixture pack's PRE-COMPILED stylesheet (W5) — token-routed only:
+   colours come from the design tokens so a rebrand reaches this markup. */
+.spotlight { display: grid; gap: 2rem; padding: 4rem 1.5rem; background: var(--neutral-surface); color: var(--neutral-ink); }
+.spotlight--right .spotlight__media { order: -1; }
+.spotlight__eyebrow { color: var(--neutral-muted-foreground); font-size: var(--size-sm); }
+.spotlight__heading { font-family: var(--font-family-display); font-size: var(--size-3xl); }
+.spotlight__claim { font-size: var(--size-lg); }
+.spotlight__cta { background: var(--brand-primary); color: var(--brand-primary-foreground); border-radius: var(--radius-md); padding: 0.75rem 1.5rem; display: inline-block; }

@@ -7,3 +7,8 @@ props:
   properties:
     author: { type: string }
     bio: { type: string }
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: content
+    order: 30

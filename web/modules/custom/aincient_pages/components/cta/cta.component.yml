@@ -13,3 +13,16 @@ props:
     subheading: { type: string }
     cta_label: { type: string }
     cta_url: { type: string }
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 160
+    icon: ◈
+    use: 'Closing call-to-action band; usually tone "brand". Give the visitor one action — close every page with one.'
+    props:
+      tone: ''
+      heading: ''
+      subheading: ''
+      cta_label: ''
+      cta_url: ''

@@ -58,6 +58,15 @@ enum Studio: string {
   case Settings = 'settings';
 
   /**
+   * The Components studio: the site-wide component-governance surface
+   * (plans/byo-components.md W1b) — which components, tones and variants this
+   * site REMOVES from every kind's palette (narrowing-only; the admission gate
+   * stays the hard floor in code). An EDITOR-ONLY studio like Settings (no
+   * chat agent); it persists through /atelier/constraint/*.
+   */
+  case Components = 'components';
+
+  /**
    * The Content studio: the live page composer + preview split-pane (pages,
    * and later structured content). (Was "Page".)
    */
@@ -110,6 +119,7 @@ enum Studio: string {
       self::DesignSystem => 'Identity',
       self::Globals => 'Navigation & Pages',
       self::Settings => 'Settings',
+      self::Components => 'Components',
       self::Content => 'Content',
       self::Library => 'Library',
       self::Media => 'Media',

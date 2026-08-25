@@ -1,0 +1,8 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier test pack'
+type: module
+description: 'TEST ONLY: the fixture component pack — one section (spotlight) carrying the full thirdPartySettings.atelier contract, so kernel tests prove a pack travels the whole path (gate → catalog → validator → renderer) end to end.'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_pages

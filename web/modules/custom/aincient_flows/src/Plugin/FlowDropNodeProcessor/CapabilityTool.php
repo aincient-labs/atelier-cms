@@ -253,7 +253,7 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
         // read as the tool's input schema. Mirrors the consumer's PORT_TOOL
         // input; marked exposed + visual_type:tool in the node-type config.
         ReservedName::PORT_TOOL => [
-          'type' => 'tool',
+          'x-data-type' => 'tool',
           'description' => 'This capability, offered as a callable tool.',
         ],
         'ok' => ['type' => 'boolean', 'description' => 'Whether the capability ran.'],

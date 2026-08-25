@@ -51,21 +51,28 @@ final class PageSchemaCodec {
    * @param array $schema
    *   A validated merged schema ({@see PageStore::validate}).
    *
+   * @param bool|null $recipe
+   *   TRUE when the page's KIND is a locked content recipe (blog-shaped), FALSE
+   *   for a composition. NULL infers it from the legacy 'blog' literal so the
+   *   codec stays a pure value transform for callers without kind access.
+   *
    * @return array{structure: array, content: array}
    *   The two stored layers.
    */
-  public static function split(array $schema): array {
-    $type = ($schema['type'] ?? '') === 'blog' ? 'blog' : 'landing';
+  public static function split(array $schema, ?bool $recipe = NULL): array {
+    $type = (string) ($schema['type'] ?? '');
+    $type = $type === '' ? 'landing' : $type;
+    $recipe ??= $type === 'blog';
 
-    // Blog is a locked content recipe: no slots, the body fields ARE the
-    // content. Structure carries only the regime; content carries the rest.
-    if ($type === 'blog') {
+    // A recipe is locked content: no slots, the body fields ARE the content.
+    // Structure carries only the kind; content carries the rest.
+    if ($recipe) {
       $content = $schema;
       unset($content['type']);
-      return ['structure' => ['type' => 'blog'], 'content' => $content];
+      return ['structure' => ['type' => $type], 'content' => $content];
     }
 
-    $structure = ['type' => 'landing', 'slots' => []];
+    $structure = ['type' => $type, 'slots' => []];
     $content = ['title' => (string) ($schema['title'] ?? ''), 'slots' => []];
     foreach ($schema['sections'] ?? [] as $section) {
       $id = (string) ($section['id'] ?? '');
@@ -94,12 +101,14 @@ final class PageSchemaCodec {
    * @return array
    *   The merged schema (validate() shape) — ready for the renderer / op grammar.
    */
-  public static function merge(array $structure, array $content): array {
-    $type = ($structure['type'] ?? '') === 'blog' ? 'blog' : 'landing';
+  public static function merge(array $structure, array $content, ?bool $recipe = NULL): array {
+    $type = (string) ($structure['type'] ?? '');
+    $type = $type === '' ? 'landing' : $type;
+    $recipe ??= $type === 'blog';
 
-    if ($type === 'blog') {
+    if ($recipe) {
       // type first, then the body fields (title, category, …).
-      $merged = ['type' => 'blog'];
+      $merged = ['type' => $type];
       foreach ($content as $key => $value) {
         if ($key !== 'type') {
           $merged[$key] = $value;
@@ -110,7 +119,7 @@ final class PageSchemaCodec {
 
     $overlay = is_array($content['slots'] ?? NULL) ? $content['slots'] : [];
     $merged = [
-      'type' => 'landing',
+      'type' => $type,
       'title' => (string) ($content['title'] ?? 'AIncient page'),
       'sections' => [],
     ];

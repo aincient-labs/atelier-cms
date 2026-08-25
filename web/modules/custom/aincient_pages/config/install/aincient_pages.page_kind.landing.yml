@@ -1,0 +1,14 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - aincient_pages
+id: landing
+label: 'Landing page'
+hint: 'A composed page — hero, sections, and calls to action.'
+mode: composition
+components: {  }
+opener: ''
+limits: {  }
+collection_source: false

@@ -15,3 +15,16 @@ props:
     questions:
       type: array
       description: 'Array of { question, answer }.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 120
+    icon: '?'
+    use: 'Frequently-asked questions — answer objections before the closing cta. Plain-text answers only; for RICH answers (formatted copy, lists, links) use accordion.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      questions: '[{question,answer}]'

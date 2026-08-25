@@ -12,3 +12,13 @@ props:
     items:
       type: array
       description: 'Array of { value, label }.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 30
+    icon: ▦
+    use: 'A row of headline numbers; great social proof under a hero.'
+    props:
+      tone: ''
+      items: '[{value,label}]'

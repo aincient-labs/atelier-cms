@@ -24,3 +24,13 @@ props:
     html:
       type: string
       description: 'Rendered, sanitised article HTML (built from the Markdown source).'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 60
+    icon: ≣
+    use: 'A block of long-form body text authored in Markdown — headings, lists, links, bold/italic, blockquotes. Reach for it for free-form formatted copy that no structured section (hero/features/content/…) models. Rendered with a reading-optimised prose measure.'
+    props:
+      tone: ''
+      markdown: ''

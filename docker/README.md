@@ -157,6 +157,12 @@ first", on the version that still has them, instead of as a refusal at boot. The
 core and is absent on older images, so converge's filesystem check stays the authority; the label
 is the early warning.
 
+A **derived client image** (a component pack baked on top of ours — the `atelier-pack-template`
+reference pipeline) must re-stamp this label: inheriting the base value would advertise a
+pack-less list, and the diff would read every update as dropping the pack. The template's CI
+collects the list out of its own built image exactly the way our release workflow does, and its
+Dockerfile stamps an empty label on plain local builds — "unknown", never "ships nothing".
+
 **Planning.** Enforcement alone leaves the operator to work the route out by hand,
 so `atelier app update` reads these labels from the registry (no pull), walks them
 backwards until it finds a version this install satisfies, and offers to apply the

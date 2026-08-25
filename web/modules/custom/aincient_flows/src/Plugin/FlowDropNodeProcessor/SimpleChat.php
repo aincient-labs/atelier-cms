@@ -214,6 +214,8 @@ class SimpleChat extends AbstractFlowDropNodeProcessor {
           'title' => 'Chat History',
           'description' => 'Previous turns as items with "role" and "content" keys. Only user and assistant turns are replayed.',
           'default' => [],
+          // The `messages` lane: a conversation, not a generic array.
+          'x-data-type' => 'messages',
           'required' => FALSE,
         ],
       ],

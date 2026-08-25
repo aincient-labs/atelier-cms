@@ -7,6 +7,37 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.10.0] — 2026-08-25
+
+**Component packs: bring your own components into the page agent's palette.** Until now the
+agent composed from the built-in section library only. A pack — an ordinary Drupal module with
+a small manifest — can now add new components that editors and the AI place, validated and
+governed exactly like the built-ins.
+
+- **Component packs.** Baked into a derived image with a one-line enablement file, the
+  appliance discovers, admits and enables them on every boot. Every pack component passes the
+  same admission gate as the built-ins; rejected components are excluded and reported, never
+  half-admitted. Get started from the
+  [pack template](https://github.com/aincient-labs/atelier-pack-template) or `atelier pack new`.
+- **A real pack developer loop.** Run the appliance in dev mode with your pack mounted: edit a
+  Twig or CSS file, refresh, see it — no restart. A component gallery renders every declared
+  example at three widths in light and inverted tones, and an MCP server exposes the catalog,
+  the gate and the design tokens to coding agents.
+- **Page kinds.** Each kind of page (landing, blog, and any you define) scopes which
+  components, tones and variants the agent may use, so a blog post no longer offers the
+  landing-page palette. Kinds are editable in the console and safe to evolve:
+  `drush atelier:kind-check` reports exactly which live pages a narrowing would affect before
+  you deploy it, and never rewrites content.
+- **Components studio.** A new console surface to govern the palette site-wide — disable a
+  component and it leaves the agent's vocabulary and is rejected on placement.
+- **CI you can copy.** The pack template ships a full reference pipeline: build the image,
+  boot it against a throwaway database, run the admission gate and kind-check inside the real
+  appliance, then publish a deployable, registry-labelled image.
+- **Sharper AI answers per page type.** The agent's instructions are now generated per page
+  kind from the live catalog, so its palette always matches what your site actually allows.
+- Engine upgrade: FlowDrop 2.4.0.
+- Removed a leftover internal teaching workflow that shipped in 0.9.0–0.9.2 config.
+
 ## [0.9.2] — 2026-08-23
 
 - **Sharing your home page now links to your home page.** Its canonical address — the one search

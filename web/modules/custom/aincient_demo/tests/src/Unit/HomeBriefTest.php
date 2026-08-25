@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_demo\Unit;
 
-use Drupal\aincient_pages\ComponentCatalog;
+use Drupal\aincient_pages\Catalog\CatalogCompiler;
+use Drupal\aincient_pages\Catalog\EffectiveCatalog;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Guards the demo homepage brief against component drift.
@@ -34,6 +36,25 @@ final class HomeBriefTest extends UnitTestCase {
   }
 
   /**
+   * Compile the effective catalog from aincient_pages' REAL shipped
+   * .component.yml files — the same palette the site discovers — so the brief
+   * is checked against what the renderer actually places.
+   */
+  private function catalog(): EffectiveCatalog {
+    $definitions = [];
+    $dir = dirname(__DIR__, 4) . '/aincient_pages/components';
+    foreach (glob($dir . '/*/*.component.yml') as $file) {
+      $name = basename(dirname($file));
+      $definitions['aincient_pages:' . $name] = Yaml::parseFile($file) + [
+        'provider' => 'aincient_pages',
+        'machineName' => $name,
+      ];
+    }
+    $this->assertNotEmpty($definitions, 'No aincient_pages .component.yml files found on disk.');
+    return CatalogCompiler::compile($definitions, NULL);
+  }
+
+  /**
    * The brief is a landing page with at least one section.
    */
   public function testBriefShape(): void {
@@ -47,7 +68,7 @@ final class HomeBriefTest extends UnitTestCase {
    * Every section uses a component the catalog actually places (no drift).
    */
   public function testEverySectionIsPlaceable(): void {
-    $placeable = ComponentCatalog::placeableNames();
+    $placeable = $this->catalog()->placeableNames();
     foreach ($this->brief()['sections'] as $i => $section) {
       $this->assertContains(
         $section['component'] ?? '',

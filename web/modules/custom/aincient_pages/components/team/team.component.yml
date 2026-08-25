@@ -19,3 +19,17 @@ props:
     members:
       type: array
       description: 'Array of { name, role, bio, avatar }. role/bio/avatar optional.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 100
+    icon: ☻
+    use: 'The people behind the company — head-shots, names, roles. columns reflows the grid.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      columns: 2|3|4
+      members: '[{name,role,bio,avatar}]'

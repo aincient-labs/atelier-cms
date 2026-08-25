@@ -334,7 +334,7 @@ final class ToolInvoke extends AbstractFlowDropNodeProcessor implements ToolsAwa
         // tool set the paired reasoning node advertised — "advertised ==
         // executable", enforced by the topology. Marked connectable in config.
         ReservedName::PORT_TOOL => [
-          'type' => 'tool',
+          'x-data-type' => 'tool',
           'title' => 'Tools',
           'description' => 'Tools this node may execute. Wire the same tool set as the paired reasoning node.',
           'required' => FALSE,
@@ -352,6 +352,11 @@ final class ToolInvoke extends AbstractFlowDropNodeProcessor implements ToolsAwa
       'properties' => [
         'tool_messages' => [
           'type' => 'array',
+          // A list of chat messages, not an arbitrary array: the `messages`
+          // lane lets this wire straight into a messages-typed input, and it
+          // stays one-way compatible with `array`/`json`/`mixed`, so the
+          // conversation-buffer wiring is unchanged.
+          'x-data-type' => 'messages',
           'description' => 'One tool-role message per EXECUTED call ({role, tool_call_id, content}) — append to a conversation buffer to persist.',
         ],
         'tool_results' => [

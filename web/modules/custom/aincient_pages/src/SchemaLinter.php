@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Drupal\aincient_pages\Catalog\EffectiveCatalog;
+
 /**
  * Structural lint of an agent-emitted section against its component schema.
  *
@@ -14,7 +16,7 @@ namespace Drupal\aincient_pages;
  * recognise, a content array it left empty, or a row field that's misnamed —
  * so the model self-corrects instead of silently shipping an empty band.
  *
- * It reasons purely from {@see ComponentCatalog} (the single source of the
+ * It reasons purely from the compiled {@see EffectiveCatalog} (the single source of the
  * prop vocabulary + the repeatable-row shapes), so the lint can never drift
  * from what the renderer actually consumes.
  *
@@ -28,6 +30,8 @@ final class SchemaLinter {
   /**
    * Lint one section's props against its component schema.
    *
+   * @param \Drupal\aincient_pages\Catalog\EffectiveCatalog $catalog
+   *   The compiled palette of the page's kind (the defs to lint against).
    * @param string $component
    *   The placeable component name (section or layout container).
    * @param array $props
@@ -40,8 +44,8 @@ final class SchemaLinter {
    * @return array<int, string>
    *   Human/agent-readable advisory messages (empty when the section is clean).
    */
-  public static function lint(string $component, array $props, bool $full = TRUE): array {
-    $def = ComponentCatalog::placeable($component);
+  public static function lint(EffectiveCatalog $catalog, string $component, array $props, bool $full = TRUE): array {
+    $def = $catalog->placeable($component);
     if ($def === NULL) {
       // Unknown components are handled by the allow-list, not here.
       return [];

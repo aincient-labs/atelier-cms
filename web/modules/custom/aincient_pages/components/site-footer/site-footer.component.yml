@@ -33,3 +33,8 @@ props:
       type: boolean
       default: true
       description: 'Show the "Made with ♥ using Atelier CMS by AIncient Labs" attribution credit in the note bar.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: chrome
+    order: 20

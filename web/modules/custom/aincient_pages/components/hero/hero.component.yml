@@ -28,3 +28,25 @@ slots:
   image:
     title: 'Hero image'
     description: 'Responsive <picture> built by the renderer from the image media token.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 10
+    icon: ◆
+    image_props:
+      image:
+        style: wide
+        view_mode: hero
+    use: 'Top-of-page opener; the only full-viewport section. Open every page with one, never stack two.'
+    props:
+      variant: centered|split
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      cta_label: ''
+      cta_url: ''
+      secondary_label: ''
+      secondary_url: ''
+      image: ''

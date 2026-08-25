@@ -21,6 +21,8 @@
 #                         key_value fallback in database_state()
 #   MOCK_SQL_FAIL_PATTERN  a sql:query whose text contains this substring fails
 #                         (e.g. cache_file_parsing → the bin's table is absent)
+#   MOCK_PM_INSTALL_FAIL  the one module machine name whose pm:install fails
+#                         (a bad pack; everything else enables fine)
 #
 # On sql:dump it writes a real .gz so restore_snapshot's `[ -f ]` + zcat work.
 #
@@ -85,6 +87,10 @@ case "$*" in
     exit 0 ;;
   "state:set "*)                    exit 0 ;;
   "updatedb"*)                      exit "${MOCK_UPDATEDB_FAIL:-0}" ;;
+  "pm:install "*)
+    # MOCK_PM_INSTALL_FAIL names the one module whose enable fails.
+    case "$*" in *" ${MOCK_PM_INSTALL_FAIL:-__none__} "*|*" ${MOCK_PM_INSTALL_FAIL:-__none__} -y"*) exit 1 ;; esac
+    exit 0 ;;
   "config:import"*)                 exit "${MOCK_CIM_FAIL:-0}" ;;
   "cache:rebuild"*)                 exit 0 ;;
   "sql:drop"*)                      exit 0 ;;

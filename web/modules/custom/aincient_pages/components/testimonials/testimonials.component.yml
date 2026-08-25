@@ -19,3 +19,17 @@ props:
     quotes:
       type: array
       description: 'Array of { quote, author, role, avatar }. avatar/role optional.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 90
+    icon: ❝
+    use: 'Customer quotes — social proof in their own words. One strong quote, or a grid of several.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      columns: 2|3
+      quotes: '[{quote,author,role,avatar}]'

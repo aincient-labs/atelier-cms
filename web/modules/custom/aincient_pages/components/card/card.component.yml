@@ -15,3 +15,8 @@ props:
     image: { type: string }
     cta_label: { type: string }
     cta_url: { type: string }
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: content
+    order: 50

@@ -36,6 +36,10 @@ DB_MAX_WAIT="${AINCIENT_DB_MAX_WAIT:-60}"
 SNAPSHOT_KEEP="${AINCIENT_SNAPSHOT_KEEP:-5}"
 # Overridable so tests can stub the health gate.
 HEALTHCHECK_CMD="${HEALTHCHECK_CMD:-$(dirname "$0")/healthcheck.sh}"
+# Pack seams (§6.6) — overridable so the bats tests can point them at a tmpdir.
+PACKS_D="${AINCIENT_PACKS_D:-/opt/drupal/packs.d}"
+PACKS_SRC="${AINCIENT_PACKS_SRC:-/opt/drupal/packs}"
+PACKS_LINK_DIR="${AINCIENT_PACKS_LINK_DIR:-${DRUPAL_ROOT}/modules/packs}"
 # The oldest site version this image will migrate a database from, and where that
 # is baked. Overridable so tests can set a floor without rebuilding the image.
 UPGRADE_FLOOR_FILE="${AINCIENT_UPGRADE_FLOOR_FILE:-/etc/atelier/upgrade-floor}"
@@ -655,6 +659,57 @@ refuse_unbootable() {
   die "refusing to touch a populated database that cannot bootstrap"
 }
 
+# --- Pack enablement (plans/byo-components.md §6.6) ---------------------------
+#
+# Declarative, not config: each /opt/drupal/packs.d/<pack>.yml names a module
+# to enable. Runs AFTER config:import in both branches — the full-set import
+# syncs core.extension and would otherwise uninstall a pack on every boot — and
+# BEFORE seed_credentials, so it lands in one place for fresh installs and
+# upgrades alike.
+#
+# A DEV stack bind-mounts the pack source at /opt/drupal/packs/<module>; we
+# symlink it into web/modules/packs so Drupal's extension discovery sees it
+# while the repo root (Dockerfile, .github, compose files) stays outside the
+# docroot. A PRODUCTION pack is baked into web/modules/custom by the client
+# image and needs no link.
+#
+# Idempotent (pm:install on an enabled module is a no-op) and NEVER fatal: a
+# pack that fails to enable logs and is skipped — a bad pack must not take the
+# site down (§3.3 has the same rule for a bad component).
+enable_packs() {
+  local decl module installed=0
+  [ -d "$PACKS_D" ] || return 0
+  for decl in "$PACKS_D"/*.yml; do
+    [ -e "$decl" ] || return 0  # unmatched glob — no packs declared
+    # The one key we read: `module: <machine_name>`. Anything else in the
+    # drop-in is for future majors; unknown keys are ignored, not errors.
+    module="$(sed -n 's/^module:[[:space:]]*//p' "$decl" | head -n 1 | tr -d '"'"'"'[:space:]')"
+    if [ -z "$module" ] || ! printf '%s' "$module" | grep -Eq '^[a-z][a-z0-9_]*$'; then
+      log "WARNING: $decl declares no valid 'module:' key; pack skipped"
+      continue
+    fi
+    if [ -d "$PACKS_SRC/$module" ] && [ ! -e "$PACKS_LINK_DIR/$module" ] && [ ! -d "${DRUPAL_ROOT}/modules/custom/$module" ]; then
+      mkdir -p "$PACKS_LINK_DIR"
+      ln -s "$PACKS_SRC/$module" "$PACKS_LINK_DIR/$module" \
+        || { log "WARNING: could not link mounted pack $module; pack skipped"; continue; }
+      log "linked mounted pack $module into modules/packs"
+    fi
+    if $DRUSH pm:install "$module" -y; then
+      log "pack $module enabled"
+      installed=1
+    else
+      log "WARNING: pack $module failed to enable; skipped (site boots without it)"
+    fi
+  done
+  # One rebuild AFTER the loop: pm:install flushes drush-side, but the web
+  # process has been observed serving a pre-enable compiled catalog until an
+  # explicit rebuild — and the boot must hand over a site whose catalog
+  # already carries the packs it just enabled.
+  if [ "$installed" = "1" ]; then
+    $DRUSH cache:rebuild || log "WARNING: post-pack cache rebuild failed"
+  fi
+}
+
 # --- Main -------------------------------------------------------------------
 #
 # THREE states, not two. The branch turns on whether the database is EMPTY —
@@ -692,6 +747,7 @@ main() {
     log "running health check"
     "$HEALTHCHECK_CMD" || { write_result install-failed; recovery_hint; die "post-install health check failed"; }
   fi
+  enable_packs
   seed_credentials
   record_version
   write_result ok

@@ -14,3 +14,17 @@ props:
     subheading: { type: string }
     cta_label: { type: string }
     cta_url: { type: string }
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 140
+    icon: ▬
+    use: 'A short, bold full-width statement band — one big sentence (a mission line or pull-quote). One idea, no list.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      cta_label: ''
+      cta_url: ''

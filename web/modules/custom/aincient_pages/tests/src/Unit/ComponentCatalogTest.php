@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
+use Drupal\aincient_pages\Catalog\CatalogCompiler;
+use Drupal\aincient_pages\Catalog\EffectiveCatalog;
 use Drupal\aincient_pages\ComponentCatalog;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -13,7 +15,10 @@ use Symfony\Component\Yaml\Yaml;
  * Lints the component & layout naming convention (see GRAMMAR.md).
  *
  * These tests are the TEETH of the convention: they fail the build if the two
- * rules the page agent depends on are ever violated as the library grows.
+ * rules the page agent depends on are ever violated as the library grows. The
+ * palette is DISCOVERED now (each .component.yml carries its atelier contract),
+ * so the lints run over the REAL shipped files compiled through the same
+ * CatalogCompiler the site uses — a config-contract test, not a fixture one.
  *
  * @group aincient
  * @coversDefaultClass \Drupal\aincient_pages\ComponentCatalog
@@ -22,28 +27,82 @@ use Symfony\Component\Yaml\Yaml;
 final class ComponentCatalogTest extends UnitTestCase {
 
   /**
+   * The compiled bare landing palette (memoized per process).
+   */
+  private static ?EffectiveCatalog $catalog = NULL;
+
+  /**
+   * Compile the REAL .component.yml files on disk into the effective catalog,
+   * synthesizing the provider + machineName keys discovery would add.
+   */
+  private static function catalog(): EffectiveCatalog {
+    if (self::$catalog === NULL) {
+      $definitions = [];
+      foreach (glob(dirname(__DIR__, 3) . '/components/*/*.component.yml') as $file) {
+        $name = basename(dirname($file));
+        $definitions['aincient_pages:' . $name] = Yaml::parseFile($file) + [
+          'provider' => 'aincient_pages',
+          'machineName' => $name,
+        ];
+      }
+      self::assertNotEmpty($definitions, 'No .component.yml files found on disk.');
+      self::$catalog = CatalogCompiler::compile($definitions, NULL);
+    }
+    return self::$catalog;
+  }
+
+  /**
+   * The placeable defs (section + layout + reference), name => def.
+   */
+  private static function placeableDefs(): array {
+    $catalog = self::catalog();
+    return $catalog->sections() + $catalog->layout() + $catalog->reference();
+  }
+
+  /**
    * RULE 1: every emitted identifier is globally unique (one word, one concept).
+   *
+   * Merged WITHOUT dedupe across the discovered tiers, so a name landing in two
+   * tiers (or twice in one) fails — reservedNames() itself dedupes, which would
+   * hide exactly the collision this test exists to catch.
    */
   public function testNamesAreUnique(): void {
-    $names = ComponentCatalog::reservedNames();
+    $catalog = self::catalog();
+    $names = array_merge(
+      $catalog->sectionNames(),
+      $catalog->layoutNames(),
+      $catalog->referenceNames(),
+      $catalog->chrome(),
+      $catalog->contentAtoms(),
+    );
     $this->assertSame(
       array_values(array_unique($names)),
       array_values($names),
       'Component/layout names must be globally unique across all tiers.',
     );
+    // The reserved-word set the grammar lints against covers every tier name.
+    foreach ($names as $name) {
+      $this->assertContains($name, $catalog->reservedNames());
+    }
   }
 
   /**
    * RULE 1 (corollary): a non-layout name never reuses a reserved layout word —
-   * `grid` belongs to the layout tier alone, so `feature-grid` is forbidden.
+   * `grid` belongs to the layout tier alone, so `feature-grid` is forbidden. A
+   * name that IS a reserved layout word (`card`, the SDC `grid` renders per
+   * tile) is the layout word itself, not a reuse — exempt.
    */
   public function testNamesDoNotReuseLayoutWords(): void {
+    $catalog = self::catalog();
     $nonLayout = array_merge(
-      ComponentCatalog::sectionNames(),
-      ComponentCatalog::CHROME,
-      ComponentCatalog::CONTENT,
+      $catalog->sectionNames(),
+      $catalog->chrome(),
+      $catalog->contentAtoms(),
     );
     foreach ($nonLayout as $name) {
+      if (in_array($name, ComponentCatalog::LAYOUT_RESERVED, TRUE)) {
+        continue;
+      }
       $segments = preg_split('/[-_]/', $name);
       foreach (ComponentCatalog::LAYOUT_RESERVED as $reserved) {
         $this->assertNotContains(
@@ -57,12 +116,11 @@ final class ComponentCatalogTest extends UnitTestCase {
 
   /**
    * RULE 2: layout/props are a SHARED, locked vocabulary — every prop a
-   * placeable (section OR layout container) uses must be declared in PROP_VOCAB
-   * (no synonyms or abbreviations creep in).
+   * placeable (section, layout container OR reference) uses must be declared in
+   * PROP_VOCAB (no synonyms or abbreviations creep in).
    */
   public function testEveryPlaceablePropIsInTheLockedVocab(): void {
-    $placeables = ComponentCatalog::SECTIONS + ComponentCatalog::LAYOUT;
-    foreach ($placeables as $name => $def) {
+    foreach (self::placeableDefs() as $name => $def) {
       foreach (array_keys($def['props']) as $prop) {
         $this->assertArrayHasKey(
           $prop,
@@ -74,19 +132,23 @@ final class ComponentCatalogTest extends UnitTestCase {
   }
 
   /**
-   * Every placeable variant enum is declared in VARIANTS, and vice versa — the
-   * map the validator clamps against must match the components that have a
-   * `variant` prop, so an unknown/missing variant can never trip the SDC enum.
+   * Every placeable variant enum is in the compiled variants() map, and vice
+   * versa — the map the validator clamps against must match the components that
+   * declare a `variant` prop, so an unknown/missing variant can never trip the
+   * SDC enum.
    */
   public function testVariantMapMatchesPlaceablesWithAVariantProp(): void {
-    $placeables = ComponentCatalog::SECTIONS + ComponentCatalog::LAYOUT;
-    foreach ($placeables as $name => $def) {
+    $catalog = self::catalog();
+    foreach (self::placeableDefs() as $name => $def) {
       $hasVariant = array_key_exists('variant', $def['props']);
       $this->assertSame(
         $hasVariant,
-        isset(ComponentCatalog::VARIANTS[$name]),
-        sprintf('"%s" variant prop and the VARIANTS clamp map must agree.', $name),
+        isset($catalog->variants()[$name]),
+        sprintf('"%s" variant prop and the compiled variants clamp map must agree.', $name),
       );
+    }
+    foreach (array_keys($catalog->variants()) as $name) {
+      $this->assertContains($name, $catalog->placeableNames());
     }
   }
 
@@ -96,8 +158,9 @@ final class ComponentCatalogTest extends UnitTestCase {
    * validator's allow-list.
    */
   public function testManifestCoversEveryPlaceable(): void {
-    $manifest = ComponentCatalog::manifest();
-    foreach (ComponentCatalog::placeableNames() as $name) {
+    $catalog = self::catalog();
+    $manifest = $catalog->manifest();
+    foreach ($catalog->placeableNames() as $name) {
       $this->assertStringContainsString($name, $manifest);
     }
     // The rename is real: the dropped name must not survive in the prompt.
@@ -116,6 +179,7 @@ final class ComponentCatalogTest extends UnitTestCase {
    * menu stops listing a placeable, the build goes red.
    */
   public function testPageAgentPromptInjectsTheWholeCatalog(): void {
+    $catalog = self::catalog();
     $prompt = $this->pageAgentSystemPrompt();
     $this->assertStringContainsString(
       ComponentCatalog::MANIFEST_TOKEN,
@@ -123,11 +187,19 @@ final class ComponentCatalogTest extends UnitTestCase {
       'The page-agent prompt must carry the manifest token (not an inlined copy of the menu) so the catalogue can never drift.',
     );
 
+    // Phase 5: the kind list is generated into the prompt the same way — the
+    // registry call, never an inlined copy of "landing | blog".
+    $this->assertStringContainsString(
+      ComponentCatalog::KINDS_TOKEN,
+      $prompt,
+      'The page-agent prompt must carry the page_kinds() token so the kind list is generated from the registry.',
+    );
+
     // Substitute what the Twig render produces for this exact call.
-    $injected = str_replace(ComponentCatalog::MANIFEST_TOKEN, ComponentCatalog::manifest(), $prompt);
+    $injected = str_replace(ComponentCatalog::MANIFEST_TOKEN, $catalog->manifest(), $prompt);
     $this->assertStringNotContainsString(ComponentCatalog::MANIFEST_TOKEN, $injected);
 
-    foreach (ComponentCatalog::placeableNames() as $name) {
+    foreach ($catalog->placeableNames() as $name) {
       // The menu line ("- name — …") and the component's prop signature both
       // reach the model — names AND props are guarded against drift.
       $this->assertStringContainsString(
@@ -136,7 +208,7 @@ final class ComponentCatalogTest extends UnitTestCase {
         sprintf('Placeable "%s" never reaches the page agent after manifest injection.', $name),
       );
       $this->assertStringContainsString(
-        ComponentCatalog::signature($name),
+        $catalog->signature($name),
         $injected,
         sprintf('Prop signature for "%s" never reaches the page agent after manifest injection.', $name),
       );
@@ -198,10 +270,13 @@ final class ComponentCatalogTest extends UnitTestCase {
    * anything but a URL, and invents a path for a page that may not exist.
    */
   public function testManifestTeachesTheLinkGrammar(): void {
-    $manifest = ComponentCatalog::manifest();
+    $manifest = self::catalog()->manifest();
     foreach (ComponentCatalog::LINK_PROPS as $prop) {
       $this->assertStringContainsString($prop, $manifest);
     }
+    // The note is the manifest's closing block — the fixed-size paragraph, never
+    // an inlined site listing.
+    $this->assertStringEndsWith(ComponentCatalog::linkTargetNote(), $manifest);
     // The token form, and the retrieval route for anything not already listed.
     $this->assertStringContainsString('entity:node:15', $manifest);
     $this->assertStringContainsString('find_reference', $manifest);
@@ -220,7 +295,7 @@ final class ComponentCatalogTest extends UnitTestCase {
     $this->assertStringContainsString('site_destinations()', $this->pageAgentSystemPrompt());
     // The manifest is grammar only — it may POINT at the destinations block, but
     // it must never carry destination lines itself (that is live site content).
-    $this->assertStringNotContainsString('→', ComponentCatalog::manifest());
+    $this->assertStringNotContainsString('→', self::catalog()->manifest());
   }
 
   /**
@@ -230,16 +305,16 @@ final class ComponentCatalogTest extends UnitTestCase {
    * "first heterogeneous container" decision (see GRAMMAR.md).
    */
   public function testAccordionBlocksAreBoundedLeafPlaceables(): void {
+    $catalog = self::catalog();
     $this->assertNotEmpty(ComponentCatalog::ACCORDION_BLOCKS);
     foreach (ComponentCatalog::ACCORDION_BLOCKS as $child) {
-      $this->assertContains(
-        $child,
-        ComponentCatalog::placeableNames(),
+      $this->assertNotNull(
+        $catalog->placeable($child),
         sprintf('ACCORDION_BLOCKS child "%s" must be a known placeable.', $child),
       );
       $this->assertNotContains(
         $child,
-        ComponentCatalog::layoutNames(),
+        $catalog->layoutNames(),
         sprintf('ACCORDION_BLOCKS must not nest a container ("%s") — panels are ONE level deep.', $child),
       );
       $this->assertNotContains(
@@ -248,11 +323,11 @@ final class ComponentCatalogTest extends UnitTestCase {
         sprintf('ACCORDION_BLOCKS must not reuse a reserved layout word ("%s").', $child),
       );
       $this->assertNotSame('accordion', $child, 'An accordion can never nest inside an accordion.');
-      // The agent-facing `use` text names every allowed block (PHP const exprs
-      // can't implode the list into it, so guard the literal against drift).
+      // The agent-facing `use` text names every allowed block — guard the
+      // shipped hint against drift.
       $this->assertStringContainsString(
         $child,
-        ComponentCatalog::SECTIONS['accordion']['use'],
+        $catalog->placeable('accordion')['use'] ?? '',
         sprintf('The accordion `use` hint must name its allowed block "%s".', $child),
       );
     }
@@ -265,10 +340,13 @@ final class ComponentCatalogTest extends UnitTestCase {
    *      owns a `variant` for it — it MUST be registered for backfill, or a
    *      top-level placement 500s on the unfilled enum.
    *   2. A renderer-internal variant is exactly that: NOT an author prop (absent
-   *      from SECTIONS props) and NOT in the author VARIANTS clamp map — so the
-   *      renderer, never PageStore, is responsible for filling it.
+   *      from the def's atelier props) and NOT in the compiled variants clamp
+   *      map — so the renderer, never PageStore, is responsible for filling it.
+   *      Its SDC schema, though, DOES declare the enum with `bare` in it — that
+   *      is what the renderer backfills against.
    */
   public function testRendererInternalVariantContract(): void {
+    $catalog = self::catalog();
     foreach (ComponentCatalog::ACCORDION_BLOCKS as $child) {
       $this->assertContains(
         $child,
@@ -279,18 +357,25 @@ final class ComponentCatalogTest extends UnitTestCase {
     foreach (ComponentCatalog::RENDERER_VARIANT_COMPONENTS as $name) {
       $this->assertContains(
         $name,
-        ComponentCatalog::placeableNames(),
+        $catalog->placeableNames(),
         sprintf('RENDERER_VARIANT_COMPONENTS member "%s" must be a known placeable.', $name),
       );
       $this->assertArrayNotHasKey(
         'variant',
-        ComponentCatalog::placeable($name)['props'] ?? [],
-        sprintf('"%s" variant is renderer-internal — it must NOT be exposed as an author prop in SECTIONS.', $name),
+        $catalog->placeable($name)['props'] ?? [],
+        sprintf('"%s" variant is renderer-internal — it must NOT be exposed as an author prop in the atelier contract.', $name),
       );
-      $this->assertArrayNotHasKey(
-        $name,
-        ComponentCatalog::VARIANTS,
-        sprintf('"%s" variant is renderer-internal — it must NOT be in the author VARIANTS clamp map.', $name),
+      $this->assertNull(
+        $catalog->variantsFor($name),
+        sprintf('"%s" variant is renderer-internal — it must NOT be in the author variants clamp map.', $name),
+      );
+      // The SDC schema itself DOES carry the enum, with the chrome-light `bare`
+      // value the renderer backfills for a panel child.
+      $sdc = Yaml::parseFile(sprintf('%s/components/%s/%s.component.yml', dirname(__DIR__, 3), $name, $name));
+      $this->assertContains(
+        'bare',
+        $sdc['props']['properties']['variant']['enum'] ?? [],
+        sprintf('"%s" must declare a `bare` value in its SDC variant enum for the renderer to select.', $name),
       );
     }
   }
@@ -352,8 +437,8 @@ final class ComponentCatalogTest extends UnitTestCase {
    */
   public function testEveryPlaceableLinkPropIsCovered(): void {
     $seen = [];
-    foreach (ComponentCatalog::placeableNames() as $name) {
-      foreach (ComponentCatalog::placeable($name)['props'] ?? [] as $prop => $hint) {
+    foreach (self::placeableDefs() as $def) {
+      foreach ($def['props'] as $prop => $hint) {
         $seen[] = $prop;
         // Row shapes, e.g. "[{title,body,cta_label,cta_url}]".
         if (str_starts_with((string) $hint, '[') && preg_match('/\{([^}]*)\}/', (string) $hint, $m)) {
@@ -371,6 +456,24 @@ final class ComponentCatalogTest extends UnitTestCase {
         );
       }
     }
+  }
+
+  /**
+   * The PROMPT BUDGET (plans/byo-components.md decision #3): the compiled
+   * manifest is inlined into the page agent's system prompt on every turn, so
+   * its rendered size is a per-turn cost every site pays. Growing the palette
+   * is fine — growing it PAST this ceiling needs a deliberate decision (tighter
+   * `use` hints, or per-kind narrowing) rather than drift. The shipped landing
+   * manifest is ~7.0k chars (~1.7k tokens) today; the ceiling leaves headroom
+   * for a handful of components, not for prose creep.
+   */
+  public function testManifestStaysInsideThePromptBudget(): void {
+    $length = strlen(self::catalog()->manifest());
+    $this->assertLessThanOrEqual(9000, $length, sprintf(
+      'The landing manifest is %d chars (~%d tokens) — past the prompt budget. Tighten `use` hints or narrow the kind before raising the ceiling.',
+      $length,
+      intdiv($length, 4),
+    ));
   }
 
 }

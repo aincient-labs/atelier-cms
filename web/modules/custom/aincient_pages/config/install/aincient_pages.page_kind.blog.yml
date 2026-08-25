@@ -1,0 +1,14 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - aincient_pages
+id: blog
+label: 'Blog post'
+hint: 'A written article — headline, body, and byline, in a fixed reading layout.'
+mode: recipe
+components: {  }
+opener: ''
+limits: {  }
+collection_source: true

@@ -27,3 +27,23 @@ slots:
   image:
     title: 'Content image'
     description: 'Responsive <picture> built by the renderer from the image media token.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 50
+    icon: ¶
+    image_props:
+      image:
+        view_mode: content
+    use: 'A prose block paired with an image — explain one idea in depth. Alternate the image side (image-left/right) as you stack these; text-only drops the image.'
+    props:
+      variant: image-right|image-left|text-only
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      body: ''
+      image: ''
+      cta_label: ''
+      cta_url: ''

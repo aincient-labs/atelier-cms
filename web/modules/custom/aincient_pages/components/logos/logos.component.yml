@@ -13,3 +13,17 @@ props:
     logos:
       type: array
       description: 'Array of { name, image, url }. image optional (falls back to the name as text).'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 20
+    icon: ▤
+    image_props:
+      image:
+        style: medium
+    use: 'A quiet row of partner/customer logos under the hero — instant "trusted by" credibility. One line of marks.'
+    props:
+      tone: ''
+      heading: ''
+      logos: '[{name,image,url}]'

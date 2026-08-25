@@ -53,6 +53,7 @@ import { ReferenceField } from "./reference-field";
 import { LinkField } from "./link-field";
 import { openBlock } from "./block-nav";
 import { PanelBar } from "./panel-bar";
+import { sectionIcon, groupByProvider } from "./catalog-meta";
 import { FieldRevert } from "./field-revert";
 
 /** One site language (GET /atelier/page/manifest → translation.languages). */
@@ -90,8 +91,18 @@ type PropDef = {
   panels?: boolean;
 };
 
-/** One placeable section component + its prop schema. */
-type SectionDef = { component: string; use: string; props: PropDef[] };
+/** One placeable section component + its prop schema. The W6 metadata (icon /
+ *  tier / provider) rides along for the picker: `icon` is the server-declared
+ *  glyph (may be '' → client fallback), `provider` the contributing module
+ *  (provenance grouping; ''/aincient_pages = built-in). */
+type SectionDef = {
+  component: string;
+  use: string;
+  props: PropDef[];
+  icon?: string;
+  tier?: string;
+  provider?: string;
+};
 
 type Manifest = {
   sections: SectionDef[];
@@ -176,14 +187,8 @@ function humanize(name: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** A type glyph per placeable, so a collapsed section reads at a glance. Falls
- *  back to a neutral block mark for anything not mapped (forward-compatible). */
-const SECTION_ICONS: Record<string, string> = {
-  hero: "◆", banner: "▬", logos: "▤", stats: "▦", features: "⊞",
-  content: "¶", gallery: "▤", testimonials: "❝", team: "☻", pricing: "$",
-  faq: "?", newsletter: "✉", cta: "◈", divider: "—", embed: "⧉", block: "▣",
-};
-const sectionIcon = (component: string): string => SECTION_ICONS[component] ?? "▢";
+/* Placeable glyphs: the manifest entry's server icon wins, then the local map,
+ * then a neutral block mark — resolution lives in catalog-meta.ts (tested). */
 
 /** The props worth showing as a one-line summary of a collapsed section, in
  *  priority order — the first non-empty string wins. */
@@ -380,10 +385,15 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
     [],
   );
 
-  // Load the section/prop catalog the editor renders from.
+  // Load the section/prop catalog the editor renders from. Per-kind (W6): a
+  // page's type is fixed at birth, so ONE fetch per studio load with the
+  // current draft's type is right — the server compiles that kind's effective
+  // palette (an unknown kind degrades to landing, same as sending none).
   useEffect(() => {
     let live = true;
-    fetch(MANIFEST_URL, { credentials: "same-origin" })
+    const draftKind = (getPageDraft()?.type ?? "").trim();
+    const url = draftKind ? `${MANIFEST_URL}?kind=${encodeURIComponent(draftKind)}` : MANIFEST_URL;
+    fetch(url, { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data: Manifest) => live && setManifest(data))
       .catch((e) => live && setError(String(e)));
@@ -1557,22 +1567,39 @@ function ComponentPicker({
         {shown.length === 0 ? (
           <p className="ain-cpicker__empty">Nothing matches “{query.trim()}”.</p>
         ) : (
-          shown.map((s) => (
-            <button
-              key={s.component}
-              type="button"
-              role="option"
-              aria-selected={false}
-              className="ain-btn ain-cpicker__item"
-              title={s.use}
-              onClick={() => onPick(s.component)}
-            >
-              <span className="ain-cpicker__ico" aria-hidden="true">{sectionIcon(s.component)}</span>
-              <span className="ain-cpicker__text">
-                <span className="ain-cpicker__name">{humanize(s.component)}</span>
-                <span className="ain-cpicker__use">{s.use}</span>
-              </span>
-            </button>
+          // Provenance grouping (W6): built-ins (aincient_pages / '') render
+          // first and exactly as before — no header, no chip. Components from
+          // any OTHER module follow under a small group header, each row with
+          // a subtle provenance chip. Presentation-only: Enter still picks the
+          // first match of the FLAT filtered list above.
+          groupByProvider(shown).map((g) => (
+            <Fragment key={g.provider || "__builtin"}>
+              {g.label !== null && (
+                <div className="ain-cpicker__grouphead" role="presentation">{g.label}</div>
+              )}
+              {g.entries.map((s) => (
+                <button
+                  key={s.component}
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  className="ain-btn ain-cpicker__item"
+                  title={s.use}
+                  onClick={() => onPick(s.component)}
+                >
+                  <span className="ain-cpicker__ico" aria-hidden="true">{sectionIcon(s.component, s.icon)}</span>
+                  <span className="ain-cpicker__text">
+                    <span className="ain-cpicker__name">
+                      {humanize(s.component)}
+                      {g.label !== null && (
+                        <span className="ain-cpicker__prov" aria-hidden="true">{g.label}</span>
+                      )}
+                    </span>
+                    <span className="ain-cpicker__use">{s.use}</span>
+                  </span>
+                </button>
+              ))}
+            </Fragment>
           ))
         )}
       </div>

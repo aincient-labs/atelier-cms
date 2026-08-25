@@ -18,3 +18,11 @@ slots:
   cover:
     title: 'Cover image'
     description: 'Responsive <picture> built by the renderer from the cover media token.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: content
+    order: 10
+    image_props:
+      cover:
+        view_mode: cover

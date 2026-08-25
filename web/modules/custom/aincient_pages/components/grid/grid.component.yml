@@ -19,3 +19,21 @@ props:
     cards:
       type: array
       description: 'Array of { title, body, icon, image, cta_label, cta_url }. Each renders as a card tile.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: layout
+    order: 10
+    icon: ⊡
+    rows:
+      cards:
+        image: image
+        view_mode: card
+    use: 'A bounded grid of equal "card" tiles — ONE level deep, never nested. Use for a homogeneous set that no named section fits. columns reflows the tiles.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      columns: 2|3|4
+      cards: '[{title,body,icon,image,cta_label,cta_url}]'

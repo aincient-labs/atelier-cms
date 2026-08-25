@@ -32,3 +32,8 @@ props:
       enum: [end, center, start]
       default: end
       description: 'How the nav links align in the remaining bar space (left logo only).'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: chrome
+    order: 10

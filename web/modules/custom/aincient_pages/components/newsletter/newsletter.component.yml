@@ -13,3 +13,16 @@ props:
     subheading: { type: string }
     cta_label: { type: string }
     placeholder: { type: string }
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 150
+    icon: ✉
+    use: 'An email sign-up band — capture subscribers. One field + one button.'
+    props:
+      tone: ''
+      heading: ''
+      subheading: ''
+      cta_label: ''
+      placeholder: ''

@@ -9,10 +9,10 @@ valid composition look good.
 
 ```jsonc
 {
-  "type": "landing" | "blog",
-  // landing:
+  "type": "<page kind id>",   // 'landing' | 'blog' ship as defaults; kinds are config (page_kind)
+  // a composition kind (landing):
   "sections": [ { "component": "...", "props": { ... } } ]
-  // blog:
+  // a recipe kind (blog):
   "title": "...", "lead": "...", "author": "...", "body_md": "# Markdown source…"
 }
 ```
@@ -20,9 +20,15 @@ valid composition look good.
 `PageSpikeController` renders this to SDC components. The schema *is* the API; the
 component schemas are the validation; this file is the taste.
 
-## Two regimes
+## Two modes, any number of KINDS
 
-### Blog — a LOCKED recipe (consistency by construction)
+A page's `type` is a **page kind** — a `page_kind` config entity naming which
+components (and which of their variants/tones) pages of that kind may compose,
+in one of two modes (plans/byo-components.md W2). `landing` (composition) and
+`blog` (recipe) ship as the defaults; their semantics below are also the code
+floor a site with no kind entities falls back to.
+
+### Recipe mode (blog) — a LOCKED recipe (consistency by construction)
 The agent supplies **content only**. Layout is fixed and not negotiable:
 
 ```
@@ -39,7 +45,7 @@ Write the body as **Markdown** in `body_md` (headings `##`/`###`, `**bold**`,
 HTML and rendered through the branded `prose` component — so author the *content*,
 never HTML or inline styles. Raw HTML in the source is escaped, not rendered.
 
-### Landing — a composition GRAMMAR (bounded creativity)
+### Composition mode (landing) — a composition GRAMMAR (bounded creativity)
 The agent arranges a `sections` list from the **allow-list** (unknown components
 are dropped). Each section is individually beautiful and constrained to
 enumerated `variant`/`tone` values, so "expressive" can't become "ugly".
@@ -47,8 +53,18 @@ enumerated `variant`/`tone` values, so "expressive" can't become "ugly".
 Section palette: `hero` · `logos` · `stats` · `features` · `content` ·
 `gallery` · `image` · `testimonials` · `team` · `pricing` · `faq` · `accordion` ·
 `banner` · `newsletter` · `cta` · `divider`, plus the `grid` layout container. The set
-covers blogs, company/marketing sites and news sites without bespoke components;
-`ComponentCatalog::manifest()` is the live, authoritative menu.
+covers blogs, company/marketing sites and news sites without bespoke components.
+The palette is DISCOVERED: each component's `.component.yml` carries its
+contract under `thirdPartySettings.atelier`, and the catalog service
+(`aincient_pages.catalog`) compiles `discovered ∩ site-constraint ∩ kind` into
+the immutable `EffectiveCatalog` a kind sees — `for($kind)->manifest()` is
+the live, authoritative menu the agent prompt inlines (the prompt passes the
+draft's kind: `component_catalog(page_kind|default('landing'))`, and lists the
+kind registry via `page_kinds()`). A recipe kind's manifest is one line — no
+placeable sections, so no menu. A PACK component's first declared example is
+inlined as a few-shot fragment (its name carries no model prior); built-ins
+stay bare. The site-wide constraint (`aincient_pages.site_constraint`, edited
+in the console's Components studio) can only NARROW the palette, never widen it.
 
 Rules the renderer enforces or the agent should follow:
 1. **Open with a `hero`.** It's the only full-viewport opener.
@@ -81,8 +97,10 @@ good one) × a grammar (good arrangement) × the live brand tokens (cohesion) =
 ## Component & layout naming convention
 The names above aren't ad-hoc — they follow a convention so the agent can pick
 them from its pretraining priors (the same bet as the design-token convention),
-and so the component library can grow predictably. The machine-readable source
-of truth is `src/ComponentCatalog.php`; the rules:
+and so the component library can grow predictably. The machine-readable sources
+of truth: each component's own `thirdPartySettings.atelier` metadata (the
+palette) plus `src/ComponentCatalog.php` (the grammar FLOOR: prop vocabulary,
+tones, reserved words, prop-flag sets); the rules:
 
 **Adopt ecosystem vocabulary, don't invent.** Names come from conventions an LLM
 already knows:
@@ -97,8 +115,8 @@ already knows:
 - **Layout** (containers) → the de-facto container vocabulary (Every Layout /
   WordPress core blocks): `grid`, `stack`, `columns`.
 
-The **tier is carried by the registry's grouping, never a name prefix** (apart
-from chrome's `site-*`) — so names stay idiomatic.
+The **tier is carried by the atelier metadata's `tier` key, never a name
+prefix** (apart from chrome's `site-*`) — so names stay idiomatic.
 
 **Two rules the agent depends on** (both linted in `ComponentCatalogTest`):
 1. **Unique names — one word, one concept.** Every component/layout name is
@@ -117,7 +135,7 @@ from chrome's `site-*`) — so names stay idiomatic.
 
 ### Layout model — flat + one bounded `grid` (ratified 2026-06-16)
 Composition is **flat**: full-width sections stacked in order. Layout is
-expressed by (a) the page regime (landing/blog), (b) section order, and (c)
+expressed by (a) the page kind's mode (composition/recipe), (b) section order, and (c)
 enumerated layout props on each section — *not* by nesting containers. We
 deliberately did **not** adopt a general nesting tier: nesting moves "is this
 composition designed?" from the curated grammar into the agent's judgement,
@@ -128,7 +146,7 @@ a homogeneous set of `card` children, with no further nesting — enough to expr
 "a grid of N cards" without a `*-grid` component per content type, while keeping
 the validity space small and responsive trivial. `grid` is now a **placeable
 layout container** (`ComponentCatalog::LAYOUT`, a distinct tier from sections but
-placed the same way); it carries its `card` children INLINE as a `cards` array
+placed the same way — `tier: layout` in its metadata); it carries its `card` children INLINE as a `cards` array
 prop (exactly like `features` carries feature cards), so the renderer never nests
 components and the flat model holds. `card` is the SDC `grid` renders per item
 (never placed directly); `stack` stays reserved for a future bounded container.

@@ -8,3 +8,8 @@ props:
     html:
       type: string
       description: 'Sanitised article body HTML.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: content
+    order: 20

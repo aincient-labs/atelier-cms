@@ -257,3 +257,18 @@ function aincient_pages_entity_base_field_info_alter(array &$fields, EntityTypeI
     $fields['path']->addConstraint('AincientReservedAlias');
   }
 }
+
+/**
+ * Implements hook_config_ignore_settings_alter().
+ *
+ * Page kinds are SITE-OWNED governance config (plans/byo-components.md §6.6):
+ * the appliance re-asserts config/sync on every boot, so anything a human tunes
+ * in the console must be fenced from config:import or the next restart reverts
+ * it. Injected in code (not the config_ignore settings file) so the fence ships
+ * with the module — the same rule a pack's validated `owns:` patterns will ride
+ * later (W7).
+ */
+function aincient_pages_config_ignore_settings_alter(array &$settings): void {
+  $settings[] = 'aincient_pages.page_kind.*';
+  $settings[] = 'aincient_pages.site_constraint';
+}

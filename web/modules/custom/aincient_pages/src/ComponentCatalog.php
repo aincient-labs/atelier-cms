@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages;
 
 /**
- * The component & layout registry — the single source of truth for the names
- * the page grammar (and the page agent) may use, and the NAMING CONVENTION
- * that keeps them predictable.
+ * The grammar FLOOR — the shared, non-discoverable rules of the page grammar.
  *
- * Sibling of DesignTokens: where DesignTokens is the catalogue the brand agent
- * reasons over, this is the catalogue the PAGE agent reasons over. PageStore
- * (the validator), PageSpikeController (the renderer) and PreviewPage (the
- * page-studio agent prompt) all read their vocabulary from HERE so the
- * allow-list, the renderer and the prompt can never drift apart.
+ * The component palette itself (sections, layout containers, reference
+ * placeables, their `use` hints and props) is DISCOVERED: each component's own
+ * `.component.yml` carries it under `thirdPartySettings.atelier`, compiled by
+ * {@see \Drupal\aincient_pages\Catalog\CatalogCompiler} into the
+ * {@see \Drupal\aincient_pages\Catalog\EffectiveCatalog} one kind sees
+ * (service `aincient_pages.catalog`, plans/byo-components.md W1). What stays
+ * HERE is the floor every pack and every kind is subject to and none may relax:
+ * the locked prop vocabulary, the reserved layout words, the tone enum, the
+ * prop-flag sets the studio/renderer key off, and the naming convention.
  *
  * ── NAMING CONVENTION ───────────────────────────────────────────────────────
  * We do not invent names; we adopt the ecosystem conventions an LLM already
@@ -26,10 +28,12 @@ namespace Drupal\aincient_pages;
  *     because "site-scoped, on every page" is a meaningful distinction.
  *   • LAYOUT         → the de-facto container vocabulary (Every Layout /
  *     WordPress core blocks): grid, stack, columns. RESERVED — see below.
- * The TIER is carried by this registry's grouping, NEVER by a name prefix
- * (apart from chrome's `site-*`), so names stay idiomatic.
+ * The TIER is carried by the atelier metadata's `tier`, NEVER by a name prefix
+ * (apart from chrome's `site-*`), so names stay idiomatic. A pack component
+ * with no ecosystem prior MUST carry a strong `use` hint instead.
  *
- * TWO RULES the agent depends on (both linted in ComponentCatalogTest):
+ * TWO RULES the agent depends on (linted in ComponentCatalogTest and enforced
+ * on packs by the admission gate):
  *   1. UNIQUE NAMES — one word, one concept. Every emitted component/layout
  *      NAME is globally unique and never reuses a reserved layout word. (That
  *      is why a "grid of features" is the section `features`, not `feature-grid`
@@ -50,238 +54,11 @@ namespace Drupal\aincient_pages;
  * homogeneous set of `card` children, no further nesting). The general nesting
  * tier was deliberately NOT adopted: it would move "is this composition
  * designed?" from the curated grammar into the agent's judgement. `grid` is the
- * sole PLACEABLE layout container (see {@see LAYOUT}); `card` is the child it
- * renders (never placed directly) and `stack` stays reserved (page-level
- * stacking is already implicit in the flat section list).
+ * sole PLACEABLE layout container; `card` is the child it renders (never placed
+ * directly) and `stack` stays reserved (page-level stacking is already implicit
+ * in the flat section list).
  */
 final class ComponentCatalog {
-
-  /**
-   * SECTION components — the landing-page allow-list (the composition palette).
-   *
-   * The order is the rough top-to-bottom order the agent should compose in.
-   * Each: 'use' (one-line selection hint for the agent) + 'props' (key => hint,
-   * keys MUST be in PROP_VOCAB). A '|'-joined hint renders as an enum, a hint
-   * starting '[' renders as a shape; '' renders the bare prop name.
-   */
-  public const SECTIONS = [
-    'hero' => [
-      'use' => 'Top-of-page opener; the only full-viewport section. Open every page with one, never stack two.',
-      'props' => [
-        'variant' => 'centered|split',
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'cta_label' => '', 'cta_url' => '',
-        'secondary_label' => '', 'secondary_url' => '',
-        'image' => '',
-      ],
-    ],
-    'logos' => [
-      'use' => 'A quiet row of partner/customer logos under the hero — instant "trusted by" credibility. One line of marks.',
-      'props' => [
-        'tone' => '',
-        'heading' => '',
-        'logos' => '[{name,image,url}]',
-      ],
-    ],
-    'stats' => [
-      'use' => 'A row of headline numbers; great social proof under a hero.',
-      'props' => [
-        'tone' => '',
-        'items' => '[{value,label}]',
-      ],
-    ],
-    'features' => [
-      'use' => 'A heading plus a grid of feature cards. icon = ONE glyph/emoji (e.g. ✶ ◆ ⚡ 🚀). columns reflow the cards.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'columns' => '2|3',
-        'features' => '[{icon,title,body}]',
-      ],
-    ],
-    'content' => [
-      'use' => 'A prose block paired with an image — explain one idea in depth. Alternate the image side (image-left/right) as you stack these; text-only drops the image.',
-      'props' => [
-        'variant' => 'image-right|image-left|text-only',
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'body' => '',
-        'image' => '',
-        'cta_label' => '', 'cta_url' => '',
-      ],
-    ],
-    'markdown' => [
-      'use' => 'A block of long-form body text authored in Markdown — headings, lists, links, bold/italic, blockquotes. Reach for it for free-form formatted copy that no structured section (hero/features/content/…) models. Rendered with a reading-optimised prose measure.',
-      'props' => [
-        'tone' => '',
-        'markdown' => '',
-      ],
-    ],
-    'gallery' => [
-      'use' => 'A grid of images (screenshots, work, photos). columns reflows the grid.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'columns' => '2|3|4',
-        'images' => '[{image,caption}]',
-      ],
-    ],
-    'image' => [
-      'use' => 'A single standalone image with an optional caption — a figure. Use to place ONE picture on its own (a screenshot, photo, diagram, chart) when no richer section fits — content pairs an image WITH text, gallery is a GRID of images. The caption shows beneath.',
-      'props' => [
-        'tone' => '',
-        'image' => '',
-        'caption' => '',
-      ],
-    ],
-    'testimonials' => [
-      'use' => 'Customer quotes — social proof in their own words. One strong quote, or a grid of several.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'columns' => '2|3',
-        'quotes' => '[{quote,author,role,avatar}]',
-      ],
-    ],
-    'team' => [
-      'use' => 'The people behind the company — head-shots, names, roles. columns reflows the grid.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'columns' => '2|3|4',
-        'members' => '[{name,role,bio,avatar}]',
-      ],
-    ],
-    'pricing' => [
-      'use' => 'Plan/price tiers side by side. Mark one tier featured to draw the eye. Follow with faq or cta.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'tiers' => '[{name,price,period,description,features,cta_label,cta_url,featured}]',
-      ],
-    ],
-    'faq' => [
-      'use' => 'Frequently-asked questions — answer objections before the closing cta. Plain-text answers only; for RICH answers (formatted copy, lists, links) use accordion.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'questions' => '[{question,answer}]',
-      ],
-    ],
-    'accordion' => [
-      'use' => 'A disclosure list whose panels hold RICH content, unlike faq\'s plain text. Each panel is a label + one or more content blocks. Use for layered detail: documentation, nested how-tos, spec breakdowns. Panels nest content blocks ONE level only — never a section or another container. exclusive = at most one panel open at a time. Allowed block components: markdown, image.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'exclusive' => '',
-        'panels' => '[{label,open,blocks:[{component,props}]}]',
-      ],
-    ],
-    'banner' => [
-      'use' => 'A short, bold full-width statement band — one big sentence (a mission line or pull-quote). One idea, no list.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'cta_label' => '', 'cta_url' => '',
-      ],
-    ],
-    'newsletter' => [
-      'use' => 'An email sign-up band — capture subscribers. One field + one button.',
-      'props' => [
-        'tone' => '',
-        'heading' => '', 'subheading' => '',
-        'cta_label' => '',
-        'placeholder' => '',
-      ],
-    ],
-    'cta' => [
-      'use' => 'Closing call-to-action band; usually tone "brand". Give the visitor one action — close every page with one.',
-      'props' => [
-        'tone' => '',
-        'heading' => '', 'subheading' => '',
-        'cta_label' => '', 'cta_url' => '',
-      ],
-    ],
-    'divider' => [
-      'use' => 'A light separator between sections — a rule, breathing space, or a small centered label. Use sparingly.',
-      'props' => [
-        'variant' => 'line|space|label',
-        'tone' => '',
-        'label' => '',
-      ],
-    ],
-  ];
-
-  /**
-   * PLACEABLE LAYOUT containers — a distinct tier from SECTIONS but placed the
-   * same way (the agent adds them as top-level blocks; PageStore/renderer treat
-   * them via {@see placeableNames()}). Same def shape as SECTIONS.
-   *
-   * Only `grid` is placeable (the one bounded container we ratified). It carries
-   * its `card` children INLINE as a `cards` array prop (exactly like `features`
-   * carries feature cards), so the renderer never nests components — the flat
-   * model holds. `card` and `stack` stay reserved words (see LAYOUT_RESERVED).
-   */
-  public const LAYOUT = [
-    'grid' => [
-      'use' => 'A bounded grid of equal "card" tiles — ONE level deep, never nested. Use for a homogeneous set that no named section fits. columns reflows the tiles.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'columns' => '2|3|4',
-        'cards' => '[{title,body,icon,image,cta_label,cta_url}]',
-      ],
-    ],
-  ];
-
-  /**
-   * REFERENCE placeables — sections whose body is another Drupal entity rather
-   * than inline copy (Phase 4b/5). Distinct from SECTIONS (inline content) and
-   * LAYOUT (containers), but placed the same way and gated through
-   * {@see placeableNames()}. Same def shape as SECTIONS.
-   *
-   *  - `embed`  surfaces ANY existing entity (a page, an article, …) rendered in
-   *    a chosen view mode, via {@see EntityEmbedResolver::render()}. Its `entity`
-   *    prop holds an embed TOKEN (`entity:node:15@teaser` / `media:42`) resolved
-   *    at render — CONTENT (a translation may embed its own entity; an empty
-   *    overlay inherits the source token).
-   *  - `block`  places a reusable GLOBAL BLOCK (a saved `aincient_block` fragment)
-   *    by id; the renderer expands the block's own sections inline. Its `ref` prop
-   *    is STRUCTURAL ({@see PageSchemaCodec::STRUCTURAL_PROPS}) — "which block goes
-   *    here" is a shared layout decision; the block entity owns its per-language
-   *    copy. Edit the block once, every page that references it updates.
-   */
-  public const REFERENCE = [
-    'embed' => [
-      'use' => 'Embed an existing piece of content (a page, an article, a media item) rendered in a chosen view mode. Use to surface REAL site content inside a composed page rather than re-typing it.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'entity' => '',
-      ],
-    ],
-    'block' => [
-      'use' => 'Place a reusable GLOBAL BLOCK — a saved fragment (a shared CTA, banner, or footer note). Edit the block once and every page that uses it updates. Reach for it when the SAME content must appear on many pages.',
-      'props' => [
-        'ref' => '',
-      ],
-    ],
-    'collection' => [
-      'use' => 'A LIVE listing of the site\'s own content — resolved from real posts, never typed. mode "strip" is a bounded preview of recent posts for a homepage/landing section ("show recent posts", "latest from the blog"): no filters, ships zero JavaScript, may appear several times on one page — give it a limit and an optional "View all" via cta_url/cta_label. mode "index" is the FULL list page with filtering ("build me a blog page", "a page that lists every post"): AT MOST ONE per page, sized by per_page. Reach for strip when a section previews posts, index when the page IS the list.',
-      'props' => [
-        'tone' => '',
-        'eyebrow' => '', 'heading' => '', 'subheading' => '',
-        'columns' => '2|3|4',
-        'mode' => 'strip|index',
-        'source' => 'blog',
-        'sort' => 'newest|oldest',
-        'limit' => 'integer',
-        'per_page' => 'integer',
-        'cta_label' => '', 'cta_url' => '',
-      ],
-    ],
-  ];
 
   /**
    * The bounded allow-list of CHILD components an `accordion` panel may hold —
@@ -304,18 +81,6 @@ final class ComponentCatalog {
   public const ACCORDION_BLOCKS = ['markdown', 'image'];
 
   /**
-   * CHROME — the site wrapper on every page. Not agent-placeable per page
-   * (the renderer wraps content in these). `site-*` is the one family prefix.
-   */
-  public const CHROME = ['site-header', 'site-footer'];
-
-  /**
-   * CONTENT atoms — composed INSIDE locked recipes / listings, never placed as
-   * sections. The blog recipe arranges these; not in the landing allow-list.
-   */
-  public const CONTENT = ['article-header', 'prose', 'byline', 'article-teaser'];
-
-  /**
    * LAYOUT containers — RESERVED vocabulary (Every Layout / WP core blocks).
    * Documented + reserved so the uniqueness lint protects these words. `grid`
    * is now PLACEABLE (see LAYOUT); `card` is the SDC `grid` renders per item;
@@ -327,23 +92,6 @@ final class ComponentCatalog {
    * Enumerations shared across the grammar.
    */
   public const TONES = ['default', 'muted', 'brand', 'inverted'];
-
-  /**
-   * Per-component `variant` enums (the first value is the clamp default). The
-   * validator clamps an unknown/missing variant to the default so a hallucinated
-   * value can never trip the SDC's required enum (a 500).
-   */
-  public const VARIANTS = [
-    'hero' => ['centered', 'split'],
-    'content' => ['image-right', 'image-left', 'text-only'],
-    'divider' => ['line', 'space', 'label'],
-  ];
-
-  /**
-   * Back-compat alias for the hero variant enum (consumed by the studio editor
-   * manifest). Prefer {@see VARIANTS} for new code.
-   */
-  public const HERO_VARIANTS = self::VARIANTS['hero'];
 
   /**
    * The LOCKED prop vocabulary (Rule 2): every prop word, one canonical meaning,
@@ -516,100 +264,25 @@ final class ComponentCatalog {
   }
 
   /**
-   * The section allow-list (names only) — the canonical landing palette that
-   * PageStore validates against and PageSpikeController renders.
-   */
-  public static function sectionNames(): array {
-    return array_keys(self::SECTIONS);
-  }
-
-  /**
-   * The placeable LAYOUT container names (grid).
-   */
-  public static function layoutNames(): array {
-    return array_keys(self::LAYOUT);
-  }
-
-  /**
-   * The reference placeable names (embed, block).
-   */
-  public static function referenceNames(): array {
-    return array_keys(self::REFERENCE);
-  }
-
-  /**
-   * Every component the page agent may PLACE as a top-level block: the section
-   * palette, the placeable layout containers, and the reference placeables
-   * (embed / block). This is the allow-list the validator (PageStore), the
-   * renderer (PageSpikeController) and the agent's op grammar (PreviewPage) all
-   * gate against.
-   */
-  public static function placeableNames(): array {
-    return array_merge(self::sectionNames(), self::layoutNames(), self::referenceNames());
-  }
-
-  /**
-   * The def (use + props) for any placeable name — section, layout container or
-   * reference placeable.
-   */
-  public static function placeable(string $name): ?array {
-    return self::SECTIONS[$name] ?? self::LAYOUT[$name] ?? self::REFERENCE[$name] ?? NULL;
-  }
-
-  /**
-   * Every emitted identifier across all tiers — used by the uniqueness lint and
-   * as the reserved-word set the grammar must not collide with.
-   */
-  public static function reservedNames(): array {
-    return array_merge(
-      self::sectionNames(),
-      self::referenceNames(),
-      self::CHROME,
-      self::CONTENT,
-      self::LAYOUT_RESERVED,
-    );
-  }
-
-  /**
    * The Twig call the page agent's stored system prompt carries where the
    * component menu goes; the Prompt Template node renders it through the
    * `component_catalog()` Twig function ({@see Twig\ComponentCatalogExtension}),
    * inlining {@see self::manifest()} at render time. Keeping the token here —
    * beside the text that fills it — makes the menu a SINGLE source: the prompt
    * config can never hold a stale copy, because it holds no copy at all.
+   *
+   * Phase 5: the call is per-kind — `page_kind` rides in from the chat turn
+   * (the studio draft's `type`) so each kind's prompt carries only its own
+   * palette; `|default('landing')` keeps a fresh page working.
    */
-  public const MANIFEST_TOKEN = '{{ component_catalog() }}';
+  public const MANIFEST_TOKEN = "{{ component_catalog(page_kind|default('landing')) }}";
 
   /**
-   * The AI-facing component listing, injected into the page agent's system
-   * prompt (sibling of DesignTokens::manifestSummary) in place of
-   * {@see self::MANIFEST_TOKEN}. Reproduces the composition palette + the
-   * placeable layout tier from this single source so the prompt can never drift
-   * from the allow-list. Grammar/taste rules stay in the prompt; this is just
-   * the menu.
+   * The Twig call that renders the PAGE KINDS list into the prompt (Phase 5) —
+   * generated from the kind registry, so the agent never believes exactly two
+   * kinds exist ({@see Twig\ComponentCatalogExtension::kinds()}).
    */
-  public static function manifest(): string {
-    $lines = ['LANDING sections (compose 3–6, in this rough order):'];
-    foreach (self::SECTIONS as $name => $def) {
-      $lines[] = sprintf('- %s — %s', $name, $def['use']);
-      $lines[] = '    props: ' . self::describeProps($def['props']);
-    }
-    $lines[] = '';
-    $lines[] = 'LAYOUT containers (use only when no named section fits; never nest):';
-    foreach (self::LAYOUT as $name => $def) {
-      $lines[] = sprintf('- %s — %s', $name, $def['use']);
-      $lines[] = '    props: ' . self::describeProps($def['props']);
-    }
-    $lines[] = '';
-    $lines[] = 'REFERENCE placeables (point at real content instead of typing it):';
-    foreach (self::REFERENCE as $name => $def) {
-      $lines[] = sprintf('- %s — %s', $name, $def['use']);
-      $lines[] = '    props: ' . self::describeProps($def['props']);
-    }
-    $lines[] = '';
-    $lines[] = self::linkTargetNote();
-    return implode("\n", $lines);
-  }
+  public const KINDS_TOKEN = '{{ page_kinds() }}';
 
   /**
    * The LINK TARGETS note — how to fill a link prop, in the agent's prompt.
@@ -636,37 +309,6 @@ final class ComponentCatalog {
       'invented target is worse than no button (and one pointing at a deleted or unpublished',
       'page is dropped from the page entirely at render, label and all).',
     ]);
-  }
-
-  /**
-   * The compact prop signature for one placeable (section or layout container),
-   * e.g. `tone(default|…), eyebrow, heading, quotes:[{quote,author,role,avatar}]`.
-   * Empty string for an unknown name. Used by the schema linter to tell the
-   * agent exactly which props a component takes.
-   */
-  public static function signature(string $name): string {
-    $def = self::placeable($name);
-    return $def ? self::describeProps($def['props']) : '';
-  }
-
-  /**
-   * Format a def's props into the compact prompt notation: bare name, an
-   * enum `tone(a|b|c)`, or a repeatable `items:[{…}]` shape.
-   */
-  private static function describeProps(array $props): string {
-    $out = [];
-    foreach ($props as $prop => $hint) {
-      if ($hint === '') {
-        $out[] = $prop === 'tone' ? 'tone(' . implode('|', self::TONES) . ')' : $prop;
-      }
-      elseif (str_starts_with($hint, '[')) {
-        $out[] = $prop . ':' . $hint;
-      }
-      else {
-        $out[] = $prop . '(' . $hint . ')';
-      }
-    }
-    return implode(', ', $out);
   }
 
 }

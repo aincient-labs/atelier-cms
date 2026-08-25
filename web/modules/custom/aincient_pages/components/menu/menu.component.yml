@@ -25,3 +25,8 @@ props:
       enum: [start, center, end]
       default: end
       description: 'Header only: which edge the nav sits against. Flyouts open away from the nearest viewport edge (end = right-anchored, fly left; otherwise left-anchored, fly right) so they never overflow off-screen.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: chrome
+    order: 30

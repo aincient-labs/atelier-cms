@@ -175,6 +175,8 @@ class BrandApplySlices extends AbstractFlowDropNodeProcessor {
           'title' => 'Messages',
           'description' => 'The conversation buffer ([{role, content, …}]) — wire the conversation_buffer node\'s messages output here. The node reads this turn\'s specialist tool results.',
           'default' => [],
+          // The `messages` lane: a conversation, not a generic array.
+          'x-data-type' => 'messages',
           'required' => FALSE,
         ],
       ],

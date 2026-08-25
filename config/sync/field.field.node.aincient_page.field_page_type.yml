@@ -10,7 +10,7 @@ field_name: field_page_type
 entity_type: node
 bundle: aincient_page
 label: 'Page type (derived)'
-description: 'Derived index of the page schema type (landing|blog). Written by PageStore on save — never edit by hand; the schema in field_page_structure is canonical.'
+description: 'Derived index of the page schema type (a page_kind id). Written by PageStore on save — never edit by hand; the schema in field_page_structure is canonical.'
 required: false
 translatable: false
 default_value: {  }

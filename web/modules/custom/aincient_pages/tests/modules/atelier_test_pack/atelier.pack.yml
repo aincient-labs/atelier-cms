@@ -1,0 +1,8 @@
+# The fixture pack manifest (plans/byo-components.md §6.1/§7.1) — parsed and
+# validated by PackManifest; PackEndToEndTest asserts it travels the gate.
+api: 1
+name: atelier_test_pack
+requires:
+  atelier: '^0.9'
+provides: [components]
+owns: []

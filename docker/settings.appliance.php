@@ -80,6 +80,13 @@ if (getenv('AINCIENT_REVERSE_PROXY')) {
   }
 }
 
+// Appliance DEV MODE — set ONLY by the `atelier pack dev` compose overlay
+// (AINCIENT_DEV=1). Opens the /atelier/dev/* pack-developer endpoints
+// (AtelierDevAccessCheck) on what must be a localhost-only stack. A production
+// deploy never sets it. Deliberately a Setting (code/env), never config or
+// state: nothing a site stores may open these routes (security floor).
+$settings['atelier_dev'] = (bool) getenv('AINCIENT_DEV');
+
 if (file_exists($app_root . '/' . $site_path . '/services.yml')) {
   $settings['container_yamls'][] = $app_root . '/' . $site_path . '/services.yml';
 }

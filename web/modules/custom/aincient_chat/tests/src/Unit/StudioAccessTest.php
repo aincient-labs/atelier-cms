@@ -75,6 +75,7 @@ final class StudioAccessTest extends UnitTestCase {
         'use aincient studio design_system',
         'use aincient studio globals',
         'use aincient studio settings',
+        'use aincient studio components',
         'use aincient studio content',
         'use aincient studio library',
         'use aincient studio media',

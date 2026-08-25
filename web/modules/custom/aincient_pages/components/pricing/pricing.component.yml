@@ -15,3 +15,16 @@ props:
     tiers:
       type: array
       description: 'Array of { name, price, period, description, features (string[]), cta_label, cta_url, featured (bool) }.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 110
+    icon: $
+    use: 'Plan/price tiers side by side. Mark one tier featured to draw the eye. Follow with faq or cta.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      tiers: '[{name,price,period,description,features,cta_label,cta_url,featured}]'

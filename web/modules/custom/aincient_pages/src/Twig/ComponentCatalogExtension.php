@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Twig;
 
-use Drupal\aincient_pages\ComponentCatalog;
+use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 /**
  * The `component_catalog()` Twig function — the live page-composition palette.
  *
- * Emits {@see ComponentCatalog::manifest()}: the single source of truth for the
+ * Emits the compiled EffectiveCatalog manifest: the single source of truth for the
  * page agent's component menu (sections, layout containers, reference
  * placeables and their props). A page-agent Prompt Template node calls
  * `{{ component_catalog() }}` so the manifest is inlined into the system prompt
@@ -32,20 +32,50 @@ use Twig\TwigFunction;
  */
 final class ComponentCatalogExtension extends AbstractExtension {
 
+  public function __construct(
+    private readonly ComponentCatalogInterface $catalog,
+  ) {}
+
   /**
    * {@inheritdoc}
    */
   public function getFunctions(): array {
     return [
       new TwigFunction('component_catalog', [$this, 'manifest'], ['is_safe' => ['html']]),
+      new TwigFunction('page_kinds', [$this, 'kinds'], ['is_safe' => ['html']]),
     ];
   }
 
   /**
-   * The component-catalogue manifest text.
+   * The component-catalogue manifest text — the palette the given kind sees.
+   *
+   * Phase 5: the Prompt Template passes the LIVE draft's kind
+   * (`component_catalog(page_kind|default('landing'))`), so a blog prompt
+   * stops carrying landing sections and a client kind ships only its own
+   * palette. 'landing' stays the bare-call default for a fresh page.
    */
-  public function manifest(): string {
-    return ComponentCatalog::manifest();
+  public function manifest(string $kind = 'landing'): string {
+    return $this->catalog->for($kind)->manifest();
+  }
+
+  /**
+   * The PAGE KINDS block for the system prompt — generated from the kind
+   * registry (Phase 5), so the agent stops believing exactly two kinds exist.
+   *
+   * One line per kind: id, label, regime prose derived from `mode`
+   * (composition = section ops; recipe = locked layout, set_content), and the
+   * kind's own hint.
+   */
+  public function kinds(): string {
+    $lines = ["PAGE KINDS (a page's `type` — pick one with set_meta {type} at creation; FIXED once saved):"];
+    foreach ($this->catalog->kinds() as $id => $kind) {
+      $regime = $kind['mode'] === 'recipe'
+        ? 'a LOCKED recipe — fixed layout, NO sections; write it with set_content (section ops are inert)'
+        : 'open composition — build it from the section list with add_section/update_section ops';
+      $hint = trim($kind['hint']);
+      $lines[] = sprintf('- %s (%s) — %s.%s', $id, $kind['label'], $regime, $hint === '' ? '' : ' ' . rtrim($hint, '.') . '.');
+    }
+    return implode("\n", $lines);
   }
 
 }

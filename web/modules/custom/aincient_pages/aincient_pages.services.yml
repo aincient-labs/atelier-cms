@@ -13,7 +13,33 @@ services:
     arguments: ['@database', '@current_user', '@entity_type.manager', '@datetime.time']
   aincient_pages.store:
     class: Drupal\aincient_pages\PageStore
-    arguments: ['@entity_type.manager', '@current_user', '@uuid', '@language_manager', '@config.factory', '@aincient_pages.moderation']
+    arguments: ['@entity_type.manager', '@current_user', '@uuid', '@language_manager', '@config.factory', '@aincient_pages.moderation', '@aincient_pages.catalog']
+  # The component-catalog service (plans/byo-components.md W1): ONE discovery
+  # path over the SDC plugin manager filtered on thirdPartySettings.atelier —
+  # the same path a client pack's components travel. for($kind) returns the
+  # compiled immutable EffectiveCatalog (discovered ∩ site-constraint ∩ kind),
+  # cached per kind in cache.discovery.
+  aincient_pages.catalog:
+    class: Drupal\aincient_pages\Catalog\AtelierComponentCatalog
+    arguments: ['@plugin.manager.sdc', '@entity_type.manager', '@config.factory', '@cache.discovery']
+  # The §6.3 dry run behind `drush atelier:kind-check`: compares every stored
+  # page structure against today's effective catalog and reports the slots a
+  # kind/constraint change would orphan. A service (not drush code) so the
+  # analysis is kernel-testable and the W9 MCP tool can render the same rows.
+  aincient_pages.kind_check:
+    class: Drupal\aincient_pages\Catalog\KindCheck
+    arguments: ['@entity_type.manager', '@aincient_pages.catalog']
+  # The full pack-validate pass (gate + CSS lint + atelier.pack.yml) — one
+  # source shared by drush atelier:pack-validate and the dev-mode endpoint.
+  aincient_pages.pack_validator:
+    class: Drupal\aincient_pages\Catalog\PackValidator
+    arguments: ['@plugin.manager.sdc', '@extension.list.module']
+  # Route requirement `_atelier_dev`: open only when the appliance runs in
+  # dev mode ($settings['atelier_dev'] via AINCIENT_DEV) — see the class.
+  aincient_pages.atelier_dev_access:
+    class: Drupal\aincient_pages\Access\AtelierDevAccessCheck
+    tags:
+      - { name: access_check, applies_to: _atelier_dev }
   aincient_pages.block_store:
     class: Drupal\aincient_pages\BlockStore
     arguments: ['@entity_type.manager', '@current_user', '@language_manager', '@aincient_pages.store', '@aincient_pages.moderation']
@@ -57,7 +83,7 @@ services:
   # render and the static export.
   aincient_pages.collection_inventory:
     class: Drupal\aincient_pages\CollectionInventory
-    arguments: ['@entity_type.manager']
+    arguments: ['@entity_type.manager', '@aincient_pages.catalog']
   aincient_pages.collection_resolver:
     class: Drupal\aincient_pages\CollectionResolver
     arguments: ['@entity_type.manager', '@entity.repository', '@aincient_pages.embed_resolver', '@date.formatter', '@aincient_pages.collection_inventory']
@@ -134,6 +160,7 @@ services:
   # that used to live inside the retired aincient_flows:reason node.
   aincient_pages.twig.component_catalog:
     class: Drupal\aincient_pages\Twig\ComponentCatalogExtension
+    arguments: ['@aincient_pages.catalog']
     tags:
       - { name: twig.extension }
   # The site's own main menu as link targets — the bounded shortlist the page

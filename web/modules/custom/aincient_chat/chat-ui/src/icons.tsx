@@ -173,6 +173,16 @@ export const LibraryIcon = (p: IconProps) => (
   <Svg {...p}><path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" /></Svg>
 );
 
+/** Components governance studio: a 2×2 grid of building blocks. */
+export const BlocksIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" />
+  </Svg>
+);
+
 export const PersonIcon = (p: IconProps) => (
   <Svg {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></Svg>
 );

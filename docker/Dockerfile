@@ -211,6 +211,14 @@ RUN chmod +x /usr/local/bin/converge.sh /usr/local/bin/healthcheck.sh /usr/local
 # that passes no build-args. Its own header documents when to raise it.
 COPY docker/upgrade-floor /etc/atelier/upgrade-floor
 
+# Pack seams (plans/byo-components.md §6): /opt/drupal/packs.d holds the
+# declarative enablement drop-ins a client image COPYs (or `atelier pack dev`
+# mounts); /opt/drupal/packs is where a DEV stack bind-mounts a pack source —
+# converge symlinks it into web/modules/packs so Drupal discovers it while the
+# repo root stays outside the docroot (its non-module files are never served).
+# Production packs are BAKED into web/modules/custom instead (§6.5).
+RUN mkdir -p /opt/drupal/packs.d /opt/drupal/packs /opt/drupal/web/modules/packs
+
 # --- The composer-resolved dependency tiers, least- to most-volatile ---------
 # Partitioned in the vendor stage; see the rationale there. Each is an
 # independent layer, so a flowdrop bump now re-ships 22 MB instead of 216 MB.

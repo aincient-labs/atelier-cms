@@ -138,3 +138,81 @@ aincient_pages.settings:
 media.source.aincient_block_fragment:
   type: media.source.field_aware
   label: '"Global block" media source configuration'
+
+# The page_kind config entity (plans/byo-components.md W2): one CONTEXT of the
+# composition grammar. Site-owned (config_ignore-fenced); the two defaults ship
+# from config/install. The compiler treats every reference as never-fatal.
+aincient_pages.page_kind.*:
+  type: config_entity
+  label: 'Page kind'
+  mapping:
+    id:
+      type: machine_name
+      label: 'ID'
+    label:
+      type: label
+      label: 'Label'
+    hint:
+      type: string
+      label: 'One-line picker/agent hint'
+    mode:
+      type: string
+      label: 'Composition mode (composition|recipe)'
+      constraints:
+        Choice: [composition, recipe]
+    components:
+      type: sequence
+      label: 'Component narrowing map (empty = whole discovered palette)'
+      sequence:
+        type: mapping
+        label: 'Per-component narrowing'
+        mapping:
+          variants:
+            type: sequence
+            label: 'Allowed variants (subset of declared; empty = all)'
+            sequence:
+              type: string
+          tones:
+            type: sequence
+            label: 'Allowed tones (subset of declared; empty = all)'
+            sequence:
+              type: string
+    opener:
+      type: string
+      label: 'Required first section (empty = unconstrained)'
+    limits:
+      type: sequence
+      label: 'Per-component placement limits'
+      sequence:
+        type: integer
+        label: 'Maximum placements'
+    collection_source:
+      type: boolean
+      label: 'Whether a collection may list pages of this kind'
+
+# The site-wide constraint layer (plans/byo-components.md W1b, decision #2):
+# tones/variants/components REMOVED across every kind — one decision, one home.
+# Narrowing-only and never-fatal; empty (or absent) = no-op. Site-owned config,
+# fenced from config:import beside the page kinds.
+aincient_pages.site_constraint:
+  type: config_object
+  label: 'Site component constraint'
+  mapping:
+    components:
+      type: sequence
+      label: 'Components removed site-wide'
+      sequence:
+        type: string
+    tones:
+      type: sequence
+      label: 'Tones removed site-wide'
+      sequence:
+        type: string
+    variants:
+      type: sequence
+      label: 'Per-component variants removed site-wide'
+      sequence:
+        type: sequence
+        label: 'Removed variants'
+        sequence:
+          type: string

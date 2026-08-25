@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
+use Drupal\aincient_pages\Catalog\CatalogCompiler;
+use Drupal\aincient_pages\Catalog\EffectiveCatalog;
 use Drupal\aincient_pages\SchemaLinter;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * The structural "ally" for the page agent — advisory lint of section props.
+ *
+ * The lint reasons from the compiled EffectiveCatalog now, so the tests build
+ * it from the REAL shipped .component.yml files — the same palette the site
+ * compiles — and hand it to lint().
  *
  * @group aincient
  * @coversDefaultClass \Drupal\aincient_pages\SchemaLinter
@@ -18,11 +25,36 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 final class SchemaLinterTest extends UnitTestCase {
 
   /**
+   * The compiled bare landing palette (memoized per process).
+   */
+  private static ?EffectiveCatalog $catalog = NULL;
+
+  /**
+   * Compile the REAL .component.yml files on disk into the effective catalog,
+   * synthesizing the provider + machineName keys discovery would add.
+   */
+  private static function catalog(): EffectiveCatalog {
+    if (self::$catalog === NULL) {
+      $definitions = [];
+      foreach (glob(dirname(__DIR__, 3) . '/components/*/*.component.yml') as $file) {
+        $name = basename(dirname($file));
+        $definitions['aincient_pages:' . $name] = Yaml::parseFile($file) + [
+          'provider' => 'aincient_pages',
+          'machineName' => $name,
+        ];
+      }
+      self::assertNotEmpty($definitions, 'No .component.yml files found on disk.');
+      self::$catalog = CatalogCompiler::compile($definitions, NULL);
+    }
+    return self::$catalog;
+  }
+
+  /**
    * The reported bug: quote rows under `testimonials` (the component name) with
    * `title` for the role. The lint must catch BOTH and point at the right prop.
    */
   public function testCatchesMisplacedTestimonialData(): void {
-    $issues = SchemaLinter::lint('testimonials', [
+    $issues = SchemaLinter::lint(self::catalog(), 'testimonials', [
       'heading' => 'Loved by cooks',
       'testimonials' => [
         ['quote' => 'Great!', 'author' => 'Sam', 'title' => 'Chef'],
@@ -42,7 +74,7 @@ final class SchemaLinterTest extends UnitTestCase {
    * A correctly-shaped section produces no advisories.
    */
   public function testCleanSectionHasNoIssues(): void {
-    $issues = SchemaLinter::lint('testimonials', [
+    $issues = SchemaLinter::lint(self::catalog(), 'testimonials', [
       'tone' => 'muted',
       'heading' => 'Loved by cooks',
       'quotes' => [
@@ -56,7 +88,7 @@ final class SchemaLinterTest extends UnitTestCase {
    * A bad row field is flagged with the allowed field list.
    */
   public function testFlagsUnknownRowField(): void {
-    $issues = SchemaLinter::lint('testimonials', [
+    $issues = SchemaLinter::lint(self::catalog(), 'testimonials', [
       'quotes' => [
         ['quote' => 'Great!', 'author' => 'Sam', 'title' => 'Chef'],
       ],
@@ -71,10 +103,10 @@ final class SchemaLinterTest extends UnitTestCase {
    * section (add_section), suppressed for a partial edit (update_section).
    */
   public function testEmptyContentArrayFlaggedOnlyForFullSection(): void {
-    $full = SchemaLinter::lint('testimonials', ['heading' => 'Loved by cooks'], TRUE);
+    $full = SchemaLinter::lint(self::catalog(), 'testimonials', ['heading' => 'Loved by cooks'], TRUE);
     $this->assertStringContainsString('renders empty', implode("\n", $full));
 
-    $partial = SchemaLinter::lint('testimonials', ['heading' => 'Loved by cooks'], FALSE);
+    $partial = SchemaLinter::lint(self::catalog(), 'testimonials', ['heading' => 'Loved by cooks'], FALSE);
     $this->assertSame([], $partial);
   }
 
@@ -82,7 +114,7 @@ final class SchemaLinterTest extends UnitTestCase {
    * An unknown component isn't this layer's job (the allow-list handles it).
    */
   public function testUnknownComponentIsSilent(): void {
-    $this->assertSame([], SchemaLinter::lint('nope', ['foo' => 'bar']));
+    $this->assertSame([], SchemaLinter::lint(self::catalog(), 'nope', ['foo' => 'bar']));
   }
 
 }

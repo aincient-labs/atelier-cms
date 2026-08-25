@@ -22,3 +22,17 @@ props:
     panels:
       type: array
       description: 'Array of { label, open, body_html } — body_html is the renderer-built HTML of the panel''s child blocks (see ACCORDION_BLOCKS). Authored as { label, open, blocks:[{component,props}] }; the renderer flattens blocks → body_html.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 130
+    icon: ≡
+    use: "A disclosure list whose panels hold RICH content, unlike faq's plain text. Each panel is a label + one or more content blocks. Use for layered detail: documentation, nested how-tos, spec breakdowns. Panels nest content blocks ONE level only — never a section or another container. exclusive = at most one panel open at a time. Allowed block components: markdown, image."
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      exclusive: ''
+      panels: '[{label,open,blocks:[{component,props}]}]'

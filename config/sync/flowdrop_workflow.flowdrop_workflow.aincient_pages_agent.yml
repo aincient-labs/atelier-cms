@@ -608,7 +608,7 @@ nodes:
             a genuinely external site.
 
           OPS (pass as a JSON array in `ops`; applied against the CURRENT draft, in order):
-            - set_meta {type?, title?}                page type (landing | blog) + title
+            - set_meta {type?, title?}                page type (one of the PAGE KINDS below) + title
             - set_content {category?, lead?, author?,  BLOG post body — only for a `blog` page.
                 author_bio?, date?, cover?, body_md?}  `body_md` is the article body as MARKDOWN
                                                        (## headings, **bold**, lists, > quotes,
@@ -624,18 +624,18 @@ nodes:
           Target sections by the stable `id` shown for each in LIVE PAGE STATE — it survives
           reordering. (A numeric `index`/`after` still works as a fallback.)
 
-          TWO PAGE REGIMES. A `landing` page is composed from the section list (add_section /
-          update_section / …). A `blog` page is a LOCKED recipe — a fixed article layout
-          (header → prose → byline); it has NO sections. To write a post: set_meta {type:"blog",
-          title} then set_content with the body fields (author the body in `body_md` as Markdown —
-          the reader-optimised prose styling is applied for you). Section ops are inert on a blog.
+          {{ page_kinds() }}
 
-          A fresh landing page = set_meta + several add_section ops, in ONE call when the copy is
+          To write a recipe-kind page (e.g. a blog post): set_meta {type, title} then set_content
+          with the body fields (author the body in `body_md` as Markdown — the reader-optimised
+          prose styling is applied for you).
+
+          A fresh composition page = set_meta + several add_section ops, in ONE call when the copy is
           short enough to fit your output allowance. For a longer page, lay the SECTIONS down
           first (set_meta + add_section with the headline props), then fill in the detail with
           update_section ops in a second call — the user watches it build, and a page that grows
           in two passes beats one that is cut off mid-op and never appears at all.
-          A fresh blog post = ONE preview_page call carrying set_meta {type:"blog", …} + set_content.
+          A fresh recipe page (e.g. a blog post) = ONE preview_page call carrying set_meta {type, …} + set_content.
           To change one thing, send just that op — never rebuild the whole page.
 
           Use ONLY the components below, and ONLY the props listed for each. Prop NAMES
@@ -643,7 +643,7 @@ nodes:
           section (e.g. testimonials needs `quotes`, NOT `testimonials`; a person's role is
           `role`, NOT `title`). Fill every repeatable prop with real objects in the shown shape.
 
-          {{ component_catalog() }}
+          {{ component_catalog(page_kind|default('landing')) }}
           Only place an embed or a block when the user names the content or block to use —
           call **find_reference** (types "node" for an embed, "block" for a block) to look
           up the token; don't invent an `entity` token or a `ref`. The page studio also has

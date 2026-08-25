@@ -27,3 +27,17 @@ slots:
   image:
     title: 'Image'
     description: 'Responsive <picture> built by the renderer from the image media token.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 80
+    icon: ◻
+    image_props:
+      image:
+        view_mode: content
+    use: 'A single standalone image with an optional caption — a figure. Use to place ONE picture on its own (a screenshot, photo, diagram, chart) when no richer section fits — content pairs an image WITH text, gallery is a GRID of images. The caption shows beneath.'
+    props:
+      tone: ''
+      image: ''
+      caption: ''

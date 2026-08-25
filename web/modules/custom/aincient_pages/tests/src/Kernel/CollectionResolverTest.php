@@ -161,9 +161,12 @@ final class CollectionResolverTest extends KernelTestBase {
     $this->assertSame(['source' => 'blog', 'sort' => 'newest', 'filter' => []], $found[$hash]);
   }
 
-  public function testSourcesConstantMatchesTheGrammar(): void {
-    // Guard against the grammar and the resolver drifting apart.
-    $this->assertContains(CollectionInventory::DEFAULT_SOURCE, CollectionInventory::SOURCES);
+  public function testSourcesMatchTheGrammar(): void {
+    // Guard against the grammar and the resolver drifting apart: the default
+    // source must always be listable (sources() now derives from the kinds
+    // flagged collection_source, with the default as its never-empty floor).
+    $inventory = $this->container->get('aincient_pages.collection_inventory');
+    $this->assertContains(CollectionInventory::DEFAULT_SOURCE, $inventory->sources());
   }
 
 }

@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from "react";
-import { PaletteIcon, DocumentIcon, ChatBubbleIcon, LayoutIcon, LibraryIcon, ShieldCheckIcon, WrenchIcon } from "./icons";
+import { PaletteIcon, DocumentIcon, ChatBubbleIcon, LayoutIcon, LibraryIcon, ShieldCheckIcon, WrenchIcon, BlocksIcon } from "./icons";
 import { IdentityStudio } from "./brand-studio";
 import { BrandPreview } from "./brand-preview";
 import { GlobalsStudio } from "./globals-studio";
@@ -10,6 +10,7 @@ import { PagePreview } from "./page-preview";
 import { MediaStudio } from "./media-studio";
 import { MediaPreview } from "./media-preview";
 import { ChecksStudio } from "./checks-studio";
+import { ComponentsStudio } from "./components-studio";
 import { enabledStudioKeys, isStudioAccessible, type StudioKey } from "./studios";
 
 /**
@@ -79,6 +80,11 @@ export const STUDIO_REGISTRY: Record<StudioKey, StudioDef> = {
   // browse + the non-AI editor rail. The old `library` registry entry is gone —
   // the shelf IS the section's home, not a separate studio.
   media: { name: "Library", Icon: LibraryIcon, Studio: MediaStudio, Preview: MediaPreview },
+  // Components — the site-wide governance pane over the discovered component
+  // vocabulary (site_constraint removals: components / tones / variants). An
+  // EDITOR-ONLY, panel-only studio: no agent, no Preview — its rail is the
+  // centre canvas (the Checks shape).
+  components: { name: "Components", Icon: BlocksIcon, Studio: ComponentsStudio },
   // The fix loop: same live preview as Content (it reads the shared page-state
   // draft), with the findings rail as the editor. Its agent stages fixes into
   // that draft via preview_page; the human Publishes. Still surfaces before its

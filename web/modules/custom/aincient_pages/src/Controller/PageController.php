@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Controller;
 
+use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\ComponentCatalog;
 use Drupal\aincient_pages\EditLock;
 use Drupal\aincient_pages\Exception\RevisionConflictException;
@@ -33,6 +34,7 @@ final class PageController implements ContainerInjectionInterface {
     private readonly ClassResolverInterface $classResolver,
     private readonly NodeModeration $moderation,
     private readonly EditLock $lock,
+    private readonly ComponentCatalogInterface $catalog,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -41,6 +43,7 @@ final class PageController implements ContainerInjectionInterface {
       $container->get('class_resolver'),
       $container->get('aincient_pages.moderation'),
       $container->get('aincient_pages.edit_lock'),
+      $container->get('aincient_pages.catalog'),
     );
   }
 
@@ -331,19 +334,28 @@ final class PageController implements ContainerInjectionInterface {
    * The single source the studio's structured section editor renders from: the
    * placeable sections, each prop (with its enum values where it's enumerated or
    * a repeatable shape), plus the shared tone/variant enums and the
-   * locked prop vocabulary. Sourced from {@see ComponentCatalog} so the editor,
-   * the validator and the agent prompt can never drift.
+   * locked prop vocabulary. Sourced from the compiled {@see EffectiveCatalog}
+   * so the editor, the validator and the agent prompt can never drift.
+   *
+   * PER-KIND (W6): ?kind=<id> compiles that kind's effective palette (an
+   * unknown kind degrades to landing, the never-fatal floor); the payload
+   * also carries `kinds` — the create-page picker's server-driven option
+   * list — and `kind` echoing what was compiled.
    */
-  public function manifest(): JsonResponse {
+  public function manifest(Request $request): JsonResponse {
+    $kind = trim((string) $request->query->get('kind', 'landing'));
+    $catalog = $this->catalog->for($kind === '' ? 'landing' : $kind);
     return new JsonResponse([
-      'sections' => array_map([$this, 'manifestEntry'], array_keys(ComponentCatalog::SECTIONS), ComponentCatalog::SECTIONS),
-      'layout' => array_map([$this, 'manifestEntry'], array_keys(ComponentCatalog::LAYOUT), ComponentCatalog::LAYOUT),
+      'kind' => $catalog->kind(),
+      'kinds' => $this->catalog->kinds(),
+      'sections' => array_map([$this, 'manifestEntry'], array_keys($catalog->sections()), $catalog->sections()),
+      'layout' => array_map([$this, 'manifestEntry'], array_keys($catalog->layout()), $catalog->layout()),
       // Reference placeables (embed / block) — surfaced so the studio can offer +
       // edit them; their `entity`/`ref` props carry a picker flag (see below).
-      'reference' => array_map([$this, 'manifestEntry'], array_keys(ComponentCatalog::REFERENCE), ComponentCatalog::REFERENCE),
-      'tones' => ComponentCatalog::TONES,
-      'hero_variants' => ComponentCatalog::HERO_VARIANTS,
-      'variants' => ComponentCatalog::VARIANTS,
+      'reference' => array_map([$this, 'manifestEntry'], array_keys($catalog->reference()), $catalog->reference()),
+      'tones' => $catalog->tones(),
+      'hero_variants' => $catalog->variantsFor('hero') ?? [],
+      'variants' => $catalog->variants() === [] ? new \stdClass() : $catalog->variants(),
       'prop_vocab' => ComponentCatalog::PROP_VOCAB,
       // The image-bearing prop / row-field names, so the studio renders a media
       // picker for them (top-level props are also flagged per-prop below).
@@ -367,6 +379,14 @@ final class PageController implements ContainerInjectionInterface {
    * for a placeable def — shared by the section and layout tiers.
    */
   private function manifestEntry(string $name, array $def): array {
+    $entryMeta = [
+      // W6: the studio's icon glyph (falls back client-side), the tier, and
+      // the PROVENANCE — which module (pack) contributed the component, so
+      // the picker can group by pack with a provenance chip.
+      'icon' => (string) ($def['icon'] ?? ''),
+      'tier' => (string) ($def['tier'] ?? ''),
+      'provider' => (string) ($def['provider'] ?? ''),
+    ];
     $props = [];
     foreach ($def['props'] as $prop => $hint) {
       $entry = ['name' => $prop, 'meaning' => ComponentCatalog::PROP_VOCAB[$prop] ?? ''];
@@ -397,7 +417,7 @@ final class PageController implements ContainerInjectionInterface {
         $entry['boolean'] = TRUE;
       }
       if ($prop === 'tone') {
-        $entry['enum'] = ComponentCatalog::TONES;
+        $entry['enum'] = $this->catalog->for('landing')->tonesFor($name);
       }
       elseif (ComponentCatalog::isPanelProp($prop)) {
         // A nested panels list (accordion) — two levels deep, so the flat rows
@@ -414,7 +434,7 @@ final class PageController implements ContainerInjectionInterface {
       }
       $props[] = $entry;
     }
-    return ['component' => $name, 'use' => $def['use'], 'props' => $props];
+    return ['component' => $name, 'use' => $def['use'], 'props' => $props] + $entryMeta;
   }
 
   /**

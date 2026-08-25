@@ -445,3 +445,39 @@ function aincient_pages_update_10014(): void {
     $node->save();
   }
 }
+
+/**
+ * Create the two default page kinds (landing, blog) — plans/byo-components.md W2.
+ *
+ * config/install only applies on a fresh module install; an existing site gets
+ * the seeds here. Idempotent: an already-present (possibly console-tuned) kind
+ * is left untouched — the site owns page_kind config (see
+ * aincient_pages_config_ignore_settings_alter()).
+ */
+function aincient_pages_update_10015(): void {
+  $storage = \Drupal::entityTypeManager()->getStorage('page_kind');
+  $seeds = [
+    'landing' => [
+      'label' => 'Landing page',
+      'hint' => 'A composed page — hero, sections, and calls to action.',
+      'mode' => 'composition',
+      'collection_source' => FALSE,
+    ],
+    'blog' => [
+      'label' => 'Blog post',
+      'hint' => 'A written article — headline, body, and byline, in a fixed reading layout.',
+      'mode' => 'recipe',
+      'collection_source' => TRUE,
+    ],
+  ];
+  foreach ($seeds as $id => $values) {
+    if ($storage->load($id) === NULL) {
+      $storage->create($values + [
+        'id' => $id,
+        'components' => [],
+        'opener' => '',
+        'limits' => [],
+      ])->save();
+    }
+  }
+}

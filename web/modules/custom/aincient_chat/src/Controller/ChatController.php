@@ -320,6 +320,14 @@ final class ChatController extends ControllerBase {
       return NULL;
     }
     $vars = ['live_page_state' => $state];
+    // Phase 5: the draft's kind rides along so the Prompt Template can emit
+    // the per-kind palette (`component_catalog(page_kind)`) — a blog turn
+    // stops paying for landing sections, a client kind ships its own menu.
+    // The catalog side is never-fatal on an unknown id, so pass it verbatim.
+    $kind = is_array($pageContext) ? ($pageContext['schema']['type'] ?? NULL) : NULL;
+    if (is_string($kind) && $kind !== '') {
+      $vars['page_kind'] = $kind;
+    }
     $directive = $this->pageLangContext($pageContext);
     if ($directive !== NULL) {
       $vars['translation_directive'] = $directive;

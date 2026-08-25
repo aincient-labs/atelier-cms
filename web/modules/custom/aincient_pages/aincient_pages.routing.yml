@@ -157,6 +157,34 @@ aincient_pages.chrome_save:
     _disable_route_normalizer: 'TRUE'
     _auth: ['cookie', 'basic_auth']
 
+# ── Components governance API (chat console) ────────────────────────────────
+# The site-wide constraint layer (plans/byo-components.md W1b, decision #2):
+# which components/tones/variants this site REMOVES across every kind. Served
+# with the undiminished discovered vocabulary so the pane can render what is
+# currently disabled; save merges by provided key and returns fresh state.
+
+aincient_pages.constraint_manifest:
+  path: '/atelier/constraint/manifest'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\ConstraintController::manifest'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio components'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_pages.constraint_save:
+  path: '/atelier/constraint/save'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\ConstraintController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio components'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
 # NOTE: logo/favicon uploads no longer have bespoke endpoints — they go through
 # the unified reference picker (/atelier/media/upload → a `media:<id>` token),
 # and the token is persisted by chrome_save. (Library IA increment #3c.)
@@ -701,3 +729,83 @@ aincient_pages.collection_archive:
     hash: '[0-9a-f]{16}'
   options:
     _disable_route_normalizer: 'TRUE'
+
+# --- Dev-mode-only endpoints (W9, plans/byo-components.md) -------------------
+# The pack developer's ground-truth surface, proxied by `atelier mcp`. Every
+# route is gated on `_atelier_dev` (AtelierDevAccessCheck): the flag comes only
+# from the AINCIENT_DEV env var, which only the `atelier pack dev` compose
+# overlay sets — on a production appliance these 403 for everyone. Session-less
+# by design so a coding agent can call them without Drupal credentials.
+aincient_pages.dev_catalog:
+  path: '/atelier/dev/catalog'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PackDevController::catalog'
+  methods: [GET]
+  requirements:
+    _atelier_dev: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+aincient_pages.dev_pack_validate:
+  path: '/atelier/dev/pack-validate'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PackDevController::packValidate'
+  methods: [GET]
+  requirements:
+    _atelier_dev: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+aincient_pages.dev_kind_check:
+  path: '/atelier/dev/kind-check'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PackDevController::kindCheck'
+  methods: [GET]
+  requirements:
+    _atelier_dev: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+aincient_pages.dev_prompt_manifest:
+  path: '/atelier/dev/prompt-manifest'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PackDevController::promptManifest'
+  methods: [GET]
+  requirements:
+    _atelier_dev: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+aincient_pages.dev_agent_eval:
+  path: '/atelier/dev/agent-eval'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PackDevController::agentEval'
+  methods: [GET]
+  requirements:
+    _atelier_dev: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+aincient_pages.dev_design_tokens:
+  path: '/atelier/dev/design-tokens'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PackDevController::designTokens'
+  methods: [GET]
+  requirements:
+    _atelier_dev: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+aincient_pages.dev_render_example:
+  path: '/atelier/dev/render'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PackDevController::renderExample'
+  methods: [GET]
+  requirements:
+    _atelier_dev: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+aincient_pages.pack_gallery:
+  path: '/atelier/packs/{module}/gallery'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\PackDevController::gallery'
+  methods: [GET]
+  requirements:
+    _atelier_dev: 'TRUE'
+    module: '[a-z][a-z0-9_]*'
+  options:
+    no_cache: 'TRUE'

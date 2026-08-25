@@ -21,3 +21,16 @@ slots:
   body:
     title: 'Embedded entity'
     description: 'The render array of the resolved entity (set by the renderer).'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: reference
+    order: 10
+    icon: ⧉
+    use: 'Embed an existing piece of content (a page, an article, a media item) rendered in a chosen view mode. Use to surface REAL site content inside a composed page rather than re-typing it.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      entity: ''

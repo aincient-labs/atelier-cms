@@ -14,3 +14,14 @@ props:
       enum: [default, muted, brand, inverted]
       default: default
     label: { type: string }
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 170
+    icon: —
+    use: 'A light separator between sections — a rule, breathing space, or a small centered label. Use sparingly.'
+    props:
+      variant: line|space|label
+      tone: ''
+      label: ''

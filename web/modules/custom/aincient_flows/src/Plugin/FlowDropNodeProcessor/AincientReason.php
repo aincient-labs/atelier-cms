@@ -234,6 +234,11 @@ class AincientReason extends AbstractFlowDropNodeProcessor implements ToolsAware
           'title' => 'Messages',
           'description' => 'The conversation to reason over (wire a memory_read of the conversation buffer): items with {role, content}; tool results add tool_call_id, assistant turns may carry tool_calls.',
           'default' => [],
+          // The `messages` lane (FlowDrop 2.4.0): JSON Schema `array`
+          // underneath, but a conversation, not an arbitrary collection.
+          // Declaring it is what makes conversation_buffer / memory_read a
+          // legal source in the editor and keeps a generic array out.
+          'x-data-type' => 'messages',
           'required' => FALSE,
         ],
         // The tool input port (ReservedName::PORT_TOOL). This node is
@@ -244,22 +249,22 @@ class AincientReason extends AbstractFlowDropNodeProcessor implements ToolsAware
         // here (tool.output → reason.input-tool) is exposed to the model —
         // incoming tool edges are the allow-list.
         ReservedName::PORT_TOOL => [
-          'type' => 'tool',
+          'x-data-type' => 'tool',
           'title' => 'Tools',
           'description' => 'Tools wired to this node. Wiring a tool here exposes it; the edges are the allow-list.',
           'required' => FALSE,
         ],
         'loop_back' => [
-          'type' => 'any',
+          // A loopback input is a control sink, which is the `trigger` lane —
+          // `any` is deprecated in 2.4.0 (removed in 3.0.0) and the payload
+          // now builds the "every lane may flow into me" rules into `trigger`.
+          // The `is_loopback` / `loopback_metadata` keys this port used to
+          // carry are read by nothing since 2.4.0; the loop still works
+          // because the runtime matches the `-input-loop_back` handle.
+          'x-data-type' => 'trigger',
           'title' => 'Loop Back',
           'description' => 'Loopback trigger — connect the loop body output here to re-run reasoning.',
           'required' => FALSE,
-          'is_loopback' => TRUE,
-          'loopback_metadata' => [
-            'edge_style' => 'dotted',
-            'skip_cycle_detection' => TRUE,
-            'label' => 'Loop Back',
-          ],
         ],
         'operation_type' => [
           'type' => 'string',
@@ -325,11 +330,13 @@ class AincientReason extends AbstractFlowDropNodeProcessor implements ToolsAware
           'description' => 'TRUE if the model wants to call a tool — branch the loop on this.',
         ],
         'assistant_message' => [
-          'type' => 'json',
+          'type' => 'object',
+          'x-data-type' => 'json',
           'description' => 'The assistant turn ({role, content, tool_calls}) — wire to a conversation-append node to persist it.',
         ],
         'raw_result' => [
-          'type' => 'json',
+          'type' => 'object',
+          'x-data-type' => 'json',
           'description' => 'The un-parsed provider response body, for codec fingerprinting. Empty when it could not be captured.',
         ],
         'codec' => [
@@ -337,7 +344,8 @@ class AincientReason extends AbstractFlowDropNodeProcessor implements ToolsAware
           'description' => 'The tool-call dialect detected on the wire (empirical, not the configured model id). Empty until detection runs.',
         ],
         'error_detail' => [
-          'type' => 'json',
+          'type' => 'object',
+          'x-data-type' => 'json',
           'description' => 'Structured provider failure {kind, provider, model, message, retryable}, or null on success.',
         ],
       ],

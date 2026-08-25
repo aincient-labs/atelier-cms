@@ -8,6 +8,7 @@ use Drupal\aincient_pages\BlockStore;
 use Drupal\aincient_pages\BrandRepository;
 use Drupal\aincient_pages\CollectionInventory;
 use Drupal\aincient_pages\CollectionResolver;
+use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\ComponentCatalog;
 use Drupal\aincient_pages\ConsentSettings;
 use Drupal\aincient_pages\EntityEmbedResolver;
@@ -59,6 +60,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
     private readonly CollectionResolver $collections,
     private readonly CollectionInventory $collectionInventory,
     private readonly PageMetatags $metatags,
+    private readonly ComponentCatalogInterface $catalog,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -77,6 +79,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
       $container->get('aincient_pages.collection_resolver'),
       $container->get('aincient_pages.collection_inventory'),
       $container->get('aincient_pages.metatags'),
+      $container->get('aincient_pages.catalog'),
     );
   }
 
@@ -184,9 +187,9 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // click-to-focus, but ONLY on the stateless preview seam ($node === NULL);
     // the canonical published render stays byte-identical (no editor hooks leak
     // onto the live site).
-    $inner = ($data['type'] ?? '') === 'blog'
-      ? $this->composeBlog($data)
-      : $this->composeLanding($data, $langcode, $node === NULL);
+    $inner = $this->catalog->for((string) ($data['type'] ?? ''))->isComposition()
+      ? $this->composeLanding($data, $langcode, $node === NULL)
+      : $this->composeBlog($data);
 
     // Wrap every page in the brand header + footer (the site chrome), with the
     // page's own sections inside a <main> landmark (a11y: landmark-one-main).
@@ -292,10 +295,11 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // sections don't blur together. (A guardrail the agent gets for free.)
     $rhythm = ['default', 'muted'];
     $r = 0;
+    $placeable = $this->catalog->for((string) ($data['type'] ?? ''))->placeableNames();
     foreach ($data['sections'] ?? [] as $section) {
       $name = $section['component'] ?? '';
       // Guardrail: only known placeable components (sections + layout + refs).
-      if (!in_array($name, ComponentCatalog::placeableNames(), TRUE)) {
+      if (!in_array($name, $placeable, TRUE)) {
         continue;
       }
 
@@ -584,14 +588,11 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * cheaper. Not an oversight: they have no entry in VIEW_MODES / ROW_PICTURES
    * by design. See the module AGENTS.md (rift integration) + DECISIONS 2026-06-23.
    */
-  private const IMAGE_STYLES = [
-    // Full-bleed opener / blog lead → the widest style.
-    'hero' => ['image' => 'wide'],
-    // A quiet row of marks → the small-but-not-tiny style (decorative, NOT Rift).
-    'logos' => ['image' => 'medium'],
-    // By prop-name fallback (content/gallery/grid images use Rift now; `avatar`s
-    // stay here on a plain thumbnail by design — decorative, fixed-size).
-    '*' => ['cover' => 'wide', 'avatar' => 'thumbnail', 'image' => 'large'],
+  private const IMAGE_STYLE_FALLBACKS = [
+    // By prop-name floor for components that declare no per-prop style in their
+    // atelier metadata (`avatar`s stay on a plain thumbnail by design —
+    // decorative, fixed-size; a pack image prop with no tuning gets `large`).
+    'cover' => 'wide', 'avatar' => 'thumbnail', 'image' => 'large',
   ];
 
   /**
@@ -607,13 +608,10 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * still flows through the URL path (IMAGE_STYLES) untouched. Migrating a
    * component = convert its twig + add its line here.
    */
-  private const VIEW_MODES = [
-    'hero' => ['image' => 'hero'],
-    'content' => ['image' => 'content'],
-    // Standalone figure — reuses the content view mode (4x3 responsive bundle).
-    'image' => ['image' => 'content'],
-    'article-header' => ['cover' => 'cover'],
-  ];
+  // (W3) The per-(component, prop) view-mode map now lives in each component's
+  // own `thirdPartySettings.atelier.image_props.<prop>.view_mode` — read via
+  // imageProp(). PRESENCE of a view_mode is still the switch: only components
+  // whose twig has an image SLOT declare one.
 
   /**
    * (component, prop) SLOT pairs whose Rift picture uses CONTAINER-QUERY mode —
@@ -623,7 +621,9 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * {@see ROW_PICTURES} instead. A converted single-image SLOT whose width ≈
    * viewport (hero/content/cover) stays on the default <picture> builder.
    */
-  private const CONTAINER_QUERY = [];
+  // (W3) Container-query mode is `image_props.<prop>.container_query: true` in
+  // the component's atelier metadata; no built-in single-image slot uses it
+  // today (the repeatables go through `rows` instead).
 
   /**
    * TRUE until the page's first image slot renders — the LCP candidate.
@@ -651,10 +651,9 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * component (grid renders cards in-twig; gallery renders images inline):
    * [component => ['rows' => <array prop>, 'image' => <token key>, 'view_mode']].
    */
-  private const ROW_PICTURES = [
-    'grid' => ['rows' => 'cards', 'image' => 'image', 'view_mode' => 'card'],
-    'gallery' => ['rows' => 'images', 'image' => 'image', 'view_mode' => 'gallery'],
-  ];
+  // (W3) The row-pictures map is `thirdPartySettings.atelier.rows` on the
+  // component ({rows-prop: {image: <row field>, view_mode: <rift bundle>}}) —
+  // read via rowPictures().
 
   private function component(string $name, array $props, ?string $langcode = NULL): array {
     // Renderer-internal `variant` (the chrome-light `bare` mode): the SDC
@@ -672,8 +671,9 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // Only converted components are mapped, so every other image prop still
     // flows through the URL path in resolveEmbeds() below (back-compat).
     $slots = [];
-    foreach (self::VIEW_MODES[$name] ?? [] as $prop => $viewMode) {
-      if (!array_key_exists($prop, $props)) {
+    foreach ($this->imageProps($name) as $prop => $tuning) {
+      $viewMode = (string) ($tuning['view_mode'] ?? '');
+      if ($viewMode === '' || !array_key_exists($prop, $props)) {
         continue;
       }
       // The value is now a SLOT, never a prop — remove it so SDC's typed-prop
@@ -721,7 +721,14 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // behind. A dangling target takes its label with it.
     $props = $this->embed->resolveLinks($props, $langcode);
 
-    $build = ['#type' => 'component', '#component' => "aincient_pages:$name", '#props' => $this->resolveEmbeds($props, $name)];
+    $build = [
+      '#type' => 'component',
+      // The provider comes from discovery (W3): a pack component renders from
+      // its own module. Unknown names keep the historic prefix (they only
+      // reach here from trusted internal calls; a bad name fails loudly).
+      '#component' => $this->catalog->discovered()->pluginId($name) ?? "aincient_pages:$name",
+      '#props' => $this->resolveEmbeds($props, $name),
+    ];
     if ($slots !== []) {
       $build['#slots'] = $slots;
     }
@@ -741,8 +748,13 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * doesn't auto-attach the rift_container_query library).
    */
   private function rowPictures(string $name, array $props, ?string $langcode): array {
-    $map = self::ROW_PICTURES[$name] ?? NULL;
-    if ($map === NULL || !is_array($props[$map['rows']] ?? NULL)) {
+    $rows = $this->catalog->discovered()->def($name)['rows'] ?? [];
+    $rowsProp = array_key_first($rows);
+    if ($rowsProp === NULL) {
+      return $props;
+    }
+    $map = ['rows' => $rowsProp, 'image' => (string) ($rows[$rowsProp]['image'] ?? 'image'), 'view_mode' => (string) ($rows[$rowsProp]['view_mode'] ?? '')];
+    if ($map['view_mode'] === '' || !is_array($props[$map['rows']] ?? NULL)) {
       return $props;
     }
     // LCP seam: a repeatable that IS the page's first image-bearing section
@@ -768,9 +780,15 @@ final class PageSpikeController implements ContainerInjectionInterface {
 
   /** Rift third-party settings enabling container-query mode for a slot, or []. */
   private function containerQuery(string $component, string $prop): array {
-    return !empty(self::CONTAINER_QUERY[$component][$prop])
+    return !empty($this->imageProps($component)[$prop]['container_query'])
       ? ['rift_container_query' => ['enable_container_queries' => TRUE]]
       : [];
+  }
+
+  /** The component's per-image-prop tuning map from its atelier metadata. */
+  private function imageProps(string $component): array {
+    $map = $this->catalog->discovered()->def($component)['image_props'] ?? [];
+    return is_array($map) ? $map : [];
   }
 
   /**
@@ -823,9 +841,10 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * The image style for a (component, prop) image slot, or NULL for original.
    */
   private function imageStyleFor(string $component, string $prop): ?string {
-    return self::IMAGE_STYLES[$component][$prop]
-      ?? self::IMAGE_STYLES['*'][$prop]
-      ?? NULL;
+    $style = $this->imageProps($component)[$prop]['style'] ?? NULL;
+    return is_string($style) && $style !== ''
+      ? $style
+      : (self::IMAGE_STYLE_FALLBACKS[$prop] ?? NULL);
   }
 
   /** The brand header, shown on every page (nav = core 'main' menu). */
@@ -915,6 +934,12 @@ final class PageSpikeController implements ContainerInjectionInterface {
         . "\n  <script type=\"application/json\" id=\"aincient-consent-config\">$consentJson</script>"
         . "\n  <script src=\"$consentJs\" defer></script>";
     }
+    // Pack stylesheets (W5): catalog-declared, pre-compiled CSS from enabled
+    // component packs — linked AFTER ours, in pack order, so pack rules win
+    // ties against the bundle while the brand :root override (below) still
+    // reaches them. Same module-path pattern as the main stylesheet, so the
+    // static exporter picks them up from the markup like any other asset.
+    $packLinks = $this->packStylesheetLinks();
     // metatag emits its own <title>; only fall back to the hand-written one when
     // there are no metatags (spike briefs, or metatag disabled).
     $metaBlock = $metaHtml !== '' ? "\n  $metaHtml" : '';
@@ -925,13 +950,33 @@ final class PageSpikeController implements ContainerInjectionInterface {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">$faviconLink$brandFontLink$fontLink$emojiLink
-  <link rel="stylesheet" href="$cssUrl">$brandStyle$consentBlock$metaBlock$titleTag
+  <link rel="stylesheet" href="$cssUrl">$packLinks$brandStyle$consentBlock$metaBlock$titleTag
 </head>
 <body class="min-h-screen bg-background text-foreground antialiased font-sans">
 $content
 </body>
 </html>
 HTML;
+  }
+
+  /**
+   * The <link> tags for every catalog-declared pack stylesheet (W5).
+   *
+   * NEVER FATAL: a declared file that is missing on disk is skipped — a pack
+   * with a broken asset must not 500 (or blank) every page render; the gate
+   * and pack-validate own telling the developer.
+   */
+  private function packStylesheetLinks(): string {
+    $links = '';
+    foreach ($this->catalog->discovered()->stylesheets() as $sheet) {
+      $modulePath = $this->moduleList->getPath($sheet['provider']);
+      if ($modulePath === '' || !is_file("$modulePath/{$sheet['path']}")) {
+        continue;
+      }
+      $href = htmlspecialchars(base_path() . "$modulePath/{$sheet['path']}?v=" . @filemtime("$modulePath/{$sheet['path']}"), ENT_QUOTES);
+      $links .= "\n  <link rel=\"stylesheet\" href=\"$href\">";
+    }
+    return $links;
   }
 
 }

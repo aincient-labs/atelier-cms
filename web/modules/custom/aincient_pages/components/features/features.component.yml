@@ -19,3 +19,17 @@ props:
     features:
       type: array
       description: 'Array of { icon, title, body }. icon = emoji or short text glyph.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 40
+    icon: ⊞
+    use: 'A heading plus a grid of feature cards. icon = ONE glyph/emoji (e.g. ✶ ◆ ⚡ 🚀). columns reflow the cards.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      columns: 2|3
+      features: '[{icon,title,body}]'

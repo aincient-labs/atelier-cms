@@ -529,3 +529,101 @@ core_extension() {
   ! grep -qE -- "--account-pass=admin( |$)" "$DRUSH_LOG"
   [ -s "$AINCIENT_PRIVATE_DIR/INITIAL_ADMIN_PASSWORD" ]
 }
+
+# --- Pack enablement (plans/byo-components.md §6.6, Phase 4) ------------------
+# Declarative packs.d drop-ins, enabled AFTER config:import (a full-set cim
+# syncs core.extension and would uninstall a pack enabled before it), never
+# fatal, and mounted sources get linked into modules/packs.
+
+# Call AFTER stage_docroot — reuses its DRUPAL_ROOT so the staged info.yml
+# files (check_installed_code_present) stay visible.
+pack_env() {
+  export AINCIENT_PACKS_D="$BATS_TEST_TMPDIR/packs.d"
+  export AINCIENT_PACKS_SRC="$BATS_TEST_TMPDIR/packs"
+  export AINCIENT_PACKS_LINK_DIR="$DRUPAL_ROOT/modules/packs"
+  mkdir -p "$AINCIENT_PACKS_D" "$AINCIENT_PACKS_SRC" "$DRUPAL_ROOT/modules/custom"
+}
+
+@test "packs.d drop-in → pm:install AFTER config:import, boot still ok" {
+  export MOCK_INSTALLED=1
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  pack_env
+  printf 'module: acme_pack\n' > "$AINCIENT_PACKS_D/acme.yml"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [ "$(result)" = "ok" ]
+  grep -q "pm:install acme_pack -y" "$DRUSH_LOG"
+  cim_line=$(line_of "config:import")
+  pack_line=$(line_of "pm:install acme_pack")
+  [ "$cim_line" -lt "$pack_line" ]
+  # The boot hands over a catalog that already carries the pack: one rebuild
+  # AFTER the enable loop (the web process has been seen serving a pre-enable
+  # compiled catalog otherwise).
+  rebuild_line=$(grep -n "cache:rebuild" "$DRUSH_LOG" | tail -1 | cut -d: -f1)
+  [ "$pack_line" -lt "$rebuild_line" ]
+}
+
+@test "no packs.d entries → no pm:install, nothing breaks" {
+  export MOCK_INSTALLED=1
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  pack_env
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  ! grep -q "pm:install" "$DRUSH_LOG"
+}
+
+@test "a pack that fails to enable is SKIPPED — boot succeeds, others enable" {
+  export MOCK_INSTALLED=1
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  pack_env
+  printf 'module: bad_pack\n'  > "$AINCIENT_PACKS_D/bad.yml"
+  printf 'module: good_pack\n' > "$AINCIENT_PACKS_D/good.yml"
+  export MOCK_PM_INSTALL_FAIL=bad_pack
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [ "$(result)" = "ok" ]
+  [[ "$output" == *"bad_pack failed to enable"* ]]
+  grep -q "pm:install good_pack -y" "$DRUSH_LOG"
+}
+
+@test "a mounted pack source is symlinked into modules/packs before enabling" {
+  export MOCK_INSTALLED=1
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  pack_env
+  mkdir -p "$AINCIENT_PACKS_SRC/acme_pack"
+  printf 'module: acme_pack\n' > "$AINCIENT_PACKS_D/acme.yml"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [ -L "$AINCIENT_PACKS_LINK_DIR/acme_pack" ]
+  [ "$(readlink "$AINCIENT_PACKS_LINK_DIR/acme_pack")" = "$AINCIENT_PACKS_SRC/acme_pack" ]
+  grep -q "pm:install acme_pack -y" "$DRUSH_LOG"
+}
+
+@test "a BAKED pack (modules/custom) is never shadowed by a mount link" {
+  export MOCK_INSTALLED=1
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  pack_env
+  mkdir -p "$AINCIENT_PACKS_SRC/acme_pack" "$DRUPAL_ROOT/modules/custom/acme_pack"
+  printf 'module: acme_pack\n' > "$AINCIENT_PACKS_D/acme.yml"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [ ! -e "$AINCIENT_PACKS_LINK_DIR/acme_pack" ]
+  grep -q "pm:install acme_pack -y" "$DRUSH_LOG"
+}
+
+@test "a drop-in without a valid module key is skipped with a warning" {
+  export MOCK_INSTALLED=1
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node)"
+  pack_env
+  printf 'name: whoops\n' > "$AINCIENT_PACKS_D/broken.yml"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"declares no valid 'module:' key"* ]]
+  ! grep -q "pm:install" "$DRUSH_LOG"
+}

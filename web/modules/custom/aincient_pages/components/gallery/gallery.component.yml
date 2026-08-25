@@ -19,3 +19,21 @@ props:
     images:
       type: array
       description: 'Array of { image, caption }. caption optional.'
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 70
+    icon: ▤
+    rows:
+      images:
+        image: image
+        view_mode: gallery
+    use: 'A grid of images (screenshots, work, photos). columns reflows the grid.'
+    props:
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      subheading: ''
+      columns: 2|3|4
+      images: '[{image,caption}]'

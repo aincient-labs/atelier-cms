@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Plugin\AiCapability;
 
-use Drupal\aincient_pages\ComponentCatalog;
+use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Drupal\aincient_pages\Catalog\EffectiveCatalog;
 use Drupal\aincient_pages\PageStore;
 use Drupal\aincient_pages\SchemaLinter;
 use Drupal\aincient_core\Attribute\Capability;
@@ -47,7 +48,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   id: 'aincient_pages:preview_page',
   function_name: 'aincient_preview_page',
   name: 'Preview page',
-  description: 'Edit the page the user is composing in the LIVE page studio by emitting a list of section OPS. This recomposes the preview INSTANTLY and stages it as an unsaved draft — it does NOT publish (the user does that with the Publish button). Use it for every change so the user sees it happen. Ops (JSON array): set_meta {type?,title?,description?,canonical_url?,og_title?,og_description?,og_image?}; set_teaser {title?,description?,image?}; set_content {category?,lead?,author?,author_bio?,date?,cover?,body_md?}; add_section {component, props?, after?}; update_section {id, props}; remove_section {id}; reorder {order:[…]}. A page\'s TYPE ("landing" or "blog") is FIXED WHEN THE PAGE IS CREATED and cannot be changed afterwards — set_meta {type:…} is only accepted while the page has never been saved, and is REFUSED on an existing page. If the user asks to turn an existing landing page into a blog post (or the reverse), do not try: tell them a new page of that type has to be created instead. set_content writes a BLOG post (ONLY on a page whose type is already "blog" — on a landing page it is refused, not silently ignored): the article body goes in body_md as MARKDOWN (## headings, **bold**, lists, > quotes, `code`, links — NOT HTML), cover is a media:<id> token, and lead/author/author_bio/date/category are plain text; a field set to empty string clears it. On a NEW, never-saved draft you may open with set_meta {type:"blog",title:…} and then set_content. set_meta also sets the page\'s SEO/meta tags — description (~50–160 chars), canonical_url, and Open Graph og_title/og_description/og_image — as per-page overrides; pass an empty string to clear one back to the site default. og_image is an image: give it a media:<id> token (preferred, like the teaser image) or a full URL. set_teaser sets how the page shows up when REFERENCED as a card (in-site listings/teasers) — its teaser title, a short teaser description, and a teaser image given as a media:<id> token (NOT a URL); this is distinct from both the page body and the SEO/meta tags. Pass an empty string to clear a teaser field. set_teaser\'s fields ride FLAT on the op, e.g. {"op":"set_teaser","title":"…","description":"…"} — NEVER nest them under a "teaser" key, and NEVER put teaser fields on set_meta (they will be dropped). Target sections by their stable "id" from LIVE PAGE STATE (preferred — survives reordering); a numeric "index"/"after" still works as a fallback. The current draft — sections (with ids) and any "meta" overrides — is shown in the system prompt as LIVE PAGE STATE; component names + props are listed there too.',
+  description: 'Edit the page the user is composing in the LIVE page studio by emitting a list of section OPS. This recomposes the preview INSTANTLY and stages it as an unsaved draft — it does NOT publish (the user does that with the Publish button). Use it for every change so the user sees it happen. Ops (JSON array): set_meta {type?,title?,description?,canonical_url?,og_title?,og_description?,og_image?}; set_teaser {title?,description?,image?}; set_content {category?,lead?,author?,author_bio?,date?,cover?,body_md?}; add_section {component, props?, after?}; update_section {id, props}; remove_section {id}; reorder {order:[…]}. A page\'s TYPE (its page KIND — the site\'s kinds are listed in the system prompt as PAGE KINDS) is FIXED WHEN THE PAGE IS CREATED and cannot be changed afterwards — set_meta {type:…} is only accepted while the page has never been saved, and is REFUSED on an existing page. If the user asks to change an existing page\'s kind (e.g. turn a landing page into a blog post), do not try: tell them a new page of that kind has to be created instead. set_content writes a recipe-kind page, e.g. a blog post (ONLY on a page whose kind is a locked recipe — on a composition page it is refused, not silently ignored): the article body goes in body_md as MARKDOWN (## headings, **bold**, lists, > quotes, `code`, links — NOT HTML), cover is a media:<id> token, and lead/author/author_bio/date/category are plain text; a field set to empty string clears it. On a NEW, never-saved draft you may open with set_meta {type:…,title:…} (e.g. type:"blog") and then set_content. set_meta also sets the page\'s SEO/meta tags — description (~50–160 chars), canonical_url, and Open Graph og_title/og_description/og_image — as per-page overrides; pass an empty string to clear one back to the site default. og_image is an image: give it a media:<id> token (preferred, like the teaser image) or a full URL. set_teaser sets how the page shows up when REFERENCED as a card (in-site listings/teasers) — its teaser title, a short teaser description, and a teaser image given as a media:<id> token (NOT a URL); this is distinct from both the page body and the SEO/meta tags. Pass an empty string to clear a teaser field. set_teaser\'s fields ride FLAT on the op, e.g. {"op":"set_teaser","title":"…","description":"…"} — NEVER nest them under a "teaser" key, and NEVER put teaser fields on set_meta (they will be dropped). Target sections by their stable "id" from LIVE PAGE STATE (preferred — survives reordering); a numeric "index"/"after" still works as a fallback. The current draft — sections (with ids) and any "meta" overrides — is shown in the system prompt as LIVE PAGE STATE; component names + props are listed there too.',
   context_definitions: [
     'ops' => new ContextDefinition(
       data_type: 'list',
@@ -80,11 +81,23 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
   protected string $result = '';
 
   /**
+   * The component catalog.
+   *
+   * This tool can't see WHICH page the ops will land on (the widget applies
+   * them client-side against the studio draft), so the fast structural check
+   * here accepts any component SOME kind allows — the union across kinds. The
+   * authoritative per-kind clamp stays PageStore::applyOps(), which knows the
+   * draft's type.
+   */
+  protected ComponentCatalogInterface $catalog;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
     $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
     $instance->currentUser = $container->get('current_user');
+    $instance->catalog = $container->get('aincient_pages.catalog');
     return $instance;
   }
 
@@ -132,7 +145,7 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
     if ($valid === []) {
       $this->result = 'Error: no usable ops. ' . implode(' ', $rejected)
         . ' Valid ops: set_meta, set_teaser, set_content, add_section, update_section, remove_section, reorder. Components: '
-        . implode(', ', ComponentCatalog::placeableNames()) . '.';
+        . implode(', ', $this->placeableUnion()) . '.';
       return;
     }
 
@@ -144,7 +157,7 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
     $warnings = [];
     foreach ($valid as $op) {
       if (($op['op'] ?? '') === 'add_section' && is_array($op['props'] ?? NULL)) {
-        $warnings = array_merge($warnings, SchemaLinter::lint((string) $op['component'], $op['props']));
+        $warnings = array_merge($warnings, SchemaLinter::lint($this->catalogHolding((string) $op['component']), (string) $op['component'], $op['props']));
       }
     }
 
@@ -246,7 +259,7 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
     switch ($type) {
       case 'add_section':
         $component = (string) ($op['component'] ?? '');
-        if (!in_array($component, ComponentCatalog::placeableNames(), TRUE)) {
+        if (!in_array($component, $this->placeableUnion(), TRUE)) {
           return sprintf('add_section needs a known component (got "%s").', $component);
         }
         break;
@@ -275,6 +288,40 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
     }
 
     return NULL;
+  }
+
+  /**
+   * Every component SOME kind allows — the fast-feedback allow-list (Phase 5).
+   *
+   * Kind-blind by design: this tool can't see the target page, and rejecting a
+   * component another kind allows would be a false negative. PageStore is the
+   * per-kind authority when the ops apply.
+   *
+   * @return string[]
+   */
+  private function placeableUnion(): array {
+    $names = [];
+    foreach (array_keys($this->catalog->kinds()) as $kind) {
+      foreach ($this->catalog->for($kind)->placeableNames() as $name) {
+        $names[$name] = TRUE;
+      }
+    }
+    return array_keys($names);
+  }
+
+  /**
+   * The first kind-catalog holding $component (landing when none) — gives the
+   * advisory linter a def for components that a narrowed landing palette or a
+   * client kind carries.
+   */
+  private function catalogHolding(string $component): EffectiveCatalog {
+    foreach (array_keys($this->catalog->kinds()) as $kind) {
+      $catalog = $this->catalog->for($kind);
+      if (in_array($component, $catalog->placeableNames(), TRUE)) {
+        return $catalog;
+      }
+    }
+    return $this->catalog->for('landing');
   }
 
   /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Drupal\aincient_pages\Catalog\EffectiveCatalog;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
@@ -105,13 +107,30 @@ final class PageStore {
     private readonly LanguageManagerInterface $languageManager,
     private readonly ConfigFactoryInterface $configFactory,
     private readonly NodeModeration $moderation,
+    private readonly ComponentCatalogInterface $catalog,
   ) {}
+
+  /**
+   * Clamp a requested page type to a known kind id ('landing' when unknown —
+   * the same never-fatal fallback the old two-literal clamp had).
+   */
+  private function clampKind(mixed $type): string {
+    return is_string($type) && $type !== '' && isset($this->catalog->kinds()[$type]) ? $type : 'landing';
+  }
+
+  /**
+   * TRUE when the kind is a locked content recipe (the blog regime shape):
+   * flat typed fields, no section stack.
+   */
+  private function isRecipe(string $type): bool {
+    return !$this->catalog->for($type)->isComposition();
+  }
 
   /**
    * Clamp an arbitrary schema to the grammar. Always returns a renderable page.
    */
   public function validate(array $schema): array {
-    $type = in_array($schema['type'] ?? '', ['landing', 'blog'], TRUE) ? $schema['type'] : 'landing';
+    $type = $this->clampKind($schema['type'] ?? '');
     $out = [
       'type' => $type,
       'title' => $this->decodeEntities((string) ($schema['title'] ?? 'AIncient page')),
@@ -131,7 +150,7 @@ final class PageStore {
       $out['teaser'] = $teaser;
     }
 
-    if ($type === 'blog') {
+    if ($this->isRecipe($type)) {
       foreach (self::BLOG_CONTENT_KEYS as $k) {
         if (!isset($schema[$k])) {
           continue;
@@ -154,15 +173,16 @@ final class PageStore {
     // so targeted ops and the per-language content overlay can address a slot by a
     // key that doesn't shift when sections are reordered (the array index does).
     $used = [];
+    $catalog = $this->catalog->for($type);
     foreach ($schema['sections'] ?? [] as $section) {
       $name = $section['component'] ?? '';
-      if (!in_array($name, ComponentCatalog::placeableNames(), TRUE)) {
+      if (!in_array($name, $catalog->placeableNames(), TRUE)) {
         continue;
       }
       $out['sections'][] = [
         'id' => $this->slotId($section['id'] ?? NULL, $used),
         'component' => $name,
-        'props' => $this->clampProps($name, $section['props'] ?? NULL),
+        'props' => $this->clampProps($catalog, $name, $section['props'] ?? NULL),
       ];
     }
     return $out;
@@ -188,19 +208,19 @@ final class PageStore {
   /**
    * Clamp a placeable's props to the grammar so a hallucinated value can never
    * render something broken (an unknown enum) or 500 (an out-of-enum typed
-   * prop). Driven entirely by {@see ComponentCatalog} so the clamp and the SDC
-   * schemas stay in lock-step as the palette grows.
+   * prop). Driven entirely by the compiled {@see EffectiveCatalog} so the
+   * clamp and the SDC schemas stay in lock-step as the palette grows.
    */
-  private function clampProps(string $name, mixed $props): array {
+  private function clampProps(EffectiveCatalog $catalog, string $name, mixed $props): array {
     $props = is_array($props) ? $props : [];
     // tone: drop an unknown surface enum — each SDC defaults its own tone.
-    if (isset($props['tone']) && !in_array($props['tone'], ComponentCatalog::TONES, TRUE)) {
+    if (isset($props['tone']) && !in_array($props['tone'], $catalog->tonesFor($name), TRUE)) {
       unset($props['tone']);
     }
     // variant: a required SDC enum — clamp an unknown OR missing value to the
     // component's default (the first listed) so it can never trip the enum.
-    if (isset(ComponentCatalog::VARIANTS[$name])) {
-      $allowed = ComponentCatalog::VARIANTS[$name];
+    $allowed = $catalog->variantsFor($name);
+    if ($allowed !== NULL) {
       $props['variant'] = in_array($props['variant'] ?? '', $allowed, TRUE)
         ? $props['variant']
         : $allowed[0];
@@ -209,7 +229,7 @@ final class PageStore {
     // a model string, then clamp into the component's declared column range so
     // it can't exceed the SDC enum (features tops at 3; wider grids allow 4).
     if (isset($props['columns'])) {
-      $def = ComponentCatalog::placeable($name);
+      $def = $catalog->placeable($name);
       $allowed = isset($def['props']['columns'])
         ? array_map('intval', explode('|', $def['props']['columns']))
         : [2, 3];
@@ -256,7 +276,7 @@ final class PageStore {
       if (isset($props['mode']) && !in_array($props['mode'], ['strip', 'index'], TRUE)) {
         $props['mode'] = 'strip';
       }
-      if (isset($props['source']) && !in_array($props['source'], CollectionInventory::SOURCES, TRUE)) {
+      if (isset($props['source']) && !in_array($props['source'], $this->catalog->collectionSources(), TRUE)) {
         $props['source'] = CollectionInventory::DEFAULT_SOURCE;
       }
       if (isset($props['sort']) && !in_array($props['sort'], CollectionInventory::SORTS, TRUE)) {
@@ -301,7 +321,7 @@ final class PageStore {
             }
             $blocks[] = [
               'component' => $child,
-              'props' => $this->clampProps($child, $block['props'] ?? NULL),
+              'props' => $this->clampProps($catalog, $child, $block['props'] ?? NULL),
             ];
           }
           $clean[] = [
@@ -317,7 +337,7 @@ final class PageStore {
     // keeping them only bloats the stored schema (and they're how the agent's
     // data lands in the wrong place). The SchemaLinter is what tells the agent
     // WHY a prop was dropped; here we just keep the persisted schema clean.
-    $declared = ComponentCatalog::placeable($name)['props'] ?? NULL;
+    $declared = $catalog->placeable($name)['props'] ?? NULL;
     $props = $declared === NULL ? $props : array_intersect_key($props, $declared);
     // Normalise over-encoded HTML entities to raw text across every prop (incl.
     // nested rows/panels). Landing props are all plain text Twig escapes — or
@@ -475,7 +495,7 @@ final class PageStore {
    */
   public function applyOps(array $schema, array $ops, bool $typeLocked = FALSE): array {
     $work = [
-      'type' => in_array($schema['type'] ?? '', ['landing', 'blog'], TRUE) ? $schema['type'] : 'landing',
+      'type' => $this->clampKind($schema['type'] ?? ''),
       'title' => (string) ($schema['title'] ?? 'AIncient page'),
       'sections' => [],
     ];
@@ -501,7 +521,7 @@ final class PageStore {
     // tracks ids so add_section mints non-colliding ones.
     $used = [];
     foreach ($schema['sections'] ?? [] as $section) {
-      if (in_array($section['component'] ?? '', ComponentCatalog::placeableNames(), TRUE)) {
+      if (in_array($section['component'] ?? '', $this->catalog->for($work['type'])->placeableNames(), TRUE)) {
         $work['sections'][] = [
           'id' => $this->slotId($section['id'] ?? NULL, $used),
           'component' => $section['component'],
@@ -519,7 +539,7 @@ final class PageStore {
       try {
         switch ($type) {
           case 'set_meta':
-            if (isset($op['type']) && in_array($op['type'], ['landing', 'blog'], TRUE)) {
+            if (isset($op['type']) && is_string($op['type']) && isset($this->catalog->kinds()[$op['type']])) {
               // The type is chosen at birth and locked (DECISIONS 0378). On a
               // page that already exists, a flip is REFUSED by name rather than
               // staged-then-silently-pinned by writeSchema: the agent has to
@@ -609,7 +629,7 @@ final class PageStore {
             // the agent wrote a whole post, was told nothing, and reported
             // success while the studio rail still showed an empty Sections
             // stack. That silent discard is the bug this names.
-            if (($work['type'] ?? '') !== 'blog') {
+            if (!$this->isRecipe((string) ($work['type'] ?? ''))) {
               throw new \InvalidArgumentException(
                 'set_content writes a BLOG post, but this page is a landing page — its body is built from sections (add_section), not blog fields. The page type is fixed at creation, so create a new blog page instead.'
               );
@@ -630,7 +650,7 @@ final class PageStore {
 
           case 'add_section':
             $name = (string) ($op['component'] ?? '');
-            if (!in_array($name, ComponentCatalog::placeableNames(), TRUE)) {
+            if (!in_array($name, $this->catalog->for($work['type'])->placeableNames(), TRUE)) {
               throw new \InvalidArgumentException(sprintf('unknown component "%s"', $name));
             }
             $new = [
@@ -913,7 +933,7 @@ final class PageStore {
     // applyOps() are legibility, this is the fence.
     $schema['type'] = $this->pinnedType($node, $schema['type'] ?? NULL);
     $clean = $this->validate($schema);
-    $split = PageSchemaCodec::split($clean);
+    $split = PageSchemaCodec::split($clean, $this->isRecipe($clean['type']));
     // The entity's own label key: `title` for a page node, `name` for a block
     // media entity (DECISIONS 0138) — so the same schema write drives both.
     $node->set($node->getEntityType()->getKey('label'), $clean['title']);
@@ -935,7 +955,7 @@ final class PageStore {
     $this->writePageType($node, $clean['type']);
     // A blog post's authored date likewise mirrors onto the node's own
     // `created` — the sort axis a listing needs, and what "Authored on" means.
-    if ($clean['type'] === 'blog') {
+    if ($this->isRecipe($clean['type'])) {
       $this->writePostDate($node, (string) ($clean['date'] ?? ''));
     }
     // SEO/meta is per-language content (like field_page_content), so it always
@@ -972,12 +992,12 @@ final class PageStore {
    * fall back to the requested type rather than forcing it to landing.
    */
   private function pinnedType(ContentEntityInterface $node, mixed $requested): string {
-    $want = in_array($requested, ['landing', 'blog'], TRUE) ? $requested : 'landing';
+    $want = $this->clampKind($requested);
     if ($node->isNew() || !$node->hasField('field_page_type')) {
       return $want;
     }
     $stored = (string) ($node->getUntranslated()->get('field_page_type')->value ?? '');
-    return in_array($stored, ['landing', 'blog'], TRUE) ? $stored : $want;
+    return $stored !== '' && isset($this->catalog->kinds()[$stored]) ? $stored : $want;
   }
 
   private function writePageType(ContentEntityInterface $node, string $type): void {
@@ -1323,7 +1343,7 @@ final class PageStore {
       $content = $this->overlayContent($this->decode($source, 'field_page_content'), $content);
     }
 
-    $merged = PageSchemaCodec::merge($structure, $content);
+    $merged = PageSchemaCodec::merge($structure, $content, $this->isRecipe($this->clampKind($structure['type'] ?? '')));
     // Surface THIS translation's own SEO/meta override (raw — not merged with
     // site defaults) so the studio's SEO editor shows what's set on the page and
     // round-trips it. Inherited defaults stay implicit (the audit reports those).

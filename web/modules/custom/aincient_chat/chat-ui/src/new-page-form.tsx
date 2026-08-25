@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { createPage } from "./page-state";
 import { XIcon } from "./icons";
 import { apiUrl } from "./console-config";
+import { orderedKinds, type KindOption } from "./catalog-meta";
 
 /**
  * The `+` birth form (studio-navigation.md §3.2 — Phase C).
@@ -17,23 +18,29 @@ import { apiUrl } from "./console-config";
  * The `type` field is the composition-contract seam (composition-contracts.md
  * §4.11 — "template selection = by page type"). v1 exposes only `landing` while
  * the template/ruleset layer is parked; a type resolves to its design template
- * server-side once that lands, so this form stays forward-compatible — grow
- * {@link PAGE_TYPES} as the type set is ratified.
+ * server-side once that lands, so this form stays forward-compatible — the
+ * picker is server-driven from the manifest's `kinds` map (W6), with
+ * {@link PAGE_TYPES} as the never-empty fallback while loading / on error.
  */
 
 /** One site language (mirrors the page-studio manifest shape). */
 type Lang = { id: string; label: string; default: boolean };
-type Manifest = { translation?: { languages?: Lang[]; multilingual?: boolean } };
+type Manifest = {
+  translation?: { languages?: Lang[]; multilingual?: boolean };
+  /** The server-driven kind picker (W6): id → label/hint/mode. */
+  kinds?: Record<string, { label?: string; hint?: string; mode?: string }>;
+};
 
 /**
- * The page types the birth form offers (the contract selector).
+ * The FALLBACK page types (the shipped pair) — shown while the manifest loads
+ * and kept when the fetch fails, so the picker is never empty.
  *
  * This is the ONE moment the type is chosen: it is fixed at creation and cannot
  * be changed afterwards (DECISIONS 0378), because landing and blog are separate
  * content regimes — a landing page's body is its section stack, a blog post's is
  * its flat article fields — so a later flip could only discard one of them.
  */
-const PAGE_TYPES: { id: string; label: string; hint: string }[] = [
+const PAGE_TYPES: KindOption[] = [
   { id: "landing", label: "Landing page", hint: "A composed page — hero, sections, and calls to action." },
   { id: "blog", label: "Blog post", hint: "A written article — headline, body, and byline, in a fixed reading layout." },
 ];
@@ -47,6 +54,10 @@ export function NewPageForm({
 }) {
   const [title, setTitle] = useState("");
   const [type, setType] = useState(PAGE_TYPES[0].id);
+  // The kind options the picker renders: server-driven from the manifest's
+  // `kinds` map once it arrives; the hardcoded shipped pair is the FALLBACK
+  // while loading or on a fetch error — the picker is never empty.
+  const [kinds, setKinds] = useState<KindOption[]>(PAGE_TYPES);
   const [langs, setLangs] = useState<Lang[]>([]);
   const [multilingual, setMultilingual] = useState(false);
   // null = the site's source/default language (a monolingual site never sends one).
@@ -66,6 +77,10 @@ export function NewPageForm({
         if (!live || !m) return;
         setLangs(m.translation?.languages ?? []);
         setMultilingual(!!m.translation?.multilingual);
+        // Kind picker (W6): landing first, blog second, add-ons alphabetically.
+        // An empty/missing map keeps the hardcoded fallback pair in place.
+        const serverKinds = orderedKinds(m.kinds);
+        if (serverKinds.length > 0) setKinds(serverKinds);
       })
       .catch(() => {});
     return () => {
@@ -105,7 +120,7 @@ export function NewPageForm({
     }
   };
 
-  const activeType = PAGE_TYPES.find((t) => t.id === type) ?? PAGE_TYPES[0];
+  const activeType = kinds.find((t) => t.id === type) ?? kinds[0];
 
   return createPortal(
     <div
@@ -155,14 +170,14 @@ export function NewPageForm({
           <span className="ain-field__label">
             <span className="ain-field__labeltext">Type</span>
           </span>
-          {PAGE_TYPES.length > 1 ? (
+          {kinds.length > 1 ? (
             <>
               <select
                 className="ain-field__input"
                 value={type}
                 onChange={(e) => setType(e.target.value)}
               >
-                {PAGE_TYPES.map((t) => (
+                {kinds.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.label}
                   </option>

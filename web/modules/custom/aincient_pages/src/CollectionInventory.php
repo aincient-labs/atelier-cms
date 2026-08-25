@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
@@ -32,12 +33,11 @@ final class CollectionInventory {
    */
   public const DEFAULT_SOURCE = 'blog';
 
-  /**
-   * The content sets a collection may list. Each maps to a `field_page_type`
-   * value ({@see PageStore::writePageType}); `filter`/taxonomy narrowing within
-   * a source is deferred (see plans/collection-listings.md).
-   */
-  public const SOURCES = ['blog'];
+  // The content sets a collection may list are the page KINDS flagged
+  // collection_source (plans/byo-components.md W2) — each kind id maps to a
+  // `field_page_type` value ({@see PageStore::writePageType}). See sources().
+  // `filter`/taxonomy narrowing within a source is deferred
+  // (see plans/collection-listings.md).
 
   /**
    * Sort axes, first is the clamp default. Both sort on the node's own
@@ -50,7 +50,19 @@ final class CollectionInventory {
 
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
+    private readonly ComponentCatalogInterface $catalog,
   ) {}
+
+  /**
+   * The kind ids a collection may list — kinds flagged `collection_source`.
+   * Always contains at least the default (never-fatal: a site whose kinds were
+   * all unflagged would otherwise blank every listing).
+   *
+   * @return string[]
+   */
+  public function sources(): array {
+    return $this->catalog->collectionSources();
+  }
 
   /**
    * Reduce an authored spec to its canonical, hash-stable form.
@@ -67,7 +79,7 @@ final class CollectionInventory {
    *   The canonical spec.
    */
   public function normalize(array $spec): array {
-    $source = is_string($spec['source'] ?? NULL) && in_array($spec['source'], self::SOURCES, TRUE)
+    $source = is_string($spec['source'] ?? NULL) && in_array($spec['source'], $this->sources(), TRUE)
       ? $spec['source']
       : self::DEFAULT_SOURCE;
     $sort = in_array($spec['sort'] ?? NULL, self::SORTS, TRUE)
@@ -118,7 +130,9 @@ final class CollectionInventory {
         continue;
       }
       $structure = json_decode((string) $node->get('field_page_structure')->value, TRUE);
-      if (!is_array($structure) || ($structure['type'] ?? '') !== 'landing') {
+      // Only composition kinds own a section stack a collection can sit in —
+      // a recipe page (blog) has slots for nothing.
+      if (!is_array($structure) || !$this->catalog->for((string) ($structure['type'] ?? ''))->isComposition()) {
         continue;
       }
       foreach ($structure['slots'] ?? [] as $slot) {

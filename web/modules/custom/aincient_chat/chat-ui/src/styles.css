@@ -3207,6 +3207,18 @@ select.ain-field__input { cursor: pointer; appearance: auto; }
    the fixed top-of-panel titles. */
 .ain-cpicker__name { font-family: var(--ain-font); font-size: 13px; font-weight: 600; color: var(--ain-text); }
 .ain-cpicker__use { font-size: 11px; color: var(--ain-text-faint); line-height: 1.3; }
+/* Provenance (W6): components from add-on modules sit under a small group
+   header, each row carrying a subtle chip. Built-in rows render untouched. */
+.ain-cpicker__grouphead {
+  padding: 6px 12px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ain-text-faint);
+  background: var(--ain-surface-2); border-bottom: 1px solid var(--ain-border);
+}
+.ain-cpicker__prov {
+  display: inline-block; margin-left: 6px; padding: 0 5px; vertical-align: 1px;
+  font-size: 9.5px; font-weight: 500; line-height: 1.6; letter-spacing: 0.02em;
+  color: var(--ain-text-dim); border: 1px solid var(--ain-border); border-radius: 999px;
+}
 
 /* The section STACK (study 02, Plate 11): rows share ONE panel with hairline
    separators — the per-card borders + insert wedges + always-visible controls
@@ -3700,3 +3712,16 @@ select.ain-field__input { cursor: pointer; appearance: auto; }
    hands-on marker for the whole immutable Tier-0 foundation. */
 .ain-pop__basehead { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .ain-pop__basehead .ain-pop__heading { margin: 0; }
+
+/* ── Components governance pane (components-studio.tsx) ─────────────────────
+   Checked = available; unchecking stages a removal. Tier headings group the
+   vocabulary; the warnings list is the compiler's honest feedback (subtle —
+   never-fatal floor, so it must not read as an error). */
+.ain-constraint__tier { margin: 8px 0 4px; display: flex; flex-direction: column; gap: 4px; }
+.ain-constraint__tiertitle { margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ain-text-faint); }
+.ain-constraint__row { min-inline-size: 0; }
+.ain-constraint__glyph { flex: 0 0 auto; font-size: 12px; line-height: 1; color: var(--ain-text-faint); }
+.ain-constraint__use { flex: 1 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ain-text-faint); }
+.ain-constraint__warnings { margin: 0 12px 4px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.ain-constraint__warning { display: flex; align-items: baseline; gap: 5px; font-size: 11px; line-height: 1.4; color: var(--ain-text-dim); }
+.ain-constraint__warning svg { flex: 0 0 auto; translate: 0 2px; }
