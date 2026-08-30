@@ -1,0 +1,71 @@
+uuid: e3cfed36-570e-41f9-bf72-696a102432aa
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+id: text_replace
+label: 'Find and Replace'
+description: 'Replace text by literal string or regular expression, with a count of what changed'
+category: processing
+icon: 'mdi:find-replace'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  case_sensitive:
+    configurable: true
+    connectable: true
+    required: false
+    default: true
+  first_only:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+    default: false
+  flags:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+    default: ''
+  mode:
+    configurable: true
+    connectable: true
+    required: false
+    default: literal
+  replace:
+    configurable: true
+    connectable: true
+    required: false
+    default: ''
+  search:
+    configurable: true
+    connectable: true
+    required: false
+    default: ''
+  text:
+    configurable: true
+    connectable: true
+    required: false
+    default: ''
+outputs:
+  replaced:
+    exposed: true
+    exposed_by_default: false
+  replaced_any:
+    exposed: true
+  text:
+    exposed: true
+tags:
+  - text
+  - processing
+executor_plugin: 'flowdrop_node_processor:text_replace'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: true
+unified_output_exposed: true
+tool_exposed: true
+confirmation: {  }
+reserved_port_exposure: {  }

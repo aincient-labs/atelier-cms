@@ -133,7 +133,11 @@ final class SpecialistParsesInGraphTest extends TestCase {
       'the ramp WINS over' => 'no precedence over the hold-the-hue rule',
       'ABSOLUTE COLOUR ASKS' => 'an absolute pick is not told to land on a swatch',
       'ONLY when no rung fits' => 'no escape hatch, so the model will over-snap',
-      'ONE rung is a nudge' => 'no step size, so "darker" lands one rung over (live-caught: 100 → 200)',
+      'HOW FAR TO MOVE' => 'no step-size table, so "darker" lands one rung over (live-caught: 100 → 200, 7/9 runs — 0411)',
+      'ONE rung ONLY for' => 'the one-rung case is not reserved for "slightly"',
+      'a description of the MECHANISM, not a size' => '"step down its ramp" in the ask is read as one rung (0411)',
+      'all still mean var(--color-blue-600)' => 'a Locked ask phrased "a blue hue" computes a literal at 4.4:1 (0411)',
+      'decided by CONTRAST, not by rung number' => 'white on yellow-500 (1.75:1) — on-colour must follow the ramp family (0411)',
     ] as $needle => $why) {
       self::assertStringContainsString($needle, $prompt, "Colour specialist: $why.");
     }
