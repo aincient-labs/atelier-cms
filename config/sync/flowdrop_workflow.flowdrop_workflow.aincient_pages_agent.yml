@@ -143,7 +143,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 401
+      height: 461
   -
     id: chat_output.1
     position:
@@ -257,7 +257,7 @@ nodes:
           hiddenPorts: {  }
     measured:
       width: 280
-      height: 281
+      height: 641
   -
     id: aincient_flows_aincient_conversation_append.2
     position:
@@ -312,7 +312,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 221
+      height: 401
   -
     id: aincient_flows_aincient_conversation_append.3
     position:
@@ -367,7 +367,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 281
+      height: 401
   -
     id: aincient_flows_aincient_conversation_append.4
     position:
@@ -422,7 +422,7 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 341
+      height: 461
   -
     id: flowdrop_node_processor_toolbox.1
     position:
@@ -808,12 +808,12 @@ nodes:
         node_type_id: conversation_buffer
     measured:
       width: 280
-      height: 401
+      height: 701
   -
     id: aincient_flows_aincient_conversation_read.2
     position:
-      x: -1120
-      'y': 420
+      x: -1480
+      'y': 720
     data:
       label: 'Conversation read'
       config:
@@ -857,12 +857,12 @@ nodes:
         node_type_id: conversation_buffer
     measured:
       width: 280
-      height: 281
+      height: 581
   -
     id: aincient_flows_aincient_message_assemble.1
     position:
-      x: -700
-      'y': 160
+      x: -1000
+      'y': 80
     data:
       label: 'Message assemble'
       config:
@@ -881,7 +881,7 @@ nodes:
         node_type_id: message_assemble
     measured:
       width: 280
-      height: 321
+      height: 441
   -
     id: aincient_flows_aincient_decline_synthesize.1
     position:
@@ -908,17 +908,23 @@ nodes:
               exposed: true
       metadata:
         node_type_id: decline_synthesize
+    measured:
+      width: 280
+      height: 441
   -
     id: conversation_normalize.1
     position:
-      x: -460
-      'y': -160
+      x: -640
+      'y': 120
     data:
       label: 'Normalize conversation'
       config:
         maxRetries: 0
       metadata:
         node_type_id: conversation_normalize
+    measured:
+      width: 280
+      height: 401
 edges:
   -
     id: xy-edge__aincient_reason.1aincient_reason.1-output-has_tool_calls-boolean_gateway.1boolean_gateway.1-input-value
@@ -1020,7 +1026,7 @@ edges:
     target: aincient_flows_aincient_conversation_append.1
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: memory
       metadata:
         edgeType: data
         sourcePortDataType: string
@@ -1039,10 +1045,10 @@ edges:
     target: aincient_flows_aincient_conversation_append.2
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: memory
       metadata:
         edgeType: data
-        sourcePortDataType: string
+        sourcePortDataType: json
     sourceHandle: aincient_reason.2-output-assistant_message
     targetHandle: aincient_flows_aincient_conversation_append.2-input-message
     style: 'stroke: var(--fd-edge-data);'
@@ -1058,10 +1064,10 @@ edges:
     target: aincient_flows_aincient_conversation_append.3
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: memory
       metadata:
         edgeType: data
-        sourcePortDataType: array
+        sourcePortDataType: messages
     sourceHandle: aincient_flows_aincient_invoke.2-output-tool_messages
     targetHandle: aincient_flows_aincient_conversation_append.3-input-message
     style: 'stroke: var(--fd-edge-data);'
@@ -1077,7 +1083,7 @@ edges:
     target: aincient_flows_aincient_decline_synthesize.1
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: human_in_loop
       metadata:
         edgeType: data
         sourcePortDataType: array
@@ -1096,7 +1102,7 @@ edges:
     target: aincient_flows_aincient_decline_synthesize.1
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: human_in_loop
       metadata:
         edgeType: data
     sourceHandle: confirmation.1-output-False
@@ -1361,7 +1367,7 @@ edges:
     target: aincient_flows_aincient_conversation_append.5
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: memory
       metadata:
         edgeType: trigger
         sourcePortDataType: trigger
@@ -1380,7 +1386,7 @@ edges:
     target: aincient_flows_aincient_conversation_append.5
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: memory
       metadata:
         edgeType: data
         sourcePortDataType: string
@@ -1402,7 +1408,7 @@ edges:
       targetCategory: processing
       metadata:
         edgeType: data
-        sourcePortDataType: array
+        sourcePortDataType: messages
     sourceHandle: aincient_flows_aincient_conversation_read.2-output-messages
     targetHandle: aincient_flows_aincient_message_assemble.1-input-scratchpad
     style: 'stroke: var(--fd-edge-data);'
@@ -1421,7 +1427,7 @@ edges:
       targetCategory: processing
       metadata:
         edgeType: data
-        sourcePortDataType: array
+        sourcePortDataType: messages
     sourceHandle: aincient_flows_aincient_conversation_append.1-output-messages
     targetHandle: aincient_flows_aincient_message_assemble.1-input-conversation
     style: 'stroke: var(--fd-edge-data);'
@@ -1437,10 +1443,10 @@ edges:
     target: conversation_normalize.1
     data:
       targetNodeType: universalNode
-      targetCategory: agents
+      targetCategory: processing
       metadata:
         edgeType: data
-        sourcePortDataType: array
+        sourcePortDataType: messages
     sourceHandle: aincient_flows_aincient_message_assemble.1-output-messages
     targetHandle: conversation_normalize.1-input-messages
     style: 'stroke: var(--fd-edge-data);'
@@ -1456,7 +1462,7 @@ edges:
     target: aincient_flows_aincient_conversation_read.2
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: memory
       metadata:
         edgeType: loopback
         sourcePortDataType: trigger
@@ -1475,7 +1481,7 @@ edges:
     target: aincient_flows_aincient_conversation_read.2
     data:
       targetNodeType: universalNode
-      targetCategory: memories
+      targetCategory: memory
       metadata:
         edgeType: loopback
         sourcePortDataType: trigger
@@ -1492,19 +1498,45 @@ edges:
     id: aincient_reason.2-aincient_reason.2-output-tool_calls-aincient_flows_aincient_conversation_append.4-aincient_flows_aincient_conversation_append.4-input-declined_tool_calls__aincient_flows_aincient_decline_synthesize.1__out
     source: aincient_flows_aincient_decline_synthesize.1
     target: aincient_flows_aincient_conversation_append.4
+    data:
+      targetNodeType: universalNode
+      targetCategory: memory
+      metadata:
+        edgeType: data
+        sourcePortDataType: array
     sourceHandle: aincient_flows_aincient_decline_synthesize.1-output-messages
     targetHandle: aincient_flows_aincient_conversation_append.4-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
   -
     id: xy-edge__aincient_flows_aincient_message_assemble.1aincient_flows_aincient_message_assemble.1-output-messages-aincient_reason.2aincient_reason.2-input-messages__conversation_normalize.1__out
     source: conversation_normalize.1
     target: aincient_reason.2
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: data
+        sourcePortDataType: messages
     sourceHandle: conversation_normalize.1-output-messages
     targetHandle: aincient_reason.2-input-messages
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-08-14T00:59:29.857Z'
+  updatedAt: '2026-08-26T21:08:19.786Z'
 created: 1781612612
-changed: 1786755402
+changed: 1787778501
 uid: 1
 input_ports:
   -

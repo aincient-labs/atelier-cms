@@ -84,9 +84,10 @@ nodes:
 
           WHERE A RAW COLOUR GOES — this is the most important rule:
           - PALETTE tokens are the ONE place a raw colour is chosen. Set THESE with a raw
-            oklch()/hex value; the rest of the system inherits from them. Almost every
-            request is satisfied by setting palette tokens alone — DO THIS BY DEFAULT.
-            Palette tokens (set as RAW colours):
+            oklch()/hex value OR a Tailwind swatch reference (var(--color-<hue>-<step>),
+            e.g. var(--color-yellow-500)); the rest of the system inherits from them. Almost
+            every request is satisfied by setting palette tokens alone — DO THIS BY DEFAULT.
+            Palette tokens (set as RAW colours or swatches):
             • brand_primary + brand_primary_foreground (text on the primary fill)
             • brand_accent + brand_accent_foreground
             • neutral_surface (page + card BACKGROUND) + neutral_ink (BODY TEXT on it —
@@ -108,7 +109,8 @@ nodes:
           USE ONLY THESE TOKEN NAMES — never invent a name (no "light_pink", no
           "accent_pink"); to add a colour, repurpose a palette slot above. var(--…) targets
           must be existing tokens (e.g. var(--brand-primary), var(--brand-accent),
-          var(--neutral-ink), var(--neutral-surface), var(--border)).
+          var(--neutral-ink), var(--neutral-surface), var(--border)) or Tailwind swatches
+          (var(--color-blue-600)).
 
           Rules:
           - SCOPE — match the palette you emit to what was actually asked. There are two
@@ -129,10 +131,42 @@ nodes:
           - RELATIVE CHANGES ("darker", "lighter", "warmer", "more muted", "less saturated")
             are always relative to the CURRENT LOOK values below — NEVER to a colour named in
             the instruction text (the orchestrator may restate a stale value). Read the
-            current value of the token being changed from CURRENT LOOK, then adjust IT. If the
-            current value is a Tailwind palette reference (e.g. var(--color-yellow-400)),
-            resolve it to that hue/lightness and adjust from there — keep the same hue unless
-            asked otherwise.
+            current value of the token being changed from CURRENT LOOK, then adjust IT.
+          - A SWATCH SITS ON A RAMP. If the current value is a Tailwind swatch (e.g.
+            var(--color-yellow-100)), CURRENT LOOK prints its ramp with the current rung
+            marked ◀. STEP ALONG THE RAMP — "darker" is a higher step, "lighter" a lower
+            one — and WRITE THE SWATCH BACK: "brand_primary": "var(--color-yellow-500)",
+            not a computed oklch(). The ramp already encodes how hue and chroma move with
+            lightness (Tailwind's yellow swings toward amber as it darkens — that IS the
+            designed darker yellow), so for a swatch-anchored token the ramp WINS over
+            "hold the hue". STEP SIZE: a plain "darker"/"lighter" is a change the user can
+            SEE — from a tint (50-200) it lands around 500-600, from mid-ramp it is 2 steps.
+            ONE rung is a nudge, reserved for "slightly" / "a touch"; an ask worded "step
+            down its ramp" still means a visible change, not one rung. The on-colour for a
+            swatch fill is the same ramp's
+            950 on a light rung, or its 50 / white on a dark rung. Leave the ramp for a
+            literal ONLY when no rung fits the ask ("just a touch darker" from a 500 has no
+            rung between 500 and 600) — and say so in the rationale.
+          - ABSOLUTE COLOUR ASKS ("make primary blue", "a forest-green accent") land on a
+            SWATCH too when one fits — var(--color-blue-600), var(--color-emerald-800) — so
+            the studio shows the pick lit and the colour stays nameable. Write a literal
+            only for a colour no ramp carries (a specific brand hex, a neutral with a
+            particular warmth).
+          - LIGHTNESS AND CHROMA ARE COUPLED — for a LITERAL value (a swatch-anchored token
+            follows its ramp instead, above). When a relative change moves lightness,
+            HUE is what carries the colour's identity — hold it. Chroma must FOLLOW: a
+            pale tint carries a low chroma only because it is near-white
+            (oklch(0.973 0.071 103) is a pale yellow), so darkening it with chroma pinned
+            gives mud — oklch(0.65 0.071 103) renders #97915E, a khaki, not a yellow. At
+            L 0.65 that hue wants roughly C 0.13-0.15. Raise chroma as lightness falls and
+            lower it as lightness rises. If the ask you were handed says "lower lightness
+            only" or "don't change chroma", treat that as scope over TOKENS, not over the
+            axes of the token you are changing — keep the hue, move chroma to match.
+          - AN ON-COLOUR IS PART OF ITS SURFACE, not a separate token you need permission
+            for. Whenever you change a surface colour, emit its paired on-colour in the
+            SAME slice if the pair would otherwise drop below 4.5:1 — brand_primary with
+            brand_primary_foreground, and so on. This holds even when the ask says to
+            touch nothing else: shipping a WCAG Fail is never the smaller change.
           - OKLCH NEUTRALS: a neutral (white / grey / black / "plain" background or
             text) MUST use chroma EXACTLY 0 — e.g. oklch(0.98 0 0). In oklch any
             chroma above 0 activates the hue axis even at extreme lightness:

@@ -83,6 +83,89 @@ final class SpecialistParsesInGraphTest extends TestCase {
   }
 
   /**
+   * The COLOUR specialist owns the colour maths, so it must defend against a
+   * narrow ask rather than obey one into a bad result.
+   *
+   * Live regression, Locked brand + a pale yellow draft + "make primary
+   * darker". The orchestrator framed the ask as "lower lightness only. Don't
+   * change hue/chroma or any other token." and the specialist complied exactly:
+   *  - chroma pinned at 0.071 (a near-white tint's chroma, meaningless at
+   *    L 0.62) → oklch(0.65 0.071 103), rendered #97915E, a khaki;
+   *  - brand_primary_foreground left at the previous colour's near-white →
+   *    2.94:1, a WCAG Fail, reported as "nothing else touched".
+   *
+   * The orchestrator side is fixed in BrandState::SURGICAL_MEANS; this is the
+   * second line of defence.
+   */
+  public function testColourSpecialistDefendsAxisCouplingAndPairs(): void {
+    $colour = $this->specialists()['aincient_brand_specialist_colour'] ?? NULL;
+    self::assertNotNull($colour, 'The colour specialist workflow is missing.');
+    $prompt = json_encode($colour);
+
+    foreach ([
+      'LIGHTNESS AND CHROMA ARE COUPLED' => 'the coupling is not stated',
+      'Chroma must FOLLOW' => 'chroma is not told to track lightness',
+      'AN ON-COLOUR IS PART OF ITS SURFACE' => 'the pair is still framed as a separate token',
+      'shipping a WCAG Fail is never the smaller change' => 'no floor against obeying a narrow ask into a Fail',
+    ] as $needle => $why) {
+      self::assertStringContainsString($needle, $prompt, "Colour specialist: $why.");
+    }
+  }
+
+  /**
+   * The colour specialist writes a swatch BACK, not a literal computed from it.
+   *
+   * 29 specialist outputs on record, 0 carrying a var(--color-*) swatch: every
+   * swatch the studio picked was read as a number and overwritten with an
+   * oklch() literal on the first touch, so the swatch grid unlit and the
+   * imagery brief lost its name (cms #44). The ramp is printed by
+   * TokenGrounding; this is the rule that tells the model to walk it.
+   */
+  public function testColourSpecialistWritesSwatchesBack(): void {
+    $colour = $this->specialists()['aincient_brand_specialist_colour'] ?? NULL;
+    self::assertNotNull($colour, 'The colour specialist workflow is missing.');
+    $prompt = json_encode($colour);
+
+    foreach ([
+      'A SWATCH SITS ON A RAMP' => 'the ramp is not introduced',
+      'STEP ALONG THE RAMP' => 'a relative ask is not told to step rungs',
+      'WRITE THE SWATCH BACK' => 'the model is not told to keep token space',
+      'the ramp WINS over' => 'no precedence over the hold-the-hue rule',
+      'ABSOLUTE COLOUR ASKS' => 'an absolute pick is not told to land on a swatch',
+      'ONLY when no rung fits' => 'no escape hatch, so the model will over-snap',
+      'ONE rung is a nudge' => 'no step size, so "darker" lands one rung over (live-caught: 100 → 200)',
+    ] as $needle => $why) {
+      self::assertStringContainsString($needle, $prompt, "Colour specialist: $why.");
+    }
+    self::assertStringNotContainsString('keep the same hue unless', $prompt, 'The superseded resolve-and-adjust sentence is still there.');
+  }
+
+  /**
+   * The orchestrator treats a successful specialist result as FINAL.
+   *
+   * Live-caught on the cms #44 verification turn: the user had set primary to
+   * yellow-100 by hand after the agent had made it blue. "Make primary darker"
+   * → the orchestrator asked correctly, the specialist wrote yellow-200 back —
+   * and the orchestrator, judging that result against its OWN earlier message
+   * ("Primary is now blue"), re-delegated "darker blue (not yellow)" and
+   * overwrote the user's pick. The conversation was stale; the state was not.
+   */
+  public function testOrchestratorTreatsASuccessfulResultAsFinal(): void {
+    $file = dirname(__DIR__, 7) . '/config/sync/flowdrop_workflow.flowdrop_workflow.brand_studio.yml';
+    self::assertFileExists($file, 'The brand orchestrator workflow is missing.');
+    $prompt = (string) file_get_contents($file);
+
+    foreach ([
+      'A SUCCESSFUL RESULT IS FINAL' => 'a clean result can still be second-guessed',
+      'YOUR MEMORY IS STALE' => 'a surprising result is not attributed to the user\'s own edit',
+      'NEVER re-delegate to steer a successful result' => 'no bar on re-delegating to "correct" a colour',
+      'the USER changed it by hand since' => 'the live-state header does not explain a divergence from the conversation',
+    ] as $needle => $why) {
+      self::assertStringContainsString($needle, $prompt, "Orchestrator: $why.");
+    }
+  }
+
+  /**
    * The validator is fed by the tolerant parser, never by the model directly.
    */
   public function testValidatorIsFedByTheTolerantParser(): void {

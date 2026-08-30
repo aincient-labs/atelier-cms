@@ -68,6 +68,8 @@ final class BrandRepository {
     private readonly ConfigFactoryInterface $configFactory,
     private readonly DesignTokens $designTokens,
     private readonly BrandFontVendor $fontVendor,
+    private readonly TokenResolver $resolver,
+    private readonly ColorContrast $contrast,
   ) {}
 
   public function tokens(): array {
@@ -149,24 +151,18 @@ final class BrandRepository {
   }
 
   /**
-   * Resolve a `var(--x)` reference chain down to a concrete value where the target
-   * is a known registry token; a Tier-0 Tailwind reference (`--color-*`, not in
-   * the registry) is returned verbatim for the descriptors to name. Depth-capped
-   * against cycles.
+   * Resolve a `var(--x)` reference chain down to a concrete value where the
+   * target is a known registry token; a Tier-0 Tailwind reference (`--color-*`,
+   * not in the registry) is returned verbatim for the descriptors to NAME.
+   *
+   * Delegates to the shared {@see TokenResolver} — this used to be one of three
+   * independent chain-walkers, and the divergence between them is what let an
+   * unresolved swatch reference reach the agent's prompt (DECISIONS 0408). The
+   * stop-at-Tier-0 shallowness is deliberate, not a gap: see
+   * {@see TokenResolver::resolveInRegistry}.
    */
-  private function resolveValue(string $value, int $depth = 0): string {
-    $value = trim($value);
-    if ($depth > 8 || !preg_match('/^var\(--([a-z0-9-]+)\)$/i', $value, $m)) {
-      return $value;
-    }
-    $target = $m[1];
-    foreach ($this->designTokens->all() as $name => $def) {
-      if (($def['css_var'] ?? str_replace('_', '-', $name)) === $target) {
-        return $this->resolveValue($this->effectiveValue($name), $depth + 1);
-      }
-    }
-    // Not a registry token (e.g. the Tier-0 Tailwind palette): leave as-is.
-    return $value;
+  private function resolveValue(string $value): string {
+    return $this->resolver->resolveInRegistry($value, $this->tokens());
   }
 
   /**
@@ -175,7 +171,8 @@ final class BrandRepository {
    * "fuchsia 300"; anything else unresolvable yields ''.
    */
   private function colorDescriptor(string $name): string {
-    $value = $this->resolveValue($this->effectiveValue($name));
+    $stored = $this->effectiveValue($name);
+    $value = $this->resolveValue($stored);
     if ($value === '') {
       return '';
     }
@@ -183,7 +180,11 @@ final class BrandRepository {
       return $value;
     }
     if (preg_match('/^var\(--color-([a-z]+)-(\d+)\)$/i', $value, $m)) {
-      return $m[1] . ' ' . $m[2];
+      // Name AND value: the name is the better prompt ingredient ("fuchsia
+      // 300" tells an image model more than an oklch triple), but the hex is
+      // what makes it reproducible — so give both rather than choosing.
+      $hex = $this->contrast->hexApproximation($stored, $this->tokens());
+      return $m[1] . ' ' . $m[2] . ($hex !== NULL ? ' (' . $hex . ')' : '');
     }
     return '';
   }

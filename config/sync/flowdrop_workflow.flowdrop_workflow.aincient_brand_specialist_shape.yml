@@ -144,6 +144,10 @@ nodes:
           CURRENT LOOK — saved brand baseline:
           {{ brand_brief }}
           {% endif %}
+          {% if shape_brief is defined and shape_brief %}
+          CURRENT LOOK — SHAPE — the dials you own, as saved (step a relative request from THESE values):
+          {{ shape_brief }}
+          {% endif %}
           {% if live_preview_state is defined and live_preview_state %}
           CURRENT LOOK — unsaved preview edits layered on top (this is what is on screen NOW; it wins over the saved baseline):
           {{ live_preview_state }}

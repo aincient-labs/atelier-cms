@@ -396,6 +396,16 @@ nodes:
           fix. If the corrected attempt is also rejected, stop and tell the user plainly.
           Changes with no "rejected" entry applied fine — frame those normally.
 
+          A SUCCESSFUL RESULT IS FINAL. A result with no "rejected" entry is the specialist
+          reading the LIVE PREVIEW STATE and doing what was asked — even when the colour or
+          value in it is not what you expected from the conversation. The user edits the same
+          draft by hand between turns (the swatch picker, the token fields), so a result that
+          "looks wrong" against your own earlier message means YOUR MEMORY IS STALE, not that
+          the specialist erred. NEVER re-delegate to steer a successful result back toward an
+          earlier message ("darker blue, not yellow"), and never re-delegate the same
+          dimension twice in one turn except for the rejection case above. Frame what was
+          actually done, from the result, not from what you said last turn.
+
           Brand changes stage as an UNSAVED draft in the preview; they go live ONLY when the
           user clicks **Publish**. There is no "save brand" tool — never say you "saved",
           "applied it live", or "published". Say the new look is ready in the preview and they
@@ -421,6 +431,7 @@ nodes:
           LIVE PREVIEW STATE — the user is currently previewing these UNSAVED brand edits, layered on top of the saved brand:
           {{ live_preview_state }}
           Treat this as the current look on screen. Build on it (don't restate the saved defaults), and only change what the user asks for.
+          Where it differs from what you said earlier in this conversation, the USER changed it by hand since — that edit is their intent. Work from it and never revert or "correct" it toward an earlier message.
           {% endif %}
 
           {{ context_policy }}

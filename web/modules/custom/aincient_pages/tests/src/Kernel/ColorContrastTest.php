@@ -104,17 +104,68 @@ final class ColorContrastTest extends KernelTestBase {
    * The hex echo grounds an oklch literal — including the hue-0 pink trap.
    *
    * oklch(0.98 0.01 0) reads as "white" to a model but is #FFF6F8 (pink);
-   * the approximation is what lets the agent see its own tint. Hex input and
-   * var() references return NULL (nothing to add / not a literal).
+   * the approximation is what lets the agent see its own tint. Hex input has
+   * nothing to add; an unparseable value is not guessed at.
    */
   public function testHexApproximationGroundsColourLiterals(): void {
     $c = $this->contrast();
     $this->assertSame('#FFF6F8', $c->hexApproximation('oklch(0.98 0.01 0)'));
     $this->assertSame('#FFFFFF', $c->hexApproximation('rgb(255 255 255)'));
     $this->assertNull($c->hexApproximation('#ffffff'));
-    $this->assertNull($c->hexApproximation('var(--brand-primary)'));
     $this->assertNull($c->hexApproximation('not-a-colour'));
     $this->assertNull($c->hexApproximation(''));
+  }
+
+  /**
+   * A var() reference is FOLLOWED, not skipped — the brown-instead-of-yellow bug.
+   *
+   * A swatch picked from the studio's Tailwind grid rides the wire as the
+   * opaque literal `var(--color-yellow-100)`. Echoed bare into the colour
+   * specialist's prompt it carried no number, so "make primary darker" had
+   * nothing to subtract from and the model anchored on the only concrete
+   * primary present — the SAVED palette — and darkened that instead.
+   */
+  public function testHexApproximationFollowsVarReferences(): void {
+    $c = $this->contrast();
+
+    // Tier 0: a Tailwind swatch reference resolves to its concrete colour.
+    $this->assertSame('#FEF9C2', $c->hexApproximation('var(--color-yellow-100)'));
+
+    // A registry token reference resolves through the effective token map.
+    $this->assertNotNull($c->hexApproximation('var(--brand-primary)'));
+
+    // Against a DRAFT: the reference must resolve to what is on screen, not to
+    // the saved value. Overrides are accepted keyed by css_var (how the studio
+    // draft rides the wire) as well as by token name.
+    $draft = ['brand-primary' => 'var(--color-yellow-100)'];
+    $this->assertSame('#FEF9C2', $c->hexApproximation('var(--brand-primary)', $draft));
+    $this->assertSame('#FEF9C2', $c->hexApproximation('var(--brand-primary)', ['brand_primary' => 'var(--color-yellow-100)']));
+
+    // An unknown reference is not guessed at.
+    $this->assertNull($c->hexApproximation('var(--no-such-token)'));
+  }
+
+  /**
+   * colorEcho is the ONE grounding renderer every model-facing echo uses.
+   *
+   * A literal gets its hex; a reference also gets the literal behind it,
+   * because a relative edit ("darker", "warmer") needs the numbers and not
+   * just the colour's identity.
+   */
+  public function testColorEchoRendersOneGroundingSuffix(): void {
+    $c = $this->contrast();
+
+    $this->assertSame(' (≈ #AB5637)', $c->colorEcho('oklch(0.55 0.12 40)'));
+    $this->assertSame(
+      ' (= oklch(97.3% 0.071 103.193) ≈ #FEF9C2)',
+      $c->colorEcho('var(--color-yellow-100)'),
+    );
+
+    // Nothing to add: already hex, unparseable, empty, or a non-colour token.
+    $this->assertSame('', $c->colorEcho('#ffffff'));
+    $this->assertSame('', $c->colorEcho('not-a-colour'));
+    $this->assertSame('', $c->colorEcho(''));
+    $this->assertSame('', $c->colorEcho('var(--radius-lg)'));
   }
 
   /**

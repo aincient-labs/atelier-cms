@@ -244,7 +244,27 @@ final class ChatController extends ControllerBase {
    */
   private function brandVariables(mixed $brandContext): ?array {
     $draft = $this->brandContext($brandContext);
-    return $draft === NULL ? NULL : ['live_preview_state' => $draft];
+    if ($draft === NULL) {
+      return NULL;
+    }
+    $vars = ['live_preview_state' => $draft];
+    // Which tokens the draft overrides, so the SAVED-brand brief can mark its
+    // own entry for them superseded instead of stating a second, competing
+    // "current" value for the same token. Two contradictory currents in one
+    // prompt is a data defect, not a prompt-wording problem — and the stale one
+    // reads more assertively ("Current saved palette: primary …"), so it wins
+    // arguments it should not (DECISIONS 0408).
+    $overrides = $brandContext['overrides'] ?? NULL;
+    if (is_array($overrides)) {
+      $names = array_keys(array_filter(
+        $overrides,
+        static fn ($v) => is_string($v) && trim($v) !== '',
+      ));
+      if ($names !== []) {
+        $vars['draft_tokens'] = implode(',', $names);
+      }
+    }
+    return $vars;
   }
 
   /**
@@ -267,20 +287,28 @@ final class ChatController extends ControllerBase {
     $lines = [];
     $overrides = $brandContext['overrides'] ?? NULL;
     if (is_array($overrides)) {
-      // Grounding: annotate non-hex colour literals with their hex equivalent.
-      // The model reads oklch(0.98 0.01 0) as "white" but SEES #FFF6F8 as pink
-      // — the hex echo is what lets it catch its own tinted colours.
-      $contrast = \Drupal::hasService('aincient_pages.color_contrast')
-        ? \Drupal::service('aincient_pages.color_contrast')
+      // Grounding: annotate every value with what it actually IS. The model
+      // reads oklch(0.98 0.01 0) as "white" but SEES #FFF6F8 as pink, reads
+      // 0.75rem as a fraction but SEES 12px — and a var() reference
+      // (var(--color-yellow-100), var(--radius-2xl)) carries no value at all
+      // until it is followed. Echoing references bare made a relative edit
+      // ("make primary darker") anchor on the saved palette instead of the
+      // draft on screen (DECISIONS 0408). TokenGrounding is the ONE renderer
+      // both this and the saved baseline in BrandState use, for every token
+      // type — not just colour.
+      $grounding = \Drupal::hasService('aincient_pages.token_grounding')
+        ? \Drupal::service('aincient_pages.token_grounding')
         : NULL;
+      // Two passes: collect the whole draft first, so a token referencing
+      // another DRAFTED token resolves against the draft, not the defaults.
       $draft = [];
       foreach ($overrides as $cssVar => $value) {
         if (is_string($value) && trim($value) !== '') {
-          $value = trim($value);
-          $draft[(string) $cssVar] = $value;
-          $hex = $contrast?->hexApproximation($value);
-          $lines[] = '- ' . (string) $cssVar . ' = ' . $value . ($hex !== NULL ? ' (≈ ' . $hex . ')' : '');
+          $draft[(string) $cssVar] = trim($value);
         }
+      }
+      foreach ($draft as $cssVar => $value) {
+        $lines[] = '- ' . $cssVar . ' = ' . $value . ($grounding?->echoFor($cssVar, $value, $draft) ?? '');
       }
       // Stage the draft as this turn's contrast baseline: the preview applier
       // grades its WCAG advisories against draft-over-saved instead of just

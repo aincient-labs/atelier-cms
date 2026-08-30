@@ -56,7 +56,7 @@ services:
   # Foundations: the design-token layer (abstract visual language).
   aincient_pages.brand:
     class: Drupal\aincient_pages\BrandRepository
-    arguments: ['@config.factory', '@aincient_pages.design_tokens', '@aincient_pages.brand_font_vendor']
+    arguments: ['@config.factory', '@aincient_pages.design_tokens', '@aincient_pages.brand_font_vendor', '@aincient_pages.token_resolver', '@aincient_pages.color_contrast']
   # Brand identity (a Globals item): name/tagline/voice/logo/footer note.
   aincient_pages.site_identity:
     class: Drupal\aincient_pages\SiteIdentity
@@ -177,9 +177,23 @@ services:
   aincient_pages.design_tokens:
     class: Drupal\aincient_pages\DesignTokens
     arguments: ['@extension.list.module']
+  # Resolution: follows a token's var() chain (registry tiers → Tier-0 Tailwind)
+  # to the concrete value behind it. The counterpart to TokenValue, which is the
+  # single point of TRUST; this is the single point of RESOLUTION. Three partial
+  # walkers used to do this independently and the weakest sat on the agent's
+  # prompt path (DECISIONS 0408).
+  aincient_pages.token_resolver:
+    class: Drupal\aincient_pages\TokenResolver
+    arguments: ['@aincient_pages.design_tokens']
   aincient_pages.color_contrast:
     class: Drupal\aincient_pages\ColorContrast
-    arguments: ['@aincient_pages.design_tokens']
+    arguments: ['@aincient_pages.design_tokens', '@aincient_pages.token_resolver']
+  # Grounding: renders a token value as a MODEL should read it (reference
+  # followed, hex for a colour, px for a rem). Every agent-facing echo of brand
+  # state goes through this one renderer so they cannot drift apart.
+  aincient_pages.token_grounding:
+    class: Drupal\aincient_pages\TokenGrounding
+    arguments: ['@aincient_pages.design_tokens', '@aincient_pages.token_resolver', '@aincient_pages.color_contrast', '@aincient_pages.brand']
   # GDPR consent model for the public site (categories + whether the banner is
   # needed, given the brand's font-delivery mode).
   aincient_pages.consent:

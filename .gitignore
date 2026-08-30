@@ -84,3 +84,8 @@ ralph/
 # Test-harness artifacts
 /.phpunit.cache/
 /coverage/
+
+# In-progress workshop artifacts (YouTube series) — live on the dev site, never shipped.
+# Swept into commits twice (nanoid bump, flowdrop 2.4.1 chore); ignore the pattern, not the file.
+config/sync/flowdrop_workflow.flowdrop_workflow.yt_*.yml
+config/sync/flowdrop_node_type.flowdrop_node_type.message_from_text.yml

@@ -2941,7 +2941,7 @@ MIT License
 
 ------------------------------------------------------------------------------
 
-@types/react@19.2.15  —  MIT
+@types/react@19.2.18  —  MIT
 
 MIT License
 
@@ -2967,7 +2967,7 @@ MIT License
 
 ------------------------------------------------------------------------------
 
-@types/react-dom@19.2.3  —  MIT
+@types/react-dom@19.2.5  —  MIT
 
 MIT License
 
@@ -7473,7 +7473,7 @@ SOFTWARE.
 
 ------------------------------------------------------------------------------
 
-react@19.2.6  —  MIT
+react@19.2.8  —  MIT
 
 MIT License
 
@@ -7499,7 +7499,7 @@ SOFTWARE.
 
 ------------------------------------------------------------------------------
 
-react-dom@19.2.6  —  MIT
+react-dom@19.2.8  —  MIT
 
 MIT License
 
@@ -13096,7 +13096,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
 
-xstate@5.32.3  —  MIT
+xstate@5.32.6  —  MIT
 
 The MIT License (MIT)
 

@@ -29,7 +29,10 @@ final class ColorContrast {
   /** Recursion guard for var() chains. */
   private const MAX_DEPTH = 12;
 
-  public function __construct(private readonly DesignTokens $tokens) {}
+  public function __construct(
+    private readonly DesignTokens $tokens,
+    private readonly TokenResolver $resolver,
+  ) {}
 
   /**
    * A contrast report for every declared surface/on pair, evaluated against the
@@ -155,25 +158,18 @@ final class ColorContrast {
   /**
    * The effective value of every token: a known override, else its default.
    *
+   * Overrides may be keyed by token name or css_var — {@see TokenResolver} owns
+   * that tolerance so every consumer gets it.
+   *
    * @return array<string, string>
    */
   private function effective(array $overrides): array {
-    $values = $this->tokens->defaults();
-    foreach ($overrides as $name => $value) {
-      if (is_string($value) && array_key_exists($name, $values)) {
-        $values[$name] = trim($value);
-      }
-    }
-    return $values;
+    return $this->resolver->effective($overrides);
   }
 
   /** @return array<string, string> css_var => token name. */
   private function cssVarToName(): array {
-    $map = [];
-    foreach ($this->tokens->all() as $name => $def) {
-      $map[$def['css_var']] = $name;
-    }
-    return $map;
+    return $this->resolver->cssVarToName();
   }
 
   /**
@@ -308,21 +304,42 @@ final class ColorContrast {
   }
 
   /**
-   * A #rrggbb approximation of a non-hex colour literal, or NULL.
+   * A #rrggbb approximation of a colour value, or NULL.
    *
    * Grounding aid for the agent: models recognise a tint in hex far more
    * reliably than in oklch() (oklch(0.98 0.01 0) reads as "white" to a model
    * but renders #FFF6F8 — pink), so everywhere we echo brand state back into a
-   * prompt we annotate non-hex colours with their hex equivalent. Returns NULL
-   * for values that are already hex (nothing to add), var() references
-   * (resolve them first if you need a literal), and anything unparseable.
+   * prompt we annotate colours with their hex equivalent.
+   *
+   * A `var()` reference is FOLLOWED (registry tokens, then the Tier-0 Tailwind
+   * palette) rather than skipped — the same resolution the contrast reports
+   * use. Leaving it unresolved was a real bug: a swatch picked from the studio's
+   * Tailwind grid reached the colour specialist as the opaque literal
+   * `var(--color-yellow-100)`, so a relative request ("make primary darker")
+   * had no number to work from and the model anchored on the only concrete
+   * primary in the prompt — the SAVED palette — and darkened that instead.
+   *
+   * Returns NULL for values that are already hex (nothing to add) and for
+   * anything that does not resolve to a concrete colour.
+   *
+   * @param string $value
+   *   The colour value: a literal, or a `var(--token)` reference to follow.
+   * @param array<string, string> $overrides
+   *   Token overrides the reference should resolve against (a studio draft or
+   *   saved brand), keyed by token name OR css_var. Without them a reference
+   *   resolves against the registry defaults.
    */
-  public function hexApproximation(string $value): ?string {
+  public function hexApproximation(string $value, array $overrides = []): ?string {
     $value = trim($value);
-    if ($value === '' || $value[0] === '#' || stripos($value, 'var(') === 0) {
+    if ($value === '' || $value[0] === '#') {
       return NULL;
     }
-    $linear = $this->parse($value);
+    $linear = $this->toLinear(
+      $value,
+      $this->effective($overrides),
+      $this->cssVarToName(),
+      $this->tokens->tailwindValues(),
+    );
     if ($linear === NULL) {
       return NULL;
     }
@@ -331,6 +348,53 @@ final class ColorContrast {
       $hex .= str_pad(dechex((int) round($this->linearToSrgb($channel) * 255)), 2, '0', STR_PAD_LEFT);
     }
     return strtoupper($hex);
+  }
+
+  /**
+   * The parenthesised grounding suffix to append when echoing a colour into a
+   * prompt — '' when there is nothing useful to add.
+   *
+   * ONE renderer for every model-facing echo, so the live-draft lines and the
+   * saved-palette line cannot drift apart again. A concrete literal gets its
+   * hex (`(≈ #AB5637)`); a `var()` reference also gets the literal it resolves
+   * to (`(= oklch(97.3% 0.071 103.193) ≈ #FEFCE8)`), because a relative edit
+   * needs the numbers, not just the colour's identity.
+   *
+   * @param string $value
+   *   The colour value being echoed.
+   * @param array<string, string> $overrides
+   *   Token overrides to resolve a reference against, keyed by token name OR
+   *   css_var.
+   */
+  public function colorEcho(string $value, array $overrides = []): string {
+    $value = trim($value);
+    $hex = $this->hexApproximation($value, $overrides);
+    if ($hex === NULL) {
+      return '';
+    }
+    if (stripos($value, 'var(') !== 0) {
+      return ' (≈ ' . $hex . ')';
+    }
+    $literal = $this->resolveToLiteral($value, $overrides);
+    return $literal === NULL || $literal === $hex
+      ? ' (≈ ' . $hex . ')'
+      : ' (= ' . $literal . ' ≈ ' . $hex . ')';
+  }
+
+  /**
+   * Follow a `var()` chain to the concrete COLOUR literal behind it, or NULL
+   * when it does not land on one. A value that is already a colour literal is
+   * returned unchanged.
+   *
+   * The chain-walking itself belongs to {@see TokenResolver}; this adds only
+   * the colour-specific requirement that the endpoint actually parse as one.
+   *
+   * @param array<string, string> $overrides
+   *   Token overrides, keyed by token name OR css_var.
+   */
+  public function resolveToLiteral(string $value, array $overrides = []): ?string {
+    $resolved = $this->resolver->resolve($value, $overrides);
+    return ($resolved === NULL || $this->parse($resolved) === NULL) ? NULL : $resolved;
   }
 
   /** Linear-light channel (0..1) → gamma-encoded sRGB (0..1). */

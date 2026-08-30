@@ -7,6 +7,25 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.10.2] — 2026-08-30
+
+**Brand agent: edits act on the colour you are previewing.** Picking a swatch in the design
+studio and then asking for a relative change ("make primary darker") used to change the *saved*
+colour instead — a darker brown from a yellow draft. The agent now reads every design token
+resolved to its real value, for colours, radii, weights and type alike, and works from what is on
+screen.
+
+- Swatches stay swatches: "darker" walks the Tailwind ramp (yellow 100 → yellow 500) instead of
+  inventing a colour, so the picked swatch stays selected and nameable.
+- An on-colour travels with its surface: darkening a fill re-derives its text colour, so a
+  locked brand can no longer ship a contrast failure to stay "minimal".
+- "Darker" no longer turns a pale colour to mud — saturation follows lightness.
+- A change you made by hand between turns is respected; the agent no longer "corrects" it back
+  toward what it said earlier.
+- The shape and typography specialists now see the site's current corners, shadows and type, so
+  "rounder" or "heavier" step from real values rather than guesses.
+- Workflow engine updated to FlowDrop 2.4.1.
+
 ## [0.10.1] — 2026-08-25
 
 **Brand agent colour fixes.** The design-system agent could write a subtly tinted "white"

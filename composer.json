@@ -35,7 +35,7 @@
         "drupal/crop": "^2.6",
         "drupal/csv_serialization": "^4.0.1",
         "drupal/file_mdm": "^3.2",
-        "drupal/flowdrop": "^2.4",
+        "drupal/flowdrop": "^2.4.1",
         "drupal/focal_point": "^2.1.2",
         "drupal/image_style_quality": "^1.7",
         "drupal/image_widget_crop": "^3.0",
