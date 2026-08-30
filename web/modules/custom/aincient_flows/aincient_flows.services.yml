@@ -1,0 +1,14 @@
+services:
+
+  # Live-turn eval for the brand agent (`drush aincient:brand-eval`). Runs a
+  # real brand_studio turn through aincient_chat's processor and reads the job
+  # trail; cross-module services are resolved at run time (see the class).
+  aincient_flows.brand_eval_runner:
+    class: Drupal\aincient_flows\Eval\BrandEvalRunner
+    arguments:
+      - '@config.factory'
+      - '@entity_type.manager'
+      - '@account_switcher'
+      - '@aincient_pages.brand'
+      - '@aincient_pages.token_resolver'
+      - '@aincient_pages.color_contrast'

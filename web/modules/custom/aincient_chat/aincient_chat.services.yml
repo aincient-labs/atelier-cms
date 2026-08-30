@@ -129,6 +129,17 @@ services:
       - '@aincient_chat.flow_dispatcher'
       - '@logger.channel.aincient_chat'
 
+  # ONE renderer for the brand studio's per-turn draft (`live_preview_state` +
+  # `draft_tokens`), shared by ChatController and `drush aincient:brand-eval` so
+  # the eval sends the agent exactly what the studio sends (DECISIONS 0408).
+  # The aincient_pages services are optional only so this module's container
+  # compiles without aincient_pages in kernel tests; on a site they are present.
+  aincient_chat.brand_turn_context:
+    class: Drupal\aincient_chat\Chat\BrandTurnContext
+    arguments:
+      - '@?aincient_pages.token_grounding'
+      - '@?aincient_pages.preview_applier'
+
   # The vision seam: turns `context:<id>` image attachments into fenced,
   # pre-described text injected into the user turn (DECISIONS 0347). Uses the
   # independently-bindable vision role via the gateway and degrades gracefully —

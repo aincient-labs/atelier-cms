@@ -1,0 +1,22 @@
+# cms #36 / #37 — "make primary darker" over a swatch DRAFT must act on the
+# draft (yellow), not the saved colour (the cinnabar default) — the original
+# "brown instead of yellow" report. The saved primary is warm (h≈40); a result
+# anywhere near it means the agent anchored on the wrong layer.
+#
+#   before (draft)            | after (was, #36)            | after (fixed)
+#   var(--color-yellow-100)   | oklch(0.45 0.10 40) brown   | a darker YELLOW
+name: darker-from-var-draft
+issue: 36
+status: ideating
+saved_tokens: {}
+draft:
+  brand-primary: var(--color-yellow-100)
+  brand-primary-foreground: oklch(0.15 0 0)
+ask: make primary darker
+expect:
+  status: completed
+  delegations.colour: ">= 1"
+  slice.brand_primary: present
+  lightness_delta.brand_primary: falls
+  hue_delta.brand_primary: "< 40"
+  prose_not: /brown|cinnabar|terracotta|rust/i

@@ -1,0 +1,26 @@
+# cms #38 (with #37) — "make the corners rounder" on a brand whose radii are all
+# 0px must move a rung the brand actually renders, not return a no-op or invent
+# a value with no anchor. The shape specialist must see its own baseline.
+#
+#   before                    | after (was)                  | after (fixed)
+#   card_radius 0px (all 0)   | radius_sm: 0px (no change)   | card/button radius > 0
+name: rounder-moves-a-real-rung
+issue: 38
+status: guided
+saved_tokens:
+  radius_sm: 0px
+  radius_md: 0px
+  radius_lg: 0px
+  radius_xl: 0px
+  radius_2xl: 0px
+  card_radius: 0px
+  button_radius: 0px
+  input_radius: 0px
+ask: make the corners a bit rounder
+expect:
+  status: completed
+  delegations.shape: ">= 1"
+  # Either path is fine — a roundness preset (expanded to the radius tokens)
+  # or one knob (card_radius/button_radius) — as long as a radius is now > 0.
+  applied_nonzero: /radius/
+  prose_not: /already|no change|nothing to change/i

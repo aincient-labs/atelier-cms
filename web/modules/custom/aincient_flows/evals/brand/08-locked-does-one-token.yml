@@ -1,0 +1,14 @@
+# plans/current.md — Locked + "make primary blue" is ONE named token: surgical by
+# the directive's own definition. It must be applied, not refused as a
+# "sweeping restyle" (thr_ade9158924014e6c, first attempt).
+# Eval data 2026-08-30 (2 runs): applied both times, never refused. The colour it
+# lands on and its contrast are a separate question → 10-absolute-ask-pair-holds-aa.
+name: locked-does-one-token
+status: locked
+saved_tokens: {}
+ask: make primary blue
+expect:
+  status: completed
+  delegations.colour: ">= 1"
+  slice.brand_primary: present
+  prose_not: /sweeping|can't|cannot|unable|locked brand (prevents|forbids)|not able/i

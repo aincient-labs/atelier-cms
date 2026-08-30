@@ -8,6 +8,7 @@ use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\State\StateInterface;
 use Drupal\aincient_chat\Chat\AttachmentTurnPreparer;
+use Drupal\aincient_chat\Chat\BrandTurnContext;
 use Drupal\aincient_chat\Chat\ChatProcessorInterface;
 use Drupal\aincient_chat\Chat\ContextPolicy;
 use Drupal\aincient_chat\Chat\SessionThreadStore;
@@ -49,6 +50,7 @@ final class ChatController extends ControllerBase {
     private readonly ThreadNamer $threadNamer,
     private readonly ModelRoleResolver $roleResolver,
     private readonly AttachmentTurnPreparer $attachmentPreparer,
+    private readonly BrandTurnContext $brandTurnContext,
   ) {}
 
   /**
@@ -64,6 +66,7 @@ final class ChatController extends ControllerBase {
       $container->get('aincient_chat.thread_namer'),
       $container->get('aincient_core.model_role_resolver'),
       $container->get('aincient_chat.attachment_turn_preparer'),
+      $container->get('aincient_chat.brand_turn_context'),
     );
   }
 
@@ -229,12 +232,11 @@ final class ChatController extends ControllerBase {
   }
 
   /**
-   * Assemble the brand console's per-turn template variable for the brand agent.
+   * The brand console's per-turn template variables for the brand agent.
    *
-   * Maps to the `variables` workflow input → the system-prompt PromptTemplate
-   * node's `live_preview_state` Twig var: the unsaved token overrides + staged
-   * fonts the user is currently previewing. NULL when there's no draft (a
-   * non-brand turn, or the saved brand with no edits → no injection).
+   * Delegates to {@see BrandTurnContext} — the ONE renderer shared with the
+   * live-turn eval (`drush aincient:brand-eval`), so what the eval sends the
+   * agent is byte-for-byte what the studio sends.
    *
    * @param mixed $brandContext
    *   The decoded `brand_context` payload, or NULL.
@@ -243,89 +245,7 @@ final class ChatController extends ControllerBase {
    *   The template variables, or NULL when there's nothing to inject.
    */
   private function brandVariables(mixed $brandContext): ?array {
-    $draft = $this->brandContext($brandContext);
-    if ($draft === NULL) {
-      return NULL;
-    }
-    $vars = ['live_preview_state' => $draft];
-    // Which tokens the draft overrides, so the SAVED-brand brief can mark its
-    // own entry for them superseded instead of stating a second, competing
-    // "current" value for the same token. Two contradictory currents in one
-    // prompt is a data defect, not a prompt-wording problem — and the stale one
-    // reads more assertively ("Current saved palette: primary …"), so it wins
-    // arguments it should not (DECISIONS 0408).
-    $overrides = $brandContext['overrides'] ?? NULL;
-    if (is_array($overrides)) {
-      $names = array_keys(array_filter(
-        $overrides,
-        static fn ($v) => is_string($v) && trim($v) !== '',
-      ));
-      if ($names !== []) {
-        $vars['draft_tokens'] = implode(',', $names);
-      }
-    }
-    return $vars;
-  }
-
-  /**
-   * Compact the brand console's live preview draft into a string for the agent.
-   *
-   * Carries `{overrides: {css_var: value}, fonts: [name]}`. We render it as
-   * readable lines (token = value) rather than raw JSON so the model parses it
-   * easily. Returns NULL when there's nothing to send (no draft → no injection).
-   *
-   * @param mixed $brandContext
-   *   The decoded `brand_context` payload, or NULL.
-   *
-   * @return string|null
-   *   The compacted context, or NULL when empty/malformed.
-   */
-  private function brandContext(mixed $brandContext): ?string {
-    if (!is_array($brandContext)) {
-      return NULL;
-    }
-    $lines = [];
-    $overrides = $brandContext['overrides'] ?? NULL;
-    if (is_array($overrides)) {
-      // Grounding: annotate every value with what it actually IS. The model
-      // reads oklch(0.98 0.01 0) as "white" but SEES #FFF6F8 as pink, reads
-      // 0.75rem as a fraction but SEES 12px — and a var() reference
-      // (var(--color-yellow-100), var(--radius-2xl)) carries no value at all
-      // until it is followed. Echoing references bare made a relative edit
-      // ("make primary darker") anchor on the saved palette instead of the
-      // draft on screen (DECISIONS 0408). TokenGrounding is the ONE renderer
-      // both this and the saved baseline in BrandState use, for every token
-      // type — not just colour.
-      $grounding = \Drupal::hasService('aincient_pages.token_grounding')
-        ? \Drupal::service('aincient_pages.token_grounding')
-        : NULL;
-      // Two passes: collect the whole draft first, so a token referencing
-      // another DRAFTED token resolves against the draft, not the defaults.
-      $draft = [];
-      foreach ($overrides as $cssVar => $value) {
-        if (is_string($value) && trim($value) !== '') {
-          $draft[(string) $cssVar] = trim($value);
-        }
-      }
-      foreach ($draft as $cssVar => $value) {
-        $lines[] = '- ' . $cssVar . ' = ' . $value . ($grounding?->echoFor($cssVar, $value, $draft) ?? '');
-      }
-      // Stage the draft as this turn's contrast baseline: the preview applier
-      // grades its WCAG advisories against draft-over-saved instead of just
-      // saved, so an incremental token update isn't warned against a stale
-      // published palette the user is no longer looking at.
-      if ($draft !== [] && \Drupal::hasService('aincient_pages.preview_applier')) {
-        \Drupal::service('aincient_pages.preview_applier')->setDraftBaseline($draft);
-      }
-    }
-    $fonts = $brandContext['fonts'] ?? NULL;
-    if (is_array($fonts) && $fonts !== []) {
-      $names = array_filter(array_map(static fn($f) => is_string($f) ? trim($f) : '', $fonts));
-      if ($names !== []) {
-        $lines[] = '- web fonts loaded: ' . implode(', ', $names);
-      }
-    }
-    return $lines === [] ? NULL : implode("\n", $lines);
+    return $this->brandTurnContext->variables($brandContext);
   }
 
   /**

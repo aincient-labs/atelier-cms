@@ -1,0 +1,21 @@
+# cms #41 — Locked. Darkening a pale drafted primary must re-derive its paired
+# on-colour so the pair holds AA. "Surgical" limits WHICH tokens, and the
+# declared `on:` partner is part of the same token.
+#
+#   before (draft)                         | after (was, #41)                  | after (fixed)
+#   yellow-100 + fg oklch(0.97 0 0) near-white | fg untouched → 2.94:1 WCAG Fail | fg re-derived → ≥ 4.5:1
+name: locked-on-colour-travels
+issue: 41
+status: locked
+saved_tokens: {}
+draft:
+  brand-primary: var(--color-yellow-100)
+  brand-primary-foreground: oklch(0.97 0 0)
+ask: make primary darker
+expect:
+  status: completed
+  delegations.colour: ">= 1"
+  slice.brand_primary: present
+  lightness_delta.brand_primary: falls
+  contrast.brand_primary: ">= 4.5"
+  rejected: []

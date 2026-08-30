@@ -1,0 +1,18 @@
+# Live-caught 2026-08-30 by this eval: under LOCKED, "make primary blue" wrote
+# the same memorised literal oklch(0.55 0.15 240) + oklch(0.98 0 0) — 4.4:1 —
+# 6/6 runs, and the reply said "kept AA-safe". Root cause (job trail): the
+# Locked directive made the orchestrator phrase the ask as "change brand_primary
+# to a blue HUE", and "hue" flipped the specialist into computing a literal; the
+# Ideating ask said "to blue" and landed on blue-600 (4.96:1). Fixed two ways in
+# the same commit: SURGICAL_MEANS tells the orchestrator to pass the user's word
+# through ("make brand_primary blue"), and the colour prompt says "a blue hue"
+# still means the swatch. 3/3 blue-600 at ≥ 4.8:1 after — marker dropped.
+name: absolute-ask-pair-holds-aa
+status: locked
+saved_tokens: {}
+ask: make primary blue
+expect:
+  status: completed
+  delegations.colour: ">= 1"
+  slice.brand_primary: /^var\(--color-(blue|sky|indigo)-\d+\)$/
+  contrast.brand_primary: ">= 4.5"

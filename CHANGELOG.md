@@ -7,6 +7,22 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.10.3] — 2026-08-30
+
+**Brand agent: "darker" means darker, and "blue" lands on a real swatch.** Two behaviours the
+design-studio assistant kept getting wrong are fixed, found and verified by a new live-turn test
+suite that runs the assistant end to end against real requests.
+
+- A plain "make primary darker" from a pale tint now moves to a clearly darker shade (yellow 100 →
+  yellow 500). It used to move a single, near-invisible step; "slightly darker" is still one step.
+- On a locked brand, "make primary blue" now picks the blue-600 swatch — the pick lights up in the
+  studio and its text colour passes WCAG AA (4.96:1). It used to write a hand-computed colour whose
+  text pair failed AA while the reply claimed it was safe.
+- Text on a darkened yellow, amber, lime or cyan fill stays dark ink instead of flipping to white
+  too early.
+- The assistant's reply now names the exact shade it applied, taken from the change itself rather
+  than guessed.
+
 ## [0.10.2] — 2026-08-30
 
 **Brand agent: edits act on the colour you are previewing.** Picking a swatch in the design

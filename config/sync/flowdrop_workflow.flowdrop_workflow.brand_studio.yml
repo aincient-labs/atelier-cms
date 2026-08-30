@@ -404,7 +404,10 @@ nodes:
           the specialist erred. NEVER re-delegate to steer a successful result back toward an
           earlier message ("darker blue, not yellow"), and never re-delegate the same
           dimension twice in one turn except for the rejection case above. Frame what was
-          actually done, from the result, not from what you said last turn.
+          actually done, from the result, not from what you said last turn. When you name a
+          value or rung in the reply ("yellow-500", "blue-600"), COPY it from the specialist's
+          result — never predict it from the ask or the ramp. If the result carries no name,
+          describe the change without one.
 
           Brand changes stage as an UNSAVED draft in the preview; they go live ONLY when the
           user clicks **Publish**. There is no "save brand" tool — never say you "saved",

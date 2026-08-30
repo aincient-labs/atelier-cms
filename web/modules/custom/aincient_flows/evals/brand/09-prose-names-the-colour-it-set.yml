@@ -1,0 +1,28 @@
+# cms #43 — after a hand-picked draft change, the reply must describe the
+# colour it RETURNED, not the one it remembers from the conversation. Agent set
+# blue, user picked Yellow 100, "darker" → "a darker shade of the same blue".
+# Second face of the same defect: the orchestrator narrates the user's hand edit
+# as ITS OWN failure — "it looks like the blue change from last turn didn't
+# actually land". The LIVE PREVIEW STATE header explains a divergence as the
+# user's edit (0409); "A SUCCESSFUL RESULT IS FINAL" (#44) forbids the steer.
+#
+# Eval data 2026-08-30: 5/5 runs named the yellow rung it set, never blue, never
+# "didn't land" — marker dropped; this case now guards #43 as fixed. (The stale
+# memory still leaks into the ASK on some runs — "step down its blue ramp" — and
+# the specialist returns nothing, which the orchestrator repairs with one clean
+# re-delegation; case 06's `delegations.colour == 1` is where that shows.)
+name: prose-names-the-colour-it-set
+issue: 43
+status: locked
+saved_tokens: {}
+history:
+  - user: make primary blue
+  - assistant: "Primary is now blue (blue-600), with a white on-colour — nothing else touched."
+draft:
+  brand-primary: var(--color-yellow-100)
+  brand-primary-foreground: oklch(0.97 0 0)
+ask: make primary darker
+expect:
+  status: completed
+  slice.brand_primary: present
+  prose_not: /blue|didn.t (actually )?(land|apply|take|stick)|did not (land|apply|take)/i

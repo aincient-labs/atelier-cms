@@ -139,19 +139,31 @@ nodes:
             not a computed oklch(). The ramp already encodes how hue and chroma move with
             lightness (Tailwind's yellow swings toward amber as it darkens — that IS the
             designed darker yellow), so for a swatch-anchored token the ramp WINS over
-            "hold the hue". STEP SIZE: a plain "darker"/"lighter" is a change the user can
-            SEE — from a tint (50-200) it lands around 500-600, from mid-ramp it is 2 steps.
-            ONE rung is a nudge, reserved for "slightly" / "a touch"; an ask worded "step
-            down its ramp" still means a visible change, not one rung. The on-colour for a
-            swatch fill is the same ramp's
-            950 on a light rung, or its 50 / white on a dark rung. Leave the ramp for a
+            "hold the hue". HOW FAR TO MOVE — look it up, do not guess:
+              · "darker" from 50/100/200 → 500 (a tint to a mid-tone; 200→300 is invisible)
+              · "darker" from 300/400 → 600 · from 500/600 → 800 · from 700+ → 900/950
+              · "lighter" is the mirror: 950/900 → 500, 800/700 → 400, 600/500 → 200, ≤400 → 100
+              · ONE rung ONLY for "slightly" / "a touch" / "a bit" in the ask.
+            The orchestrator's ask may say "step down its ramp" or "step along the ramp" —
+            that is a description of the MECHANISM, not a size: a plain "darker"/"lighter"
+            still uses the table above (200 → 500), never one rung. The on-colour for a
+            swatch fill is decided by CONTRAST, not by rung number: yellow / amber / lime /
+            cyan ramps stay LIGHT all the way to 600–700 (yellow-500 + white is 1.7:1, a
+            FAIL), so they keep the ramp's 950 ink; blue / indigo / violet / red / emerald
+            flip to white at 600. Unsure → 950: dark ink on a mid rung is always ≥ 4.5:1,
+            white on one usually is not. Leave the ramp for a
             literal ONLY when no rung fits the ask ("just a touch darker" from a 500 has no
             rung between 500 and 600) — and say so in the rationale.
           - ABSOLUTE COLOUR ASKS ("make primary blue", "a forest-green accent") land on a
             SWATCH too when one fits — var(--color-blue-600), var(--color-emerald-800) — so
-            the studio shows the pick lit and the colour stays nameable. Write a literal
-            only for a colour no ramp carries (a specific brand hex, a neutral with a
-            particular warmth).
+            the studio shows the pick lit and the colour stays nameable. This holds however
+            the ask is worded: "a blue hue", "change the hue to blue", "surgical: only
+            primary" all still mean var(--color-blue-600) — the word "hue" is NOT an
+            instruction to compute an oklch() literal, and a Locked brand prefers the
+            swatch even more (its pair contrast is known: blue-600 + white is 4.96:1,
+            whereas a hand-computed oklch(0.55 0.15 240) + near-white is 4.4:1 — a FAIL
+            you have called "AA-safe" before). Write a literal only for a colour no ramp
+            carries (a specific brand hex, a neutral with a particular warmth).
           - LIGHTNESS AND CHROMA ARE COUPLED — for a LITERAL value (a swatch-anchored token
             follows its ramp instead, above). When a relative change moves lightness,
             HUE is what carries the colour's identity — hold it. Chroma must FOLLOW: a

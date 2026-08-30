@@ -1,0 +1,37 @@
+# cms #44 (the 8-step scenario; also #41/#42) — the agent set blue last turn,
+# the user then hand-picked Yellow 100 in the picker, and asks "darker". A
+# swatch stays a swatch: step along the yellow ramp and write the swatch back,
+# in ONE delegation (a clean specialist result is final — no re-delegation).
+#
+#   before (draft)            | after (was, #44)              | after (fixed)
+#   var(--color-yellow-100)   | oklch(0.62 0.15 103) literal  | var(--color-yellow-4xx..7xx)
+#
+# STEP SIZE (eval data 2026-08-30): the swatch was written back every run, but a
+# plain "darker" moved ONE rung (yellow-200) 7/9 runs although the prompt said
+# "from a tint it lands around 500-600". Job trail: the orchestrator rewrote the
+# ask as "step down its ramp" and the specialist obeyed literally. Fixed at both
+# ends — SURGICAL_MEANS: pass the user's word through; colour prompt: an explicit
+# from→to table, and "step down" is a mechanism not a size. 6/6 → yellow-500.
+# ON-COLOUR: one of those six kept WHITE on yellow-500 (1.75:1) — the "950 on a
+# light rung / white on a dark rung" rule is ambiguous for yellow, where 500 is
+# still light. Rule now decides by contrast per ramp family. 3/3 dark ink after.
+# Marker dropped. Watch: the prose named "yellow-600" twice while the slice said
+# 500 (a #43 face — the orchestrator predicting instead of copying the result).
+name: darker-from-swatch-after-hand-edit
+issue: 44
+status: locked
+saved_tokens: {}
+history:
+  - user: make primary blue
+  - assistant: "Primary is now blue (blue-600), with a white on-colour — nothing else touched."
+draft:
+  brand-primary: var(--color-yellow-100)
+  brand-primary-foreground: oklch(0.97 0 0)
+ask: make primary darker
+expect:
+  status: completed
+  delegations.colour: "== 1"
+  slice.brand_primary: /^var\(--color-yellow-(400|500|600|700)\)$/
+  slice.brand_primary_foreground: present
+  contrast.brand_primary: ">= 4.5"
+  rejected: []

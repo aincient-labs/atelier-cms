@@ -1,0 +1,25 @@
+# cms #39 — one resolver. A reference that appears in BOTH the saved brand and
+# the draft must read the same in both lines: here the saved accent and the
+# drafted primary both point at rose-500, and "make accent match primary" must
+# not drift because one line resolved and the other did not.
+#
+#   saved brand_accent = var(--color-rose-500); draft brand-primary = var(--color-rose-500)
+#   before (was, #39)                           | after (fixed)
+#   accent echoed bare, primary grounded → the  | both grounded → the specialist
+#   model "matches" by inventing a literal      | writes the same swatch or a literal within a few degrees
+name: saved-layer-under-draft
+issue: 39
+status: guided
+saved_tokens:
+  brand_accent: var(--color-rose-500)
+  brand_accent_foreground: oklch(0.98 0 0)
+draft:
+  brand-primary: var(--color-rose-500)
+  brand-primary-foreground: oklch(0.98 0 0)
+ask: make the accent colour a slightly lighter version of the primary
+expect:
+  status: completed
+  delegations.colour: ">= 1"
+  slice.brand_accent: present
+  hue_delta.brand_accent: "< 15"
+  lightness_delta.brand_accent: rises

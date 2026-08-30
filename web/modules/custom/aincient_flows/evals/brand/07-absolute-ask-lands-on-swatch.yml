@@ -1,0 +1,19 @@
+# plans/current.md — "make primary blue" lands on a Tailwind swatch
+# (`var(--color-blue-6xx)`), not a hand-computed literal, so the studio shows
+# the pick lit and the descriptor stays nameable (#44 §3).
+#
+# Eval data 2026-08-30 (sonnet-5 reasoning, haiku-4.5 specialist): under
+# Ideating the ask reached the specialist as "to blue" and landed on blue-600
+# 6/8 runs; the two misses (oklch(0.55 0.15 240), slate-700) predate the
+# "however the ask is worded" sentence in the colour prompt. 3/3 after it —
+# marker dropped. The Locked face (the orchestrator used to say "a blue HUE",
+# which produced a literal every time) is case 10.
+name: absolute-ask-lands-on-swatch
+status: ideating
+saved_tokens: {}
+ask: make primary blue
+expect:
+  status: completed
+  delegations.colour: ">= 1"
+  slice.brand_primary: /^var\(--color-(blue|sky|indigo)-\d+\)$/
+  contrast.brand_primary: ">= 4.5"

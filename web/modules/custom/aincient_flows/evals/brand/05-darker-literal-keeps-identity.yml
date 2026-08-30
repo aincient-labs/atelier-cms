@@ -1,0 +1,30 @@
+# cms #42 — "darker" from a near-white LITERAL (not a swatch, so no ramp to
+# walk) must let chroma rise as lightness falls, hue held. Pinning chroma at
+# 0.071 while dropping L to 0.65 gave khaki #97915E from a yellow.
+#
+#   before (draft literal)          | after (was, #42)                 | after (fixed)
+#   oklch(0.973 0.071 103.193)      | oklch(0.65 0.071 103.193) khaki  | hue ±15°, chroma > 0.071
+#
+# The fixture is deliberately OFF every Tailwind ramp (yellow-100 itself is
+# oklch(0.973 0.071 103.193) — a first draft used exactly that and the model,
+# correctly, snapped to the ramp). A literal sits on no ramp: 0409 says it keeps
+# the 0408 path — hold the hue, let chroma follow.
+# Eval data 2026-08-30: run 2 held it (oklch(0.65 0.15 92)); run 3 snapped to
+# yellow-600 (hue 76, Δ16°). The KHAKI defect is the chroma assertion; the hue
+# bound only forbids a colour nobody chose, so it is the ramp's own drift (< 30°,
+# as 0409 accepts for swatches — yellow 103° → 76°), not 15°.
+name: darker-literal-keeps-identity
+issue: 42
+status: locked
+saved_tokens: {}
+draft:
+  brand-primary: oklch(0.95 0.055 92)
+  brand-primary-foreground: oklch(0.15 0 0)
+ask: make primary darker
+expect:
+  status: completed
+  delegations.colour: ">= 1"
+  slice.brand_primary: present
+  lightness_delta.brand_primary: falls
+  hue_delta.brand_primary: "< 30"
+  chroma_delta.brand_primary: rises
