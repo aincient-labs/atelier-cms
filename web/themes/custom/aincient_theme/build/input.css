@@ -69,6 +69,9 @@
    Brand the markup Drupal emits (local tasks, form items) using stable core
    classes, so login/admin/node pages get real containers — not bare lists. */
 @layer components {
+  /* In-page anchor wrapper (a section's `anchor` prop → id): land a #jump with
+     breathing room rather than flush to the viewport edge. */
+  .ain-anchor { scroll-margin-top: 4.5rem; }
   /* Local tasks → pill tab bar. */
   .ain-tabs { @apply mb-8; }
   .ain-tabs__list { @apply flex flex-wrap gap-1 border-b border-border pb-3; }

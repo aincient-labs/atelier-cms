@@ -1,5 +1,8 @@
 # AIncient appliance — reference topology.
 #
+#   edge     nginx, the only published port: serves a frozen snapshot to anonymous
+#            visitors without touching PHP, proxies everything else to `app`
+#            (DECISIONS 0416 Phase 3; rule in edge.conf).
 #   app      the AIncient image; converges on start, serves the console.
 #   db       persistent state (the only thing that must survive image swaps).
 #   updater  the privileged "one-click upgrade" sidecar — watches a shared flag
@@ -50,8 +53,11 @@ services:
       # Leave ADMIN_PASS unset to have converge generate a random password on
       # first install (printed to the app log + written to private/INITIAL_ADMIN_PASSWORD).
       AINCIENT_ADMIN_PASS: ${ADMIN_PASS:-}
-    ports:
-      - "${HTTP_PORT:-41221}:80"   # 41221 = "AINCI" in leet
+      # `edge` is the only way in, so its X-Forwarded-* headers are trusted
+      # (REMOTE_ADDR = the immediate peer): Drupal sees real client IPs and the
+      # outer scheme. See docker/settings.appliance.php.
+      AINCIENT_REVERSE_PROXY: "1"
+    # No published port: `edge` fronts it.
     # Let the console reach services on the host machine (e.g. a locally-run
     # Ollama at host.docker.internal:11434). Docker Desktop provides this name
     # automatically; on Linux it only resolves with this explicit mapping.
@@ -61,6 +67,21 @@ services:
       - files:/opt/drupal/web/sites/default/files
       - private:/opt/drupal/private          # snapshots live here
       - upgrade-signal:/shared                # the flag the console writes
+    restart: unless-stopped
+
+  edge:
+    # The only published port (DECISIONS 0416 Phase 3). nginx answers anonymous
+    # requests from the frozen snapshot without touching PHP and proxies the rest
+    # to `app`; while `app` restarts on upgrade, frozen visitors never notice and
+    # everyone else gets a "starting" page instead of a connection error.
+    image: nginx:1.28-alpine
+    depends_on:
+      - app
+    ports:
+      - "${HTTP_PORT:-41221}:80"   # 41221 = "AINCI" in leet
+    volumes:
+      - ./edge.conf:/etc/nginx/conf.d/default.conf:ro
+      - private:/srv/private:ro               # frozen/current + snapshots
     restart: unless-stopped
 
   updater:

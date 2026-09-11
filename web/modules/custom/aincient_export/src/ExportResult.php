@@ -29,7 +29,12 @@ final class ExportResult {
 
   public int $assetsCopied = 0;
 
-  public int $derivativesWarmed = 0;
+  /**
+   * @var array<string, int>
+   *   Assets a page referenced that could neither be copied from disk nor
+   *   produced by the kernel (asset path => HTTP status).
+   */
+  public array $missingAssets = [];
 
   /**
    * @var array<int, array{file: string, ref: string}>
@@ -45,7 +50,7 @@ final class ExportResult {
   ) {}
 
   public function ok(): bool {
-    return !$this->failures && !$this->brokenLinks;
+    return !$this->failures && !$this->brokenLinks && !$this->missingAssets;
   }
 
 }

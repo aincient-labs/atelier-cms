@@ -25,6 +25,9 @@ final class ExportOptions {
    *   Run the post-export link check.
    * @param string[] $checkIgnore
    *   fnmatch() patterns of referenced paths the link check may ignore.
+   * @param array<string, mixed> $markerExtra
+   *   Extra fields merged into the .aincient-export.json marker (a frozen
+   *   snapshot records its label, timestamp and author here).
    */
   public function __construct(
     public readonly string $outDir,
@@ -34,6 +37,7 @@ final class ExportOptions {
     public readonly bool $includeUsers = FALSE,
     public readonly bool $runLinkCheck = TRUE,
     public readonly array $checkIgnore = [],
+    public readonly array $markerExtra = [],
   ) {}
 
 }

@@ -16,6 +16,19 @@ Because code is immutable in a running container, **Drupal cannot upgrade its ow
 code** — new PHP only arrives as a new image + restart. Everything else (schema +
 config migration) the site does to *itself*.
 
+## The edge: one published port
+
+`compose.yaml` publishes a single port — the **`edge`** service (nginx, rule in `edge.conf`). When
+`private/frozen/current` points at a snapshot (Freeze & Live, `drush aincient:freeze`), an anonymous
+GET/HEAD is answered from those files and a miss is the snapshot's own `404.html` — PHP never runs
+for visitors. A Drupal session cookie, a console/Drupal-owned path (`/atelier /user /api /session
+/admin /system`), any other method, a dotfile or a `.php` path proxies to `app`; with no symlink
+(Live) everything does. While `app` restarts on an upgrade, frozen pages stay up and everyone else
+sees a 503 "Atelier is starting" page. `app` publishes nothing and trusts the edge's `X-Forwarded-*`
+(`AINCIENT_REVERSE_PROXY=1`). The Apache vhost in the image carries the same rule as a fallback for
+image-only runs. `install.sh` and the Manager (`stack.rs`) write byte-identical copies of
+`compose.yaml` + `edge.conf`; change all three together.
+
 ## Converge: the site heals itself
 
 `converge.sh` runs on **every** container start (via `entrypoint.sh`) and is

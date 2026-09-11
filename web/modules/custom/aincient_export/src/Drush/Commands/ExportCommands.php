@@ -22,7 +22,7 @@ final class ExportCommands extends DrushCommands {
   /**
    * Menu/system paths that legitimately point outside a static export.
    */
-  private const DEFAULT_CHECK_IGNORE = [
+  public const DEFAULT_CHECK_IGNORE = [
     '/user',
     '/user/*',
     '/admin/*',
@@ -103,11 +103,10 @@ final class ExportCommands extends DrushCommands {
     );
 
     $this->io()->success(sprintf(
-      '%d pages, %d assets exported to %s (%d derivatives warmed).',
+      '%d pages, %d assets exported to %s.',
       count($result->pages),
       $result->assetsCopied,
       $result->outDir,
-      $result->derivativesWarmed,
     ));
     if ($result->zipPath !== NULL) {
       $this->io()->success(sprintf('Zip with %d files at %s.', $result->zipFiles, $result->zipPath));
@@ -121,6 +120,9 @@ final class ExportCommands extends DrushCommands {
     }
     foreach ($result->brokenLinks as $broken) {
       $this->io()->error(sprintf('Broken reference in %s: %s', $broken['file'], $broken['ref']));
+    }
+    foreach ($result->missingAssets as $path => $status) {
+      $this->io()->error(sprintf('Missing asset %s (HTTP %d).', $path, $status));
     }
 
     return $result->ok() ? self::EXIT_SUCCESS : self::EXIT_FAILURE;

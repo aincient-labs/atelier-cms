@@ -39,9 +39,29 @@ final class MarkdownRendererTest extends UnitTestCase {
    */
   public function testRendersMarkdownToHtml(): void {
     $html = $this->renderer->toSafeHtml("# Title\n\nSome **bold** and a [link](https://example.com).");
-    $this->assertStringContainsString('<h1>Title</h1>', $html);
+    // Headings carry a slug id (see testHeadingsCarryIdAnchors).
+    $this->assertStringContainsString('<h1 id="title">Title</h1>', $html);
     $this->assertStringContainsString('<strong>bold</strong>', $html);
     $this->assertStringContainsString('href="https://example.com"', $html);
+  }
+
+  /**
+   * Every heading carries an id slugged from its text, with no visible permalink
+   * element — so `[jump](#our-team)` works — and a repeated heading is disambiguated.
+   *
+   * @covers ::toSafeHtml
+   */
+  public function testHeadingsCarryIdAnchors(): void {
+    $html = $this->renderer->toSafeHtml("## Our team\n\ntext\n\n### Café & Prices!\n\n## Our team\n\n## 2024");
+    $this->assertStringContainsString('<h2 id="our-team">Our team</h2>', $html);
+    $this->assertStringContainsString('<h3 id="cafe-prices">', $html);
+    // Second identical heading gets a suffixed id (ids are unique per document).
+    $this->assertStringContainsString('<h2 id="our-team-1">Our team</h2>', $html);
+    // A heading with no slug-able text still gets a (dull) id.
+    $this->assertStringContainsString('<h2 id="section">2024</h2>', $html);
+    // No permalink <a> injected, no "content-" prefix.
+    $this->assertStringNotContainsString('heading-permalink', $html);
+    $this->assertStringNotContainsString('id="content-', $html);
   }
 
   /**

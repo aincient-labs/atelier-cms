@@ -307,6 +307,11 @@ final class PageSpikeController implements ContainerInjectionInterface {
       // The ref is either a legacy `block:<id>` token (an aincient_block NODE) or,
       // as blocks migrate onto the media bundle (DECISIONS 0137), a `media:<id>`
       // token pointing at a `block` media entity — same scheme as media/embed.
+      // The in-page link target (`#<slug>`, AnchorSlug) is a wrapper
+      // concern, never an SDC prop — lift it out before the section renders.
+      $anchor = is_string($section['props']['anchor'] ?? NULL) ? $section['props']['anchor'] : '';
+      unset($section['props']['anchor']);
+
       if ($name === 'block') {
         $ref = is_string($section['props']['ref'] ?? NULL) ? trim($section['props']['ref']) : '';
         $parsed = $ref !== '' ? $this->embed->parse($ref) : NULL;
@@ -318,11 +323,19 @@ final class PageSpikeController implements ContainerInjectionInterface {
         if ($inner === NULL) {
           continue;
         }
+        $group = [];
         foreach ($inner as $innerSection) {
           $b = $this->renderSection($innerSection, $langcode, $identify);
           if ($b !== NULL) {
-            $build[] = $b;
+            $group[] = $b;
           }
+        }
+        // One anchor for the whole spliced block (it is one slot on this page).
+        if ($anchor !== '' && $group !== []) {
+          $build[] = $this->anchorSection($group, $anchor);
+        }
+        else {
+          array_push($build, ...$group);
         }
         continue;
       }
@@ -333,10 +346,30 @@ final class PageSpikeController implements ContainerInjectionInterface {
       }
       $b = $this->renderSection($section, $langcode, $identify);
       if ($b !== NULL) {
-        $build[] = $identify ? $this->identifySection($b, (string) ($section['id'] ?? '')) : $b;
+        $b = $identify ? $this->identifySection($b, (string) ($section['id'] ?? '')) : $b;
+        $build[] = $anchor !== '' ? $this->anchorSection($b, $anchor) : $b;
       }
     }
     return $build;
+  }
+
+  /**
+   * Wrap a placed section so it is reachable as `#<anchor>` — the section's
+   * `anchor` structural prop rendered as a plain block wrapper's id.
+   *
+   * A wrapper rather than an attribute on the SDC's own <section>: the
+   * components don't print `attributes`, and a pack component (W7) never would,
+   * so the id has to live one level out to work for every placeable alike. The
+   * `.ain-anchor` class carries the scroll offset (aincient-pages.css) so a jump
+   * lands with breathing room, not flush to the viewport edge. This is the LIVE
+   * render path too (unlike identifySection) — the id IS the feature.
+   */
+  private function anchorSection(array $build, string $anchor): array {
+    return [
+      '#type' => 'container',
+      '#attributes' => ['id' => $anchor, 'class' => ['ain-anchor']],
+      'section' => $build,
+    ];
   }
 
   /**
@@ -656,6 +689,10 @@ final class PageSpikeController implements ContainerInjectionInterface {
   // read via rowPictures().
 
   private function component(string $name, array $props, ?string $langcode = NULL): array {
+    // Belt: `anchor` is rendered by the slot wrapper (composeLanding) and is not
+    // declared by any component, so it must never reach the SDC's prop validator
+    // — whichever path (a panel child, a spliced block section) led here.
+    unset($props['anchor']);
     // Renderer-internal `variant` (the chrome-light `bare` mode): the SDC
     // validates the enum BEFORE Twig's |default(), and PageStore strips the prop
     // (it is not a declared author prop), so an absent variant would reach the SDC

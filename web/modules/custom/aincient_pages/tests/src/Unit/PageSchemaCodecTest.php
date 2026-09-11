@@ -81,6 +81,24 @@ final class PageSchemaCodecTest extends UnitTestCase {
   }
 
   /**
+   * `anchor` (the in-page link target) is STRUCTURAL: a `#pricing` link must land
+   * on the same slot in every language, so the slug travels with the slot.
+   */
+  public function testAnchorIsStructural(): void {
+    $schema = [
+      'type' => 'landing',
+      'title' => 'Lumen',
+      'sections' => [
+        ['id' => 'cccc3333', 'component' => 'cta', 'props' => ['anchor' => 'pricing', 'heading' => 'Buy']],
+      ],
+    ];
+    ['structure' => $structure, 'content' => $content] = PageSchemaCodec::split($schema);
+    $this->assertSame('pricing', $structure['slots'][0]['anchor']);
+    $this->assertArrayNotHasKey('anchor', $content['slots']['cccc3333']);
+    $this->assertSame($schema, PageSchemaCodec::merge($structure, $content));
+  }
+
+  /**
    * A block placement's `ref` is STRUCTURAL (travels in the structure slot, shared
    * across languages), while an embed's `entity` token is CONTENT (per-language).
    */

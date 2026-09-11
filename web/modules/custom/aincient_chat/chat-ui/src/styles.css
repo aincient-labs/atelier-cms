@@ -2536,6 +2536,104 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-accent); outline-o
 .ain-globals__consent-status svg { flex: none; width: 14px; height: 14px; margin-top: 1px; }
 .ain-globals__consent-status[data-active] { color: var(--ain-jade); border-style: solid; border-color: var(--ain-border); }
 
+/* === Settings studio · Snapshots (Freeze & Live, DECISIONS 0416) ============
+   The last section of the Settings rail, held apart from the chrome fields by
+   a hairline + breathing room. A Live row + one row per snapshot, each led by
+   a radio-style "serving" ring; the pigment goes to the serving ring + the one
+   primary (Freeze now); every per-row action is a compact/quiet button. Colour
+   is always a token — no opacity-dimmed text (WCAG AA, 0376). */
+.ain-snapshots {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--ain-border);
+}
+.ain-snapshots__head { display: flex; flex-direction: column; gap: 4px; }
+.ain-snapshots__title {
+  display: flex; align-items: center; gap: 6px; margin: 0;
+  font-family: var(--ain-font-display); font-weight: 500; font-size: 15px; line-height: 1.3;
+  color: var(--ain-text);
+}
+.ain-snapshots__title svg { font-size: 14px; color: var(--ain-accent); }
+.ain-snapshots__explainer { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--ain-text-dim); }
+
+/* Who visitors see right now — the section's persistent verdict line. Jade tint
+   when a snapshot is served (a deliberate state), plain when live. */
+.ain-snapshots__serving {
+  margin: 0; padding: 7px 10px; font-size: 12px; line-height: 1.4;
+  color: var(--ain-text); border: 1px solid var(--ain-border); border-radius: var(--ain-radius);
+  background: color-mix(in oklch, var(--ain-jade) 10%, transparent);
+  border-color: color-mix(in oklch, var(--ain-jade) 40%, var(--ain-border));
+}
+.ain-snapshots__serving[data-live] { background: var(--ain-bg); border-color: var(--ain-border); color: var(--ain-text-dim); }
+.ain-snapshots__serving strong { font-weight: 600; color: var(--ain-text); }
+
+.ain-snapshots__freeze { display: flex; flex-direction: column; gap: 3px; }
+.ain-snapshots__freeze .ain-field__inputrow { align-items: stretch; }
+.ain-snapshots__freeze .ain-topbtn { flex: none; white-space: nowrap; }
+.ain-snapshots__progress { margin: 4px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--ain-accent-2); }
+
+.ain-snapshots__error, .ain-snapshots__notice {
+  display: flex; align-items: flex-start; gap: 5px; margin: 0;
+  font-size: 12px; line-height: 1.4;
+}
+.ain-snapshots__error { color: var(--ain-danger); }
+.ain-snapshots__notice { color: var(--ain-text-dim); }
+.ain-snapshots__notice svg { flex: none; font-size: 13px; margin-top: 2px; color: var(--ain-jade); }
+.ain-snapshots__loading { margin: 0; font-size: 12px; color: var(--ain-text-dim); }
+
+/* A freeze that came back ok:false — the export's problems, scroll-capped at
+   ~6 lines, with the "serve it anyway" override kept secondary (never filled). */
+.ain-snapshots__problems {
+  display: flex; flex-direction: column; gap: 6px; padding: 8px 10px;
+  border: 1px solid color-mix(in oklch, var(--ain-danger) 45%, var(--ain-border));
+  border-radius: var(--ain-radius); background: color-mix(in oklch, var(--ain-danger) 7%, transparent);
+}
+.ain-snapshots__problems-title { margin: 0; font-size: 12px; line-height: 1.4; color: var(--ain-danger); }
+.ain-snapshots__problemlist {
+  margin: 0; padding: 6px 8px 6px 22px; max-height: 6.4em; overflow-y: auto;
+  font-family: var(--ain-mono); font-size: 10.5px; line-height: 1.5; color: var(--ain-text);
+  background: var(--ain-surface); border: 1px solid var(--ain-border); border-radius: 4px;
+}
+.ain-snapshots__problemlist li { overflow-wrap: anywhere; }
+.ain-snapshots__problemactions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Rows: ring · body (name + chips / meta / counts) · actions. */
+.ain-snapshots__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ain-snapshots__row {
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px;
+  border: 1px solid var(--ain-border); border-radius: var(--ain-radius); background: var(--ain-bg);
+  transition: border-color .12s;
+}
+.ain-snapshots__row[data-serving] { border-color: var(--ain-accent); }
+.ain-snapshots__row[data-busy] { border-style: dashed; }
+.ain-snapshots__marker { flex: none; display: inline-flex; margin-top: 2px; font-size: 15px; color: var(--ain-text-faint); }
+.ain-snapshots__marker[data-on] { color: var(--ain-accent); }
+.ain-snapshots__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ain-snapshots__name {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  font-size: 12.5px; font-weight: 600; line-height: 1.3; color: var(--ain-text); overflow-wrap: anywhere;
+}
+.ain-snapshots__meta, .ain-snapshots__counts { margin: 0; font-size: 11px; line-height: 1.4; color: var(--ain-text-dim); }
+.ain-snapshots__counts { font-variant-numeric: tabular-nums; }
+.ain-snapshots__dot { margin: 0 5px; color: var(--ain-text-faint); }
+/* Whisper chips (same grammar as .ain-pair-badge): mono tint, hue = the verdict. */
+.ain-snapshots__chip {
+  display: inline-flex; align-items: center; padding: 1px 6px;
+  font-family: var(--ain-mono); font-size: 9.5px; font-weight: 400; letter-spacing: .08em;
+  text-transform: uppercase; line-height: 1.45; white-space: nowrap; border-radius: 4px;
+}
+.ain-snapshots__chip--serving { color: var(--ain-accent); background: color-mix(in oklch, var(--ain-accent) 12%, transparent); }
+.ain-snapshots__chip--kept { color: var(--ain-jade); background: color-mix(in oklch, var(--ain-jade) 14%, transparent); }
+.ain-snapshots__actions { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; max-width: 46%; }
+.ain-snapshots__actions .ain-topbtn svg { font-size: 12px; }
+.ain-snapshots__delete { color: var(--ain-text-dim); }
+.ain-snapshots__delete:not(:disabled):hover { color: var(--ain-danger); }
+/* An <a> styled as a button still needs the shared focus ring (it isn't a <button>). */
+.ain-snapshots__actions a.ain-btn:focus-visible { outline: 3px solid color-mix(in oklch, var(--ain-accent) 30%, transparent); outline-offset: 1px; }
+@media (max-width: 480px) {
+  .ain-snapshots__row { flex-wrap: wrap; }
+  .ain-snapshots__actions { max-width: none; width: 100%; justify-content: flex-start; padding-left: 23px; }
+}
+
 /* === Inline menu editor (shared by Header / Footer) ======================== */
 .ain-menued { display: flex; flex-direction: column; gap: 6px; }
 .ain-menued__empty { margin: 2px 0; font-size: 12px; color: var(--ain-text-faint); }

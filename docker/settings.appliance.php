@@ -72,12 +72,15 @@ else {
 // would be client-spoofable). Set AINCIENT_REVERSE_PROXY=1 to enable.
 if (getenv('AINCIENT_REVERSE_PROXY')) {
   $settings['reverse_proxy'] = TRUE;
-  // The proxy is the upstream peer; in a container network its address isn't
-  // known ahead of time, so trust the immediate gateway. Override with
-  // AINCIENT_REVERSE_PROXY_ADDRESSES (comma-separated) to pin it.
-  if ($addrs = getenv('AINCIENT_REVERSE_PROXY_ADDRESSES')) {
-    $settings['reverse_proxy_addresses'] = array_values(array_filter(array_map('trim', explode(',', $addrs))));
-  }
+  // The proxy is the immediate peer (the `edge` service, or an operator's
+  // Traefik); in a container network its address isn't known ahead of time, so
+  // trust exactly that peer — Symfony's REMOTE_ADDR placeholder. Core ignores
+  // the flag when the list is empty, so this default is what makes it work.
+  // Override with AINCIENT_REVERSE_PROXY_ADDRESSES (comma-separated) to pin it.
+  $addrs = getenv('AINCIENT_REVERSE_PROXY_ADDRESSES');
+  $settings['reverse_proxy_addresses'] = $addrs
+    ? array_values(array_filter(array_map('trim', explode(',', $addrs))))
+    : ['REMOTE_ADDR'];
 }
 
 // Appliance DEV MODE — set ONLY by the `atelier pack dev` compose overlay

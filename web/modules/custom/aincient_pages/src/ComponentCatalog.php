@@ -100,6 +100,7 @@ final class ComponentCatalog {
    * column count; `tone` is always the surface/mood enum).
    */
   public const PROP_VOCAB = [
+    'anchor' => 'optional in-page link target for the section: a lowercase slug (e.g. pricing), reachable from any link prop as #pricing. Every section accepts it.',
     'tone' => 'surface/mood enum: default | muted | brand | inverted.',
     'variant' => 'named arrangement of a component (enumerated per component).',
     'columns' => 'column count for a grid of fluid children (integer).',
@@ -308,6 +309,24 @@ final class ComponentCatalog {
       'If it genuinely does not exist, leave the link prop unset and say so — a button with an',
       'invented target is worse than no button (and one pointing at a deleted or unpublished',
       'page is dropped from the page entirely at render, label and all).',
+    ]);
+  }
+
+  /**
+   * The IN-PAGE ANCHORS note — how a link can jump to a section on the same page.
+   *
+   * `anchor` is a universal structural prop ({@see PageStore::clampProps}), so it
+   * never appears in a placeable's declared prop list ({@see describeProps()});
+   * without this paragraph the agent could not know it exists. Headings inside a
+   * `markdown` section are anchored automatically ({@see MarkdownRenderer}).
+   */
+  public static function anchorNote(): string {
+    return implode("\n", [
+      'IN-PAGE ANCHORS: EVERY section additionally accepts `anchor` — a lowercase slug',
+      '(letters, digits, hyphens; e.g. anchor: "pricing"). A link prop may then point at it as',
+      '`#pricing` (same page) or `/plans#pricing` (another page). Set one only when something',
+      'links to it (a "jump to" nav, a button to a lower section). Headings inside a `markdown`',
+      'section get an id from their text automatically: "## Our team" is reachable as #our-team.',
     ]);
   }
 

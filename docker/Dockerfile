@@ -152,6 +152,12 @@ WORKDIR /opt/drupal
 # Apache serves the Drupal docroot. A <Directory> grant is required — just
 # moving DocumentRoot leaves the new path under Debian's default "deny", and
 # AllowOverride All lets Drupal's .htaccess rewrite rules (clean URLs) work.
+# Freeze & Live (DECISIONS 0416): when private/frozen/current points at a
+# snapshot, anonymous visitors get its files; a request carrying a Drupal
+# session cookie, a console path, or a path the snapshot lacks falls through to
+# Drupal. No symlink = Live. The DDEV nginx config mirrors this rule; keep both
+# in step. Live is "no symlink", never "symlink to the docroot" — a
+# file-exists rule aimed at the docroot would serve settings.php.
 RUN printf '%s\n' \
       '<VirtualHost *:80>' \
       '  DocumentRoot /opt/drupal/web' \
@@ -160,6 +166,29 @@ RUN printf '%s\n' \
       '    Require all granted' \
       '    DirectoryIndex index.php' \
       '  </Directory>' \
+      '  <Directory /opt/drupal/private/frozen>' \
+      '    Options FollowSymLinks' \
+      '    AllowOverride None' \
+      '    Require all granted' \
+      '    <FilesMatch "^\.|\.ph(p[0-9]?|tml|ar)$">' \
+      '      Require all denied' \
+      '    </FilesMatch>' \
+      '  </Directory>' \
+      '  RewriteEngine On' \
+      '  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$' \
+      '  RewriteCond %{HTTP_COOKIE} !(^|;\s*)S?SESS[0-9a-f]+= [NC]' \
+      '  RewriteCond $1 !^(atelier|user|api|session|admin|system)(/|$)' \
+      '  RewriteCond /opt/drupal/private/frozen/current/$1/index.html -f' \
+      '  RewriteRule ^/(.*)$ /opt/drupal/private/frozen/current/$1/index.html [L,E=ATELIER_FROZEN:1]' \
+      '  RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$' \
+      '  RewriteCond %{HTTP_COOKIE} !(^|;\s*)S?SESS[0-9a-f]+= [NC]' \
+      '  RewriteCond $1 !^(atelier|user|api|session|admin|system)(/|$)' \
+      '  RewriteCond $1 !(^|/)\.' \
+      '  RewriteCond $1 !\.ph(p[0-9]?|tml|ar)$ [NC]' \
+      '  RewriteCond /opt/drupal/private/frozen/current/$1 -f' \
+      '  RewriteRule ^/(.+)$ /opt/drupal/private/frozen/current/$1 [L,E=ATELIER_FROZEN:1]' \
+      '  Header set X-Atelier-Served frozen env=ATELIER_FROZEN' \
+      '  Header set Cache-Control "public, max-age=300, stale-while-revalidate=86400" env=ATELIER_FROZEN' \
       '</VirtualHost>' \
       > /etc/apache2/sites-available/000-default.conf \
     && printf 'ServerName localhost\n' > /etc/apache2/conf-available/servername.conf \

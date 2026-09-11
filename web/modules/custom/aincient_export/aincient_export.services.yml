@@ -2,9 +2,6 @@ services:
   aincient_export.path_inventory:
     class: Drupal\aincient_export\PathInventory
     arguments: ['@entity_type.manager', '@config.factory', '@?aincient_pages.collection_inventory']
-  aincient_export.derivative_warmer:
-    class: Drupal\aincient_export\DerivativeWarmer
-    arguments: ['@entity_type.manager', '@image.factory']
   aincient_export.static_renderer:
     class: Drupal\aincient_export\StaticRenderer
     arguments: ['@http_kernel', '@request_stack', '@account_switcher', '@?http_middleware.page_cache']
@@ -17,9 +14,17 @@ services:
     class: Drupal\aincient_export\Exporter
     arguments:
       - '@aincient_export.path_inventory'
-      - '@aincient_export.derivative_warmer'
       - '@aincient_export.static_renderer'
       - '@aincient_export.link_checker'
       - '@aincient_export.packager'
       - '@entity_type.manager'
       - '@module_handler'
+  aincient_export.snapshot_store:
+    class: Drupal\aincient_export\SnapshotStore
+    arguments: ['@aincient_export.exporter', '@datetime.time']
+  # /atelier/snapshots/<id>/<deep/file/path> → the snapshot-file route + ?file=.
+  # Drupal's router matches a `.*` slug one segment deep only (see the class).
+  aincient_export.path_processor.snapshots:
+    class: Drupal\aincient_export\PathProcessor\SnapshotPathProcessor
+    tags:
+      - { name: path_processor_inbound, priority: 200 }

@@ -337,6 +337,9 @@ final class EffectiveCatalog {
       }
     }
     $lines[] = '';
+    $lines[] = ComponentCatalog::anchorNote();
+    $lines[] = '';
+    // The link note stays the closing block (tests pin it as the manifest's end).
     $lines[] = ComponentCatalog::linkTargetNote();
     return implode("\n", $lines);
   }

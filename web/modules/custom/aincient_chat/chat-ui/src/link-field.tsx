@@ -38,7 +38,7 @@ export function LinkField({
   dirty = false,
   revert,
   compact = false,
-  placeholder = "/about or https://…",
+  placeholder = "/about, #section or https://…",
 }: {
   /** Field label. Omitted in a compact host, where the row labels the control. */
   label?: string;

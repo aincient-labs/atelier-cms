@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for aincient_export.
+ */
+
+declare(strict_types=1);
+
+use Drupal\image\Entity\ImageStyle;
+
+/**
+ * Flush image-style derivatives left behind by the removed export warmer.
+ *
+ * Until 2026-09-11 every export/freeze ran a DerivativeWarmer that generated
+ * EVERY image style for EVERY image file — the plain Rift building blocks
+ * (`2560w2560h`, `webp`, `70`, …) as PNG, which no page ever links (Rift links
+ * `<WxH>-webp-<q>` composites, built on first request). On a small site that
+ * was ~240 MB of dead files under public://styles, swept into every backup.
+ * The warmer is gone; this drops what it wrote. Everything still referenced
+ * comes back on demand (Rift's download controller, core's image.style_public).
+ */
+function aincient_export_update_10101(): void {
+  foreach (ImageStyle::loadMultiple() as $style) {
+    $style->flush();
+  }
+}

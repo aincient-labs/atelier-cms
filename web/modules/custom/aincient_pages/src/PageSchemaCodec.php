@@ -42,8 +42,13 @@ final class PageSchemaCodec {
    * per-language copy. `entity` (an `embed` token) is deliberately NOT structural
    * — it's content, so a translation may embed its own entity (an empty overlay
    * inherits the source token), mirroring how media tokens live in content.
+   *
+   * `anchor` (the section's in-page link target, `#<slug>`) is structural: a link
+   * to `#pricing` must land on the same slot in every language, so the slug is
+   * shared rather than translated. Accepted on EVERY placeable
+   * ({@see PageStore::clampProps}), rendered as the slot wrapper's `id`.
    */
-  public const STRUCTURAL_PROPS = ['tone', 'variant', 'columns', 'ref', 'mode', 'source', 'sort', 'limit', 'per_page'];
+  public const STRUCTURAL_PROPS = ['anchor', 'tone', 'variant', 'columns', 'ref', 'mode', 'source', 'sort', 'limit', 'per_page'];
 
   /**
    * Split a merged page-schema into its structure + content layers.

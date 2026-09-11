@@ -16,6 +16,7 @@ import {
   type ChromeDraft,
 } from "./globals-state";
 import { seedChromeDraft, cloneChromeDraft, type ChromeManifest } from "./chrome-shared";
+import { SnapshotsSection } from "./snapshots-section";
 
 /**
  * The Settings studio (DECISIONS 0372): the operator settings that belong to
@@ -322,6 +323,10 @@ export function SettingsStudio({ onClose }: { onClose: () => void }) {
               </p>
             </div>
           </div>
+
+          {/* Freeze & Live (DECISIONS 0416) — owns its own state + API; nothing
+              here touches the chrome draft or the Publish above. */}
+          <SnapshotsSection />
         </div>
       )}
     </div>

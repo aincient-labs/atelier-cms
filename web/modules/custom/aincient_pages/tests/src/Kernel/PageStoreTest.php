@@ -156,6 +156,40 @@ final class PageStoreTest extends KernelTestBase {
     $this->assertSame('brand', $clean['sections'][1]['props']['tone']);
   }
 
+  public function testAnchorAcceptedOnEverySectionAsUniqueSlug(): void {
+    $clean = $this->store()->validate([
+      'type' => 'landing',
+      'title' => 'Hi',
+      'sections' => [
+        ['component' => 'hero', 'props' => ['variant' => 'centered', 'heading' => 'A', 'anchor' => '#Pricing & Plans']],
+        ['component' => 'cta', 'props' => ['heading' => 'Go', 'anchor' => 'pricing-plans']],
+        ['component' => 'cta', 'props' => ['heading' => 'Again', 'anchor' => '   ']],
+        ['component' => 'cta', 'props' => ['heading' => 'Num', 'anchor' => '2024']],
+        [
+          'component' => 'accordion',
+          'props' => [
+            'anchor' => 'faq',
+            'panels' => [['label' => 'One', 'blocks' => [['component' => 'markdown', 'props' => ['markdown' => 'x', 'anchor' => 'inner']]]]],
+          ],
+        ],
+      ],
+    ]);
+
+    $props = array_column($clean['sections'], 'props');
+    // Not a declared prop of any component, yet kept — normalised to a slug
+    // (leading '#' tolerated, case folded, punctuation collapsed to hyphens).
+    $this->assertSame('pricing-plans', $props[0]['anchor']);
+    // A repeat is suffixed, never dropped, so the page's ids stay unique.
+    $this->assertSame('pricing-plans-2', $props[1]['anchor']);
+    // Blank → absent; a bare number → absent (not a usable slug).
+    $this->assertArrayNotHasKey('anchor', $props[2]);
+    $this->assertArrayNotHasKey('anchor', $props[3]);
+    // A container keeps its own anchor; a nested child block has no wrapper to
+    // carry one, so its anchor is dropped rather than stored and never rendered.
+    $this->assertSame('faq', $props[4]['anchor']);
+    $this->assertArrayNotHasKey('anchor', $props[4]['panels'][0]['blocks'][0]['props']);
+  }
+
   public function testHeroVariantDefaultsWhenMissing(): void {
     // hero/variant is a required SDC enum with no default — a missing value
     // would render a 500, so the guardrail must clamp it to a valid variant.

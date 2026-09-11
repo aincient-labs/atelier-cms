@@ -173,19 +173,39 @@ final class PageStore {
     // so targeted ops and the per-language content overlay can address a slot by a
     // key that doesn't shift when sections are reordered (the array index does).
     $used = [];
+    $anchors = [];
     $catalog = $this->catalog->for($type);
     foreach ($schema['sections'] ?? [] as $section) {
       $name = $section['component'] ?? '';
       if (!in_array($name, $catalog->placeableNames(), TRUE)) {
         continue;
       }
+      $props = $this->clampProps($catalog, $name, $section['props'] ?? NULL);
+      // An anchor is an HTML id, so it must be unique on the page: a repeat
+      // gets a numeric suffix (the first keeps the plain slug) rather than being
+      // dropped — the author asked for a target and still gets one.
+      if (isset($props['anchor'])) {
+        $props['anchor'] = self::uniqueAnchor($props['anchor'], $anchors);
+      }
       $out['sections'][] = [
         'id' => $this->slotId($section['id'] ?? NULL, $used),
         'component' => $name,
-        'props' => $this->clampProps($catalog, $name, $section['props'] ?? NULL),
+        'props' => $props,
       ];
     }
     return $out;
+  }
+
+  /**
+   * Make an anchor unique within the page: `pricing`, then `pricing-2`, … .
+   */
+  private static function uniqueAnchor(string $slug, array &$taken): string {
+    $candidate = $slug;
+    for ($n = 2; isset($taken[$candidate]); $n++) {
+      $candidate = $slug . '-' . $n;
+    }
+    $taken[$candidate] = TRUE;
+    return $candidate;
   }
 
   /**
@@ -211,8 +231,15 @@ final class PageStore {
    * prop). Driven entirely by the compiled {@see EffectiveCatalog} so the
    * clamp and the SDC schemas stay in lock-step as the palette grows.
    */
-  private function clampProps(EffectiveCatalog $catalog, string $name, mixed $props): array {
+  private function clampProps(EffectiveCatalog $catalog, string $name, mixed $props, bool $nested = FALSE): array {
     $props = is_array($props) ? $props : [];
+    // anchor: the universal in-page link target (`#<slug>`), accepted on every
+    // TOP-LEVEL placeable and rendered as the slot wrapper's id — so it is not
+    // in any component's declared props and must survive the declared-props
+    // intersect below. A child block inside a container has no wrapper of its
+    // own, so an anchor there would silently never render: dropped.
+    $anchor = $nested ? NULL : AnchorSlug::slug($props['anchor'] ?? NULL);
+    unset($props['anchor']);
     // tone: drop an unknown surface enum — each SDC defaults its own tone.
     if (isset($props['tone']) && !in_array($props['tone'], $catalog->tonesFor($name), TRUE)) {
       unset($props['tone']);
@@ -321,7 +348,7 @@ final class PageStore {
             }
             $blocks[] = [
               'component' => $child,
-              'props' => $this->clampProps($catalog, $child, $block['props'] ?? NULL),
+              'props' => $this->clampProps($catalog, $child, $block['props'] ?? NULL, TRUE),
             ];
           }
           $clean[] = [
@@ -339,6 +366,9 @@ final class PageStore {
     // WHY a prop was dropped; here we just keep the persisted schema clean.
     $declared = $catalog->placeable($name)['props'] ?? NULL;
     $props = $declared === NULL ? $props : array_intersect_key($props, $declared);
+    if ($anchor !== NULL) {
+      $props['anchor'] = $anchor;
+    }
     // Normalise over-encoded HTML entities to raw text across every prop (incl.
     // nested rows/panels). Landing props are all plain text Twig escapes — or
     // inline-markdown its renderer re-escapes — so a stored "&amp;" must be a raw

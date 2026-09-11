@@ -10,11 +10,13 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 /**
  * Orchestrates one static export: inventory → render → package.
  *
+ * Not final so SnapshotStore can be unit-tested with a test double.
+ *
  * Static HTML is the first adapter over the site's structured inventory
  * (DECISIONS 0181); this class owns the pipeline order so later adapters can
  * reuse the inventory/derivative steps and swap the serialization.
  */
-final class Exporter {
+class Exporter {
 
   /**
    * Marker file proving a directory was produced by this exporter.
@@ -22,11 +24,10 @@ final class Exporter {
    * The output directory is wiped on every run; the marker is the guard
    * against pointing --out at a directory we did not create.
    */
-  private const MARKER = '.aincient-export.json';
+  public const MARKER = '.aincient-export.json';
 
   public function __construct(
     private readonly PathInventory $pathInventory,
-    private readonly DerivativeWarmer $derivativeWarmer,
     private readonly StaticRenderer $renderer,
     private readonly LinkChecker $linkChecker,
     private readonly Packager $packager,
@@ -46,9 +47,6 @@ final class Exporter {
     $out = rtrim($options->outDir, '/');
 
     $this->prepareOutputDirectory($out);
-
-    $notify('Warming image-style derivatives …');
-    $result->derivativesWarmed = $this->derivativeWarmer->warmAll();
 
     $notify('Rendering pages …');
     $exported_assets = [];
@@ -94,7 +92,7 @@ final class Exporter {
       'generator' => 'aincient_export',
       'pages' => count($result->pages),
       'assets' => $result->assetsCopied,
-    ]) . "\n");
+    ] + $options->markerExtra, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 
     if ($options->zipPath !== NULL) {
       $notify('Packaging zip …');
@@ -109,7 +107,13 @@ final class Exporter {
    * Exports one asset: disk copy when possible, kernel replay otherwise.
    *
    * The kernel fallback covers route-generated assets that exist only after
-   * a request — lazy CSS/JS aggregates, unwarmed derivatives.
+   * a request — lazy CSS/JS aggregates and, above all, image-style
+   * derivatives: Rift links `files/styles/<WxH>-webp-<q>/…` composites that
+   * its download controller generates on first request, so replaying the URL
+   * IS the generation step. Nothing is pre-warmed (a warmer that iterated every
+   * image style wrote 240 MB of plain-style PNGs no page referenced); a
+   * derivative the toolkit cannot build comes back non-200 and is recorded in
+   * `$result->missingAssets` so the export fails loudly.
    *
    * @param array<string, bool> $exported
    *   Seen-set of asset paths, shared across the run.
@@ -138,7 +142,10 @@ final class Exporter {
     else {
       $outcome = $this->renderer->renderPath($path, $options->baseUrl);
       if ($outcome->status !== 200) {
-        // Not a servable asset — the link check will report it if referenced.
+        // Referenced by a page but not servable: a derivative that failed to
+        // build, an aggregate that vanished. The link checker only walks
+        // a[href], so this is the one place it gets reported.
+        $result->missingAssets[$bare] = $outcome->status;
         return;
       }
       if ($outcome->file !== NULL) {

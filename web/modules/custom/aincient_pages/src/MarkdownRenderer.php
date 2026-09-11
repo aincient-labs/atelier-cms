@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages;
 
 use Drupal\Component\Utility\Xss;
-use League\CommonMark\CommonMarkConverter;
 use League\CommonMark\ConverterInterface;
 use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkExtension;
 use League\CommonMark\Extension\InlinesOnly\InlinesOnlyExtension;
 use League\CommonMark\MarkdownConverter;
 
@@ -26,6 +27,14 @@ use League\CommonMark\MarkdownConverter;
  *   2. The output is still passed through {@see Xss::filterAdmin()} — the same
  *      defence-in-depth posture as the `prose` SDC, which trusts pre-sanitised
  *      HTML. So even a future parser-config slip can't inject script.
+ *
+ * Every heading carries an `id` slugged from its text (`## Our team` →
+ * `<h2 id="our-team">`), so a link can jump to it as `#our-team` — the same
+ * in-page-anchor feature a section gets from its `anchor` prop. League's
+ * HeadingPermalink extension does the slugging (Unicode-aware, unique within the
+ * one Markdown document) with its permalink `<a>` switched off: the id alone is
+ * the feature; no visible ¶ symbol. Uniqueness is per section — two `markdown`
+ * sections with the same heading text would collide, which is the author's call.
  *
  * Single converter instance, reused — CommonMark's environment is immutable and
  * safe to share across conversions.
@@ -96,13 +105,30 @@ final class MarkdownRenderer {
    * The lazily-built, reusable CommonMark converter (safe defaults baked in).
    */
   private function converter(): ConverterInterface {
-    return $this->converter ??= new CommonMarkConverter([
+    if ($this->converter !== NULL) {
+      return $this->converter;
+    }
+    $environment = new Environment([
       // Escape raw HTML in the source rather than rendering it (belt; Xss is
       // the braces). Authors write Markdown, not HTML.
       'html_input' => 'escape',
       // Drop javascript:/data: and other unsafe link schemes.
       'allow_unsafe_links' => FALSE,
+      // Heading ids only (see the class doc): no inserted permalink element, no
+      // "content-" prefix, so `## Pricing` is simply `<h2 id="pricing">`.
+      'heading_permalink' => [
+        'insert' => 'none',
+        'apply_id_to_heading' => TRUE,
+        'id_prefix' => '',
+        'fragment_prefix' => '',
+      ],
+      // The shared anchor slug rule (ASCII, predictable), wrapped by League for
+      // per-document uniqueness ("our-team", then "our-team-1").
+      'slug_normalizer' => ['instance' => new AnchorSlug(), 'max_length' => AnchorSlug::MAX_LENGTH],
     ]);
+    $environment->addExtension(new CommonMarkCoreExtension());
+    $environment->addExtension(new HeadingPermalinkExtension());
+    return $this->converter = new MarkdownConverter($environment);
   }
 
   /**

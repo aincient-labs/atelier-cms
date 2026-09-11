@@ -62,7 +62,13 @@ type Lang = { id: string; label: string; default: boolean };
 /** The structural prop names that travel with the slot (shared across languages).
  *  Mirrors PageSchemaCodec::STRUCTURAL_PROPS — a symmetric translation inherits
  *  these from the source, so the studio locks them when editing one. */
-const STRUCTURAL_PROPS = new Set(["tone", "variant", "columns"]);
+const STRUCTURAL_PROPS = new Set(["anchor", "tone", "variant", "columns"]);
+
+/** The universal `anchor` prop (PageStore::clampProps accepts it on every
+ *  top-level section, so no component declares it) — appended to each section
+ *  card's Appearance group as a plain text field. The meaning comes from the
+ *  manifest's prop_vocab so the studio and the agent describe it identically. */
+const ANCHOR_PROP = "anchor";
 
 /** One prop of a section, as returned by /atelier/page/manifest. */
 type PropDef = {
@@ -1400,6 +1406,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                         index={index}
                         count={sections.length}
                         props={propDefs.get(section.component) ?? []}
+                        anchorMeaning={manifest?.prop_vocab?.anchor ?? "In-page link target (a slug, reachable as #slug)."}
                         imageProps={imageProps}
                         linkProps={linkProps}
                         blockComponents={blockComponents}
@@ -1699,11 +1706,14 @@ function SectionCard({
   locked,
   diff,
   onRevertProp,
+  anchorMeaning,
 }: {
   section: PageSection;
   index: number;
   count: number;
   props: PropDef[];
+  /** The `anchor` prop's meaning line (manifest prop_vocab) for the field hint. */
+  anchorMeaning: string;
   /** Row-field names that hold an image (render a media picker inside rows). */
   imageProps: Set<string>;
   /** Row-field names that hold a link target (render the URL｜Page control). */
@@ -1740,6 +1750,9 @@ function SectionCard({
   // tuck into a hairline-led subgroup so the copy fields read first.
   const content = props.filter((p) => !STRUCTURAL_PROPS.has(p.name));
   const appearance = props.filter((p) => STRUCTURAL_PROPS.has(p.name));
+  if (!appearance.some((p) => p.name === ANCHOR_PROP)) {
+    appearance.push({ name: ANCHOR_PROP, meaning: anchorMeaning });
+  }
   const renderProp = (prop: PropDef) => (
     <PropControl
       key={prop.name}

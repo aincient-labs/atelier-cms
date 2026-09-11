@@ -7,6 +7,34 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.11.0] — 2026-09-11
+
+**Freeze & Live: serve visitors a snapshot of your site, and keep editing behind it.** One command
+(or one click in Settings → Snapshots) exports the published site into a versioned snapshot and
+puts it in front of visitors as plain files. You keep working on the live site while signed in;
+switch which snapshot is served, or go back to live, instantly. Snapshots are kept, listed,
+previewable and prunable.
+
+- A new `edge` web server is the only published port. Visitors are answered from the snapshot
+  without running PHP; while the app container restarts during an upgrade, frozen pages stay up
+  and everything else gets a short "Atelier is starting" page instead of an error.
+- Only GET and HEAD are served from a snapshot; dotfiles and PHP files inside one are never served
+  or executed. A freeze that produced failures or broken links is taken but not served unless you
+  force it.
+- **Upgrading an existing install:** the stack now has an `edge` service and `edge.conf`. Re-run
+  the installer or let the Manager's `atelier doctor --fix` rewrite `compose.yaml` and `edge.conf`;
+  your data volumes are untouched.
+
+**In-page anchors.** Every section can carry an anchor (`pricing`), so a button or link can jump to
+it as `#pricing`, also from another page. Headings written in a markdown section get an anchor
+automatically.
+
+**Exports and backups are far smaller.** Static exports and snapshots no longer pre-generate every
+image size for every picture before rendering; they produce exactly the derivatives the pages use.
+On a small site that removes about 240 MB of files nobody linked, and the one-time cleanup runs on
+upgrade. An image derivative that cannot be built now fails the export with a named file instead of
+being skipped silently.
+
 ## [0.10.3] — 2026-08-30
 
 **Brand agent: "darker" means darker, and "blue" lands on a real swatch.** Two behaviours the

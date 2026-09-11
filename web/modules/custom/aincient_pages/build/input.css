@@ -30,6 +30,9 @@
 
 /* Long-form article styling for the blog regime (no plugin dependency). */
 @layer components {
+  /* In-page anchor wrapper (a section's `anchor` prop → id): land a #jump with
+     breathing room rather than flush to the viewport edge. */
+  .ain-anchor { scroll-margin-top: 4.5rem; }
   .prose-aincient { @apply text-[1.075rem]; line-height: var(--prose-leading); }
   .prose-aincient > * + * { margin-top: 1.3em; }
   .prose-aincient h2 { @apply font-display text-2xl font-bold tracking-tight mt-12 mb-4; }

@@ -1,0 +1,70 @@
+# Snapshot preview + list (DECISIONS 0416). Lives under the console base so the
+# web server's frozen rule never captures it (console paths always reach Drupal).
+aincient_export.snapshots:
+  path: '/atelier/snapshots'
+  defaults:
+    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::list'
+  requirements:
+    _permission: 'use aincient operator console'
+  options:
+    no_cache: TRUE
+
+# One file out of a snapshot. Deep paths (`/atelier/snapshots/<id>/a/b/c.css`)
+# arrive here through SnapshotPathProcessor, which folds the remainder into
+# `?file=` — a `{path}` slug with `.*` only ever matches one extra segment.
+aincient_export.snapshot_file:
+  path: '/atelier/snapshots/{id}'
+  defaults:
+    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::file'
+    # The processed path differs from the request URI on purpose; without this
+    # the redirect module's route normalizer 301s every deep file request to
+    # the bare `<id>` URL (dropping the file). It reads the REQUEST ATTRIBUTE,
+    # which route defaults become — an `options:` entry does nothing.
+    _disable_route_normalizer: TRUE
+  requirements:
+    _permission: 'use aincient operator console'
+    id: '^[0-9]{8}-[0-9]{4}(-[a-z0-9-]+)?$'
+  options:
+    no_cache: TRUE
+
+# Actions the console's Settings studio calls (same shape as /atelier/chrome/save:
+# POST JSON, cookie auth, the studio's own permission).
+aincient_export.snapshot_freeze:
+  path: '/atelier/snapshots/freeze'
+  defaults:
+    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::freeze'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+aincient_export.snapshot_use:
+  path: '/atelier/snapshots/use'
+  defaults:
+    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::use'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+aincient_export.snapshot_keep:
+  path: '/atelier/snapshots/keep'
+  defaults:
+    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::keep'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+aincient_export.snapshot_delete:
+  path: '/atelier/snapshots/delete'
+  defaults:
+    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::delete'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
