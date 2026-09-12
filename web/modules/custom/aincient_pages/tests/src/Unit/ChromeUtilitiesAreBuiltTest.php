@@ -67,6 +67,29 @@ final class ChromeUtilitiesAreBuiltTest extends TestCase {
   }
 
   /**
+   * Variant utilities the language switcher depends on, in their MINIFIED
+   * selector spelling (Tailwind escapes `:` and `/`).
+   *
+   * These are not sizing steps so the `h-N` regex below cannot find them, but
+   * they fail exactly the same silent way: the switcher's popover is revealed
+   * purely by `group-hover`/`group-focus-within` and its trigger label swaps on
+   * a breakpoint, so a stale bundle leaves a dropdown that never opens and an
+   * endonym that never shows — with correct Twig and passing tests. This bit in
+   * review during the 9-language rework (DECISIONS 0420).
+   *
+   * Escaped spellings are asserted as-written rather than derived, because the
+   * escaping is the part that is easy to get wrong in both directions.
+   */
+  private const SWITCHER_UTILITIES = [
+    'max-sm\\:hidden',
+    'sm\\:hidden',
+    'group-hover\\/lang\\:opacity-100',
+    'group-hover\\/lang\\:pointer-events-auto',
+    'group-focus-within\\/lang\\:opacity-100',
+    'group-focus-within\\/lang\\:pointer-events-auto',
+  ];
+
+  /**
    * Utilities named in the chrome Twig that Tailwind must have emitted.
    *
    * Deliberately narrow: sizing utilities chosen by a prop value, which are the
@@ -93,6 +116,7 @@ final class ChromeUtilitiesAreBuiltTest extends TestCase {
         }
       }
     }
+    $found = array_merge($found, self::SWITCHER_UTILITIES);
     $found = array_values(array_unique($found));
     sort($found);
 
@@ -117,9 +141,12 @@ final class ChromeUtilitiesAreBuiltTest extends TestCase {
 
       $missing = [];
       foreach ($utilities as $utility) {
-        // Minified Tailwind emits `.h-6{height:...}`; the brace anchors the
-        // match so `.h-6` cannot be satisfied by `.h-60` or `.max-h-6`.
-        if (!str_contains($css, ".$utility{")) {
+        // Minified Tailwind emits a plain utility as `.h-6{height:...}` but a
+        // GROUP variant as `.group-hover\\/lang\\:opacity-100:is(…){…}` — so the
+        // terminator is `{` or `:`, not `{` alone. Anchor on "next character
+        // cannot continue a class name" instead: that still stops `.h-6` being
+        // satisfied by `.h-60`, and stops a leading-`.` match inside `.max-h-6`.
+        if (!preg_match('/\\.' . preg_quote($utility, '/') . '(?![\\w-])/', $css)) {
           $missing[] = $utility;
         }
       }

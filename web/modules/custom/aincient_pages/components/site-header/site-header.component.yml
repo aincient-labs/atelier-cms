@@ -12,7 +12,7 @@ props:
       description: 'Array of { label, url }.'
     language_links:
       type: array
-      description: 'Array of { langcode, label, url, active } language-switch links. Rendered only when the site has 2+ languages; empty otherwise.'
+      description: 'Array of { langcode, label, native, url, active, translated } language-switch links. Rendered only when the site has 2+ languages; empty otherwise. Up to 3 languages render inline as codes; 4+ collapse into a dropdown of endonyms. `translated: false` marks a language the current page has no translation for — still linked, but signposted.'
     logo_position:
       type: string
       enum: [left, center]

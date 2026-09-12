@@ -21,15 +21,82 @@
       </nav>
     {% endif %}
     {% if language_links|default([])|length > 1 %}
-      {# Only render with 2+ languages. `ml-auto` pins it to the far end when
-         there is no nav to take the flex-1 space. #}
-      <nav aria-label="{{ 'Language'|t }}" class="flex items-center gap-3 text-sm font-medium {{ is_centered ? '' : 'ml-auto' }}">
-        {% for l in language_links %}
-          <a href="{{ l.url }}" hreflang="{{ l.langcode }}" title="{{ l.label }}"
-             class="uppercase tracking-wide {{ l.active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground' }}"
-             {{ l.active ? 'aria-current="true"' : '' }}>{{ l.langcode }}</a>
-        {% endfor %}
-      </nav>
+      {# Two presentations, chosen by how many languages the site has. Up to
+         LANG_INLINE_MAX they sit inline as bare codes (the compact EN/DE bar a
+         2-language site expects); beyond that they collapse into ONE trigger +
+         a CSS-only popover listing endonyms, because a 9-language row would
+         crowd the nav off the bar and wrap on narrow viewports.
+
+         The popover follows the same no-JS pattern as `menu`: group-hover +
+         group-focus-within toggling opacity/pointer-events (never Tailwind's
+         `invisible`/`visible`, which collide with core's hidden.module.css).
+
+         `translated: false` marks a language the CURRENT page has no
+         translation for — the link still works (the visitor gets Drupal's
+         fallback rendering), so it is signposted, not hidden or disabled.
+         Muting uses text-muted-foreground, never opacity (WCAG AA). #}
+      {% set lang_inline_max = 3 %}
+      {# `set` inside a for-loop does not escape the loop scope in Twig, so pick
+         the active entry with a filter instead. Falls back to the first language
+         if negotiation left none marked active. #}
+      {% set active_langs = language_links|filter(l => l.active) %}
+      {% set current_lang = active_langs is not empty ? active_langs|first : language_links|first %}
+      {% if language_links|length <= lang_inline_max %}
+        <nav aria-label="{{ 'Language'|t }}" class="flex items-center gap-3 text-sm font-medium {{ is_centered ? '' : 'ml-auto' }}">
+          {% for l in language_links %}
+            <a href="{{ l.url }}" hreflang="{{ l.langcode }}"
+               title="{{ l.translated ? l.native : 'Not translated: @lang'|t({'@lang': l.native}) }}"
+               class="uppercase tracking-wide {{ l.active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground' }} {{ l.translated ? '' : 'underline decoration-dashed underline-offset-4' }}"
+               {{ l.active ? 'aria-current="true"' : '' }}>{{ l.langcode }}</a>
+          {% endfor %}
+        </nav>
+      {% else %}
+        <div class="relative group/lang shrink-0 {{ is_centered ? '' : 'ml-auto' }}">
+          <button type="button" aria-haspopup="true" aria-label="{{ 'Change language'|t }}"
+                  class="flex items-center gap-1.5 rounded px-2 py-1.5 text-sm font-medium text-foreground transition hover:bg-foreground/5">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-4 w-4 shrink-0">
+              <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M1.75 8h12.5M8 1.75c1.7 1.9 2.55 4 2.55 6.25S9.7 12.35 8 14.25C6.3 12.35 5.45 10.25 5.45 8S6.3 3.65 8 1.75Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {# `max-sm:hidden`, never a bare `hidden`: Drupal core's
+               hidden.module.css ships `.hidden{display:none}` on the themed
+               render path and would hide the endonym at every width. #}
+            <span class="max-sm:hidden">{{ current_lang.native|default(current_lang.label) }}</span>
+            <span class="sm:hidden uppercase tracking-wide">{{ current_lang.langcode }}</span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3 w-3 shrink-0 text-muted-foreground">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="absolute right-0 top-full z-40 pt-2 pointer-events-none opacity-0 transition duration-150 group-hover/lang:pointer-events-auto group-hover/lang:opacity-100 group-focus-within/lang:pointer-events-auto group-focus-within/lang:opacity-100">
+            {# Capped height + scroll so the panel stays on screen at any language
+               count, not just the nine this was reworked for. #}
+            <ul aria-label="{{ 'Language'|t }}" class="max-h-[min(70vh,22rem)] min-w-[13rem] overflow-y-auto rounded-[var(--popover-radius)] border border-[color:var(--popover-border)] bg-background p-1.5 text-sm shadow-[var(--popover-shadow)]">
+              {% for l in language_links %}
+                <li>
+                  <a href="{{ l.url }}" hreflang="{{ l.langcode }}" lang="{{ l.langcode }}"
+                     class="flex items-center gap-2.5 rounded px-2.5 py-1.5 transition hover:bg-foreground/5 {{ l.active ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground' }}"
+                     {{ l.active ? 'aria-current="true"' : '' }}>
+                    <span class="flex h-4 w-4 shrink-0 items-center justify-center">
+                      {% if l.active %}
+                        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" class="h-3.5 w-3.5">
+                          <path d="M3 8.5l3.25 3.25L13 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                      {% endif %}
+                    </span>
+                    <span class="min-w-0 flex-1 truncate">{{ l.native|default(l.label) }}</span>
+                    {% if not l.translated %}
+                      {# Lowercase, not an uppercase badge: at nine languages most rows carry this
+                         marker, and a row of shouting badges reads as the content of the menu
+                         rather than as an annotation on it. #}
+                      <span class="shrink-0 text-xs text-muted-foreground" title="{{ 'This page has no @lang translation yet'|t({'@lang': l.native}) }}">{{ 'untranslated'|t }}</span>
+                    {% endif %}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endif %}
     {% endif %}
   </div>
 </header>

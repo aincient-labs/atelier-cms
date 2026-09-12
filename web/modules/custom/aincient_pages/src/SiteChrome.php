@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Menu\MenuLinkTreeInterface;
 use Drupal\Core\Menu\MenuTreeParameters;
+use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Path\PathMatcherInterface;
 use Drupal\Core\Url;
 
@@ -62,6 +65,7 @@ final class SiteChrome {
     private readonly ChromeRepository $chrome,
     private readonly LanguageManagerInterface $languageManager,
     private readonly PathMatcherInterface $pathMatcher,
+    private readonly RouteMatchInterface $routeMatch,
   ) {}
 
   /** Props for the `aincient_pages:site-header` SDC. */
@@ -76,14 +80,21 @@ final class SiteChrome {
 
   /**
    * Visitor-facing language-switch links for the current page, as a flat list of
-   * `{langcode, label, url, active}`.
+   * `{langcode, label, native, url, active, translated}`.
    *
    * Empty on a single-language site (the common case) — the header hides the
-   * switcher when this is empty. When an operator adds a second language and
-   * translates a page, this lights up automatically: each link points at the
-   * same page under that language's URL (path-prefix negotiation), and `active`
-   * marks the language the visitor is currently viewing. Mirrors what core's
-   * language_block does, flattened for the SDC.
+   * switcher when this is empty. Each entry points at the SAME page under that
+   * language's URL (path-prefix negotiation); `active` marks the language being
+   * viewed and `translated` says whether the page this URL resolves to actually
+   * has a translation in that language (FALSE means the visitor lands on the
+   * fallback rendering — the header marks those rather than hiding them, so the
+   * switcher's shape stays stable across a site's pages).
+   *
+   * `label` is the language's name in the SITE's language (what Drupal's
+   * language list holds); `native` is its endonym — "Deutsch", not "German" —
+   * because a visitor scanning a 9-language list is looking for their own
+   * language written the way they write it. Falls back to `label` for a custom
+   * language core has no endonym for.
    */
   public function languageLinks(): array {
     $languages = $this->languageManager->getLanguages();
@@ -97,17 +108,43 @@ final class SiteChrome {
     // getLanguageSwitchLinks(), which returns nothing in the full-bleed page
     // controller's route context.
     $route = $this->pathMatcher->isFrontPage() ? '<front>' : '<current>';
+    // Core's canonical endonym table, keyed by langcode => [English, native].
+    $standard = LanguageManager::getStandardLanguageList();
+    $entity = $this->routeEntity();
     $links = [];
     foreach ($languages as $langcode => $language) {
       $url = Url::fromRoute($route)->setOption('language', $language);
       $links[] = [
         'langcode' => $langcode,
         'label' => $language->getName(),
+        'native' => (string) ($standard[$langcode][1] ?? $language->getName()),
         'url' => $url->toString(),
         'active' => $langcode === $current,
+        'translated' => $entity === NULL || $entity->hasTranslation($langcode),
       ];
     }
     return $links;
+  }
+
+  /**
+   * The content entity the current route renders, or NULL when there isn't one.
+   *
+   * Used only to answer "is this page translated into language X". A route with
+   * no entity (a view, a listing, the login form) returns NULL, which the caller
+   * reads as "can't tell" and treats every language as available — better than
+   * marking everything untranslated on pages where translation isn't an entity
+   * property at all.
+   *
+   * Note this reads the FIRST content-entity upcast parameter, which is the page
+   * being viewed on every canonical route we render chrome for.
+   */
+  private function routeEntity(): ?ContentEntityInterface {
+    foreach ($this->routeMatch->getParameters() as $parameter) {
+      if ($parameter instanceof ContentEntityInterface && $parameter->isTranslatable()) {
+        return $parameter;
+      }
+    }
+    return NULL;
   }
 
   /** Props for the `aincient_pages:site-footer` SDC. */

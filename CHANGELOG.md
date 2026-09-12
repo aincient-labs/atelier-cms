@@ -7,6 +7,17 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.12.0] — 2026-09-12
+
+**The language switcher now works on sites with many languages.** Up to three languages the header
+keeps the familiar inline row of codes (EN / DE). From four it becomes a single globe-and-language
+button opening a list of every language by its own name — "Deutsch", "日本語", "Português, Portugal"
+— rather than a wall of two-letter codes. The list follows the order you set for your languages,
+scrolls rather than running off the screen, and needs no JavaScript.
+
+- A page that has not been translated into a language is marked "untranslated" and still offered,
+  so the switcher keeps the same shape everywhere instead of changing from page to page.
+
 ## [0.11.0] — 2026-09-11
 
 **Freeze & Live: serve visitors a snapshot of your site, and keep editing behind it.** One command

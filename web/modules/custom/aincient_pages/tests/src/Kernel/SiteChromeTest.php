@@ -6,6 +6,7 @@ namespace Drupal\Tests\aincient_pages\Kernel;
 
 use Drupal\aincient_pages\SiteChrome;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
@@ -22,6 +23,7 @@ final class SiteChromeTest extends KernelTestBase {
     'user',
     'link',
     'menu_link_content',
+    'language',
     'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
   ];
 
@@ -67,6 +69,32 @@ final class SiteChromeTest extends KernelTestBase {
     $this->assertSame('inline', $footer['layout']);
     $this->assertSame('medium', $footer['logo_size']);
     $this->assertTrue($footer['show_tagline']);
+  }
+
+  /**
+   * A many-language site: every configured language is offered, each carrying
+   * its endonym so the header can list "Deutsch" rather than "German", and with
+   * `translated` defaulting TRUE on a route that has no content entity to ask.
+   */
+  public function testLanguageLinksCarryEndonymsAndTranslationState(): void {
+    foreach (['de', 'fr', 'es', 'ja'] as $langcode) {
+      ConfigurableLanguage::createFromLangcode($langcode)->save();
+    }
+
+    $links = $this->chrome()->languageLinks();
+
+    // English (default) + the four added.
+    $this->assertCount(5, $links);
+    $byCode = array_column($links, NULL, 'langcode');
+    $this->assertSame('Deutsch', $byCode['de']['native']);
+    $this->assertSame('日本語', $byCode['ja']['native']);
+    // `label` stays the site-language name; `native` is the endonym.
+    $this->assertSame('German', $byCode['de']['label']);
+    // Exactly one active language, and it is the one being viewed.
+    $this->assertSame(['en'], array_column(array_filter($links, static fn(array $l) => $l['active']), 'langcode'));
+    // No content entity on this route => every language counts as available
+    // rather than everything being marked untranslated.
+    $this->assertSame([TRUE, TRUE, TRUE, TRUE, TRUE], array_column($links, 'translated'));
   }
 
   public function testNavNestsChildLinks(): void {
