@@ -7,6 +7,22 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.12.2] — 2026-09-12
+
+**Menus now offer only the pages that exist in the language you are reading.** A menu entry whose
+page has not been translated into the current language used to lead somewhere broken: on the live
+site it showed the English page under a German or Japanese address, and in a frozen snapshot there
+was nothing to serve at all. Those entries are now left out, so every link in the menu works.
+
+- A section heading whose own page is untranslated but whose sub-pages are translated stays in place
+  as a plain heading, so its children are still reachable.
+- Entries are dropped quietly rather than labelled "not translated" — a label like that would itself
+  need translating into every language you offer.
+- With this, freezing a multilingual site reports no broken links.
+
+**Worth knowing:** a language you have enabled but not yet translated any page into will show an
+empty menu. Its home page and the language switcher still work.
+
 ## [0.12.1] — 2026-09-12
 
 **Multilingual sites: frozen snapshots now hold your translations, and the language switcher points

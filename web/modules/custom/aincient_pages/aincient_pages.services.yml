@@ -132,7 +132,7 @@ services:
     arguments: ['@entity_type.manager']
   aincient_pages.chrome:
     class: Drupal\aincient_pages\SiteChrome
-    arguments: ['@menu.link_tree', '@aincient_pages.brand', '@aincient_pages.site_identity', '@aincient_pages.chrome_repository', '@language_manager', '@config.factory', '@current_route_match']
+    arguments: ['@menu.link_tree', '@aincient_pages.brand', '@aincient_pages.site_identity', '@aincient_pages.chrome_repository', '@language_manager', '@config.factory', '@entity_type.manager', '@current_route_match']
   # The metatag tag set for one rendered page. The chrome-less shell builds its
   # own <head>, so it resolves tags here — including the front-page defaults
   # metatag only applies from its own page pipeline (issue #29).

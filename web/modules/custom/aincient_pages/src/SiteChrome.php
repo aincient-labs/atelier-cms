@@ -7,6 +7,7 @@ namespace Drupal\aincient_pages;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Menu\MenuLinkTreeInterface;
 use Drupal\Core\Menu\MenuTreeParameters;
@@ -66,6 +67,7 @@ final class SiteChrome {
     private readonly ChromeRepository $chrome,
     private readonly LanguageManagerInterface $languageManager,
     private readonly ConfigFactoryInterface $configFactory,
+    private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly RouteMatchInterface $routeMatch,
   ) {}
 
@@ -258,18 +260,68 @@ final class SiteChrome {
    *   generateIndexAndSort manipulator.
    */
   private function toLinks(array $tree): array {
+    $langcode = $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
+    $metadata = $this->cacheability ?? new CacheableMetadata();
+    $metadata->addCacheContexts(['languages:' . LanguageInterface::TYPE_CONTENT]);
+
     $links = [];
     foreach ($tree as $element) {
       if (!$element->link->isEnabled()) {
         continue;
       }
+      $url = $element->link->getUrlObject();
+      $below = $element->subtree ? $this->toLinks($element->subtree) : [];
+      $target = $this->linkTarget($url);
+      if ($target !== NULL) {
+        $metadata->addCacheableDependency($target);
+      }
+      // A menu entry whose target has no translation in the language being
+      // browsed points at a page that does not exist here: live Drupal would
+      // render the default-language copy under a foreign prefix, and in a frozen
+      // snapshot there is nothing to serve at all (DECISIONS 0421). Drop it
+      // rather than link it. Deliberately NOT the switcher's "mark, don't hide"
+      // rule (0420): the switcher must keep a stable shape because it is how you
+      // change language, while a menu listing only the pages that exist in the
+      // current language is simply what a multilingual site looks like — and
+      // marking would need a visible "untranslated" string that itself needs
+      // translating into every language.
+      $untranslated = $target !== NULL && !$target->hasTranslation($langcode);
+      if ($untranslated && $below === []) {
+        continue;
+      }
       $links[] = [
         'label' => (string) $element->link->getTitle(),
-        'url' => $element->link->getUrlObject()->toString(),
-        'below' => $element->subtree ? $this->toLinks($element->subtree) : [],
+        // An untranslated PARENT that still has translated children stays as a
+        // non-link group header (an ordinary menu pattern) so the children are
+        // not orphaned; the SDC renders an empty url as a <button>/<span>.
+        'url' => $untranslated ? '' : $url->toString(),
+        'below' => $below,
       ];
     }
+    $this->cacheability = $metadata;
     return $links;
+  }
+
+  /**
+   * The translatable content entity a menu link points at, if any.
+   *
+   * NULL for an external link, `<front>`, or any route without a content-entity
+   * parameter — those are language-agnostic and always kept.
+   */
+  private function linkTarget(Url $url): ?ContentEntityInterface {
+    if ($url->isExternal() || !$url->isRouted()) {
+      return NULL;
+    }
+    foreach ($url->getRouteParameters() as $type => $id) {
+      if (!$this->entityTypeManager->hasDefinition($type)) {
+        continue;
+      }
+      $entity = $this->entityTypeManager->getStorage($type)->load($id);
+      if ($entity instanceof ContentEntityInterface && $entity->isTranslatable()) {
+        return $entity;
+      }
+    }
+    return NULL;
   }
 
   /**

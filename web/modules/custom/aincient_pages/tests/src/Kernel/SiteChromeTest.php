@@ -7,6 +7,10 @@ namespace Drupal\Tests\aincient_pages\Kernel;
 use Drupal\aincient_pages\SiteChrome;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\node\Entity\Node;
+use Drupal\node\Entity\NodeType;
+use Drupal\user\Entity\Role;
+use Drupal\user\RoleInterface;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
@@ -24,6 +28,7 @@ final class SiteChromeTest extends KernelTestBase {
     'link',
     'menu_link_content',
     'language',
+    'field', 'text', 'filter', 'node', 'content_translation',
     'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
   ];
 
@@ -32,6 +37,25 @@ final class SiteChromeTest extends KernelTestBase {
     $this->installConfig(['workflows', 'content_moderation', 'aincient_pages']);
     $this->installEntitySchema('user');
     $this->installEntitySchema('menu_link_content');
+    $this->installEntitySchema('node');
+    $this->installSchema('node', ['node_access']);
+    $this->installConfig(['user']);
+    // nav() runs core's checkAccess manipulator as the CURRENT user, which is
+    // anonymous here — without this every node-backed menu link is filtered out
+    // and the assertions below would pass for the wrong reason.
+    $anonymous = Role::load(RoleInterface::ANONYMOUS_ID)
+      ?: Role::create(['id' => RoleInterface::ANONYMOUS_ID, 'label' => 'Anonymous']);
+    $anonymous->grantPermission('access content')->save();
+    // ContentEntityBase::isTranslatable() is FALSE until the BUNDLE is marked
+    // translatable — which is also why the production guard is right: with no
+    // per-bundle translation configured there are no translations to be missing.
+    $this->container->get('content_translation.manager')
+      ->setEnabled('node', 'aincient_page', TRUE);
+    $this->installConfig(['node', 'filter']);
+    // aincient_pages ships the `aincient_page` type in its own config.
+    if (NodeType::load('aincient_page') === NULL) {
+      NodeType::create(['type' => 'aincient_page', 'name' => 'Page'])->save();
+    }
   }
 
   private function chrome(): SiteChrome {
@@ -113,6 +137,59 @@ final class SiteChromeTest extends KernelTestBase {
 
     $this->assertContains('route', $contexts);
     $this->assertContains('languages:language_url', $contexts);
+  }
+
+  /**
+   * A menu entry whose target has no translation in the language being browsed
+   * points at a page that does not exist there — live Drupal would render the
+   * default-language copy under a foreign prefix, and a frozen snapshot has
+   * nothing to serve at all. It is dropped, not linked and not labelled: a
+   * visible "untranslated" marker would itself need translating into every
+   * language (DECISIONS 0421; contrast the switcher's 0420 rule, which keeps a
+   * stable shape because it is how you change language).
+   */
+  public function testNavDropsEntriesWithNoTranslationInTheCurrentLanguage(): void {
+    // BOTH as config entities: the default language is otherwise only the
+    // LanguageDefault service, so switching it below would leave the site
+    // monolingual — and isTranslatable() is FALSE on a monolingual site, which
+    // would make every assertion here pass for the wrong reason.
+    if (ConfigurableLanguage::load('en') === NULL) {
+      ConfigurableLanguage::createFromLangcode('en')->save();
+    }
+    ConfigurableLanguage::createFromLangcode('de')->save();
+
+    $english = Node::create(['type' => 'aincient_page', 'title' => 'English only', 'status' => 1]);
+    $english->save();
+    $both = Node::create(['type' => 'aincient_page', 'title' => 'Both', 'status' => 1]);
+    $both->save();
+    $both->addTranslation('de', ['title' => 'Beide'])->save();
+
+    foreach ([$english, $both] as $node) {
+      MenuLinkContent::create([
+        'title' => $node->label(),
+        'link' => ['uri' => 'entity:node/' . $node->id()],
+        'menu_name' => 'main',
+      ])->save();
+    }
+    // An external entry is language-agnostic and must survive either way.
+    MenuLinkContent::create(['title' => 'Elsewhere', 'link' => ['uri' => 'https://example.com'], 'menu_name' => 'main'])->save();
+
+    // Browsing in English: everything is offered.
+    $labels = array_column($this->chrome()->nav('main'), 'label');
+    $this->assertContains('English only', $labels);
+    $this->assertContains('Both', $labels);
+    $this->assertContains('Elsewhere', $labels);
+
+    // Browsing in German: the untranslated page is gone, the rest stays.
+    $this->container->get('language_manager')
+      ->setConfigOverrideLanguage(ConfigurableLanguage::load('de'));
+    \Drupal::service('language.default')->set(ConfigurableLanguage::load('de'));
+    $this->container->get('language_manager')->reset();
+
+    $labels = array_column($this->chrome()->nav('main'), 'label');
+    $this->assertNotContains('English only', $labels);
+    $this->assertContains('Both', $labels);
+    $this->assertContains('Elsewhere', $labels);
   }
 
   public function testNavNestsChildLinks(): void {
