@@ -97,6 +97,24 @@ final class SiteChromeTest extends KernelTestBase {
     $this->assertSame([TRUE, TRUE, TRUE, TRUE, TRUE], array_column($links, 'translated'));
   }
 
+  /**
+   * The switcher's hrefs come from `<current>`, whose outbound route processor
+   * varies by route — so the chrome MUST hand that cache context on. Losing it
+   * (the plain Url::toString() drops all bubbleable metadata) let one page's
+   * header be reused on another: the static exporter renders the front page
+   * first, and every later frozen page then linked the language FRONT pages
+   * instead of its own translations (pitch-demo report, 12 Sep 2026).
+   */
+  public function testLanguageLinksCarryTheRouteCacheContext(): void {
+    ConfigurableLanguage::createFromLangcode('de')->save();
+
+    $this->chrome()->languageLinks();
+    $contexts = $this->chrome()->cacheability()->getCacheContexts();
+
+    $this->assertContains('route', $contexts);
+    $this->assertContains('languages:language_url', $contexts);
+  }
+
   public function testNavNestsChildLinks(): void {
     $parent = MenuLinkContent::create(['title' => 'Products', 'link' => ['uri' => 'internal:/'], 'menu_name' => 'main', 'weight' => 0]);
     $parent->save();

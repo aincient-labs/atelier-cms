@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages;
 
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Menu\MenuLinkTreeInterface;
 use Drupal\Core\Menu\MenuTreeParameters;
 use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Path\PathMatcherInterface;
 use Drupal\Core\Url;
 
 /**
@@ -64,7 +65,7 @@ final class SiteChrome {
     private readonly SiteIdentity $identity,
     private readonly ChromeRepository $chrome,
     private readonly LanguageManagerInterface $languageManager,
-    private readonly PathMatcherInterface $pathMatcher,
+    private readonly ConfigFactoryInterface $configFactory,
     private readonly RouteMatchInterface $routeMatch,
   ) {}
 
@@ -96,6 +97,47 @@ final class SiteChrome {
    * language written the way they write it. Falls back to `label` for a custom
    * language core has no endonym for.
    */
+  /**
+   * Cacheability collected while building the chrome (see languageLinks()).
+   */
+  private ?CacheableMetadata $cacheability = NULL;
+
+  /**
+   * The cache metadata the chrome's links depend on.
+   *
+   * MUST be applied to the render array that carries headerProps(): the
+   * language switcher points at `<current>`, whose outbound route processor
+   * varies by route. Without it the header is cached route-agnostically and
+   * the first page rendered in a process poisons every later one — which is
+   * exactly what the static exporter did (front page first, so every frozen
+   * page linked the language FRONT pages instead of its own translations).
+   */
+  public function cacheability(): CacheableMetadata {
+    return $this->cacheability ?? new CacheableMetadata();
+  }
+
+  /**
+   * Whether the CURRENT route is the site's front page.
+   *
+   * Deliberately NOT `path.matcher`: PathMatcher::isFrontPage() memoizes its
+   * answer in a service that lives for the whole process and is never reset.
+   * That is harmless in a web request (one page per process) and wrong in the
+   * static exporter, which renders every page in ONE process — the front page
+   * goes first, so every later page inherited its TRUE and emitted front-page
+   * language links. Same reasoning as PageMetatags::isFrontPage().
+   */
+  private function isFrontPage(): bool {
+    if ($this->routeMatch->getRouteName() === NULL) {
+      return FALSE;
+    }
+    $url = Url::fromRouteMatch($this->routeMatch);
+    if (!$url->isRouted()) {
+      return FALSE;
+    }
+    $front = trim((string) $this->configFactory->get('system.site')->get('page.front'));
+    return $front !== '' && '/' . $url->getInternalPath() === $front;
+  }
+
   public function languageLinks(): array {
     $languages = $this->languageManager->getLanguages();
     if (count($languages) < 2) {
@@ -107,22 +149,50 @@ final class SiteChrome {
     // language's path prefix (e.g. `/de/…`). More predictable than
     // getLanguageSwitchLinks(), which returns nothing in the full-bleed page
     // controller's route context.
-    $route = $this->pathMatcher->isFrontPage() ? '<front>' : '<current>';
+    // Error pages have no translations of their own: `<current>` there would
+    // emit `/de/system/404`, which is neither a real page (the exporter's link
+    // check flags it) nor useful to a visitor. Send them to each language's
+    // front page instead.
+    $errorRoute = in_array($this->routeMatch->getRouteName(), ['system.404', 'system.403'], TRUE);
+    $route = ($errorRoute || $this->isFrontPage()) ? '<front>' : '<current>';
     // Core's canonical endonym table, keyed by langcode => [English, native].
     $standard = LanguageManager::getStandardLanguageList();
     $entity = $this->routeEntity();
+    $metadata = $this->cacheability ?? new CacheableMetadata();
     $links = [];
     foreach ($languages as $langcode => $language) {
-      $url = Url::fromRoute($route)->setOption('language', $language);
+      $translated = $entity === NULL || $entity->hasTranslation($langcode);
+      // A language this page has no translation in has no page to link to: in a
+      // FROZEN snapshot that target simply does not exist (the export holds a
+      // page once per real translation), and on the live site it would render
+      // the default-language copy under a foreign prefix — the "English text
+      // under a 简体中文 label" the pitch-demo report called out. Point at that
+      // language's front page instead; the row still carries its "untranslated"
+      // marker, so the affordance stays honest and live matches frozen.
+      $target = $translated ? $route : '<front>';
+      $url = Url::fromRoute($target)->setOption('language', $language);
+      // toString(TRUE): the plain toString() DISCARDS the bubbleable metadata,
+      // including the 'route' cache context RouteProcessorCurrent adds for
+      // `<current>`. Dropping it is what let one page's switcher be reused on
+      // every other page. Collect it and let cacheability() hand it on.
+      $generated = $url->toString(TRUE);
+      $metadata = $metadata->merge(CacheableMetadata::createFromObject($generated));
       $links[] = [
         'langcode' => $langcode,
         'label' => $language->getName(),
         'native' => (string) ($standard[$langcode][1] ?? $language->getName()),
-        'url' => $url->toString(),
+        'url' => $generated->getGeneratedUrl(),
         'active' => $langcode === $current,
-        'translated' => $entity === NULL || $entity->hasTranslation($langcode),
+        'translated' => $translated,
       ];
     }
+    // The set of links (and which one is active) also varies by the negotiated
+    // URL language, and by the entity whose translations they were read from.
+    $metadata->addCacheContexts(['languages:' . LanguageInterface::TYPE_URL]);
+    if ($entity !== NULL) {
+      $metadata->addCacheableDependency($entity);
+    }
+    $this->cacheability = $metadata;
     return $links;
   }
 

@@ -1,7 +1,7 @@
 services:
   aincient_export.path_inventory:
     class: Drupal\aincient_export\PathInventory
-    arguments: ['@entity_type.manager', '@config.factory', '@?aincient_pages.collection_inventory']
+    arguments: ['@entity_type.manager', '@config.factory', '@language_manager', '@?aincient_pages.collection_inventory']
   aincient_export.static_renderer:
     class: Drupal\aincient_export\StaticRenderer
     arguments: ['@http_kernel', '@request_stack', '@account_switcher', '@?http_middleware.page_cache']

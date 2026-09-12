@@ -19,6 +19,8 @@ use Drupal\aincient_pages\SiteIdentity;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\DependencyInjection\ClassResolverInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Url;
 use Drupal\aincient_pages\SiteChrome;
 use Drupal\Core\Extension\ModuleExtensionList;
@@ -61,6 +63,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
     private readonly CollectionInventory $collectionInventory,
     private readonly PageMetatags $metatags,
     private readonly ComponentCatalogInterface $catalog,
+    private readonly LanguageManagerInterface $languageManager,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -80,6 +83,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
       $container->get('aincient_pages.collection_inventory'),
       $container->get('aincient_pages.metatags'),
       $container->get('aincient_pages.catalog'),
+      $container->get('language_manager'),
     );
   }
 
@@ -105,8 +109,10 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * web fonts as a real page, so the chrome reskins with the live Foundations.
    */
   public function renderChrome(array $headerProps, array $footerProps): Response {
+    $header = $this->component('site-header', $headerProps);
+    $this->chrome->cacheability()->applyTo($header);
     $build = [
-      $this->component('site-header', $headerProps),
+      $header,
       $this->chromePreviewBody(),
       $this->component('site-footer', $footerProps),
     ];
@@ -886,7 +892,11 @@ final class PageSpikeController implements ContainerInjectionInterface {
 
   /** The brand header, shown on every page (nav = core 'main' menu). */
   private function siteHeader(): array {
-    return $this->component('site-header', $this->chrome->headerProps());
+    $header = $this->component('site-header', $this->chrome->headerProps());
+    // The switcher's `<current>` links vary by route — without this the header
+    // is cached route-agnostically and one page's links leak onto the next.
+    $this->chrome->cacheability()->applyTo($header);
+    return $header;
   }
 
   /** The brand footer, shown on every page (nav = core 'footer' menu). */
@@ -981,9 +991,15 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // there are no metatags (spike briefs, or metatag disabled).
     $metaBlock = $metaHtml !== '' ? "\n  $metaHtml" : '';
     $titleTag = str_contains($metaHtml, '<title') ? '' : "\n  <title>$title</title>";
+    // The page shell is hand-written rather than themed, so nothing fills in
+    // html_attributes for us: negotiate the interface language here or every
+    // translated page ships `lang="en"` (wrong for screen readers and search).
+    $language = $this->languageManager->getCurrentLanguage();
+    $htmlLang = htmlspecialchars($language->getId(), ENT_QUOTES);
+    $htmlDir = $language->getDirection() === LanguageInterface::DIRECTION_RTL ? 'rtl' : 'ltr';
     return <<<HTML
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="$htmlLang" dir="$htmlDir">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">$faviconLink$brandFontLink$fontLink$emojiLink

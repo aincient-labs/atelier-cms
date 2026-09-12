@@ -7,6 +7,28 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.12.1] — 2026-09-12
+
+**Multilingual sites: frozen snapshots now hold your translations, and the language switcher points
+at them.** Previously a snapshot contained only the default language, so a visitor clicking Deutsch
+on a frozen page landed on the German home page rather than the German version of what they were
+reading — and every other language page fell through to the live site. A freeze now exports each
+language's home page plus every page that actually has a translation, and each page's switcher links
+its own translations.
+
+- Translated pages are served with the right `lang` attribute, so screen readers and search engines
+  read them as German, Japanese or Chinese rather than English.
+- A language a page has not been translated into is still listed and marked "untranslated", and now
+  takes you to that language's home page instead of an English page under a foreign address.
+- On a "page not found" screen the switcher offers each language's home page.
+
+**Known limitation on multilingual sites:** a freeze still reports broken links for menu entries that
+point at pages with no translation in that language. The freeze is taken and can be served with
+"Serve it anyway"; those particular links fall back to the live site.
+
+**Security.** Updated `browserslist`, `baseline-browser-mapping` and `composer/composer` to their
+patched releases. Build-time dependencies only — the shipped application is unchanged.
+
 ## [0.12.0] — 2026-09-12
 
 **The language switcher now works on sites with many languages.** Up to three languages the header
