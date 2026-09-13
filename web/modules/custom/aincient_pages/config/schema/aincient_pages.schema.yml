@@ -63,6 +63,9 @@ aincient_pages.identity:
     footer_note:
       type: label
       label: 'Footer note'
+    build_with:
+      type: boolean
+      label: 'Show the "Build with Atelier" line on the auth screens'
     site:
       type: mapping
       label: 'Site information (overrides system.site at runtime; empty = shipped default)'

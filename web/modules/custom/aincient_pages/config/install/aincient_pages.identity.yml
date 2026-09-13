@@ -13,6 +13,10 @@ guidelines:
 logo: ''
 favicon: ''
 footer_note: ''
+# The "Build with Atelier" line in the auth-screen identity panel (DECISIONS
+# 0422). On by default; the site owner can switch it off — it is the only mark
+# of ours on a screen that is otherwise entirely theirs.
+build_with: true
 # Site information (DECISIONS 0183): the operator-owned slice of core's
 # system.site. Empty values mean "no opinion" — the shipped system.site default
 # shows through (SiteInformationOverrider only overrides non-empty values). The

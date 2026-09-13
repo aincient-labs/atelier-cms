@@ -7,6 +7,26 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.13.0] — 2026-09-13
+
+**Your sign-in screen now looks like your site.** Signing in, resetting a password and creating an
+account share a new screen: a card with your own identity — your logo or site name, your tagline and
+a single stroke of your brand colour — on a panel beside the form. It is your brand on the panel,
+not ours, so the door into a hotel site and the door into a law firm's site no longer look identical.
+
+- On a phone the panel steps aside and the form fills the card, so nothing is pushed off the screen.
+- The heading, the button and the browser tab now all say the same thing: "Sign in".
+- A small "Build with Atelier" line sits at the foot of the panel. It is shown by default and you can
+  turn it off.
+
+**Fixed: on a small phone, the privacy banner could cover the sign-in button** with no way to scroll
+to it. The screen now always leaves room for the banner.
+
+**More readable forms, everywhere on your site.** The outline that marks the field you are typing in
+is now drawn at full strength instead of a faint tint — a real difference if you move through a form
+by keyboard. Fields are also sized so they no longer overpower the label above them, and are large
+enough to tap comfortably.
+
 ## [0.12.2] — 2026-09-12
 
 **Menus now offer only the pages that exist in the language you are reading.** A menu entry whose

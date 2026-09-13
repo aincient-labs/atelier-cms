@@ -64,6 +64,19 @@ final class SiteIdentity {
     return (string) ($this->guidelines()['tagline'] ?? '');
   }
 
+  /**
+   * Whether the "Build with Atelier" line shows on the auth screens.
+   *
+   * The one Atelier mark on a screen that otherwise belongs entirely to the
+   * site owner — so it is theirs to remove. Absent config reads as TRUE: the
+   * line is on by default, including on databases upgraded from before the key
+   * existed.
+   */
+  public function buildWith(): bool {
+    $value = $this->configFactory->get(self::CONFIG)->get('build_with');
+    return $value === NULL ? TRUE : (bool) $value;
+  }
+
   public function footerNote(): string {
     return (string) ($this->configFactory->get(self::CONFIG)->get('footer_note') ?? '');
   }

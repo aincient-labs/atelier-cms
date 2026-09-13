@@ -29,10 +29,17 @@
   input[type="text"], input[type="email"], input[type="password"],
   input[type="search"], input[type="url"], input[type="tel"], input[type="number"],
   input[type="date"], select, textarea {
-    /* w-full so Drupal's size="60" inputs fit their container (card/form). */
+    /* w-full so Drupal's size="60" inputs fit their container (card/form).
+       The focus ring is SOLID: a dimmed ring over a 1px border is the weakest
+       possible indicator on the one screen a keyboard user cannot skip. */
     @apply w-full max-w-full border border-border bg-background px-3 py-2
-           text-foreground outline-none focus:ring-2 focus:ring-primary/40;
+           text-foreground outline-none
+           focus:border-primary focus:ring-2 focus:ring-primary;
     border-radius: var(--input-radius);
+    /* A field must not out-shout the label naming it, and 2.75rem is a real
+       touch target. 1rem also keeps iOS from zooming the viewport on focus. */
+    font-size: 1rem;
+    min-height: 2.75rem;
   }
   button, input[type="submit"], .button {
     @apply inline-flex items-center justify-center px-5 py-2.5 no-underline transition
@@ -95,24 +102,153 @@
 
   /* Card primitive + the auth forms (login / register / reset) as a card.
      Radius/shadow/border + density-driven padding come from component tokens. */
-  .ain-card,
-  .user-login-form,
-  .user-pass,
-  .user-register-form {
+  .ain-card {
     @apply border bg-card;
     border-radius: var(--card-radius);
     box-shadow: var(--card-shadow);
     border-color: var(--card-border);
     padding: calc(2rem * var(--density));
   }
+
+  /* ── Auth screens (login / password reset / register) ────────────────────
+     DIRECTION C1 (DECISIONS 0422): an ink identity panel beside the form from
+     1024px up. The panel wears the SITE's ink + primary — never Atelier's
+     brand; a user's site never inherits ours. Markup: page--auth.html.twig.
+
+     The auth forms are NOT cards here: they sit directly on the form column's
+     paper, so the card's border/shadow/padding are explicitly cleared. */
   .user-login-form,
   .user-pass,
-  .user-register-form { @apply max-w-md; }
+  .user-register-form {
+    @apply border-0 bg-transparent p-0;
+    box-shadow: none;
+    max-width: none;
+  }
 
-  /* Auth screens: the centred template supplies its own heading + wordmark, so
-     hide Drupal's default left-aligned page title block there (the theme renders
-     it as #block-…-page-title, no .block-page-title-block class). */
-  .ain-auth [id$="page-title"] { @apply hidden; }
+  /* The ground the card sits on. */
+  .ain-auth-screen {
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    @apply bg-muted;
+    padding-inline: 1.5rem;
+    padding-block: 3rem;
+    /* The consent banner is fixed at the highest z-index in the document and is
+       253px tall; on a short phone it covered the submit button with nothing to
+       scroll. consent.js publishes its height — reserve it so the button is
+       always reachable. 0 when no banner is shown. */
+    padding-block-end: calc(3rem + var(--ain-consent-h, 0px));
+  }
+
+  /* The card itself: one column (the form) until the panel appears at 1024px. */
+  .ain-auth-card {
+    width: 100%;
+    max-width: 26rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    overflow: hidden;
+    @apply border bg-card;
+    border-color: var(--card-border);
+    border-radius: var(--card-radius);
+    /* NOT var(--card-shadow): a brand whose card shadow resolves to a fully
+       transparent colour leaves the front door as a hairline on a near-identical
+       ground (the defect this screen was rebuilt to fix). Mixed from the site's
+       own ink so it stays the site's light — diffuse, never a glow. */
+    box-shadow:
+      0 1px 2px color-mix(in oklab, var(--foreground) 7%, transparent),
+      0 12px 32px -12px color-mix(in oklab, var(--foreground) 24%, transparent);
+  }
+
+  .ain-auth-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 2rem;
+  }
+  .ain-auth-inner { width: 100%; max-width: 22rem; }
+
+  .ain-auth-id { @apply mb-7 flex flex-col items-start gap-2; }
+  .ain-auth-id__logo { @apply h-10 w-auto; }
+  .ain-auth-id__name {
+    @apply font-mono text-xs uppercase text-muted-foreground;
+    letter-spacing: 0.15em;
+  }
+
+  .ain-auth-heading {
+    @apply mb-6 font-display text-foreground;
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: var(--heading-weight);
+    letter-spacing: var(--heading-tracking);
+  }
+
+  .ain-auth-alt { @apply mt-6 text-sm text-muted-foreground; }
+  .ain-auth-alt a { @apply font-medium text-foreground underline underline-offset-4 hover:no-underline; }
+
+  /* Full-width primary action: the obvious next step, and a real target. */
+  .ain-auth-screen .form-actions { @apply mt-7; }
+  .ain-auth-screen .form-actions input[type="submit"],
+  .ain-auth-screen .form-actions .button { @apply w-full; min-height: 2.75rem; }
+
+  /* The identity panel. Hidden below 1024px — DROPPED, not stacked above the
+     form, which would push the button back under the consent banner. */
+  .ain-auth-panel { display: none; }
+
+  @media (min-width: 1024px) {
+    .ain-auth-card {
+      max-width: 60rem;
+      grid-template-columns: 1fr 1fr;
+      min-height: 30rem;
+    }
+    .ain-auth-main { padding: 3rem 3rem; }
+    /* The form is FIRST in the DOM (so it is the first tab stop) and placed
+       right by `order`. Never reorder these in the template. */
+    .ain-auth-panel { order: -1; }
+    .ain-auth-id { display: none; }
+
+    .ain-auth-panel {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 2.5rem;
+      padding: 3rem 2.75rem;
+      background: var(--foreground);
+      color: var(--background);
+    }
+    /* The one flourish: a single diagonal swipe of the site's own primary,
+       bleeding off both edges. Decoration only — never a focus target. */
+    .ain-auth-panel::after {
+      content: "";
+      position: absolute;
+      right: -2rem;
+      top: -60%;
+      width: 12rem;
+      height: 230%;
+      background: var(--primary);
+      opacity: 0.13;
+      transform: rotate(28deg);
+      pointer-events: none;
+    }
+    .ain-auth-panel > * { position: relative; z-index: 1; }
+    .ain-auth-panel__logo { @apply h-12 w-auto; }
+    .ain-auth-panel__name {
+      @apply font-display;
+      font-size: 1.75rem;
+      line-height: 1.15;
+      font-weight: var(--heading-weight);
+      letter-spacing: var(--heading-tracking);
+    }
+    /* On a dark tone, secondary text stays FULL on-colour and is separated by
+       size and tracking — an opacity dim here fails AA (see DECISIONS 0376). */
+    .ain-auth-panel__tagline { @apply mt-3 text-sm; max-width: 28ch; }
+    .ain-auth-panel__foot {
+      @apply font-mono text-xs uppercase;
+      letter-spacing: 0.14em;
+    }
+  }
 }
 
 /* Long-form article styling — scoped to node content only (NOT forms/admin),

@@ -60,6 +60,9 @@ function aincient_chat_toolbar(): array {
  */
 function aincient_chat_form_user_login_form_alter(array &$form, FormStateInterface $form_state): void {
   $form['#submit'][] = 'aincient_chat_user_login_submit';
+  // One verb for one action: the heading, the <title> and this button all say
+  // "Sign in". Core's default here is "Log in".
+  $form['actions']['submit']['#value'] = t('Sign in');
 }
 
 /**

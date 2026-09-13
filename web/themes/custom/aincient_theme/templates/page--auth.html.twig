@@ -1,44 +1,74 @@
 {#
 /**
  * @file
- * Branded, chrome-less auth screen — the AIncient product front door.
+ * Branded, chrome-less auth screen — the product front door.
  *
  * Shared by every auth surface (login / password reset / register): the theme
  * routes all three routes to this template via a page suggestion (see
  * aincient_theme_theme_suggestions_page_alter()), so they look identical.
  *
- * A centred brand wordmark above the card-styled form (the .user-login-form /
- * .user-pass / .user-register-form card styling lives in build/input.css). No
- * site header/footer and no local-task tabs: this is an auth surface, not a
- * content page. Instead of tabs, one plain cross-link moves between sign-in and
- * reset. Brand vars + the per-route heading/link come from
- * aincient_theme_preprocess_page().
- */
-#}
-<div class="flex min-h-screen flex-col items-center justify-center bg-muted px-6 py-12">
-  <main id="main-content" tabindex="-1" class="w-full max-w-md">
+ * LAYOUT (DECISIONS 0422 — "direction C1"): a centred split CARD on the site's
+ * muted ground — an ink identity panel beside the form from 1024px up. Below
+ * that the panel is DROPPED, not stacked, and the card narrows to the form
+ * alone, so the submit button never gets pushed down the page (a stacked panel
+ * put it under the fixed consent banner on short phones).
+ *
+ * The panel wears the SITE's own ink + primary, never Atelier's brand — a
+ * user's site never inherits ours. The only thing of ours on the screen is the
+ * optional "Build with Atelier" line in the panel foot.
+ *
+ * ORDER: the form is FIRST in the DOM and placed to the right by grid `order`,
+ * so a keyboard or screen-reader user lands on the username field instead of
+ * tabbing through the identity panel. Never reorder these two in source.
+ *
+ * Brand vars + the per-route heading/link come from
+ * aincient_theme_preprocess_page(); the form itself is styled in build/input.css.
+ #}
+<div class="ain-auth-screen">
+  <div class="ain-auth-card">
 
-    <div class="mb-8 flex flex-col items-center text-center">
+  <main id="main-content" tabindex="-1" class="ain-auth-main">
+    <div class="ain-auth-inner">
+
+      {# The panel is hidden below 1024px, so the site names itself here instead. #}
+      <div class="ain-auth-id">
+        {% if ain_auth.logo_url %}
+          <img src="{{ ain_auth.logo_url }}" alt="{{ ain_auth.name }}" class="ain-auth-id__logo" />
+        {% else %}
+          <span class="ain-auth-id__name">{{ ain_auth.name }}</span>
+        {% endif %}
+      </div>
+
+      <h1 class="ain-auth-heading">{{ ain_auth.heading }}</h1>
+
+      {{ ain_auth.messages }}
+
+      {{ page.content }}
+
+      {% if ain_auth.alt.url %}
+        <p class="ain-auth-alt">
+          <a href="{{ ain_auth.alt.url }}">{{ ain_auth.alt.label }}</a>
+        </p>
+      {% endif %}
+
+    </div>
+  </main>
+
+  <aside class="ain-auth-panel">
+    <div class="ain-auth-panel__id">
       {% if ain_auth.logo_url %}
-        <img src="{{ ain_auth.logo_url }}" alt="{{ ain_auth.name }}" class="mb-4 h-12 w-auto" />
+        <img src="{{ ain_auth.logo_url }}" alt="{{ ain_auth.name }}" class="ain-auth-panel__logo" />
       {% else %}
-        <span class="font-display text-2xl font-semibold text-foreground">{{ ain_auth.name }}</span>
+        <p class="ain-auth-panel__name">{{ ain_auth.name }}</p>
       {% endif %}
       {% if ain_auth.tagline %}
-        <p class="mt-2 text-sm text-muted-foreground">{{ ain_auth.tagline }}</p>
+        <p class="ain-auth-panel__tagline">{{ ain_auth.tagline }}</p>
       {% endif %}
-      <h1 class="mt-6 font-display text-xl text-foreground">{{ ain_auth.heading }}</h1>
     </div>
-
-    {{ ain_auth.messages }}
-
-    {{ page.content }}
-
-    {% if ain_auth.alt.url %}
-      <p class="mt-6 text-center text-sm text-muted-foreground">
-        <a href="{{ ain_auth.alt.url }}" class="font-medium text-foreground underline underline-offset-4 hover:no-underline">{{ ain_auth.alt.label }}</a>
-      </p>
+    {% if ain_auth.build_with %}
+      <p class="ain-auth-panel__foot">{{ 'Build with Atelier'|t }}</p>
     {% endif %}
+  </aside>
 
-  </main>
+  </div>
 </div>

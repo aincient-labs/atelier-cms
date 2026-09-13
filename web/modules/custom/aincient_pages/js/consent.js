@@ -206,14 +206,39 @@
     document.body.appendChild(root);
   }
 
+  /**
+   * Publish the banner's height as --ain-consent-h on <html> while it is shown.
+   *
+   * The banner is position:fixed at the top of the z-order, so on a short
+   * viewport it can cover whatever sits at the bottom of a page that has no
+   * room to scroll (it buried the sign-in button on the auth screen). Layouts
+   * that must stay reachable reserve this much space at their end edge; it
+   * reads as 0px whenever no banner is on screen.
+   */
+  function publishHeight() {
+    if (!root || root.hidden) {
+      document.documentElement.style.removeProperty('--ain-consent-h');
+      return;
+    }
+    document.documentElement.style.setProperty('--ain-consent-h', root.offsetHeight + 'px');
+  }
+
   function showBanner() {
     if (!root) { buildBanner(); }
     root.hidden = false;
     if (reopenBtn) { reopenBtn.hidden = true; }
+    publishHeight();
+    // The panel reflows (preferences opened, text wrapped at a new width), so
+    // track it rather than measuring once.
+    if (window.ResizeObserver && !root._ainRo) {
+      root._ainRo = new ResizeObserver(publishHeight);
+      root._ainRo.observe(root);
+    }
   }
 
   function hideBanner() {
     if (root) { root.hidden = true; }
+    publishHeight();
   }
 
   function showReopen() {

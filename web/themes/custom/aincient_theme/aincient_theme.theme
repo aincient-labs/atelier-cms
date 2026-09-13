@@ -38,6 +38,29 @@ function aincient_theme_theme_suggestions_page_alter(array &$suggestions, array 
 }
 
 /**
+ * The per-route auth copy: the heading, and the ONE cross-link that replaces
+ * the local-task tabs. Shared by the <h1> (preprocess_page) and the document
+ * <title> (preprocess_html) so the two can never disagree — core's route titles
+ * say "Log in" where the screen says "Sign in".
+ */
+function _aincient_theme_auth_copy(string $route): ?array {
+  return [
+    'user.login' => [
+      'heading' => t('Sign in'),
+      'alt' => ['label' => t('Forgot your password?'), 'url' => '/user/password'],
+    ],
+    'user.pass' => [
+      'heading' => t('Reset your password'),
+      'alt' => ['label' => t('Back to sign in'), 'url' => '/user/login'],
+    ],
+    'user.register' => [
+      'heading' => t('Create your account'),
+      'alt' => ['label' => t('Back to sign in'), 'url' => '/user/login'],
+    ],
+  ][$route] ?? NULL;
+}
+
+/**
  * Implements hook_preprocess_html().
  *
  * Inject the brand CSS-var override into the document head and brand the body.
@@ -53,6 +76,11 @@ function aincient_theme_preprocess_html(array &$variables): void {
   // left-aligned page-title block there.
   if (in_array(\Drupal::routeMatch()->getRouteName(), AINCIENT_THEME_AUTH_ROUTES, TRUE)) {
     $variables['attributes']['class'][] = 'ain-auth';
+    // The tab title says what the screen says.
+    $copy = _aincient_theme_auth_copy(\Drupal::routeMatch()->getRouteName());
+    if ($copy && isset($variables['head_title']['title'])) {
+      $variables['head_title']['title'] = $copy['heading'];
+    }
   }
 
   if (!\Drupal::hasService('aincient_pages.chrome')) {
@@ -162,20 +190,7 @@ function aincient_theme_preprocess_page(array &$variables): void {
   if (in_array($route, AINCIENT_THEME_AUTH_ROUTES, TRUE)) {
     $identity = \Drupal::service('aincient_pages.site_identity');
     // Per-route heading + the single cross-link to the counterpart surface.
-    $copy = [
-      'user.login' => [
-        'heading' => t('Sign in'),
-        'alt' => ['label' => t('Forgot your password?'), 'url' => '/user/password'],
-      ],
-      'user.pass' => [
-        'heading' => t('Reset your password'),
-        'alt' => ['label' => t('Back to sign in'), 'url' => '/user/login'],
-      ],
-      'user.register' => [
-        'heading' => t('Create your account'),
-        'alt' => ['label' => t('Back to sign in'), 'url' => '/user/login'],
-      ],
-    ][$route];
+    $copy = _aincient_theme_auth_copy($route);
     $variables['ain_auth'] = [
       'name' => $identity->name() ?: \Drupal::config('system.site')->get('name'),
       'tagline' => $identity->tagline(),
@@ -183,7 +198,19 @@ function aincient_theme_preprocess_page(array &$variables): void {
       'messages' => ['#type' => 'status_messages'],
       'heading' => $copy['heading'],
       'alt' => $copy['alt'],
+      // The one Atelier mark on an otherwise site-owned screen. Operator-removable
+      // (aincient_pages.identity: build_with), default on.
+      'build_with' => $identity->buildWith(),
     ];
+
+    // The auth template prints its OWN <h1>, so drop core's page-title block
+    // rather than rendering a second heading and hiding it in CSS.
+    unset($variables['page']['content']['aincient_theme_page_title']);
+
+    // The panel reflects the site identity; rebuild it when that config changes.
+    CacheableMetadata::createFromRenderArray($variables)
+      ->addCacheTags(['config:aincient_pages.identity'])
+      ->applyTo($variables);
   }
 }
 
