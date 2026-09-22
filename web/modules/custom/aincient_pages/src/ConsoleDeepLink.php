@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\Core\Url;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
@@ -44,10 +45,7 @@ final class ConsoleDeepLink {
     $type = $entity->getEntityTypeId();
     $bundle = $entity->bundle();
     return match (TRUE) {
-      $type === 'node' && $bundle === 'aincient_page' => [
-        'aincient_chat.console_doc',
-        ['studio' => 'content', 'doc_type' => 'node', 'nid' => $entity->id()],
-      ],
+      $type === 'node' && $bundle === 'aincient_page' => self::pageRoute($entity),
       $type === 'media' && $bundle === 'block' => [
         'aincient_chat.console_doc',
         ['studio' => 'content', 'doc_type' => 'block', 'nid' => $entity->id()],
@@ -58,6 +56,30 @@ final class ConsoleDeepLink {
       ],
       default => NULL,
     };
+  }
+
+  /**
+   * The Content-studio route for a page node — per TRANSLATION.
+   *
+   * A page is edited one language at a time, so "Edit in studio" invoked on the
+   * German translation must open the German room. The console codec addresses a
+   * translation by a trailing path segment (/atelier/content/node/5/de), which
+   * is its OWN route (`console_doc_translation`) rather than an optional
+   * parameter on `console_doc` — passing `langcode` to the latter would append
+   * `?langcode=de`, a query the codec does not read, and silently land on the
+   * source language. The source translation keeps the bare route.
+   *
+   * @return array{0: string, 1: array<string, mixed>}
+   */
+  private static function pageRoute(EntityInterface $entity): array {
+    $params = ['studio' => 'content', 'doc_type' => 'node', 'nid' => $entity->id()];
+    if (!$entity instanceof TranslatableInterface || $entity->isDefaultTranslation()) {
+      return ['aincient_chat.console_doc', $params];
+    }
+    return [
+      'aincient_chat.console_doc_translation',
+      $params + ['langcode' => $entity->language()->getId()],
+    ];
   }
 
   /**

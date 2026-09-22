@@ -12,3 +12,7 @@ default_settings: |-
   }
 exposed_categories:
   - ui
+webmcp_tools: true
+webmcp_bridge: false
+console_enabled: true
+assistant_enabled: true

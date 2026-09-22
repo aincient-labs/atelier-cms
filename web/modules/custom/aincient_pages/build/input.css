@@ -43,6 +43,8 @@
   .prose-aincient ol { @apply list-decimal pl-6 space-y-2 opacity-90; }
   .prose-aincient blockquote { @apply border-l-4 border-primary/40 pl-5 italic opacity-80; }
   .prose-aincient code { @apply rounded bg-muted px-1.5 py-0.5 text-[0.9em]; }
+  .prose-aincient pre { @apply overflow-x-auto rounded bg-muted p-4 text-[0.9em]; }
+  .prose-aincient pre code { @apply bg-transparent p-0; }
   .prose-aincient img { @apply rounded-xl my-8 w-full ring-1 ring-border; }
   .prose-aincient hr { @apply my-10 border-border; }
 

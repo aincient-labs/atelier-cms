@@ -7,6 +7,38 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.14.0] — 2026-09-22
+
+**Links on a multilingual site now stay in the language you are reading.** An internal link inside
+your content used to point at the site-wide path, which could drop a reader out of German and back
+into English mid-journey. Links now carry the language prefix of the page they sit on, and every
+translation of a page gets its own readable address instead of sharing one. Converting a section —
+"turn this features band into a grid" — no longer loses the translations of that band, and Checks
+now reads each page in the language it is checking.
+
+**Checks looks for two more things.** A link to a spot on the same page (`#prices`) is now followed
+through to see whether that spot actually exists, so a heading you renamed no longer leaves a link
+that goes nowhere — and it is fixable from Checks like any other broken link. Checks also tells you
+when your site has no favicon set, the small icon browsers show in the tab.
+
+**Fixed: the setup screen could fail outright.** On a site upgraded from an older release, one
+unreadable piece of saved model data could turn the whole setup screen into "The website
+encountered an unexpected error". It now loads the parts it can read, says plainly that some saved
+model data could not be read, and leaves your connected providers untouched.
+
+**Fixed: three small things in the page components.** A call-to-action band with no tone set drew
+its button in a colour that was nearly unreadable against the background. Feature cards quietly
+stored a link label and URL and then never showed them. And a wide block of code no longer spills
+out of its box — it scrolls.
+
+**Your site's images, CSS and JavaScript are now cached for a year by visitors' browsers,** so a
+returning reader re-downloads far less. Pages themselves are unaffected and still update instantly.
+
+**Under the hood:** the workflow engine moves to FlowDrop 2.6.0, its first stable 2.x release. The
+upgrade runs itself when the appliance starts — there is nothing to do by hand. A confirmation you
+answer twice (a double-click, or a second browser tab) now explains itself in plain words instead
+of showing an internal message.
+
 ## [0.13.0] — 2026-09-13
 
 **Your sign-in screen now looks like your site.** Signing in, resetting a password and creating an

@@ -12,7 +12,7 @@ import {
   loadBlockIntoStudio,
   loadPageIntoStudio,
 } from "./page-state";
-import { getAuditNode, setAuditNode as setAuditNodeStore } from "./audit-state";
+import { getAuditLang, getAuditNode, setAuditNode as setAuditNodeStore } from "./audit-state";
 import { closeMedia, getMediaId, loadMediaIntoStudio } from "./media-state";
 import { lockState, subscribeLock } from "./page-lock";
 import { clearDocEnd, setDocEnd } from "./doc-end-state";
@@ -79,7 +79,9 @@ export function deriveRoomFromStores(): Room {
   // Checks: the audited node (if one is picked) is an audit room, else the studio.
   if (studio === AUDIT_STUDIO) {
     const audit = getAuditNode();
-    return audit ? { kind: "audit", nid: Number(audit) } : { kind: "studio", studio };
+    return audit
+      ? { kind: "audit", nid: Number(audit), langcode: getAuditLang() }
+      : { kind: "studio", studio };
   }
   // Media: an open item is a media room; nothing open is the family's home —
   // the Library SHELF (0168: the bare media studio room retired with the
@@ -172,7 +174,8 @@ export const consoleNav = createConsoleNav(
     },
     closeDocToListing: () => closeDocToListing(),
     closeMediaDoc: () => closeMedia(),
-    setAuditNode: (nid) => setAuditNodeStore(nid === null ? null : String(nid)),
+    setAuditNode: (nid, langcode) =>
+      setAuditNodeStore(nid === null ? null : String(nid), langcode ?? null),
   },
   { room: deriveRoomFromStores() },
 ).start();

@@ -49,10 +49,13 @@ export type Room =
   | { kind: "node"; doc: "page" | "block"; nid: number; langcode: string | null; title?: string }
   /**
    * A Checks audit room — the read-only health report for a node. Its own kind
-   * (not a `node` doc) because it drives the Checks studio, is set synchronously
-   * (audit-state, no async load / no dead-end), and carries no langcode.
+   * (not a `node` doc) because it drives the Checks studio and is set
+   * synchronously (audit-state, no async load / no dead-end). It DOES carry a
+   * langcode: a page is audited per translation (the report endpoint takes
+   * `?langcode=`), so the EN and DE audits of one page are two rooms — opening
+   * Checks from a German page must grade the German page.
    */
-  | { kind: "audit"; nid: number; title?: string }
+  | { kind: "audit"; nid: number; langcode?: string | null; title?: string }
   /**
    * A Media studio room — editing ONE image-media item, reached by opening it
    * from the Library shelf. Its own kind (not a `node` doc) because it drives the
@@ -92,7 +95,9 @@ export function roomId(room: Room): string {
   if (room.kind === "list") return "content:list";
   if (room.kind === "shelf") return "media:shelf";
   if (room.kind === "draft") return room.thread ? `content:draft:${room.thread}` : "content:draft";
-  if (room.kind === "audit") return `checks:audit:${room.nid}`;
+  // The source-language audit keeps the bare key (its URL has no lang segment);
+  // a translation's audit is a room of its own.
+  if (room.kind === "audit") return `checks:audit:${room.nid}${room.langcode ? `:${room.langcode}` : ""}`;
   if (room.kind === "media") return room.id != null ? `media:${room.id}` : "media:new";
   return `content:${room.doc}:${room.nid}:${room.langcode ?? ""}`;
 }

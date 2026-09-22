@@ -82,15 +82,18 @@ final class PageController implements ContainerInjectionInterface {
   /**
    * POST /atelier/page/preview — render a draft page-schema, WITHOUT persisting.
    *
-   * Body: `{ "schema": { …page-schema… } }`. The schema is clamped through the
-   * same guardrail Publish uses, then rendered to the chrome-less HTML the
-   * studio iframe shows (via `srcdoc`). Stateless: nothing is stored.
+   * Body: `{ "schema": { …page-schema… }, "langcode"? }`. The schema is clamped
+   * through the same guardrail Publish uses, then rendered to the chrome-less
+   * HTML the studio iframe shows (via `srcdoc`). `langcode` is the translation
+   * being edited, so internal hrefs preview with the same prefix + alias the
+   * published translation gets. Stateless: nothing is stored.
    */
   public function preview(Request $request): Response {
     $data = json_decode((string) $request->getContent(), TRUE);
     $schema = is_array($data) && is_array($data['schema'] ?? NULL) ? $data['schema'] : [];
+    $langcode = is_array($data) && is_string($data['langcode'] ?? NULL) && $data['langcode'] !== '' ? $data['langcode'] : NULL;
     $clean = $this->store->validate($schema);
-    return $this->spike()->renderSchema($clean);
+    return $this->spike()->renderSchema($clean, $langcode);
   }
 
   /**

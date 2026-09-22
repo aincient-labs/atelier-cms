@@ -464,6 +464,88 @@ final class PageOpsTest extends KernelTestBase {
     $this->assertSame('Post, retitled', $result['schema']['title']);
   }
 
+  /**
+   * A section is CONVERTED to another component in place: update_section
+   * {component} swaps the component and KEEPS the slot id, which is what keeps
+   * the per-language content overlay (keyed by that id) attached. A remove+add
+   * would mint a fresh id and orphan the translation.
+   */
+  public function testUpdateSectionConvertsComponentAndKeepsTheId(): void {
+    $built = $this->store()->applyOps([], [
+      ['op' => 'set_meta', 'type' => 'landing', 'title' => 'Lumen'],
+      ['op' => 'add_section', 'component' => 'hero', 'props' => ['heading' => 'Hi']],
+      ['op' => 'add_section', 'component' => 'features', 'props' => ['heading' => 'What we do']],
+    ])['schema'];
+    $id = $built['sections'][1]['id'];
+
+    $result = $this->store()->applyOps($built, [
+      ['op' => 'update_section', 'id' => $id, 'component' => 'grid'],
+    ]);
+
+    $this->assertSame([], $result['rejected']);
+    $section = $result['schema']['sections'][1];
+    $this->assertSame('grid', $section['component']);
+    $this->assertSame($id, $section['id']);
+    // Props that still exist on the new component survive the conversion.
+    $this->assertSame('What we do', $section['props']['heading']);
+    // And the rest of the page is untouched.
+    $this->assertSame(['hero', 'grid'], array_column($result['schema']['sections'], 'component'));
+  }
+
+  /**
+   * add_section {replaces} takes the named slot's id AND position.
+   */
+  public function testAddSectionReplacesKeepsIdAndPosition(): void {
+    $built = $this->store()->applyOps([], [
+      ['op' => 'set_meta', 'type' => 'landing', 'title' => 'Lumen'],
+      ['op' => 'add_section', 'component' => 'hero', 'props' => ['heading' => 'Hi']],
+      ['op' => 'add_section', 'component' => 'features', 'props' => ['heading' => 'What we do']],
+      ['op' => 'add_section', 'component' => 'cta', 'props' => ['heading' => 'Talk to us']],
+    ])['schema'];
+    $id = $built['sections'][1]['id'];
+
+    $result = $this->store()->applyOps($built, [
+      [
+        'op' => 'add_section',
+        'component' => 'grid',
+        'replaces' => $id,
+        // `after` is ignored when `replaces` names a slot.
+        'after' => 2,
+        'props' => ['heading' => 'Was wir tun'],
+      ],
+    ]);
+
+    $this->assertSame([], $result['rejected']);
+    $this->assertSame(['hero', 'grid', 'cta'], array_column($result['schema']['sections'], 'component'));
+    $this->assertSame($id, $result['schema']['sections'][1]['id']);
+    $this->assertSame('Was wir tun', $result['schema']['sections'][1]['props']['heading']);
+    $this->assertCount(3, $result['schema']['sections']);
+  }
+
+  /**
+   * An unknown `replaces` id, and a conversion to an unknown component, are
+   * NAMED rejections — never a fatal and never a silent append.
+   */
+  public function testUnknownReplacesAndUnknownConversionAreRejected(): void {
+    $built = $this->store()->applyOps([], [
+      ['op' => 'set_meta', 'type' => 'landing', 'title' => 'Lumen'],
+      ['op' => 'add_section', 'component' => 'hero', 'props' => ['heading' => 'Hi']],
+    ])['schema'];
+    $id = $built['sections'][0]['id'];
+
+    $result = $this->store()->applyOps($built, [
+      ['op' => 'add_section', 'component' => 'grid', 'replaces' => 'nope1234', 'props' => []],
+      ['op' => 'update_section', 'id' => $id, 'component' => 'not_a_component'],
+    ]);
+
+    $this->assertSame(['add_section', 'update_section'], array_column($result['rejected'], 'op'));
+    $this->assertStringContainsString('no section with id "nope1234"', $result['rejected'][0]['reason']);
+    $this->assertStringContainsString('unknown component "not_a_component"', $result['rejected'][1]['reason']);
+    // Neither op touched the page.
+    $this->assertSame(['hero'], array_column($result['schema']['sections'], 'component'));
+    $this->assertSame($id, $result['schema']['sections'][0]['id']);
+  }
+
   public function testUpdateRevisesExistingNode(): void {
     $id = $this->store()->store(['type' => 'landing', 'title' => 'V1', 'sections' => []]);
     $ok = $this->store()->update($id, ['type' => 'landing', 'title' => 'V2', 'sections' => [['component' => 'hero', 'props' => ['variant' => 'centered']]]]);

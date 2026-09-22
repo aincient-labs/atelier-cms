@@ -40,14 +40,23 @@ import type { StudioKey } from "./studios";
  * audit room), which derives the studio + loads the doc and reflects the URL. A
  * fresh thread lands in the room; modifier / middle clicks never reach here (the
  * anchor opens the durable URL in a new tab natively).
+ *
+ * `langcode` carries the translation the link was built from, so opening a page
+ * (or its audit) from a German workspace stays German — it must match the href
+ * {@link pageDeepLink} put on the anchor, or the in-place click and the new-tab
+ * click would land in different rooms.
  */
-export function openPageInPlace(studio: StudioKey | undefined, node: string): void {
+export function openPageInPlace(
+  studio: StudioKey | undefined,
+  node: string,
+  langcode: string | null = null,
+): void {
   const nid = Number(node);
   if (!Number.isInteger(nid) || nid <= 0) return;
   const room: Room =
     studio === "checks"
-      ? { kind: "audit", nid }
-      : { kind: "node", doc: "page", nid, langcode: null };
+      ? { kind: "audit", nid, langcode }
+      : { kind: "node", doc: "page", nid, langcode };
   if (sameRoom(activeRoom(), room)) return;
   consoleNav.enterRoom(room);
 }

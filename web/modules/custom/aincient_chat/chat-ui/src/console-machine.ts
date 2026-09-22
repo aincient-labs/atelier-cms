@@ -112,8 +112,9 @@ export type ConsoleActions = {
    *  the target room doesn't own — a stale media item left open renders the
    *  image over the Library shelf's ledger. */
   closeMediaDoc: () => void;
-  /** Set (or clear, with null) the Checks audit node — synchronous, no load. */
-  setAuditNode: (nid: number | null) => void;
+  /** Set (or clear, with null) the Checks audit node + the translation being
+   *  audited — synchronous, no load. */
+  setAuditNode: (nid: number | null, langcode?: string | null) => void;
 };
 
 const NOOP_ACTIONS: ConsoleActions = {
@@ -269,7 +270,10 @@ export function consoleMachine(deps: Partial<ConsoleActions> = {}) {
        * never leaks across a navigation. Synchronous (audit-state has no load).
        */
       reconcileAudit: ({ context }) =>
-        fx.setAuditNode(context.room.kind === "audit" ? context.room.nid : null),
+        fx.setAuditNode(
+          context.room.kind === "audit" ? context.room.nid : null,
+          context.room.kind === "audit" ? (context.room.langcode ?? null) : null,
+        ),
       /** `loadingDoc` entry: kick off the async node / media load. */
       beginLoad: ({ context }) => {
         if (context.room.kind === "node" || context.room.kind === "media") fx.beginDocLoad(context.room);

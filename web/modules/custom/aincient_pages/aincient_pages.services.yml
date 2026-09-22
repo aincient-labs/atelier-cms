@@ -13,7 +13,10 @@ services:
     arguments: ['@database', '@current_user', '@entity_type.manager', '@datetime.time']
   aincient_pages.store:
     class: Drupal\aincient_pages\PageStore
-    arguments: ['@entity_type.manager', '@current_user', '@uuid', '@language_manager', '@config.factory', '@aincient_pages.moderation', '@aincient_pages.catalog']
+    # pathauto.generator is OPTIONAL (@?) — NULL when pathauto is uninstalled;
+    # it exists so a written translation gets its own alias (PageStore::
+    # syncTranslationAlias), which pathauto's own hooks never do.
+    arguments: ['@entity_type.manager', '@current_user', '@uuid', '@language_manager', '@config.factory', '@aincient_pages.moderation', '@aincient_pages.catalog', '@?pathauto.generator']
   # The component-catalog service (plans/byo-components.md W1): ONE discovery
   # path over the SDC plugin manager filtered on thirdPartySettings.atelier —
   # the same path a client pack's components travel. for($kind) returns the
@@ -69,11 +72,17 @@ services:
     arguments: ['@config.storage']
     tags:
       - { name: config.factory.override }
+  # Renders a RAW internal href in the page's render language (prefix + the
+  # translation's own alias). path_alias.manager is OPTIONAL (@?) so the service
+  # still builds where the path_alias module is absent.
+  aincient_pages.language_aware_href:
+    class: Drupal\aincient_pages\LanguageAwareHref
+    arguments: ['@language_manager', '@config.factory', '@?path_alias.manager']
   aincient_pages.embed_resolver:
     class: Drupal\aincient_pages\EntityEmbedResolver
     # rift view-modes manager is OPTIONAL (@?) — null when rift is uninstalled,
     # in which case picture() no-ops and the renderer falls back to a plain <img>.
-    arguments: ['@entity_type.manager', '@file_url_generator', '@entity.repository', '@?plugin.manager.rift_picture_view_modes', '@config.factory']
+    arguments: ['@entity_type.manager', '@file_url_generator', '@entity.repository', '@?plugin.manager.rift_picture_view_modes', '@config.factory', '@aincient_pages.language_aware_href']
   aincient_pages.media:
     class: Drupal\aincient_pages\MediaRepository
     arguments: ['@entity_type.manager', '@aincient_pages.embed_resolver', '@file_system', '@token', '@file_url_generator', '@aincient_core.image_upload_validator']

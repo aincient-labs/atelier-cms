@@ -94,9 +94,14 @@ final class PageSpikeController implements ContainerInjectionInterface {
    * gets back the same chrome-less HTML a saved page would render, so the iframe
    * shows exactly what Publish will produce. The caller (PageController) clamps
    * the schema through PageStore first; this just composes + renders it.
+   *
+   * $langcode is the language the draft is being edited in (the studio's open
+   * translation, or the Checks report's translation): embeds, global blocks and
+   * raw internal hrefs render in it, so preview and Checks match the published
+   * translation. NULL = the current content language (an unborn draft).
    */
-  public function renderSchema(array $schema): Response {
-    return $this->respond($schema);
+  public function renderSchema(array $schema, ?string $langcode = NULL): Response {
+    return $this->respond($schema, NULL, $langcode);
   }
 
   /**
@@ -185,10 +190,11 @@ final class PageSpikeController implements ContainerInjectionInterface {
   }
 
   /** Shared: compose a page-schema → SDC → chrome-less HTML response. */
-  private function respond(array $data, ?NodeInterface $node = NULL): Response {
-    // The language to resolve embeds + global blocks in (the page's own, or NULL
-    // for the spike briefs / stateless preview → current content language).
-    $langcode = $node?->language()->getId();
+  private function respond(array $data, ?NodeInterface $node = NULL, ?string $langcode = NULL): Response {
+    // The language to resolve embeds + global blocks + raw internal hrefs in:
+    // the page's own, else the stateless seam's explicit language, else NULL
+    // (the spike briefs / an unborn draft → current content language).
+    $langcode = $node?->language()->getId() ?? $langcode;
     // Stamp each placed section with its stable slot id for the studio's
     // click-to-focus, but ONLY on the stateless preview seam ($node === NULL);
     // the canonical published render stays byte-identical (no editor hooks leak

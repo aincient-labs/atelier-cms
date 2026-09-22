@@ -100,7 +100,7 @@ export function roomToPath(room: Room): string {
     case "draft":
       return `${base}/content/draft${room.thread ? `/${room.thread}` : ""}`;
     case "audit":
-      return `${base}/checks/node/${room.nid}`;
+      return `${base}/checks/node/${room.nid}${room.langcode ? `/${room.langcode}` : ""}`;
     case "media":
       // An id-less media room is the "new image" room → /media/image/new.
       return `${base}/media/image/${room.id ?? "new"}`;
@@ -177,7 +177,11 @@ export function parseUrl(): { room: Room; threadId: string | null } {
   const nid = Number(seg[2]);
   if (!Number.isInteger(nid) || nid <= 0) return { room: studioOrList(studio), threadId };
 
-  if (studio === "checks" && kind === "node") return { room: { kind: "audit", nid }, threadId };
+  // The trailing segment is the langcode — read exactly as the Content page
+  // branch below does, so /checks/node/5/de round-trips.
+  if (studio === "checks" && kind === "node") {
+    return { room: { kind: "audit", nid, langcode: seg[3] ?? null }, threadId };
+  }
   if (studio === COLLECTION_STUDIO && kind === "block") {
     return { room: { kind: "node", doc: "block", nid, langcode: null }, threadId };
   }

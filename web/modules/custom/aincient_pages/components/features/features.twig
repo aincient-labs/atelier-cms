@@ -22,6 +22,7 @@
           {% if f.icon %}<div class="flex h-11 w-11 items-center justify-center rounded-[var(--card-radius)] bg-primary/10 text-2xl">{{ f.icon }}</div>{% endif %}
           <h3 class="mt-5 font-display text-lg [font-weight:var(--features-title-weight)]">{{ f.title }}</h3>
           {% if f.body %}<p class="mt-2 text-sm leading-relaxed {{ on_dark ? '' : 'text-muted-foreground' }}">{{ f.body|inline_md }}</p>{% endif %}
+          {% if f.cta_label %}<a href="{{ f.cta_url|default('#') }}" class="mt-4 inline-flex items-center text-sm font-semibold {{ on_dark ? '' : 'text-primary-on-surface' }} transition hover:opacity-80">{{ f.cta_label }} &rarr;</a>{% endif %}
         </div>
       {% endfor %}
     </div>

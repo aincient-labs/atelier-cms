@@ -8,6 +8,7 @@ import {
   getPageUrl,
   getPageKind,
   getPageNode,
+  getPageLang,
   getAuthoringNew,
   setSelectedSection,
   getSelectedSection,
@@ -149,7 +150,9 @@ export function PagePreview() {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ schema }),
+      // The open translation, so internal hrefs preview with the same language
+      // prefix + alias the published translation renders (null = source/unborn).
+      body: JSON.stringify({ schema, langcode: getPageLang() }),
     })
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((text) => {

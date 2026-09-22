@@ -29,6 +29,14 @@ sees a 503 "Atelier is starting" page. `app` publishes nothing and trusts the ed
 image-only runs. `install.sh` and the Manager (`stack.rs`) write byte-identical copies of
 `compose.yaml` + `edge.conf`; change all three together.
 
+### Cache headers
+
+The image enables `mod_expires`, so core's `web/.htaccess` expiry policy applies: static
+assets get a 1-year `Cache-Control`/`Expires`, and aggregated CSS/JS under
+`sites/default/files/{css,js}` are additionally marked `immutable` (content-addressed,
+hashed filenames). Pages routed through `index.php` are never expiry-cached — core's own
+`ExpiresActive Off` for `.php` keeps them off this path.
+
 ## Converge: the site heals itself
 
 `converge.sh` runs on **every** container start (via `entrypoint.sh`) and is

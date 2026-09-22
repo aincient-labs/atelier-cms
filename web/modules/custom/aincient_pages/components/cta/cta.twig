@@ -1,9 +1,10 @@
+{% set tone = tone|default('brand') %}
 {% set tone_class = {
   default: 'bg-background text-foreground',
   muted: 'bg-muted text-muted-foreground',
   brand: 'bg-primary text-primary-foreground',
   inverted: 'bg-foreground text-background',
-}[tone|default('brand')] %}
+}[tone] %}
 {% set on_dark = tone in ['brand', 'inverted'] %}
 {% set btn = on_dark ? 'bg-background text-foreground hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90' %}
 

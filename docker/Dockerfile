@@ -199,6 +199,21 @@ RUN printf '%s\n' \
 RUN printf 'Timeout 600\n' > /etc/apache2/conf-available/aincient-timeout.conf \
     && a2enconf aincient-timeout
 
+# Core's web/.htaccess wraps its static-asset ExpiresDefault (1 year; Off for
+# .php) in <IfModule mod_expires.c> — inert unless the module is on, so static
+# assets shipped with no Cache-Control at all. mod_headers is already enabled
+# above; layer content-addressed immutability on top: aggregated CSS/JS under
+# sites/default/files/{css,js} carry a hash in the filename, so they never need
+# revalidation once cached. Pages (routed through index.php) are untouched —
+# core's own ExpiresActive Off for .php keeps them off this path.
+RUN a2enmod expires \
+    && printf '%s\n' \
+      '<LocationMatch "^/sites/default/files/(css|js)/">' \
+      '  Header merge Cache-Control "immutable"' \
+      '</LocationMatch>' \
+      > /etc/apache2/conf-available/aincient-cache.conf \
+    && a2enconf aincient-cache
+
 # Start from PHP's shipped production ini (display_errors Off, hardened defaults)
 # rather than the compiled-in dev-leaning defaults, then layer our overrides on top.
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"

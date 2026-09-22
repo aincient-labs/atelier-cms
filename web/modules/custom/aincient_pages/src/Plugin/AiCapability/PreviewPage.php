@@ -48,12 +48,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   id: 'aincient_pages:preview_page',
   function_name: 'aincient_preview_page',
   name: 'Preview page',
-  description: 'Edit the page the user is composing in the LIVE page studio by emitting a list of section OPS. This recomposes the preview INSTANTLY and stages it as an unsaved draft — it does NOT publish (the user does that with the Publish button). Use it for every change so the user sees it happen. Ops (JSON array): set_meta {type?,title?,description?,canonical_url?,og_title?,og_description?,og_image?}; set_teaser {title?,description?,image?}; set_content {category?,lead?,author?,author_bio?,date?,cover?,body_md?}; add_section {component, props?, after?}; update_section {id, props}; remove_section {id}; reorder {order:[…]}. A page\'s TYPE (its page KIND — the site\'s kinds are listed in the system prompt as PAGE KINDS) is FIXED WHEN THE PAGE IS CREATED and cannot be changed afterwards — set_meta {type:…} is only accepted while the page has never been saved, and is REFUSED on an existing page. If the user asks to change an existing page\'s kind (e.g. turn a landing page into a blog post), do not try: tell them a new page of that kind has to be created instead. set_content writes a recipe-kind page, e.g. a blog post (ONLY on a page whose kind is a locked recipe — on a composition page it is refused, not silently ignored): the article body goes in body_md as MARKDOWN (## headings, **bold**, lists, > quotes, `code`, links — NOT HTML), cover is a media:<id> token, and lead/author/author_bio/date/category are plain text; a field set to empty string clears it. On a NEW, never-saved draft you may open with set_meta {type:…,title:…} (e.g. type:"blog") and then set_content. set_meta also sets the page\'s SEO/meta tags — description (~50–160 chars), canonical_url, and Open Graph og_title/og_description/og_image — as per-page overrides; pass an empty string to clear one back to the site default. og_image is an image: give it a media:<id> token (preferred, like the teaser image) or a full URL. set_teaser sets how the page shows up when REFERENCED as a card (in-site listings/teasers) — its teaser title, a short teaser description, and a teaser image given as a media:<id> token (NOT a URL); this is distinct from both the page body and the SEO/meta tags. Pass an empty string to clear a teaser field. set_teaser\'s fields ride FLAT on the op, e.g. {"op":"set_teaser","title":"…","description":"…"} — NEVER nest them under a "teaser" key, and NEVER put teaser fields on set_meta (they will be dropped). Target sections by their stable "id" from LIVE PAGE STATE (preferred — survives reordering); a numeric "index"/"after" still works as a fallback. The current draft — sections (with ids) and any "meta" overrides — is shown in the system prompt as LIVE PAGE STATE; component names + props are listed there too.',
+  description: 'Edit the page the user is composing in the LIVE page studio by emitting a list of section OPS. This recomposes the preview INSTANTLY and stages it as an unsaved draft — it does NOT publish (the user does that with the Publish button). Use it for every change so the user sees it happen. Ops (JSON array): set_meta {type?,title?,description?,canonical_url?,og_title?,og_description?,og_image?}; set_teaser {title?,description?,image?}; set_content {category?,lead?,author?,author_bio?,date?,cover?,body_md?}; add_section {component, props?, after?, replaces?}; update_section {id, props?, component?}; remove_section {id}; reorder {order:[…]}. To CONVERT a section to another component keep its id: update_section {id, component:"grid", props} or add_section {replaces:id,…} — never remove+add, that discards the section\'s translations. A page\'s TYPE (its page KIND — the site\'s kinds are listed in the system prompt as PAGE KINDS) is FIXED WHEN THE PAGE IS CREATED and cannot be changed afterwards — set_meta {type:…} is only accepted while the page has never been saved, and is REFUSED on an existing page. If the user asks to change an existing page\'s kind (e.g. turn a landing page into a blog post), do not try: tell them a new page of that kind has to be created instead. set_content writes a recipe-kind page, e.g. a blog post (ONLY on a page whose kind is a locked recipe — on a composition page it is refused, not silently ignored): the article body goes in body_md as MARKDOWN (## headings, **bold**, lists, > quotes, `code`, links — NOT HTML), cover is a media:<id> token, and lead/author/author_bio/date/category are plain text; a field set to empty string clears it. On a NEW, never-saved draft you may open with set_meta {type:…,title:…} (e.g. type:"blog") and then set_content. set_meta also sets the page\'s SEO/meta tags — description (~50–160 chars), canonical_url, and Open Graph og_title/og_description/og_image — as per-page overrides; pass an empty string to clear one back to the site default. og_image is an image: give it a media:<id> token (preferred, like the teaser image) or a full URL. set_teaser sets how the page shows up when REFERENCED as a card (in-site listings/teasers) — its teaser title, a short teaser description, and a teaser image given as a media:<id> token (NOT a URL); this is distinct from both the page body and the SEO/meta tags. Pass an empty string to clear a teaser field. set_teaser\'s fields ride FLAT on the op, e.g. {"op":"set_teaser","title":"…","description":"…"} — NEVER nest them under a "teaser" key, and NEVER put teaser fields on set_meta (they will be dropped). Target sections by their stable "id" from LIVE PAGE STATE (preferred — survives reordering); a numeric "index"/"after" still works as a fallback. The current draft — sections (with ids) and any "meta" overrides — is shown in the system prompt as LIVE PAGE STATE; component names + props are listed there too.',
   context_definitions: [
     'ops' => new ContextDefinition(
       data_type: 'list',
       label: new TranslatableMarkup('Section ops'),
-      description: new TranslatableMarkup('An ARRAY of ops to apply to the current page draft (each op is an object), e.g. [{"op":"set_meta","title":"Lumen","description":"A calm place to write."},{"op":"set_teaser","title":"Lumen","description":"Write without friction."},{"op":"add_section","component":"hero","props":{"heading":"Hi","variant":"split"}},{"op":"update_section","id":"a1b2c3d4","props":{"tone":"brand"}}]. Teaser fields are FLAT on set_teaser — do not nest them under "teaser" or place them on set_meta. Target a section by its "id" from the LIVE PAGE STATE in the system prompt (numeric "index" still works).'),
+      description: new TranslatableMarkup('An ARRAY of ops to apply to the current page draft (each op is an object), e.g. [{"op":"set_meta","title":"Lumen","description":"A calm place to write."},{"op":"set_teaser","title":"Lumen","description":"Write without friction."},{"op":"add_section","component":"hero","props":{"heading":"Hi","variant":"split"}},{"op":"update_section","id":"a1b2c3d4","props":{"tone":"brand"}},{"op":"update_section","id":"a1b2c3d4","component":"grid"}]. To CONVERT a section to another component, keep its id — update_section {id, component} (or add_section {replaces:id, component, props}), never remove_section + add_section, which discards that section\'s translations. Teaser fields are FLAT on set_teaser — do not nest them under "teaser" or place them on set_meta. Target a section by its "id" from the LIVE PAGE STATE in the system prompt (numeric "index" still works).'),
       required: TRUE,
       // Declare the element shape so the tool projects as a real JSON array of
       // objects (not a string the model must remember to JSON-encode). Every
@@ -156,8 +156,14 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
     // targets a draft section this tool can't see, so PageStore clamps that.
     $warnings = [];
     foreach ($valid as $op) {
-      if (($op['op'] ?? '') === 'add_section' && is_array($op['props'] ?? NULL)) {
-        $warnings = array_merge($warnings, SchemaLinter::lint($this->catalogHolding((string) $op['component']), (string) $op['component'], $op['props']));
+      // add_section always names its component; update_section does so only when
+      // it is CONVERTING the section — in both cases the props are lintable here.
+      if (in_array($op['op'] ?? '', ['add_section', 'update_section'], TRUE)
+        && is_string($op['component'] ?? NULL) && is_array($op['props'] ?? NULL)) {
+        // A conversion is a PARTIAL edit: props the op omits may already sit on
+        // the draft section, so the "renders empty" nag is suppressed for it.
+        $full = ($op['op'] ?? '') === 'add_section';
+        $warnings = array_merge($warnings, SchemaLinter::lint($this->catalogHolding((string) $op['component']), (string) $op['component'], $op['props'], $full));
       }
     }
 
@@ -205,8 +211,8 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
       'set_meta' => ['fields' => array_merge(['type', 'title'], PageStore::META_KEYS), 'optional' => []],
       'set_teaser' => ['fields' => PageStore::TEASER_KEYS, 'optional' => []],
       'set_content' => ['fields' => PageStore::BLOG_CONTENT_KEYS, 'optional' => []],
-      'add_section' => ['fields' => ['component'], 'optional' => ['props', 'after']],
-      'update_section' => ['fields' => ['id', 'index'], 'optional' => ['props']],
+      'add_section' => ['fields' => ['component'], 'optional' => ['props', 'after', 'replaces']],
+      'update_section' => ['fields' => ['id', 'index'], 'optional' => ['props', 'component']],
       'remove_section' => ['fields' => ['id', 'index'], 'optional' => []],
       'reorder' => ['fields' => ['order'], 'optional' => []],
     ];
@@ -269,6 +275,12 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
         if (!((isset($op['id']) && is_string($op['id']) && $op['id'] !== '')
           || (isset($op['index']) && is_numeric($op['index'])))) {
           return sprintf('%s needs a section "id" (or numeric "index").', $type);
+        }
+        // An optional `component` CONVERTS the section in place (keeping its id,
+        // and with it the slot's translations) — so it must name a real one.
+        if ($type === 'update_section' && array_key_exists('component', $op)
+          && !in_array((string) ($op['component'] ?? ''), $this->placeableUnion(), TRUE)) {
+          return sprintf('update_section "component" must be a known component (got "%s").', (string) ($op['component'] ?? ''));
         }
         break;
 

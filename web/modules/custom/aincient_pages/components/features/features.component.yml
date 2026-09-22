@@ -18,18 +18,18 @@ props:
       default: 3
     features:
       type: array
-      description: 'Array of { icon, title, body }. icon = emoji or short text glyph.'
+      description: 'Array of [{icon,title,body,cta_label,cta_url}]. icon = emoji or short text glyph; cta_label/cta_url are optional.'
 thirdPartySettings:
   atelier:
     api: 1
     tier: section
     order: 40
     icon: ⊞
-    use: 'A heading plus a grid of feature cards. icon = ONE glyph/emoji (e.g. ✶ ◆ ⚡ 🚀). columns reflow the cards.'
+    use: 'A heading plus a grid of feature cards. icon = ONE glyph/emoji (e.g. ✶ ◆ ⚡ 🚀). Each card may carry an optional cta_label + cta_url link. columns reflow the cards.'
     props:
       tone: ''
       eyebrow: ''
       heading: ''
       subheading: ''
       columns: 2|3
-      features: '[{icon,title,body}]'
+      features: '[{icon,title,body,cta_label,cta_url}]'

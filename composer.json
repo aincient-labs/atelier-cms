@@ -28,14 +28,14 @@
         "drupal/coffee": "^2.0.1",
         "drupal/config_ignore": "^3.4",
         "drupal/config_split": "^2.0.2",
-        "drupal/core": "^11.4.4",
-        "drupal/core-composer-scaffold": "^11.4.4",
-        "drupal/core-project-message": "^11.4.4",
-        "drupal/core-recipe-unpack": "^11.4.4",
+        "drupal/core": "^11.4.7",
+        "drupal/core-composer-scaffold": "^11.4.7",
+        "drupal/core-project-message": "^11.4.7",
+        "drupal/core-recipe-unpack": "^11.4.7",
         "drupal/crop": "^2.6",
         "drupal/csv_serialization": "^4.0.1",
         "drupal/file_mdm": "^3.2",
-        "drupal/flowdrop": "^2.5",
+        "drupal/flowdrop": "2.6.0",
         "drupal/focal_point": "^2.1.2",
         "drupal/image_style_quality": "^1.7",
         "drupal/image_widget_crop": "^3.0",
@@ -53,8 +53,8 @@
         "drupal/token": "^1.17",
         "drupal/tome": "^1.16",
         "drupal/views_data_export": "^1.10",
-        "drush/drush": "^13.7.6",
-        "league/commonmark": "^2.10.0",
+        "drush/drush": "^13.8.0",
+        "league/commonmark": "^2.10.1",
         "symfony/ai-anthropic-platform": "^0.12",
         "symfony/ai-deep-seek-platform": "^0.12",
         "symfony/ai-gemini-platform": "^0.12",
@@ -170,6 +170,6 @@
         }
     },
     "require-dev": {
-        "drupal/core-dev": "^11.4.4"
+        "drupal/core-dev": "^11.4.7"
     }
 }

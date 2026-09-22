@@ -10,7 +10,7 @@ services:
   # priority runs first, so `seo` precedes `links`.
   aincient_audit.check.seo_meta:
     class: Drupal\aincient_audit\Check\SeoMetaCheck
-    arguments: ['@aincient_audit.meta_reader']
+    arguments: ['@aincient_audit.meta_reader', '@?aincient_pages.site_identity']
     tags:
       - { name: aincient_audit.check, priority: 20 }
   aincient_audit.check.internal_links:

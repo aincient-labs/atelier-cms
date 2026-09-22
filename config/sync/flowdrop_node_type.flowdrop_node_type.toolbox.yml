@@ -1,0 +1,33 @@
+uuid: 950681af-457a-41b0-b1ba-e0c524800b7f
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+id: toolbox
+label: 'Tool Box'
+description: 'Bundle tools into a shared set that multiple agents can consume'
+category: tools
+icon: 'mdi:toolbox-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  tool:
+    configurable: false
+    connectable: true
+    required: false
+outputs:
+  tool:
+    exposed: true
+tags:
+  - tools
+  - agent
+executor_plugin: 'flowdrop_node_processor:toolbox'
+visual_type: tool
+supported_visual_types:
+  - tool
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false
+confirmation: {  }
+reserved_port_exposure: {  }

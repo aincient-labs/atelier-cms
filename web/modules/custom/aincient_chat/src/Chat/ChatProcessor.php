@@ -73,9 +73,37 @@ class ChatProcessor implements ChatProcessorInterface {
     }
     catch (\Throwable $e) {
       $this->logger->error('Interrupt resume failed: @m', ['@m' => $e->getMessage()]);
-      yield ChatEvent::error('Could not resume: ' . $e->getMessage());
+      yield ChatEvent::error($this->resumeFailureMessage($e));
       yield ChatEvent::done(['thread_id' => $threadId]);
     }
+  }
+
+  /**
+   * A person-facing reason a resume was refused.
+   *
+   * The engine refuses an unanswerable interrupt with a published `error_code`
+   * (flowdrop 2.6.0) whose accompanying message is explicitly prose that may
+   * change between releases — so the code is what we read, and the wording here
+   * is ours. The three below are the ones a person can actually cause by using
+   * the UI: double-clicking a choice, answering a question a second tab already
+   * answered, or coming back to a stale one.
+   *
+   * Duck-typed on purpose. Both `RefusalCodeInterface` and the exception classes
+   * that carry it are `@internal` in 2.6.0 ("Not `@api` yet"), so binding to
+   * either by name would couple us to something upstream has reserved the right
+   * to move. The code STRINGS are the published contract; `getErrorCode()` is
+   * the only thing we ask for, and anything that cannot answer falls through to
+   * the generic message.
+   */
+  private function resumeFailureMessage(\Throwable $e): string {
+    $code = method_exists($e, 'getErrorCode') ? (string) $e->getErrorCode() : '';
+
+    return match ($code) {
+      'RESOLUTION_IN_PROGRESS' => 'That choice is already being recorded — give it a moment.',
+      'INTERRUPT_NOT_PENDING' => 'That choice was already answered.',
+      'INTERRUPT_EXPIRED' => 'That choice expired before it was answered.',
+      default => 'Could not resume: ' . $e->getMessage(),
+    };
   }
 
 }

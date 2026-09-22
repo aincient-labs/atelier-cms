@@ -261,6 +261,19 @@ export type OnboardingSettings = {
    * that looks like ours but isn't is the one thing worth never leaving silent.
    */
   preferencesDeclared?: boolean;
+  /**
+   * At least one part of this payload could not be read server-side.
+   *
+   * The setup screen reads stored, upgraded-over state (a catalogue enumerated
+   * from keys an older release wrote, the recommendations document, the profile
+   * config). Any of it can be a shape this release no longer understands — which
+   * used to 500 the whole console (atelier-cms #28). Each part now degrades to
+   * its empty shape instead, and says so here so the wizard can show a notice
+   * rather than an unexplained empty picker.
+   */
+  degraded?: boolean;
+  /** Which payload keys degraded (e.g. ["profiles", "presets"]). */
+  unavailable?: string[];
 };
 
 export function settings(): AincientSettings {

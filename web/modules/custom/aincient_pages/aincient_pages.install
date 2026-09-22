@@ -7,6 +7,7 @@
 
 declare(strict_types=1);
 
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\node\NodeInterface;
@@ -480,4 +481,51 @@ function aincient_pages_update_10015(): void {
       ])->save();
     }
   }
+}
+
+/**
+ * Backfill URL aliases for existing page TRANSLATIONS.
+ *
+ * Until PageStore::syncTranslationAlias() existed, only the source language of
+ * an aincient_page ever got a path_alias row (pathauto aliases the entity
+ * object it is handed, and the store saves the source-language node). Every
+ * already-published translation is therefore reachable only at /<lang>/node/N.
+ * This regenerates the missing alias from each translation's own title.
+ */
+function aincient_pages_update_10016(array &$sandbox): void {
+  if (!\Drupal::moduleHandler()->moduleExists('pathauto')) {
+    $sandbox['#finished'] = 1;
+    return;
+  }
+  /** @var \Drupal\node\NodeStorageInterface $storage */
+  $storage = \Drupal::entityTypeManager()->getStorage('node');
+  if (!isset($sandbox['ids'])) {
+    $sandbox['ids'] = array_values($storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('type', 'aincient_page')
+      ->execute());
+    $sandbox['total'] = count($sandbox['ids']);
+    $sandbox['done'] = 0;
+  }
+  if (!$sandbox['total']) {
+    $sandbox['#finished'] = 1;
+    return;
+  }
+  /** @var \Drupal\pathauto\PathautoGeneratorInterface $generator */
+  $generator = \Drupal::service('pathauto.generator');
+  $batch = array_splice($sandbox['ids'], 0, 25);
+  foreach ($storage->loadMultiple($batch) as $node) {
+    if (!$node instanceof ContentEntityInterface) {
+      continue;
+    }
+    $source = $node->getUntranslated()->language()->getId();
+    foreach (array_keys($node->getTranslationLanguages()) as $langcode) {
+      if ($langcode === $source) {
+        continue;
+      }
+      $generator->updateEntityAlias($node->getTranslation($langcode), 'update');
+    }
+  }
+  $sandbox['done'] += count($batch);
+  $sandbox['#finished'] = $sandbox['ids'] ? $sandbox['done'] / max(1, $sandbox['total']) : 1;
 }

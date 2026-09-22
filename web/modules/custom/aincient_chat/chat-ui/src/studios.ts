@@ -185,13 +185,23 @@ export function findAgent(agentId: string | undefined): WorkflowRef | undefined 
  *   else    → the Content page node room (/atelier/content/node/<nid>) — the
  *             "edit this page" entry point the page agent / operator share.
  *
+ * `langcode` (when the caller knows which translation it is opening) rides as
+ * the trailing path segment in BOTH studios — the source language omits it. A
+ * link built from a German page must stay on the German page.
+ *
  * Room-primary paths (D3): the open document IS the room, so there is no ?page=/
  * ?audit= query — the node id rides in the path. Pure (no flow-store read) so it
  * stays a leaf util: the caller passes the active studio and the route base. New
  * studios that list pages extend this one switch rather than re-deriving URLs.
  */
-export function pageDeepLink(studio: StudioKey | undefined, node: string, base: string): string {
+export function pageDeepLink(
+  studio: StudioKey | undefined,
+  node: string,
+  base: string,
+  langcode?: string | null,
+): string {
   const id = encodeURIComponent(node);
-  if (studio === "checks") return `${base}/checks/node/${id}`;
-  return `${base}/content/node/${id}`;
+  const lang = langcode ? `/${encodeURIComponent(langcode)}` : "";
+  if (studio === "checks") return `${base}/checks/node/${id}${lang}`;
+  return `${base}/content/node/${id}${lang}`;
 }

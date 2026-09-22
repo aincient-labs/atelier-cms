@@ -3,7 +3,7 @@ import { useAssistantRuntime, useThreadRuntime } from "@assistant-ui/react";
 import { PanelBar } from "./panel-bar";
 import { StudioActionsPortal } from "./studio-ui";
 import { XIcon, RotateCcwIcon, WrenchIcon, SparkleIcon } from "./icons";
-import { getAuditNode, setAuditNode, subscribeAuditNode } from "./audit-state";
+import { getAuditLang, getAuditNode, setAuditNode, subscribeAuditNode } from "./audit-state";
 import { clearDocEnd, setDocEnd } from "./doc-end-state";
 import type { PageMeta } from "./page-state";
 import {
@@ -93,7 +93,14 @@ type AuditReport = {
   checks: Check[];
 };
 
-const reportUrl = (nid: string) => apiUrl(`/audit/${encodeURIComponent(nid)}/report`);
+/** The report endpoint for a page, in the TRANSLATION being audited: the
+ *  controller loads that translation's latest revision, so a German page is
+ *  graded on its German title, copy and links. No langcode = the source. */
+const reportUrl = (nid: string, langcode: string | null) =>
+  apiUrl(
+    `/audit/${encodeURIComponent(nid)}/report` +
+      (langcode ? `?langcode=${encodeURIComponent(langcode)}` : ""),
+  );
 
 /**
  * Whether a finding has an AI write path — the finding's OWN remediation says so
@@ -166,6 +173,7 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
   const runtime = useAssistantRuntime();
   const thread = useThreadRuntime();
   const [nodeId, setNodeId] = useState<string | null>(null);
+  const [langcode, setLangcode] = useState<string | null>(null);
   const [report, setReport] = useState<AuditReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,17 +185,19 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
   // flips it on; a load or a write resets it (see openForChecks / the writes).
   const [dirty, setDirty] = useState(false);
 
-  const docName = report?.title || "Checks";
+  // The audited translation is part of the document's name here: two rooms of
+  // the same page differ only by language, so the header has to say which.
+  const docName = (report?.title || "Checks") + (langcode ? ` (${langcode})` : "");
   // Writes need the shared draft to be THIS page and edit access on it.
   const canWrite = !!nodeId && getPageNode() === nodeId && moderation.canEdit;
 
   // Run the deterministic audit for a node. Held in a ref so effects/handlers
   // call the latest closure without re-subscribing.
-  const runAudit = useRef<(nid: string) => void>(() => {});
-  runAudit.current = (nid: string) => {
+  const runAudit = useRef<(nid: string, lang?: string | null) => void>(() => {});
+  runAudit.current = (nid: string, lang: string | null = getAuditLang()) => {
     setLoading(true);
     setError(null);
-    fetch(reportUrl(nid), { credentials: "same-origin" })
+    fetch(reportUrl(nid, lang), { credentials: "same-origin" })
       .then((r) => {
         // An inaccessible (403) / missing (404) page is a deep-link dead-end —
         // route it to the shared end-state pane, not the inline error.
@@ -212,16 +222,16 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
   // Skips the load when the draft is already this page (a re-audit, or arriving
   // from the Content→Checks handover with the page already open — preserves any
   // staged edits). A load access failure routes to the doc-end pane.
-  const openForChecks = useRef<(nid: string) => void>(() => {});
-  openForChecks.current = (nid: string) => {
+  const openForChecks = useRef<(nid: string, lang?: string | null) => void>(() => {});
+  openForChecks.current = (nid: string, lang: string | null = getAuditLang()) => {
     const load =
-      getPageNode() === nid
+      getPageNode() === nid && getPageLang() === lang
         ? Promise.resolve()
-        : loadPageIntoStudio(nid, null, "checks");
+        : loadPageIntoStudio(nid, lang, "checks");
     void load
       .then(() => {
         setDirty(false);
-        runAudit.current(nid);
+        runAudit.current(nid, lang);
       })
       .catch((e: unknown) => {
         const status = e instanceof DocLoadError ? e.status : 0;
@@ -239,9 +249,11 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const unsub = subscribeAuditNode(() => {
       const id = getAuditNode();
+      const lang = getAuditLang();
       setNodeId(id);
+      setLangcode(lang);
       setReport(null);
-      if (id) openForChecks.current(id);
+      if (id) openForChecks.current(id, lang);
     });
     // url-sync owns the URL now (a /checks/node/N deep link resolves through the
     // machine → reconcileAudit → setAuditNode, which fires before this effect
@@ -249,14 +261,19 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
     // subscription notify would have been missed); getPageNode() covers arriving
     // from the Content→Checks handover with the page already open.
     const seed = getAuditNode() ?? getPageNode();
+    // The seed's language comes from whichever store supplied it: the audit
+    // store when the deep link already resolved, else the page open in Content
+    // (the handover — its translation is the one to audit).
+    const seedLang = getAuditNode() ? getAuditLang() : getPageLang();
     if (seed) {
       // setAuditNode no-ops (no notify) when the store already holds `seed`, so
       // load directly in that case; otherwise let the subscription do it.
-      if (seed === getAuditNode()) {
+      if (seed === getAuditNode() && seedLang === getAuditLang()) {
         setNodeId(seed);
-        openForChecks.current(seed);
+        setLangcode(seedLang);
+        openForChecks.current(seed, seedLang);
       } else {
-        setAuditNode(seed);
+        setAuditNode(seed, seedLang);
       }
     }
     return unsub;

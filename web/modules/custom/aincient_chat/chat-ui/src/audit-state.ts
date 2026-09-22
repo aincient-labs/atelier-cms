@@ -12,6 +12,10 @@
  */
 
 let currentNode: string | null = null;
+/** The TRANSLATION being audited (null = the source language). Part of the
+ *  audited-document identity: the report endpoint takes `?langcode=`, so EN and
+ *  DE are two different audits of one node. */
+let currentLang: string | null = null;
 const subscribers = new Set<() => void>();
 
 /** The node currently being audited, or null when none is picked. */
@@ -19,11 +23,20 @@ export function getAuditNode(): string | null {
   return currentNode;
 }
 
-/** Set the audited node and notify listeners. No-op (no notify) when unchanged,
- *  so the ChecksStudio mirror ⇄ url-sync reflection loop converges in one pass. */
-export function setAuditNode(node: string | null): void {
-  if (node === currentNode) return;
+/** The langcode of the audited translation, or null for the source language. */
+export function getAuditLang(): string | null {
+  return currentLang;
+}
+
+/** Set the audited node (+ translation) and notify listeners. No-op (no notify)
+ *  when unchanged, so the ChecksStudio mirror ⇄ url-sync reflection loop
+ *  converges in one pass. Clearing the node clears the langcode with it — they
+ *  are one identity. */
+export function setAuditNode(node: string | null, langcode: string | null = null): void {
+  const lang = node === null ? null : langcode;
+  if (node === currentNode && lang === currentLang) return;
   currentNode = node;
+  currentLang = lang;
   for (const cb of subscribers) cb();
 }
 

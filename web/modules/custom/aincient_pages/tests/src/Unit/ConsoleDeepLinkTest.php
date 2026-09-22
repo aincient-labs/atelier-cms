@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_pages\Unit;
 
 use Drupal\aincient_pages\ConsoleDeepLink;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -35,6 +37,46 @@ final class ConsoleDeepLinkTest extends UnitTestCase {
     $this->assertSame(
       ['aincient_chat.console_doc', ['studio' => 'content', 'doc_type' => 'node', 'nid' => '5']],
       ConsoleDeepLink::route($this->entity('node', 'aincient_page', 5)),
+    );
+  }
+
+  /**
+   * A NON-DEFAULT translation opens its OWN room — the trailing-path-segment
+   * route (/atelier/content/node/5/de), never `console_doc` + ?langcode=.
+   *
+   * @covers ::route
+   */
+  public function testTranslatedPageNodeRouteCarriesItsLangcode(): void {
+    $language = $this->createMock(LanguageInterface::class);
+    $language->method('getId')->willReturn('de');
+    $entity = $this->createMock(ContentEntityInterface::class);
+    $entity->method('getEntityTypeId')->willReturn('node');
+    $entity->method('bundle')->willReturn('aincient_page');
+    $entity->method('id')->willReturn('5');
+    $entity->method('isDefaultTranslation')->willReturn(FALSE);
+    $entity->method('language')->willReturn($language);
+
+    $this->assertSame(
+      ['aincient_chat.console_doc_translation', ['studio' => 'content', 'doc_type' => 'node', 'nid' => '5', 'langcode' => 'de']],
+      ConsoleDeepLink::route($entity),
+    );
+  }
+
+  /**
+   * The SOURCE translation keeps the bare room — no langcode segment.
+   *
+   * @covers ::route
+   */
+  public function testDefaultTranslationHasNoLangcodeParam(): void {
+    $entity = $this->createMock(ContentEntityInterface::class);
+    $entity->method('getEntityTypeId')->willReturn('node');
+    $entity->method('bundle')->willReturn('aincient_page');
+    $entity->method('id')->willReturn('5');
+    $entity->method('isDefaultTranslation')->willReturn(TRUE);
+
+    $this->assertSame(
+      ['aincient_chat.console_doc', ['studio' => 'content', 'doc_type' => 'node', 'nid' => '5']],
+      ConsoleDeepLink::route($entity),
     );
   }
 

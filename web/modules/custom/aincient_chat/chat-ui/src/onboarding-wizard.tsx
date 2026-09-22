@@ -10,6 +10,7 @@ import {
   type OnboardingSettings,
 } from "./adapter";
 import {
+  AlertCircleIcon,
   AnthropicIcon,
   CheckIcon,
   DeepSeekIcon,
@@ -517,7 +518,9 @@ export function OnboardingWizard() {
       ? activeProfile
       : hasEarnedBindings
         ? null
-        : (cfg.defaultProfile ?? cfg.profiles?.[0]?.id ?? null),
+        // `||`, not `??`: a degraded payload sends '' for a default it could not
+        // read, and an empty id is Custom, not a profile to open on.
+        : (cfg.defaultProfile || cfg.profiles?.[0]?.id || null),
   );
   // Whether the per-role pickers are revealed. Only advanced operators care which
   // concrete models are in play, so auto mode keeps them collapsed: open from the
@@ -826,6 +829,10 @@ export function OnboardingWizard() {
         )}
         <ProgressDots step={step} />
 
+        {/* Something stored could not be read — say so once, at the top, so an
+            empty picker below has an attributable cause (atelier-cms #28). */}
+        {cfg.degraded && <DegradedNotice />}
+
         {step === "connect" && (
           <>
             {/* The wordmark carries the welcome now that the greeting step is
@@ -1108,6 +1115,24 @@ function UnfillableRoles({
  * line does not attempt to render the rules — it names where they live, which is
  * the one thing someone surprised by a pick actually needs.
  */
+/**
+ * The setup screen could not read part of what this site had saved.
+ *
+ * NOT an error and not a Drupal message: the screen works, the operator's keys
+ * are untouched, and the one thing they might notice — a picker with nothing in
+ * it — now has a cause and a remedy attached. The server has already logged the
+ * exception for whoever runs the site; this line is for whoever is looking at it.
+ */
+function DegradedNotice() {
+  return (
+    <p className="ain-wiz__note ain-wiz__lede--row" role="status">
+      <AlertCircleIcon className="ain-wiz__shield" />
+      Some saved model data could not be read. Check for updates refetches it; your
+      connected providers are unaffected.
+    </p>
+  );
+}
+
 function SitePreferencesNote() {
   return (
     <p className="ain-wiz__foot ain-wiz__sitepref">

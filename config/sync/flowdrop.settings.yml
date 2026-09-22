@@ -7,3 +7,23 @@ execution:
   default_orchestrator: 'flowdrop_runtime:synchronous'
 ui:
   icon_picker_enabled: true
+retention:
+  flowdrop_session:
+    mode: 'off'
+    max_age: 2592000
+    failure_max_age: 31536000
+  flowdrop_pipeline:
+    mode: 'off'
+    max_age: 2592000
+    failure_max_age: 31536000
+  flowdrop_job:
+    mode: 'off'
+    max_age: 2592000
+    failure_max_age: 31536000
+  flowdrop_session_message:
+    mode: 'off'
+    max_age: 2592000
+    failure_max_age: 31536000
+  state_checkpoint:
+    mode: 'off'
+    max_age: 2592000

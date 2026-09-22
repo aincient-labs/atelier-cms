@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_audit\Check;
 
 use Drupal\aincient_audit\MetaTagReader;
+use Drupal\aincient_pages\SiteIdentity;
 use Drupal\node\NodeInterface;
 
 /**
@@ -55,6 +56,11 @@ final class SeoMetaCheck implements CheckInterface {
 
   public function __construct(
     private readonly MetaTagReader $meta,
+    // Optional (v1 wires it via services.yml, but any direct construction
+    // that omits it — e.g. SeoMetaCheckTest — still works): the site favicon
+    // is GLOBAL, not per-page, so `seo.favicon` is skipped entirely when this
+    // is NULL rather than treated as "no favicon".
+    private readonly ?SiteIdentity $identity = NULL,
   ) {}
 
   /**
@@ -165,6 +171,20 @@ final class SeoMetaCheck implements CheckInterface {
       }
       else {
         $findings[] = $this->metaFinding($id, self::PASS, $label . ' set', (string) $tags[$key], 'Meta: ' . $key);
+      }
+    }
+
+    // Favicon — GLOBAL (site identity, not per-page), so it is skipped when
+    // the identity service isn't wired in (a direct construction that omits
+    // it), not treated as "missing". No REMEDIATION entry: there is no
+    // per-page field to edit, only Site settings → Identity, so `remediation`
+    // stays NULL (the manual/AI fix UI has nothing to route to here).
+    if ($this->identity !== NULL) {
+      if ($this->identity->favicon() === '') {
+        $findings[] = $this->finding('seo.favicon', self::WARN, 'No favicon set', 'Browsers show a blank tab icon; set one in Site settings → Identity.', 'Site: favicon', 'meta');
+      }
+      else {
+        $findings[] = $this->finding('seo.favicon', self::PASS, 'Favicon set', 'The site has a favicon configured.', 'Site: favicon', 'meta');
       }
     }
 

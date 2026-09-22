@@ -6,6 +6,7 @@ import { pageDeepLink } from "./studios";
 import { consoleBase, opensNewTab } from "./console-url";
 import { openSurface } from "./surface-nav";
 import { openPageInPlace } from "./url-sync";
+import { getPageLang, getPageNode } from "./page-state";
 
 /**
  * Generic `data_table` generative-UI widget.
@@ -108,9 +109,16 @@ function DataTableCard({ payload }: { payload: DataTablePayload }) {
   // is stable while a thread is open.
   const studio = activeStudioKey();
   const base = consoleBase();
+  // The translation to open in, and ONLY for the page already open here: that
+  // row is the studio handover (this page, other studio) and must stay in the
+  // language being worked on. Any OTHER page is opened in its source language —
+  // it may well have no translation in ours, and a browse click must never
+  // silently start one.
+  const langFor = (node: string): string | null =>
+    node === getPageNode() ? getPageLang() : null;
   const hrefFor = (action: RowAction | undefined): string | undefined => {
     if (action?.kind === "link") return action.href;
-    if (action?.kind === "open_page") return pageDeepLink(studio, action.node, base);
+    if (action?.kind === "open_page") return pageDeepLink(studio, action.node, base, langFor(action.node));
     return undefined;
   };
 
@@ -129,7 +137,7 @@ function DataTableCard({ payload }: { payload: DataTablePayload }) {
     if (action.kind === "open_page") {
       // A page row is a within-workspace move: load the doc beside the chat in
       // the same tab, conversation intact (surface-nav policy).
-      openPageInPlace(studio, action.node);
+      openPageInPlace(studio, action.node, langFor(action.node));
     } else if (action.kind === "link") {
       // A fixed external URL → a new tab (it leaves the console).
       openSurface(action.href, "output");
@@ -199,7 +207,7 @@ function DataTableCard({ payload }: { payload: DataTablePayload }) {
                             e.stopPropagation();
                             if (inPlace && action?.kind === "open_page" && !opensNewTab(e)) {
                               e.preventDefault();
-                              openPageInPlace(studio, action.node);
+                              openPageInPlace(studio, action.node, langFor(action.node));
                             }
                           }}
                         >

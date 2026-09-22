@@ -1005,7 +1005,9 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
         {kind === "page" && nodeId && !dirty && isStudioAccessible("checks") && (
           <button
             className="ain-btn ain-topbtn"
-            onClick={() => nodeId && window.location.assign(pageDeepLink("checks", nodeId, consoleBase()))}
+            onClick={() =>
+              nodeId && window.location.assign(pageDeepLink("checks", nodeId, consoleBase(), getPageLang()))
+            }
             title="Run checks on this page in the Checks studio"
           >
             <ShieldCheckIcon /> Run checks

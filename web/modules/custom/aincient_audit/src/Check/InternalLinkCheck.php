@@ -65,11 +65,29 @@ final class InternalLinkCheck implements CheckInterface {
       return $findings;
     }
 
+    // Every `id` attribute rendered on THIS page — section anchors (DECISIONS
+    // 0413, PageSpikeController::anchorSection) and markdown heading slugs
+    // (MarkdownRenderer) alike — is what a same-page `#x` fragment resolves
+    // against.
+    $ids = $this->extractIds($html);
+
     $internalOk = 0;
     $external = 0;
     $brokenSeen = [];
+    $fragmentSeen = [];
     foreach ($hrefs as $href) {
       $kind = $this->classify($href);
+      if ($kind === 'fragment') {
+        $fragment = substr($href, 1);
+        if (isset($ids[$fragment])) {
+          $internalOk++;
+        }
+        elseif (!isset($fragmentSeen[$fragment])) {
+          $fragmentSeen[$fragment] = TRUE;
+          $findings[] = $this->finding('links.fragment:' . $fragment, self::FAIL, 'Dangling in-page link', sprintf('“#%s” points at no section or heading on this page.', $fragment), 'Links', 'content', ['action' => 'edit_prop', 'target' => ['href' => $href], 'aiFixable' => TRUE]);
+        }
+        continue;
+      }
       if ($kind === 'skip') {
         continue;
       }
@@ -82,6 +100,9 @@ final class InternalLinkCheck implements CheckInterface {
         continue;
       }
       // Access-free: a route/alias exists, regardless of who may view it.
+      // Note: a cross-page `/other#x` fragment is left unchecked here — we'd
+      // need the OTHER page's rendered HTML to validate its ids, which this
+      // check (single-page, no-HTTP) doesn't have.
       if ($this->pathValidator->getUrlIfValidWithoutAccessCheck($path)) {
         $internalOk++;
       }
@@ -94,7 +115,7 @@ final class InternalLinkCheck implements CheckInterface {
       }
     }
 
-    if ($brokenSeen === []) {
+    if ($brokenSeen === [] && $fragmentSeen === []) {
       $findings[] = $this->finding('links.internal_ok', self::PASS, 'Internal links resolve', sprintf('%d internal link%s checked — all valid.', $internalOk, $internalOk === 1 ? '' : 's'), 'Links', 'content');
     }
     if ($external > 0) {
@@ -107,16 +128,19 @@ final class InternalLinkCheck implements CheckInterface {
   /**
    * Render the page's stored schema to chrome-less HTML (no persist), or NULL
    * when the page has no schema yet. Reuses the studio's render seam so the
-   * markup matches a live page exactly.
+   * markup matches a live page exactly — in the node's OWN language, so a
+   * translation's overlay, heading slugs and language-prefixed hrefs are what
+   * get checked (a German page is graded on its German links, not the source's).
    */
   private function renderHtml(NodeInterface $node): ?string {
-    $schema = $this->store->load((string) $node->id());
+    $langcode = $node->language()->getId();
+    $schema = $this->store->load((string) $node->id(), $langcode);
     if ($schema === NULL) {
       return NULL;
     }
     /** @var \Drupal\aincient_pages\Controller\PageSpikeController $spike */
     $spike = $this->classResolver->getInstanceFromDefinition(PageSpikeController::class);
-    return (string) $spike->renderSchema($schema)->getContent();
+    return (string) $spike->renderSchema($schema, $langcode)->getContent();
   }
 
   /**
@@ -147,12 +171,44 @@ final class InternalLinkCheck implements CheckInterface {
   }
 
   /**
+   * Every `id` attribute present anywhere in the rendered HTML, as a lookup
+   * set (`//*[@id]`) — section-anchor wrappers and markdown heading slugs
+   * alike.
+   *
+   * @return array<string, true>
+   */
+  private function extractIds(string $html): array {
+    if (trim($html) === '') {
+      return [];
+    }
+    $dom = new \DOMDocument();
+    $previous = libxml_use_internal_errors(TRUE);
+    $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    $ids = [];
+    $xpath = new \DOMXPath($dom);
+    foreach ($xpath->query('//*[@id]') as $node) {
+      $id = trim($node->getAttribute('id'));
+      if ($id !== '') {
+        $ids[$id] = TRUE;
+      }
+    }
+    return $ids;
+  }
+
+  /**
    * Classify an href: `internal` (resolve it), `external` (count, don't fetch),
-   * or `skip` (fragment, mailto:, tel:, javascript:, data:, protocol-relative).
+   * `fragment` (a non-empty same-page `#x`, resolved against the page's own
+   * rendered ids), or `skip` (a bare `#`, mailto:, tel:, javascript:, data:).
    */
   private function classify(string $href): string {
-    if ($href === '' || $href[0] === '#') {
+    if ($href === '') {
       return 'skip';
+    }
+    if ($href[0] === '#') {
+      return $href === '#' ? 'skip' : 'fragment';
     }
     if (preg_match('#^(mailto:|tel:|javascript:|data:)#i', $href)) {
       return 'skip';

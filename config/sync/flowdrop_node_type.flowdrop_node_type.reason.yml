@@ -1,0 +1,74 @@
+uuid: 1d5b30e4-7a70-4d23-b9cd-8b3212258d78
+langcode: en
+status: true
+dependencies:
+  module:
+    - flowdrop_node_processor
+id: reason
+label: 'Reason (agent step)'
+description: 'One tool-aware LLM inference: emits the next tool_calls or a final answer (executes nothing). The agent loop is authored around it.'
+category: agents
+icon: 'mdi:brain'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  loop_back:
+    configurable: false
+    connectable: true
+    required: false
+  maxTokens:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+  messages:
+    configurable: false
+    connectable: true
+    required: false
+  model:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+  operation_type:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+  systemPrompt:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+  temperature:
+    configurable: true
+    connectable: true
+    exposed_by_default: false
+    required: false
+  tool:
+    configurable: false
+    connectable: true
+    required: false
+outputs:
+  assistant_message:
+    exposed: true
+    exposed_by_default: false
+  has_tool_calls:
+    exposed: true
+    exposed_by_default: false
+  text:
+    exposed: true
+  tool_calls:
+    exposed: true
+    exposed_by_default: false
+tags:
+  - agent
+executor_plugin: 'flowdrop_node_processor:reason'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false
+confirmation: {  }
+reserved_port_exposure: {  }

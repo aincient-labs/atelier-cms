@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\node\NodeInterface;
+use Drupal\pathauto\PathautoGeneratorInterface;
 
 /**
  * Validates, persists, and resolves agent-generated page-schemas.
@@ -108,6 +109,9 @@ final class PageStore {
     private readonly ConfigFactoryInterface $configFactory,
     private readonly NodeModeration $moderation,
     private readonly ComponentCatalogInterface $catalog,
+    // OPTIONAL (@?): NULL when pathauto is uninstalled (kernel tests, a site
+    // that opted out) — the alias sync then no-ops. See syncTranslationAlias().
+    private readonly ?PathautoGeneratorInterface $pathautoGenerator = NULL,
   ) {}
 
   /**
@@ -487,7 +491,11 @@ final class PageStore {
    * one-shot path uses — so a bad op can never produce an unrenderable page.
    *
    * Sections are addressed by their stable `id` (preferred — survives reordering)
-   * or, as a fallback, by 0-based `index`. add_section mints a fresh id.
+   * or, as a fallback, by 0-based `index`. add_section mints a fresh id — unless
+   * it names `replaces`, which keeps the replaced slot's id. CONVERTING a section
+   * to another component must keep the id (update_section {component} or
+   * add_section {replaces}): the per-language content overlay is keyed by slot id,
+   * so a remove+add discards that slot's translations without a word.
    *
    * Supported ops (each a map with an `op` key):
    *   - set_meta       {type?, title?, description?,  page-level fields + SEO
@@ -499,8 +507,12 @@ final class PageStore {
    *   - set_content    {category?, lead?, author?,   BLOG body fields (body_md is
    *                     author_bio?, date?, cover?,   Markdown source; null/blank a
    *                     body_md?}                     key clears it) — blog-only
-   *   - add_section    {component, props?, after?}   insert (after = id|index; append if absent)
-   *   - update_section {id|index, props}             shallow prop-merge (null=unset)
+   *   - add_section    {component, props?, after?,   insert (after = id|index; append if absent).
+   *                     replaces?}                   replaces = an existing slot id: the new
+   *                                                   section TAKES that id + position (after is
+   *                                                   ignored) so translations survive.
+   *   - update_section {id|index, props?,            shallow prop-merge (null=unset); component?
+   *                     component?}                   converts the section IN PLACE, same id.
    *   - remove_section {id|index}                    drop a section
    *   - reorder        {order: [id|int,…]}           permutation of all slots
    *
@@ -683,6 +695,24 @@ final class PageStore {
             if (!in_array($name, $this->catalog->for($work['type'])->placeableNames(), TRUE)) {
               throw new \InvalidArgumentException(sprintf('unknown component "%s"', $name));
             }
+            // `replaces` converts a slot IN PLACE: the new section takes the old
+            // one's stable id and position, so the per-language content overlay
+            // (keyed by slot id — see PageSchemaCodec) survives the swap. Without
+            // it the agent's remove+add mints a fresh id and every translation of
+            // that slot is orphaned, silently falling back to the source copy.
+            $replaces = $op['replaces'] ?? NULL;
+            if ($replaces !== NULL && $replaces !== '') {
+              if (!is_string($replaces)) {
+                throw new \InvalidArgumentException('add_section "replaces" must be a section id');
+              }
+              $at = $this->resolveIndex(['id' => $replaces], $work['sections']);
+              $work['sections'][$at] = [
+                'id' => $work['sections'][$at]['id'],
+                'component' => $name,
+                'props' => self::opProps($op, 'add_section'),
+              ];
+              break;
+            }
             $new = [
               'id' => $this->slotId(NULL, $used),
               'component' => $name,
@@ -699,6 +729,24 @@ final class PageStore {
 
           case 'update_section':
             $idx = $this->resolveIndex($op, $work['sections']);
+            // An optional `component` CONVERTS the section to another placeable
+            // while keeping its stable id — the only conversion that preserves
+            // translations. Props are merged as usual and validate()/clampProps
+            // then clamps them to the new component's grammar, so props the new
+            // component doesn't declare are dropped (drop only what no longer
+            // exists). The per-language overlay is carried across BY PROP NAME:
+            // scalar copy props that exist on both components (heading,
+            // subheading, eyebrow, cta_label, …) survive automatically, while a
+            // repeatable renamed across components (features[] → cards[]) does
+            // NOT match by name and its translated rows are lost. That is
+            // accepted: guessing a row-level mapping would silently mistranslate.
+            if (array_key_exists('component', $op) && $op['component'] !== NULL) {
+              $name = is_string($op['component']) ? $op['component'] : '';
+              if (!in_array($name, $this->catalog->for($work['type'])->placeableNames(), TRUE)) {
+                throw new \InvalidArgumentException(sprintf('unknown component "%s"', $name));
+              }
+              $work['sections'][$idx]['component'] = $name;
+            }
             $merged = $work['sections'][$idx]['props'];
             foreach (self::opProps($op, 'update_section') as $k => $v) {
               if ($v === NULL) {
@@ -1152,6 +1200,7 @@ final class PageStore {
     }
     // Saving the node persists every translation it carries.
     $node->save();
+    $this->syncTranslationAlias($node, $langcode);
     return TRUE;
   }
 
@@ -1256,6 +1305,16 @@ final class PageStore {
     $node->setRevisionLogMessage($log);
     $this->stampCoauthors($node, $coauthors);
     $node->save();
+    if ($langcode === NULL) {
+      // A pure state change (transition(), or a source-language publish) has no
+      // single translation in play — but it may have just made a forward draft
+      // the DEFAULT revision, which is the moment pathauto will first alias
+      // its translations. Sync them all; the generator is idempotent.
+      $this->syncAllTranslationAliases($node);
+    }
+    else {
+      $this->syncTranslationAlias($node, $langcode);
+    }
     return $this->stateEnvelope($id);
   }
 
@@ -1297,6 +1356,53 @@ final class PageStore {
       'node_id' => $id,
       'url' => $this->url($id),
     ] + $this->moderation->legibility($node, (bool) $node->access('update'));
+  }
+
+  /**
+   * Give a just-written NON-SOURCE translation its own URL alias.
+   *
+   * Pathauto's entity hooks only ever alias the entity OBJECT they are handed,
+   * and every store write saves the SOURCE-language node object (saving it
+   * persists all its translations). So without this, a German translation kept
+   * only the English alias row and `/de/<alias>` 404'd — the page was reachable
+   * at `/de/node/N` alone. Core's `path` field handles translations itself;
+   * pathauto does not.
+   *
+   * Only the named non-source translation is touched — the source alias is never
+   * regenerated. The generator itself skips non-default revisions (so a forward
+   * draft correctly gets no alias; publishing it later — by langcode here, or by
+   * an editorial transition via {@see syncAllTranslationAliases}) — aliases it),
+   * honours a manual/disabled pathauto state, and consults
+   * aincient_pages_pathauto_is_alias_reserved() ({@see ReservedAliases}).
+   */
+  private function syncTranslationAlias(ContentEntityInterface $node, ?string $langcode): void {
+    if ($this->pathautoGenerator === NULL || $langcode === NULL || $langcode === '') {
+      return;
+    }
+    if ($langcode === $node->getUntranslated()->language()->getId()) {
+      return;
+    }
+    if (!$node->hasTranslation($langcode)) {
+      return;
+    }
+    $this->pathautoGenerator->updateEntityAlias($node->getTranslation($langcode), 'update');
+  }
+
+  /**
+   * {@see syncTranslationAlias} for every non-source translation of $node.
+   *
+   * Used when a write names no translation: an editorial transition (approve /
+   * publish through the review workflow) saves the node with `langcode = NULL`,
+   * yet it is exactly that save which turns a forward-draft translation into the
+   * default revision pathauto is willing to alias.
+   */
+  private function syncAllTranslationAliases(ContentEntityInterface $node): void {
+    $source = $node->getUntranslated()->language()->getId();
+    foreach (array_keys($node->getTranslationLanguages(FALSE)) as $langcode) {
+      if ($langcode !== $source) {
+        $this->syncTranslationAlias($node, $langcode);
+      }
+    }
   }
 
   /**

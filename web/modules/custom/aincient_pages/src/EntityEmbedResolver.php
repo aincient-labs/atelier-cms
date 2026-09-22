@@ -50,6 +50,9 @@ final class EntityEmbedResolver {
     private readonly EntityRepositoryInterface $entityRepository,
     private readonly ?PluginManagerInterface $riftViewModes,
     private readonly ConfigFactoryInterface $configFactory,
+    // Optional + LAST so any caller constructing this service by hand keeps
+    // working; NULL simply means raw hrefs are left exactly as authored.
+    private readonly ?LanguageAwareHref $languageAwareHref = NULL,
   ) {}
 
   /**
@@ -179,8 +182,10 @@ final class EntityEmbedResolver {
    * unlinked.
    *
    * Recurses into arrays so tokens inside repeatables (grid cards, pricing
-   * tiers, logos) resolve on the same terms as top-level props. Raw URLs and
-   * plain paths pass through untouched.
+   * tiers, logos) resolve on the same terms as top-level props. Raw external
+   * URLs and fragments pass through untouched; a raw INTERNAL path is
+   * re-rendered in $langcode ({@see LanguageAwareHref}) so a translation's CTA
+   * lands on the translation, not on the source-language page.
    */
   public function resolveLinks(array $props, ?string $langcode = NULL): array {
     foreach ($props as $key => $value) {
@@ -193,6 +198,17 @@ final class EntityEmbedResolver {
       }
       $token = trim($value);
       if (!$this->isToken($token)) {
+        // A RAW href (a typed path, an external URL, a fragment). Only an
+        // internal root-relative path changes, and only on a multilingual site:
+        // it was authored in one language and must be re-rendered in the render
+        // language so the translation's prefix + alias apply. See
+        // {@see LanguageAwareHref}.
+        if ($this->languageAwareHref !== NULL) {
+          $rewritten = $this->languageAwareHref->rewrite($value, $langcode);
+          if ($rewritten !== $value) {
+            $props[$key] = $rewritten;
+          }
+        }
         continue;
       }
       $url = $this->linkUrl($token, $langcode);
