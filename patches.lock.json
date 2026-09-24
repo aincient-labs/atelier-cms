@@ -1,0 +1,17 @@
+{
+    "_hash": "fb9f131b5c50a5d54499abe96005825a5d1314b8c7b73bbb58c8f6ec6ceb4766",
+    "patches": {
+        "drupal/admin_theme": [
+            {
+                "package": "drupal/admin_theme",
+                "description": "PHP 8.4: use explicit nullable type on isAdminRoute() param",
+                "url": "patches/admin-theme-nullable-route.patch",
+                "sha256": "9dadb21c2e63256ab06978e083f38a20380e46b96fc284e49fe708148f5f48f3",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ]
+    }
+}
