@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 import { offerWrapup } from "./thread-seal";
 import { useActiveThreadSealed } from "./thread-seal-hooks";
 import {
@@ -235,7 +235,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const { closeSheets } = useStudioUI();
   // The runtime is read only to resolve the active thread's backend id when a
   // a Publish/Approve offers to wrap the conversation up (see commitPublish()).
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [draft, setDraftState] = useState<PageSchema>(() => getPageDraft() ?? EMPTY_PAGE);
   // The last-saved schema snapshot the draft is diffed against for "dirty". When
@@ -750,7 +750,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
       absorbWrite(result);
       const what = isBlock ? "Block" : lang ? `${langLabel} translation` : "Page";
       setNotice({ text: `${what} published`, url: typeof result?.url === "string" ? (result.url as string) : undefined });
-      offerWrapup(runtime.threads.mainItem.getState().remoteId, wrapupRef(result));
+      offerWrapup(runtime.activeThread().remoteId, wrapupRef(result));
     } catch (e) {
       failWrite("publish", e);
     } finally {
@@ -780,7 +780,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
           setNotice({ text: TRANSITION_NOTICE[t.id] ?? t.to_label });
         }
         if (t.to === "published") {
-          offerWrapup(runtime.threads.mainItem.getState().remoteId, wrapupRef(result));
+          offerWrapup(runtime.activeThread().remoteId, wrapupRef(result));
         }
       } catch (e) {
         failWrite(t.label.toLowerCase(), e);

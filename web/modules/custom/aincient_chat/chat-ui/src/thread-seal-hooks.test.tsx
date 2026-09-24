@@ -15,9 +15,10 @@
  * way. A cached implementation fails the thread-switch case here; nothing else in
  * the suite would notice.
  *
- * The runtime is mocked rather than mounted: `useThreadRemoteId` only ever reads
- * `runtime.threads.mainItem`, so a two-method fake is the whole surface, and it
- * lets a test move the active thread deterministically.
+ * The chat handle is mocked rather than mounted (at our `./aui` seam, not the
+ * vendor's module): `useThreadRemoteId` only ever reads the active thread and
+ * subscribes, so a two-method fake is the whole surface of `ConsoleChat` it
+ * touches, and it lets a test move the active thread deterministically.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,18 +29,14 @@ const runtime = vi.hoisted(() => {
   let remoteId = "";
   const listeners = new Set<() => void>();
   return {
-    threads: {
-      mainItem: {
-        subscribe(cb: () => void) {
-          listeners.add(cb);
-          return () => {
-            listeners.delete(cb);
-          };
-        },
-        getState() {
-          return { remoteId };
-        },
-      },
+    subscribe(cb: () => void) {
+      listeners.add(cb);
+      return () => {
+        listeners.delete(cb);
+      };
+    },
+    activeThread() {
+      return { remoteId };
     },
     /** Move the active thread the way a sidebar click or a `?thr=` link does. */
     setActive(id: string) {
@@ -49,8 +46,8 @@ const runtime = vi.hoisted(() => {
   };
 });
 
-vi.mock("@assistant-ui/react", () => ({
-  useAssistantRuntime: () => runtime,
+vi.mock("./aui", () => ({
+  useConsoleChat: () => runtime,
 }));
 
 const { useActiveThreadSealed, useThreadSealed } = await import("./thread-seal-hooks");

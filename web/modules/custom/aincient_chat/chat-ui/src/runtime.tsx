@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 import {
-  useLocalRuntime,
-  useRemoteThreadListRuntime,
-  useThreadListItemRuntime,
-  ExportedMessageRepository,
-  InMemoryThreadListAdapter,
-  WebSpeechDictationAdapter,
-  type RemoteThreadListAdapter,
-  type ThreadHistoryAdapter,
-} from "@assistant-ui/react";
+  useTurnRuntime,
+  useServerThreadListRuntime,
+  useThreadListEntryHandle,
+  MessageRepository,
+  LocalThreadListAdapter,
+  DictationAdapter,
+  type ThreadListSource,
+  type ThreadHistorySource,
+} from "./aui";
 import {
   mockAdapter,
   makeHttpAdapter,
@@ -32,8 +32,8 @@ import { loadLatestPage } from "./thread-pages";
  * Built once (browser support is fixed for the session) and left undefined
  * where the API is missing (e.g. Firefox), which hides the mic button.
  */
-const dictation = WebSpeechDictationAdapter.isSupported()
-  ? new WebSpeechDictationAdapter({ continuous: true, interimResults: true })
+const dictation = DictationAdapter.isSupported()
+  ? new DictationAdapter({ continuous: true, interimResults: true })
   : undefined;
 
 /**
@@ -46,7 +46,7 @@ const dictation = WebSpeechDictationAdapter.isSupported()
  *
  * Built on assistant-ui's remote-thread-list runtime. `runtimeHook` is the
  * per-thread runtime factory and renders inside the thread-list-item context,
- * so we read the active thread's id there (via `useThreadListItemRuntime`) and
+ * so we read the active thread's id there (via `useThreadListEntryHandle`) and
  * bind BOTH the send adapter and the history adapter to that specific thread —
  * no shared/ambient state, so switching or starting a new chat is always exact.
  */
@@ -60,7 +60,7 @@ function mintThreadId(): string {
 const mock = isMock();
 
 /** The thread-list adapter: lists threads and mints ids for new ones. */
-const threadListAdapter: RemoteThreadListAdapter = Object.assign(new InMemoryThreadListAdapter(), {
+const threadListAdapter: ThreadListSource = Object.assign(new LocalThreadListAdapter(), {
   // The sidebar list — lightweight metadata for every thread.
   list: async () => {
     if (mock) return { threads: [] };
@@ -110,8 +110,8 @@ const threadListAdapter: RemoteThreadListAdapter = Object.assign(new InMemoryThr
  * Per-thread runtime: resolve THIS thread's backend id from its list-item, then
  * bind the SSE send adapter and the lazy history adapter to it.
  */
-function useThreadRuntime() {
-  const item = useThreadListItemRuntime();
+function usePerThreadRuntime() {
+  const item = useThreadListEntryHandle();
 
   const resolveThreadId = async (): Promise<string> => {
     const state = item.getState();
@@ -125,7 +125,7 @@ function useThreadRuntime() {
     [item],
   );
 
-  const history = useMemo<ThreadHistoryAdapter>(
+  const history = useMemo<ThreadHistorySource>(
     () => ({
       // Lazy AND windowed: only the opened thread's newest page is fetched;
       // older turns load on demand as the user scrolls up (thread-pages.ts).
@@ -133,7 +133,7 @@ function useThreadRuntime() {
         const state = item.getState();
         if (mock || !state.remoteId) return { messages: [] };
         const messages = await loadLatestPage(state.remoteId);
-        return ExportedMessageRepository.fromArray(messages);
+        return MessageRepository.fromArray(messages);
       },
       // The server persists turns during the POST; nothing to do here.
       append: async () => {},
@@ -141,12 +141,12 @@ function useThreadRuntime() {
     [item],
   );
 
-  return useLocalRuntime(sendAdapter, { adapters: { history, dictation } });
+  return useTurnRuntime(sendAdapter, { adapters: { history, dictation } });
 }
 
 export function useAincientRuntime() {
-  return useRemoteThreadListRuntime({
-    runtimeHook: useThreadRuntime,
+  return useServerThreadListRuntime({
+    runtimeHook: usePerThreadRuntime,
     adapter: threadListAdapter,
     allowNesting: true,
   });

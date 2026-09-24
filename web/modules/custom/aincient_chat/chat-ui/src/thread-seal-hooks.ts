@@ -20,7 +20,7 @@
  */
 
 import { useMemo, useSyncExternalStore } from "react";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 import { isThreadSealed, sealVersion, subscribeSeals } from "./thread-seal";
 
 /**
@@ -29,10 +29,10 @@ import { isThreadSealed, sealVersion, subscribeSeals } from "./thread-seal";
  * thread item, so a thread switch re-renders the caller.
  */
 export function useThreadRemoteId(): string {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   return useSyncExternalStore(
-    (cb) => runtime.threads.mainItem.subscribe(cb),
-    () => runtime.threads.mainItem.getState().remoteId ?? "",
+    (cb) => runtime.subscribe(cb),
+    () => runtime.activeThread().remoteId ?? "",
   );
 }
 

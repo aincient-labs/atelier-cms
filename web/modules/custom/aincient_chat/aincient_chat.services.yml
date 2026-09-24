@@ -6,6 +6,23 @@ services:
   aincient_chat.router:
     class: Drupal\aincient_chat\Chat\HybridChatRouter
 
+  # The set of console studios. A plugin type rather than the enum it replaces
+  # (DECISIONS 0424): a component pack may ship a studio, so "which studios
+  # exist" is a property of the install, not of one file in this module. The
+  # permissions page, the settings form, the shell catalog and the agent
+  # bucketing all read it — and all read it through the manager's ordered
+  # convenience methods, so display order has one home.
+  plugin.manager.aincient.studios:
+    class: Drupal\aincient_chat\Studio\StudioManager
+    arguments:
+      # Spelled out rather than `parent: default_plugin_manager`: a child
+      # service's arguments override the parent's BY INDEX, so the extra logger
+      # would silently take the namespaces slot.
+      - '@container.namespaces'
+      - '@cache.discovery'
+      - '@module_handler'
+      - '@logger.channel.aincient_chat'
+
   # Shapes a signed-in user into the console's read-only identity card (name,
   # email, avatar, AIncient roles, tenure, status). Shared by the shell
   # (window.aincientChat.viewer) and the self-service account pane, which returns
@@ -27,6 +44,7 @@ services:
       - '@config.factory'
       - '@entity_type.manager'
       - '@aincient_core.capability_verbs'
+      - '@plugin.manager.aincient.studios'
 
   # The console conversation store, backed by FlowDrop sessions (single lane).
   # The sidebar/history/archive/delete endpoints read threads from here.

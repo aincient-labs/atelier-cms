@@ -7,6 +7,34 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.15.0] — 2026-09-24
+
+**A component pack can now add its own studio to the console.** The set of studios — General,
+Identity, Content, Library, Checks and the rest — used to be a fixed list inside Atelier. It is
+discovered now, so a pack can ship a workspace of its own and it shows up in the switcher, in the
+settings form and on the permissions page beside the built-in ones. Every studio, yours or ours,
+gets its own "use this studio" permission automatically, so a new one arrives gated rather than
+open to everybody. Studio names and addresses are unchanged, so bookmarks and saved links still
+work. One limit worth knowing: a pack can declare a studio today, but only Atelier's own studios
+can draw an editor pane in it — the browser half of the contract is not open yet.
+
+**A pack says what it adds, and cannot add agent abilities.** `atelier.pack.yml` takes a fourth
+payload, `studios`, and `atelier:pack-validate` grades it: a pack that promises a studio and ships
+none fails, one that ships a studio without declaring it is flagged, and a studio name that is not
+prefixed with the pack's own name is rejected before it can collide with anybody else's.
+Validation now also refuses a pack that ships its own agent capabilities. What an agent can DO on
+your site is Atelier's list, reviewed as a whole and deliberately kept to actions that are
+reversible and stay inside your site — a pack composes workflows over those abilities rather than
+adding new ones. If you need a new one, that is a conversation with us, not a directory.
+
+**Under the hood:** the chat interface moved to a new major version of the library underneath it,
+which removed every hook the console was using. The console now reaches that library through a
+single module of its own, so the entire upgrade was paid in one file and nothing else in the
+interface had to change — the next one will work the same way. A studio that a pack ships broken
+is logged and skipped instead of taking the console down with it. Also updated: React 19.3.0, the
+Docker tooling inside the one-click updater, and the build and test toolchains, including a
+security fix in a test-only dependency.
+
 ## [0.14.0] — 2026-09-22
 
 **Links on a multilingual site now stay in the language you are reading.** An internal link inside

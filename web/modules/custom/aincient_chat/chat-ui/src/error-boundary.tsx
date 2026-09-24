@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { makeAssistantToolUI } from "@assistant-ui/react";
+import { registerToolWidget } from "./aui";
 
 /**
  * Render-error containment for the console.
@@ -109,21 +109,21 @@ function keysChanged(a: readonly unknown[] | undefined, b: readonly unknown[] | 
 }
 
 /**
- * `makeAssistantToolUI`, but the widget's rendered output is wrapped in an
+ * `registerToolWidget`, but the widget's rendered output is wrapped in an
  * auto-resetting {@link ErrorBoundary}. A throw inside one widget's body (a
  * malformed payload, a bad enum) then renders that ONE widget as nothing
  * instead of taking down the whole transcript — the same bail-to-null
  * philosophy the widgets already follow for missing payload fields, made
  * structural. Drop-in: identical signature and return type.
  */
-type ToolUIConfig<TArgs, TResult> = Parameters<typeof makeAssistantToolUI<TArgs, TResult>>[0];
+type ToolUIConfig<TArgs, TResult> = Parameters<typeof registerToolWidget<TArgs, TResult>>[0];
 
 export function makeSafeAssistantToolUI<TArgs, TResult>(config: ToolUIConfig<TArgs, TResult>) {
   // `render` is a component type (function OR class), so render it as an element
   // rather than calling it — matching how assistant-ui mounts it internally.
   const Render = config.render;
-  if (!Render) return makeAssistantToolUI<TArgs, TResult>(config);
-  return makeAssistantToolUI<TArgs, TResult>({
+  if (!Render) return registerToolWidget<TArgs, TResult>(config);
+  return registerToolWidget<TArgs, TResult>({
     ...config,
     render: (props) => (
       <ErrorBoundary autoReset label={`tool:${config.toolName}`}>

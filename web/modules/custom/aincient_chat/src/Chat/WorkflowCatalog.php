@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_chat\Chat;
 
-use Drupal\aincient_chat\Studio;
+use Drupal\aincient_chat\Studio\StudioManager;
 use Drupal\aincient_core\CapabilityVerbs;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
  * The studio → agents map the console runs.
  *
  * The console is a workspace switcher: it is always in exactly one studio
- * ({@see \Drupal\aincient_chat\Studio}), the default being General. Each studio
+ * ({@see \Drupal\aincient_chat\Studio\StudioManager}), the default being
+ * General. Each studio
  * owns a set of FlowDrop workflows ("agents", a 1:N relationship) plus a default
  * agent a new conversation runs. Admin-owned at /admin/config/aincient-chat.
  *
@@ -43,13 +44,14 @@ final class WorkflowCatalog {
     private readonly ConfigFactoryInterface $configFactory,
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly CapabilityVerbs $capabilityVerbs,
+    private readonly StudioManager $studioManager,
   ) {}
 
   /**
    * The enabled studios, each with its valid agents and resolved default.
    *
-   * Studios appear in the enum's display order. Agents are validated against
-   * existing flowdrop_workflow entities and returned as id => label (sorted by
+   * Studios appear in the studio plugins' display order. Agents are validated
+   * against existing flowdrop_workflow entities and returned as id => label (sorted by
    * label). A studio with no valid agent is omitted (disabled). Each studio's
    * `default` is its configured default when still valid, else its first agent.
    *
@@ -64,7 +66,7 @@ final class WorkflowCatalog {
     $configured = (array) $this->config()->get('studios');
     $labels = $this->workflowLabels();
     $out = [];
-    foreach (Studio::keys() as $key) {
+    foreach ($this->studioManager->keys() as $key) {
       $entry = (array) ($configured[$key] ?? []);
       $agents = [];
       foreach (array_map('strval', (array) ($entry['agents'] ?? [])) as $id) {
@@ -90,7 +92,7 @@ final class WorkflowCatalog {
    * The studio a fresh console session opens in.
    *
    * The configured `default_studio` when it's an enabled studio; otherwise the
-   * first enabled studio; finally the enum default. Always returns a key that is
+   * first enabled studio; finally the fallback studio. Always returns a key that is
    * either enabled or the safe fallback.
    */
   public function defaultStudio(): string {
@@ -99,13 +101,13 @@ final class WorkflowCatalog {
     if (isset($studios[$configured])) {
       return $configured;
     }
-    return $studios === [] ? Studio::default()->value : (string) array_key_first($studios);
+    return $studios === [] ? $this->studioManager->defaultId() : (string) array_key_first($studios);
   }
 
   /**
    * Which studio owns a workflow id, or NULL if none does.
    *
-   * Deterministic: studios are scanned in enum order, so even if an admin
+   * Deterministic: studios are scanned in display order, so even if an admin
    * mis-configures an agent into two studios (the form forbids it), bucketing
    * still resolves to a single studio.
    */

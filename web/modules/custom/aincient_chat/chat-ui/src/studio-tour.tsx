@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { MouseEvent } from "react";
-import { useThreadRuntime } from "@assistant-ui/react";
+import { useConsoleThread } from "./aui";
 import { makeSafeAssistantToolUI } from "./error-boundary";
 import { stageComposerPrefill } from "./composer-prefill";
 import { carriesPrefill, tourHeader, visibleTourRooms, type TourRoom } from "./tour-model";
@@ -126,7 +126,7 @@ function TourCard({ room, prefill }: { room: TourRoom; prefill?: string }) {
  * raced a switch (a hop with no prefill is the graceful degradation).
  */
 function useLastUserText(): string {
-  const thread = useThreadRuntime();
+  const thread = useConsoleThread();
   try {
     const messages = thread.getState().messages;
     for (let i = messages.length - 1; i >= 0; i -= 1) {

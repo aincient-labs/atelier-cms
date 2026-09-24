@@ -4,6 +4,7 @@
   restrict access: true
 
 # Per-studio access permissions (`use aincient studio <key>`), one per
-# specialised studio, minted from the Studio enum so they can't drift.
+# specialised studio, minted from the studio PLUGINS so they can't drift — and
+# so a studio shipped by a component pack arrives with its own permission.
 permission_callbacks:
   - \Drupal\aincient_chat\StudioPermissions::permissions

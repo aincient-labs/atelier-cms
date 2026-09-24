@@ -18,8 +18,10 @@
  * too, once it started scoping itself to the studio and the room's agent — see
  * `capability-chips.test.tsx`.)
  *
- * The assistant-ui hooks are mocked to a plain thread snapshot — the component
- * uses them purely as selectors over `{ isRunning, messages }` and one `append`.
+ * The chat-runtime facade (`./aui`) is mocked to a plain thread snapshot — the
+ * component uses it purely as selectors over `{ isRunning, messages }` and one
+ * `sendTurn`. Mocking OUR seam rather than the vendor is the point of the facade:
+ * this test names what the console means, not what assistant-ui happens to call it.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -33,12 +35,14 @@ const stub = vi.hoisted(() => ({
   state: { isRunning: false, messages: [] as Msg[], messageId: "" },
 }));
 
-vi.mock("@assistant-ui/react", () => ({
-  useThreadRuntime: () => ({ append: stub.append }),
-  useMessage: (sel: (m: { id: string }) => unknown) => sel({ id: stub.state.messageId }),
-  useThread: (sel: (t: typeof stub.state) => unknown) => sel(stub.state),
+vi.mock("./aui", () => ({
+  useConsoleThread: () => ({ append: stub.append }),
+  useTurnState: (sel: (m: { id: string }) => unknown) => sel({ id: stub.state.messageId }),
+  useThreadState: (sel: (t: typeof stub.state) => unknown) => sel(stub.state),
+  sendTurn: (thread: { append: typeof stub.append }, text: string) =>
+    thread.append({ role: "user", content: [{ type: "text", text }] }),
   // `error-boundary.tsx` calls this at import time for the tool UI export.
-  makeAssistantToolUI: (config: unknown) => config,
+  registerToolWidget: (config: unknown) => config,
 }));
 
 const { ProviderFailureNotice } = await import("./progress-widget");

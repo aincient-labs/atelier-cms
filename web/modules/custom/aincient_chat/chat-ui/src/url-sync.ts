@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { AssistantRuntime } from "@assistant-ui/react";
+import type { ConsoleChat } from "./aui";
 import { activeRoom, consoleNav, deriveRoomFromStores } from "./console-nav";
 import { parseUrl, roomToUrl } from "./console-url";
 import { startNewBlock, startNewPage } from "./page-state";
@@ -65,9 +65,8 @@ export function openPageInPlace(
  * The one hook the shell mounts: bind the URL to the console machine. Replaces the
  * former useUrlStudioSync / useUrlPageSync / useUrlThreadSync trio.
  */
-export function useConsoleUrl(runtime: AssistantRuntime) {
+export function useConsoleUrl(runtime: ConsoleChat) {
   useEffect(() => {
-    const threads = runtime.threads;
     let disposed = false;
     // Set while WE drive a transition from history (deep link on load / popstate)
     // so the projection doesn't echo the URL the browser already shows back into
@@ -88,15 +87,12 @@ export function useConsoleUrl(runtime: AssistantRuntime) {
 
     /** The list knows this id (regular or archived)? Deleted/foreign ids don't. */
     const isKnown = (id: string) => {
-      const s = threads.getState();
-      return s.threadIds.includes(id) || s.archivedThreadIds.includes(id);
+      const s = runtime.threadList();
+      return s.ids.includes(id) || s.archivedIds.includes(id);
     };
 
     /** The active thread's backend id, or null while it's still fresh/unsaved. */
-    const activeThreadId = (): string | null => {
-      const s = threads.getState();
-      return s.threadItems[s.mainThreadId]?.remoteId ?? null;
-    };
+    const activeThreadId = (): string | null => runtime.activeThread().remoteId ?? null;
 
     /**
      * Parse the URL into { room, threadId }, resolving the one ambiguous case:
@@ -115,8 +111,7 @@ export function useConsoleUrl(runtime: AssistantRuntime) {
     };
 
     const syncTitle = () => {
-      const s = threads.getState();
-      const title = s.threadItems[s.mainThreadId]?.title;
+      const title = runtime.activeThread().title;
       document.title = title ? `${title} — Atelier` : "Atelier";
     };
 
@@ -158,7 +153,7 @@ export function useConsoleUrl(runtime: AssistantRuntime) {
     // truth for which ids exist — switching to an unknown id would fabricate an
     // entry via our stub fetch()). Drive the machine to the URL's room, then
     // canonicalise in place (no history entry) and start observing.
-    threads.getLoadThreadsPromise().then(() => {
+    runtime.listLoaded().then(() => {
       if (disposed) return;
       const { room, threadId } = resolveUrl();
       const landing = threadId && isKnown(threadId) ? threadId : null;
@@ -186,7 +181,7 @@ export function useConsoleUrl(runtime: AssistantRuntime) {
         }
         syncTitle();
         unsubRoom = consoleNav.subscribe(project);
-        unsubThreads = threads.subscribe(project);
+        unsubThreads = runtime.subscribe(project);
         window.addEventListener("popstate", onPopState);
       }, 0);
     });

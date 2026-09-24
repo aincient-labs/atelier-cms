@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 
 /**
  * Running AI token-usage + cost total for a conversation, per thread.
@@ -85,16 +85,16 @@ export function sessionUsage(threadId: string | undefined): UsageTotal {
 
 /** The active (main) thread's running session usage, reactively. */
 export function useActiveThreadUsage(): UsageTotal {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   return useSyncExternalStore(
     (cb) => {
       const unsubStore = subscribe(cb);
-      const unsubItem = runtime.threads.mainItem.subscribe(cb);
+      const unsubItem = runtime.subscribe(cb);
       return () => {
         unsubStore();
         unsubItem();
       };
     },
-    () => sessionUsage(runtime.threads.mainItem.getState().remoteId),
+    () => sessionUsage(runtime.activeThread().remoteId),
   );
 }

@@ -5,14 +5,21 @@
  * The chat-ui is distributed under the MIT License. Its dependencies are
  * permissive (MIT / ISC / BSD / Apache-2.0 / 0BSD), which permit that
  * redistribution ON CONDITION we preserve their copyright notices and license
- * text. This script walks node_modules, collects each package's license
- * declaration + bundled LICENSE file, and emits a single attribution file that
- * must ship alongside every build.
+ * text. This script walks the PRODUCTION dependency closure (the `dependencies`
+ * graph — what Rollup can actually pull into the bundle), collects each
+ * package's license declaration + bundled LICENSE file, and emits a single
+ * attribution file that must ship alongside every build.
+ *
+ * devDependencies are deliberately out of scope: a build-time tool is never
+ * redistributed, so it neither needs attribution nor can relicense the
+ * distributable. Walking all of node_modules conflated the two and made the
+ * copyleft gate fire on toolchain packages (vite 8 ships lightningcss, MPL-2.0,
+ * as a native build-time CSS minifier that never enters the bundle).
  *
  * Zero dependencies on purpose — it must run in any checkout without an extra
  * install. Run via `npm run notices` (wired into `npm run build`).
  */
-import { readdirSync, readFileSync, existsSync, writeFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, existsSync, writeFileSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,17 +37,39 @@ if (!existsSync(NODE_MODULES)) {
   process.exit(1);
 }
 
-/** Enumerate every package dir, including scoped (@scope/name). */
+/** Resolve `name` the way Node would from `fromDir`, walking node_modules up to ROOT. */
+function resolvePackageDir(name, fromDir) {
+  let dir = fromDir;
+  for (;;) {
+    const candidate = join(dir, "node_modules", name);
+    if (existsSync(join(candidate, "package.json"))) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir || !parent.startsWith(ROOT)) return null;
+    dir = parent;
+  }
+}
+
+/**
+ * Every package dir reachable from the root `dependencies` graph — i.e. every
+ * package whose code can end up in the shipped bundle. Optional and peer deps
+ * are followed too when they are actually installed, since Rollup will happily
+ * resolve them.
+ */
 function packageDirs() {
+  const rootPkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
   const out = [];
-  for (const name of readdirSync(NODE_MODULES)) {
-    if (name === ".bin" || name === ".cache") continue;
-    const p = join(NODE_MODULES, name);
-    if (!statSync(p).isDirectory()) continue;
-    if (name.startsWith("@")) {
-      for (const scoped of readdirSync(p)) out.push(join(p, scoped));
-    } else {
-      out.push(p);
+  const visited = new Set();
+  const queue = Object.keys(rootPkg.dependencies ?? {}).map((n) => [n, ROOT]);
+  while (queue.length) {
+    const [name, fromDir] = queue.shift();
+    const dir = resolvePackageDir(name, fromDir);
+    if (!dir || visited.has(dir)) continue;
+    visited.add(dir);
+    out.push(dir);
+    let pkg;
+    try { pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")); } catch { continue; }
+    for (const dep of [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.optionalDependencies ?? {}), ...Object.keys(pkg.peerDependencies ?? {})]) {
+      queue.push([dep, dir]);
     }
   }
   return out;

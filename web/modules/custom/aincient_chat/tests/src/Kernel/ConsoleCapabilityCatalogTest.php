@@ -121,6 +121,7 @@ final class ConsoleCapabilityCatalogTest extends KernelTestBase {
         $this->container->get('config.factory'),
         $etm,
         $this->container->get('aincient_core.capability_verbs'),
+        $this->container->get('plugin.manager.aincient.studios'),
       ),
       $this->container->get('menu.link_tree'),
       $this->container->get('config.factory'),
@@ -129,6 +130,7 @@ final class ConsoleCapabilityCatalogTest extends KernelTestBase {
       $this->container->get('csrf_token'),
       $this->container->get('aincient_core.model_role_resolver'),
       $this->container->get('aincient_core.inference.registry'),
+      $this->container->get('plugin.manager.aincient.studios'),
     );
   }
 

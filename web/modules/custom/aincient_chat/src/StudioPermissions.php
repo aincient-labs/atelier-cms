@@ -4,22 +4,36 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_chat;
 
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\aincient_chat\Studio\StudioManager;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Mints one dynamic permission per specialised studio.
  *
- * The studio set is code-owned ({@see Studio}); rather than hand-list a
- * `use aincient studio <key>` permission per case in *.permissions.yml (which
- * would drift the moment a studio is added or renamed), we derive them from the
- * enum. Wired via `permission_callbacks` in `aincient_chat.permissions.yml`.
+ * The studio set is discovered ({@see \Drupal\aincient_chat\Studio\StudioManager});
+ * rather than hand-list a `use aincient studio <key>` permission per studio in
+ * *.permissions.yml (which would drift the moment a studio is added, renamed —
+ * or installed with a pack), we derive them from the plugin definitions. Wired
+ * via `permission_callbacks` in `aincient_chat.permissions.yml`.
  *
- * General is intentionally absent — it is the open default landing studio, gated
- * only by `use aincient operator console` ({@see Studio::permission}).
+ * This is why a pack studio gets a permission for free and cannot ship itself
+ * ungated: the permission is derived from the id, and only a studio that
+ * declares `open: TRUE` has none. General is the one such studio — the open
+ * default landing workspace, gated only by `use aincient operator console`.
  */
-final class StudioPermissions {
+final class StudioPermissions implements ContainerInjectionInterface {
 
   use StringTranslationTrait;
+
+  public function __construct(
+    private readonly StudioManager $studios,
+  ) {}
+
+  public static function create(ContainerInterface $container): self {
+    return new self($container->get('plugin.manager.aincient.studios'));
+  }
 
   /**
    * Builds the per-studio access permissions.
@@ -29,10 +43,10 @@ final class StudioPermissions {
    */
   public function permissions(): array {
     $permissions = [];
-    foreach (Studio::cases() as $studio) {
+    foreach ($this->studios->studios() as $studio) {
       $permission = $studio->permission();
       if ($permission === NULL) {
-        // General — open to any console user, no dedicated permission.
+        // An open studio (General) — no dedicated permission to grant.
         continue;
       }
       $permissions[$permission] = [

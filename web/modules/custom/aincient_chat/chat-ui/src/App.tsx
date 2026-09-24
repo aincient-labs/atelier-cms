@@ -1,5 +1,11 @@
 import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { ComponentType, SVGProps } from "react";
+// The layout primitives — and only those — come straight from the vendor here.
+// They are compound-component namespaces used as MARKUP, re-exporting them would
+// buy indirection and nothing else, and App.tsx is ours and is never plugin-facing.
+// That exemption is documented in `./aui` and enforced by `aui/seam.test.ts`; it
+// covers this file and no other, and it does not extend to hooks — those come
+// from the facade below, like everywhere else in the console.
 import {
   AssistantRuntimeProvider,
   ThreadPrimitive,
@@ -8,18 +14,20 @@ import {
   ActionBarPrimitive,
   ThreadListPrimitive,
   ThreadListItemPrimitive,
-  useAssistantRuntime,
-  useComposer,
-  useComposerRuntime,
-  useMessage,
-  useThreadList,
-  useThreadListItem,
-  useThreadListItemRuntime,
-  useThreadRuntime,
-  WebSpeechDictationAdapter,
 } from "@assistant-ui/react";
 import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  DictationAdapter,
+  useComposerHandle,
+  useComposerState,
+  useConsoleChat,
+  useConsoleThread,
+  useThreadListEntry,
+  useThreadListEntryHandle,
+  useThreadListState,
+  useTurnState,
+} from "./aui";
 import { isMock, sealThread, settings } from "./adapter";
 import {
   flowVersion,
@@ -222,8 +230,8 @@ type HitlAction = { verb: string; by?: string };
  * interrupts inbox), so the actor isn't assumed to be the viewer.
  */
 function ActionEvent({ action }: { action: HitlAction }) {
-  const time = messageTime(useMessage((m) => m.createdAt));
-  const label = useMessage((m) =>
+  const time = messageTime(useTurnState((m) => m.createdAt));
+  const label = useTurnState((m) =>
     m.content
       .filter((p): p is { type: "text"; text: string } => p.type === "text")
       .map((p) => p.text)
@@ -250,9 +258,9 @@ function ActionEvent({ action }: { action: HitlAction }) {
 }
 
 function UserMessage() {
-  const time = messageTime(useMessage((m) => m.createdAt));
+  const time = messageTime(useTurnState((m) => m.createdAt));
   // A HITL answer is an action, not typed chat — render the event chip.
-  const action = useMessage(
+  const action = useTurnState(
     (m) => (m.metadata?.custom as { hitlAction?: HitlAction } | undefined)?.hitlAction,
   );
   if (action) return <ActionEvent action={action} />;
@@ -355,9 +363,9 @@ function ThinkingIndicator() {
 }
 
 function AssistantMessage() {
-  const time = messageTime(useMessage((m) => m.createdAt));
-  const running = useMessage((m) => m.status?.type === "running");
-  const hasText = useMessage((m) =>
+  const time = messageTime(useTurnState((m) => m.createdAt));
+  const running = useTurnState((m) => m.status?.type === "running");
+  const hasText = useTurnState((m) =>
     m.content.some((p) => p.type === "text" && p.text.trim().length > 0),
   );
   // The studio signs with the A-monogram + "Atelier" — one voice, whichever
@@ -405,10 +413,10 @@ function AssistantMessage() {
  * showing an unanswered HITL card; see thread-sync.ts.
  */
 function useInteractionSync() {
-  const runtime = useAssistantRuntime();
-  const thread = useThreadRuntime();
+  const runtime = useConsoleChat();
+  const thread = useConsoleThread();
   return () => {
-    void syncPendingInterrupt(thread, runtime.threads.mainItem.getState().remoteId);
+    void syncPendingInterrupt(thread, runtime.activeThread().remoteId);
   };
 }
 
@@ -418,11 +426,11 @@ function useInteractionSync() {
  * recognised speech streams straight into the composer, which the user reviews
  * and sends manually. Hidden where the browser has no Web Speech support.
  */
-const DICTATION_SUPPORTED = WebSpeechDictationAdapter.isSupported();
+const DICTATION_SUPPORTED = DictationAdapter.isSupported();
 
 function DictateButton() {
-  const composer = useComposerRuntime();
-  const active = useComposer((c) => {
+  const composer = useComposerHandle();
+  const active = useComposerState((c) => {
     const type = c.dictation?.status.type;
     return type === "starting" || type === "running";
   });
@@ -457,7 +465,7 @@ const ATTACH_ACCEPT =
  * home — the same thread-id resolution the send adapter uses (runtime.tsx).
  */
 function AttachButton() {
-  const item = useThreadListItemRuntime();
+  const item = useThreadListEntryHandle();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -600,7 +608,7 @@ function formatBytes(bytes: number): string {
  * settled — the fresh thread's composer, not the one we left.
  */
 function ComposerPrefill() {
-  const composer = useComposerRuntime();
+  const composer = useComposerHandle();
   const studio = useActiveStudio();
   useEffect(() => {
     // Takes unconditionally: a hop to a room OTHER than the staged one forgets
@@ -634,11 +642,11 @@ function Composer() {
   // dictating we lock min-height to the tallest height seen so it can only
   // grow; the lock is released once the composer empties (i.e. after send),
   // so a stopped-but-unsent dictation keeps its grown size.
-  const dictating = useComposer((c) => {
+  const dictating = useComposerState((c) => {
     const type = c.dictation?.status.type;
     return type === "starting" || type === "running";
   });
-  const isEmpty = useComposer((c) => c.isEmpty);
+  const isEmpty = useComposerState((c) => c.isEmpty);
 
   useEffect(() => {
     const ta = inputRef.current;
@@ -722,15 +730,15 @@ function Composer() {
  * layout — the "scroll jumps on load" bug.
  */
 function LoadEarlier({ viewportRef }: { viewportRef: React.RefObject<HTMLDivElement | null> }) {
-  const runtime = useAssistantRuntime();
-  const thread = useThreadRuntime();
+  const runtime = useConsoleChat();
+  const thread = useConsoleThread();
   const edge = useActiveThreadWindowEdge();
   const sentinelRef = useRef<HTMLDivElement>(null);
   // The latest load callback, readable from the (once-mounted) observer.
   const loadRef = useRef<() => void>(() => {});
 
   loadRef.current = () => {
-    const threadId = runtime.threads.mainItem.getState().remoteId;
+    const threadId = runtime.activeThread().remoteId;
     const viewport = viewportRef.current;
     if (!threadId || !viewport) return;
 
@@ -813,10 +821,10 @@ function BrandLogo({ className, onGoHome }: { className?: string; onGoHome?: () 
 
 /** The active (main) thread's title, reactively — empty until the server names it. */
 function useActiveThreadTitle(): string {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   return useSyncExternalStore(
-    (cb) => runtime.threads.mainItem.subscribe(cb),
-    () => runtime.threads.mainItem.getState().title ?? "",
+    (cb) => runtime.subscribe(cb),
+    () => runtime.activeThread().title ?? "",
   );
 }
 
@@ -827,10 +835,10 @@ function useActiveThreadTitle(): string {
  * throw mid-transition can never stick across the navigation that caused it.
  */
 function useActiveThreadId(): string {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   return useSyncExternalStore(
-    (cb) => runtime.threads.subscribe(cb),
-    () => runtime.threads.getState().mainThreadId,
+    (cb) => runtime.subscribe(cb),
+    () => runtime.threadList().activeId,
   );
 }
 
@@ -855,7 +863,7 @@ function useIsNarrow(): boolean {
 
 function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const checkExternal = useInteractionSync();
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   const guardedSwitch = useGuardedSwitch();
   const viewportRef = useRef<HTMLDivElement>(null);
   // Reset key for the transcript boundary below: a thread change remounts it
@@ -870,15 +878,15 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   // read, never re-entered as live. Like a lock it swaps the composer for a
   // read-only pane — the way to continue is a fresh thread on the same resource.
   const archived = useSyncExternalStore(
-    (cb) => runtime.threads.mainItem.subscribe(cb),
-    () => runtime.threads.mainItem.getState().status === "archived",
+    (cb) => runtime.subscribe(cb),
+    () => runtime.activeThread().status === "archived",
   );
   // Already on a fresh (unsent) thread: the runtime's new-thread is a singleton,
   // so "New chat" would dry-fire (switchToThread(sameId) early-returns). Law 12 —
   // no silent controls: dim the "+" and teach the fresh-context idea on hover.
   const fresh = useSyncExternalStore(
-    (cb) => runtime.threads.mainItem.subscribe(cb),
-    () => runtime.threads.mainItem.getState().status === "new",
+    (cb) => runtime.subscribe(cb),
+    () => runtime.activeThread().status === "new",
   );
   // The open page's editor lock, read from the machine's lock region (reflected
   // from page-lock by console-nav). `elsewhere`/`lost` both mean the pen isn't
@@ -951,7 +959,7 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
               aria-label={fresh ? "You're already in a fresh chat — it starts with a clean slate" : "New chat — starts fresh, with a clean context"}
               title={fresh ? "You're already in a fresh chat — it starts with a clean slate" : "New chat — starts fresh, with a clean context"}
               disabled={fresh}
-              onClick={() => guardedSwitch(() => void runtime.threads.switchToNewThread())}
+              onClick={() => guardedSwitch(() => void runtime.switchToNewThread())}
             >
               <PlusIcon />
             </button>
@@ -1099,7 +1107,7 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
  * rect) so the list's overflow scroll never clips it.
  */
 function ThreadItemMenu({ remoteId }: { remoteId: string }) {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -1115,7 +1123,7 @@ function ThreadItemMenu({ remoteId }: { remoteId: string }) {
     if (!remoteId) return;
     void sealThread(remoteId, true);
     rememberThreadSeal(remoteId, true);
-    if (runtime.threads.mainItem.getState().remoteId === remoteId) consoleNav.seal();
+    if (runtime.activeThread().remoteId === remoteId) consoleNav.seal();
   };
 
   useEffect(() => {
@@ -1210,23 +1218,21 @@ function useRoomTick(): void {
  * exist) and room navigation (which live thread to land on).
  */
 function useThreadRows(): ThreadRow[] {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   const flowV = useSyncExternalStore(subscribeFlows, flowVersion);
   const wnV = useSyncExternalStore(subscribeWorkingNodes, workingNodeVersion);
   const sealV = useSyncExternalStore(subscribeSeals, sealVersion);
   // A stable key that changes when threads are added / removed / (un)archived.
-  const idsKey = useThreadList(
-    (s) => `${s.threadIds.join(",")}|${s.archivedThreadIds.join(",")}`,
-  );
+  const idsKey = useThreadListState((s) => `${s.ids.join(",")}|${s.archivedIds.join(",")}`);
   return useMemo(() => {
-    const s = runtime.threads.getState();
+    const s = runtime.threadList();
     const mk = (tid: string, archived: boolean): ThreadRow | null => {
-      const remoteId = s.threadItems[tid]?.remoteId;
+      const remoteId = runtime.threadById(tid)?.remoteId;
       return remoteId ? { remoteId, archived, sealed: isThreadSealed(remoteId) } : null;
     };
     return [
-      ...s.threadIds.map((tid) => mk(tid, false)),
-      ...s.archivedThreadIds.map((tid) => mk(tid, true)),
+      ...s.ids.map((tid) => mk(tid, false)),
+      ...s.archivedIds.map((tid) => mk(tid, true)),
     ].filter((r): r is ThreadRow => r !== null);
     // idsKey/flowV/wnV/sealV are the reactive triggers; runtime is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1280,8 +1286,8 @@ function ChatColumn({
  * first) since the primitive iterates in store order.
  */
 function WipRow() {
-  const remoteId = useThreadListItem((t) => t.remoteId);
-  const archived = useThreadListItem((t) => t.status === "archived");
+  const remoteId = useThreadListEntry((t) => t.remoteId);
+  const archived = useThreadListEntry((t) => t.status === "archived");
   const guardedSwitch = useGuardedSwitch();
   const activeRemote = useActiveRemoteId();
   useRoomTick();
@@ -1405,7 +1411,7 @@ function Sidebar({
   // AssistantRuntimeProvider) — not in App's body, which sits outside it. They
   // feed onEnterRoom's landing-thread pick AND the section's empty check.
   const rows = useThreadRows();
-  const isLoading = useThreadList((s) => s.isLoading);
+  const isLoading = useThreadListState((s) => s.isLoading);
   const current = activeRoom();
   const section = roomStudio(current);
   const isContent = section === COLLECTION_STUDIO;
@@ -2254,6 +2260,25 @@ function TopBar({
 }
 
 /* ---------------------------------------------------------------------- app */
+/**
+ * Binds the console machine and the URL to the chat runtime, and renders nothing.
+ *
+ * Both used to run in `App()` off the runtime object it had just constructed.
+ * They now take {@link ConsoleChat} — our handle, read from the client in context
+ * — and App's own body sits OUTSIDE the provider, so the work moved to a child.
+ */
+function RuntimeBindings() {
+  const chat = useConsoleChat();
+  // (console-nav.ts) Runs before any user-driven ENTER_ROOM / SWITCH_THREAD.
+  useEffect(() => bindRuntime(chat), [chat]);
+  // URL ⇄ console machine (Phase 2, D3): the room owns the path
+  // (/atelier/<studio>[/…/<nid>]) and the active thread rides as ?thr=. This one
+  // hook projects the machine's room/thread into the address bar and resolves
+  // deep links / back-forward back into the machine (console-url is the codec).
+  useConsoleUrl(chat);
+  return null;
+}
+
 export function App() {
   // Seed the active studio from the URL synchronously, on the very first render,
   // BEFORE `useActiveStudio()` (and thus `paneStudio`) is read below. A deep link
@@ -2270,14 +2295,9 @@ export function App() {
     return null;
   });
   const runtime = useAincientRuntime();
-  // Bind the runtime the console statechart drives thread switches through
-  // (console-nav.ts). Runs before any user-driven ENTER_ROOM / SWITCH_THREAD.
-  useEffect(() => bindRuntime(runtime), [runtime]);
-  // URL ⇄ console machine (Phase 2, D3): the room owns the path
-  // (/atelier/<studio>[/…/<nid>]) and the active thread rides as ?thr=. This one
-  // hook projects the machine's room/thread into the address bar and resolves
-  // deep links / back-forward back into the machine (console-url is the codec).
-  useConsoleUrl(runtime);
+  // The console-machine binding and the URL sync used to live here, reading the
+  // runtime object App had just built. They now need the chat CLIENT, which only
+  // exists inside the provider below — see {@link RuntimeBindings}.
   // The sidebar (chat/thread listing) starts closed on every fresh load, on
   // all viewports — the conversation gets the room and the listing is one
   // toggle away. On phones it already overlays the conversation (see the
@@ -2399,6 +2419,11 @@ export function App() {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      {/* Binds the console statechart + the address bar to the conversation.
+          First child on purpose: React runs a child's effects before its
+          siblings' below it, so console-nav holds the chat handle before any
+          room can be entered. */}
+      <RuntimeBindings />
       {/* Registers the human-in-the-loop choice widget (FlowDrop ChoiceNode). */}
       <FlowDropChoiceToolUI />
       {/* Registers the live node-execution trail (the `aincient_progress` part). */}

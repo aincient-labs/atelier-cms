@@ -10,7 +10,7 @@ import type { WorkflowRef } from "./flow";
  * The console is a workspace switcher: it is always in exactly one studio, and
  * everything (history, the new-chat agent, the editor pane) is scoped to it. The
  * SET of studios is code-owned — the front-end component registry lives in
- * `studio-registry.tsx`, the backend mirror is the `Studio` PHP enum. This module
+ * `studio-registry.tsx`, the backend mirror is the `Studio` plugin type. This module
  * is the bridge: the server tells us which studios are enabled and their agents,
  * keyed by the same studio key the registry and the enum share.
  */

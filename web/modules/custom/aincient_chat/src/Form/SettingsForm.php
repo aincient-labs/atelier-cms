@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_chat\Form;
 
-use Drupal\aincient_chat\Studio;
+use Drupal\aincient_chat\Studio\StudioManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -31,6 +31,7 @@ final class SettingsForm extends ConfigFormBase {
     ConfigFactoryInterface $config_factory,
     TypedConfigManagerInterface $typed_config_manager,
     private readonly EntityTypeManagerInterface $entityTypeManager,
+    private readonly StudioManager $studioManager,
   ) {
     parent::__construct($config_factory, $typed_config_manager);
   }
@@ -43,6 +44,7 @@ final class SettingsForm extends ConfigFormBase {
       $container->get('config.factory'),
       $container->get('config.typed'),
       $container->get('entity_type.manager'),
+      $container->get('plugin.manager.aincient.studios'),
     );
   }
 
@@ -81,7 +83,7 @@ final class SettingsForm extends ConfigFormBase {
       '#type' => 'select',
       '#title' => $this->t('Default studio'),
       '#options' => $this->studioLabels(),
-      '#default_value' => $config->get('default_studio') ?: Studio::default()->value,
+      '#default_value' => $config->get('default_studio') ?: $this->studioManager->defaultId(),
       '#required' => TRUE,
       '#description' => $this->t('The studio a fresh console session opens in. The console is always in exactly one studio.'),
     ];
@@ -93,8 +95,7 @@ final class SettingsForm extends ConfigFormBase {
       '#open' => TRUE,
       '#tree' => TRUE,
     ];
-    foreach (Studio::cases() as $studio) {
-      $key = $studio->value;
+    foreach ($this->studioManager->studios() as $key => $studio) {
       $entry = (array) ($studios[$key] ?? []);
       $form['studios'][$key] = [
         '#type' => 'details',
@@ -165,8 +166,7 @@ final class SettingsForm extends ConfigFormBase {
   public function validateForm(array &$form, FormStateInterface $form_state): void {
     parent::validateForm($form, $form_state);
     $seen = [];
-    foreach (Studio::cases() as $studio) {
-      $key = $studio->value;
+    foreach ($this->studioManager->studios() as $key => $studio) {
       $agents = $this->tickedAgents($form_state->getValue(['studios', $key, 'agents'], []));
       $default = (string) $form_state->getValue(['studios', $key, 'default'], '');
       if ($default !== '' && !in_array($default, $agents, TRUE)) {
@@ -191,8 +191,7 @@ final class SettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $studios = [];
-    foreach (Studio::cases() as $studio) {
-      $key = $studio->value;
+    foreach ($this->studioManager->keys() as $key) {
       $agents = $this->tickedAgents($form_state->getValue(['studios', $key, 'agents'], []));
       if ($agents === []) {
         continue;
@@ -257,8 +256,8 @@ final class SettingsForm extends ConfigFormBase {
    */
   private function studioLabels(): array {
     $labels = [];
-    foreach (Studio::cases() as $studio) {
-      $labels[$studio->value] = $studio->label();
+    foreach ($this->studioManager->studios() as $key => $studio) {
+      $labels[$key] = $studio->label();
     }
     return $labels;
   }

@@ -1,4 +1,4 @@
-import type { ChatModelAdapter, ChatModelRunResult, ThreadMessageLike } from "@assistant-ui/react";
+import type { TurnAdapter, TurnResult, ConsoleMessage } from "./aui";
 import { isAuditAgent, isBrandAgent, isChromeAgent, isMediaAgent, isPageAgent, rememberThreadWorkflow, selectedWorkflowId, threadWorkflow } from "./flow";
 import { findAgent, type StudioCatalog } from "./studios";
 import type { CapabilityChip } from "./capabilities";
@@ -298,7 +298,7 @@ function lastUserText(messages: readonly { role: string; content: readonly unkno
 // MOCK — streams a canned reply word-by-word. No network, no backend.
 // First simulates a short workflow run (thinking pause + node trail) so the
 // loading states can be shaped frontend-first.
-const mockAdapter: ChatModelAdapter = {
+const mockAdapter: TurnAdapter = {
   async *run({ messages, abortSignal }) {
     const text = lastUserText(messages);
 
@@ -597,7 +597,7 @@ export async function deleteThread(threadId: string): Promise<void> {
 
 /** One window of a thread's history, newest-anchored. */
 export type ThreadPage = {
-  messages: ThreadMessageLike[];
+  messages: ConsoleMessage[];
   /** Whether turns OLDER than this window remain on the server. */
   hasMore: boolean;
   /** The oldest turn id in the window — the `before` cursor for the next page up. */
@@ -655,7 +655,7 @@ export async function fetchThreadPage(
   const homed = !!threadWorkingNode(threadId);
   const messages = turns
     .filter((t) => t.role === "user" || t.role === "assistant")
-    .map((t): ThreadMessageLike => {
+    .map((t): ConsoleMessage => {
       // Backend sends unix seconds; assistant-ui wants a Date.
       const createdAt = t.created ? new Date(t.created * 1000) : undefined;
       // Re-hydrate a HITL request: rebuild the same `flowdrop_choice` part the
@@ -801,7 +801,7 @@ let liveToolSeq = 0;
 // cumulative assistant-ui content (each yield carries the FULL content so far).
 // The active thread's backend id is supplied by `getThreadId` (the remote
 // thread-list runtime owns thread identity now; see runtime.tsx).
-export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAdapter {
+export function makeHttpAdapter(getThreadId: () => Promise<string>): TurnAdapter {
   return {
   async *run({ messages, abortSignal }) {
     const { endpoint } = settings();
@@ -949,7 +949,7 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): ChatModelAd
     // lives in the per-thread side store.
     let usage: UsageTotal = EMPTY_USAGE;
 
-    const snapshot = (): ChatModelRunResult => ({
+    const snapshot = (): TurnResult => ({
       content: [
         ...(steps.length ? [progressPart(steps)] : []),
         ...tools,

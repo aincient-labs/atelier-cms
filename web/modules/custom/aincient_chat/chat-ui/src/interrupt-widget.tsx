@@ -1,4 +1,4 @@
-import { useThreadRuntime } from "@assistant-ui/react";
+import { useConsoleThread } from "./aui";
 import { makeSafeAssistantToolUI } from "./error-boundary";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -99,7 +99,7 @@ function isAffirmative(answer: unknown): boolean {
 }
 
 function ChoiceWidget({ uuid, prompt, schema, threadId, status, resolved, answer }: Args) {
-  const thread = useThreadRuntime();
+  const thread = useConsoleThread();
   const confirmation = isConfirmation(schema);
   const [selected, setSelected] = useState<string[]>([]);
   // The settled outcome: re-hydrated from the persisted interrupt on reload,

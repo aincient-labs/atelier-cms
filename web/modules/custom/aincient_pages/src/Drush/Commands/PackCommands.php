@@ -65,9 +65,11 @@ final class PackCommands extends DrushCommands {
 
     // The pack manifest verdict rides as pseudo-rows so --format=json carries
     // it and a table run shows it beside the components it governs.
-    if ($report['pack'] !== NULL && $report['pack']['found']) {
+    // Emitted even with NO manifest, because the pack-level checks that do not
+    // need one (the capability fence) must never be a silent rejection.
+    if ($report['pack'] !== NULL && ($report['pack']['found'] || $report['pack']['errors'] !== [] || $report['pack']['warnings'] !== [])) {
       $rows[] = [
-        'component' => 'atelier.pack.yml',
+        'component' => $report['pack']['found'] ? 'atelier.pack.yml' : 'pack',
         'tier' => '',
         'provider' => $module,
         'status' => $report['pack']['errors'] !== [] ? 'REJECTED' : ($report['pack']['warnings'] !== [] ? 'WARN' : 'OK'),

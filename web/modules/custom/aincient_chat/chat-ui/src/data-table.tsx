@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useThreadRuntime } from "@assistant-ui/react";
+import { sendTurn, useConsoleThread } from "./aui";
 import { makeSafeAssistantToolUI } from "./error-boundary";
 import { activeStudioKey } from "./flow";
 import { pageDeepLink } from "./studios";
@@ -88,7 +88,7 @@ function formatCell(value: CellValue, format?: Column["format"]): string {
 }
 
 function DataTableCard({ payload }: { payload: DataTablePayload }) {
-  const thread = useThreadRuntime();
+  const thread = useConsoleThread();
   const columns = payload.columns ?? [];
   const rows = payload.rows ?? [];
 
@@ -142,7 +142,7 @@ function DataTableCard({ payload }: { payload: DataTablePayload }) {
       // A fixed external URL → a new tab (it leaves the console).
       openSurface(action.href, "output");
     } else if (action.kind === "send") {
-      thread.append({ role: "user", content: [{ type: "text", text: action.message }] });
+      sendTurn(thread, action.message);
     }
   };
 

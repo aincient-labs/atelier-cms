@@ -9,12 +9,19 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 # Copy only the manifests first so this layer caches until deps change.
-COPY composer.json composer.lock ./
+COPY composer.json composer.lock patches.lock.json ./
 # The local patches referenced by extra.patches (cweagans/composer-patches) must
 # be present in the build context before `composer install`, or composer-patches
 # can't stat the file, falls into its remote-download branch, and dies with a
 # TypeError (RemoteFilesystem::copy() gets a null origin URL). patches/ changes
 # rarely, so it sits alongside the manifests without hurting layer caching.
+#
+# patches.lock.json rides along for the same reason, one level up: under
+# composer-patches 2.x it, not composer.json, is what the plugin applies. The
+# plugin would regenerate a missing one from composer.json and still patch
+# correctly, but then the image's patch set would be resolved at build time
+# instead of pinned by the sha256 we committed. Copying it makes the appliance
+# build reproduce exactly the patch set CI verified.
 COPY patches ./patches
 # Materialise web/core, web/modules/contrib, vendor/, and the scaffolded docroot.
 # --no-dev: the appliance image never ships phpunit/phpcs/etc.

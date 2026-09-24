@@ -1,4 +1,4 @@
-import type { AssistantRuntime } from "@assistant-ui/react";
+import type { ConsoleChat } from "./aui";
 import { createConsoleNav, type ConsoleActions } from "./console-machine";
 import { activeStudioKey, setActiveStudio } from "./flow";
 import {
@@ -54,7 +54,7 @@ import { AUDIT_STUDIO, COLLECTION_STUDIO, MEDIA_STUDIO, type Room } from "./room
 /** The runtime, bound by the shell on mount (the machine drives thread switches
  *  through it). Null until {@link bindRuntime} runs — no ENTER_ROOM can arrive
  *  before then (they're all user-driven, post-mount). */
-let runtime: AssistantRuntime | null = null;
+let runtime: ConsoleChat | null = null;
 
 /** The HTTP status of a doc-load failure, else 0 (transient). */
 function loadStatus(e: unknown): number {
@@ -64,7 +64,7 @@ function loadStatus(e: unknown): number {
 /** The active thread's backend id, or null (fresh/unsent thread, or pre-bind). */
 function currentThreadId(): string | null {
   try {
-    return runtime?.threads.mainItem.getState().remoteId ?? null;
+    return runtime?.activeThread().remoteId ?? null;
   } catch {
     return null;
   }
@@ -136,10 +136,10 @@ export const consoleNav = createConsoleNav(
       // url-sync clearOpenDoc, which wiped the dead-end on every thread change.
       clearDocEnd();
       if (!runtime) return;
-      const target = threadId
-        ? runtime.threads.switchToThread(threadId)
-        : runtime.threads.switchToNewThread();
-      void target.catch(() => {});
+      // A failed switch is swallowed inside the facade (see `ConsoleChat`), so
+      // this is fire-and-forget on purpose.
+      if (threadId) runtime.switchToThread(threadId);
+      else runtime.switchToNewThread();
       // Defer the settle one tick so the studio/doc derivation runs OFF the
       // switch's React batch (the emitNextTick console-crash rule, §1). The 4b
       // gate PROVED this deferral is load-bearing: a synchronous settle throws
@@ -202,7 +202,7 @@ subscribeLock(reflectLock);
 reflectLock();
 
 /** Bind the assistant-ui runtime the machine drives thread switches through. */
-export function bindRuntime(rt: AssistantRuntime): void {
+export function bindRuntime(rt: ConsoleChat): void {
   runtime = rt;
 }
 

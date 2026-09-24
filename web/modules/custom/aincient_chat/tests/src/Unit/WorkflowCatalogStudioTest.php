@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_chat\Unit;
 
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
+use Drupal\aincient_chat\Studio\StudioManager;
 use Drupal\aincient_core\CapabilityVerbs;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -56,16 +57,25 @@ final class WorkflowCatalogStudioTest extends UnitTestCase {
     $etm->method('hasDefinition')->with('flowdrop_workflow')->willReturn(TRUE);
     $etm->method('getStorage')->with('flowdrop_workflow')->willReturn($storage);
 
+    // The studio SET, doubled: this test is about the agent map, so it only
+    // needs the manager to answer with the built-in studio keys in order.
+    $studios = $this->createMock(StudioManager::class);
+    $studios->method('keys')->willReturn([
+      'general', 'design_system', 'globals', 'settings',
+      'components', 'content', 'library', 'media', 'checks',
+    ]);
+    $studios->method('defaultId')->willReturn('general');
+
     return new WorkflowCatalog($configFactory, $etm, new CapabilityVerbs(
       $this->createMock(PluginManagerInterface::class),
-    ));
+    ), $studios);
   }
 
   /**
    * A representative two-studio config (general + design_system).
    *
-   * Studio keys must be {@see \Drupal\aincient_chat\Studio} cases, since
-   * studios() only considers enum keys.
+   * Studio keys must be studio plugin ids, since studios() only considers keys
+   * the {@see \Drupal\aincient_chat\Studio\StudioManager} knows.
    *
    * @return array<string, mixed>
    */

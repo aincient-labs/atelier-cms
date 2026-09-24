@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 import {
   findAgent,
   serverDefaultStudio,
@@ -196,17 +196,17 @@ export function rememberThreadWorkflow(threadId: string, ref: WorkflowRef): void
 
 /** The active (main) thread's pinned workflow, reactively. */
 export function useActiveThreadWorkflow(): WorkflowRef | undefined {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   return useSyncExternalStore(
     (cb) => {
       const unsubStore = subscribe(cb);
-      const unsubItem = runtime.threads.mainItem.subscribe(cb);
+      const unsubItem = runtime.subscribe(cb);
       return () => {
         unsubStore();
         unsubItem();
       };
     },
-    () => threadWorkflow(runtime.threads.mainItem.getState().remoteId),
+    () => threadWorkflow(runtime.activeThread().remoteId),
   );
 }
 

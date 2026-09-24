@@ -62,6 +62,15 @@ final class PackManifestTest extends UnitTestCase {
     $this->assertStringContainsString('unknown payload "blocks"', implode(' ', $warnings));
   }
 
+  public function testStudiosIsAKnownPayload(): void {
+    // The fourth payload (DECISIONS 0424): a pack may ship a console studio.
+    // Whether it actually ships one is graded by PackValidator, which can see
+    // the plugins; the manifest layer only has to accept the word.
+    [$errors, $warnings] = PackManifest::validate(self::manifest(['provides' => ['components', 'studios']]), 'acme_pack');
+    $this->assertSame([], $errors);
+    $this->assertSame([], $warnings);
+  }
+
   public function testReadOnTheFixturePack(): void {
     $path = dirname(__DIR__, 2) . '/modules/atelier_test_pack';
     $result = PackManifest::read($path, 'atelier_test_pack');

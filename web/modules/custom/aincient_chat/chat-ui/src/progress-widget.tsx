@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMessage, useThread, useThreadRuntime } from "@assistant-ui/react";
+import { sendTurn, useConsoleThread, useThreadState, useTurnState } from "./aui";
 import { makeSafeAssistantToolUI } from "./error-boundary";
 import { technicalDetail } from "./console-config";
 import { describeStep, describeSteps, summarizeSteps, visibleSteps } from "./step-vocabulary";
@@ -73,15 +73,15 @@ function statusGlyph(status: string) {
  *      would re-send a message whose work may since have landed.
  *   3. It is disabled while a turn is running, so it cannot stack a second turn on
  *      a held lock.
- * The send itself is `thread.append` — the same path the composer, the interrupt
+ * The send itself is `sendTurn` — the same path the composer, the interrupt
  * widget and the data-table actions use. There is NO resume: it is a new turn
  * carrying the same words.
  */
 export function ProviderFailureNotice({ card }: { card: ProviderFailureCard }) {
-  const thread = useThreadRuntime();
-  const messageId = useMessage((m) => m.id);
-  const running = useThread((t) => t.isRunning);
-  const messages = useThread((t) => t.messages);
+  const thread = useConsoleThread();
+  const messageId = useTurnState((m) => m.id);
+  const running = useThreadState((t) => t.isRunning);
+  const messages = useThreadState((t) => t.messages);
   const [sent, setSent] = useState(false);
 
   // Lock 2: only the newest turn may be re-sent, and only if we can still find
@@ -96,7 +96,7 @@ export function ProviderFailureNotice({ card }: { card: ProviderFailureCard }) {
     // rendering, and a rendering can be one paint behind a running turn.
     if (sent || running || !canRetry) return;
     setSent(true);
-    thread.append({ role: "user", content: [{ type: "text", text: words }] });
+    sendTurn(thread, words);
   };
 
   return (
@@ -150,7 +150,7 @@ function lastUserText(earlier: readonly { role: string; content: readonly unknow
 }
 
 function ProgressTrail({ steps }: { steps: NodeStep[] }) {
-  const running = useMessage((m) => m.status?.type === "running");
+  const running = useTurnState((m) => m.status?.type === "running");
   // NULL = "the user hasn't decided" — a failed, finished trail then opens
   // itself, while either explicit click still wins.
   const [override, setOverride] = useState<boolean | null>(null);

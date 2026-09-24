@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { offerWrapup } from "./thread-seal";
 import { PanelBar } from "./panel-bar";
@@ -77,7 +77,7 @@ function ComponentRow({
 
 export function ComponentsStudio({ onClose }: { onClose: () => void }) {
   const { closeSheets } = useStudioUI();
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   const [manifest, setManifest] = useState<ConstraintManifest | null>(null);
   const [effective, setEffective] = useState<ConstraintManifest["effective"] | null>(null);
   const [baseline, setBaseline] = useState<ConstraintDraft | null>(null);
@@ -145,7 +145,7 @@ export function ComponentsStudio({ onClose }: { onClose: () => void }) {
       setBaseline(seed);
       setDraft(cloneConstraintDraft(seed));
       setNotice("Component governance published to the live site.");
-      offerWrapup(runtime.threads.mainItem.getState().remoteId);
+      offerWrapup(runtime.activeThread().remoteId);
     } catch (e) {
       setError(`Couldn’t publish: ${e instanceof Error ? e.message : e}`);
     } finally {

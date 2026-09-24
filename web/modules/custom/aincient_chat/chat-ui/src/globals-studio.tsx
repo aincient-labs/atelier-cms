@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { offerWrapup } from "./thread-seal";
 import { PanelBar } from "./panel-bar";
@@ -128,7 +128,7 @@ function LayoutControl({
 
 export function GlobalsStudio({ onClose }: { onClose: () => void }) {
   const { closeSheets } = useStudioUI();
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   const [manifest, setManifest] = useState<ChromeManifest | null>(null);
   const [baseline, setBaseline] = useState<ChromeDraft | null>(null);
   const [draft, setDraft] = useState<ChromeDraft | null>(null);
@@ -248,7 +248,7 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
       pushChrome(working);
       setNotice("Published to the live site.");
       reloadPreview();
-      offerWrapup(runtime.threads.mainItem.getState().remoteId);
+      offerWrapup(runtime.activeThread().remoteId);
     } catch (e) {
       setError(`Couldn’t publish: ${e instanceof Error ? e.message : e}`);
     } finally {

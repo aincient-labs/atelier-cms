@@ -6,7 +6,8 @@ namespace Drupal\aincient_chat\Controller;
 
 use Drupal\aincient_chat\Account\ViewerCard;
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
-use Drupal\aincient_chat\Studio;
+use Drupal\aincient_chat\Studio\StudioInterface;
+use Drupal\aincient_chat\Studio\StudioManager;
 use Drupal\aincient_core\CapabilitySet;
 use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
 use Drupal\aincient_core\Inference\PlatformRegistry;
@@ -63,6 +64,7 @@ final class ConsoleController implements ContainerInjectionInterface {
     private readonly CsrfTokenGenerator $csrfToken,
     private readonly ModelRoleResolver $modelRoles,
     private readonly PlatformRegistry $providers,
+    private readonly StudioManager $studios,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -78,6 +80,7 @@ final class ConsoleController implements ContainerInjectionInterface {
       $container->get('csrf_token'),
       $container->get('aincient_core.model_role_resolver'),
       $container->get('aincient_core.inference.registry'),
+      $container->get('plugin.manager.aincient.studios'),
     );
   }
 
@@ -347,13 +350,13 @@ HTML;
     foreach ($this->workflowCatalog->studios() as $key => $studio) {
       // Per-studio access gate: a studio the user can't enter never reaches the
       // shell (the save/load routes enforce the same permission server-side).
-      $case = Studio::tryFromKey($key);
-      if ($case !== NULL && !$case->accessibleBy($this->currentUser)) {
+      $studioPlugin = $this->studios->get($key);
+      if ($studioPlugin !== NULL && !$studioPlugin->accessibleBy($this->currentUser)) {
         continue;
       }
       // Release feature flag: an in-progress studio is omitted from the shell so
       // it never renders (UI-only gate; its backend routes stay untouched).
-      if ($this->hiddenByFeatureFlag($case)) {
+      if ($this->hiddenByFeatureFlag($studioPlugin)) {
         continue;
       }
       // NO CAPABILITY GATE HERE. The Media studio's agent used to be dropped from
@@ -427,12 +430,12 @@ HTML;
    */
   private function studioAccess(): array {
     $access = [];
-    foreach (Studio::cases() as $studio) {
+    foreach ($this->studios->studios() as $studio) {
       if ($this->hiddenByFeatureFlag($studio)) {
         continue;
       }
       if ($studio->accessibleBy($this->currentUser)) {
-        $access[] = $studio->value;
+        $access[] = $studio->id();
       }
     }
     return $access;
@@ -446,8 +449,8 @@ HTML;
    * place (still permission-gated). Checks ships OFF until the policy runtime
    * (Phase 4) lands — flip `features.checks_enabled` in `aincient_chat.settings`.
    */
-  private function hiddenByFeatureFlag(?Studio $studio): bool {
-    if ($studio === Studio::Checks) {
+  private function hiddenByFeatureFlag(?StudioInterface $studio): bool {
+    if ($studio?->id() === 'checks') {
       return !(bool) $this->configFactory->get('aincient_chat.settings')->get('features.checks_enabled');
     }
     return FALSE;
@@ -461,11 +464,11 @@ HTML;
    */
   private function defaultStudio(): string {
     $default = $this->workflowCatalog->defaultStudio();
-    $case = Studio::tryFromKey($default);
-    if ($case !== NULL && $case->accessibleBy($this->currentUser)) {
+    $studio = $this->studios->get($default);
+    if ($studio !== NULL && $studio->accessibleBy($this->currentUser)) {
       return $default;
     }
-    return Studio::default()->value;
+    return $this->studios->defaultId();
   }
 
   /**

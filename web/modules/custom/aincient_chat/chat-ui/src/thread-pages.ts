@@ -1,10 +1,5 @@
 import { useSyncExternalStore } from "react";
-import {
-  ExportedMessageRepository,
-  useAssistantRuntime,
-  type ThreadMessageLike,
-  type ThreadRuntime,
-} from "@assistant-ui/react";
+import { MessageRepository, useConsoleChat, type ConsoleMessage, type ConsoleThread } from "./aui";
 import { fetchThreadPage, type ThreadPage } from "./adapter";
 
 /**
@@ -46,7 +41,7 @@ export function seedWindow(threadId: string, page: ThreadPage): void {
 }
 
 /** The newest window of a thread, for the history adapter's initial load. */
-export async function loadLatestPage(threadId: string): Promise<ThreadMessageLike[]> {
+export async function loadLatestPage(threadId: string): Promise<ConsoleMessage[]> {
   const page = await fetchThreadPage(threadId, { limit: PAGE_SIZE });
   seedWindow(threadId, page);
   return page.messages;
@@ -62,7 +57,7 @@ export async function loadLatestPage(threadId: string): Promise<ThreadMessageLik
  * the user keeps scrolling through it.
  */
 export async function loadOlderPage(
-  thread: ThreadRuntime,
+  thread: ConsoleThread,
   threadId: string,
   onBeforeImport?: () => void,
 ): Promise<number> {
@@ -81,9 +76,9 @@ export async function loadOlderPage(
     // Prepend to the CURRENT messages (not a cached window) so live turns
     // appended since open keep their state.
     thread.import(
-      ExportedMessageRepository.fromArray([
+      MessageRepository.fromArray([
         ...page.messages,
-        ...(thread.getState().messages as readonly ThreadMessageLike[]),
+        ...(thread.getState().messages as readonly ConsoleMessage[]),
       ]),
     );
     return page.messages.length;
@@ -95,18 +90,18 @@ export async function loadOlderPage(
 
 /** The active (main) thread's window edge, reactively — drives LoadEarlier. */
 export function useActiveThreadWindowEdge(): WindowEdge | undefined {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   return useSyncExternalStore(
     (cb) => {
       const unsubStore = subscribe(cb);
-      const unsubItem = runtime.threads.mainItem.subscribe(cb);
+      const unsubItem = runtime.subscribe(cb);
       return () => {
         unsubStore();
         unsubItem();
       };
     },
     () => {
-      const remoteId = runtime.threads.mainItem.getState().remoteId;
+      const remoteId = runtime.activeThread().remoteId;
       return remoteId ? edges.get(remoteId) : undefined;
     },
   );

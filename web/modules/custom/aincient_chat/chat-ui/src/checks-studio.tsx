@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useAssistantRuntime, useThreadRuntime } from "@assistant-ui/react";
+import { useConsoleChat, useConsoleThread } from "./aui";
 import { PanelBar } from "./panel-bar";
 import { StudioActionsPortal } from "./studio-ui";
 import { XIcon, RotateCcwIcon, WrenchIcon, SparkleIcon } from "./icons";
@@ -170,8 +170,8 @@ function batchInstruction(findings: Finding[]): string {
 }
 
 export function ChecksStudio({ onClose }: { onClose: () => void }) {
-  const runtime = useAssistantRuntime();
-  const thread = useThreadRuntime();
+  const runtime = useConsoleChat();
+  const thread = useConsoleThread();
   const [nodeId, setNodeId] = useState<string | null>(null);
   const [langcode, setLangcode] = useState<string | null>(null);
   const [report, setReport] = useState<AuditReport | null>(null);
@@ -332,7 +332,7 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
       setDirty(false);
       reloadPreview();
       setNotice("Published");
-      offerWrapup(runtime.threads.mainItem.getState().remoteId, {
+      offerWrapup(runtime.activeThread().remoteId, {
         ...(typeof result?.url === "string" ? { url: result.url as string } : {}),
         node,
       });

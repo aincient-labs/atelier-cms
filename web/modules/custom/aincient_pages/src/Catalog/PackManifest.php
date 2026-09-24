@@ -31,8 +31,15 @@ final class PackManifest {
   /** Manifest API majors this build understands (mirrors AdmissionGate). */
   public const KNOWN_API_MAJORS = [1];
 
-  /** Payload kinds a pack may declare in `provides:`. */
-  public const PAYLOADS = ['components', 'page_kinds', 'providers'];
+  /**
+   * Payload kinds a pack may declare in `provides:`.
+   *
+   * `studios` is the fourth (DECISIONS 0424): a pack may ship a console
+   * workspace as a `Plugin/Studio` plugin. What a pack may NOT ship is an agent
+   * VERB — see {@see CapabilityFence}, which is a security floor, not a payload
+   * we haven't got round to.
+   */
+  public const PAYLOADS = ['components', 'page_kinds', 'providers', 'studios'];
 
   public const FILENAME = 'atelier.pack.yml';
 

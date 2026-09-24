@@ -106,7 +106,7 @@ final class ConsoleDeepLink {
   /**
    * The studio-access permission gating this entity's deep link, or NULL.
    *
-   * Mirrors `Studio::<case>->permission()` in aincient_chat as a literal string
+   * Mirrors `StudioInterface::permission()` in aincient_chat as a literal string
    * (aincient_pages does not depend on aincient_chat's code, only its routes):
    * the deep link opens a studio, so the operation is only offered to a user who
    * can actually enter it — otherwise the link lands on a console that falls back

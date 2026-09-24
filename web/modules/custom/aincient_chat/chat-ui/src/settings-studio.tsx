@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 import { StudioActionsPortal, useStudioUI } from "./studio-ui";
 import { offerWrapup } from "./thread-seal";
 import { PanelBar } from "./panel-bar";
@@ -59,7 +59,7 @@ function countDirty(base: ChromeDraft, draft: ChromeDraft): number {
 
 export function SettingsStudio({ onClose }: { onClose: () => void }) {
   const { closeSheets } = useStudioUI();
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   const mailId = useId();
   const [manifest, setManifest] = useState<ChromeManifest | null>(null);
   const [baseline, setBaseline] = useState<ChromeDraft | null>(null);
@@ -161,7 +161,7 @@ export function SettingsStudio({ onClose }: { onClose: () => void }) {
       pushChrome(working);
       setNotice("Settings published to the live site.");
       reloadPreview();
-      offerWrapup(runtime.threads.mainItem.getState().remoteId);
+      offerWrapup(runtime.activeThread().remoteId);
     } catch (e) {
       setError(`Couldn’t publish: ${e instanceof Error ? e.message : e}`);
     } finally {

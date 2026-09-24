@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ToolCallMessagePartProps } from "@assistant-ui/react";
+import type { ToolWidgetProps } from "./aui";
 import { CheckIcon, SpinnerIcon } from "./icons";
 
 /**
@@ -16,7 +16,7 @@ import { CheckIcon, SpinnerIcon } from "./icons";
  * Registered via `components.tools.Fallback`, so the dedicated UIs
  * (flowdrop_choice, aincient_progress) keep precedence.
  */
-export function ToolUsageCard({ toolName, args, result }: ToolCallMessagePartProps) {
+export function ToolUsageCard({ toolName, args, result }: ToolWidgetProps) {
   const [open, setOpen] = useState(false);
   const done = result !== undefined;
 

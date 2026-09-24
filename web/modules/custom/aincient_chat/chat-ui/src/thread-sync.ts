@@ -1,4 +1,4 @@
-import { ExportedMessageRepository, type ThreadRuntime } from "@assistant-ui/react";
+import { MessageRepository, type ConsoleThread } from "./aui";
 import { fetchThreadPage } from "./adapter";
 import { PAGE_SIZE, seedWindow } from "./thread-pages";
 
@@ -45,7 +45,7 @@ function pendingChoiceOf(messages: readonly { role: string; content: readonly un
  * elsewhere. Safe to call from any interaction handler; throttled, and a
  * no-op while a run is in flight or no pending card is on screen.
  */
-export async function syncPendingInterrupt(thread: ThreadRuntime, threadId: string | undefined): Promise<void> {
+export async function syncPendingInterrupt(thread: ConsoleThread, threadId: string | undefined): Promise<void> {
   if (!threadId || thread.getState().isRunning) return;
 
   const pending = pendingChoiceOf(thread.getState().messages);
@@ -87,5 +87,5 @@ export async function syncPendingInterrupt(thread: ThreadRuntime, threadId: stri
   // Re-import the newest window and reset the edge: older pages the user had
   // scrolled in are one scroll away again, and the action lives at the tail.
   seedWindow(threadId, page);
-  thread.import(ExportedMessageRepository.fromArray(page.messages));
+  thread.import(MessageRepository.fromArray(page.messages));
 }

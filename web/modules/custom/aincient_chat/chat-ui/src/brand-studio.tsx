@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode, RefObject } from "react";
 import { createPortal } from "react-dom";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 import { rememberThreadSeal } from "./thread-seal";
 import { resetThreadMemory, sealThread } from "./adapter";
 import {
@@ -373,7 +373,7 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
   const { closeSheets } = useStudioUI();
   // Read only to resolve the active thread's backend id when a Publish seals the
   // conversation (auto-archives it; see the publish handler).
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Working value per css-var (the draft). Seeded from the saved baseline with
@@ -724,7 +724,7 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
         // A clean, site-wide publish is the conversation's "done" beat (DECISIONS
         // 0093) — SEAL the thread (read-only + auto-archived). Skipped on a partial
         // (rejected) token publish. Only when there's a backend thread to lock.
-        const sealedId = runtime.threads.mainItem.getState().remoteId;
+        const sealedId = runtime.activeThread().remoteId;
         if (sealedId) {
           try {
             await sealThread(sealedId, true);
@@ -813,7 +813,7 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
     // The live thread's backend id comes from the assistant-ui runtime (the same
     // source the URL `?thr=` and the seal path read) — NOT the nav machine, which
     // treats the browse-like brand room as unhomed (context.threadId is null here).
-    const threadId = runtime.threads.mainItem.getState().remoteId;
+    const threadId = runtime.activeThread().remoteId;
     if (threadId) {
       void resetThreadMemory(threadId);
     }

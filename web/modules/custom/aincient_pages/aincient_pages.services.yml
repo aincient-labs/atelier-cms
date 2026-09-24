@@ -36,7 +36,11 @@ services:
   # source shared by drush atelier:pack-validate and the dev-mode endpoint.
   aincient_pages.pack_validator:
     class: Drupal\aincient_pages\Catalog\PackValidator
-    arguments: ['@plugin.manager.sdc', '@extension.list.module']
+    # The studio manager is OPTIONAL ('@?'): it lives in aincient_chat, and
+    # aincient_pages must not gain a hard dependency on the chat layer for a
+    # validator check (memory/cross-module-service-dep-breaks-kernel-tests).
+    # Absent ⇒ the studio-payload grade is simply not made.
+    arguments: ['@plugin.manager.sdc', '@extension.list.module', '@?plugin.manager.aincient.studios']
   # Route requirement `_atelier_dev`: open only when the appliance runs in
   # dev mode ($settings['atelier_dev'] via AINCIENT_DEV) — see the class.
   aincient_pages.atelier_dev_access:

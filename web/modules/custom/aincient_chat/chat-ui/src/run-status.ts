@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { useAssistantRuntime } from "@assistant-ui/react";
+import { useConsoleChat } from "./aui";
 
 /**
  * Live "what is the backend doing right now" text, per thread.
@@ -42,18 +42,18 @@ export function clearRunStatus(threadId: string): void {
 
 /** The active (main) thread's live status text, reactively. */
 export function useActiveThreadRunStatus(): string | undefined {
-  const runtime = useAssistantRuntime();
+  const runtime = useConsoleChat();
   return useSyncExternalStore(
     (cb) => {
       const unsubStore = subscribe(cb);
-      const unsubItem = runtime.threads.mainItem.subscribe(cb);
+      const unsubItem = runtime.subscribe(cb);
       return () => {
         unsubStore();
         unsubItem();
       };
     },
     () => {
-      const remoteId = runtime.threads.mainItem.getState().remoteId;
+      const remoteId = runtime.activeThread().remoteId;
       return remoteId ? statusByThread.get(remoteId) : undefined;
     },
   );

@@ -4,7 +4,7 @@
 #
 # Built by compose with context: docker/ (dockerfile: updater/Dockerfile), so
 # the COPY source is relative to docker/ — hence updater/updater.sh, not updater.sh.
-FROM docker:27-cli
+FROM docker:28-cli
 
 COPY updater/updater.sh /usr/local/bin/updater.sh
 RUN chmod +x /usr/local/bin/updater.sh

@@ -23,7 +23,7 @@
     ],
     "require": {
         "composer/installers": "^2.3",
-        "cweagans/composer-patches": "^1.7.3",
+        "cweagans/composer-patches": "^2.0.0",
         "drupal/admin_theme": "^1.1",
         "drupal/coffee": "^2.0.1",
         "drupal/config_ignore": "^3.4",
@@ -121,8 +121,22 @@
     },
     "extra": {
         "_removed-with-drupal-ai": "The two-release uninstall window closed here. drupal/ai, ai_agents, ai_metering, gemini_provider, flowdrop_ai_provider and the seven ai_provider_* packages were UNINSTALLED in the release that shipped as v0.1.0 (config/sync stopped listing them, so converge's config:import uninstalls them) and are now dropped from require, along with the three patches that only ever patched their code. The window existed because drush pm:uninstall needs a module's own hook_uninstall and schema to drop its tables cleanly — dropping the package first would delete the code before the uninstall could use it. Any site on v0.1.0 or newer has already been through that uninstall and upgrades here directly. A site that never did (a pre-v0.1.0 :edge build) still has them installed, and cannot boot without their code at all — which is why docker/converge.sh refuses that upgrade outright, naming the modules, before touching the database. See .dev DECISIONS 0295 (the uninstalls) and 0320 (this removal).",
-        "enable-patching": true,
-        "composer-exit-on-patch-failure": true,
+        "_comment-composer-patches": [
+            "cweagans/composer-patches 2.x. The 1.x keys `enable-patching` and",
+            "`composer-exit-on-patch-failure` are GONE — 2.x reads neither, so leaving them here",
+            "would just be a comforting no-op. Nothing is lost: 2.x always hard-fails the",
+            "install when a patch does not apply (Patches.php: \"No available patcher was able",
+            "to apply patch …\", non-zero exit), which is what we wanted the old flag for.",
+            "",
+            "The compact `{package: {description: path}}` format below is still supported in",
+            "2.x, so the patch definition itself is unchanged.",
+            "",
+            "2.x adds patches.lock.json (committed): the resolved patch set pinned by sha256.",
+            "It is the file the plugin actually applies — editing `patches` here WITHOUT running",
+            "`composer patches-relock` silently changes nothing. CI asserts the two agree.",
+            "A missing patches.lock.json is regenerated from this file on install, which is why",
+            "docker/Dockerfile still builds even though it copies a partial context."
+        ],
         "patches": {
             "drupal/admin_theme": {
                 "PHP 8.4: use explicit nullable type on isAdminRoute() param": "patches/admin-theme-nullable-route.patch"

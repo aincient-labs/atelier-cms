@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useThreadRuntime } from "@assistant-ui/react";
+import { sendTurn, useConsoleThread } from "./aui";
 import { makeSafeAssistantToolUI } from "./error-boundary";
 import { apiUrl } from "./console-config";
 
@@ -44,7 +44,7 @@ function Onboarding(payload: OnboardingPayload) {
   const providerLabel = payload.providerLabel ?? "your AI provider";
   const isHost = payload.auth === "host";
   const keyHelp = isHost ? undefined : KEY_HELP[provider];
-  const thread = useThreadRuntime();
+  const thread = useConsoleThread();
 
   const [apiKey, setApiKey] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "done">(
@@ -81,7 +81,7 @@ function Onboarding(payload: OnboardingPayload) {
   // Hand off to the next step of the happy path: the key now works, so this
   // appends a normal turn the agent answers with the brand picker.
   const toBranding = () => {
-    thread.append({ role: "user", content: [{ type: "text", text: "Help me set up my brand" }] });
+    sendTurn(thread, "Help me set up my brand");
   };
 
   if (status === "done") {
