@@ -1,0 +1,95 @@
+/*
+ * kit · Button · IconButton (button.tsx) — `.ain-btn` owns focus + disabled for every button; `.ain-topbtn` + its four voices and the `--sm` / `--on` modifiers; `.ain-iconbtn`.
+ *
+ * Extracted from styles.css unchanged (plans/studio-modules.md, "the kit, for
+ * real"): the class names are the contract, so markup that still writes them by
+ * hand keeps working while call sites move to the component. System tokens only
+ * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
+ * feature rule of equal specificity still overrides the kit — never the reverse.
+ */
+/* Shared action-button primitive. Owns the universal interaction states —
+   keyboard focus + disabled — in ONE place so no button can drift on them
+   again (the studio Discard/Publish "looked clickable while frozen" bug came
+   from each button reinventing these). Visual variants layer on top —
+   the study-02 kit's four voices (a button is a promise):
+     .ain-topbtn            secondary — raised paper, hairline (the default)
+     .ain-topbtn--primary   the ONE filled cinnabar control per view
+     .ain-topbtn--quiet     text only, ground appears on hover (repeated / in-card)
+     .ain-topbtn--danger    the brick-outlined CONFIRM step (pre-confirm stays quiet)
+   plus .ain-iconbtn (ghost icons) and .ain-scrollbtn.
+   Selection controls (.ain-chip here; the Identity studio's swatches and font options) are toggles with
+   bespoke geometry and deliberately do NOT build on this. */
+.ain-btn { cursor: pointer; font: inherit; }
+/* Focus = the accent TINT ring (same grammar as the composer) — never a glow,
+   never the browser blue. */
+.ain-btn:focus-visible { outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: 1px; }
+/* Disabled = dimmed in place (kit): same shape, 45% opacity, shadow removed. */
+.ain-btn:disabled { cursor: default; opacity: .45; box-shadow: none; }
+.ain-topbtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  cursor: pointer; text-decoration: none; font: inherit; font-size: 13.5px; line-height: 16px;
+  color: var(--ain-color-text); background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md); padding: 6px 12px;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  transition: border-color .12s, background .12s, box-shadow .08s, transform .08s;
+}
+/* Hover stays achromatic — the pigment belongs to the primary and active
+   states, not to every button the pointer crosses (one pigment, one place). */
+.ain-topbtn:not(:disabled):hover { background: var(--ain-color-surface-raised); }
+/* Press = the button settles into the paper — 1px, soft; the arcade 2px stamp is retired. */
+.ain-topbtn:not(:disabled):active { transform: translateY(1px); box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent); }
+/* Primary — the one filled control. Max one per view. */
+.ain-topbtn--primary {
+  border-color: var(--ain-color-accent); background: var(--ain-color-accent); color: var(--ain-color-on-accent);
+}
+.ain-topbtn--primary:not(:disabled):hover {
+  background: color-mix(in oklch, var(--ain-color-accent) 90%, var(--ain-color-text));
+  border-color: color-mix(in oklch, var(--ain-color-accent) 90%, var(--ain-color-text));
+}
+.ain-topbtn--primary svg { color: inherit; }
+/* A disabled primary steps out of its pigment (spec .b-disabled): panel ground,
+   faint ink, hairline — a washed cinnabar still reads as a live promise. */
+.ain-topbtn--primary:disabled {
+  opacity: 1; background: var(--ain-color-surface-raised); border-color: var(--ain-color-border);
+  color: var(--ain-color-text-faint); box-shadow: none;
+}
+/* Quiet — text only; a ground surfaces on hover. For actions that repeat per
+   row or card, where a raised border would multiply into a control panel. */
+.ain-topbtn--quiet { border-color: transparent; background: transparent; box-shadow: none; color: var(--ain-color-text-muted); }
+.ain-topbtn--quiet:not(:disabled):hover { background: var(--ain-color-surface-raised); border-color: transparent; color: var(--ain-color-text); }
+.ain-topbtn--quiet:not(:disabled):active { transform: none; box-shadow: none; }
+/* Armed/on state for toggle buttons (e.g. Compare) — accent TINT, never the
+   primary fill: a toggle is a state, not the screen's one promise. */
+.ain-topbtn--on {
+  border-color: color-mix(in oklch, var(--ain-color-accent) 45%, transparent);
+  background: color-mix(in oklch, var(--ain-color-accent) 12%, transparent);
+  color: var(--ain-color-text);
+}
+/* Compact button for in-field actions (e.g. a reference field's Edit / Change),
+   where full .ain-topbtn metrics overpower the 11px label + 48px thumb row. */
+.ain-topbtn--sm { font-size: 11.5px; line-height: 14px; padding: 3px 8px; gap: 4px; box-shadow: 0 1px 4px -1px color-mix(in oklch, var(--ain-color-shadow) 35%, transparent); }
+.ain-topbtn--sm:not(:disabled):active { transform: translateY(1px); box-shadow: 0 1px 2px -1px color-mix(in oklch, var(--ain-color-shadow) 20%, transparent); }
+.ain-topbtn--sm.ain-topbtn--quiet { box-shadow: none; }
+/* generic icon button */
+.ain-iconbtn {
+  display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 7px;
+  cursor: pointer; color: var(--ain-color-text-muted); background: transparent;
+  border: 1px solid transparent; border-radius: var(--ain-radius-md); font: inherit; font-size: 15px;
+  transition: color .12s, background .12s, border-color .12s;
+}
+.ain-iconbtn:not(:disabled):hover { color: var(--ain-color-text); background: var(--ain-color-surface-raised); border-color: var(--ain-color-border); }
+.ain-iconbtn--on { color: var(--ain-color-accent); background: color-mix(in oklch, var(--ain-color-accent) 16%, transparent); }
+/* The CONFIRM step of a destructive flow: brick text and hairline on paper,
+   NEVER a fill. Brick and cinnabar sit 4 degrees of hue apart, so a filled
+   danger read as the primary; the fill now means one thing, the primary.
+   The text takes 20% ink so it clears AA on both grounds (light 7.2:1, dark
+   5.4:1, dark hover 4.8:1). Pre-confirm triggers stay quiet/secondary with
+   brick text via .ain-menu__item--danger et al. */
+.ain-topbtn--danger {
+  border-color: var(--ain-color-danger);
+  background: var(--ain-color-surface);
+  color: color-mix(in oklch, var(--ain-color-danger) 80%, var(--ain-color-text));
+}
+.ain-topbtn--danger:not(:disabled):hover {
+  background: color-mix(in oklch, var(--ain-color-danger) 10%, var(--ain-color-surface));
+}

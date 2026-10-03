@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { sendTurn, useConsoleThread, useThreadState, useTurnState } from "./aui";
-import { makeSafeAssistantToolUI } from "./error-boundary";
+import { makeSafeAssistantToolUI } from "./kit/error-boundary";
 import { technicalDetail } from "./console-config";
 import { describeStep, describeSteps, summarizeSteps, visibleSteps } from "./step-vocabulary";
 import type { NodeStep } from "./adapter";
 import { providerFailureCard, type ProviderFailureCard } from "./provider-failure";
-import { AlertCircleIcon, CheckIcon, ChevronDownIcon, SpinnerIcon, WorkflowIcon, WrenchIcon, XIcon } from "./icons";
+import { AlertCircleIcon, CheckIcon, ChevronDownIcon, SpinnerIcon, WorkflowIcon, WrenchIcon, XIcon } from "./kit/icons";
 
 /**
  * The live work trail — what the assistant is doing, in the owner's words.

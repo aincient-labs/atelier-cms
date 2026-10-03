@@ -7,6 +7,45 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.16.0] — 2026-10-03
+
+**The console is easier to use with a keyboard and a screen reader.** Its dialogs, menus and pickers
+were rebuilt on one shared set of controls. Focus now stays inside an open dialog and goes back to
+the button that opened it. Escape closes only the topmost layer, so pressing it in the timezone list
+no longer closes My account. Every dialog has a title. The timezone picker narrows as you type. A
+studio's "Published" or "Saved" line is read out by screen readers, and so is the error that
+replaces a studio that failed to load.
+
+**Loading looks like the thing that is coming.** Content and Library show placeholder rows while
+their first results arrive, and studio panels show placeholder fields, instead of a spinner or a
+"Loading…" line. Nothing flashes on a fast load, and the page doesn't jump when the content lands.
+
+**Two smaller changes in the console.** "Discard", "Delete for good" and similar confirms no longer
+look like the main action: they are now an outline instead of a solid button that was nearly the
+same colour as the primary one. The Identity studio opens with its name-and-logo card folded, so the
+colour controls are in view on arrival. A link from chat straight to the logo field still opens it.
+
+**The console loads less up front.** Each studio's code is now its own download, fetched the first
+time you open that studio, and a new release refreshes only what changed. If a studio's code fails
+to load, its panel offers a retry instead of leaving the console blank.
+
+**Experimental: a component pack can draw its own studio panel.** Since 0.15 a pack could declare a
+studio but not draw anything in it. Now a pack can point its studio at a built script, and the
+console loads it when someone opens the studio. Only people allowed into that studio get the script.
+A script that is broken, or built for a different version of the contract, shows a clear message in
+its panel and leaves the rest of the console working. `atelier:pack-validate` now says what is wrong
+with a pack's studio settings. This contract may still change, and we will document it once we have
+built a studio on it ourselves.
+
+**For pack authors: old style variable names go away in the next release.** The console's colour
+and spacing variables (`--ain-*`) were renamed to a consistent scheme, for example `--ain-bg` →
+`--ain-color-bg` and `--ain-text-dim` → `--ain-color-text-muted`. The old names still work in 0.16 and
+will be removed in 0.17, so update any pack CSS that uses them.
+
+**Under the hood:** every built-in studio is now a separate module, built and tested on its own. Your
+studios, permissions and saved links are unchanged. We tested direct upgrades to 0.16 from 0.1.0,
+0.8.2, 0.11.0, 0.13.0 and 0.15.0: there's no need to stop at an earlier version on the way.
+
 ## [0.15.0] — 2026-09-24
 
 **A component pack can now add its own studio to the console.** The set of studios — General,

@@ -1,0 +1,31 @@
+/*
+ * kit · SegmentedControl · Tabs list (segmented.tsx, tabs.tsx) — the kit's one multi-choice chrome: a recessed track, the active option raised paper.
+ *
+ * Extracted from styles.css unchanged (plans/studio-modules.md, "the kit, for
+ * real"): the class names are the contract, so markup that still writes them by
+ * hand keeps working while call sites move to the component. System tokens only
+ * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
+ * feature rule of equal specificity still overrides the kit — never the reverse.
+ */
+/* Segmented control — the kit's ONLY multi-choice chrome (filters, views,
+   toggles). A recessed track; the active option is RAISED PAPER — the accent
+   fill on segments is banned (study 02, Plate 12: a mode is stated once, and
+   never in the pigment). */
+.ain-seg {
+  display: flex; gap: 2px; padding: 2px;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: color-mix(in oklch, var(--ain-color-shadow) 5%, var(--ain-color-surface-raised));
+}
+.ain-seg__btn {
+  flex: 1; border: 0; background: transparent; border-radius: 4px;
+  font: inherit; font-size: 11.5px; color: var(--ain-color-text-muted); padding: 5px 8px; cursor: pointer;
+  white-space: nowrap;
+  transition: background .1s, color .1s, box-shadow .1s;
+}
+.ain-seg__btn:hover { color: var(--ain-color-text); }
+.ain-seg__btn:focus-visible { outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: -1px; }
+.ain-seg__btn[aria-pressed="true"],
+.ain-seg__btn[aria-selected="true"] {
+  background: var(--ain-color-surface); color: var(--ain-color-text); font-weight: 600;
+  box-shadow: 0 1px 4px -1px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+}

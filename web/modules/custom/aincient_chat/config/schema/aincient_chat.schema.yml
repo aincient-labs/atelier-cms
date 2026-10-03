@@ -4,11 +4,8 @@ aincient_chat.settings:
   mapping:
     features:
       type: mapping
-      label: 'Release feature flags — gate in-progress studios out of the console'
+      label: 'Operator flags with no UI (a studio that ships off is in disabled_studios, not here — DECISIONS 0440)'
       mapping:
-        checks_enabled:
-          type: boolean
-          label: 'Enable the Checks studio (policy runtime is mid-build; ships off)'
         technical_detail:
           type: boolean
           label: 'Show engine detail in the console work trail (node/type ids, wiring steps, router status) — operator debugging only; ships off'
@@ -18,6 +15,12 @@ aincient_chat.settings:
     api_base:
       type: string
       label: 'Override for the console JSON-API prefix (decoupled backend); empty = same base as the SPA'
+    disabled_studios:
+      type: sequence
+      label: 'Studios switched OFF (absent = on; data stays, routes 403, owned capabilities refused — DECISIONS 0430)'
+      sequence:
+        type: string
+        label: 'Studio ID'
     studios:
       type: sequence
       label: 'Studio → agents map'

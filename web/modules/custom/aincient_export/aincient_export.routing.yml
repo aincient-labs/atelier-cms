@@ -27,44 +27,6 @@ aincient_export.snapshot_file:
   options:
     no_cache: TRUE
 
-# Actions the console's Settings studio calls (same shape as /atelier/chrome/save:
-# POST JSON, cookie auth, the studio's own permission).
-aincient_export.snapshot_freeze:
-  path: '/atelier/snapshots/freeze'
-  defaults:
-    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::freeze'
-  methods: [POST]
-  requirements:
-    _permission: 'use aincient studio settings'
-  options:
-    _auth: ['cookie', 'basic_auth']
-
-aincient_export.snapshot_use:
-  path: '/atelier/snapshots/use'
-  defaults:
-    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::use'
-  methods: [POST]
-  requirements:
-    _permission: 'use aincient studio settings'
-  options:
-    _auth: ['cookie', 'basic_auth']
-
-aincient_export.snapshot_keep:
-  path: '/atelier/snapshots/keep'
-  defaults:
-    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::keep'
-  methods: [POST]
-  requirements:
-    _permission: 'use aincient studio settings'
-  options:
-    _auth: ['cookie', 'basic_auth']
-
-aincient_export.snapshot_delete:
-  path: '/atelier/snapshots/delete'
-  defaults:
-    _controller: '\Drupal\aincient_export\Controller\SnapshotPreviewController::delete'
-  methods: [POST]
-  requirements:
-    _permission: 'use aincient studio settings'
-  options:
-    _auth: ['cookie', 'basic_auth']
+# The Settings studio's ACTIONS (freeze / use / keep / delete) are the studio's
+# own routes — `aincient_studio_site.routing.yml`, under the same paths. Only
+# the read-only list above and the snapshot files below are core's.

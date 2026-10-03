@@ -25,7 +25,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /**
  * The pack developer's ground-truth endpoints — DEV MODE ONLY (W9).
  *
- * Every route here carries `_atelier_dev` ({@see AtelierDevAccessCheck}):
+ * Every route here carries `_atelier_dev` ({@see \Drupal\aincient_core\Access\AtelierDevAccessCheck}):
  * they exist solely on an `atelier pack dev` stack, where the `atelier mcp`
  * stdio server proxies them so the developer's coding agent works against the
  * live contract (the compiled catalog, the real gate, the exact prompt text)

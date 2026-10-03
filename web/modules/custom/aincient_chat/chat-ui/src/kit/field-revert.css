@@ -1,0 +1,22 @@
+/*
+ * kit · FieldRevert (field-revert.tsx) — the per-field changed-dot that turns into an undo glyph.
+ *
+ * Extracted from styles.css unchanged (plans/studio-modules.md, "the kit, for
+ * real"): the class names are the contract, so markup that still writes them by
+ * hand keeps working while call sites move to the component. System tokens only
+ * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
+ * feature rule of equal specificity still overrides the kit — never the reverse.
+ */
+/* Per-field "changed" marker / revert affordance: an accent dot at rest that
+   swaps to an undo glyph on hover or focus; clicking reverts just this field. */
+.ain-revert {
+  flex: none; display: inline-grid; place-items: center;
+  width: 16px; height: 16px; border-radius: 999px; cursor: pointer; color: var(--ain-color-warning);
+}
+.ain-revert:hover, .ain-revert:focus-visible { background: color-mix(in oklch, var(--ain-color-accent) 16%, transparent); outline: none; }
+.ain-revert__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ain-revert__ico { display: none; width: 12px; height: 12px; }
+.ain-revert:hover .ain-revert__dot,
+.ain-revert:focus-visible .ain-revert__dot { display: none; }
+.ain-revert:hover .ain-revert__ico,
+.ain-revert:focus-visible .ain-revert__ico { display: block; }

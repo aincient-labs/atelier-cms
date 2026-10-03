@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 import { capabilityChips, type CapabilityChip } from "./capabilities";
-import { EyeIcon, ImageIcon, PenIcon } from "./icons";
+import { EyeIcon, ImageIcon, PenIcon } from "./kit/icons";
 
 /**
  * The capability row above the composer — what THIS room can DO.

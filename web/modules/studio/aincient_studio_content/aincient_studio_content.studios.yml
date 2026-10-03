@@ -1,0 +1,30 @@
+# The Content studio (plans/studio-modules.md "The manifest", DECISIONS 0430) —
+# one frozen built-in id (0425): `content` lives in `use aincient studio content`,
+# in the `studios` agents map and in every stored `?page=` deep link. The display
+# name the console shows is "Pages" (the IA's Tier-1 daily peer — it is the
+# site's OUTPUT surface); the admin label stays "Content" as the attribute
+# plugin's did. The module name namespaces nothing.
+#
+# Its agent is `aincient_pages_agent` (shipped in config/install and mirrored in
+# config/sync — a unit test keeps the two equal) and its owned capability is
+# `preview_page`, the composing verb: refused at dispatch while the studio is
+# switched off. `list_pages` and `find_reference` are NOT listed here on purpose
+# — they are core's shared verbs (the operator, audit and image agents call
+# them), so switching Content off never refuses them (StudioDisabledTest).
+#
+# Its UI exports `Studio` (the page composer rail: sections, SEO / teaser / blog
+# groups, translations, the editorial actions), `Preview` (the SHARED page
+# preview — core's, reached through the sdk, because Checks renders the same
+# canvas beside its findings and a studio may never import another studio) and
+# `ToolUIs` (the `preview_page` chat card that yanks the console to the room).
+content:
+  label: 'Content'
+  description: 'The pages of the site — compose, edit, translate and publish them beside a live preview.'
+  help: 'Ask the chat to compose or change the page, or edit sections and fields directly in the rail; nothing is live until you Publish.'
+  weight: 50
+  ui:
+    entry: ui/index.tsx
+    name: 'Pages'
+    icon: document
+  flows: [aincient_pages_agent]
+  capabilities: [preview_page]

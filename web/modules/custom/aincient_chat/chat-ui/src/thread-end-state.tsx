@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { ComponentType, SVGProps } from "react";
-import { SparkleIcon, ShieldCheckIcon, CircleQuestionIcon, StarIcon } from "./icons";
+import type { ComponentProps, ComponentType, ReactNode, SVGProps } from "react";
+import { SparkleIcon, ShieldCheckIcon, CircleQuestionIcon, StarIcon } from "./kit/icons";
+import { Button } from "./kit/button";
 
 /** Public source repo the star nudge links to. */
 const GITHUB_REPO_URL = "https://github.com/aincient-labs/atelier-cms";
@@ -106,24 +107,33 @@ const COPY: Record<EndStateVariant, {
   },
 };
 
+/**
+ * `TitleAs` swaps the heading for another one (the kit `DialogTitle`, when the
+ * card is a Dialog's own — the shell's dead-end overlay); any other prop (the
+ * dialog's role, ids, ref, focus handlers) lands on the card.
+ */
 export function ThreadEndState({
   variant,
   actions,
   className,
+  TitleAs,
+  ...rest
 }: {
   variant: EndStateVariant;
   actions: EndStateAction[];
   className?: string;
-}) {
+  TitleAs?: ComponentType<{ className?: string; children: ReactNode }>;
+} & Omit<ComponentProps<"div">, "children">) {
   const { Icon, title, body } = COPY[variant];
   return (
     <div
+      role="status"
+      {...rest}
       className={`ain-endstate${className ? ` ${className}` : ""}`}
       data-variant={variant}
-      role="status"
     >
       <Icon className="ain-endstate__icon" aria-hidden />
-      <h2 className="ain-endstate__title">{title}</h2>
+      {TitleAs ? <TitleAs className="ain-endstate__title">{title}</TitleAs> : <h2 className="ain-endstate__title">{title}</h2>}
       <p className="ain-endstate__body">{body}</p>
       <div className="ain-endstate__actions">
         {actions.map((a) =>
@@ -139,14 +149,9 @@ export function ThreadEndState({
               {a.label}
             </a>
           ) : (
-            <button
-              key={a.label}
-              type="button"
-              className={`ain-btn ain-topbtn${a.primary ? " ain-topbtn--primary" : ""}`}
-              onClick={a.onClick}
-            >
+            <Button key={a.label} variant={a.primary ? "primary" : "secondary"} onClick={a.onClick}>
               {a.label}
-            </button>
+            </Button>
           ),
         )}
       </div>

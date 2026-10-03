@@ -104,6 +104,12 @@ export type AincientSettings = {
    */
   onboarding?: OnboardingSettings;
   /**
+   * Which surface the shell mounts. Absent = the console. `"kit"` = the kit
+   * gallery (`/atelier/dev/kit`, ConsoleController::kitGallery, dev mode only),
+   * loaded as its own chunk so the console never carries it.
+   */
+  view?: "kit";
+  /**
    * Human-readable name of the provider an attached image is sent to (e.g.
    * "Anthropic"), so the composer consent line can name it instead of the generic
    * "your connected AI provider". Server-resolved from the VISION role (where the

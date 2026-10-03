@@ -53,6 +53,20 @@ final class SnapshotStore {
   }
 
   /**
+   * What is served + every snapshot, as the console's snapshots section reads
+   * it — the shape every list/action response carries so the rail can
+   * re-render from the answer.
+   *
+   * @return array{serving: string, snapshots: array<int, array<string, mixed>>}
+   */
+  public function state(): array {
+    return [
+      'serving' => $this->current(),
+      'snapshots' => array_map(static fn (Snapshot $s): array => $s->toArray(), $this->list()),
+    ];
+  }
+
+  /**
    * All snapshots, newest first (ids sort chronologically).
    *
    * @return \Drupal\aincient_export\Snapshot[]

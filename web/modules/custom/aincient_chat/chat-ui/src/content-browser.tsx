@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, DocumentIcon, PlusIcon, SpinnerIcon } from "./icons";
+import { Button } from "./kit/button";
+import { EmptyState } from "./kit/empty-state";
+import { LoadingState } from "./kit/loading-state";
+import { Notice } from "./kit/notice";
+import { ChevronLeftIcon, ChevronRightIcon, DocumentIcon, PlusIcon } from "./kit/icons";
 import { apiUrl } from "./console-config";
 
 /**
@@ -172,9 +176,9 @@ export function ContentBrowser({
           ))}
         </div>
         {onNew && (
-          <button type="button" className="ain-btn ain-topbtn ain-topbtn--primary ain-browser__new" onClick={onNew}>
+          <Button variant="primary" className="ain-browser__new" onClick={onNew}>
             <PlusIcon /> New page
-          </button>
+          </Button>
         )}
       </div>
       {/* An active filter is always visible (never silently applied): the mono
@@ -187,22 +191,17 @@ export function ContentBrowser({
       )}
 
       {error ? (
-        <p className="ain-studio__error">{error}</p>
+        <Notice tone="error" panel>{error}</Notice>
       ) : items === null ? (
-        <p className="ain-browser__empty">
-          <SpinnerIcon /> Loading pages…
-        </p>
+        <LoadingState label="Loading pages" trailing />
       ) : items.length === 0 ? (
-        <div className="ain-browser__empty">
-          <DocumentIcon />
-          <p>
-            {debouncedQ
-              ? `No pages match “${debouncedQ}” — clear the filter or make one.`
-              : filtered
-                ? "Nothing in this state — switch the filter back to All."
-                : "Nothing here yet — describe a page in the chat and it lands here."}
-          </p>
-        </div>
+        <EmptyState icon={<DocumentIcon />}>
+          {debouncedQ
+            ? `No pages match “${debouncedQ}” — clear the filter or make one.`
+            : filtered
+              ? "Nothing in this state — switch the filter back to All."
+              : "Nothing here yet — describe a page in the chat and it lands here."}
+        </EmptyState>
       ) : (
         <ul className="ain-browser__list" role="listbox" aria-label={`${verb} a page`}>
           {items.map((page) => {
@@ -256,27 +255,27 @@ export function ContentBrowser({
 
       {total > PAGE_SIZE && (
         <div className="ain-browser__pager">
-          <button
-            type="button"
-            className="ain-btn ain-topbtn ain-topbtn--sm ain-browser__page"
+          <Button
+            size="sm"
+            className="ain-browser__page"
             onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
             disabled={!canPrev || loading}
             aria-label="Previous page"
           >
             <ChevronLeftIcon /> Prev
-          </button>
+          </Button>
           <span className="ain-browser__range">
             {from}–{to} of {total}
           </span>
-          <button
-            type="button"
-            className="ain-btn ain-topbtn ain-topbtn--sm ain-browser__page"
+          <Button
+            size="sm"
+            className="ain-browser__page"
             onClick={() => setOffset((o) => o + PAGE_SIZE)}
             disabled={!canNext || loading}
             aria-label="Next page"
           >
             Next <ChevronRightIcon />
-          </button>
+          </Button>
         </div>
       )}
     </div>

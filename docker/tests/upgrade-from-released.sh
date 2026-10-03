@@ -127,13 +127,13 @@ ok "all six agent workflows survived the config deletes"
 # truncates the bin; this asserts the outcome rather than the mechanism, so it
 # also catches the next cache that pins a stale parse.
 #
-# Scoped to OUR modules on purpose: contrib and core legitimately remove routes
+# Scoped to OUR modules (both tiers: custom and studio) on purpose: contrib and core legitimately remove routes
 # during the ALTER pass (unmet _module_dependencies, views, rest), so a whole-site
 # comparison would fail on routes that are absent by design.
 missing=$(drush php:eval '
 $dirs = array_filter(
   \Drupal::service("module_handler")->getModuleDirectories(),
-  fn($d) => str_contains($d, "/modules/custom/")
+  fn($d) => str_contains($d, "/modules/custom/") || str_contains($d, "/modules/studio/")
 );
 $discovery = new \Drupal\Core\Discovery\YamlDiscovery("routing", $dirs);
 $provider = \Drupal::service("router.route_provider");

@@ -1,0 +1,79 @@
+# The Settings studio's Freeze & Live ACTIONS (DECISIONS 0416; plans/studio-modules.md
+# Phase E.3). Moved out of `aincient_export` with their paths unchanged (the
+# snapshots section fetches by path); they always carried the studio's own
+# permission, so the move changes nothing a user can reach — what changes is
+# that the route subscriber now stamps them with the on/off switch's
+# requirement, so a switched-off Settings studio 403s them. The read-only list
+# (`/atelier/snapshots`) and every snapshot's files stay in core: looking at
+# what visitors see is not a studio action, and the console's snapshot preview
+# must work with this studio off.
+#
+# Same shape as /atelier/chrome/save: POST JSON, cookie auth, the derived
+# permission, no cache.
+
+aincient_studio_site.snapshot_freeze:
+  path: '/atelier/snapshots/freeze'
+  defaults:
+    _controller: '\Drupal\aincient_studio_site\Controller\SnapshotActionsController::freeze'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_site.snapshot_use:
+  path: '/atelier/snapshots/use'
+  defaults:
+    _controller: '\Drupal\aincient_studio_site\Controller\SnapshotActionsController::use'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_site.snapshot_keep:
+  path: '/atelier/snapshots/keep'
+  defaults:
+    _controller: '\Drupal\aincient_studio_site\Controller\SnapshotActionsController::keep'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_site.snapshot_delete:
+  path: '/atelier/snapshots/delete'
+  defaults:
+    _controller: '\Drupal\aincient_studio_site\Controller\SnapshotActionsController::delete'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
+
+# "Clear examples" (plans/studio-modules.md "Demo content", DECISIONS 0441): a
+# studio seeds example content on its first enable; this is the one operator
+# surface that removes it. The tracking table and the delete are core's
+# (`aincient_core.demo_content`, `drush atelier:demo-clear`); the ROUTES are
+# the Settings studio's, so a switched-off Settings 403s them.
+
+aincient_studio_site.examples:
+  path: '/atelier/examples'
+  defaults:
+    _controller: '\Drupal\aincient_studio_site\Controller\ExamplesController::list'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']
+    no_cache: TRUE
+
+aincient_studio_site.examples_clear:
+  path: '/atelier/examples/clear'
+  defaults:
+    _controller: '\Drupal\aincient_studio_site\Controller\ExamplesController::clear'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings'
+  options:
+    _auth: ['cookie', 'basic_auth']

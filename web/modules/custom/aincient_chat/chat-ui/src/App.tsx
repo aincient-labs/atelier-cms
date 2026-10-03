@@ -43,7 +43,11 @@ import {
 } from "./flow";
 import { CapabilityChips } from "./capability-chips";
 import { takeComposerPrefill } from "./composer-prefill";
-import { PanelBar } from "./panel-bar";
+import { PanelBar } from "./kit/panel-bar";
+import { LoadingState } from "./kit/loading-state";
+import { Button, IconButton } from "./kit/button";
+import { Dialog, DialogClose, DialogTitle } from "./kit/dialog";
+import { Menu, MenuItem, MenuRadioGroup, MenuRadioItem } from "./kit/menu";
 import { AccountPane } from "./account-pane";
 import {
   agentsForStudio,
@@ -53,6 +57,7 @@ import {
   type StudioKey,
 } from "./studios";
 import { studioDef, studioHasEditor } from "./studio-registry";
+import { useLoadedStudioToolUIs, useStudioModule } from "./studio-loader";
 import { visibleTiers, visibleDestinationCount, type ResolvedGroup } from "./nav-model";
 import {
   activeRoom,
@@ -87,22 +92,14 @@ import { NodeProgressToolUI } from "./progress-widget";
 import { SessionUsageChip, UsageFooterToolUI } from "./usage-footer";
 import { NameInvite } from "./name-invite";
 import { WeatherCardToolUI } from "./weather-widget";
-import { BrandPickerToolUI } from "./brand-picker";
-import { BrandStatusProposalToolUI } from "./brand-status-proposal";
-import { BrandPreviewToolUI } from "./brand-preview-tool";
-import { DesignTokenAdmissionToolUI } from "./design-token-admission";
-import { LogoHandoffToolUI } from "./logo-handoff";
 import { OnboardingToolUI } from "./onboarding";
 import { StudioTourToolUI } from "./studio-tour";
-import { PagePreviewToolUI } from "./page-preview-tool";
-import { ChromePreviewToolUI } from "./chrome-preview-tool";
-import { DataTableToolUI } from "./data-table";
-import { MediaResultToolUI } from "./media-result";
+import { DataTableToolUI } from "./kit/data-table";
 import { ToolUsageCard } from "./tool-card";
 import {
   MenuIcon,
   Wordmark,
-  Chip,
+  AtelierMark,
   SparkleIcon,
   SunIcon,
   MoonIcon,
@@ -125,13 +122,13 @@ import {
   PaperclipIcon,
   SpinnerIcon,
   DocumentIcon,
-} from "./icons";
+} from "./kit/icons";
 import { MarkdownImage } from "./markdown-image";
-import { StudioUIContext, useStudioUI } from "./studio-ui";
+import { StudioUIContext, useStudioUI } from "./kit/studio-ui";
 import { NewPageForm } from "./new-page-form";
 import { subscribeNewPageRequest } from "./new-page-request";
 import { isPageDirty } from "./page-dirty";
-import { ErrorBoundary } from "./error-boundary";
+import { ErrorBoundary } from "./kit/error-boundary";
 import { ThreadEndState } from "./thread-end-state";
 import { getDocEnd, subscribeDocEnd } from "./doc-end-state";
 import {
@@ -375,7 +372,7 @@ function AssistantMessage() {
     <MessagePrimitive.Root className="ain-msg ain-msg--assistant">
       <div className="ain-msg__col">
         <span className="ain-msg__name">
-          <Chip className="ain-msg__mark" aria-hidden />
+          <AtelierMark className="ain-msg__mark" aria-hidden />
           <span>Atelier</span>
           {time && <span className="ain-msg__time"> · {time}</span>}
         </span>
@@ -599,7 +596,7 @@ function formatBytes(bytes: number): string {
  * A one-room studio-tour card stages the user's own sentence for the room it
  * hands off to; this drops it into that room's composer on arrival. Renders
  * nothing, and sits OUTSIDE the composer-mode branches so it runs even where the
- * composer is withheld (an editor-only room like Globals) — arriving anywhere
+ * composer is withheld (an editor-only room like Settings) — arriving anywhere
  * clears the stage, which is what makes a stale sentence impossible rather than
  * merely unlikely.
  *
@@ -689,16 +686,14 @@ function Composer() {
         {/* Lift/drop the conversation over the preview canvas. Only shown when the
             chat is docked to the bottom (editor studio, phone width) — CSS gates
             it; inert everywhere else. */}
-        <button
-          type="button"
-          className="ain-btn ain-iconbtn ain-composer__convotoggle"
+        <IconButton
+          className="ain-composer__convotoggle"
           onClick={toggleConvo}
           aria-pressed={convoOpen}
-          aria-label={convoOpen ? "Hide conversation" : "Show conversation"}
-          title={convoOpen ? "Hide conversation" : "Show conversation"}
+          label={convoOpen ? "Hide conversation" : "Show conversation"}
         >
           {convoOpen ? <ChevronDownIcon /> : <ChevronUpIcon />}
-        </button>
+        </IconButton>
         <AttachButton />
         <DictateButton />
         <span className="ain-composer__spacer" />
@@ -791,9 +786,9 @@ function LoadEarlier({ viewportRef }: { viewportRef: React.RefObject<HTMLDivElem
   if (!hasMore) return null;
   return (
     <div ref={sentinelRef} className="ain-loadearlier">
-      <button className="ain-btn ain-topbtn" onClick={() => loadRef.current()} disabled={edge?.loading}>
+      <Button onClick={() => loadRef.current()} disabled={edge?.loading}>
         {edge?.loading ? "Loading…" : "Load earlier messages"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -940,9 +935,9 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
       <PanelBar
         className="ain-panelbar--chat"
         lead={
-          <button className="ain-btn ain-iconbtn" onClick={onToggleSidebar} aria-label="Conversations" title="Conversations">
+          <IconButton onClick={onToggleSidebar} label="Conversations">
             <MenuIcon />
-          </button>
+          </IconButton>
         }
         title={chatTitle || "New chat"}
         titleClassName="ain-panelbar__title--convo"
@@ -953,16 +948,13 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
             <RoomAgentPicker />
             {/* Not ThreadListPrimitive.New: the primitive switches on click, which
                 would drop an unsaved page draft. Route through the dirty-guard. */}
-            <button
-              type="button"
-              className="ain-btn ain-iconbtn"
-              aria-label={fresh ? "You're already in a fresh chat — it starts with a clean slate" : "New chat — starts fresh, with a clean context"}
-              title={fresh ? "You're already in a fresh chat — it starts with a clean slate" : "New chat — starts fresh, with a clean context"}
+            <IconButton
+              label={fresh ? "You're already in a fresh chat — it starts with a clean slate" : "New chat — starts fresh, with a clean context"}
               disabled={fresh}
               onClick={() => guardedSwitch(() => void runtime.switchToNewThread())}
             >
               <PlusIcon />
-            </button>
+            </IconButton>
           </>
         }
       />
@@ -970,7 +962,7 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
         <LoadEarlier viewportRef={viewportRef} />
         <ThreadPrimitive.Empty>
           <div className="ain-welcome">
-            <Chip className="ain-logo" />
+            <AtelierMark className="ain-logo" />
             <h1>{heading}</h1>
             {body ? <p>{body}</p> : null}
             {asks.length ? (
@@ -1000,7 +992,7 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           fallback={(retry) => (
             <div className="ain-transcript-error" role="alert">
               <p>This conversation couldn’t be displayed.</p>
-              <button className="ain-btn ain-topbtn" onClick={retry}>Try again</button>
+              <Button onClick={retry}>Try again</Button>
             </div>
           )}
         >
@@ -1102,16 +1094,13 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 
 /* ------------------------------------------------------------------- sidebar */
 /**
- * Per-thread "⋯" dropdown (shadcn-style): the row stays all title; Archive and
- * Delete collapse into a small menu. Position is fixed (anchored to the button
- * rect) so the list's overflow scroll never clips it.
+ * Per-thread "⋯" dropdown: the row stays all title; Finish, Archive and
+ * Delete collapse into the kit Menu (it portals out of the list, so the list's
+ * overflow scroll never clips it).
  */
 function ThreadItemMenu({ remoteId }: { remoteId: string }) {
   const runtime = useConsoleChat();
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const item = useThreadListEntryHandle();
 
   // Finish wraps the thread up read-only (the manual parallel of publish's offer);
   // the seal auto-archives it out of the room in the same save (D8) — the local
@@ -1119,68 +1108,24 @@ function ThreadItemMenu({ remoteId }: { remoteId: string }) {
   // land on a fresh thread in the same room. "Reopen" is retired: to continue,
   // start fresh.
   const finish = () => {
-    setOpen(false);
     if (!remoteId) return;
     void sealThread(remoteId, true);
     rememberThreadSeal(remoteId, true);
     if (runtime.activeThread().remoteId === remoteId) consoleNav.seal();
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (e: PointerEvent) => {
-      const t = e.target as Node;
-      if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return;
-      setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    const onScroll = (e: Event) => {
-      if (menuRef.current?.contains(e.target as Node)) return;
-      setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointer, true);
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("scroll", onScroll, true);
-    return () => {
-      document.removeEventListener("pointerdown", onPointer, true);
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("scroll", onScroll, true);
-    };
-  }, [open]);
-
-  const toggle = () => {
-    const r = btnRef.current?.getBoundingClientRect();
-    if (r) setPos({ top: r.bottom + 4, left: r.right });
-    setOpen((v) => !v);
-  };
-
   return (
-    <>
-      <button
-        ref={btnRef}
-        className="ain-btn ain-iconbtn ain-tli__more"
-        data-open={open || undefined}
-        onClick={toggle}
-        aria-label="Thread options"
-        aria-haspopup="menu"
-        aria-expanded={open}
-      >
-        <MoreHorizontalIcon />
-      </button>
-      {open && (
-        <div ref={menuRef} className="ain-menu" role="menu" style={{ top: pos.top, left: pos.left }}>
-          <button className="ain-menu__item" role="menuitem" onClick={finish}>
-            <SparkleIcon /> Finish &amp; wrap up
-          </button>
-          <ThreadListItemPrimitive.Archive className="ain-menu__item" role="menuitem" onClick={() => setOpen(false)}>
-            <ArchiveIcon /> Archive
-          </ThreadListItemPrimitive.Archive>
-          <ThreadListItemPrimitive.Delete className="ain-menu__item ain-menu__item--danger" role="menuitem" onClick={() => setOpen(false)}>
-            <TrashIcon /> Delete
-          </ThreadListItemPrimitive.Delete>
-        </div>
-      )}
-    </>
+    <Menu
+      trigger={
+        <IconButton className="ain-tli__more" label="Thread options">
+          <MoreHorizontalIcon />
+        </IconButton>
+      }
+    >
+      <MenuItem icon={<SparkleIcon />} onSelect={finish}>Finish &amp; wrap up</MenuItem>
+      <MenuItem icon={<ArchiveIcon />} onSelect={() => item.archive()}>Archive</MenuItem>
+      <MenuItem danger icon={<TrashIcon />} onSelect={() => item.delete()}>Delete</MenuItem>
+    </Menu>
   );
 }
 
@@ -1667,10 +1612,8 @@ type CrumbIcon = ComponentType<SVGProps<SVGSVGElement>>;
 type CrumbOption = { key: string; label: string; Icon?: CrumbIcon; selected?: boolean };
 
 /**
- * A themed listbox crumb (the .ain-menu anatomy shared with the account and
- * thread menus) — the reusable dropdown behind both breadcrumb segments. Same
- * WAI-ARIA wiring as UserMenu/the old flow picker: listbox/option roles, focus
- * landing on the selected option, arrow/Home/End/Escape keys, click-outside.
+ * A crumb that picks one of several places (a section, a group's studios, the
+ * agent): a crumb-styled trigger over the kit Menu, the current one checked.
  */
 function CrumbMenu({
   ariaLabel,
@@ -1685,112 +1628,29 @@ function CrumbMenu({
   options: CrumbOption[];
   onChoose: (key: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const items = () =>
-    Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="option"]') ?? []);
-
-  useEffect(() => {
-    if (!open) return;
-    const list = items();
-    (list.find((el) => el.getAttribute("aria-selected") === "true") ?? list[0])?.focus();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (e: PointerEvent) => {
-      if (rootRef.current?.contains(e.target as Node)) return;
-      setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointer, true);
-    return () => document.removeEventListener("pointerdown", onPointer, true);
-  }, [open]);
-
-  const onTriggerKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      setOpen(true);
-    }
-  };
-
-  const onMenuKeyDown = (e: React.KeyboardEvent) => {
-    const list = items();
-    const idx = list.indexOf(document.activeElement as HTMLElement);
-    switch (e.key) {
-      case "Escape":
-        e.preventDefault();
-        setOpen(false);
-        btnRef.current?.focus();
-        break;
-      case "ArrowDown":
-        e.preventDefault();
-        list[(idx + 1) % list.length]?.focus();
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        list[(idx - 1 + list.length) % list.length]?.focus();
-        break;
-      case "Home":
-        e.preventDefault();
-        list[0]?.focus();
-        break;
-      case "End":
-        e.preventDefault();
-        list[list.length - 1]?.focus();
-        break;
-      case "Tab":
-        setOpen(false);
-        break;
-    }
-  };
-
-  const choose = (key: string) => {
-    setOpen(false);
-    btnRef.current?.focus();
-    onChoose(key);
-  };
-
+  const selected = options.find((o) => o.selected)?.key ?? "";
   return (
-    <div className={`ain-crumb${className ? ` ${className}` : ""}`} ref={rootRef}>
-      <button
-        ref={btnRef}
-        className="ain-crumb__trigger"
-        data-open={open || undefined}
-        onClick={() => setOpen((v) => !v)}
-        onKeyDown={onTriggerKeyDown}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={ariaLabel}
+    <div className={`ain-crumb${className ? ` ${className}` : ""}`}>
+      <Menu
+        label={ariaLabel}
+        align="start"
+        sideOffset={6}
+        className="ain-crumb__menu"
+        trigger={
+          <button className="ain-crumb__trigger" aria-label={ariaLabel}>
+            {trigger}
+            <ChevronDownIcon className="ain-crumb__caret" aria-hidden />
+          </button>
+        }
       >
-        {trigger}
-        <ChevronDownIcon className="ain-crumb__caret" aria-hidden />
-      </button>
-      {open && (
-        <div
-          ref={menuRef}
-          className="ain-menu ain-crumb__menu"
-          role="listbox"
-          aria-label={ariaLabel}
-          onKeyDown={onMenuKeyDown}
-        >
+        <MenuRadioGroup value={selected} onValueChange={onChoose}>
           {options.map((o) => (
-            <button
-              key={o.key}
-              className="ain-menu__item ain-crumb__option"
-              role="option"
-              aria-selected={!!o.selected}
-              onClick={() => choose(o.key)}
-            >
-              <span className="ain-crumb__check" aria-hidden>{o.selected && <CheckIcon />}</span>
-              {o.Icon && <o.Icon className="ain-crumb__icon" aria-hidden />}
+            <MenuRadioItem key={o.key} value={o.key} icon={o.Icon && <o.Icon className="ain-crumb__icon" aria-hidden />}>
               {o.label}
-            </button>
+            </MenuRadioItem>
           ))}
-        </div>
-      )}
+        </MenuRadioGroup>
+      </Menu>
     </div>
   );
 }
@@ -1827,7 +1687,7 @@ function emitNextTick(emit: () => void): void {
  * agent (Content: page agent + operator); this lets you pick which one a NEW
  * conversation runs. It only renders when the active room has a real CHOICE (>1
  * agent) — a single-agent room shows a static label, and an agentless room
- * (Globals, editor-only) shows nothing.
+ * (Settings, editor-only) shows nothing.
  *
  * A conversation pins its agent at start and can't switch midway, so choosing a
  * different agent on a pinned thread confirms, then starts a fresh conversation
@@ -1889,33 +1749,35 @@ function RoomAgentPicker() {
           <span className="ain-crumb__value">{currentAgent?.label}</span>
         </span>
       )}
-      {confirming && (
-        <div className="ain-confirm__overlay" role="dialog" aria-modal="true" aria-label="Switch agent">
-          <div className="ain-confirm">
-            <p className="ain-confirm__text">
-              This conversation runs on <strong>{pinned?.label}</strong> and can&apos;t switch agents midway.
-              Start a <strong>new conversation</strong> on <strong>{confirming.label}</strong>? The current one stays in the sidebar.
-            </p>
-            <div className="ain-confirm__actions">
-              <button className="ain-btn ain-topbtn" onClick={() => setConfirming(null)}>Cancel</button>
-              <button className="ain-btn ain-topbtn ain-topbtn--primary" onClick={startNewChat}>Start new chat</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={confirming != null}
+        onOpenChange={(open) => !open && setConfirming(null)}
+        title="Switch agent?"
+        description={
+          <>
+            This conversation runs on <strong>{pinned?.label}</strong> and can&apos;t switch agents midway.
+            Start a <strong>new conversation</strong> on <strong>{confirming?.label}</strong>? The current one stays in the sidebar.
+          </>
+        }
+        actions={
+          <>
+            <DialogClose><Button>Cancel</Button></DialogClose>
+            <Button variant="primary" onClick={startNewChat}>Start new chat</Button>
+          </>
+        }
+      />
     </>
   );
 }
 
 /* ----------------------------------------------------------------- user menu */
 /**
- * Account flyout (WAI-ARIA menu-button pattern): an avatar chip — the user's
- * initial, falling back to a person glyph — replaces the bare username and
- * Log out link in the top bar. Items come from Drupal's "User account menu"
- * (My account, Log out, plus whatever a site builder adds). Opening moves
- * focus into the menu; arrows/Home/End cycle the items, Escape (or an
- * outside click / tabbing away) closes and Escape returns focus to the
- * trigger.
+ * Account flyout: an avatar chip — the user's initial, falling back to a
+ * person glyph — replaces the bare username and Log out link in the top bar.
+ * Items come from Drupal's "User account menu" (My account, Log out, plus
+ * whatever a site builder adds). A kit `Menu` (Radix): arrows, Home/End and
+ * typeahead move, Escape or an outside click closes, focus returns to the
+ * trigger. Link entries are `MenuItem asChild` anchors.
  */
 function UserMenu() {
   // Re-read on demand: the account pane mutates window.aincientChat.viewer after
@@ -1928,183 +1790,99 @@ function UserMenu() {
   const name = viewer?.name || "";
   const email = viewer?.email || "";
   const initial = viewer?.initial ?? (name || email).trim().charAt(0).toUpperCase();
-  const [open, setOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const items = () =>
-    Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
-
-  // Focus enters the menu when it opens (keyboard and mouse alike).
-  useEffect(() => {
-    if (open) items()[0]?.focus();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (e: PointerEvent) => {
-      if (rootRef.current?.contains(e.target as Node)) return;
-      setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointer, true);
-    return () => document.removeEventListener("pointerdown", onPointer, true);
-  }, [open]);
 
   if (!viewer && accountMenu.length === 0) return null;
 
-  const onTriggerKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
-      e.preventDefault(); // Suppress the synthetic click — open exactly once.
-      setOpen(true);
-    }
-  };
-
-  const onMenuKeyDown = (e: React.KeyboardEvent) => {
-    const list = items();
-    const idx = list.indexOf(document.activeElement as HTMLElement);
-    switch (e.key) {
-      case "Escape":
-        e.preventDefault();
-        setOpen(false);
-        btnRef.current?.focus();
-        break;
-      case "ArrowDown":
-        e.preventDefault();
-        list[(idx + 1) % list.length]?.focus();
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        list[(idx - 1 + list.length) % list.length]?.focus();
-        break;
-      case "Home":
-        e.preventDefault();
-        list[0]?.focus();
-        break;
-      case "End":
-        e.preventDefault();
-        list[list.length - 1]?.focus();
-        break;
-      case "Tab":
-        // Let focus move on naturally; the menu just closes behind it.
-        setOpen(false);
-        break;
-    }
-  };
-
   return (
-    <div className="ain-usermenu" ref={rootRef}>
-      <button
-        ref={btnRef}
-        className="ain-btn ain-usermenu__trigger"
-        data-open={open || undefined}
-        onClick={() => setOpen((v) => !v)}
-        onKeyDown={onTriggerKeyDown}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={name || email ? `Account: ${name || email}` : "Account"}
+    <div className="ain-usermenu">
+      <Menu
+        label="Account"
+        align="end"
+        sideOffset={6}
+        className="ain-usermenu__menu"
+        trigger={
+          <button
+            ref={btnRef}
+            type="button"
+            className="ain-btn ain-usermenu__trigger"
+            aria-label={name || email ? `Account: ${name || email}` : "Account"}
+          >
+            {viewer?.avatarUrl ? (
+              <img className="ain-usermenu__avatar ain-usermenu__avatar--img" src={viewer.avatarUrl} alt="" aria-hidden />
+            ) : initial ? (
+              <span className="ain-usermenu__avatar" aria-hidden>{initial}</span>
+            ) : (
+              <span className="ain-usermenu__avatar" aria-hidden><PersonIcon /></span>
+            )}
+            <ChevronDownIcon className="ain-usermenu__caret" aria-hidden />
+          </button>
+        }
       >
-        {viewer?.avatarUrl ? (
-          <img className="ain-usermenu__avatar ain-usermenu__avatar--img" src={viewer.avatarUrl} alt="" aria-hidden />
-        ) : initial ? (
-          <span className="ain-usermenu__avatar" aria-hidden>{initial}</span>
-        ) : (
-          <span className="ain-usermenu__avatar" aria-hidden><PersonIcon /></span>
-        )}
-        <ChevronDownIcon className="ain-usermenu__caret" aria-hidden />
-      </button>
-      {open && (
-        <div
-          ref={menuRef}
-          className="ain-menu ain-usermenu__menu"
-          role="menu"
-          aria-label="Account"
-          onKeyDown={onMenuKeyDown}
-        >
-          {viewer && (
-            <div className="ain-usermenu__card" role="presentation">
-              {/* Plate 14: the earned name leads (email dim beneath) — or the
-                  email stands alone. No ACTIVE pill (a chip that can only ever
-                  say one thing is noise), no tenure arithmetic. */}
-              <div className="ain-usermenu__cardhead">
-                {viewer.avatarUrl ? (
-                  <img className="ain-usermenu__cardavatar ain-usermenu__cardavatar--img" src={viewer.avatarUrl} alt="" />
-                ) : initial ? (
-                  <span className="ain-usermenu__cardavatar" aria-hidden>{initial}</span>
-                ) : null}
-                <div className="ain-usermenu__ident">
-                  {name ? (
-                    <>
-                      <strong className="ain-usermenu__name">{name}</strong>
-                      {email && <div className="ain-usermenu__email">{email}</div>}
-                    </>
-                  ) : (
-                    email && <strong className="ain-usermenu__name">{email}</strong>
-                  )}
-                </div>
+        {viewer && (
+          <div className="ain-usermenu__card" role="presentation">
+            {/* Plate 14: the earned name leads (email dim beneath) — or the
+                email stands alone. No ACTIVE pill (a chip that can only ever
+                say one thing is noise), no tenure arithmetic. */}
+            <div className="ain-usermenu__cardhead">
+              {viewer.avatarUrl ? (
+                <img className="ain-usermenu__cardavatar ain-usermenu__cardavatar--img" src={viewer.avatarUrl} alt="" />
+              ) : initial ? (
+                <span className="ain-usermenu__cardavatar" aria-hidden>{initial}</span>
+              ) : null}
+              <div className="ain-usermenu__ident">
+                {name ? (
+                  <>
+                    <strong className="ain-usermenu__name">{name}</strong>
+                    {email && <div className="ain-usermenu__email">{email}</div>}
+                  </>
+                ) : (
+                  email && <strong className="ain-usermenu__name">{email}</strong>
+                )}
               </div>
-              {((viewer.roles?.length ?? 0) > 0 || viewer.since) && (
-                <div className="ain-usermenu__roles">
-                  {(viewer.roles ?? []).map((r) => (
-                    <span key={r} className="ain-usermenu__role">{r}</span>
-                  ))}
-                  {viewer.since && <span className="ain-usermenu__since">since {viewer.since}</span>}
-                </div>
-              )}
             </div>
-          )}
-          {viewer && (
-            <button
-              type="button"
-              className="ain-menu__item"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                setAccountOpen(true);
-              }}
-            >
-              Manage account
-            </button>
-          )}
-          {/* System (/admin — the curated Atelier landing, the basement). Named
-              "System" so it never collides with the studios that live INSIDE the
-              console (Content/Globals/…). A plain same-tab anchor is the
-              declarative workspace form (surface-nav: within-workspace = same
-              tab). Server-gated on canAdmin (the admin-overview permission), so a
-              non-admin never sees a door they can't open. */}
-          {settings().canAdmin && (
-            <a className="ain-menu__item" role="menuitem" href="/admin">
-              System
-            </a>
-          )}
-          {/* Re-entry into the onboarding wizard — the v1 settings surface (Law 14).
-              Server-gated on canReenter (admin on a configured site), so a non-admin
-              never sees a door they can't open. */}
-          {settings().onboarding?.canReenter && (
-            <button
-              type="button"
-              className="ain-menu__item"
-              role="menuitem"
-              onClick={() => openSurface(`${consoleBase()}?onboarding=1`, "workspace")}
-            >
-              Set up AI providers
-            </button>
-          )}
-          {accountMenu.map((item) => (
-            <a key={item.url} className="ain-menu__item" role="menuitem" href={item.url}>
-              {item.title}
-            </a>
-          ))}
-        </div>
-      )}
+            {((viewer.roles?.length ?? 0) > 0 || viewer.since) && (
+              <div className="ain-usermenu__roles">
+                {(viewer.roles ?? []).map((r) => (
+                  <span key={r} className="ain-usermenu__role">{r}</span>
+                ))}
+                {viewer.since && <span className="ain-usermenu__since">since {viewer.since}</span>}
+              </div>
+            )}
+          </div>
+        )}
+        {viewer && <MenuItem onSelect={() => setAccountOpen(true)}>Manage account</MenuItem>}
+        {/* System (/admin — the curated Atelier landing, the basement). Named
+            "System" so it never collides with the studios that live INSIDE the
+            console (Content/Globals/…). A plain same-tab anchor is the
+            declarative workspace form (surface-nav: within-workspace = same
+            tab). Server-gated on canAdmin (the admin-overview permission), so a
+            non-admin never sees a door they can't open. */}
+        {settings().canAdmin && (
+          <MenuItem asChild>
+            <a href="/admin">System</a>
+          </MenuItem>
+        )}
+        {/* Re-entry into the onboarding wizard — the v1 settings surface (Law 14).
+            Server-gated on canReenter (admin on a configured site), so a non-admin
+            never sees a door they can't open. */}
+        {settings().onboarding?.canReenter && (
+          <MenuItem onSelect={() => openSurface(`${consoleBase()}?onboarding=1`, "workspace")}>
+            Set up AI providers
+          </MenuItem>
+        )}
+        {accountMenu.map((item) => (
+          <MenuItem key={item.url} asChild>
+            <a href={item.url}>{item.title}</a>
+          </MenuItem>
+        ))}
+      </Menu>
       {accountOpen && (
         <AccountPane
-          onClose={() => {
-            setAccountOpen(false);
-            btnRef.current?.focus();
-          }}
+          onClose={() => setAccountOpen(false)}
           onViewerChange={() => bumpViewer((v) => v + 1)}
+          returnFocus={btnRef}
         />
       )}
     </div>
@@ -2118,19 +1896,78 @@ function UserMenu() {
  * Only studios with editor components reach here (App gates on studioHasEditor).
  */
 function StudioPane({ studioKey, onClose }: { studioKey: StudioKey; onClose: () => void }) {
-  const def = studioDef(studioKey);
-  const Studio = def?.Studio;
-  const Preview = def?.Preview;
-  if (!Studio) return null;
+  // The studio's lazy half (studio-loader.ts): the chunk is usually already
+  // here — the URL's studio loads before first render, the rest at idle — so
+  // the skeleton shows only on a cold switch, for the one round trip.
+  const { status, module, retry } = useStudioModule(studioKey);
+  if (status === "failed") return <StudioLoadFailed name={studioDef(studioKey)?.name ?? studioKey} retry={retry} />;
+  if (!module) return <StudioLoading />;
+  const { Studio, Preview } = module;
   // A studio with both a Preview and an editor renders Preview first (centre
-  // canvas), then the editor rail (right). A PANEL-ONLY studio (Checks) omits the
-  // Preview — its Studio is the centre canvas itself. Both are flat siblings of
-  // the chat inside .ain-workspace so each collapses on its own as the viewport
-  // narrows — no wrapping element to fight the responsive cascade.
+  // canvas), then the editor rail (right). A studio without a Preview renders
+  // its Studio as the centre canvas itself. Both are flat siblings of the chat
+  // inside .ain-workspace so each collapses on its own as the viewport narrows
+  // — no wrapping element to fight the responsive cascade.
   return (
     <>
       {Preview && <Preview />}
       <Studio onClose={onClose} />
+    </>
+  );
+}
+
+/**
+ * The rail while a studio's chunk is in flight: the rail's own geometry with
+ * placeholder bars (Law 09 — a skeleton keeps the layout where it will be),
+ * so the workspace does not jump when the real rail lands.
+ */
+function StudioLoading() {
+  return (
+    <aside className="ain-studio__rail ain-studio-loading">
+      <div className="ain-panelbar">
+        <span className="ain-skeleton ain-skeleton--btn" />
+      </div>
+      <LoadingState variant="fields" label="Loading studio" />
+    </aside>
+  );
+}
+
+/**
+ * The rail when its chunk could not be fetched (offline, or a deploy mid-session
+ * replaced the files). The chat column still works; this offers the retry.
+ */
+function StudioLoadFailed({ name, retry }: { name: string; retry: () => void }) {
+  return (
+    <aside className="ain-studio__rail ain-studio-loading ain-studio-loading--failed" role="alert">
+      <div className="ain-panelbar">
+        <span className="ain-panelbar__title">{name}</span>
+      </div>
+      <div className="ain-studio-loading__body">
+        <p className="ain-studio-loading__text">
+          The {name} studio could not be loaded. Check the connection, or reload if a new version was
+          just installed.
+        </p>
+        <button type="button" className="ain-btn" onClick={retry}>
+          Try again
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/**
+ * Registers every chat widget the LOADED studio modules bring
+ * (StudioUiModule.ToolUIs — e.g. the Library studio's `media_result` card).
+ * Mounted regardless of which studio is active or on, so cards in stored
+ * threads keep rendering; re-renders as each studio's chunk lands (the loader
+ * preloads them all at idle after boot).
+ */
+function StudioToolUIs() {
+  return (
+    <>
+      {useLoadedStudioToolUIs().map(({ key, ToolUI }) => (
+        <ToolUI key={key} />
+      ))}
     </>
   );
 }
@@ -2141,54 +1978,47 @@ function StudioPane({ studioKey, onClose }: { studioKey: StudioKey; onClose: () 
  * and drop the brand overlay / unsaved page draft — so preview-nav.ts cancels
  * anchor clicks and fires here. We explain that, and offer to open the link in
  * a new tab so the user can still get where they were headed. Esc / overlay
- * click / "Got it" dismiss; reusing the .ain-confirm dialog anatomy.
+ * click / "Got it" dismiss (the kit Dialog).
  */
 function PreviewLinkBlockedModal() {
   const [href, setHref] = useState<string | null>(null);
   useEffect(() => subscribeBlockedLink(setHref), []);
-  useEffect(() => {
-    if (href === null) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setHref(null); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [href]);
-  if (href === null) return null;
   // Show a readable destination; keep the full href for the new-tab action.
-  let label = href;
+  let label = href ?? "";
   try {
-    const u = new URL(href);
-    label = u.host + u.pathname + u.search;
+    if (href) {
+      const u = new URL(href);
+      label = u.host + u.pathname + u.search;
+    }
   } catch {
     /* unparsable → show it raw */
   }
   return (
-    <div
-      className="ain-confirm__overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Links disabled in preview"
-      onClick={() => setHref(null)}
-    >
-      <div className="ain-confirm" onClick={(e) => e.stopPropagation()}>
-        <p className="ain-confirm__text">
-          <strong>Links are disabled in the live preview.</strong> This is a working
-          preview — following <span className="ain-confirm__code">{label}</span> would
+    <Dialog
+      open={href !== null}
+      onOpenChange={(open) => !open && setHref(null)}
+      title="Links are disabled in the live preview"
+      description={
+        <>
+          This is a working preview — following <span className="ain-confirm__code">{label}</span> would
           navigate away and lose your current changes.
-        </p>
-        <div className="ain-confirm__actions">
-          <button className="ain-btn ain-topbtn" onClick={() => setHref(null)}>Got it</button>
-          <button
-            className="ain-btn ain-topbtn ain-topbtn--primary"
+        </>
+      }
+      actions={
+        <>
+          <DialogClose><Button>Got it</Button></DialogClose>
+          <Button
+            variant="primary"
             onClick={() => {
-              openSurface(href, "output");
+              if (href) openSurface(href, "output");
               setHref(null);
             }}
           >
             Open in new tab ↗
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    />
   );
 }
 
@@ -2225,34 +2055,29 @@ function TopBar({
         {/* Reveal the editor rail when it's a summoned sheet (tablet/phone).
             Hidden on desktop, where the rail is always in view — CSS gates it. */}
         {studioActive && (
-          <button
-            className="ain-btn ain-topbtn ain-topbar__edittoggle"
+          <Button
+            className="ain-topbar__edittoggle"
             onClick={toggleEdit}
             aria-pressed={editOpen}
             aria-label="Edit values"
             title="Edit values"
           >
             <SlidersIcon /> <span className="ain-topbtn__label">Edit</span>
-          </button>
+          </Button>
         )}
         {/* Studio actions (Discard / Publish / leave) portal into this slot from
             the active studio so they stay reachable when the rail is collapsed. */}
         <span className="ain-studio-actions" id="ain-studio-actions" />
         {allowThemeSwitch && (
-          <button className="ain-btn ain-iconbtn" onClick={onToggleTheme} aria-label="Toggle theme" title="Toggle theme">
+          <IconButton onClick={onToggleTheme} label="Toggle theme">
             {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-          </button>
+          </IconButton>
         )}
         {/* View the live site — the console's output. New tab, always (the
             surface-nav rule: protect the open draft + thread behind it). */}
-        <button
-          className="ain-btn ain-iconbtn"
-          onClick={() => openSurface("/", "output")}
-          aria-label="View site"
-          title="View site"
-        >
+        <IconButton onClick={() => openSurface("/", "output")} label="View site">
           <GlobeIcon />
-        </button>
+        </IconButton>
         <UserMenu />
       </div>
     </header>
@@ -2351,7 +2176,7 @@ export function App() {
   // The console is always in exactly one studio. A studio with editor components
   // (Design System, Globals, Content) renders a split-pane beside the chat;
   // General has none, so it's full-width chat. `paneStudio` is the active studio
-  // iff it has an editor. An EDITOR-ONLY studio (Globals: no chat agent yet) has
+  // iff it has an editor. An EDITOR-ONLY studio (Settings: no chat agent) has
   // no agents in the catalog — `hasAgents` gates the chat column off so the
   // workspace is just preview + editor rail (the composer is gated by construction).
   // Subscribe to the statechart so the shell's `data-room` test anchor tracks
@@ -2432,24 +2257,10 @@ export function App() {
       <UsageFooterToolUI />
       {/* Registers the weather card (the `weather_card` generative-UI tool). */}
       <WeatherCardToolUI />
-      {/* Registers the quick brand picker (the `brand_picker` generative-UI tool). */}
-      <BrandPickerToolUI />
-      {/* Registers the brand-status HITL confirm card (the `brand_status_proposal` tool). */}
-      <BrandStatusProposalToolUI />
-      {/* Registers the live brand preview applier (the `brand_preview` generative-UI tool). */}
-      <BrandPreviewToolUI />
-      {/* Registers the design-token admission card (the `design_token_admission` tool). */}
-      <DesignTokenAdmissionToolUI />
-      {/* Registers the logo-handoff card (the `logo_handoff` tool → Identity → Logo). */}
-      <LogoHandoffToolUI />
-      {/* Registers the live page preview applier (the `page_preview` generative-UI tool). */}
-      <PagePreviewToolUI />
-      {/* Registers the live chrome preview applier (the `chrome_preview` generative-UI tool). */}
-      <ChromePreviewToolUI />
       {/* Registers the generic `data_table` widget (e.g. list_pages → open in studio). */}
       <DataTableToolUI />
-      {/* Registers the generated-image card (the `media_result` generative-UI tool). */}
-      <MediaResultToolUI />
+      {/* Every loaded studio's chat widgets (see StudioToolUIs). */}
+      <StudioToolUIs />
       {/* Registers the first-run AI-connect panel (the `onboarding` generative-UI tool). */}
       <OnboardingToolUI />
 
@@ -2520,13 +2331,15 @@ export function App() {
             iframes. Inside .ain-shell so it inherits the console font/theme. */}
         <PreviewLinkBlockedModal />
         {/* Shell-level dead-end: a deep-linked document the user can't open
-            (denied) or that's gone. Reuses the confirm-overlay anatomy; the
-            actions clear the dead-end and route the user somewhere useful. */}
-        {docEnd && (
-          <div className="ain-confirm__overlay" role="dialog" aria-modal="true" aria-label="Document unavailable">
+            (denied) or that's gone: the end-state card IS the dialog (asChild),
+            answered only by its actions, which clear the dead-end and route the
+            user somewhere useful. */}
+        <Dialog open={docEnd != null} onOpenChange={() => {}} dismissible={false} asChild>
+          {docEnd && (
             <ThreadEndState
               variant={docEnd.kind}
               className="ain-endstate--overlay"
+              TitleAs={DialogTitle}
               actions={[
                 {
                   label: "Start a new thread",
@@ -2543,36 +2356,26 @@ export function App() {
                 },
               ]}
             />
-          </div>
-        )}
+          )}
+        </Dialog>
         {/* Shell-level dirty-guard: a thread switch that would drop the open
-            page/block draft's unsaved edits confirms first. Reuses the confirm
-            anatomy; Cancel keeps the draft, Discard runs the staged switch (whose
-            clear-on-switch then drops the draft). */}
-        {pendingSwitch && (
-          <div
-            className="ain-confirm__overlay"
-            role="presentation"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setPendingSwitch(null);
-            }}
-          >
-            <div className="ain-confirm" role="dialog" aria-modal="true" aria-label="Unsaved changes">
-              <p className="ain-confirm__text">
-                This page has unsaved changes. Switching conversations will discard them — save or
-                publish first to keep them.
-              </p>
-              <div className="ain-confirm__actions">
-                <button className="ain-btn ain-topbtn" onClick={() => setPendingSwitch(null)}>
-                  Cancel
-                </button>
-                <button className="ain-btn ain-topbtn ain-topbtn--primary" onClick={confirmSwitch}>
-                  Discard &amp; switch
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            page/block draft's unsaved edits confirms first. Cancel keeps the
+            draft, Discard runs the staged switch (whose clear-on-switch then
+            drops the draft). */}
+        <Dialog
+          open={pendingSwitch != null}
+          onOpenChange={(open) => !open && setPendingSwitch(null)}
+          title="Unsaved changes"
+          description="This page has unsaved changes. Switching conversations will discard them — save or publish first to keep them."
+          actions={
+            <>
+              <DialogClose><Button>Cancel</Button></DialogClose>
+              <Button variant="primary" onClick={confirmSwitch}>
+                Discard &amp; switch
+              </Button>
+            </>
+          }
+        />
       </div>
       </StudioUIContext.Provider>
       </SwitchGuardContext.Provider>

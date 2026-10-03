@@ -33,8 +33,8 @@ final class CapabilityVerbsTest extends UnitTestCase {
     $manager = $this->createMock(PluginManagerInterface::class);
     $manager->method('getDefinitions')->willReturn([
       // The two capabilities that spend more than words.
-      'aincient_pages:generate_image' => ['verbs' => [CapabilitySet::DRAW]],
-      'aincient_pages:generate_alt_text' => ['verbs' => [CapabilitySet::DESCRIBE]],
+      'aincient_studio_media:generate_image' => ['verbs' => [CapabilitySet::DRAW]],
+      'aincient_studio_media:generate_alt_text' => ['verbs' => [CapabilitySet::DESCRIBE]],
       // The overwhelming majority: no declaration at all.
       'aincient_pages:list_pages' => [],
       'aincient_brand:preview_brand' => ['verbs' => []],

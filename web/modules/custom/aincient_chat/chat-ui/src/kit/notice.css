@@ -1,0 +1,13 @@
+/* --- Notice: a one-line outcome (kit/notice.tsx) ---
+   Promoted from Settings, where the Examples and Snapshots sections each kept
+   an identical copy (.ain-settings-{examples,snapshots}__{notice,error}). */
+.ain-notice {
+  display: flex; align-items: flex-start; gap: 5px; margin: 0;
+  font-size: 12px; line-height: 1.4;
+}
+.ain-notice--error { color: var(--ain-color-danger); }
+.ain-notice--success { color: var(--ain-color-text-muted); }
+.ain-notice--success svg { flex: none; font-size: 13px; margin-top: 2px; color: var(--ain-color-success); }
+/* The panel form: an error that stands in for a whole pane or rail. Moved
+   unchanged from styles.css, where it shared a rule with .ain-studio__hint. */
+.ain-studio__error { padding: 14px 12px; font-size: 13px; color: var(--ain-color-danger); }

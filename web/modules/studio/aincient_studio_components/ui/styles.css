@@ -1,0 +1,17 @@
+/*
+ * The Components studio's own styles (plans/studio-modules.md "Studio CSS guards").
+ * Bundled by the one console build (`import "./styles.css"` from ui/index.tsx) into
+ * the same aincient-chat.css as the console's. Every class is prefixed with the
+ * studio id (`.ain-components-`), values are system tokens only, no raw colours,
+ * no opacity dimming (0376) — `studio-css.test.ts` holds the tree to it. Layout
+ * primitives (`.ain-field`, `.ain-studio__*`, `.ain-btn`) are the console's and
+ * are used, never redefined, here.
+ */
+.ain-components__tier { margin: 8px 0 4px; display: flex; flex-direction: column; gap: 4px; }
+.ain-components__tiertitle { margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ain-color-text-faint); }
+.ain-components__row { min-inline-size: 0; }
+.ain-components__glyph { flex: 0 0 auto; font-size: 12px; line-height: 1; color: var(--ain-color-text-faint); }
+.ain-components__use { flex: 1 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ain-color-text-faint); }
+.ain-components__warnings { margin: 0 12px 4px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.ain-components__warning { display: flex; align-items: baseline; gap: 5px; font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); }
+.ain-components__warning svg { flex: 0 0 auto; translate: 0 2px; }

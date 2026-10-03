@@ -1,0 +1,9 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier studio demo test'
+type: module
+description: 'TEST ONLY: a manifest-only studio that SHIPS DEMO CONTENT (two nodes under content/demo/), so kernel tests prove the first-enable import, its once-ness and "clear examples" (plans/studio-modules.md "Demo content").'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_chat
+  - drupal:node

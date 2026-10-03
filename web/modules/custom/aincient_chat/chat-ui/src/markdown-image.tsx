@@ -1,5 +1,5 @@
 import type React from "react";
-import { ImageIcon } from "./icons";
+import { ImageIcon } from "./kit/icons";
 
 /**
  * The `img` renderer for any assistant/agent markdown (the chat transcript and the

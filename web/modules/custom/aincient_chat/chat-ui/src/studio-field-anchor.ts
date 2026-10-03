@@ -35,6 +35,14 @@ export function fieldAnchorId(key: string): string {
   return "ain-fa--" + key.replace(/[._]+/g, "-");
 }
 
+/**
+ * Fired on `window` (detail = the field key) when {@link focusStudioField}
+ * cannot find a field: a collapsed card that holds it listens and opens, and
+ * the caller's retry then lands. A card that folds fields away must listen, or
+ * a deep link into it fails silently.
+ */
+export const REVEAL_FIELD_EVENT = "ain:reveal-field";
+
 /** The field key requested via the URL (`?field=`), or null when none is set. */
 export function requestedFieldAnchor(search: string = window.location.search): string | null {
   const value = new URLSearchParams(search).get(FIELD_ANCHOR_PARAM);
@@ -44,15 +52,19 @@ export function requestedFieldAnchor(search: string = window.location.search): s
 /**
  * Reveal a field by key: scroll its anchored wrapper into view and focus its
  * first focusable control. Returns whether the field was found (so a caller can
- * retry after a late mount). Safe to call before the DOM settles — a miss is a
- * no-op, and the studio re-calls it once its rail renders.
+ * retry after a late mount). Safe to call before the DOM settles — a miss
+ * fires {@link REVEAL_FIELD_EVENT} so a collapsed card can open, and the studio
+ * re-calls it once its rail renders.
  */
 export function focusStudioField(key: string, root: ParentNode = document): boolean {
   // The id is selector-safe by construction (lowercase + hyphens); CSS.escape is
   // belt-and-braces, and absent in some non-browser test DOMs.
   const id = fieldAnchorId(key);
   const el = root.querySelector<HTMLElement>("#" + (typeof CSS !== "undefined" ? CSS.escape(id) : id));
-  if (!el) return false;
+  if (!el) {
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(REVEAL_FIELD_EVENT, { detail: key }));
+    return false;
+  }
   el.scrollIntoView?.({ block: "center", behavior: "smooth" });
   const focusable = el.matches("input,select,textarea,button,a[href],[tabindex]")
     ? el

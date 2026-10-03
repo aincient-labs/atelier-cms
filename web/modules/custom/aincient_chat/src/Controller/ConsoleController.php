@@ -8,6 +8,7 @@ use Drupal\aincient_chat\Account\ViewerCard;
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
 use Drupal\aincient_chat\Studio\StudioInterface;
 use Drupal\aincient_chat\Studio\StudioManager;
+use Drupal\aincient_chat\Studio\StudioSwitch;
 use Drupal\aincient_core\CapabilitySet;
 use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
 use Drupal\aincient_core\Inference\PlatformRegistry;
@@ -18,6 +19,8 @@ use Drupal\aincient_pages\ChromeRepository;
 use Drupal\aincient_pages\SiteIdentity;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Access\CsrfTokenGenerator;
+use Drupal\Core\Asset\AssetQueryStringInterface;
+use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -65,6 +68,9 @@ final class ConsoleController implements ContainerInjectionInterface {
     private readonly ModelRoleResolver $modelRoles,
     private readonly PlatformRegistry $providers,
     private readonly StudioManager $studios,
+    private readonly StudioSwitch $studioSwitch,
+    private readonly FileUrlGeneratorInterface $fileUrls,
+    private readonly AssetQueryStringInterface $assetQueryString,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -81,6 +87,9 @@ final class ConsoleController implements ContainerInjectionInterface {
       $container->get('aincient_core.model_role_resolver'),
       $container->get('aincient_core.inference.registry'),
       $container->get('plugin.manager.aincient.studios'),
+      $container->get('aincient_chat.studio_switch'),
+      $container->get('file_url_generator'),
+      $container->get('asset.query_string'),
     );
   }
 
@@ -164,6 +173,15 @@ HTML;
       // studios (Globals — no server agent, enabled client-side) are gated too,
       // not just the agent-bearing ones filtered out of `studios` above.
       'studioAccess' => $this->studioAccess(),
+      // Pack studios — the ones our console build never saw, so the nav learns
+      // their name/icon here and the rail is a built ES module the console
+      // import()s and mounts (plans/console-extension-point.md Phase 4,
+      // DECISIONS 0448). Same gate as `studioAccess`: a studio this user may
+      // not enter, or one switched off, never has its script URL in the shell.
+      'packStudios' => $this->packStudios(),
+      // Where a pack studio's `ctx.api.fetch` gets the CSRF token for a write to
+      // a route with `_csrf_request_header_token` (Drupal's own /session/token).
+      'csrfTokenUrl' => Url::fromRoute('system.csrftoken')->toString(),
       // What this install can DO, in three product verbs — Write / Describe /
       // Draw — each either available or needs-setup, never a hedged third state.
       // The chat rail renders these above the composer in EVERY room, always: the
@@ -193,6 +211,33 @@ HTML;
     ];
     // Let other modules (e.g. aincient_assistant_ui) contribute console config.
     $this->moduleHandler->alter('aincient_console_settings', $settings);
+    return $this->shell($settings);
+  }
+
+  /**
+   * The kit gallery: every console primitive, both modes (`/atelier/dev/kit`).
+   *
+   * The same chrome-less shell and bundle as the console, told by `view` to
+   * mount the gallery chunk instead (chat-ui/src/main.tsx). Dev mode only — the
+   * route requires `_atelier_dev` — and it carries no site data: only the two
+   * URL bases the bundle's shared modules read.
+   */
+  public function kitGallery(): HtmlResponse {
+    return $this->shell([
+      'view' => 'kit',
+      'basePath' => $this->consoleBasePath(),
+      'apiBase' => $this->apiBase(),
+    ]);
+  }
+
+  /**
+   * The SPA shell response for a settings payload: the console library, the
+   * no-store headers and the CSP every surface of this bundle is served under.
+   *
+   * @param array<string, mixed> $settings
+   *   Injected as `window.aincientChat`, which the bundle reads on boot.
+   */
+  private function shell(array $settings): HtmlResponse {
     $settings = json_encode($settings, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
     $response = (new HtmlResponse($this->buildHtml($settings)))
@@ -354,9 +399,8 @@ HTML;
       if ($studioPlugin !== NULL && !$studioPlugin->accessibleBy($this->currentUser)) {
         continue;
       }
-      // Release feature flag: an in-progress studio is omitted from the shell so
-      // it never renders (UI-only gate; its backend routes stay untouched).
-      if ($this->hiddenByFeatureFlag($studioPlugin)) {
+      // Switched off: the studio is omitted from the shell so it never renders.
+      if ($this->hidden($studioPlugin)) {
         continue;
       }
       // NO CAPABILITY GATE HERE. The Media studio's agent used to be dropped from
@@ -431,7 +475,7 @@ HTML;
   private function studioAccess(): array {
     $access = [];
     foreach ($this->studios->studios() as $studio) {
-      if ($this->hiddenByFeatureFlag($studio)) {
+      if ($this->hidden($studio)) {
         continue;
       }
       if ($studio->accessibleBy($this->currentUser)) {
@@ -442,30 +486,77 @@ HTML;
   }
 
   /**
-   * Whether a studio is hidden from the console by a release feature flag.
+   * The pack studios this user may enter, keyed by studio id.
    *
-   * A UI-only gate: an in-progress studio is kept out of both the agent catalog
-   * and the access list so it never renders, while its backend routes stay in
-   * place (still permission-gated). Checks ships OFF until the policy runtime
-   * (Phase 4) lands — flip `features.checks_enabled` in `aincient_chat.settings`.
+   * A pack studio declares `ui.script` (+ optional `ui.style`) instead of the
+   * built-ins' `ui.entry` ({@see StudioManifest::UI_KEYS}). The files are
+   * static module assets — served to anyone, like any library JS — so the gate
+   * is on the URL reaching the shell, exactly as for `studioAccess`. The URL
+   * carries Drupal's asset query string, the same `?v=` cache buster every
+   * library gets, so a pack upgrade is never served from a stale cache.
+   *
+   * @return array<string, array{name: string, icon: string|null, script: string, style?: string}>
    */
-  private function hiddenByFeatureFlag(?StudioInterface $studio): bool {
-    if ($studio?->id() === 'checks') {
-      return !(bool) $this->configFactory->get('aincient_chat.settings')->get('features.checks_enabled');
+  private function packStudios(): array {
+    $out = [];
+    foreach ($this->studios->studios() as $id => $studio) {
+      $script = $studio->uiScript();
+      if ($script === NULL || $this->hidden($studio) || !$studio->accessibleBy($this->currentUser)) {
+        continue;
+      }
+      $provider = (string) ($studio->getPluginDefinition()['provider'] ?? '');
+      if ($provider === '' || !$this->moduleHandler->moduleExists($provider)) {
+        continue;
+      }
+      $path = $this->moduleHandler->getModule($provider)->getPath();
+      $entry = [
+        'name' => $studio->uiName(),
+        'icon' => $studio->uiIcon(),
+        'script' => $this->assetUrl($path . '/' . $script),
+      ];
+      $style = $studio->uiStyle();
+      if ($style !== NULL) {
+        $entry['style'] = $this->assetUrl($path . '/' . $style);
+      }
+      $out[(string) $id] = $entry;
     }
-    return FALSE;
+    return $out;
+  }
+
+  /**
+   * A module file's root-relative URL with the asset cache buster.
+   */
+  private function assetUrl(string $path): string {
+    return $this->fileUrls->generateString($path) . '?v=' . $this->assetQueryString->get();
+  }
+
+  /**
+   * Whether a studio is kept out of the console shell altogether.
+   *
+   * One reason: switched OFF by the operator ({@see StudioSwitch}, DECISIONS
+   * 0430) — absent from the catalog AND the access list, so the SPA never
+   * renders it and falls back to the default studio; its routes 403 and its
+   * owned capabilities are refused too. The `features.checks_enabled` release
+   * flag that used to be the second reason is gone (DECISIONS 0440): a studio
+   * that ships off ships with `default_enabled: false` in its manifest and is
+   * switched on with `drush atelier:studio-enable`, not with a second knob.
+   */
+  private function hidden(?StudioInterface $studio): bool {
+    return $studio !== NULL && !$this->studioSwitch->isEnabled($studio->id());
   }
 
   /**
    * The studio a new session opens in, never one the user can't enter.
    *
    * The configured default ({@see WorkflowCatalog::defaultStudio}) is honoured
-   * when accessible; otherwise General (always open).
+   * when accessible and shown; otherwise General (always open). A switched-off
+   * studio is never the default — opening a session in a studio the shell does
+   * not render would strand the user in nothing.
    */
   private function defaultStudio(): string {
     $default = $this->workflowCatalog->defaultStudio();
     $studio = $this->studios->get($default);
-    if ($studio !== NULL && $studio->accessibleBy($this->currentUser)) {
+    if ($studio !== NULL && $studio->accessibleBy($this->currentUser) && !$this->hidden($studio)) {
       return $default;
     }
     return $this->studios->defaultId();

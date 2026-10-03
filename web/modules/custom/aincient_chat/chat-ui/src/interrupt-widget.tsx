@@ -1,11 +1,12 @@
 import { useConsoleThread } from "./aui";
-import { makeSafeAssistantToolUI } from "./error-boundary";
+import { Button } from "./kit/button";
+import { makeSafeAssistantToolUI } from "./kit/error-boundary";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { settings } from "./adapter";
 import { stageInterruptAnswer } from "./interrupt-state";
-import { CheckIcon, CircleQuestionIcon, ShieldCheckIcon, XIcon } from "./icons";
+import { CheckIcon, CircleQuestionIcon, ShieldCheckIcon, XIcon } from "./kit/icons";
 import { MarkdownImage } from "./markdown-image";
 
 /**
@@ -180,12 +181,12 @@ function ChoiceWidget({ uuid, prompt, schema, threadId, status, resolved, answer
 
       {state === "pending" && confirmation && (
         <div className="ain-hitl__actions">
-          <button className="ain-btn ain-topbtn ain-topbtn--primary" onClick={() => submit(true)}>
+          <Button variant="primary" onClick={() => submit(true)}>
             {confirmationLabels(schema).confirm}
-          </button>
-          <button className="ain-btn ain-topbtn" onClick={() => submit(false)}>
+          </Button>
+          <Button onClick={() => submit(false)}>
             {confirmationLabels(schema).decline}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -210,13 +211,13 @@ function ChoiceWidget({ uuid, prompt, schema, threadId, status, resolved, answer
               </label>
             ))}
           </div>
-          <button
-            className="ain-btn ain-topbtn ain-topbtn--primary"
+          <Button
+            variant="primary"
             disabled={selected.length === 0}
             onClick={() => submit(multiple ? selected : selected[0])}
           >
             Submit
-          </button>
+          </Button>
         </>
       )}
     </div>

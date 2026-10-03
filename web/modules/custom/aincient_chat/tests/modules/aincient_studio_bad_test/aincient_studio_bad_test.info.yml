@@ -1,0 +1,8 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier studio bad-manifest test'
+type: module
+description: 'TEST ONLY: a deliberately malformed *.studios.yml (no label, a misspelt key), so a kernel test proves a bad manifest is dropped with a warning rather than thrown (DECISIONS 0425, 0430).'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_chat

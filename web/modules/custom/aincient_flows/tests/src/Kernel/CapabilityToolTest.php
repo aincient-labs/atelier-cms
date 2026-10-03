@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_flows\Kernel;
 
 use Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\CapabilityTool;
+use Drupal\aincient_core\Capability\CapabilityGateInterface;
+use Drupal\aincient_core\Capability\CapabilityGates;
 use Drupal\aincient_core\Capability\CapabilityManager;
 use Drupal\flowdrop\DTO\ParameterBag;
 use Drupal\KernelTests\KernelTestBase;
@@ -48,6 +50,16 @@ final class CapabilityToolTest extends KernelTestBase {
     'workflows',
     'content_moderation',
     'aincient_pages',
+    // `preview_chrome` — the one capability below with free-text JSON args and
+    // no content prerequisite — is the Site studios' verb (Phase E.3), and
+    // `preview_page` — the schema / ops fixture — is the Content studio's
+    // (Phase E.4), so both modules (and the studio frame they depend on) are
+    // enabled for the decode and gate tests. A core test reaching into a studio
+    // module for a fixture is accepted; a core→studio MODULE dependency would
+    // not be.
+    'aincient_chat',
+    'aincient_studio_content',
+    'aincient_studio_site',
   ];
 
   /**
@@ -76,6 +88,7 @@ final class CapabilityToolTest extends KernelTestBase {
       'aincient_capability:' . substr($functionCallId, (int) strpos($functionCallId, ':') + 1),
       ['function_call_id' => $functionCallId],
       $this->manager,
+      $this->container->get('aincient_core.capability_gates'),
     );
   }
 
@@ -85,7 +98,7 @@ final class CapabilityToolTest extends KernelTestBase {
    * The input_schema is the FunctionCall's own typed context.
    */
   public function testSchemaComesFromTheBoundCapability(): void {
-    $schema = $this->tool('aincient_pages:preview_page')->getParameterSchema();
+    $schema = $this->tool('aincient_studio_content:preview_page')->getParameterSchema();
 
     $this->assertSame('object', $schema['type']);
     $props = $schema['properties'];
@@ -107,7 +120,7 @@ final class CapabilityToolTest extends KernelTestBase {
    * envelope (it persists nothing; the studio's Publish is the only write).
    */
   public function testProcessExecutesTheCapability(): void {
-    $result = $this->tool('aincient_pages:preview_page')->process(new ParameterBag([
+    $result = $this->tool('aincient_studio_content:preview_page')->process(new ParameterBag([
       'ops' => json_encode([
         ['op' => 'set_meta', 'title' => 'Lumen'],
         ['op' => 'add_section', 'component' => 'hero', 'props' => ['heading' => 'Hi']],
@@ -130,7 +143,7 @@ final class CapabilityToolTest extends KernelTestBase {
    * got 'array'" once the reasoning role moved off Claude.
    */
   public function testProcessAcceptsNativeArrayOps(): void {
-    $result = $this->tool('aincient_pages:preview_page')->process(new ParameterBag([
+    $result = $this->tool('aincient_studio_content:preview_page')->process(new ParameterBag([
       'ops' => [
         ['op' => 'set_meta', 'title' => 'Lumen'],
         ['op' => 'add_section', 'component' => 'hero', 'props' => ['heading' => 'Hi']],
@@ -154,7 +167,7 @@ final class CapabilityToolTest extends KernelTestBase {
    * envelope — while bare, non-entity ampersands (a URL query) pass through.
    */
   public function testModelEntitiesAreDecodedInArgs(): void {
-    $result = $this->tool('aincient_pages:preview_chrome')->process(new ParameterBag([
+    $result = $this->tool('aincient_studio_site:preview_chrome')->process(new ParameterBag([
       'identity_json' => json_encode([
         'name' => 'Ember &amp; Oak',
         'tagline' => 'O&#39;Brien&#39;s &lt;pick&gt;',
@@ -177,9 +190,34 @@ final class CapabilityToolTest extends KernelTestBase {
    * An unbound node fails gracefully rather than throwing.
    */
   public function testUnboundCapabilityFailsGracefully(): void {
-    $node = new CapabilityTool([], 'aincient_capability:x', [], $this->manager);
+    $node = new CapabilityTool([], 'aincient_capability:x', [], $this->manager, $this->container->get('aincient_core.capability_gates'));
     $result = $node->process(new ParameterBag([]));
     $this->assertFalse($result['ok']);
+  }
+
+  /**
+   * @covers ::process
+   *
+   * A gate's refusal is the tool result and the capability never runs
+   * (DECISIONS 0430: a switched-off studio's own verbs are refused at
+   * dispatch). Asserted here, at the node, because this is the boundary every
+   * model-issued call crosses.
+   */
+  public function testGateRefusalIsReturnedAndCapabilityDoesNotRun(): void {
+    $gates = new CapabilityGates();
+    $gates->addGate(new class implements CapabilityGateInterface {
+
+      public function refusal(string $capabilityId): ?string {
+        return $capabilityId === 'aincient_studio_content:preview_page' ? 'Switched off.' : NULL;
+      }
+
+    });
+    $node = new CapabilityTool([], 'aincient_capability:preview_page', ['function_call_id' => 'aincient_studio_content:preview_page'], $this->manager, $gates);
+    $this->assertSame(['ok' => FALSE, 'result' => 'Switched off.'], $node->process(new ParameterBag([])));
+
+    // A capability the gate has no opinion on still runs.
+    $other = new CapabilityTool([], 'aincient_capability:preview_chrome', ['function_call_id' => 'aincient_studio_site:preview_chrome'], $this->manager, $gates);
+    $this->assertTrue($other->process(new ParameterBag(['identity_json' => '{}']))['ok']);
   }
 
 }

@@ -70,7 +70,7 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "scripts": {
-        "test": "SIMPLETEST_DB=sqlite://localhost//tmp/phpunit.sqlite BROWSERTEST_OUTPUT_DIRECTORY=/tmp phpunit -c web/core/phpunit.xml.dist web/modules/custom",
+        "test": "SIMPLETEST_DB=sqlite://localhost//tmp/phpunit.sqlite BROWSERTEST_OUTPUT_DIRECTORY=/tmp phpunit -c web/core/phpunit.xml.dist web/modules/custom web/modules/studio",
         "_comment_prune-engine-tier": [
             "flowdrop installs to web/modules/engine (see installer-paths) so the appliance image can",
             "cache that fast-moving tier as its own layer. When that mapping changed, composer installed",

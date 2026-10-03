@@ -1,30 +1,21 @@
-import type { ComponentType, SVGProps } from "react";
-import { PaletteIcon, DocumentIcon, ChatBubbleIcon, LayoutIcon, LibraryIcon, ShieldCheckIcon, WrenchIcon, BlocksIcon } from "./icons";
-import { IdentityStudio } from "./brand-studio";
-import { BrandPreview } from "./brand-preview";
-import { GlobalsStudio } from "./globals-studio";
-import { SettingsStudio } from "./settings-studio";
-import { GlobalsPreview } from "./globals-preview";
-import { PageStudio } from "./page-studio";
-import { PagePreview } from "./page-preview";
-import { MediaStudio } from "./media-studio";
-import { MediaPreview } from "./media-preview";
-import { ChecksStudio } from "./checks-studio";
-import { ComponentsStudio } from "./components-studio";
+import { ChatBubbleIcon } from "./kit/icons";
 import { enabledStudioKeys, isStudioAccessible, type StudioKey } from "./studios";
+import type { StudioDef } from "./studio-module";
+import { GENERATED_STUDIOS } from "./studio-registry.generated";
+import { packStudioRows } from "./mount/pack-studios";
 
 /**
  * The studio component registry — the front-end half of the studio concept.
  *
- * Each studio's NAME, ICON, and (for specialised studios) editor/preview
- * components live here, keyed by the studio key shared with the backend `Studio`
- * enum and the server's studio catalog ({@see studios.ts}). General has no
- * editor components → it renders as full-width chat; Design System (Foundations
- * tokens), Globals (chrome — Brand identity / Header / Footer), and Content
- * (pages) bring a live-preview split-pane.
+ * Each studio's NAME, ICON and — for a studio with a rail — the `load` that
+ * fetches its editor/preview chunk live here, keyed by the studio key shared
+ * with the backend `Studio` plugin type and the server's studio catalog
+ * ({@see studios.ts}). General has no `load` → it renders as full-width chat;
+ * every other studio brings its split-pane through the generated registry, and
+ * `studio-loader.ts` is what calls `load` and holds the result.
  *
- * A studio may be EDITOR-ONLY (Globals): it has editor components here but no
- * agent in the server catalog. Capability is NOT what makes a studio editor-only
+ * A studio may be EDITOR-ONLY (Settings, Components): it has editor components
+ * but no agent in the server catalog. Capability is NOT what makes a studio editor-only
  * — Media used to lose its agent whenever the image role was unbound, and no
  * longer does (see `capabilities.ts`): a rail that can only handle words still
  * earns its place, and the chips say what is missing.
@@ -35,61 +26,55 @@ import { enabledStudioKeys, isStudioAccessible, type StudioKey } from "./studios
  * column itself still renders wherever the section holds live conversations, so
  * history never becomes unreachable when an agent is dropped.
  *
- * Adding a studio (Menu, Homepage, …) = a new entry here + its components, the
- * matching enum case, and (for an agent-bearing studio) a config row. Nothing
- * else hard-codes the set.
+ * Adding a studio (Forms, Homepage, …) = a studio MODULE under
+ * `web/modules/studio/<module>/` with a `<module>.studios.yml` manifest whose
+ * `ui:` map names the crumb (`name`, `icon`) and, for a studio with a rail, the
+ * `entry` file exporting {@link StudioUiModule}'s fields (DECISIONS 0430).
+ * Nothing here changes: `npm run gen:studios` (run by prebuild/pretest/
+ * pretypecheck) writes the row into `studio-registry.generated.ts`, the build
+ * gives the entry its own chunk, and the server discovers the same manifest.
+ * The built-ins that predated the tier have all migrated (Phase E: Components
+ * 0431, the Library family 0432, Checks 0433, the Site studios 0434, Content
+ * 0435, Identity 0436); only General remains here, by design.
  */
 
-type IconType = ComponentType<SVGProps<SVGSVGElement>>;
+/**
+ * One studio's front-end row — the eager half of the studio-module contract
+ * (`studio-module.ts`), so General's row and a generated one are the same type
+ * by construction.
+ */
+export type { StudioDef };
 
-export type StudioDef = {
-  /** Display name in the breadcrumb (the backend owns its own admin label). */
-  name: string;
-  /** Inline-SVG glyph for the studio crumb. */
-  Icon: IconType;
-  /** The editor rail — omitted for chat-only studios (General). */
-  Studio?: ComponentType<{ onClose: () => void }>;
-  /** The live-preview pane — omitted for chat-only studios. */
-  Preview?: ComponentType;
+/**
+ * The console's own half: General, the open catch-all — full-width chat, no
+ * editor components, the fallback every read ends in. It is the one studio
+ * with no module to live in (core may not carry a manifest), so its row is
+ * here, exactly as its server definition is the StudioManager's own (0436).
+ * Every other studio arrives through GENERATED_STUDIOS.
+ */
+const BUILT_IN_STUDIOS: Record<StudioKey, StudioDef> = {
+  general: { name: "General", Icon: ChatBubbleIcon },
+};
+
+/**
+ * General first, then the generated studio modules — spread in that order so a
+ * module would WIN an id collision (none can: the server refuses a manifest
+ * that redeclares `general`) — then the shell's PACK studios
+ * (`mount/pack-studios.tsx`, Phase 4 of plans/console-extension-point.md),
+ * which never replace one of ours (pack-validate holds a pack's ids to its own
+ * prefix; this is the belt to that brace). Key order is display order
+ * ({@link enabledStudios}): module studios follow General, sorted by id, and
+ * pack studios follow them. The nav model, not this map, is where a deliberate
+ * order belongs.
+ */
+const OURS: Record<StudioKey, StudioDef> = {
+  ...BUILT_IN_STUDIOS,
+  ...GENERATED_STUDIOS,
 };
 
 export const STUDIO_REGISTRY: Record<StudioKey, StudioDef> = {
-  general: { name: "General", Icon: ChatBubbleIcon },
-  // Identity — the whole brand: design tokens + name/tagline/voice/imagery +
-  // the WHOLE logo (image · size · position) + favicon + footer note. Keeps the
-  // stable `design_system` machine id (DECISIONS 0372); its Publish is compound
-  // (brand/save tokens + chrome/save identity slice). Preview is the token
-  // showcase (BrandPreview); the identity fields publish as drafts too.
-  design_system: { name: "Identity", Icon: PaletteIcon, Studio: IdentityStudio, Preview: BrandPreview },
-  // Navigation & Pages — main + footer menus, front/404/403 routing, and the
-  // header/footer arrangement knobs. Keeps the stable `globals` machine id; the
-  // identity half moved to Identity, email + privacy to Settings.
-  globals: { name: "Navigation & Pages", Icon: LayoutIcon, Studio: GlobalsStudio, Preview: GlobalsPreview },
-  // Settings — site email + privacy/consent (font delivery). A NEW editor-only
-  // studio (DECISIONS 0372); persists through the shared chrome endpoints.
-  settings: { name: "Settings", Icon: WrenchIcon, Studio: SettingsStudio, Preview: GlobalsPreview },
-  // The site OUTPUT surface — a visitor-facing page. Display name is "Pages"
-  // (the IA's Tier-1 daily peer); the enum key + URL slug stay `content`.
-  content: { name: "Pages", Icon: DocumentIcon, Studio: PageStudio, Preview: PagePreview },
-  // The reusable-ingredient family — displayed as "Library", its Tier-1 name
-  // (DECISIONS 0168). One studio owns the whole family, exactly as `content`
-  // owns Pages: the SHELF room (browse media + global blocks — MediaPreview
-  // renders the shelf browser when nothing is open) and the item rooms (one
-  // image open in the same split-pane). The OPTIONAL Nano Banana chat rail
-  // attaches once an image agent is configured; unbound, the family degrades to
-  // browse + the non-AI editor rail. The old `library` registry entry is gone —
-  // the shelf IS the section's home, not a separate studio.
-  media: { name: "Library", Icon: LibraryIcon, Studio: MediaStudio, Preview: MediaPreview },
-  // Components — the site-wide governance pane over the discovered component
-  // vocabulary (site_constraint removals: components / tones / variants). An
-  // EDITOR-ONLY, panel-only studio: no agent, no Preview — its rail is the
-  // centre canvas (the Checks shape).
-  components: { name: "Components", Icon: BlocksIcon, Studio: ComponentsStudio },
-  // The fix loop: same live preview as Content (it reads the shared page-state
-  // draft), with the findings rail as the editor. Its agent stages fixes into
-  // that draft via preview_page; the human Publishes. Still surfaces before its
-  // agent exists (the editor-only arm of enabledStudios).
-  checks: { name: "Checks", Icon: ShieldCheckIcon, Studio: ChecksStudio, Preview: PagePreview },
+  ...OURS,
+  ...Object.fromEntries(Object.entries(packStudioRows()).filter(([key]) => !(key in OURS))),
 };
 
 /** The registry entry for a studio key (undefined for an unknown key). */
@@ -97,16 +82,20 @@ export function studioDef(key: StudioKey | undefined): StudioDef | undefined {
   return key ? STUDIO_REGISTRY[key] : undefined;
 }
 
-/** Whether a studio renders an editor/preview split-pane (vs full-width chat). */
+/**
+ * Whether a studio renders an editor/preview split-pane (vs full-width chat) —
+ * known from the manifest (`ui.entry` present ⇒ a `load`), so the answer is
+ * synchronous whether or not the studio's chunk has arrived.
+ */
 export function studioHasEditor(key: StudioKey | undefined): boolean {
-  return !!studioDef(key)?.Studio;
+  return !!studioDef(key)?.load;
 }
 
 /**
  * Whether a studio is OFFERED to this user: it EITHER has a configured agent
  * (present in the server catalog) OR brings its own editor components, AND the
  * user may enter it. The editor arm is what surfaces an EDITOR-ONLY studio
- * (Globals/Library — no chat agent) without a config row; the access arm gates
+ * (Settings/Components — no chat agent) without a config row; the access arm gates
  * every studio (incl. editor-only ones) by the server's `studioAccess`.
  *
  * The single availability predicate — used by both {@link enabledStudios} (the

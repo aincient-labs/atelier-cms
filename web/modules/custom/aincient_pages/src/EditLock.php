@@ -21,7 +21,7 @@ use Drupal\Component\Datetime\TimeInterface;
  *
  * The holder is identified by `uid` + `studio`, but the authority is an opaque,
  * server-minted `lock_token` — a FENCING token, not just a tiebreaker. Every
- * DB write ({@see PageController} save/publish/transition) presents its token
+ * DB write ({@see \Drupal\aincient_studio_content\Controller\PageController} save/publish/transition) presents its token
  * and {@see verify} rejects any whose token ≠ the current row's, so a stale tab
  * *cannot* write (strictly stronger than the `base_vid` optimistic check, which
  * stays as a secondary guard against legitimate-holder races). The token — not

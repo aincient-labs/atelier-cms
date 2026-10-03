@@ -1,0 +1,6 @@
+# Deliberately INVALID — the one manifest StudioManifestTest's tree walk expects
+# to fail. No `label`, and `capabilites` is the typo the unknown-key rule exists
+# to catch (it would otherwise leave the studio's verbs callable while it is off).
+studio_bad_test:
+  weight: 510
+  capabilites: [ping]

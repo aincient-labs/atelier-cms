@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from "react";
-import { WrenchIcon } from "./icons";
+import { WrenchIcon } from "./kit/icons";
 import { STUDIO_REGISTRY, studioAvailable, type StudioDef } from "./studio-registry";
 import type { StudioKey } from "./studios";
 

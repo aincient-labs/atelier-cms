@@ -58,6 +58,17 @@ services:
     class: Drupal\aincient_core\Capability\CapabilityManager
     parent: default_plugin_manager
 
+  # Whether a capability may run at all right now, asked at dispatch by the
+  # FlowDrop capability node (DECISIONS 0430: a disabled studio's OWNED verbs are
+  # refused server-side, so a turn in another studio cannot call them). Any
+  # module adds a gate by tagging a CapabilityGateInterface service
+  # `aincient_core.capability_gate`; zero gates = everything allowed. Not the
+  # 0368 taint gate.
+  aincient_core.capability_gates:
+    class: Drupal\aincient_core\Capability\CapabilityGates
+    tags:
+      - { name: service_collector, tag: aincient_core.capability_gate, call: addGate }
+
   # Which provider+model a NODE's stored `operation_type`/`model` pair resolves
   # to. Shared by the reasoner and the simple-chat node so the resolution ORDER
   # cannot drift between them — a node resolving differently depending on which
@@ -383,6 +394,13 @@ services:
     class: Drupal\aincient_core\CapabilityVerbs
     arguments:
       - '@plugin.manager.aincient.capabilities'
+  # Which of our two code tiers a module lives in (web/modules/custom = core,
+  # web/modules/studio = studios; DECISIONS 0430). The one answer the capability
+  # fence, the capability deriver and the roster guards key on.
+  aincient_core.studio_tier:
+    class: Drupal\aincient_core\StudioTier
+    arguments:
+      - '@extension.list.module'
   # The `install_capabilities()` Twig function — the same answer, as instructions
   # an agent's Prompt Template node can inline.
   aincient_core.twig.install_capabilities:
@@ -431,3 +449,20 @@ services:
       - '@aincient_core.image_upload_validator'
       - '@aincient_core.document_upload_validator'
       - '@logger.channel.aincient_core'
+
+  # Which entities a studio seeded as demo content, and the "clear examples"
+  # delete (plans/studio-modules.md "Demo content", DECISIONS 0430).
+  aincient_core.demo_content:
+    class: Drupal\aincient_core\Demo\DemoContentTracker
+    arguments:
+      - '@database'
+      - '@entity_type.manager'
+      - '@logger.channel.aincient_core'
+
+  # Route requirement `_atelier_dev`: open only when the appliance runs in dev
+  # mode ($settings['atelier_dev'] via AINCIENT_DEV) — see the class. Here, not
+  # in aincient_pages, because the console (aincient_chat) gates on it too.
+  aincient_core.atelier_dev_access:
+    class: Drupal\aincient_core\Access\AtelierDevAccessCheck
+    tags:
+      - { name: access_check, applies_to: _atelier_dev }

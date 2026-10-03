@@ -12,6 +12,10 @@ module:
   aincient_mail: 0
   aincient_onboarding: 0
   aincient_pages: 0
+  aincient_studio_components: 0
+  aincient_studio_content: 0
+  aincient_studio_media: 0
+  aincient_studio_site: 0
   automated_cron: 0
   basic_auth: 0
   big_pipe: 0

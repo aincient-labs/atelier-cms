@@ -1,0 +1,18 @@
+/*
+ * kit · Chip (chip.tsx) — a small toggle — a preset, a filter value.
+ *
+ * Extracted from styles.css unchanged (plans/studio-modules.md, "the kit, for
+ * real"): the class names are the contract, so markup that still writes them by
+ * hand keeps working while call sites move to the component. System tokens only
+ * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
+ * feature rule of equal specificity still overrides the kit — never the reverse.
+ */
+.ain-chip {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 3px 7px 3px 5px; font: inherit; font-size: 11px; color: var(--ain-color-text-muted);
+  background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  transition: border-color .1s, color .1s;
+}
+.ain-chip:hover { border-color: var(--ain-color-border-strong); color: var(--ain-color-text); }
+.ain-chip--on { border-color: var(--ain-color-accent); color: var(--ain-color-text); box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent); }
+.ain-chip__label { line-height: 1; }

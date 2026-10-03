@@ -1,0 +1,6 @@
+studio_demo_bad_test:
+  label: 'Studio demo bad test'
+  description: 'A fixture studio with a broken example file.'
+  help: 'Nothing to see here.'
+  weight: 520
+  demo: content/demo

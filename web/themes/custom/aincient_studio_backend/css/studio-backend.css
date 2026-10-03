@@ -7,67 +7,17 @@
  * without the weight of Gin. Stark ships almost no CSS, so this file styles
  * from a near-blank slate rather than fighting a base theme.
  *
- * Tokens mirror the console's :root (chat-ui/src/styles.css) so a state, a
- * surface, or the mark reads identically in the app and the admin.
+ * Tokens are the console's own (aincient_core/tokens, docs/console-tokens.md),
+ * so a state, a surface, or the mark reads identically in the app and the admin.
  *
- * This file owns the tokens + the shell (sidebar, brand, account) and the
+ * This file owns the shell (sidebar, brand, account) and the
  * theme's bespoke components; everything that styles CORE's markup (tabs,
  * forms, tables, messages, …) lives in css/admin-kit.css.
  */
 
-:root {
-  /* Gesso paper (light) — the app default: a warm, mineral off-white ground,
-     bistre near-black ink, the colour budget spent on one cinnabar pigment. */
-  --ain-bg: oklch(0.923 0.009 82);          /* gesso ground — page canvas */
-  --ain-surface: oklch(0.986 0.004 82);     /* raised cards — brightest paper */
-  --ain-surface-2: oklch(0.951 0.007 82);   /* chrome / recessed panels */
-  --ain-border: oklch(0.86 0.007 88);
-  --ain-border-strong: oklch(0.58 0.010 85);
-  --ain-text: oklch(0.24 0.008 70);         /* bistre ink */
-  --ain-text-dim: oklch(0.47 0.010 78);
-  --ain-text-faint: oklch(0.62 0.010 80);
-  --ain-accent: oklch(0.545 0.155 32);      /* CINNABAR — the one pigment */
-  --ain-accent-2: oklch(0.60 0.100 66);     /* warm ochre — quiet secondary */
-  --ain-jade: oklch(0.52 0.090 163);        /* verdigris — positive / links */
-  --ain-on-accent: oklch(0.985 0.005 90);   /* paper ink on a cinnabar fill */
-  --ain-danger: oklch(0.52 0.160 28);
-  --ain-shadow: oklch(0.30 0.010 60);       /* soft warm ink — diffuse lift */
-  --ain-mark-ring: oklch(0.24 0.010 70);
-
-  /* Four-band spectrum — lives ONLY in the brand mark, never on chrome. */
-  --ain-band-1: oklch(0.66 0.21 27);
-  --ain-band-2: oklch(0.78 0.17 70);
-  --ain-band-3: oklch(0.74 0.17 163);
-  --ain-band-4: oklch(0.58 0.21 292);
-
-  --ain-radius: 7px;
-  --ain-sidebar-w: 264px;
-  --ain-font: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-  --ain-font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --ain-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
-}
-
-/* Studio night (dark) — the atelier after hours: warm charcoal grounds, gesso
-   ink, cinnabar lifted for the dark. Follows the OS unless something else has
-   an opinion; the console uses the same values. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ain-bg: oklch(0.205 0.006 72);
-    --ain-surface: oklch(0.245 0.007 72);
-    --ain-surface-2: oklch(0.285 0.008 72);
-    --ain-border: oklch(0.34 0.008 72);
-    --ain-border-strong: oklch(0.46 0.010 72);
-    --ain-text: oklch(0.93 0.008 85);
-    --ain-text-dim: oklch(0.70 0.010 85);
-    --ain-text-faint: oklch(0.55 0.010 82);
-    --ain-accent: oklch(0.66 0.155 34);
-    --ain-accent-2: oklch(0.72 0.095 66);
-    --ain-jade: oklch(0.72 0.085 165);
-    --ain-danger: oklch(0.62 0.150 25);
-    --ain-shadow: oklch(0.12 0.010 60);
-    --ain-mark-ring: oklch(0.97 0.005 290);
-  }
-}
+/* The tokens — gesso paper by default, studio night under the OS dark scheme —
+   are css/tokens.generated.css (listed before this file in the `global`
+   library), generated from aincient_core/tokens/*.json. Edit the JSON. */
 
 /* ============================================================= base reset === */
 
@@ -77,9 +27,9 @@ html { -webkit-text-size-adjust: 100%; }
 
 body.sb-backend {
   margin: 0;
-  background: var(--ain-bg);
-  color: var(--ain-text);
-  font-family: var(--ain-font);
+  background: var(--ain-color-bg);
+  color: var(--ain-color-text);
+  font-family: var(--ain-font-body);
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -90,16 +40,16 @@ body.sb-backend {
    "contrib islands"). `:where()` contributes NO specificity, so the guard
    excludes the island without shifting this rule's weight against anything
    else on the page. */
-.sb-backend a:where(:not(.revision-graph-wrapper *)) { color: var(--ain-jade); text-decoration: none; }
+.sb-backend a:where(:not(.revision-graph-wrapper *)) { color: var(--ain-color-success); text-decoration: none; }
 /* Interactive affordance is a quiet colour shift, never an underline — the
    console (chat-ui) never underlines on hover, so the backend matches it. */
-.sb-backend a:where(:not(.revision-graph-wrapper *)):hover { color: color-mix(in oklch, var(--ain-jade) 78%, var(--ain-text)); }
+.sb-backend a:where(:not(.revision-graph-wrapper *)):hover { color: color-mix(in oklch, var(--ain-color-success) 78%, var(--ain-color-text)); }
 
 .sb-backend h1, .sb-backend h2, .sb-backend h3,
 .sb-backend h4, .sb-backend h5 {
   font-family: var(--ain-font-display);
   font-weight: 600;
-  color: var(--ain-text);
+  color: var(--ain-color-text);
   line-height: 1.2;
   margin: 0 0 0.5em;
 }
@@ -113,9 +63,9 @@ body.sb-backend {
   top: 0;
   z-index: 1000;
   padding: 0.5rem 0.875rem;
-  background: var(--ain-text);
-  color: var(--ain-surface);
-  border-radius: 0 0 var(--ain-radius) 0;
+  background: var(--ain-color-text);
+  color: var(--ain-color-surface);
+  border-radius: 0 0 var(--ain-radius-md) 0;
 }
 .sb-skip-link:focus { left: 0; }
 
@@ -131,11 +81,11 @@ body.sb-backend {
    stretch); the sticky viewport-pinned part is the inner wrapper — so the
    paper never ends mid-page on long forms. */
 .sb-sidebar {
-  flex: 0 0 var(--ain-sidebar-w);
-  width: var(--ain-sidebar-w);
+  flex: 0 0 var(--ain-sidebar-width);
+  width: var(--ain-sidebar-width);
   align-self: stretch;
-  background: var(--ain-surface);
-  border-right: 1px solid var(--ain-border);
+  background: var(--ain-color-surface);
+  border-right: 1px solid var(--ain-color-border);
 }
 .sb-sidebar__inner {
   position: sticky;
@@ -154,8 +104,8 @@ body.sb-backend {
   align-items: center;
   gap: 0.625rem;
   padding: 0.375rem 0.5rem 0.875rem;
-  color: var(--ain-text) !important;
-  border-bottom: 1px solid var(--ain-border);
+  color: var(--ain-color-text) !important;
+  border-bottom: 1px solid var(--ain-color-border);
   margin-bottom: 0.5rem;
 }
 .sb-brand:hover { text-decoration: none; }
@@ -178,14 +128,14 @@ body.sb-backend {
   gap: 0.375rem;
   padding: 0.375rem 0.625rem;
   margin-bottom: 0.5rem;
-  border-radius: var(--ain-radius);
-  color: var(--ain-text-dim) !important;
+  border-radius: var(--ain-radius-md);
+  color: var(--ain-color-text-muted) !important;
   font-weight: 600;
   line-height: 1.2;
 }
 .sb-console:hover {
-  background: var(--ain-surface-2);
-  color: var(--ain-text) !important;
+  background: var(--ain-color-surface-raised);
+  color: var(--ain-color-text) !important;
   text-decoration: none;
 }
 .sb-console__icon { display: inline-flex; flex: 0 0 auto; color: currentColor; }
@@ -198,14 +148,14 @@ body.sb-backend {
   align-items: center;
   gap: 0.625rem;
   padding: 0.5rem 0.625rem;
-  border-radius: var(--ain-radius);
-  color: var(--ain-text-dim) !important;
+  border-radius: var(--ain-radius-md);
+  color: var(--ain-color-text-muted) !important;
   font-weight: 500;
   line-height: 1.2;
 }
 .sb-nav__link:hover {
-  background: var(--ain-surface-2);
-  color: var(--ain-text) !important;
+  background: var(--ain-color-surface-raised);
+  color: var(--ain-color-text) !important;
   text-decoration: none;
 }
 /* Active = the accent TINT, the same selection grammar as the console thread
@@ -213,11 +163,11 @@ body.sb-backend {
    never a surface fill-box with an inset bar (that rounded-bracket treatment
    is the retired pre-Atelier idiom). */
 .sb-nav__link.is-active {
-  background: color-mix(in oklch, var(--ain-accent) 10%, transparent);
-  color: var(--ain-text) !important;
+  background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
+  color: var(--ain-color-text) !important;
   font-weight: 600;
 }
-.sb-nav__link.is-active .sb-nav__icon { color: var(--ain-accent); }
+.sb-nav__link.is-active .sb-nav__icon { color: var(--ain-color-accent); }
 .sb-nav__icon { display: inline-flex; flex: 0 0 auto; }
 .sb-nav__icon svg { width: 18px; height: 18px; display: block; }
 
@@ -225,24 +175,24 @@ body.sb-backend {
 .sb-account {
   margin-top: auto;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--ain-border);
+  border-top: 1px solid var(--ain-color-border);
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
 }
 .sb-account__name {
   font-weight: 600;
-  color: var(--ain-text) !important;
+  color: var(--ain-color-text) !important;
   padding: 0.25rem 0.5rem;
-  border-radius: var(--ain-radius);
+  border-radius: var(--ain-radius-md);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sb-account__name:hover { background: var(--ain-surface-2); text-decoration: none; }
+.sb-account__name:hover { background: var(--ain-color-surface-raised); text-decoration: none; }
 .sb-account__logout {
   font-size: 0.8125rem;
-  color: var(--ain-text-faint) !important;
+  color: var(--ain-color-text-faint) !important;
   padding: 0.125rem 0.5rem;
 }
 
@@ -265,7 +215,7 @@ body.sb-backend {
 .sb-landing__intro {
   font-family: var(--ain-font-display);
   font-size: 1.05rem;
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
   max-width: 40rem;
   margin: 0 0 1.75rem;
 }
@@ -279,30 +229,30 @@ body.sb-backend {
   flex-direction: column;
   gap: 0.375rem;
   padding: 1.125rem 1.25rem 1.25rem;
-  background: var(--ain-surface);
-  border: 1px solid var(--ain-border);
+  background: var(--ain-color-surface);
+  border: 1px solid var(--ain-color-border);
   border-radius: 10px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
-  color: var(--ain-text) !important;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  color: var(--ain-color-text) !important;
   transition: border-color 0.12s, box-shadow 0.12s, transform 0.08s;
 }
 .sb-landing__card:hover {
   text-decoration: none;
-  /* A hair of pigment tint, not a jump to --ain-border-strong — whose dark stone
+  /* A hair of pigment tint, not a jump to --ain-color-border-strong — whose dark stone
      hairline read too sharp against the paper card. The deepened lift below
      carries the hover affordance (user feedback 2026-07-13). */
-  border-color: color-mix(in oklch, var(--ain-accent) 22%, var(--ain-border));
-  box-shadow: 0 4px 14px -8px var(--ain-shadow);
+  border-color: color-mix(in oklch, var(--ain-color-accent) 22%, var(--ain-color-border));
+  box-shadow: 0 4px 14px -8px var(--ain-color-shadow);
 }
 .sb-landing__card:focus-visible {
-  outline: 3px solid color-mix(in oklch, var(--ain-accent) 30%, transparent);
+  outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent);
   outline-offset: 1px;
 }
-.sb-landing__icon { display: inline-flex; color: var(--ain-text-dim); margin-bottom: 0.25rem; }
+.sb-landing__icon { display: inline-flex; color: var(--ain-color-text-muted); margin-bottom: 0.25rem; }
 .sb-landing__icon svg { width: 22px; height: 22px; display: block; }
-.sb-landing__icon--console { color: var(--ain-accent); }
+.sb-landing__icon--console { color: var(--ain-color-accent); }
 .sb-landing__label { font-weight: 600; font-size: 1rem; }
-.sb-landing__desc { font-size: 0.8425rem; line-height: 1.45; color: var(--ain-text-dim); }
+.sb-landing__desc { font-size: 0.8425rem; line-height: 1.45; color: var(--ain-color-text-muted); }
 
 /* ====================================== profile hero (/user/N — People) ==== */
 /* Built in aincient_core_preprocess_user() and template
@@ -312,10 +262,10 @@ body.sb-backend {
 
 .ain-profile-hero {
   margin-block-end: 1.5rem;
-  background: var(--ain-surface);
-  border: 1px solid var(--ain-border);
+  background: var(--ain-color-surface);
+  border: 1px solid var(--ain-color-border);
   border-radius: 10px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
   overflow: hidden;
 }
 .ain-profile-hero__body { display: flex; align-items: center; gap: 1.25rem; padding: 1.5rem; }
@@ -326,45 +276,45 @@ body.sb-backend {
   display: grid; place-items: center;
   font-family: var(--ain-font-display);
   font-size: 1.75rem; font-weight: 600; line-height: 1; letter-spacing: 0.02em;
-  color: var(--ain-text-dim);
-  border: 1px solid var(--ain-border);
-  background: var(--ain-surface-2);
+  color: var(--ain-color-text-muted);
+  border: 1px solid var(--ain-color-border);
+  background: var(--ain-color-surface-raised);
 }
 .ain-profile-hero__avatar--photo { object-fit: cover; }
 .ain-profile-hero__meta { min-width: 0; flex: 1 1 auto; }
 .ain-profile-hero__nameline { display: flex; align-items: center; flex-wrap: wrap; gap: 0.625rem; }
-.ain-profile-hero__name { font-family: var(--ain-font-display); font-size: 1.5rem; font-weight: 700; line-height: 1.2; color: var(--ain-text); }
+.ain-profile-hero__name { font-family: var(--ain-font-display); font-size: 1.5rem; font-weight: 700; line-height: 1.2; color: var(--ain-color-text); }
 /* State is a whisper — mono tint chip, never a fill. */
 .ain-profile-hero__status {
-  font-family: var(--ain-mono);
+  font-family: var(--ain-font-mono);
   font-size: 11px; font-weight: 600; line-height: 1;
   padding: 4px 7px; border-radius: 4px;
   text-transform: uppercase; letter-spacing: 0.05em;
 }
 .ain-profile-hero__status--active {
-  color: var(--ain-jade);
-  background: color-mix(in oklch, var(--ain-jade) 10%, transparent);
+  color: var(--ain-color-success);
+  background: color-mix(in oklch, var(--ain-color-success) 10%, transparent);
 }
 .ain-profile-hero__status--blocked {
-  color: var(--ain-danger);
-  background: color-mix(in oklch, var(--ain-danger) 12%, transparent);
+  color: var(--ain-color-danger);
+  background: color-mix(in oklch, var(--ain-color-danger) 12%, transparent);
 }
-.ain-profile-hero__handle { margin-block-start: 0.25rem; font-size: 0.875rem; color: var(--ain-text-dim); }
+.ain-profile-hero__handle { margin-block-start: 0.25rem; font-size: 0.875rem; color: var(--ain-color-text-muted); }
 .ain-profile-hero__roles { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-block-start: 0.75rem; }
 /* A role is a category, not a state — brand-neutral surface fill. */
-.ain-profile-hero__role { font-size: 0.75rem; font-weight: 600; line-height: 1; padding: 0.3125rem 0.5rem; border-radius: 4px; background: var(--ain-surface-2); color: var(--ain-text); }
+.ain-profile-hero__role { font-size: 0.75rem; font-weight: 600; line-height: 1; padding: 0.3125rem 0.5rem; border-radius: 4px; background: var(--ain-color-surface-raised); color: var(--ain-color-text); }
 .ain-profile-hero__facts { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; margin: 1rem 0 0; }
 .ain-profile-hero__fact { margin: 0; }
-.ain-profile-hero__fact dt { font-family: var(--ain-mono); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ain-text-dim); }
-.ain-profile-hero__fact dd { margin: 0.1875rem 0 0; font-size: 0.9375rem; color: var(--ain-text); }
-.ain-profile-hero__fact a { color: var(--ain-jade); }
+.ain-profile-hero__fact dt { font-family: var(--ain-font-mono); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ain-color-text-muted); }
+.ain-profile-hero__fact dd { margin: 0.1875rem 0 0; font-size: 0.9375rem; color: var(--ain-color-text); }
+.ain-profile-hero__fact a { color: var(--ain-color-success); }
 
 /* ============================================================= responsive === */
 @media (max-width: 800px) {
   .sb-shell { flex-direction: column; }
   .sb-sidebar {
     flex-basis: auto; width: 100%;
-    border-right: none; border-bottom: 1px solid var(--ain-border);
+    border-right: none; border-bottom: 1px solid var(--ain-color-border);
   }
   .sb-sidebar__inner {
     position: static; height: auto;

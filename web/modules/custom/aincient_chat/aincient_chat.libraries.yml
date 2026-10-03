@@ -12,9 +12,19 @@ console:
   # Footer-scoped (default): lands in the shell's scripts_bottom placeholder,
   # AFTER Drupal's settings JSON + drupalSettingsLoader, so window.drupalSettings
   # is populated before the bundle reads it. Mounts on DOMContentLoaded.
+  #
+  # An ES MODULE, not a classic script: the bundle is split into this entry,
+  # the console chunk and one lazy chunk per studio module (chat-ui/
+  # vite.chunks.ts), which the entry reaches by relative `import()`. The
+  # `type: module` attribute also takes the file out of Drupal's aggregation
+  # (any attribute does — AssetResolver), which a chunked bundle needs: an
+  # aggregate would be served from a path the relative imports cannot resolve
+  # against. The version below is a placeholder: aincient_chat_library_info_alter()
+  # replaces it with the entry file's content hash, so the browser's cached
+  # copy is busted by a new build and by nothing else.
   version: 0.1.0
   js:
-    js/dist/aincient-chat.js: { minified: true }
+    js/dist/aincient-chat.js: { minified: true, attributes: { type: module } }
   css:
     theme:
       js/dist/aincient-chat.css: {}

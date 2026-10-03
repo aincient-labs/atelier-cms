@@ -1,0 +1,5 @@
+entity_type: node
+values:
+  type: page
+  title: 'Example: the second page'
+  status: 0

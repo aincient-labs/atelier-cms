@@ -1,0 +1,33 @@
+/*
+ * The kit gallery's own layout (gallery.tsx) — the page around the specimens,
+ * never the specimens themselves: those wear only kit CSS, or the gallery
+ * would stop showing what a studio actually gets. System tokens only.
+ */
+.ain-kitgallery { height: 100%; overflow-y: auto; background: var(--ain-color-bg); color: var(--ain-color-text); }
+.ain-kitgallery__bar { position: sticky; top: 0; z-index: 10; background: var(--ain-color-surface); padding-inline: 16px; }
+.ain-kitgallery__body { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 16px; }
+.ain-kitgallery__lede { margin: 0; font-size: 13px; color: var(--ain-color-text-muted); }
+.ain-kitgallery__lede code { font-family: var(--ain-font-mono); font-size: 12px; }
+.ain-kitgallery__out { font-family: var(--ain-font-mono); font-size: 12px; color: var(--ain-color-text); }
+.ain-kitgallery__specimen {
+  display: grid; grid-template-columns: minmax(160px, 220px) 1fr; gap: 16px;
+  padding: 16px; background: var(--ain-color-surface);
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+}
+@media (max-width: 640px) { .ain-kitgallery__specimen { grid-template-columns: 1fr; } }
+.ain-kitgallery__head { display: flex; flex-direction: column; gap: 4px; }
+.ain-kitgallery__name { margin: 0; font-family: var(--ain-font-display); font-size: 16px; font-weight: 600; }
+.ain-kitgallery__note { margin: 0; font-size: 12px; line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-kitgallery__stage { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ain-kitgallery__row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ain-kitgallery__rowlabel { flex: 0 0 72px; font-family: var(--ain-font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ain-color-text-faint); }
+.ain-kitgallery__rowbody { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ain-kitgallery__fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 16px; }
+.ain-kitgallery__fieldset { margin: 4px 0 0; padding: 0; border: 0; min-inline-size: 0; display: flex; flex-direction: column; gap: 6px; }
+.ain-kitgallery__p { margin: 0; font-size: 13px; color: var(--ain-color-text-muted); }
+.ain-kitgallery__skeleton { display: flex; gap: 12px; align-items: flex-start; max-width: 360px; }
+.ain-kitgallery__skeletoncol { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.ain-kitgallery__line { height: 12px; }
+.ain-kitgallery__col { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+.ain-kitgallery__stage { display: flex; min-height: 140px; }
+.ain-kitgallery__stage + .ain-kitgallery__stage { border-top: 1px dashed var(--ain-color-border); }

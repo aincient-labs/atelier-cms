@@ -29,6 +29,24 @@ aincient_chat.console_studio:
     _permission: 'use aincient operator console'
     studio: '(?!chat$)[a-z][a-z0-9_-]*'
 
+# The kit gallery (plans/studio-modules.md, "the kit"): every console primitive
+# in both modes, mounted by the same bundle as its own chunk. Dev mode only —
+# `_atelier_dev` (aincient_core's AtelierDevAccessCheck) 403s it for everyone on
+# a production appliance — and behind the console permission as well, unlike
+# the session-less machine endpoints under /atelier/dev/: it is a page for a
+# person, not an agent.
+aincient_chat.dev_kit:
+  path: '/atelier/dev/kit'
+  defaults:
+    _controller: 'Drupal\aincient_chat\Controller\ConsoleController::kitGallery'
+    _title: 'Kit gallery'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient operator console'
+    _atelier_dev: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
 # The New-page draft room. `console-url.ts` lists /atelier/content/draft and
 # /atelier/content/draft/<thread> as bookmarkable rooms and roomToPath EMITS
 # them, so the client pushes those URLs — but with no server route behind them a

@@ -119,7 +119,7 @@ export function injectSelectionStyles(doc: Document | null | undefined): void {
     doc.head.appendChild(style);
   }
   const root = document.getElementById("aincient-chat-root") ?? document.documentElement;
-  const accent = getComputedStyle(root).getPropertyValue("--ain-accent").trim() || "#7c3aed";
+  const accent = getComputedStyle(root).getPropertyValue("--ain-color-accent").trim() || "#7c3aed";
   style.textContent = `
     .ain-sec-wrap { display: contents; }
     .ain-sec-wrap[data-ain-selected] > * {
@@ -159,7 +159,7 @@ export function paintSelection(doc: Document | null | undefined, id: string | nu
  * near-white on a dark brand. The iframe can't read the parent's `--ain-*`
  * vars, so we resolve the console's scrollbar colours here and bake the literal
  * values in. Mirrors the global `::-webkit-scrollbar` block in styles.css (8px,
- * transparent track, flat square `--ain-border-strong` thumb, `--ain-text-dim`
+ * transparent track, flat square `--ain-color-border-strong` thumb, `--ain-color-text-muted`
  * on hover); `scrollbar-width` is Firefox-only (it would disable the webkit
  * rules in Chrome), hence the `@supports` guard. Re-baked on each (re)load, so
  * a console theme switch is picked up the next time the preview reloads.
@@ -174,8 +174,8 @@ export function injectPreviewScrollbar(doc: Document | null | undefined): void {
   }
   const root = document.getElementById("aincient-chat-root") ?? document.documentElement;
   const cs = getComputedStyle(root);
-  const thumb = cs.getPropertyValue("--ain-border-strong").trim() || "#888";
-  const thumbHover = cs.getPropertyValue("--ain-text-dim").trim() || "#555";
+  const thumb = cs.getPropertyValue("--ain-color-border-strong").trim() || "#888";
+  const thumbHover = cs.getPropertyValue("--ain-color-text-muted").trim() || "#555";
   style.textContent = `
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }

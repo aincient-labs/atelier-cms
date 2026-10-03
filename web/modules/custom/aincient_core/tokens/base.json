@@ -1,0 +1,55 @@
+{
+  "$description": "Mode-less SYSTEM tokens (type, radius, size) and the COMPONENT exceptions that are not colours. Same value in light and dark.",
+  "font": {
+    "$type": "fontFamily",
+    "body": {
+      "$value": "system-ui, -apple-system, \"Segoe UI\", Helvetica, Arial, sans-serif",
+      "$description": "Body sans = the study-02 system stack. Schibsted Grotesk is retired from the UI."
+    },
+    "display": {
+      "$value": "\"Fraunces\", \"Iowan Old Style\", \"Palatino Linotype\", Palatino, Georgia, serif",
+      "$description": "The maker's hand — panel titles and UPPERCASE eyebrows. Fraunces is self-hosted (aincient_chat/fonts)."
+    },
+    "mono": {
+      "$value": "ui-monospace, \"SF Mono\", \"JetBrains Mono\", Menlo, monospace",
+      "$description": "Utility mono — whisper chips, micro-labels, machine text (Law 13)."
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "$description": "One radius family — 4 / 7 / 10 / 14 px: chips, controls, cards, panels (Law 06).",
+    "sm": { "$value": "4px" },
+    "md": { "$value": "7px" },
+    "lg": { "$value": "10px" },
+    "xl": { "$value": "14px" }
+  },
+  "size": {
+    "$type": "dimension",
+    "column-max": { "$value": "760px", "$description": "The reading column — chat and forms never grow wider." }
+  },
+  "sidebar": {
+    "$type": "dimension",
+    "width": { "$value": "264px" }
+  },
+  "topbar": {
+    "$type": "dimension",
+    "height": {
+      "$value": "51px",
+      "$description": "The top bar's height — the WIP-list drawer and its scrim start below it. Tracks .ain-topbar's 30px control + 10px×2 padding + 1px border."
+    }
+  },
+  "panel-bar": {
+    "$type": "dimension",
+    "height": { "$value": "36px", "$description": "Shared height of every panel head (chat / preview / rail) so the column heads line up flush." }
+  },
+  "mark": {
+    "$type": "color",
+    "$description": "The brand mark's spectrum chip — the ONLY place the four vivid bands appear (Law 01).",
+    "band": {
+      "1": { "$value": "{ref.color.coral.66}" },
+      "2": { "$value": "{ref.color.amber.78}" },
+      "3": { "$value": "{ref.color.mint.74}" },
+      "4": { "$value": "{ref.color.violet.58}" }
+    }
+  }
+}

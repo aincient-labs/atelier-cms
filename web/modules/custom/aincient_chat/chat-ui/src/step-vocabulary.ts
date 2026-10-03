@@ -79,7 +79,7 @@ const NODE_PHRASES: Record<string, [present: string, past: string]> = {
   aincient_reason: ["Thinking", "Thought it through"],
   flowdrop_ai_provider_simple_chat: ["Thinking", "Thought it through"],
   http_request: ["Fetching from the web", "Fetched from the web"],
-  aincient_flows_policy_check: ["Checking site policy", "Checked site policy"],
+  aincient_audit_policy_check: ["Checking site policy", "Checked site policy"],
   aincient_flows_brand_validate_slice: ["Checking the brand", "Checked the brand"],
   aincient_flows_brand_apply_slices: ["Applying the brand", "Applied the brand"],
 };

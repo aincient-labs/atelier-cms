@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Catalog;
 
+use Drupal\aincient_core\StudioTier;
+
 /**
  * A pack may not ship agent VERBS (plans/console-extension-point.md Phase 3b).
  *
@@ -32,6 +34,11 @@ namespace Drupal\aincient_pages\Catalog;
  * the taint + tool gate first, then open the contract — not the other way
  * round. Do not soften this to a warning in the meantime; silence here is the
  * bug.
+ *
+ * A STUDIO MODULE (`web/modules/studio`) is ours and may own capabilities
+ * (DECISIONS 0430), so it is exempt. The exemption is by PATH, not by name:
+ * converge never bakes or links a pack into that tier, so living there is
+ * something a pack cannot claim for itself.
  */
 final class CapabilityFence {
 
@@ -51,7 +58,10 @@ final class CapabilityFence {
    * updates `CapabilityRosterTaintGuardTest`, which is the point: two edits,
    * both asking the same question.
    *
-   * This is a name check, so a pack that names itself `aincient_brand` walks
+   * Studio-tier modules (`aincient_brand`, the Library, Checks, …) are exempt by
+   * PATH, not by name — {@see StudioTier::isStudioPath()} below.
+   *
+   * This is a name check, so a pack that names itself `aincient_pages` walks
    * through. That is acceptable because this fence is a CI aid for honest
    * authors, not the security control: the control is the roster review, and
    * a pack impersonating one of our modules is not a mistake anyone makes by
@@ -60,8 +70,6 @@ final class CapabilityFence {
    * @var array<int, string>
    */
   public const ATELIER_MODULES = [
-    'aincient_audit',
-    'aincient_brand',
     'aincient_onboarding',
     'aincient_pages',
   ];
@@ -78,7 +86,7 @@ final class CapabilityFence {
    *   Errors — empty when the pack ships no capabilities.
    */
   public static function check(string $modulePath, string $module): array {
-    if (in_array($module, self::ATELIER_MODULES, TRUE)) {
+    if (in_array($module, self::ATELIER_MODULES, TRUE) || StudioTier::isStudioPath($modulePath)) {
       return [];
     }
     $dir = rtrim($modulePath, '/') . '/' . self::CAPABILITY_DIR;

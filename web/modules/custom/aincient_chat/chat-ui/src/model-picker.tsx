@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { CheckIcon, ChevronDownIcon, SparkleIcon } from "./icons";
+import { CheckIcon, ChevronDownIcon, SparkleIcon } from "./kit/icons";
 
 /**
  * One selectable model in the picker. `recommendation` is our curated quality

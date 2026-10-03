@@ -2,7 +2,8 @@ import { useState, useSyncExternalStore } from "react";
 import { settings } from "./adapter";
 import { apiUrl } from "./console-config";
 import { settleNameInvite, shouldInviteName, subscribeNameInvite } from "./name-invite-state";
-import { CheckIcon, XIcon } from "./icons";
+import { Button } from "./kit/button";
+import { CheckIcon, XIcon } from "./kit/icons";
 
 /**
  * "What should we call you?" — asked once, after the studio has made something.
@@ -78,15 +79,14 @@ export function NameInvite() {
           maxLength={60}
           disabled={saving}
         />
-        <button
-          type="button"
-          className="ain-btn ain-topbtn ain-topbtn--sm"
+        <Button
+          size="sm"
           onClick={save}
           disabled={saving || name.trim() === ""}
           title="Save your name"
         >
           <CheckIcon className="ain-nameinvite__icon" /> Save
-        </button>
+        </Button>
         <button
           type="button"
           className="ain-btn ain-nameinvite__dismiss"

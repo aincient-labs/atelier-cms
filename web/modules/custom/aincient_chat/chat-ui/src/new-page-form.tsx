@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { createPage } from "./page-state";
-import { XIcon } from "./icons";
+import { Button } from "./kit/button";
+import { Dialog } from "./kit/dialog";
 import { apiUrl } from "./console-config";
 import { orderedKinds, type KindOption } from "./catalog-meta";
 
@@ -88,18 +88,6 @@ export function NewPageForm({
     };
   }, []);
 
-  useEffect(() => {
-    titleRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const sourceLang = langs.find((l) => l.default);
   const canSubmit = title.trim().length > 0 && !busy;
 
@@ -122,125 +110,103 @@ export function NewPageForm({
 
   const activeType = kinds.find((t) => t.id === type) ?? kinds[0];
 
-  return createPortal(
-    <div
-      className="ain-confirm__overlay"
-      role="presentation"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title="New page"
+      titleClassName="ain-newpage__title"
+      closeButton
+      onSubmit={submit}
+      initialFocus={titleRef}
+      className="ain-newpage"
     >
-      <form
-        className="ain-confirm ain-newpage"
-        role="dialog"
-        aria-modal="true"
-        aria-label="New page"
-        onSubmit={submit}
-      >
-        <div className="ain-newpage__head">
-          <h2 className="ain-newpage__title">New page</h2>
-          <button
-            type="button"
-            className="ain-btn ain-pop__close"
-            onClick={onClose}
-            aria-label="Close"
-            title="Close (Esc)"
-          >
-            <XIcon />
-          </button>
-        </div>
+      <label className="ain-field">
+        <span className="ain-field__label">
+          <span className="ain-field__labeltext">Title</span>
+        </span>
+        <input
+          ref={titleRef}
+          className="ain-field__input"
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g. Homepage"
+          maxLength={255}
+          required
+        />
+      </label>
 
-        <label className="ain-field">
-          <span className="ain-field__label">
-            <span className="ain-field__labeltext">Title</span>
-          </span>
-          <input
-            ref={titleRef}
-            className="ain-field__input"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Homepage"
-            maxLength={255}
-            required
-          />
-        </label>
-
-        <div className="ain-field">
-          <span className="ain-field__label">
-            <span className="ain-field__labeltext">Type</span>
-          </span>
-          {kinds.length > 1 ? (
-            <>
-              <select
-                className="ain-field__input"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-              >
-                {kinds.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-              {/* The chosen type's hint stays visible under the select — the
-                  choice is permanent, so it is made with its consequence in
-                  view rather than from a bare label. */}
-              <span className="ain-newpage__typehint">{activeType.hint}</span>
-            </>
-          ) : (
-            <div className="ain-newpage__type">
-              <span className="ain-newpage__typename">{activeType.label}</span>
-              <span className="ain-newpage__typehint">{activeType.hint}</span>
-            </div>
-          )}
-          <p className="ain-newpage__note">
-            The type is fixed once the page is created — it decides how the page is built.
-          </p>
-        </div>
-
-        {multilingual && langs.length > 0 && (
-          <label className="ain-field">
-            <span className="ain-field__label">
-              <span className="ain-field__labeltext">Language</span>
-            </span>
+      <div className="ain-field">
+        <span className="ain-field__label">
+          <span className="ain-field__labeltext">Type</span>
+        </span>
+        {kinds.length > 1 ? (
+          <>
             <select
               className="ain-field__input"
-              value={lang ?? sourceLang?.id ?? ""}
-              onChange={(e) => {
-                const v = e.target.value;
-                setLang(sourceLang && v === sourceLang.id ? null : v);
-              }}
+              value={type}
+              onChange={(e) => setType(e.target.value)}
             >
-              {langs.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.label}
-                  {l.default ? " (default)" : ""}
+              {kinds.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
                 </option>
               ))}
             </select>
-          </label>
+            {/* The chosen type's hint stays visible under the select — the
+                choice is permanent, so it is made with its consequence in
+                view rather than from a bare label. */}
+            <span className="ain-newpage__typehint">{activeType.hint}</span>
+          </>
+        ) : (
+          <div className="ain-newpage__type">
+            <span className="ain-newpage__typename">{activeType.label}</span>
+            <span className="ain-newpage__typehint">{activeType.hint}</span>
+          </div>
         )}
+        <p className="ain-newpage__note">
+          The type is fixed once the page is created — it decides how the page is built.
+        </p>
+      </div>
 
-        {error && (
-          <p className="ain-newpage__error" role="alert">
-            {error}
-          </p>
-        )}
+      {multilingual && langs.length > 0 && (
+        <label className="ain-field">
+          <span className="ain-field__label">
+            <span className="ain-field__labeltext">Language</span>
+          </span>
+          <select
+            className="ain-field__input"
+            value={lang ?? sourceLang?.id ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              setLang(sourceLang && v === sourceLang.id ? null : v);
+            }}
+          >
+            {langs.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.label}
+                {l.default ? " (default)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
-        <div className="ain-confirm__actions">
-          <button type="button" className="ain-btn ain-topbtn" onClick={onClose} disabled={busy}>
-            Cancel
-          </button>
-          <button type="submit" className="ain-btn ain-topbtn ain-topbtn--primary" disabled={!canSubmit}>
-            {busy ? "Creating…" : "Create page"}
-          </button>
-        </div>
-      </form>
-    </div>,
-    // Portal within the console root, NOT document.body: the --ain-* tokens are
-    // scoped to #aincient-chat-root, so a body portal renders the card
-    // transparent/unstyled (same gotcha as the account pane, DECISIONS 0158).
-    document.getElementById("aincient-chat-root") ?? document.body,
+      {error && (
+        <p className="ain-newpage__error" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div className="ain-confirm__actions">
+        <Button onClick={onClose} disabled={busy}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary" disabled={!canSubmit}>
+          {busy ? "Creating…" : "Create page"}
+        </Button>
+      </div>
+    </Dialog>
   );
 }

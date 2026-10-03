@@ -1,0 +1,19 @@
+/*
+ * kit · Popover (popover.tsx) — a floating paper card anchored to its trigger.
+ * Radix positions the wrapper; this styles the card. Above the modal overlay
+ * (1300) so a popover opened inside a dialog is not hidden behind it. System
+ * tokens only (studio-css.test.ts rule 4).
+ */
+.ain-popover {
+  z-index: 1400; min-width: 200px; max-width: min(360px, calc(100vw - 32px));
+  max-height: var(--radix-popover-content-available-height, 60vh); overflow-y: auto;
+  padding: 12px; font-size: 13px; line-height: 1.45; color: var(--ain-color-text);
+  background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md);
+  box-shadow: 0 8px 22px -6px color-mix(in oklch, var(--ain-color-shadow) 42%, transparent);
+}
+.ain-popover:focus-visible { outline: none; }
+.ain-popover__title { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+/* A menu rendered by Radix is positioned by its wrapper: drop the fixed-position
+   offset the hand-placed .ain-menu still uses. */
+.ain-menu--anchored { position: static; transform: none; z-index: 1400; }

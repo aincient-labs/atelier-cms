@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getPageDraft, getPageUrl, subscribePageDraft, subscribePreviewReload, subscribePageLoad, type PageMeta, type PageTeaser } from "./page-state";
-import { PanelBar } from "./panel-bar";
+import { PanelBar } from "./kit/panel-bar";
 import { apiUrl } from "./console-config";
 
 /**

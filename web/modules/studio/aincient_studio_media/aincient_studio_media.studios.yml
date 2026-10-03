@@ -1,0 +1,30 @@
+# The Library family (plans/studio-modules.md "The manifest", DECISIONS 0430) —
+# TWO studio ids in one module, because the console treats them as one family
+# (DECISIONS 0168): `media` is the section's home and owns the UI; `library` is
+# the shelf's permission-bearing id. Both ids are frozen built-in ids (0425):
+# they live in `use aincient studio library` / `use aincient studio media`, in
+# the `studios` agents map and in stored deep links. The module name namespaces
+# nothing.
+#
+# `media` is the one studio here with an agent (`aincient_image_agent`, shipped
+# in config/install and mirrored in config/sync — a unit test keeps the two
+# equal) and owned capabilities: the three image verbs are refused at dispatch
+# while the studio is switched off. Its UI exports `Studio` (the non-AI editor
+# rail), `Preview` (the image canvas / the shelf browser) and `ToolUIs` (the
+# `media_result` chat card).
+library:
+  label: 'Library'
+  description: 'The reusable-ingredient shelf — images and global blocks, one catalog.'
+  help: 'Browse what every page composes from. Open an image to rename, describe or replace it; blocks open their own editor.'
+  weight: 60
+media:
+  label: 'Media'
+  description: 'Edit one image — its name, alt text and file — beside a preview; or ask the chat to generate, edit, describe or name it.'
+  help: 'The rail is the human path and always works. The chat can draw once an image model is connected.'
+  weight: 70
+  ui:
+    entry: ui/index.tsx
+    name: 'Library'
+    icon: library
+  flows: [aincient_image_agent]
+  capabilities: [generate_image, generate_alt_text, propose_media_name]

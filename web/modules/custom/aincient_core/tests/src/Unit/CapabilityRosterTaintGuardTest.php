@@ -24,6 +24,8 @@ use PHPUnit\Framework\Attributes\Group;
  * the question the failure message asks. No Drupal bootstrap — it reads the
  * plugin files off disk, so it cannot be defeated by container state.
  *
+ * Studio modules (web/modules/studio, DECISIONS 0430) are ours and may own
+ * capabilities, so the roster guard watches both tiers.
  */
 #[Group('aincient_core')]
 final class CapabilityRosterTaintGuardTest extends UnitTestCase {
@@ -66,11 +68,16 @@ final class CapabilityRosterTaintGuardTest extends UnitTestCase {
    * The capability roster is frozen; a change must reconfirm the taint decision.
    */
   public function testCapabilityRosterIsUnchangedSinceTheTaintReview(): void {
-    // From tests/src/Unit up to modules/custom: Unit → src → tests → aincient_core
-    // → custom.
-    $customModules = dirname(__DIR__, 4);
+    // From tests/src/Unit up to web/modules: Unit → src → tests → aincient_core
+    // → custom → modules. Both of our tiers, custom and studio (two globs:
+    // GLOB_BRACE is not portable).
+    $tiers = dirname(__DIR__, 5);
     $found = [];
-    foreach (glob($customModules . '/*/src/Plugin/AiCapability/*.php') ?: [] as $file) {
+    $files = array_merge(
+      glob($tiers . '/custom/*/src/Plugin/AiCapability/*.php') ?: [],
+      glob($tiers . '/studio/*/src/Plugin/AiCapability/*.php') ?: [],
+    );
+    foreach ($files as $file) {
       $found[] = basename($file, '.php');
     }
     sort($found);

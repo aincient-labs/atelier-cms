@@ -1,0 +1,35 @@
+# The Checks studio (plans/studio-modules.md "The manifest", DECISIONS 0430) —
+# the page-health FIX LOOP: the findings rail beside the shared page preview,
+# the audit agent that stages repairs into the same draft, and the two read-only
+# verbs it narrates with. `checks` is a frozen built-in id (0425): it lives in
+# `use aincient studio checks`, the `studios` agents map and stored deep links
+# (`/atelier/checks/node/<id>`). The module keeps its historical machine name
+# `aincient_audit` (DECISIONS 0433): it owns the `aincient_policy` config
+# entity type and the `aincient_policy_revision` table, and renaming an
+# installed entity provider is a data migration, not a folder move.
+#
+# Everything the audit needs ships here: the deterministic engine and checks,
+# the shipped default policies (config entities) and the FlowDrop policy
+# workflows they run as, the `policy_check` node processor those workflows are
+# built from, the audit agent, and the `/atelier/audit/{node}/report` route.
+# The three `flows:` are all in config/install, mirrored from config/sync under
+# a drift test (ChecksConfigMirrorTest). Core keeps nothing of it: with this
+# studio switched off a page still edits, publishes and exports — it is just
+# never audited.
+#
+# SHIPS OFF (`default_enabled: false`, DECISIONS 0440): the policy runtime is
+# still mid-build, so a fresh install seeds `checks` into `disabled_studios`
+# and an operator opts in with `drush atelier:studio-enable checks`. This
+# replaced the `features.checks_enabled` release flag, which hid the studio
+# UI-only while its routes and verbs stayed live.
+checks:
+  label: 'Checks'
+  description: 'Read-only page health audits — SEO, meta tags, internal-link integrity — with AI-staged fixes the human publishes.'
+  help: 'Pick a page to audit it. Fix a finding inline, or ask the chat to fix it; every fix is a draft until you Publish.'
+  weight: 80
+  default_enabled: false
+  ui:
+    entry: ui/index.tsx
+    icon: shield-check
+  flows: [aincient_audit_agent, aincient_policy_seo, aincient_policy_links]
+  capabilities: [run_page_audit, read_meta_tags]

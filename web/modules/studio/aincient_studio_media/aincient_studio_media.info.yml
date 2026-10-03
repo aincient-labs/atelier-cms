@@ -1,0 +1,16 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier Library studio'
+type: module
+description: 'The Library family: the reusable-ingredient shelf (`library`) and the one-image editing room (`media`) — the non-AI editor rail, the image agent and its three capabilities (generate_image, generate_alt_text, propose_media_name). The second studio module (plans/studio-modules.md Phase E).'
+package: Atelier studios
+core_version_requirement: ^11
+dependencies:
+  # The studio frame: manifest discovery, the on/off switch, the derived
+  # permissions and the route gate.
+  - aincient_chat
+  # What this studio edits — image media through `aincient_pages.media`
+  # (MediaRepository) and the unified reference catalog. Upload, token
+  # resolution, the picker and `find_reference` stay in core: a page must keep
+  # placing and rendering images with this studio switched off. Only the
+  # one-item editing surface and the image agent's verbs are here.
+  - aincient_pages

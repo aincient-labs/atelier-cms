@@ -38,7 +38,7 @@ describe("describeStep", () => {
   it("counts reasoning, tools, brand and policy steps as work", () => {
     for (const nodeTypeId of [
       "aincient_reason",
-      "aincient_flows_policy_check",
+      "aincient_audit_policy_check",
       "aincient_flows_brand_validate_slice",
       "aincient_flows_aincient_capability_list_pages",
       "flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_colour",

@@ -52,21 +52,20 @@ final class StudioAccessTest extends KernelTestBase {
     'content_moderation',
     'aincient_pages',
     'aincient_chat',
+    // The gated-studio fixture: every built-in is a studio MODULE now (Phase E,
+    // DECISIONS 0431–0436), so the access rule is proven on the test manifest.
+    'aincient_studio_test',
   ];
 
   /**
-   * The built-in studios, in display order. Append-only: see the class doc.
+   * The studios this test sees, in display order: General (the console's own,
+   * declared by the manager — the last built-in, every other one is a studio
+   * module since Phase E.5 / DECISIONS 0436) and the gated fixture. The frozen
+   * ids of the migrated built-ins are asserted by each module's own test.
    */
   private const BUILT_IN = [
     'general',
-    'design_system',
-    'globals',
-    'settings',
-    'components',
-    'content',
-    'library',
-    'media',
-    'checks',
+    'studio_test',
   ];
 
   private function manager(): StudioManager {
@@ -121,24 +120,26 @@ final class StudioAccessTest extends KernelTestBase {
 
   /**
    * accessibleBy is exactly a hasPermission() check on the studio's permission
-   * — a content-only grant opens Content (and General) but not Globals.
+   * — a grant for the gated studio opens it (and General); no grant opens
+   * General alone. The rule is the same for every gated studio.
    */
   public function testAccessibleByFollowsPermission(): void {
-    $account = $this->createMock(AccountInterface::class);
-    $account->method('hasPermission')->willReturnCallback(
-      static fn(string $permission): bool => $permission === 'use aincient studio content',
+    $granted = $this->createMock(AccountInterface::class);
+    $granted->method('hasPermission')->willReturnCallback(
+      static fn(string $permission): bool => $permission === 'use aincient studio studio_test',
     );
+    $none = $this->createMock(AccountInterface::class);
+    $none->method('hasPermission')->willReturn(FALSE);
 
     $manager = $this->manager();
-    $this->assertTrue($manager->get('content')->accessibleBy($account), 'Held permission ⇒ accessible.');
-    $this->assertTrue($manager->get('general')->accessibleBy($account), 'General is always accessible.');
-    $this->assertFalse($manager->get('globals')->accessibleBy($account), 'Ungranted studio ⇒ not accessible.');
-    $this->assertFalse($manager->get('design_system')->accessibleBy($account));
-    $this->assertFalse($manager->get('checks')->accessibleBy($account));
+    $this->assertTrue($manager->get('studio_test')->accessibleBy($granted), 'Held permission ⇒ accessible.');
+    $this->assertTrue($manager->get('general')->accessibleBy($granted), 'General is always accessible.');
+    $this->assertFalse($manager->get('studio_test')->accessibleBy($none), 'Ungranted studio ⇒ not accessible.');
+    $this->assertTrue($manager->get('general')->accessibleBy($none), 'General needs no grant.');
   }
 
   /**
-   * The permission set is minted from the plugins: one per gated studio,
+   * The permission set is minted from the manifests: one per gated studio,
    * General excluded, each restricted.
    */
   public function testPermissionsMintedFromPlugins(): void {
@@ -165,9 +166,9 @@ final class StudioAccessTest extends KernelTestBase {
    * The console shell, the settings form and the permissions page all read
    * `studios()`, so an exception out of it is a 500 on every one of them — for
    * every user of a client's site, because of one bad class in a pack. A
-   * malformed ID is already dropped-and-logged; discovery only proves a class
-   * carries the attribute, so the class that does not implement
-   * StudioInterface has to be dropped in the same way.
+   * malformed ID is already dropped-and-logged; a manifest may name any
+   * `class`, so the class that does not implement StudioInterface has to be
+   * dropped in the same way.
    */
   public function testUninstantiableStudioIsDroppedNotThrown(): void {
     $logger = $this->createMock(LoggerInterface::class);
@@ -178,7 +179,7 @@ final class StudioAccessTest extends KernelTestBase {
         $this->callback(static fn(array $context): bool => ($context['%id'] ?? '') === 'acme_pack'),
       );
 
-    // A pack shipping `#[Studio(id: 'acme_pack')] class Reports {}` — a valid
+    // A pack whose manifest names `class: Drupal\acme_pack\Reports` — a valid
     // id on a class that implements nothing. NullBackend keeps this double's
     // discovery out of the real manager's cache bin.
     $manager = new class(

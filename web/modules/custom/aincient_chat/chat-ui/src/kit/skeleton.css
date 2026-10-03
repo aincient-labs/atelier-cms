@@ -1,0 +1,20 @@
+/*
+ * kit · Skeleton (skeleton.tsx) — placeholder bars with the real geometry (Law 09).
+ *
+ * Extracted from styles.css unchanged (plans/studio-modules.md, "the kit, for
+ * real"): the class names are the contract, so markup that still writes them by
+ * hand keeps working while call sites move to the component. System tokens only
+ * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
+ * feature rule of equal specificity still overrides the kit — never the reverse.
+ */
+.ain-skeleton {
+  display: block; border-radius: 4px;
+  background: color-mix(in oklch, var(--ain-color-text) 8%, transparent);
+  animation: ain-mic-pulse 1.4s ease-in-out infinite;
+}
+/* The 150ms-late fade-in a skeleton container uses (Law 09: under ~150ms show nothing). */
+@keyframes ain-skel-in { to { opacity: 1; } }
+.ain-skeleton--input { width: 100%; height: 30px; }
+.ain-skeleton--avatar { flex: none; width: 44px; height: 44px; border-radius: 999px; }
+.ain-skeleton--btn { width: 120px; height: 26px; }
+.ain-skeleton--short { width: 60%; }

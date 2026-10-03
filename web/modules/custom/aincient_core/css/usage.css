@@ -27,7 +27,7 @@
 .ain-usage .ain-usage__note,
 .ain-usage .ain-usage__exports {
   max-width: 46rem;
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
 }
 
 .ain-usage .ain-usage__note {
@@ -52,17 +52,17 @@
 
 .ain-usage .ain-usage__period {
   padding: 0.3rem 0.75rem;
-  border: 1px solid var(--ain-border);
-  border-radius: var(--ain-radius);
-  color: var(--ain-text-dim);
+  border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md);
+  color: var(--ain-color-text-muted);
   font-size: 0.8125rem;
   text-decoration: none;
 }
 
 .ain-usage .ain-usage__period.is-active {
-  border-color: var(--ain-accent);
-  background: var(--ain-surface-2);
-  color: var(--ain-accent);
+  border-color: var(--ain-color-accent);
+  background: var(--ain-color-surface-raised);
+  color: var(--ain-color-accent);
   font-weight: 600;
 }
 
@@ -79,15 +79,15 @@
 .ain-usage .ain-usage__totals li {
   flex: 1 1 10rem;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--ain-border);
-  border-radius: var(--ain-radius);
-  background: var(--ain-surface-2);
+  border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md);
+  background: var(--ain-color-surface-raised);
   list-style: none;
 }
 
 .ain-usage .ain-usage__stat-label {
   display: block;
-  color: var(--ain-text-faint);
+  color: var(--ain-color-text-faint);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -122,7 +122,7 @@
 .ain-usage .ain-usage__table caption {
   caption-side: bottom;
   padding-block-start: 0.5rem;
-  color: var(--ain-text-faint);
+  color: var(--ain-color-text-faint);
   font-size: 0.8125rem;
   text-align: start;
 }
@@ -130,13 +130,13 @@
 .ain-usage .ain-usage__table th,
 .ain-usage .ain-usage__table td {
   padding: 0.55rem 0.75rem;
-  border-block-end: 1px solid var(--ain-border);
+  border-block-end: 1px solid var(--ain-color-border);
   vertical-align: top;
   text-align: start;
 }
 
 .ain-usage .ain-usage__table th {
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -166,7 +166,7 @@
 /* A machine string rendered as one, so a typo in `claude-haiku-4-5-20251001`
    is visible rather than smoothed over. */
 .ain-usage .ain-usage__id {
-  font-family: var(--ain-mono);
+  font-family: var(--ain-font-mono);
   font-size: 0.8125rem;
 }
 
@@ -184,8 +184,8 @@
    code and a filter on the export both key on, so it is always shown. */
 .ain-usage .ain-usage__tag {
   display: block;
-  color: var(--ain-text-faint);
-  font-family: var(--ain-mono);
+  color: var(--ain-color-text-faint);
+  font-family: var(--ain-font-mono);
   font-size: 0.75rem;
 }
 
@@ -193,7 +193,7 @@
   display: block;
   max-width: 26rem;
   margin-block-start: 0.2rem;
-  color: var(--ain-text-faint);
+  color: var(--ain-color-text-faint);
   font-size: 0.8125rem;
 }
 
@@ -213,7 +213,7 @@
   max-width: 26rem;
   margin-block-start: 0.5rem;
   border-radius: 3px;
-  background: var(--ain-surface-2);
+  background: var(--ain-color-surface-raised);
 }
 
 .ain-usage .ain-usage__bar-fill {
@@ -221,7 +221,7 @@
   height: 100%;
   min-width: 2px;
   border-radius: 3px;
-  background: var(--ain-border-strong);
+  background: var(--ain-color-border-strong);
 }
 
 /* ===== 3. The two states that are not numbers ===== */
@@ -236,7 +236,7 @@
    like every other row. Tint the row, because the consequence belongs to the
    model, not to the cost cell alone. */
 .ain-usage tr.ain-usage__row--unpriced > td {
-  background: var(--ain-surface-2);
+  background: var(--ain-color-surface-raised);
 }
 
 /* Sits under the model id in the first column, so it reads as a note on the
@@ -245,8 +245,8 @@
   display: block;
   max-width: 30rem;
   margin-block-start: 0.3rem;
-  color: var(--ain-accent-2);
-  font-family: var(--ain-font);
+  color: var(--ain-color-warning);
+  font-family: var(--ain-font-body);
   font-size: 0.8125rem;
   text-align: start;
   white-space: normal;
@@ -256,7 +256,7 @@
    a call site we forgot to name or one we did not know was running, and both are
    worth a mark. */
 .ain-usage tr.ain-usage__row--unknown .ain-usage__tag {
-  color: var(--ain-accent-2);
+  color: var(--ain-color-warning);
 }
 
 /* ===== The under-report notice ===== */
@@ -268,9 +268,9 @@
 .ain-usage .ain-usage__unpriced {
   margin-block: 1rem;
   padding: 0.75rem 1rem;
-  border-inline-start: 3px solid var(--ain-accent-2);
-  border-radius: 0 var(--ain-radius) var(--ain-radius) 0;
-  background: var(--ain-surface-2);
+  border-inline-start: 3px solid var(--ain-color-warning);
+  border-radius: 0 var(--ain-radius-md) var(--ain-radius-md) 0;
+  background: var(--ain-color-surface-raised);
 }
 
 .ain-usage .ain-usage__unpriced .form-item,
@@ -279,6 +279,6 @@
 }
 
 .ain-usage .ain-usage__unpriced li {
-  font-family: var(--ain-mono);
+  font-family: var(--ain-font-mono);
   font-size: 0.8125rem;
 }

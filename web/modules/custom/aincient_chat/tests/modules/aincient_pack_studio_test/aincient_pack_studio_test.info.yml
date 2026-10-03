@@ -1,0 +1,8 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier pack studio test'
+type: module
+description: 'TEST ONLY: a pack-style studio that brings its rail as a built ES module (ui.script + ui.style) the console mounts through the Phase 4 boundary (plans/console-extension-point.md, DECISIONS 0448).'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_chat

@@ -1,0 +1,7 @@
+# A manifest-only studio: everything the server knows about it is here.
+studio_test:
+  label: 'Studio test'
+  description: 'A fixture studio for the kernel tests.'
+  help: 'Nothing to see here.'
+  weight: 500
+  capabilities: [ping]

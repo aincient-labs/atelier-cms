@@ -50,11 +50,16 @@ final class NestedPipelineGuardTest extends UnitTestCase {
    * No capability starts a pipeline; the scratchpad's turn scope stays correct.
    */
   public function testNoCapabilitySpawnsNestedPipelines(): void {
-    // From tests/src/Unit up to modules/custom: Unit → src → tests →
-    // aincient_flows → custom.
-    $customModules = dirname(__DIR__, 4);
+    // From tests/src/Unit up to web/modules: Unit → src → tests →
+    // aincient_flows → custom → modules. Both of our tiers, custom and studio
+    // (two globs: GLOB_BRACE is not portable).
+    $tiers = dirname(__DIR__, 5);
     $offenders = [];
-    foreach (glob($customModules . '/*/src/Plugin/AiCapability/*.php') ?: [] as $file) {
+    $files = array_merge(
+      glob($tiers . '/custom/*/src/Plugin/AiCapability/*.php') ?: [],
+      glob($tiers . '/studio/*/src/Plugin/AiCapability/*.php') ?: [],
+    );
+    foreach ($files as $file) {
       $source = (string) file_get_contents($file);
       foreach (self::PIPELINE_SPAWNING_SYMBOLS as $symbol) {
         if (str_contains($source, $symbol)) {

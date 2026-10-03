@@ -21,7 +21,7 @@
  * COLOUR. Nothing here is cinnabar. Law 01 gives the brand pigment at most two
  * elements per screen and never on rules or edges, and everything this page
  * marks is STATE, which §3.4 puts in the muted-earth set as a tint: brick
- * (`--ain-danger`) for what we know is wrong, ochre (`--ain-accent-2`) for what
+ * (`--ain-color-danger`) for what we know is wrong, ochre (`--ain-color-warning`) for what
  * merely wants checking. The page therefore spends none of its accent budget.
  *
  * The `--ain-*` tokens come from the Studio Backend theme's :root
@@ -32,7 +32,7 @@
 .ain-pricing .ain-pricing__intro,
 .ain-pricing .ain-pricing__link {
   max-width: 46rem;
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
 }
 
 .ain-pricing .ain-pricing__intro {
@@ -51,9 +51,9 @@
 .ain-pricing .ain-pricing__unpriced {
   margin-block-end: 1rem;
   padding: 0.75rem 1rem;
-  border-inline-start: 3px solid var(--ain-accent-2);
-  background: var(--ain-surface-2);
-  border-radius: 0 var(--ain-radius) var(--ain-radius) 0;
+  border-inline-start: 3px solid var(--ain-color-warning);
+  background: var(--ain-color-surface-raised);
+  border-radius: 0 var(--ain-radius-md) var(--ain-radius-md) 0;
 }
 
 .ain-pricing .ain-pricing__unpriced .form-item,
@@ -62,7 +62,7 @@
 }
 
 .ain-pricing .ain-pricing__unpriced li {
-  font-family: var(--ain-mono);
+  font-family: var(--ain-font-mono);
   font-size: 0.8125rem;
 }
 
@@ -84,8 +84,8 @@
  *
  * COLOUR. Nothing here is cinnabar. Law 01 gives the brand pigment at most two
  * elements per screen and never on rules or edges, and everything marked here is
- * STATE, which §3.4 puts in the muted-earth set: brick (`--ain-danger`) for what
- * we know is wrong, ochre (`--ain-accent-2`) for what wants checking.
+ * STATE, which §3.4 puts in the muted-earth set: brick (`--ain-color-danger`) for what
+ * we know is wrong, ochre (`--ain-color-warning`) for what wants checking.
  * ------------------------------------------------------------------------ */
 
 /* ===== The column heading the numbers are read against ===== */
@@ -98,31 +98,31 @@
 .ain-pricing .ain-pricing__models {
   /* The price column's width, and the indent our own disclosure marker takes.
      Both are shared between the header and the rows, so neither can drift. */
-  --ain-price-col: 11rem;
-  --ain-marker: 1.5rem;
+  --ain-pricing-price-col: 11rem;
+  --ain-pricing-marker: 1.5rem;
   margin-block-start: 1.25rem;
   overflow: hidden;
-  border: 1px solid var(--ain-border);
-  border-radius: var(--ain-radius);
+  border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md);
   /* The card belongs to the LEDGER, not to each row. Per-row cards float the
      lines apart and break the vertical run the price column is read down; no
      card at all leaves the open row as the only tinted thing on screen, which
      reads as the page being broken rather than as a row being open. One paper
      surface, hairline-ruled. */
-  background: var(--ain-surface);
+  background: var(--ain-color-surface);
 }
 
 .ain-pricing .ain-pricing__head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--ain-price-col);
+  grid-template-columns: minmax(0, 1fr) var(--ain-pricing-price-col);
   gap: 0.75rem;
-  padding: 0.5rem 0.85rem 0.4rem calc(0.85rem + var(--ain-marker));
-  border-block-end: 1px solid var(--ain-border);
+  padding: 0.5rem 0.85rem 0.4rem calc(0.85rem + var(--ain-pricing-marker));
+  border-block-end: 1px solid var(--ain-color-border);
   /* The recessed eyebrow a table head wears in this theme, so the column titles
      read as a heading rather than as a first row with no numbers. */
-  background: var(--ain-surface-2);
-  color: var(--ain-text-dim);
-  font-family: var(--ain-mono);
+  background: var(--ain-color-surface-raised);
+  color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -137,7 +137,7 @@
 .ain-pricing .ain-pricing__model {
   margin: 0;
   border: 0;
-  border-block-end: 1px solid var(--ain-border);
+  border-block-end: 1px solid var(--ain-color-border);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
@@ -160,7 +160,7 @@
 /* The admin theme draws its own chevron as `summary::before`. It is sized and
    positioned for a flex summary, and this one is a block, so it lands above the
    line as a stray tick. It is also the wrong marker to keep: the whole ledger's
-   left column is measured from `--ain-marker`, so the indent has to come from a
+   left column is measured from `--ain-pricing-marker`, so the indent has to come from a
    marker whose width we set rather than one the theme may restyle. */
 .ain-pricing .ain-pricing__model > summary::before {
   display: none;
@@ -176,7 +176,7 @@
   inline-size: 0;
   block-size: 0;
   border-block: 0.3rem solid transparent;
-  border-inline-start: 0.4rem solid var(--ain-text-faint);
+  border-inline-start: 0.4rem solid var(--ain-color-text-faint);
   transition: transform 0.12s ease;
 }
 
@@ -185,16 +185,16 @@
 }
 
 .ain-pricing .ain-pricing__model > summary:hover {
-  background: var(--ain-surface-2);
+  background: var(--ain-color-surface-raised);
 }
 
 /* The whole row is the control, so the ring goes round the whole row — inset,
    because an outline on a full-bleed element inside a clipped card is otherwise
    trimmed by the card's own overflow and half the ring disappears. */
 .ain-pricing .ain-pricing__model > summary:focus-visible {
-  outline: 2px solid var(--ain-text);
+  outline: 2px solid var(--ain-color-text);
   outline-offset: -3px;
-  background: var(--ain-surface-2);
+  background: var(--ain-color-surface-raised);
 }
 
 /* Three columns: the marker, the id and meta, then the prices. The price column
@@ -204,7 +204,7 @@
    wraps instead; it is the thing with slack. */
 .ain-pricing .ain-pricing__line {
   display: grid;
-  grid-template-columns: var(--ain-marker) minmax(0, 1fr) var(--ain-price-col);
+  grid-template-columns: var(--ain-pricing-marker) minmax(0, 1fr) var(--ain-pricing-price-col);
   gap: 0.25rem 0.75rem;
   align-items: baseline;
   inline-size: 100%;
@@ -215,8 +215,8 @@
    than smoothed over by a text face. */
 .ain-pricing .ain-pricing__line .ain-pricing__id {
   min-width: 0;
-  color: var(--ain-text);
-  font-family: var(--ain-mono);
+  color: var(--ain-color-text);
+  font-family: var(--ain-font-mono);
   font-size: 0.875rem;
   overflow-wrap: anywhere;
 }
@@ -247,27 +247,27 @@
    by a class the form sets, which cannot silently stop applying. */
 .ain-pricing .ain-pricing__num--none,
 .ain-pricing .ain-pricing__free {
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
 }
 
 /* Free is a claim about the model, not a number, so it says so in words rather
    than as a $0.00 indistinguishable from an unpriced one. */
 .ain-pricing .ain-pricing__free {
   grid-column: 1 / -1;
-  font-family: var(--ain-font);
+  font-family: var(--ain-font-body);
   font-size: 0.8125rem;
   font-style: italic;
 }
 
 /* Line two: who uses this model, or why it is on the page at all. An annotation
    — set back, small, and never competing with the id above it, but NOT faint.
-   `--ain-text-faint` measures 3.48:1 on this surface, under AA's 4.5 for text
+   `--ain-color-text-faint` measures 3.48:1 on this surface, under AA's 4.5 for text
    this size, and every one of these lines carries meaning: which roles spend
    through this model, or how many calls it has already billed at $0.00. Faint
    is for decoration, and there is none here. */
 .ain-pricing .ain-pricing__meta {
   grid-column: 2;
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
   font-size: 0.8125rem;
 }
 
@@ -285,9 +285,9 @@
   display: inline-block;
   padding: 0.05rem 0.4rem;
   border-radius: 2px;
-  background: var(--ain-surface-2);
-  color: var(--ain-text-dim);
-  font-family: var(--ain-mono);
+  background: var(--ain-color-surface-raised);
+  color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -304,14 +304,14 @@
    tint has one appearance everywhere and can be measured. */
 .ain-pricing .ain-pricing__badge--unpriced,
 .ain-pricing .ain-pricing__badge--lapsed {
-  background: color-mix(in srgb, var(--ain-danger) 10%, var(--ain-surface));
-  color: var(--ain-danger);
+  background: color-mix(in srgb, var(--ain-color-danger) 10%, var(--ain-color-surface));
+  color: var(--ain-color-danger);
 }
 
 .ain-pricing .ain-pricing__badge--stale,
 .ain-pricing .ain-pricing__badge--disagrees {
-  background: color-mix(in srgb, var(--ain-accent-2) 14%, var(--ain-surface));
-  color: var(--ain-accent-2);
+  background: color-mix(in srgb, var(--ain-color-warning) 14%, var(--ain-color-surface));
+  color: var(--ain-color-warning);
 }
 
 /* The last row rules against the card's own edge; a second line there reads as
@@ -326,13 +326,13 @@
    badges spend on a rate that is actually wrong — when all it is doing is being
    open. */
 .ain-pricing .ain-pricing__model[open] > summary {
-  border-block-end: 1px solid var(--ain-border);
+  border-block-end: 1px solid var(--ain-color-border);
 }
 
 /* Everything in the open row hangs off the id's left edge, not the row's — so
    the eye keeps the same margin it was scanning down. */
 .ain-pricing .ain-pricing__model > *:not(summary) {
-  padding-inline: calc(0.85rem + var(--ain-marker)) 0.85rem;
+  padding-inline: calc(0.85rem + var(--ain-pricing-marker)) 0.85rem;
 }
 
 .ain-pricing .ain-pricing__model .ain-pricing__status {
@@ -344,12 +344,12 @@
 
 .ain-pricing .ain-pricing__status--unpriced,
 .ain-pricing .ain-pricing__status--lapsed {
-  color: var(--ain-danger);
+  color: var(--ain-color-danger);
 }
 
 .ain-pricing .ain-pricing__status--disagrees,
 .ain-pricing .ain-pricing__status--stale {
-  color: var(--ain-accent-2);
+  color: var(--ain-color-warning);
 }
 
 /* The question the row is asking, in the voice of a question rather than a
@@ -375,7 +375,7 @@
   margin-block-start: 0.15rem;
   margin-inline-start: 1.6rem;
   max-width: 40rem;
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
   font-size: 0.8125rem;
   line-height: 1.5;
 }
@@ -393,7 +393,7 @@
      label for the first box. */
   margin: 0.5rem 0 0.25rem 1.6rem;
   padding-block-start: 0.75rem;
-  border-block-start: 1px solid var(--ain-border);
+  border-block-start: 1px solid var(--ain-color-border);
 }
 
 /* `$ [ 2.00 ] / Mtok` on one line. Drupal renders a field prefix and suffix as
@@ -415,7 +415,7 @@
 
 .ain-pricing .ain-pricing__rates-grid .field-prefix,
 .ain-pricing .ain-pricing__rates-grid .field-suffix {
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
   font-size: 0.8125rem;
   white-space: nowrap;
 }
@@ -430,7 +430,7 @@
   grid-column: 1 / -1;
   margin: 0;
   max-width: 40rem;
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
   font-size: 0.8125rem;
   line-height: 1.5;
 }
@@ -443,7 +443,7 @@
    only a pathological URL breaks now. */
 .ain-pricing .ain-pricing__model .ain-pricing__provenance {
   margin: 0.25rem 0 1rem;
-  color: var(--ain-text-dim);
+  color: var(--ain-color-text-muted);
   font-size: 0.8125rem;
   overflow-wrap: anywhere;
 }
@@ -462,7 +462,7 @@
 .ain-pricing .ain-pricing__retired {
   margin: 0;
   border: 0;
-  border-block-start: 1px solid var(--ain-border);
+  border-block-start: 1px solid var(--ain-color-border);
   border-radius: 0;
   background: transparent;
 }
@@ -472,8 +472,8 @@
    that has landed in the middle of one. */
 .ain-pricing .ain-pricing__retired > summary {
   padding: 0.5rem 0.85rem;
-  background: var(--ain-surface-2);
-  color: var(--ain-text-dim);
+  background: var(--ain-color-surface-raised);
+  color: var(--ain-color-text-muted);
   font-size: 0.8125rem;
 }
 
@@ -486,8 +486,8 @@
 
 .ain-pricing .ain-pricing__retired > [id$="--description"] {
   padding: 0.6rem 0.85rem;
-  border-block-end: 1px solid var(--ain-border);
-  color: var(--ain-text-dim);
+  border-block-end: 1px solid var(--ain-color-border);
+  color: var(--ain-color-text-muted);
   font-size: 0.8125rem;
   line-height: 1.5;
 }

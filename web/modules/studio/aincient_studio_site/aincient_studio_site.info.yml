@@ -1,0 +1,28 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier Site studios'
+type: module
+description: 'The site-wide studios: Navigation & Pages (`globals` — menus, front/404/403 routing, header/footer arrangement, the chrome agent and its preview_chrome verb) and Settings (`settings` — site email, privacy/consent, Freeze & Live snapshots). Two frozen ids, one module: they edit one chrome draft beside one live chrome preview (DECISIONS 0372). The fourth studio module (plans/studio-modules.md Phase E.3).'
+package: Atelier studios
+core_version_requirement: ^11
+dependencies:
+  # The studio frame: manifest discovery, the on/off switch, the derived
+  # permissions and the route gate.
+  - aincient_chat
+  # What these studios edit — the chrome (ChromeRepository, SiteIdentity, the
+  # menus) through the SHARED `/atelier/chrome/*` endpoints, which stay in core
+  # because Identity (design_system) writes its own slice through the same
+  # merge, and because a site must keep rendering its header and footer with
+  # these studios switched off. Only the editing surfaces and the chrome agent's
+  # one verb are here; the preview applier the verb validates with is core's.
+  - aincient_pages
+  # Freeze & Live: the Settings rail's snapshot ACTIONS (freeze / use / keep /
+  # delete) live here; the store, the exporter, the drush commands and the
+  # read-only list + file routes stay in core — the site exports with this
+  # studio switched off.
+  - aincient_export
+  # "Clear examples": the demo-content tracking table + delete live in core
+  # (`aincient_core.demo_content`) so `drush atelier:demo-clear` works with
+  # this studio switched off; the Settings rail's section and its routes are
+  # here. Named explicitly, not inherited through aincient_chat: a service
+  # argument that reaches into another module must be a declared dependency.
+  - aincient_core

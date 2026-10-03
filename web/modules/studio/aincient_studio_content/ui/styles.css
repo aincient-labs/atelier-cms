@@ -1,0 +1,193 @@
+/* The Content studio's own styles (plans/studio-modules.md Phase E.4, DECISIONS
+   0435) — the page composer rail: the section stack and its hover-revealed
+   controls, the insert seams and the searchable component picker, the global-
+   block cards and the Body ｜ Presence facet switch. Every class here is
+   prefixed `.ain-content-` (studio-css.test.ts); the rail also USES the
+   console's shared classes (.ain-field, .ain-studio__*, .ain-panel__*,
+   .ain-menu__*, .ain-pagepick — the kit's reference picker shares that list),
+   which stay in the console stylesheet. The shared page preview, the content
+   browser and the Presence cards are core's and keep their rules there. */
+
+/* Insertion point between section cards (and at the top / end): an always-visible
+   "+" that sits on the seam between two cards (it's fine for it to overlap them)
+   and opens the searchable component picker at that exact index. Replaces the old
+   flat chip-wall (didn't scale; append-only). */
+.ain-content-insert {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  height: 6px; margin: 0; z-index: 1;
+}
+/* On hover the seam fills with a soft accent bar spanning the gap (the "+" sits
+   on it) — an unmistakable insert target, vs a thin line that reads as broken. */
+.ain-content-insert::before {
+  content: ""; position: absolute; left: 6px; right: 6px; top: 50%; transform: translateY(-50%);
+  height: 18px; border-radius: var(--ain-radius-md);
+  background: color-mix(in oklch, var(--ain-color-accent) 16%, transparent);
+  visibility: hidden;
+}
+.ain-content-insert:hover::before { visibility: visible; }
+/* Flat neobrutalist chip idiom (matches .ain-chip): sharp 2px corners + a hard
+   offset shadow on hover — NOT a rounded pebble. */
+.ain-content-insert__btn {
+  position: relative; display: inline-flex; align-items: center; gap: 5px;
+  padding: 1px 7px; font: inherit; font-size: 11px; color: var(--ain-color-text-muted);
+  background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  cursor: pointer; transition: border-color .1s, color .1s, box-shadow .1s;
+}
+.ain-content-insert__btn:hover {
+  border-color: var(--ain-color-border-strong); color: var(--ain-color-text);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+}
+.ain-content-insert__btn svg { width: 12px; height: 12px; }
+/* Prominent variant — the empty-state / first-section trigger (gets its own row;
+   no seam bar — it's a standalone button, not a between-cards target). */
+.ain-content-insert--prominent { height: auto; margin: 8px 0; }
+.ain-content-insert--prominent .ain-content-insert__btn { padding: 7px 12px; font-size: 12px; }
+.ain-content-insert--prominent::before { display: none; }
+/* Active — the gap expands to a full-width block holding the picker. Lift it
+   above the neighbouring seam buttons (z-index 1) so they can't overlap it, and
+   drop the seam line so it doesn't draw across the picker. */
+.ain-content-insert--active { display: block; height: auto; margin: 6px 0; z-index: 5; }
+.ain-content-insert--active::before { display: none; }
+
+/* Searchable component picker, opened inline at an insertion point. */
+.ain-content-picker {
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: var(--ain-color-surface); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent); overflow: hidden;
+}
+.ain-content-picker__search {
+  width: 100%; border: 0; border-bottom: 1px solid var(--ain-color-border);
+  border-radius: 0; background: var(--ain-color-surface-raised);
+}
+.ain-content-picker__list { display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; }
+.ain-content-picker__empty { padding: 12px; font-size: 12.5px; color: var(--ain-color-text-muted); }
+.ain-content-picker__item {
+  display: flex; align-items: flex-start; gap: 8px; width: 100%; text-align: left; cursor: pointer;
+  padding: 8px 12px; background: none; border: 0; border-bottom: 1px solid var(--ain-color-border);
+}
+.ain-content-picker__item:last-child { border-bottom: none; }
+.ain-content-picker__item:hover { background: color-mix(in oklch, var(--ain-color-accent) 14%, var(--ain-color-surface-raised)); }
+.ain-content-picker__ico { flex: none; width: 16px; text-align: center; font-size: 13px; color: var(--ain-color-text-muted); line-height: 1.5; }
+.ain-content-picker__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+/* The component name is read while scanning the picker (and varies per row), so
+   it's the legible body font, not the pixel display face — pixel is reserved for
+   the fixed top-of-panel titles. */
+.ain-content-picker__name { font-family: var(--ain-font-body); font-size: 13px; font-weight: 600; color: var(--ain-color-text); }
+.ain-content-picker__use { font-size: 11px; color: var(--ain-color-text-faint); line-height: 1.3; }
+/* Provenance (W6): components from add-on modules sit under a small group
+   header, each row carrying a subtle chip. Built-in rows render untouched. */
+.ain-content-picker__grouphead {
+  padding: 6px 12px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ain-color-text-faint);
+  background: var(--ain-color-surface-raised); border-bottom: 1px solid var(--ain-color-border);
+}
+.ain-content-picker__prov {
+  display: inline-block; margin-left: 6px; padding: 0 5px; vertical-align: 1px;
+  font-size: 9.5px; font-weight: 500; line-height: 1.6; letter-spacing: 0.02em;
+  color: var(--ain-color-text-muted); border: 1px solid var(--ain-color-border); border-radius: 999px;
+}
+
+/* The section STACK (study 02, Plate 11): rows share ONE panel with hairline
+   separators — the per-card borders + insert wedges + always-visible controls
+   are retired. Content at rest; the grip and ⋯ surface on hover. */
+.ain-content-secstack {
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: var(--ain-color-surface); overflow: hidden;
+}
+.ain-content-secstack > .ain-content-section + .ain-content-section { border-top: 1px solid var(--ain-color-border); }
+/* An in-stack insert picker gets its own breathing room between rows. */
+.ain-content-secstack > .ain-content-insert--active { margin: 6px; }
+.ain-content-section { background: none; }
+.ain-content-section[data-open] { background: var(--ain-color-surface); }
+/* The head is a flex row: hover grip · a full-width toggle · dirty · ⋯.
+   (Controls are siblings of the toggle, not nested — no button-in-button.) */
+.ain-content-section__head { display: flex; align-items: center; gap: 2px; padding: 0 6px 0 2px; }
+.ain-content-section__head:hover { background: var(--ain-color-surface-raised); }
+/* The drag grip — hidden at rest (visibility, so it also leaves the tab order
+   until the row is hovered), revealed by the row hover. */
+.ain-content-section__grip {
+  flex: none; display: grid; place-items: center; width: 16px; align-self: stretch;
+  color: var(--ain-color-text-faint); cursor: grab; visibility: hidden;
+}
+.ain-content-section__grip svg { width: 13px; height: 13px; }
+.ain-content-section__head:hover .ain-content-section__grip { visibility: visible; }
+.ain-content-section__grip:active { cursor: grabbing; }
+.ain-content-section__toggle {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px;
+  margin: 0; padding: 7px 4px 7px 2px; border: 0; background: none; text-align: left; cursor: pointer;
+  font: inherit; color: var(--ain-color-text);
+}
+/* Name over its mono fact line — an outline of names, not machinery. */
+.ain-content-section__cell { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
+.ain-content-section__name {
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 600;
+  color: var(--ain-color-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ain-content-section__sum {
+  min-width: 0; font-family: var(--ain-font-mono); font-size: 10px; letter-spacing: .01em;
+  color: var(--ain-color-text-faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Chevron points down when open; rotates to point right when collapsed. */
+.ain-content-section__chev { width: 12px; height: 12px; flex: none; color: var(--ain-color-text-faint); transition: transform .12s; }
+.ain-content-section__toggle[aria-expanded="false"] .ain-content-section__chev { transform: rotate(-90deg); }
+/* Unsaved-change count on a section-card head — survives collapse so a folded
+   card still advertises the edits (and per-field markers) inside it. Mirrors
+   the brand studio's .ain-card__dirty. */
+.ain-content-section__dirty {
+  flex: none; display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 5px;
+  font-size: 10px; font-weight: 600; line-height: 1; color: var(--ain-color-warning);
+  background: color-mix(in oklch, var(--ain-color-warning) 15%, transparent); border-radius: 999px;
+}
+/* The row's ⋯ — hover-revealed like the grip; holds reorder/insert/remove. */
+.ain-content-section__more { flex: none; visibility: hidden; }
+.ain-content-section__head:hover .ain-content-section__more,
+.ain-content-section__more:focus-visible,
+.ain-content-section__more[data-open] { visibility: visible; }
+.ain-content-section__more svg { width: 14px; height: 14px; }
+/* The editing body, set off from the head by a hairline (matches .ain-card). */
+.ain-content-section__body { padding: 4px 10px 8px; border-top: 1px solid var(--ain-color-border); }
+/* The first field in the body — selected by position: naming the kit's shared
+   field class here would break the studio CSS rule. */
+.ain-content-section__body > :first-child { margin-top: 8px; }
+.ain-content-section__noprops { margin: 8px 0 4px; font-size: 11.5px; color: var(--ain-color-text-faint); }
+/* One quiet append affordance closes the stack. */
+.ain-content-addsec {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
+  padding: 5px 8px; border: 0; background: none; border-radius: var(--ain-radius-md);
+  font: inherit; font-size: 12px; color: var(--ain-color-text-muted);
+}
+.ain-content-addsec:hover { background: var(--ain-color-surface-raised); color: var(--ain-color-text); }
+.ain-content-addsec svg { width: 12px; height: 12px; }
+
+.ain-content-block {
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: var(--ain-color-surface); padding: 6px; display: flex; flex-direction: column; gap: 6px;
+}
+.ain-content-block__head { display: flex; align-items: center; gap: 6px; }
+.ain-content-block__pick { flex: 1; min-width: 0; }
+.ain-content-block__type {
+  flex: 1; font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--ain-color-text-muted);
+}
+.ain-content-block__props { display: flex; flex-direction: column; gap: 6px; }
+
+/* Body ｜ Presence facet — the kit's segmented grammar: recessed track,
+   active = RAISED PAPER (the accent fill on segments is banned — study 02,
+   Plate 12; a facet is a mode, and a mode never wears the pigment). */
+.ain-content-facet {
+  display: inline-flex; gap: 2px; padding: 2px; flex: none;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: color-mix(in oklch, var(--ain-color-shadow) 5%, var(--ain-color-surface-raised));
+}
+.ain-content-facet__btn {
+  font: inherit; font-size: 11.5px; font-weight: 600; line-height: 16px;
+  padding: 3px 10px; border: 0; border-radius: 4px;
+  background: none; color: var(--ain-color-text-muted); cursor: pointer;
+  transition: background .1s, color .1s, box-shadow .1s;
+}
+.ain-content-facet__btn[aria-pressed="true"] {
+  background: var(--ain-color-surface); color: var(--ain-color-text);
+  box-shadow: 0 1px 4px -1px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+}
+.ain-content-facet__btn:not([aria-pressed="true"]):hover { color: var(--ain-color-text); }

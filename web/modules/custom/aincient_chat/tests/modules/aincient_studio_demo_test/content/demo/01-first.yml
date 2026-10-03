@@ -1,0 +1,6 @@
+# One entity per file; `values` goes to the storage's create() verbatim.
+entity_type: node
+values:
+  type: page
+  title: 'Example: the first page'
+  status: 1

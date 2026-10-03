@@ -1,4 +1,4 @@
-import { HumanSetIcon } from "./icons";
+import { HumanSetIcon } from "./kit/icons";
 import { isChatReachable } from "./console-config";
 
 /**

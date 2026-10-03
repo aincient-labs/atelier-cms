@@ -6,7 +6,7 @@
  */
 
 /**
- * @defgroup aincient_studio Studio plugins
+ * @defgroup aincient_studio Studios (manifest plugins)
  * @{
  * A STUDIO is one workspace of the operator console.
  *
@@ -15,23 +15,32 @@
  * editor/preview split pane. A studio has two halves:
  *
  * - The SERVER half, this plugin type: the key, the admin label, the display
- *   order and the access gate. Discovered from `src/Plugin/Studio` in every
- *   enabled module, so a component pack can ship one
- *   (plans/console-extension-point.md, DECISIONS 0424).
- * - The BROWSER half: the editor/preview components, registered in the console
- *   bundle's own registry. Until the imperative mount boundary lands
- *   (`window.atelier.console`, Phase 4 of that plan), only studios built into
- *   the console bundle have a browser half — a plugin-only studio is visible to
- *   the server (permission, settings form, catalog) but has nothing to render.
+ *   order, the access gate and the studio's index (UI entry, flows, owned
+ *   capabilities, demo source). Declared by a YAML manifest,
+ *   `<module>.studios.yml`, in every enabled module — a studio module under
+ *   `web/modules/studio/` (DECISIONS 0430) or a component pack
+ *   (plans/console-extension-point.md, DECISIONS 0424). No PHP class: the
+ *   manifest IS the plugin; `#[Studio]` attribute plugins are gone (0436).
+ *   General, the open fallback, is the manager's own and has no manifest.
+ * - The BROWSER half: the manifest's `ui:` map. `ui.entry` names the
+ *   rail/preview module, compiled by the one console build into the studio's
+ *   own chunk and loaded the first time the studio opens (studio modules);
+ *   `ui.name` (defaults to `label`) and `ui.icon` (a kit icon name, defaults
+ *   to the chat glyph) are what the console's nav shows before that chunk
+ *   loads. A manifest with no `ui.entry` — a pack, until the imperative mount
+ *   boundary lands (`window.atelier.console`, Phase 4 of that plan) — is a
+ *   chat-only studio: visible to the server (permission, settings form,
+ *   catalog) and in the nav under its name and icon, rendered as chat.
  *
  * @code
- * namespace Drupal\acme_reports\Plugin\Studio;
- *
- * use Drupal\aincient_chat\Attribute\Studio;
- * use Drupal\aincient_chat\Studio\StudioBase;
- *
- * #[Studio(id: 'acme_reports', label: 'Reports', weight: 90)]
- * final class Reports extends StudioBase {}
+ * # acme_reports/acme_reports.studios.yml
+ * acme_reports:
+ *   label: 'Reports'
+ *   description: 'Usage and traffic reports.'
+ *   weight: 90
+ *   ui:
+ *     name: 'Reports'
+ *     icon: sliders
  * @endcode
  *
  * Three rules, all of them load-bearing:

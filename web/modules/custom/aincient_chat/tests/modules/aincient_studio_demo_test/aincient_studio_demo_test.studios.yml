@@ -1,0 +1,7 @@
+# A studio whose only reason to exist is its demo content.
+studio_demo_test:
+  label: 'Studio demo test'
+  description: 'A fixture studio that ships two example pages.'
+  help: 'Nothing to see here.'
+  weight: 510
+  demo: content/demo

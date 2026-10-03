@@ -55,6 +55,8 @@ final class ConsoleCapabilityCatalogTest extends KernelTestBase {
     'content_moderation',
     'aincient_pages',
     'aincient_chat',
+    // The Media room is a studio MODULE now (Phase E, DECISIONS 0432).
+    'aincient_studio_media',
   ];
 
   /**
@@ -122,6 +124,7 @@ final class ConsoleCapabilityCatalogTest extends KernelTestBase {
         $etm,
         $this->container->get('aincient_core.capability_verbs'),
         $this->container->get('plugin.manager.aincient.studios'),
+        $this->container->get('aincient_chat.studio_switch'),
       ),
       $this->container->get('menu.link_tree'),
       $this->container->get('config.factory'),
@@ -131,6 +134,9 @@ final class ConsoleCapabilityCatalogTest extends KernelTestBase {
       $this->container->get('aincient_core.model_role_resolver'),
       $this->container->get('aincient_core.inference.registry'),
       $this->container->get('plugin.manager.aincient.studios'),
+      $this->container->get('aincient_chat.studio_switch'),
+      $this->container->get('file_url_generator'),
+      $this->container->get('asset.query_string'),
     );
   }
 

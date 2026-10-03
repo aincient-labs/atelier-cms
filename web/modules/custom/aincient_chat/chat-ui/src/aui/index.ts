@@ -172,6 +172,10 @@ export interface ConsoleThreadEntry {
   getState(): ThreadEntry;
   /** Claim a backend id for a thread that has not sent a turn yet. */
   initialize(): ReturnType<Scope<"threadListItem">["initialize"]>;
+  /** Move the thread out of the room's list (the ⋯ menu's Archive). */
+  archive(): void;
+  /** Delete the thread for good (the ⋯ menu's Delete). */
+  delete(): void;
 }
 
 /** The whole conversation set. Stable across renders; always reads fresh. */
@@ -249,6 +253,8 @@ export function useThreadListEntryHandle(): ConsoleThreadEntry {
     () => ({
       getState: () => aui.threadListItem().getState(),
       initialize: () => aui.threadListItem().initialize(),
+      archive: () => void aui.threadListItem().archive(),
+      delete: () => void aui.threadListItem().delete(),
     }),
     [aui],
   );

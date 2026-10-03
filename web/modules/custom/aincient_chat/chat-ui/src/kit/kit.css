@@ -1,0 +1,27 @@
+/*
+ * The kit's stylesheets, in one place and one order (plans/studio-modules.md,
+ * "`kit/` — the console component library"). styles.css imports this file
+ * right after the tokens and before its first rule, so every kit rule precedes every feature rule:
+ * a feature may restyle a primitive at equal specificity, and the kit never
+ * silently wins. The order below is the order the rules had inside styles.css
+ * before they moved, which is what kept the move a zero-pixel change (verified
+ * by a computed-style diff of every console room, both modes).
+ *
+ * One file per primitive; a new primitive adds its line here.
+ */
+@import "./menu.css";
+@import "./button.css";
+@import "./dialog.css";
+@import "./popover.css";
+@import "./skeleton.css";
+@import "./segmented.css";
+@import "./tabs.css";
+@import "./field.css";
+@import "./field-revert.css";
+@import "./chip.css";
+@import "./filter-select.css";
+@import "./notice.css";
+@import "./empty-state.css";
+@import "./loading-state.css";
+@import "./studio-group.css";
+@import "./studio-status.css";

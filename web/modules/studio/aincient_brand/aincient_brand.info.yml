@@ -1,0 +1,15 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier Identity studio'
+type: module
+description: 'The Identity studio (`design_system` — the console calls it Identity): the brand rail + token showcase preview, the three brand write routes, the brand agent (`brand_studio` + its three specialists) and its six draft-only capabilities. The agent only previews; brand goes live solely via the studio''s Publish. Brand domain logic lives in aincient_pages; this module is the editing surface and agent layer on top of it. The sixth studio module (plans/studio-modules.md Phase E.5) — a core module moved tiers whole under its own name (the 0433 pattern).'
+package: Atelier studios
+core_version_requirement: ^11
+dependencies:
+  # The studio frame: manifest discovery, the on/off switch, the derived
+  # permissions and the route gate.
+  - aincient_chat
+  # What this studio edits — the brand through BrandRepository, the token
+  # registry and the preset catalog, which stay core: the site renders its brand
+  # with this studio switched off.
+  - aincient_pages
+  - aincient_core

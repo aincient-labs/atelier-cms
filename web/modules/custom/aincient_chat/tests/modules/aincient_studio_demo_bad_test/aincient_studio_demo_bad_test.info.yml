@@ -1,0 +1,9 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier studio demo BAD test'
+type: module
+description: 'TEST ONLY: a manifest-only studio whose demo content has one good file and one malformed file, so kernel tests prove a failing import rolls the whole studio back.'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_chat
+  - drupal:node

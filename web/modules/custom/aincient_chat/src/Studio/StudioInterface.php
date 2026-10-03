@@ -64,4 +64,83 @@ interface StudioInterface extends PluginInspectionInterface {
    */
   public function accessibleBy(AccountInterface $account): bool;
 
+  /**
+   * One-line admin description (settings form, `atelier:studio-info`).
+   */
+  public function description(): string;
+
+  /**
+   * Tour / empty-state copy; empty when the studio declares none.
+   */
+  public function help(): string;
+
+  /**
+   * Whether a fresh install switches this studio ON.
+   *
+   * Seeds `aincient_chat.settings:disabled_studios` when the providing module
+   * is installed; after that the config is the switch
+   * ({@see \Drupal\aincient_chat\Studio\StudioSwitch}), never this flag.
+   */
+  public function defaultEnabled(): bool;
+
+  /**
+   * The console UI entry (`ui.entry`), relative to the providing module, or
+   * NULL when the studio is chat-only (General, or a manifest with no entry).
+   *
+   * Compiled by the one console build into the studio's own lazy chunk; the
+   * server never serves it. The manifest's `ui.name` / `ui.icon` are the
+   * build's too and have no server read.
+   */
+  public function uiEntry(): ?string;
+
+  /**
+   * The pack studio's built browser module (`ui.script`), relative to the
+   * providing module, or NULL for a built-in or chat-only studio.
+   *
+   * Served as a static file; the console `import()`s it and calls its
+   * `mount(el, ctx)` (plans/console-extension-point.md Phase 4, DECISIONS 0448).
+   * Mutually exclusive with {@see self::uiEntry()}.
+   */
+  public function uiScript(): ?string;
+
+  /**
+   * The pack studio's stylesheet (`ui.style`), relative to the providing
+   * module, or NULL. Only ever set beside {@see self::uiScript()}.
+   */
+  public function uiStyle(): ?string;
+
+  /**
+   * The console's crumb name (`ui.name`, defaulting to the label).
+   */
+  public function uiName(): string;
+
+  /**
+   * The kit icon name (`ui.icon`), or NULL for the default chat glyph.
+   */
+  public function uiIcon(): ?string;
+
+  /**
+   * The `flowdrop_workflow` ids this studio ships in its `config/install`.
+   *
+   * @return list<string>
+   */
+  public function flows(): array;
+
+  /**
+   * The capability plugin ids this studio OWNS (`<provider>:<slug>`).
+   *
+   * A verb used by one studio lives in that studio and is refused server-side
+   * while the studio is off; a verb used by more than one lives in core and is
+   * never listed here (plans/studio-modules.md, capability ownership rule).
+   *
+   * @return list<string>
+   */
+  public function capabilities(): array;
+
+  /**
+   * The demo-content source directory, relative to the providing module, or
+   * NULL when the studio ships none.
+   */
+  public function demoPath(): ?string;
+
 }

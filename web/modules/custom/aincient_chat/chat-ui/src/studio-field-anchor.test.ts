@@ -5,6 +5,7 @@ import {
   fieldAnchorId,
   focusStudioField,
   requestedFieldAnchor,
+  REVEAL_FIELD_EVENT,
 } from "./studio-field-anchor";
 
 /**
@@ -28,6 +29,15 @@ describe("studio-field-anchor", () => {
   describe("focusStudioField", () => {
     beforeEach(() => {
       document.body.innerHTML = "";
+    });
+
+    it("a missing field asks collapsed cards to reveal it, so the retry can land", () => {
+      const asked: string[] = [];
+      const listen = (e: Event) => asked.push(String((e as CustomEvent<string>).detail));
+      window.addEventListener(REVEAL_FIELD_EVENT, listen);
+      expect(focusStudioField("identity.logo")).toBe(false);
+      window.removeEventListener(REVEAL_FIELD_EVENT, listen);
+      expect(asked).toEqual(["identity.logo"]);
     });
 
     it("finds an anchored field and reports a hit", () => {

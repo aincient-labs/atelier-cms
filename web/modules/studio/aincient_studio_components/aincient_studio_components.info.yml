@@ -1,0 +1,15 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier Components studio'
+type: module
+description: 'The Components studio: the site-wide component-governance surface — which components, tones and variants this site REMOVES from every kind''s palette (plans/byo-components.md W1b). The first studio module (plans/studio-modules.md Phase B, DECISIONS 0431).'
+package: Atelier studios
+core_version_requirement: ^11
+dependencies:
+  # The studio frame: manifest discovery, the on/off switch, the derived
+  # permission and the route gate.
+  - aincient_chat
+  # What this studio governs — `aincient_pages.site_constraint` and the
+  # component catalog it narrows. The constraint itself, its schema and its
+  # render-time application stay in core: the site must keep honouring a saved
+  # constraint with this studio switched off. Only the editing surface is here.
+  - aincient_pages

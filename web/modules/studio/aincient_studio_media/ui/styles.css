@@ -1,0 +1,117 @@
+/* The Library studio's stylesheet (plans/studio-modules.md Phase E) — bundled by
+   the one console build through `ui/index.tsx`'s import, so it lands in
+   `aincient-chat.css` BEFORE the console's own rules. Every class here is
+   prefixed with one of the module's studio ids (`.ain-library-*` / `.ain-media-*`,
+   `studio-css.test.ts`); shared looks (.ain-browser, .ain-studio__rail,
+   .ain-preview, .ain-topbtn) are USED in the markup, never redefined here.
+   Colours come from var(--ain-…) tokens only. */
+
+/* ---------------------------------------------------------------- Library shelf
+   The media family's browse canvas (library-browse.tsx, DECISIONS 0168) — the
+   centre pane of the SHELF room, rendered by MediaPreview when nothing is open.
+   It IS a .ain-browser ledger (Plate 10: one toolbar, one panel, hairline rows);
+   these rules add only the shelf's extras — the row thumbnail and the
+   hover-revealed row actions. */
+.ain-library__item { position: relative; }
+.ain-library__thumb {
+  flex: none; width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--ain-color-border); border-radius: 7px;
+  background: var(--ain-color-bg); color: var(--ain-color-text-faint); overflow: hidden;
+}
+.ain-library__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ain-library__thumb svg { width: 18px; height: 18px; }
+.ain-library__thumb[data-type="block"] { background: var(--ain-color-surface-raised); }
+/* Quiet row actions surface on hover/focus only (Plate 10) — siblings of the
+   row trigger (never nested buttons), floated over the row's right edge on the
+   row's own hover ground so they read as part of it. Revealed with visibility,
+   not opacity: the studio CSS rule forbids opacity dimming (DECISIONS 0376), and
+   a hidden control is also out of the tab order until the row has focus. */
+.ain-library__actions {
+  position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
+  display: flex; gap: 2px; visibility: hidden; pointer-events: none;
+}
+.ain-library__item:hover .ain-library__actions,
+.ain-library__item:focus-within .ain-library__actions {
+  visibility: visible; pointer-events: auto;
+}
+.ain-library__action { background: var(--ain-color-surface-raised); }
+
+/* ------------------------------------------------------------------ media studio
+   Editing ONE image: the preview (centre canvas) + the non-AI editor rail
+   (media-preview.tsx / media-studio.tsx). The rail borrows .ain-studio__rail; the
+   preview borrows .ain-preview — these rules add only the media-specific bits. */
+.ain-media-preview__stage {
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; min-height: 0; overflow: auto;
+}
+.ain-media-preview__img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  /* A soft checker so transparent PNGs read as transparent, not white-on-white. */
+  background:
+    repeating-conic-gradient(var(--ain-color-surface-raised) 0% 25%, var(--ain-color-surface) 0% 50%) 50% / 20px 20px;
+  border: 1px solid var(--ain-color-border);
+}
+.ain-media-preview__facts {
+  flex: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0;
+  padding: 10px 16px; border-top: 1px solid var(--ain-color-border);
+  background: var(--ain-color-surface);
+}
+.ain-media-preview__fact { display: flex; align-items: baseline; gap: 6px; margin: 0; }
+.ain-media-preview__fact dt {
+  font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ain-color-text-muted);
+}
+.ain-media-preview__fact dd { margin: 0; font-size: 12px; color: var(--ain-color-text); }
+.ain-media-preview__fact code {
+  font-size: 11px; padding: 1px 5px; border: 1px solid var(--ain-color-border);
+  background: var(--ain-color-surface-raised); color: var(--ain-color-text-muted);
+}
+
+.ain-media-studio__body { display: flex; flex-direction: column; gap: 14px; padding: 14px 12px; min-height: 0; overflow: auto; }
+.ain-media-studio__replace { align-self: flex-start; }
+
+/* generated-image chat card (media-result.tsx — the media_result widget) */
+.ain-media-result {
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  box-shadow: 0 5px 14px -4px color-mix(in oklch, var(--ain-color-shadow) 40%, transparent); background: var(--ain-color-surface);
+  overflow: hidden; max-width: 420px;
+}
+.ain-media-result__head {
+  display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+  border-bottom: 1px solid var(--ain-color-border);
+}
+.ain-media-result__icon { width: 15px; height: 15px; color: var(--ain-color-text-muted); flex: none; }
+.ain-media-result__title { font-family: var(--ain-font-display); font-size: 12px; font-weight: 650; color: var(--ain-color-text); }
+.ain-media-result__badge {
+  margin-left: auto; font-size: 10px; letter-spacing: .03em; text-transform: uppercase;
+  padding: 1px 6px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  color: var(--ain-color-text-muted);
+}
+.ain-media-result__stage {
+  display: flex; align-items: center; justify-content: center; padding: 14px;
+  background:
+    repeating-conic-gradient(var(--ain-color-surface-raised) 0% 25%, var(--ain-color-surface) 0% 50%) 50% / 20px 20px;
+}
+.ain-media-result__img { max-width: 100%; max-height: 340px; object-fit: contain; border: 1px solid var(--ain-color-border); }
+.ain-media-result__alt {
+  margin: 0; padding: 10px 14px; border-top: 1px solid var(--ain-color-border);
+  background: var(--ain-color-surface); font-style: italic; color: var(--ain-color-text);
+  border-left: 3px solid var(--ain-color-border);
+}
+.ain-media-result__facts {
+  display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0;
+  padding: 10px 12px; border-top: 1px solid var(--ain-color-border); background: var(--ain-color-surface);
+}
+.ain-media-result__fact { display: flex; align-items: baseline; gap: 6px; margin: 0; min-width: 0; }
+.ain-media-result__fact dt {
+  font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ain-color-text-muted);
+}
+.ain-media-result__fact dd { margin: 0; font-size: 12px; color: var(--ain-color-text); min-width: 0; overflow-wrap: anywhere; }
+.ain-media-result__fact code {
+  font-size: 11px; padding: 1px 5px; border: 1px solid var(--ain-color-border);
+  background: var(--ain-color-surface-raised); color: var(--ain-color-text-muted);
+}
+.ain-media-result__actions { padding: 10px 12px; border-top: 1px solid var(--ain-color-border); }
+.ain-media-result__error { margin: 0; padding: 0 12px 10px; font-size: 12px; color: var(--ain-color-danger); }

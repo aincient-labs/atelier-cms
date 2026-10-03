@@ -1,0 +1,62 @@
+# The Identity studio's editing routes (plans/studio-modules.md Phase E.5,
+# DECISIONS 0436). Moved out of `aincient_pages` with their PATHS unchanged — the
+# console's brand studio fetches by path — and re-homed under this module. All
+# three carried `use aincient studio design_system` alone, which made them this
+# studio's; the route subscriber stamps `_aincient_studio_enabled: design_system`,
+# so a switched-off Identity studio 403s the manifest, the Publish and the status
+# write. What they call stays core — BrandRepository, DesignTokens, ColorContrast,
+# PresetCatalog, FontPairings and the brand revisions live in `aincient_pages`,
+# because the site must keep rendering its brand with this studio off. The
+# no-AI admin form + revision history (/admin/config/content/atelier-brand) stay
+# core too: they are the operator's path with the console gone.
+
+# JSON token manifest for the chat console's live brand editor (metadata +
+# current value per token). Read-only; the frontend previews edits client-side.
+aincient_brand.brand_manifest:
+  path: '/atelier/brand/manifest'
+  defaults:
+    _controller: '\Drupal\aincient_brand\Controller\BrandController::manifest'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio design_system'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Publish the brand studio's working token diff — the console's one deliberate
+# global write. The picker + studio edit a preview-only draft; this is the only
+# thing that persists, through the same BrandRepository path the form/AI tool
+# use, so it records an attributed, reversible revision. Gated like the manifest.
+aincient_brand.brand_save:
+  path: '/atelier/brand/save'
+  defaults:
+    _controller: '\Drupal\aincient_brand\Controller\BrandController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio design_system'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Persist the brand design-intent status (stage + lock) IMMEDIATELY — separate
+# from brand_save because status is a MODE, not draft content, so it does not
+# ride the token draft→Publish cycle. Gated like the manifest/save.
+aincient_brand.brand_status:
+  path: '/atelier/brand/status'
+  defaults:
+    _controller: '\Drupal\aincient_brand\Controller\BrandController::setStatus'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio design_system'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']

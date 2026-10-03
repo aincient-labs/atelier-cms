@@ -1,0 +1,71 @@
+/*
+ * kit · Field · TextInput · Textarea · Select · Checkbox (field.tsx) — the stacked label / control / hint / error column, the input body, the check and radio-card variants and the character gauge.
+ *
+ * Extracted from styles.css unchanged (plans/studio-modules.md, "the kit, for
+ * real"): the class names are the contract, so markup that still writes them by
+ * hand keeps working while call sites move to the component. System tokens only
+ * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
+ * feature rule of equal specificity still overrides the kit — never the reverse.
+ */
+.ain-field__error { font-size: 11.5px; color: var(--ain-color-danger); }
+/* --- one token control: matches the console's "physical control" idiom
+   (border-strong + hard offset shadow on the swatch, accent on focus). --- */
+.ain-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+/* A boolean prop renders inline: checkbox · label (no stacked input). */
+.ain-field--check { flex-direction: row; align-items: center; gap: 7px; }
+.ain-field--check .ain-field__checkbox { flex: 0 0 auto; margin: 0; accent-color: var(--ain-color-accent); cursor: pointer; }
+.ain-field--check .ain-field__label { font-size: 12px; }
+.ain-field__label {
+  /* The kit whisper label: mono small caps, tracking not weight (study 02 f-label). */
+  font-family: var(--ain-font-mono); font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ain-color-text-muted);
+}
+/* Labels that carry an inner text span also carry a per-field revert marker, so
+   they lay out as a row: text (truncates) · marker (fixed). Scoped to the brand
+   studio's controls — labels elsewhere (page studio, reference field) render no
+   inner span and keep their plain block flow. */
+.ain-field__label:has(.ain-field__labeltext) { display: flex; align-items: center; gap: 5px; }
+.ain-field__labeltext { min-width: 0; }
+/* A changed field gets a faint accent rail so it reads as dirty at a glance. */
+.ain-field[data-dirty] { border-left: 2px solid color-mix(in oklch, var(--ain-color-warning) 60%, transparent); padding-left: 7px; margin-left: -9px; }
+.ain-field__control { display: flex; align-items: center; gap: 6px; }
+.ain-field__input {
+  flex: 1; min-width: 0; font: inherit; font-size: 12px; color: var(--ain-color-text);
+  padding: 6px 8px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  /* Raised paper, same as the card it sits on (spec .f-input): the recede is
+     the hairline + inset shade doing the work — a darker ground fill reads as
+     a generic "filled input" slab, not paper pressed in (Plate 15 feedback). */
+  background: var(--ain-color-surface); transition: border-color .12s, background .12s;
+  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
+}
+.ain-field__input:hover { background: var(--ain-color-surface-raised); }
+.ain-field__input:focus { outline: none; border-color: color-mix(in oklch, var(--ain-color-accent) 40%, transparent); background: var(--ain-color-surface); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ain-color-accent) 10%, transparent); }
+/* Long-form text prop (Markdown source) — a resizable monospace textarea. */
+.ain-field__textarea {
+  display: block; width: 100%; flex: none; resize: vertical; min-height: 120px;
+  line-height: 1.5; white-space: pre-wrap;
+  font-family: var(--ain-font-mono);
+}
+/* Radio-field variant: a choice as stacked radios (control · label +
+   consequence hint). Shared field chrome — the Settings studio's font-delivery
+   choice uses it. */
+.ain-field--radio {
+  flex-direction: row; align-items: flex-start; gap: 8px;
+  padding: 8px 10px; margin-bottom: 6px; cursor: pointer;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: var(--ain-color-bg); transition: background .12s, border-color .12s;
+}
+.ain-field--radio:hover { background: var(--ain-color-surface-raised); }
+.ain-field--radio:has(.ain-field__radio:checked) { border-color: var(--ain-color-accent); }
+.ain-field__radio { flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--ain-color-accent); cursor: pointer; }
+.ain-field__radiobody { display: flex; flex-direction: column; gap: 2px; }
+.ain-field__hint { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-faint); }
+.ain-field__control { position: relative; }
+/* The `font` shorthand resets size to the inherited ~15px shell — re-pin the kit's
+   12px after it so a textarea matches its sibling <input> (Plate 15 / 9a). */
+textarea.ain-field__input { resize: vertical; min-height: 3.2em; font: inherit; font-size: 12px; }
+/* A native select reuses the text-input chrome; just flag it interactive. */
+select.ain-field__input { cursor: pointer; appearance: auto; }
+/* character gauge under a meta field */
+.ain-field__count { display: block; margin-top: 4px; font-size: 11px; color: var(--ain-color-text-faint); font-variant-numeric: tabular-nums; }
+.ain-field__count[data-ok] { color: var(--ain-color-success); }

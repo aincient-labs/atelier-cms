@@ -174,7 +174,7 @@ final class PackEndToEndTest extends KernelTestBase {
    */
   public function testDevGalleryAndRenderEndpoint(): void {
     $this->setSetting('atelier_dev', TRUE);
-    $this->assertTrue($this->container->get('aincient_pages.atelier_dev_access')->access()->isAllowed());
+    $this->assertTrue($this->container->get('aincient_core.atelier_dev_access')->access()->isAllowed());
 
     $controller = PackDevController::create($this->container);
     $gallery = (string) $controller->gallery('atelier_test_pack')->getContent();
@@ -188,7 +188,7 @@ final class PackEndToEndTest extends KernelTestBase {
     $this->assertStringContainsString('atelier-test-pack.css', $html, 'The pack stylesheet is linked.');
 
     $this->setSetting('atelier_dev', FALSE);
-    $this->assertFalse($this->container->get('aincient_pages.atelier_dev_access')->access()->isAllowed());
+    $this->assertFalse($this->container->get('aincient_core.atelier_dev_access')->access()->isAllowed());
   }
 
   /**

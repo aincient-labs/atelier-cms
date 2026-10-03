@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { sendTurn, useConsoleThread } from "./aui";
-import { makeSafeAssistantToolUI } from "./error-boundary";
+import { Button } from "./kit/button";
+import { makeSafeAssistantToolUI } from "./kit/error-boundary";
 import { apiUrl } from "./console-config";
 
 /**
@@ -93,9 +94,9 @@ function Onboarding(payload: OnboardingPayload) {
         <p className="ain-onboard__note">
           Your console is live. Next, give your site a look and feel.
         </p>
-        <button type="button" className="ain-btn ain-topbtn ain-topbtn--primary" onClick={toBranding}>
+        <Button variant="primary" onClick={toBranding}>
           Set up my brand →
-        </button>
+        </Button>
       </div>
     );
   }
@@ -123,14 +124,13 @@ function Onboarding(payload: OnboardingPayload) {
 
       {error && <p className="ain-onboard__error">{error}</p>}
 
-      <button
-        type="button"
-        className="ain-btn ain-topbtn ain-topbtn--primary"
+      <Button
+        variant="primary"
         onClick={connect}
         disabled={status === "saving"}
       >
         {status === "saving" ? "Connecting…" : "Connect"}
-      </button>
+      </Button>
 
       <p className="ain-onboard__foot">
         {isHost && (

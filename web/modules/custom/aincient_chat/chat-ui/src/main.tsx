@@ -3,7 +3,10 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { settings } from "./adapter";
 import { OnboardingWizard } from "./onboarding-wizard";
-import { ErrorBoundary } from "./error-boundary";
+import { ErrorBoundary } from "./kit/error-boundary";
+import { parseUrl } from "./console-url";
+import { roomStudio } from "./rooms-core";
+import { loadStudio, preloadStudios } from "./studio-loader";
 import "./styles.css";
 
 /**
@@ -84,10 +87,52 @@ function mount(): void {
   );
 }
 
+/**
+ * Boot. The console is split into chunks (vite.chunks.ts): this entry, the
+ * console, and one per studio module. The studio the URL opens is fetched
+ * BEFORE the first render so that room paints with its rail rather than a
+ * skeleton — the page is blank until then anyway, exactly as it was while one
+ * bundle parsed. Every other studio is fetched at idle afterwards, so the chat
+ * cards their agents emit render in old threads too (studio-loader.ts). A
+ * failed fetch still mounts: the rail then shows its retry, and the chat works.
+ */
+function boot(): void {
+  // The kit gallery (/atelier/dev/kit) is its own chunk and its own surface:
+  // no chat runtime, no studios, no onboarding check.
+  if (settings().view === "kit") {
+    void import("./kit-gallery/gallery").then(({ KitGallery }) => {
+      const el = document.getElementById("aincient-chat-root");
+      if (!el) return;
+      createRoot(el).render(
+        <StrictMode>
+          <ErrorBoundary label="kit-gallery" fallback={(retry) => <ConsoleCrash retry={retry} />}>
+            <KitGallery />
+          </ErrorBoundary>
+        </StrictMode>,
+      );
+    });
+    return;
+  }
+  if (settings().onboarding?.needed) {
+    mount();
+    return;
+  }
+  let initial: string | undefined;
+  try {
+    initial = roomStudio(parseUrl().room);
+  } catch {
+    initial = undefined;
+  }
+  void loadStudio(initial).finally(() => {
+    mount();
+    preloadStudios();
+  });
+}
+
 // The shell may load the script in <head> (Drupal library placement), so wait
 // for the mount point to exist.
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", mount);
+  document.addEventListener("DOMContentLoaded", boot);
 } else {
-  mount();
+  boot();
 }

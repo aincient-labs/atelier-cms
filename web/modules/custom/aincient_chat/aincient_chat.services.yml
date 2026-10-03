@@ -23,6 +23,63 @@ services:
       - '@module_handler'
       - '@logger.channel.aincient_chat'
 
+  # The studio on/off switch (`disabled_studios`, DECISIONS 0430). One service so
+  # the shell, the routes, the catalog, the capability gate, the install seeding
+  # and `drush atelier:studio-*` all read and write the same list.
+  aincient_chat.studio_switch:
+    class: Drupal\aincient_chat\Studio\StudioSwitch
+    arguments:
+      - '@config.factory'
+
+  # A switched-off studio's routes 403 (DECISIONS 0430). The requirement is
+  # added to every route gated by exactly `use aincient studio <id>` by the
+  # route subscriber below, so no routing.yml names it.
+  aincient_chat.access_check.studio_enabled:
+    class: Drupal\aincient_chat\Access\StudioEnabledAccessCheck
+    arguments:
+      - '@aincient_chat.studio_switch'
+      - '@config.factory'
+    tags:
+      - { name: access_check, applies_to: _aincient_studio_enabled }
+  aincient_chat.studio_route_subscriber:
+    class: Drupal\aincient_chat\Routing\StudioRouteSubscriber
+    tags:
+      - { name: event_subscriber }
+
+  # A studio's demo content, imported ONCE on its first enable and removed by
+  # "Clear examples" (plans/studio-modules.md "Demo content", DECISIONS 0430 /
+  # 0441). The subscriber watches the switch's config so every on-ramp seeds
+  # the same way; the install hook covers studios that ship on.
+  aincient_chat.studio_demo_content:
+    class: Drupal\aincient_chat\Studio\StudioDemoContent
+    arguments:
+      - '@plugin.manager.aincient.studios'
+      - '@aincient_core.demo_content'
+      - '@entity_type.manager'
+      - '@extension.list.module'
+      - '@state'
+      - '@database'
+      - '@logger.channel.aincient_chat'
+  aincient_chat.studio_demo_subscriber:
+    class: Drupal\aincient_chat\EventSubscriber\StudioDemoSubscriber
+    arguments:
+      - '@aincient_chat.studio_demo_content'
+      - '@config.installer'
+    tags:
+      - { name: event_subscriber }
+
+  # A switched-off studio's OWNED capabilities are refused at dispatch, so a
+  # turn in another studio cannot call them (DECISIONS 0430). Collected by
+  # aincient_core.capability_gates, consulted by the FlowDrop capability node.
+  aincient_chat.studio_capability_gate:
+    class: Drupal\aincient_chat\Studio\StudioCapabilityGate
+    arguments:
+      - '@plugin.manager.aincient.studios'
+      - '@aincient_chat.studio_switch'
+      - '@logger.channel.aincient_chat'
+    tags:
+      - { name: aincient_core.capability_gate }
+
   # Shapes a signed-in user into the console's read-only identity card (name,
   # email, avatar, AIncient roles, tenure, status). Shared by the shell
   # (window.aincientChat.viewer) and the self-service account pane, which returns
@@ -45,6 +102,7 @@ services:
       - '@entity_type.manager'
       - '@aincient_core.capability_verbs'
       - '@plugin.manager.aincient.studios'
+      - '@aincient_chat.studio_switch'
 
   # The console conversation store, backed by FlowDrop sessions (single lane).
   # The sidebar/history/archive/delete endpoints read threads from here.

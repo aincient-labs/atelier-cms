@@ -6,6 +6,7 @@ namespace Drupal\Tests\aincient_chat\Unit;
 
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
 use Drupal\aincient_chat\Studio\StudioManager;
+use Drupal\aincient_chat\Studio\StudioSwitch;
 use Drupal\aincient_core\CapabilityVerbs;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -40,6 +41,7 @@ final class WorkflowCatalogPresentationTest extends UnitTestCase {
       $this->createMock(EntityTypeManagerInterface::class),
       new CapabilityVerbs($this->createMock(PluginManagerInterface::class)),
       $this->createMock(StudioManager::class),
+      new StudioSwitch($configFactory),
     );
   }
 

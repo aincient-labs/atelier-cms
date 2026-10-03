@@ -198,6 +198,10 @@ publish "$BASE_TAG"
 
 info "fresh install (v0.1.0)"
 "${COMPOSE[@]}" down -v >/dev/null 2>&1 || true
+# Rebuild the updater sidecar from this checkout — `up` alone reuses whatever
+# image a previous run cached. NOT `up --build`: that would also rebuild `app`
+# from the Dockerfile over the AINCIENT_IMAGE tag this test pins.
+"${COMPOSE[@]}" build -q updater
 "${COMPOSE[@]}" up -d >/dev/null
 if wait_log app "converge OK" 300; then ok "fresh install converged"; else bad "fresh install did not converge"; fi
 [ "$(wait_http http://app/ 120)" = "200" ] && ok "console reachable" || bad "console not 200"

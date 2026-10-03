@@ -1,5 +1,5 @@
-import { makeSafeAssistantToolUI } from "./error-boundary";
-import { ArrowDownIcon, ArrowUpIcon } from "./icons";
+import { makeSafeAssistantToolUI } from "./kit/error-boundary";
+import { ArrowDownIcon, ArrowUpIcon } from "./kit/icons";
 import { type UsageTotal, useActiveThreadUsage } from "./usage-state";
 
 /**

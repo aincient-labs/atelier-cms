@@ -1,0 +1,85 @@
+# The Media studio's editing routes — the one-image editor rail's reads and
+# writes (plans/studio-modules.md Phase E). Moved out of `aincient_pages` with
+# their paths unchanged (the console's media-state fetches by path); the
+# permission changed from `use aincient studio content` to the studio's own
+# derived permission, which the route subscriber turns into a 403 while the
+# studio is switched off. Upload (`/atelier/media/upload`) and token resolution
+# (`/atelier/media/url`) stay in core: the reference picker and the Presence
+# cards need them with this studio off.
+
+# The editable detail of one image — the "open this media item" entry point for
+# the editor rail (mirror of block_schema).
+aincient_studio_media.media_schema:
+  path: '/atelier/media/{media}/schema'
+  defaults:
+    _controller: '\Drupal\aincient_studio_media\Controller\MediaEditController::detail'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio media'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Update an image's name / alt text (the editor rail's Save).
+aincient_studio_media.media_save:
+  path: '/atelier/media/{media}'
+  defaults:
+    _controller: '\Drupal\aincient_studio_media\Controller\MediaEditController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio media'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Swap an image's underlying file, keeping the same media:<id> token.
+aincient_studio_media.media_replace:
+  path: '/atelier/media/{media}/file'
+  defaults:
+    _controller: '\Drupal\aincient_studio_media\Controller\MediaEditController::replaceFile'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio media'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Overwrite an image with ANOTHER item's bytes (commit an edit onto the original),
+# keeping the target's media:<id> token.
+aincient_studio_media.media_replace_from:
+  path: '/atelier/media/{media}/replace-from'
+  defaults:
+    _controller: '\Drupal\aincient_studio_media\Controller\MediaEditController::replaceFrom'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio media'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Delete an image-media item (the human's explicit discard of an unwanted asset).
+aincient_studio_media.media_delete:
+  path: '/atelier/media/{media}/delete'
+  defaults:
+    _controller: '\Drupal\aincient_studio_media\Controller\MediaEditController::delete'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio media'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'

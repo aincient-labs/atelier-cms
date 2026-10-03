@@ -1,0 +1,325 @@
+# The Content studio's editing routes (plans/studio-modules.md Phase E.4,
+# DECISIONS 0435). Moved out of `aincient_pages` with their PATHS unchanged — the
+# console's page-state store fetches by path — and their route names re-homed
+# under this module. Every route here carried `use aincient studio content`
+# alone, which by the Phase A rule made it this studio's: the route subscriber
+# stamps `_aincient_studio_enabled: content`, so a switched-off Content studio
+# 403s the whole editing surface. What they call stays core — PageStore,
+# BlockStore, NodeModeration, EditLock and the component catalog live in
+# `aincient_pages`, because a page must keep rendering, exporting and being
+# audited (Checks reads the same draft through the shared lock routes) with this
+# studio off.
+#
+# NOT here, deliberately: the editor-lock trio (`content+checks` — shared), the
+# unified reference API (behind the kit's <ReferenceField>, used by every rail)
+# and media upload / token resolution (the picker and the Presence cards). They
+# stay in `aincient_pages.routing.yml`.
+
+# ── Pages ───────────────────────────────────────────────────────────────────
+
+# Apply the page agent's ops to the working draft (PageStore::applyOps). No write.
+aincient_studio_content.page_apply:
+  path: '/atelier/page/apply'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::apply'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Render a draft page-schema to chrome-less HTML (studio iframe srcdoc). No write.
+aincient_studio_content.page_preview:
+  path: '/atelier/page/preview'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::preview'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Save the studio's working draft (editorial workflow): persists a forward draft
+# revision — does NOT publish. Create a new draft page or update one.
+aincient_studio_content.page_save:
+  path: '/atelier/page/save'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Editorial transitions for a page (the decoupled "go live" + review lifecycle).
+# All gated at the route by the broad console permission; the per-transition
+# permission (publish/approve/…) is enforced in the store against the user's
+# legal transitions. publish = write-latest-then-go-live.
+aincient_studio_content.page_publish:
+  path: '/atelier/page/publish'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::publish'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.page_submit_review:
+  path: '/atelier/page/submit-review'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::submitReview'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.page_approve:
+  path: '/atelier/page/approve'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::approve'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.page_reject:
+  path: '/atelier/page/reject'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::reject'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.page_archive:
+  path: '/atelier/page/archive'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::archive'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.page_restore:
+  path: '/atelier/page/restore'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::restore'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+
+# The component catalog the studio's structured section editor renders from.
+aincient_studio_content.page_manifest:
+  path: '/atelier/page/manifest'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::manifest'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Existing pages for the studio's page picker (id/title/changed/url, newest first).
+aincient_studio_content.page_list:
+  path: '/atelier/page/list'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::list'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# The stored schema for an existing page — the "edit this page" entry point.
+aincient_studio_content.page_schema:
+  path: '/atelier/page/{node}/schema'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::pageSchema'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      node:
+        type: 'entity:node'
+
+# Flip a page translation to its OWN (asymmetric) layout — copy-on-write. Gated
+# by the divergence permission (it detaches the translation from source layout
+# edits). Body: { "langcode": "<lc>" }.
+aincient_studio_content.page_diverge:
+  path: '/atelier/page/{node}/diverge'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::diverge'
+  methods: [POST]
+  requirements:
+    _permission: 'diverge aincient page layout'
+    # Stamped by hand: the subscriber only stamps routes whose permission is
+    # exactly the studio's, and this one carries its own governance permission
+    # on top — but it is still this studio's write, and 403s with it off.
+    _aincient_studio_enabled: 'content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      node:
+        type: 'entity:node'
+
+# Re-inherit the source layout for a translation (asymmetric → symmetric). Always
+# allowed (re-inheriting is never a governance risk). Body: { "langcode": "<lc>" }.
+aincient_studio_content.page_converge:
+  path: '/atelier/page/{node}/converge'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::converge'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    # JSON/data API for the console SPA — never let a (future) redirect-module
+    # route normalizer 301 these: a 301 on a POST drops the body and breaks the
+    # call. Language is always an explicit `langcode` param, never negotiated.
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      node:
+        type: 'entity:node'
+
+# ── Global blocks ───────────────────────────────────────────────────────────
+# Reusable fragments authored in the same studio (sections-only). A page places
+# one with a `block` slot; the renderer expands the block's sections inline.
+
+# Save the studio's working block fragment as a DRAFT (editorial workflow) —
+# create a new draft block or update one. Does NOT publish.
+aincient_studio_content.block_save:
+  path: '/atelier/block/save'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Editorial transitions for a block (mirror of the page transitions above).
+aincient_studio_content.block_publish:
+  path: '/atelier/block/publish'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::publish'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.block_submit_review:
+  path: '/atelier/block/submit-review'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::submitReview'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.block_approve:
+  path: '/atelier/block/approve'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::approve'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.block_reject:
+  path: '/atelier/block/reject'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::reject'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.block_archive:
+  path: '/atelier/block/archive'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::archive'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_content.block_restore:
+  path: '/atelier/block/restore'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::restore'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# The stored fragment for an existing block — the "edit this block" entry point.
+aincient_studio_content.block_schema:
+  path: '/atelier/block/{media}/schema'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::blockSchema'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'

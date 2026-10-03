@@ -1,0 +1,33 @@
+# ── Components governance API (chat console) ────────────────────────────────
+# The site-wide constraint layer (plans/byo-components.md W1b, decision #2):
+# which components/tones/variants this site REMOVES across every kind. Served
+# with the undiminished discovered vocabulary so the pane can render what is
+# currently disabled; save merges by provided key and returns fresh state.
+#
+# Gated by the studio's DERIVED permission alone; aincient_chat's route
+# subscriber adds the studio-enabled requirement, so a switched-off Components
+# studio 403s both even for a user who holds the permission (DECISIONS 0430).
+# The paths are unchanged from their aincient_pages days — the console reaches
+# them through apiUrl("/constraint/…"), never by route name.
+
+aincient_studio_components.constraint_manifest:
+  path: '/atelier/constraint/manifest'
+  defaults:
+    _controller: '\Drupal\aincient_studio_components\Controller\ConstraintController::manifest'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio components'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_components.constraint_save:
+  path: '/atelier/constraint/save'
+  defaults:
+    _controller: '\Drupal\aincient_studio_components\Controller\ConstraintController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio components'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']

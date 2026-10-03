@@ -1,0 +1,434 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_brand_validate_slice
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.data_to_json
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+    - flowdrop_node_type.flowdrop_node_type.json_to_data
+    - flowdrop_node_type.flowdrop_node_type.prompt_template
+id: aincient_brand_specialist_typography
+label: 'Brand specialist: Typography'
+description: 'Single-pass typography specialist. Takes a typography instruction (+ optional current state), decides the typeface PAIRING and type-scale presets, and returns a brand-preview slice (presets_json/tokens_json/fonts) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: -560
+      'y': -20
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: message
+            -
+              id: history
+            -
+              id: sessionId
+            -
+              id: messageId
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: chat_input
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 441
+  -
+    id: prompt_template.1
+    position:
+      x: -560
+      'y': 460
+    data:
+      label: 'Typography system prompt'
+      config:
+        template: |-
+          {% verbatim %}
+          You are the TYPOGRAPHY specialist for AIncient's brand studio. You receive a
+          single instruction describing a desired typography change. The AUTHORITATIVE
+          current look is given below under CURRENT LOOK. Decide the best typeface PAIRING
+          and type-scale presets, and return them. You APPLY NOTHING — you only return a
+          slice for the orchestrator.
+
+          Return ONLY a single JSON object (no prose, no markdown fence). Use any of these
+          keys; omit a key you are not setting:
+          - "presets_json": an object choosing typography presets by group:
+            - pairing — display+body typeface pairing: inter, editorial, geometric,
+              technical, warm, corporate, superfamily. (Loads the web fonts for you.)
+            - text_size — body reading size: compact, default, large.
+            - heading_weight — heading/display heaviness: regular, medium, bold, heavy.
+          - "tokens_json": raw font tokens ONLY for a fine adjustment no preset expresses:
+            font_family_base, font_family_display, heading_tracking. Prefer presets; only
+            hand-pick a font family when the user names a specific family.
+          - "fonts": comma-separated Google Font family names to load — ONLY when you set a
+            raw font_family token to a custom family.
+
+          Rules:
+          - ALWAYS prefer a pairing preset over hand-picking font families. If the user
+            names a pairing id (Inter, Editorial, Warm, …), use that exact id; never
+            substitute your own fonts.
+          - RELATIVE CHANGES ("bigger", "heavier", "one step up") are relative to the
+            CURRENT LOOK values below — never to a value named in the instruction text.
+          - Touch ONLY typography. Do NOT emit colour, radius, shadow, density, or spacing
+            tokens — other specialists own those.
+          - If the instruction implies no typography change, return {}.
+
+          Example — instruction "use the Warm pairing with heavier headings":
+          {"presets_json": {"pairing": "warm", "heading_weight": "heavy"}}
+          {% endverbatim %}
+          {% if brand_brief is defined and brand_brief %}
+
+          CURRENT LOOK — saved brand baseline:
+          {{ brand_brief }}
+          {% endif %}
+          {% if type_brief is defined and type_brief %}
+          CURRENT LOOK — TYPOGRAPHY — the dials you own, as saved (step a relative request from THESE values):
+          {{ type_brief }}
+          {% endif %}
+          {% if live_preview_state is defined and live_preview_state %}
+          CURRENT LOOK — unsaved preview edits layered on top (this is what is on screen NOW; it wins over the saved baseline):
+          {{ live_preview_state }}
+          {% endif %}
+        nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: prompt
+            -
+              id: template
+              exposed: false
+            -
+              id: variables
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: variables
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: prompt_template
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 501
+  -
+    id: simple_chat.1
+    position:
+      x: -80
+      'y': 220
+    data:
+      label: 'Typography reasoning'
+      config:
+        operation_type: 'aincient_role:task'
+        model: null
+        temperature: 0
+        maxTokens: 8192
+        systemPrompt: ''
+      metadata:
+        node_type_id: flowdrop_ai_provider_simple_chat
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 501
+  -
+    id: chat_output.1
+    position:
+      x: 1420
+      'y': 660
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: format
+              exposed: false
+            -
+              id: timestamp
+              exposed: false
+            -
+              id: metadata
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: message
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: chat_output
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 541
+  -
+    id: data_to_json.1
+    position:
+      x: 1020
+      'y': 580
+    data:
+      label: 'Data to JSON'
+      config:
+        maxRetries: 0
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: data_to_json
+    measured:
+      width: 280
+      height: 261
+  -
+    id: json_to_data.1
+    position:
+      x: 280
+      'y': 460
+    data:
+      label: 'JSON to Data'
+      config:
+        parse_mode: tolerant
+        nodeType: default
+        maxRetries: 0
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: json_to_data
+    measured:
+      width: 280
+      height: 261
+  -
+    id: aincient_flows_brand_validate_slice.1
+    position:
+      x: 640
+      'y': 500
+    data:
+      label: 'Validate brand slice'
+      config:
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          outputs:
+            -
+              id: slice
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: slice
+            -
+              id: trigger
+              exposed: false
+      metadata:
+        node_type_id: aincient_flows_brand_validate_slice
+    measured:
+      width: 280
+      height: 281
+edges:
+  -
+    id: xy-edge__chat_input.1chat_input.1-output-message-simple_chat.1simple_chat.1-input-message
+    source: chat_input.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: simple_chat.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__prompt_template.1prompt_template.1-output-prompt-simple_chat.1simple_chat.1-input-systemPrompt
+    source: prompt_template.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: prompt_template.1-output-prompt
+    targetHandle: simple_chat.1-input-systemPrompt
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__simple_chat.1simple_chat.1-output-response-json_to_data.1json_to_data.1-input-json
+    source: simple_chat.1
+    target: json_to_data.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: data
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: simple_chat.1-output-response
+    targetHandle: json_to_data.1-input-json
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__json_to_data.1json_to_data.1-output-data-aincient_flows_brand_validate_slice.1aincient_flows_brand_validate_slice.1-input-slice
+    source: json_to_data.1
+    target: aincient_flows_brand_validate_slice.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: json_to_data.1-output-data
+    targetHandle: aincient_flows_brand_validate_slice.1-input-slice
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__aincient_flows_brand_validate_slice.1aincient_flows_brand_validate_slice.1-output-slice-data_to_json.1data_to_json.1-input-data
+    source: aincient_flows_brand_validate_slice.1
+    target: data_to_json.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: data
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: aincient_flows_brand_validate_slice.1-output-slice
+    targetHandle: data_to_json.1-input-data
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__data_to_json.1data_to_json.1-output-json-chat_output.1chat_output.1-input-message
+    source: data_to_json.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: data_to_json.1-output-json
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+metadata:
+  createdAt: '2026-08-13T16:58:27.912Z'
+  updatedAt: '2026-08-13T17:08:38.858Z'
+created: 1782300000
+changed: 1786640918
+uid: 1
+input_ports:
+  -
+    name: ask
+    node_id: chat_input.1
+    port: message
+  -
+    name: current_state
+    node_id: prompt_template.1
+    port: variables
+output_ports:
+  -
+    name: slice
+    node_id: chat_output.1
+    port: message
+parameter_schema:
+  type: object
+  required:
+    - ask
+  properties:
+    ask:
+      type: string
+      description: 'The typography instruction to act on — what the user wants for typefaces / type scale. Pass the typography-relevant part of the request only; do NOT restate current values (the authoritative current look is supplied separately via current_state).'
+      default: ''
+      required: true
+    current_state:
+      type: object
+      description: 'The authoritative current look (saved-brand brief + live preview draft), injected from the brand_state node — NOT model-authored. Wire a data edge into this port; it is withheld from the model and supplied deterministically from run state.'
+      required: false
+output_schema:
+  type: object
+  properties:
+    slice:
+      type: string
+schema_version: 1.0.0

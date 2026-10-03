@@ -133,6 +133,10 @@ V1_LOCAL="$(docker inspect --format '{{.Id}}' "$TAG")"
 
 info "fresh install via the repo compose (db + app + updater)"
 "${COMPOSE[@]}" down -v >/dev/null 2>&1 || true
+# Rebuild the updater sidecar from this checkout — `up` alone reuses whatever
+# image a previous run cached. NOT `up --build`: that would also rebuild `app`
+# from the Dockerfile over the AINCIENT_IMAGE tag this test pins.
+"${COMPOSE[@]}" build -q updater
 "${COMPOSE[@]}" up -d >/dev/null
 if wait_log app "converge OK" 240; then ok "fresh install converged"; else bad "fresh install did not converge"; fi
 [ "$(shared converge.result)" = "ok" ] && ok "converge.result=ok recorded" || bad "converge.result not ok"

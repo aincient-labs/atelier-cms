@@ -27,9 +27,10 @@ import {
   Wordmark,
   XIcon,
   ZaiIcon,
-} from "./icons";
+} from "./kit/icons";
 import { ModelPicker, type ModelPickerOption } from "./model-picker";
 import { apiUrl, consoleBase } from "./console-config";
+import { Button } from "./kit/button";
 
 /**
  * First-run onboarding wizard — the product's handshake.
@@ -382,9 +383,8 @@ function ProviderRow({
                 spellCheck={false}
                 autoFocus={!needsEndpoint}
               />
-              <button
-                type="button"
-                className="ain-btn ain-topbtn ain-topbtn--sm"
+              <Button
+                size="sm"
                 onClick={onConnect}
                 disabled={status === "connecting"}
               >
@@ -397,7 +397,7 @@ function ProviderRow({
                 ) : (
                   "Connect"
                 )}
-              </button>
+              </Button>
             </div>
           </label>
           {error && <p className="ain-wiz__error">{error}</p>}
@@ -892,18 +892,17 @@ export function OnboardingWizard() {
                 escape on a re-run — two raised shapes at most (Laws 07, 08). */}
             <div className="ain-wiz__actions">
               {closable && (
-                <button type="button" className="ain-btn ain-topbtn ain-topbtn--quiet" onClick={skip}>
+                <Button variant="quiet" onClick={skip}>
                   Skip for now
-                </button>
+                </Button>
               )}
-              <button
-                type="button"
-                className="ain-btn ain-topbtn ain-topbtn--primary"
+              <Button
+                variant="primary"
                 onClick={() => setStep("models")}
                 disabled={!hasChat}
               >
                 Continue →
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -1038,17 +1037,16 @@ export function OnboardingWizard() {
             {error && <p className="ain-wiz__error">{error}</p>}
 
             <div className="ain-wiz__actions">
-              <button type="button" className="ain-btn ain-topbtn ain-topbtn--quiet" onClick={() => setStep("connect")}>
+              <Button variant="quiet" onClick={() => setStep("connect")}>
                 ← Back
-              </button>
+              </Button>
               {closable && (
-                <button type="button" className="ain-btn ain-topbtn ain-topbtn--quiet" onClick={skip}>
+                <Button variant="quiet" onClick={skip}>
                   Skip for now
-                </button>
+                </Button>
               )}
-              <button
-                type="button"
-                className="ain-btn ain-topbtn ain-topbtn--primary"
+              <Button
+                variant="primary"
                 onClick={finish}
                 disabled={status === "saving"}
               >
@@ -1059,7 +1057,7 @@ export function OnboardingWizard() {
                 ) : (
                   "Open your studio"
                 )}
-              </button>
+              </Button>
             </div>
           </>
         )}

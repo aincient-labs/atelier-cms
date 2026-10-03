@@ -21,6 +21,9 @@ web/sites/*/settings.ddev.php
 # references js/dist/*, not chat-ui/). Keeping the React source out shrinks the
 # volatile custom-modules layer by ~80% (~2.2 MB → ~0.5 MB), so a code-only pull is
 # smaller. (js/dist/THIRD-PARTY-NOTICES.txt still ships for attribution.)
+# The same holds for a studio module's ui/ source (web/modules/studio): the one
+# console build compiles it into aincient_chat/js/dist, and the image never runs it.
 web/modules/custom/*/chat-ui
+web/modules/studio/*/ui
 # macOS finder cruft — 50+ of these otherwise ride into the image.
 **/.DS_Store

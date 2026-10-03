@@ -1,0 +1,3 @@
+/* System tokens only (DECISIONS 0448): never --ain-ref-*, never kit classes. */
+.pack-hello { padding: 16px; color: var(--ain-text); }
+.pack-hello__lede { color: var(--ain-text-muted); }

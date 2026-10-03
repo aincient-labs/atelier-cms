@@ -165,6 +165,8 @@ function aincient_core_schema(): array {
     ],
   ];
 
+  $schema['aincient_demo_content'] = aincient_core_demo_content_table();
+
   return $schema;
 }
 
@@ -575,5 +577,71 @@ function aincient_core_update_11011(): void {
   if (!$manager->getEntityType('aincient_context_entry')) {
     $type = \Drupal::entityTypeManager()->getDefinition('aincient_context_entry');
     $manager->installEntityType($type);
+  }
+}
+
+/**
+ * The tracking table for studio demo content.
+ *
+ * A TABLE, NOT A BASE FIELD, because it has to tag entities we do not own: a
+ * studio's demo content is ordinary nodes and media, and a base field would mean
+ * altering `node` and `media` storage (and every other entity type a studio ever
+ * seeds) just to carry a flag. A side table keyed (entity_type, entity_id) tags
+ * anything, costs the owner's schema nothing, and disappears with this module
+ * (plans/studio-modules.md "Demo content", DECISIONS 0430).
+ *
+ * `entity_id` is a string although node and media ids are integers today: the
+ * key then also fits a UUID- or machine-name-keyed entity type without a schema
+ * change. Shared by hook_schema() and the update path so the two cannot drift.
+ */
+function aincient_core_demo_content_table(): array {
+  return [
+    'description' => 'Entities created as studio demo content, so "clear examples" can remove them.',
+    'fields' => [
+      'entity_type' => [
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'description' => 'The entity type id of the tracked entity.',
+      ],
+      'entity_id' => [
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'description' => 'The tracked entity id, as a string.',
+      ],
+      'studio' => [
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'description' => 'The id of the studio whose demo content this is.',
+      ],
+      'created' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Unix timestamp of when the entity was tagged.',
+      ],
+    ],
+    'primary key' => ['entity_type', 'entity_id'],
+    'indexes' => [
+      // The only read besides a full clear: "everything this studio seeded".
+      'studio' => ['studio'],
+    ],
+  ];
+}
+
+/**
+ * Create the demo-content tracking table on existing sites.
+ *
+ * Fresh installs get it from hook_schema(); this brings existing installs up to
+ * date (the appliance converge path runs `drush updatedb`). Guarded with
+ * tableExists() so a re-run, or a site that already has it, is a no-op. The
+ * table starts empty: nothing already on a site is retroactively "demo".
+ */
+function aincient_core_update_11012(): void {
+  $schema = \Drupal::database()->schema();
+  if (!$schema->tableExists('aincient_demo_content')) {
+    $schema->createTable('aincient_demo_content', aincient_core_demo_content_table());
   }
 }

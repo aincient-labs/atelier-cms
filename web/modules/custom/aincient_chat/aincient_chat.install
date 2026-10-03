@@ -38,3 +38,24 @@ function aincient_chat_update_10002(): void {
     $manager->uninstallEntityType($type);
   }
 }
+
+/**
+ * Fold the `features.checks_enabled` release flag into the studio switch.
+ *
+ * The flag hid the Checks studio from the console UI-only (its routes and
+ * verbs stayed live) and predated `disabled_studios`, which is a real off
+ * (DECISIONS 0430). Two ways to turn one studio off is one too many, so the
+ * flag is gone (DECISIONS 0440): a site that had Checks hidden — the flag
+ * false or never set, which is every shipped site — gets `checks` in
+ * `disabled_studios`; a site whose operator had flipped it on keeps Checks on.
+ */
+function aincient_chat_update_10003(): void {
+  $config = \Drupal::configFactory()->getEditable('aincient_chat.settings');
+  $was_on = (bool) $config->get('features.checks_enabled');
+  $disabled = $config->get('disabled_studios');
+  $disabled = array_values(array_unique(array_map('strval', is_array($disabled) ? $disabled : [])));
+  if (!$was_on && !in_array('checks', $disabled, TRUE)) {
+    $disabled[] = 'checks';
+  }
+  $config->set('disabled_studios', $disabled)->clear('features.checks_enabled')->save();
+}

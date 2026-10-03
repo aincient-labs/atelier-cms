@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ToolWidgetProps } from "./aui";
-import { CheckIcon, SpinnerIcon } from "./icons";
+import { CheckIcon, SpinnerIcon } from "./kit/icons";
 
 /**
  * Fallback renderer for tool-call parts with no dedicated UI.

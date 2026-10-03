@@ -120,7 +120,7 @@ final class PackValidator {
    * The id rule is the one that cannot be relaxed later: studio ids share one
    * flat namespace with ours and become permission names and URL values, so a
    * third-party id must be prefixed with its module name
-   * ({@see \Drupal\aincient_chat\Attribute\Studio}).
+   * ({@see \Drupal\aincient_chat\Studio\StudioManifest}).
    *
    * @param array $manifest
    *   The decoded manifest (empty when the pack has none).
@@ -144,8 +144,21 @@ final class PackValidator {
 
     $errors = [];
     $warnings = [];
+    // The manifest schema, graded on the pack's own file: discovery drops an
+    // invalid studio, so its errors would otherwise surface only as "ships no
+    // studio". Called by name — the manager is typed to core's interface here.
+    if (method_exists($this->studios, 'manifestErrors')) {
+      foreach ($this->studios->manifestErrors($module) as $id => $problems) {
+        foreach ($problems as $problem) {
+          $errors[] = sprintf('studio "%s": %s', $id, $problem);
+        }
+        if (!in_array((string) $id, $ids, TRUE)) {
+          $ids[] = (string) $id;
+        }
+      }
+    }
     if ($declared && $ids === []) {
-      $errors[] = 'declares the "studios" payload but ships no studio plugin (expected at least one class in src/Plugin/Studio). Note that a studio only appears here once the module is installed.';
+      $errors[] = 'declares the "studios" payload but ships no studio (expected at least one entry in <module>.studios.yml). Note that a studio only appears here once the module is installed.';
     }
     if (!$declared && $ids !== []) {
       $warnings[] = sprintf('ships studio plugin(s) %s but does not declare "studios" in provides — declare the payload so the manifest says what the pack adds.', implode(', ', $ids));

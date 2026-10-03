@@ -1,0 +1,16 @@
+/* --- StudioGroup (kit/studio-group.tsx): one titled group in an editor rail ---
+   Moved unchanged from styles.css (the collapsible-chevron rules it carried had
+   no user left and were dropped). */
+.ain-studio__group { margin-top: 12px; }
+.ain-studio__grouptitle {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  margin: 0 0 6px; padding: 2px 0; border: 0; background: none; text-align: left;
+  font-family: var(--ain-font-mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--ain-color-warning);
+}
+.ain-studio__grouptitle:hover { color: var(--ain-color-text); }
+/* The faint note under the title: what the group governs. */
+.ain-studio__groupnote { margin: -2px 0 8px; font-size: 11px; line-height: 1.4; color: var(--ain-color-text-faint); }
+/* Title row with actions at the right end (Sections: count + "Expand all"). */
+.ain-studio__grouphead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ain-studio__grouptitle--static { width: auto; margin-bottom: 0; }

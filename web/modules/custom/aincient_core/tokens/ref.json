@@ -1,0 +1,71 @@
+{
+  "$description": "REFERENCE tier — what a colour IS (plans/studio-modules.md § Console tokens, DECISIONS 0438). Named by pigment + lightness step (OKLCH L × 100). Nothing outside the system tier may use these; a theme overrides them.",
+  "ref": {
+    "color": {
+      "$type": "color",
+      "charcoal": {
+        "$description": "Studio-night grounds — warm neutrals (hue 72) so the dark reads as tinted panel, not cold UI grey.",
+        "20": { "$value": "oklch(0.205 0.006 72)" },
+        "25": { "$value": "oklch(0.245 0.007 72)" },
+        "28": { "$value": "oklch(0.285 0.008 72)" },
+        "34": { "$value": "oklch(0.34 0.008 72)" },
+        "46": { "$value": "oklch(0.46 0.010 72)" }
+      },
+      "gesso": {
+        "$description": "Gesso paper — warm mineral off-whites (chroma kept low so it reads clean, not cozy).",
+        "99": { "$value": "oklch(0.986 0.004 82)" },
+        "95": { "$value": "oklch(0.951 0.007 82)" },
+        "93": { "$value": "oklch(0.93 0.008 85)" },
+        "92": { "$value": "oklch(0.923 0.009 82)" },
+        "86": { "$value": "oklch(0.86 0.007 88)" }
+      },
+      "stone": {
+        "$description": "Mid warm neutrals — the muted and faint inks, the strong hairline.",
+        "70": { "$value": "oklch(0.70 0.010 85)" },
+        "62": { "$value": "oklch(0.62 0.010 80)" },
+        "58": { "$value": "oklch(0.58 0.010 85)" },
+        "55": { "$value": "oklch(0.55 0.010 82)" },
+        "47": { "$value": "oklch(0.47 0.010 78)" }
+      },
+      "bistre": {
+        "$description": "Warm near-black ink.",
+        "24": { "$value": "oklch(0.24 0.008 70)" }
+      },
+      "chalk": {
+        "$description": "A cool white — the mark's ring on a dark ground only.",
+        "97": { "$value": "oklch(0.97 0.005 290)" }
+      },
+      "cinnabar": {
+        "$description": "THE pigment (docs/brand.md §2.2). 55 on paper, 66 lifted for the dark ground; 49 / 72 are the pressed states.",
+        "72": { "$value": "oklch(0.72 0.155 34)" },
+        "66": { "$value": "oklch(0.66 0.155 34)" },
+        "55": { "$value": "oklch(0.545 0.155 32)" },
+        "49": { "$value": "oklch(0.49 0.155 32)" }
+      },
+      "ochre": {
+        "$description": "Warm ochre — the draft / attention whisper (Law 02).",
+        "72": { "$value": "oklch(0.72 0.095 66)" },
+        "60": { "$value": "oklch(0.60 0.100 66)" }
+      },
+      "verdigris": {
+        "$description": "Muted verdigris — positive state and links.",
+        "72": { "$value": "oklch(0.72 0.085 165)" },
+        "52": { "$value": "oklch(0.52 0.090 163)" }
+      },
+      "brick": {
+        "$description": "Deeper red, held apart from cinnabar — blocked / destructive.",
+        "62": { "$value": "oklch(0.62 0.150 25)" },
+        "52": { "$value": "oklch(0.52 0.160 28)" }
+      },
+      "umber": {
+        "$description": "Shadow ink — light falling in a room, never a hard offset (Law 04).",
+        "30": { "$value": "oklch(0.30 0.010 60)" },
+        "12": { "$value": "oklch(0.12 0.010 60)" }
+      },
+      "coral":  { "$description": "The mark's spectrum, band 1.", "66": { "$value": "oklch(0.66 0.21 27)" } },
+      "amber":  { "$description": "The mark's spectrum, band 2.", "78": { "$value": "oklch(0.78 0.17 70)" } },
+      "mint":   { "$description": "The mark's spectrum, band 3.", "74": { "$value": "oklch(0.74 0.17 163)" } },
+      "violet": { "$description": "The mark's spectrum, band 4.", "58": { "$value": "oklch(0.58 0.21 292)" } }
+    }
+  }
+}

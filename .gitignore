@@ -89,3 +89,6 @@ ralph/
 # Swept into commits twice (nanoid bump, flowdrop 2.4.1 chore); ignore the pattern, not the file.
 config/sync/flowdrop_workflow.flowdrop_workflow.yt_*.yml
 config/sync/flowdrop_node_type.flowdrop_node_type.message_from_text.yml
+
+# RTK's vitest JSON reporter output (chat-ui test runs)
+.vitest/

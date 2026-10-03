@@ -295,6 +295,11 @@ COPY recipes /opt/drupal/recipes
 COPY web/themes/custom /opt/drupal/web/themes/custom
 COPY config /opt/drupal/config
 COPY web/modules/custom /opt/drupal/web/modules/custom
+# The studio tier (DECISIONS 0430) is its own layer, not folded into custom's:
+# studios will churn at their own rate, like engine/ above, and a studio-only
+# change should not re-ship the whole core tier. Tiny today (a README), so the
+# layer costs nothing until studios land.
+COPY web/modules/studio /opt/drupal/web/modules/studio
 
 # The application code must be READABLE BY www-data, whatever the build host's
 # file modes were. `COPY` preserves the context's permissions, so a checkout with

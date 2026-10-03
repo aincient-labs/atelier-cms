@@ -6,6 +6,7 @@ namespace Drupal\Tests\aincient_pages\Unit;
 
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\aincient_pages\Catalog\CapabilityFence;
+use Drupal\aincient_chat\Studio\StudioManager;
 use Drupal\aincient_pages\Catalog\PackValidator;
 use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Theme\ComponentPluginManager;
@@ -105,6 +106,22 @@ final class PackFenceTest extends UnitTestCase {
   }
 
   /**
+   * A module in the studio tier (web/modules/studio, DECISIONS 0430) is ours:
+   * it may own capabilities, and the exemption is the PATH, not the name.
+   */
+  public function testStudioTierModuleMayShipCapabilities(): void {
+    $studioPath = $this->packPath . '/modules/studio/acme_studio';
+    mkdir($studioPath . '/' . CapabilityFence::CAPABILITY_DIR, 0777, TRUE);
+    file_put_contents($studioPath . '/' . CapabilityFence::CAPABILITY_DIR . '/DoThing.php', '<?php');
+
+    $this->assertSame([], CapabilityFence::check($studioPath, 'acme_studio'));
+    // The same tree under any other path is still fenced.
+    $customPath = $this->packPath . '/modules/custom/acme_studio';
+    mkdir($customPath . '/' . CapabilityFence::CAPABILITY_DIR, 0777, TRUE);
+    $this->assertCount(1, CapabilityFence::check($customPath, 'acme_studio'));
+  }
+
+  /**
    * A pack shipping a capability is REJECTED, and a missing manifest is not a
    * way around it — the fence runs on any named module.
    */
@@ -150,7 +167,7 @@ final class PackFenceTest extends UnitTestCase {
     $report = $this->validator([])->validate('acme_pack');
 
     $this->assertSame(1, $report['rejected']);
-    $this->assertStringContainsString('ships no studio plugin', implode(' ', $report['pack']['errors']));
+    $this->assertStringContainsString('ships no studio (expected', implode(' ', $report['pack']['errors']));
   }
 
   /**
@@ -191,6 +208,29 @@ final class PackFenceTest extends UnitTestCase {
 
     $this->assertSame(0, $report['rejected']);
     $this->assertSame([], $report['pack']['errors']);
+  }
+
+  /**
+   * A pack studio whose manifest discovery DROPPED (a `ui.entry` where a
+   * `ui.script` belongs, DECISIONS 0448) is reported with the schema error,
+   * not as a pack that "ships no studio".
+   */
+  public function testDroppedStudioManifestIsReportedWithItsErrors(): void {
+    $this->manifest("api: 1\nprovides: [studios]\n");
+    $components = $this->createMock(ComponentPluginManager::class);
+    $components->method('getDefinitions')->willReturn([]);
+    $moduleList = $this->createMock(ModuleExtensionList::class);
+    $moduleList->method('getPath')->willReturn($this->packPath);
+    $studios = $this->createMock(StudioManager::class);
+    $studios->method('getDefinitions')->willReturn([]);
+    $studios->method('manifestErrors')->with('acme_pack')->willReturn([
+      'acme_pack_leads' => ['"ui.entry" is only for studio modules under web/modules/studio/'],
+    ]);
+
+    $report = (new PackValidator($components, $moduleList, $studios))->validate('acme_pack');
+    $errors = implode("\n", $report['pack']['errors']);
+    $this->assertStringContainsString('studio "acme_pack_leads": "ui.entry" is only for studio modules', $errors);
+    $this->assertStringNotContainsString('ships no studio', $errors, 'The real reason, not the symptom.');
   }
 
 }

@@ -3,7 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
-    - flowdrop_node_type.flowdrop_node_type.aincient_flows_policy_check
+    - flowdrop_node_type.flowdrop_node_type.aincient_audit_policy_check
 id: aincient_policy_seo
 label: 'Policy: SEO & meta tags'
 description: 'The shipped default SEO & meta-tag policy (DECISIONS 0129). Runs the `seo` check against the target node — read from the workflow initial data — and returns its findings. Deterministic — no LLM, no HTTP; run synchronously and DB-free by the PolicyEvaluator.'
@@ -18,7 +18,7 @@ nodes:
       config:
         check: seo
       metadata:
-        node_type_id: aincient_flows_policy_check
+        node_type_id: aincient_audit_policy_check
     measured:
       width: 280
       height: 300

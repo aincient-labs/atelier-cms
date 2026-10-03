@@ -1,0 +1,32 @@
+# The Identity studio (plans/studio-modules.md "The manifest", DECISIONS 0430) —
+# one frozen built-in id (0425): `design_system` lives in `use aincient studio
+# design_system`, in the `studios` agents map and in stored deep links. The
+# admin label is "Identity" — what the console calls the room since the old
+# Brand studio split three ways (DECISIONS 0372): Identity keeps the design
+# tokens + name / tagline / voice / imagery + the whole logo + favicon + footer
+# note; Navigation & Pages and Settings went to `aincient_studio_site`. The
+# module keeps its historical name (`aincient_brand`, the 0433 pattern): its six
+# capability ids are `aincient_brand:*` in every flow and test, and nothing is
+# gained by renaming them.
+#
+# Its agent is `brand_studio`, which delegates to three specialist flows
+# (colour, shape, typography) through three `flowdrop_workflow_executor` node
+# types — all seven ship in config/install and are mirrored in config/sync under
+# one drift test. Its six owned capabilities are the draft-only brand verbs,
+# refused at dispatch while the studio is switched off; `brand_state` and
+# `brand_apply_slices` are core FlowDrop processors in `aincient_flows` (they
+# depend only on `aincient_pages`), not capabilities, so they are not listed.
+#
+# Its UI exports `Studio` (the brand rail), `Preview` (the token showcase) and
+# `ToolUIs` (the five brand chat cards: picker, live preview, status proposal,
+# token admission, logo hand-off).
+design_system:
+  label: 'Identity'
+  description: 'The brand — design tokens, name, tagline, voice, logo and favicon — beside a live token showcase.'
+  help: 'Ask the chat for a mood, a palette or a typeface pairing, or edit tokens and identity fields directly; nothing is live until you Publish.'
+  weight: 10
+  ui:
+    entry: ui/index.tsx
+    icon: palette
+  flows: [brand_studio, aincient_brand_specialist_colour, aincient_brand_specialist_shape, aincient_brand_specialist_typography]
+  capabilities: [brand_picker, preview_brand, propose_brand_status, propose_design_tokens, reset_preview, route_logo_image]

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_chat\Chat;
 
 use Drupal\aincient_chat\Studio\StudioManager;
+use Drupal\aincient_chat\Studio\StudioSwitch;
 use Drupal\aincient_core\CapabilityVerbs;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
@@ -45,6 +46,7 @@ final class WorkflowCatalog {
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly CapabilityVerbs $capabilityVerbs,
     private readonly StudioManager $studioManager,
+    private readonly StudioSwitch $studioSwitch,
   ) {}
 
   /**
@@ -52,7 +54,10 @@ final class WorkflowCatalog {
    *
    * Studios appear in the studio plugins' display order. Agents are validated
    * against existing flowdrop_workflow entities and returned as id => label (sorted by
-   * label). A studio with no valid agent is omitted (disabled). Each studio's
+   * label). A studio with no valid agent is omitted (disabled), and so is a
+   * studio switched OFF ({@see StudioSwitch}, DECISIONS 0430): its flows leave
+   * the switcher, and because {@see self::resolve()} only accepts agents listed
+   * here, a POSTed id for one of them falls back to the default. Each studio's
    * `default` is its configured default when still valid, else its first agent.
    *
    * @return array<string, array{agents: array<string, string>, default: string}>
@@ -67,6 +72,9 @@ final class WorkflowCatalog {
     $labels = $this->workflowLabels();
     $out = [];
     foreach ($this->studioManager->keys() as $key) {
+      if (!$this->studioSwitch->isEnabled($key)) {
+        continue;
+      }
       $entry = (array) ($configured[$key] ?? []);
       $agents = [];
       foreach (array_map('strval', (array) ($entry['agents'] ?? [])) as $id) {

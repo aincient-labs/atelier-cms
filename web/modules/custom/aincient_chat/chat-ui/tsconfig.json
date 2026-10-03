@@ -2,8 +2,14 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["node"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -14,7 +20,53 @@
     "jsx": "react-jsx",
     "strict": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    // Mirrors vite.aliases.ts (keep the two in step): studio UI under
+    // web/modules/studio/*/ui has no node_modules above it, so react resolves to
+    // THIS package's types (as do vitest + @testing-library for a studio's own
+    // tests), and the @console/* roots + @studio name the same
+    // directories the bundle uses (DECISIONS 0430). No baseUrl — TypeScript 7
+    // removed it; paths resolve relative to this file.
+    "paths": {
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/*": [
+        "./node_modules/@types/react/*"
+      ],
+      "react-dom": [
+        "./node_modules/@types/react-dom"
+      ],
+      "react-dom/*": [
+        "./node_modules/@types/react-dom/*"
+      ],
+      "@console/kit": [
+        "./src/kit"
+      ],
+      "@console/kit/*": [
+        "./src/kit/*"
+      ],
+      "@console/sdk": [
+        "./src/sdk"
+      ],
+      "@console/sdk/*": [
+        "./src/sdk/*"
+      ],
+      "@console/aui": [
+        "./src/aui"
+      ],
+      "@console/aui/*": [
+        "./src/aui/*"
+      ],
+      "vitest": ["./node_modules/vitest"],
+      "@testing-library/*": ["./node_modules/@testing-library/*"],
+      "@studio/*": [
+        "../../../studio/*"
+      ]
+    }
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "../../../studio/*/ui"
+  ]
 }

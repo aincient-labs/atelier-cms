@@ -1,0 +1,12 @@
+# A pack studio: no ui.entry (our build never sees this module), a built
+# script the console import()s and mounts instead. The id carries the module
+# name, as pack-validate requires of a pack.
+aincient_pack_studio_test:
+  label: 'Pack studio test'
+  description: 'A fixture pack studio for the kernel tests.'
+  weight: 900
+  ui:
+    script: studio/studio.js
+    style: studio/studio.css
+    name: 'Leads'
+    icon: blocks

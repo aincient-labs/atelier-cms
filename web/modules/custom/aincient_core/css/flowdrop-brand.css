@@ -8,8 +8,8 @@
  *
  * Mechanism: FlowDrop is driven by a clean `--fd-*` semantic token system
  * (design-tokens.css -> theme-layer.css). We remap those tokens onto the
- * Atelier console palette (the `--ain-*` tokens canonical in the chat-ui
- * `styles.css` `:root`), the override point the FlowDrop docs intend for
+ * Atelier console palette (the `--ain-*` tokens generated from
+ * `aincient_core/tokens`, docs/console-tokens.md), the override point the FlowDrop docs intend for
  * themes. Loaded in the `theme` CSS bucket (via hook_library_info_alter
  * attaching us to `flowdrop_ui_components/flowdrop`), so we cascade after the
  * Svelte bundle's `component`-bucket flowdrop.css and win.
@@ -44,7 +44,7 @@
   --fd-font-family-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* Soft craft corners — the sharp 2px arcade edge is retired (§10). The
-     console commits to a single soft radius (--ain-radius: 7px); we let the
+     console commits to a single soft radius (--ain-radius-md: 7px); we let the
      scale rise gently around it rather than pinning everything flat. */
   --fd-radius-sm: 5px;
   --fd-radius-md: 7px;
@@ -57,44 +57,17 @@
 }
 
 /* =========================================================================
-   LIGHT MODE (FlowDrop default) — Atelier gesso paper. Values copied from the
-   console light theme (chat-ui styles.css `[data-ain-theme="light"]`): a warm
-   mineral off-white ground, bistre ink, one cinnabar pigment.
+   THE PALETTE is css/flowdrop-tokens.generated.css (listed before this file in
+   the `flowdrop_brand` library), generated from aincient_core/tokens/*.json:
+   `:root` is gesso paper, `[data-theme="dark"]` is studio night, mirroring
+   FlowDrop's own light-default / attribute-dark shape. Only the canvas wash,
+   which no other surface has, is defined here.
    ========================================================================= */
 :root {
-  --ain-bg: oklch(0.923 0.009 82);         /* gesso ground — the app canvas     */
-  --ain-surface: oklch(0.986 0.004 82);    /* raised cards — brightest paper     */
-  --ain-surface-2: oklch(0.951 0.007 82);  /* panel / chrome — recessed a touch  */
-  --ain-border: oklch(0.86 0.007 88);      /* hairline                           */
-  --ain-border-strong: oklch(0.58 0.010 85);
-  --ain-text: oklch(0.24 0.008 70);        /* bistre — warm near-black ink       */
-  --ain-text-dim: oklch(0.47 0.010 78);
-  --ain-accent: oklch(0.545 0.155 32);     /* CINNABAR — the one pigment         */
-  --ain-accent-hover: oklch(0.49 0.155 32);
-  --ain-accent-muted: oklch(0.545 0.155 32 / 10%);
-  --ain-shadow: oklch(0.30 0.010 60);      /* soft warm ink — diffuse lift       */
-  --ain-canvas: linear-gradient(135deg, oklch(0.94 0.008 82) 0%, oklch(0.92 0.010 82) 100%);
+  --ain-flowdrop-canvas: linear-gradient(135deg, oklch(0.94 0.008 82) 0%, oklch(0.92 0.010 82) 100%);
 }
-
-/* =========================================================================
-   DARK MODE — Atelier "studio night". Values copied from the console dark
-   default (chat-ui styles.css `#aincient-chat-root`): warm charcoal grounds,
-   paper ink, cinnabar lifted for the dark ground. The shadow is a deep warm
-   near-black (soft + diffuse) — NOT the retired neon-lavender hard offset.
-   ========================================================================= */
 [data-theme="dark"] {
-  --ain-bg: oklch(0.205 0.006 72);         /* charcoal canvas                    */
-  --ain-surface: oklch(0.245 0.007 72);    /* panel / chrome                     */
-  --ain-surface-2: oklch(0.285 0.008 72);  /* raised cards / hover               */
-  --ain-border: oklch(0.34 0.008 72);
-  --ain-border-strong: oklch(0.46 0.010 72);
-  --ain-text: oklch(0.93 0.008 85);        /* warm paper ink                     */
-  --ain-text-dim: oklch(0.70 0.010 85);
-  --ain-accent: oklch(0.66 0.155 34);      /* cinnabar, lifted for the dark ground */
-  --ain-accent-hover: oklch(0.72 0.155 34);
-  --ain-accent-muted: oklch(0.66 0.155 34 / 16%);
-  --ain-shadow: oklch(0.12 0.010 60);      /* deep warm ink — soft diffuse lift  */
-  --ain-canvas: linear-gradient(135deg, oklch(0.19 0.006 72) 0%, oklch(0.22 0.007 72) 100%);
+  --ain-flowdrop-canvas: linear-gradient(135deg, oklch(0.19 0.006 72) 0%, oklch(0.22 0.007 72) 100%);
 }
 
 /* =========================================================================
@@ -110,71 +83,71 @@
 :root,
 [data-theme="dark"] {
   /* Surfaces */
-  --fd-background: var(--ain-surface);
-  --fd-foreground: var(--ain-text);
-  --fd-muted: var(--ain-bg);
-  --fd-muted-foreground: var(--ain-text-dim);
-  --fd-subtle: var(--ain-surface-2);
-  --fd-card: var(--ain-surface);
-  --fd-card-foreground: var(--ain-text);
-  --fd-header: var(--ain-surface);
-  --fd-header-foreground: var(--ain-text);
-  --fd-header-gradient: linear-gradient(180deg, var(--ain-surface) 0%, var(--ain-bg) 100%);
-  --fd-surface-tint: var(--ain-accent-muted);
+  --fd-background: var(--ain-color-surface);
+  --fd-foreground: var(--ain-color-text);
+  --fd-muted: var(--ain-color-bg);
+  --fd-muted-foreground: var(--ain-color-text-muted);
+  --fd-subtle: var(--ain-color-surface-raised);
+  --fd-card: var(--ain-color-surface);
+  --fd-card-foreground: var(--ain-color-text);
+  --fd-header: var(--ain-color-surface);
+  --fd-header-foreground: var(--ain-color-text);
+  --fd-header-gradient: linear-gradient(180deg, var(--ain-color-surface) 0%, var(--ain-color-bg) 100%);
+  --fd-surface-tint: var(--ain-color-accent-tint);
 
   /* Borders */
-  --fd-border: var(--ain-border);
-  --fd-border-muted: var(--ain-surface-2);
-  --fd-border-strong: var(--ain-border-strong);
-  --fd-node-border: var(--ain-border);
-  --fd-node-border-hover: var(--ain-border-strong);
+  --fd-border: var(--ain-color-border);
+  --fd-border-muted: var(--ain-color-surface-raised);
+  --fd-border-strong: var(--ain-color-border-strong);
+  --fd-node-border: var(--ain-color-border);
+  --fd-node-border-hover: var(--ain-color-border-strong);
 
   /* Single cinnabar accent — the interface commits to one pigment (§2.2), on
      at most a couple of elements per screen. Primary + accent + ring + info all
      resolve to cinnabar; success/warning/danger keep their own meaning colours. */
-  --fd-primary: var(--ain-accent);
-  --fd-primary-hover: var(--ain-accent-hover);
+  --fd-primary: var(--ain-color-accent);
+  --fd-primary-hover: var(--ain-color-accent-hover);
   --fd-primary-foreground: #fff;
-  --fd-primary-muted: var(--ain-accent-muted);
-  --fd-accent: var(--ain-accent);
-  --fd-accent-hover: var(--ain-accent-hover);
+  --fd-primary-muted: var(--ain-color-accent-tint);
+  --fd-accent: var(--ain-color-accent);
+  --fd-accent-hover: var(--ain-color-accent-hover);
   --fd-accent-foreground: #fff;
-  --fd-accent-muted: var(--ain-accent-muted);
-  --fd-ring: var(--ain-accent);
-  --fd-info: var(--ain-accent);
-  --fd-info-muted: var(--ain-accent-muted);
+  --fd-accent-muted: var(--ain-color-accent-tint);
+  --fd-ring: var(--ain-color-accent);
+  --fd-info: var(--ain-color-accent);
+  --fd-info-muted: var(--ain-color-accent-tint);
 
-  --fd-secondary: var(--ain-surface-2);
-  --fd-secondary-hover: var(--ain-border);
-  --fd-secondary-foreground: var(--ain-text);
+  --fd-secondary: var(--ain-color-surface-raised);
+  --fd-secondary-hover: var(--ain-color-border);
+  --fd-secondary-foreground: var(--ain-color-text);
 
   /* Canvas backdrop (the node-graph gradient). Node-port contrast rings
      (--fd-handle-border) and the modal scrim (--fd-backdrop) keep FlowDrop's
      mode-correct defaults. */
-  --fd-layout-background: var(--ain-canvas);
+  --fd-layout-background: var(--ain-flowdrop-canvas);
 
   /* Scrollbars */
-  --fd-scrollbar-thumb: var(--ain-border);
-  --fd-scrollbar-thumb-hover: var(--ain-border-strong);
-  --fd-scrollbar-track: var(--ain-bg);
+  --fd-scrollbar-thumb: var(--ain-color-border);
+  --fd-scrollbar-thumb-hover: var(--ain-color-border-strong);
+  --fd-scrollbar-track: var(--ain-color-bg);
 
   /* Edges — selected snaps to cinnabar in both modes. */
-  --fd-edge-trigger-selected: var(--ain-accent);
-  --fd-edge-data-selected: var(--ain-accent);
-  --fd-edge-loopback-selected: var(--ain-accent);
+  --fd-edge-trigger-selected: var(--ain-color-accent);
+  --fd-edge-data-selected: var(--ain-color-accent);
+  --fd-edge-loopback-selected: var(--ain-color-accent);
 
   /* Shadows are SOFT + diffuse — the warm-paper lift (§3, Law 08): a blurred,
      low-offset shadow so surfaces read as caught light, never a hard ink block.
      This single scale swap re-softens everything that lifts — nodes, tool /
      gateway nodes, cards, inputs, the component sidebar, canvas FABs and the
      settings modal. Recipe mirrors the console (0 Ny Bpx color-mix ain-shadow). */
-  --fd-shadow-sm: 0 1px 2px color-mix(in oklch, var(--ain-shadow) 15%, transparent);
-  --fd-shadow-md: 0 2px 8px -2px color-mix(in oklch, var(--ain-shadow) 22%, transparent);
-  --fd-shadow-lg: 0 6px 16px -4px color-mix(in oklch, var(--ain-shadow) 26%, transparent);
-  --fd-shadow-xl: 0 12px 28px -6px color-mix(in oklch, var(--ain-shadow) 30%, transparent);
+  --fd-shadow-sm: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  --fd-shadow-md: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 22%, transparent);
+  --fd-shadow-lg: 0 6px 16px -4px color-mix(in oklch, var(--ain-color-shadow) 26%, transparent);
+  --fd-shadow-xl: 0 12px 28px -6px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent);
 
   /* Header lift = a clean flat hairline (no drop shadow). */
-  --fd-header-shadow: 0 1px 0 var(--ain-border);
+  --fd-header-shadow: 0 1px 0 var(--ain-color-border);
 }
 
 /* The few box-shadows the bundle hardcodes (not driven by the scale): the

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
+use Drupal\aincient_core\Capability\CapabilityGates;
 use Drupal\aincient_core\Capability\CapabilityManager;
 use Drupal\aincient_core\Capability\ExecutableCapabilityInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -49,6 +50,7 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
     $plugin_id,
     $plugin_definition,
     protected CapabilityManager $capabilityManager,
+    protected CapabilityGates $gates,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -67,6 +69,7 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
       $plugin_id,
       $plugin_definition,
       $container->get('plugin.manager.aincient.capabilities'),
+      $container->get('aincient_core.capability_gates'),
     );
   }
 
@@ -87,6 +90,17 @@ class CapabilityTool extends AbstractFlowDropNodeProcessor {
     $id = $this->functionCallId();
     if ($id === '') {
       return ['ok' => FALSE, 'result' => 'This capability node is not bound to a command.'];
+    }
+
+    // Refused before the plugin is even built: a switched-off studio's OWN
+    // verbs must not run from a turn in any other studio (DECISIONS 0430). The
+    // refusal is the tool result, so the model reads why and tells the user,
+    // rather than retrying. This is the one boundary every model-issued call
+    // crosses, which is why the check lives here and not in the projector
+    // (hiding the tool would not stop an already-wired node).
+    $refusal = $this->gates->refusal($id);
+    if ($refusal !== NULL) {
+      return ['ok' => FALSE, 'result' => $refusal];
     }
 
     try {

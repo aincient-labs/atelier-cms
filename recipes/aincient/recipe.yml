@@ -29,6 +29,12 @@ install:
   # First-run onboarding: presents the connect-AI wizard on a keyless install.
   # Without this the console has no way to prompt for AI setup on a fresh site.
   - aincient_onboarding
+  # The studio modules (web/modules/studio, DECISIONS 0430): surfaces on top of
+  # core, switched on/off by config, never uninstalled. Components first (0431).
+  - aincient_studio_components
+  - aincient_studio_content
+  - aincient_studio_media
+  - aincient_studio_site
   # Demo showcase: seeds a branded homepage (an aincient_page) and points the
   # front page at it, so a fresh install opens on a polished, on-brand site that
   # sells the product and invites the visitor to log in and try it. Pulls in

@@ -1,0 +1,29 @@
+/*
+ * kit · Dialog (dialog.tsx) — the overlay + the paper card a modal sits on, shared by the Radix Dialog and the hand-rolled confirms still in the console.
+ *
+ * Extracted from styles.css unchanged (plans/studio-modules.md, "the kit, for
+ * real"): the class names are the contract, so markup that still writes them by
+ * hand keeps working while call sites move to the component. System tokens only
+ * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
+ * feature rule of equal specificity still overrides the kit — never the reverse.
+ */
+/* confirm dialog — switching flows starts a new conversation */
+.ain-confirm__overlay {
+  position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center;
+  background: color-mix(in oklch, var(--ain-color-shadow) 55%, transparent);
+}
+.ain-confirm {
+  max-width: 420px; margin: 16px; padding: 18px;
+  background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md); box-shadow: 0 8px 22px -6px color-mix(in oklch, var(--ain-color-shadow) 42%, transparent);
+}
+.ain-confirm__text { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--ain-color-text); }
+.ain-confirm__actions { display: flex; justify-content: flex-end; gap: 9px; }
+/* The Radix Dialog's card: a title + body + actions column, scroll inside. */
+.ain-dialog { display: flex; flex-direction: column; gap: 12px; width: 420px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; }
+.ain-dialog:focus-visible { outline: none; }
+.ain-dialog__title { margin: 0; font-family: var(--ain-font-display); font-size: 15px; font-weight: 600; color: var(--ain-color-text); }
+.ain-dialog__description { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ain-color-text-muted); }
+.ain-dialog .ain-confirm__actions { margin-top: 2px; }
+/* A title row with a close ✕ (Dialog closeButton) — the form dialogs. */
+.ain-dialog__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

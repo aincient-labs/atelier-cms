@@ -23,7 +23,9 @@ import {
   neutralizePreviewTabbing,
   paintSelection,
 } from "./preview-nav";
-import { PanelBar } from "./panel-bar";
+import { EmptyState } from "./kit/empty-state";
+import { Notice } from "./kit/notice";
+import { PanelBar } from "./kit/panel-bar";
 import { ContentBrowser } from "./content-browser";
 import { PresencePreview } from "./presence-preview";
 import { useFacet } from "./page-facet";
@@ -265,7 +267,7 @@ export function PagePreview() {
         aria-hidden="true"
       />
       {error ? (
-        <p className="ain-studio__error">{error}</p>
+        <Notice tone="error" panel>{error}</Notice>
       ) : layers.length === 0 ? (
         // Idle (nothing open, no deliberate New) → browse + pick a page from the
         // canvas. Mid-build / a deliberate New / an opened-but-empty page → the
@@ -297,12 +299,9 @@ export function PagePreview() {
             />
           )
         ) : (
-          <div className="ain-pagepreview__empty">
-            <p>Your page preview appears here.</p>
-            <p className="ain-pagepreview__hint">
-              Ask the agent to build a page, or add a section in the studio.
-            </p>
-          </div>
+          <EmptyState variant="stage" hint="Ask the agent to build a page, or add a section in the studio.">
+            Your page preview appears here.
+          </EmptyState>
         )
       ) : (
         <div className="ain-preview__stage">

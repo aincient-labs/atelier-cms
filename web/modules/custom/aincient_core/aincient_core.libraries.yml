@@ -10,6 +10,10 @@ flowdrop_brand:
       # so the editor chrome leaks no operator IP (docs/brand.md §2.4 /
       # DECISIONS 0058). Regenerate via scripts/fetch-brand-fonts.php.
       fonts/brand-fonts.css: {}
+      # The console's design tokens in FlowDrop's own light-default /
+      # [data-theme="dark"] shape, generated from tokens/*.json by the chat-ui
+      # build (docs/console-tokens.md). Before the brand layer, which remaps them.
+      css/flowdrop-tokens.generated.css: {}
       css/flowdrop-brand.css: {}
   dependencies:
     - flowdrop_ui_components/theme-layer

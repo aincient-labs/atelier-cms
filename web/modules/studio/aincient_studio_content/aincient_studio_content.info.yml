@@ -1,0 +1,18 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier Content studio'
+type: module
+description: 'The Content studio (`content` — the console calls it Pages): the live page composer rail beside the shared page preview, the page + global-block editing routes, the pages agent (`aincient_pages_agent`) and its one owned verb, `preview_page`. The fifth studio module (plans/studio-modules.md Phase E.4).'
+package: Atelier studios
+core_version_requirement: ^11
+dependencies:
+  # The studio frame: manifest discovery, the on/off switch, the derived
+  # permissions and the route gate.
+  - aincient_chat
+  # What this studio edits — pages and global blocks through PageStore /
+  # BlockStore / NodeModeration / EditLock and the component catalog, which all
+  # stay in core: a page must keep rendering, exporting and being audited with
+  # this studio switched off. Only the editing surface (the rail, the 22 write /
+  # read routes behind it) and the pages agent's composing verb are here. The
+  # shared verbs it also calls — `list_pages`, `find_reference` — stay core,
+  # because the operator, audit and image agents call them too.
+  - aincient_pages

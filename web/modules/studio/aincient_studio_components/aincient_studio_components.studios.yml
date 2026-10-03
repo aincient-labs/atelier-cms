@@ -1,0 +1,18 @@
+# The Components studio (plans/studio-modules.md "The manifest", DECISIONS 0430).
+#
+# The id stays `components` — a built-in id is frozen (0425): it lives in the
+# `use aincient studio components` permission, in `aincient_chat.settings` and in
+# stored deep links. The module name namespaces nothing.
+#
+# EDITOR-ONLY, PANEL-ONLY: no agent (`flows` is empty), no Preview — its rail is
+# the centre canvas (the Checks shape). It owns no capability yet: the
+# constraint is edited through its two JSON routes (`routing.yml`), gated by the
+# derived permission, which the studio switch turns into a 403 when it is off.
+components:
+  label: 'Components'
+  description: 'Which components, tones and variants this site uses — a narrowing layer over the discovered component vocabulary.'
+  help: 'Untick what this site should never place. Existing uses stay; the agent and the studios stop offering it.'
+  weight: 40
+  ui:
+    entry: ui/index.tsx
+    icon: blocks

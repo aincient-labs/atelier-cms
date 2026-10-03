@@ -2,6 +2,10 @@ global:
   version: 1.x
   css:
     theme:
+      # The console's design tokens, generated from aincient_core/tokens/*.json
+      # by the chat-ui build (docs/console-tokens.md). First, so the two files
+      # below only ever read them.
+      css/tokens.generated.css: {}
       css/studio-backend.css: {}
       css/admin-kit.css: {}
   dependencies:

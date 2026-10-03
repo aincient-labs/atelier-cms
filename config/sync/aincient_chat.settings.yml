@@ -1,7 +1,8 @@
 features:
-  checks_enabled: false
   technical_detail: false
 default_studio: general
+disabled_studios:
+  - checks
 studios:
   general:
     agents:

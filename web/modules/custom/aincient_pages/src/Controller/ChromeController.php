@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * JSON/HTML API for the Globals studios (Header / Footer / Brand identity).
  *
- * The chrome parallel of {@see BrandController} / {@see PageController}: the
+ * The chrome parallel of {@see BrandController} / the Content studio's PageController: the
  * studio edits a preview-only DRAFT (chrome layout + identity + the two chrome
  * menus) client-side, renders it live through {@see preview()}, and persists it
  * only on Publish ({@see save()}). Three stores back it: {@see ChromeRepository}

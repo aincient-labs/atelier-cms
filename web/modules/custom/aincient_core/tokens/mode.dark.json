@@ -1,0 +1,27 @@
+{
+  "$description": "SYSTEM colour roles, DARK mode (studio night) — what a colour is FOR. Same names as mode.light.json; a surface picks which is its base.",
+  "color": {
+    "$type": "color",
+    "bg":             { "$value": "{ref.color.charcoal.20}", "$description": "The app canvas." },
+    "surface":        { "$value": "{ref.color.charcoal.25}", "$description": "Panels and chrome." },
+    "surface-raised": { "$value": "{ref.color.charcoal.28}", "$description": "The emphasised layer — hover fills, chips, raised cards." },
+    "border":         { "$value": "{ref.color.charcoal.34}", "$description": "The 1px hairline (Law 06)." },
+    "border-strong":  { "$value": "{ref.color.charcoal.46}" },
+    "text":           { "$value": "{ref.color.gesso.93}", "$description": "Ink." },
+    "text-muted":     { "$value": "{ref.color.stone.70}", "$description": "Secondary ink — stays WCAG AA; never dim with opacity (0376)." },
+    "text-faint":     { "$value": "{ref.color.stone.55}", "$description": "Placeholders only — must read as absence, not content." },
+    "accent":         { "$value": "{ref.color.cinnabar.66}", "$description": "Cinnabar, lifted for the dark ground — the one pigment (Law 01)." },
+    "accent-hover":   { "$value": "{ref.color.cinnabar.72}" },
+    "accent-tint":    { "$value": "color-mix(in oklch, {color.accent} 16%, transparent)", "$description": "A whisper of the accent for selected / focus fills." },
+    "on-accent":      { "$value": "{ref.color.gesso.99}", "$description": "Paper ink on a cinnabar fill." },
+    "focus-ring":     { "$value": "{color.accent}", "$description": "Focus is a tint ring, never a halo (Law 04)." },
+    "warning":        { "$value": "{ref.color.ochre.72}", "$description": "Draft / dirty / attention — a tint, never a fill (Law 02)." },
+    "success":        { "$value": "{ref.color.verdigris.72}", "$description": "Positive state and links." },
+    "danger":         { "$value": "{ref.color.brick.62}", "$description": "Blocked / archived / destructive." },
+    "shadow":         { "$value": "{ref.color.umber.12}", "$description": "The shadow ink, mixed into every box-shadow." }
+  },
+  "mark": {
+    "$type": "color",
+    "ring": { "$value": "{ref.color.chalk.97}", "$description": "The mark's ring — a white sticker on the dark ground." }
+  }
+}

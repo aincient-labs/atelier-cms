@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from "react";
-import { makeSafeAssistantToolUI } from "./error-boundary";
+import { makeSafeAssistantToolUI } from "./kit/error-boundary";
 import {
   SunIcon,
   CloudIcon,
@@ -10,7 +10,7 @@ import {
   CloudLightningIcon,
   CloudFogIcon,
   WindIcon,
-} from "./icons";
+} from "./kit/icons";
 
 /**
  * Weather card — the first generative-UI tool widget.

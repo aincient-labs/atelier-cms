@@ -1,0 +1,39 @@
+/*
+ * kit · Menu (menu.tsx) — the dropdown list anatomy, shared by Radix-backed menus and the hand-positioned ones still in the console.
+ *
+ * Extracted from styles.css unchanged (plans/studio-modules.md, "the kit, for
+ * real"): the class names are the contract, so markup that still writes them by
+ * hand keeps working while call sites move to the component. System tokens only
+ * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
+ * feature rule of equal specificity still overrides the kit — never the reverse.
+ */
+/* shadcn-style dropdown for per-thread actions (fixed-position, right-aligned
+   to the "⋯" button via translateX so the list scroll never clips it) */
+.ain-menu {
+  position: fixed; z-index: 1200; min-width: 148px;
+  transform: translateX(-100%);
+  display: flex; flex-direction: column; gap: 1px; padding: 4px;
+  background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+}
+.ain-menu__item {
+  display: flex; align-items: center; gap: 9px; cursor: pointer;
+  background: transparent; border: 0; color: var(--ain-color-text);
+  font: inherit; font-size: 13.5px; text-align: left; text-decoration: none;
+  padding: 7px 10px; border-radius: var(--ain-radius-md);
+}
+.ain-menu__item:hover { background: var(--ain-color-surface-raised); }
+.ain-menu__item svg { font-size: 14px; opacity: .7; }
+.ain-menu__item--danger { color: var(--ain-color-danger); }
+/* Menu items can be disabled (Move up on the first row). */
+.ain-menu__item:disabled { opacity: .4; cursor: default; }
+.ain-menu__item:disabled:hover { background: transparent; }
+/* Radix items mark the keyboard-highlighted and the disabled item with data
+   attributes, not :hover / :disabled. */
+.ain-menu__item[data-highlighted] { background: var(--ain-color-surface-raised); outline: none; }
+.ain-menu__item[data-disabled] { opacity: .4; cursor: default; }
+/* A single-choice item (MenuRadioItem, the FilterSelect option): the current
+   one gets an INK check (Plate 13) — the pigment never marks a menu state. */
+.ain-menu__item--radio { white-space: nowrap; gap: 8px; }
+.ain-menu__check { flex: none; display: inline-grid; place-items: center; width: 14px; color: var(--ain-color-text); }
+.ain-menu__check svg { font-size: 12px; }

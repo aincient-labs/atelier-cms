@@ -1,0 +1,578 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_brand_validate_slice
+    - flowdrop_node_type.flowdrop_node_type.chat_input
+    - flowdrop_node_type.flowdrop_node_type.chat_output
+    - flowdrop_node_type.flowdrop_node_type.data_to_json
+    - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
+    - flowdrop_node_type.flowdrop_node_type.json_to_data
+    - flowdrop_node_type.flowdrop_node_type.prompt_template
+id: aincient_brand_specialist_colour
+label: 'Brand specialist: Colour & contrast'
+description: 'Single-pass colour & contrast specialist. Takes a colour instruction plus the authoritative current look (injected deterministically, not model-authored), decides a complete contrast-safe palette, and returns a brand-preview slice (tokens_json) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
+nodes:
+  -
+    id: chat_input.1
+    position:
+      x: -480
+      'y': -20
+    data:
+      label: 'Chat Input'
+      config:
+        nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: message
+            -
+              id: history
+            -
+              id: sessionId
+            -
+              id: messageId
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: chat_input
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 441
+  -
+    id: prompt_template.1
+    position:
+      x: -480
+      'y': 460
+    data:
+      label: 'Colour system prompt'
+      config:
+        template: |-
+          {% verbatim %}
+          You are the COLOUR & CONTRAST specialist for AIncient's brand studio. You receive
+          a single instruction about a colour/palette change. The AUTHORITATIVE current look
+          is given below under CURRENT LOOK — it is the real, on-screen state. Decide a
+          COMPLETE, coherent, contrast-safe palette and return it. You APPLY NOTHING — return
+          a slice only.
+
+          Return ONLY a single JSON object (no prose, no markdown fence) with:
+          - "tokens_json": an object mapping colour token names to values.
+
+          WHERE A RAW COLOUR GOES — this is the most important rule:
+          - PALETTE tokens are the ONE place a raw colour is chosen. Set THESE with a raw
+            oklch()/hex value OR a Tailwind swatch reference (var(--color-<hue>-<step>),
+            e.g. var(--color-yellow-500)); the rest of the system inherits from them. Almost
+            every request is satisfied by setting palette tokens alone — DO THIS BY DEFAULT.
+            Palette tokens (set as RAW colours or swatches):
+            • brand_primary + brand_primary_foreground (text on the primary fill)
+            • brand_accent + brand_accent_foreground
+            • neutral_surface (page + card BACKGROUND) + neutral_ink (BODY TEXT on it —
+              the opposite light/dark end from the surface)
+            • neutral_subtle (the MUTED SURFACE) + neutral_muted_foreground (muted text on
+              it — keep them ≥4.5:1)
+            • neutral_border
+          - SEMANTIC roles (background, foreground, primary, primary_foreground, accent,
+            accent_foreground, muted, muted_foreground, card, card_foreground, border,
+            selection, focus_ring) and COMPONENT colours (button_bg, button_fg,
+            button_border_color, card_border_color, popover_border_color,
+            site_footer_bg, site_footer_fg) are NOT places to put a raw colour — they MUST
+            be a REFERENCE to a palette token, e.g. "primary": "var(--brand-primary)",
+            "card_border_color": "var(--neutral-border)". A raw colour here is rejected.
+            To make one of these a NEW colour, set a PALETTE token to that colour first,
+            then point the role at it. Only override these for fine control; usually you
+            don't need to — they already inherit from the palette.
+
+          USE ONLY THESE TOKEN NAMES — never invent a name (no "light_pink", no
+          "accent_pink"); to add a colour, repurpose a palette slot above. var(--…) targets
+          must be existing tokens (e.g. var(--brand-primary), var(--brand-accent),
+          var(--neutral-ink), var(--neutral-surface), var(--border)) or Tailwind swatches
+          (var(--color-blue-600)).
+
+          Rules:
+          - SCOPE — match the palette you emit to what was actually asked. There are two
+            kinds of colour request; decide which one this is FIRST:
+            (a) A NAMED THEME / MOOD / full re-look ("make it neon", "go dark", "an editorial
+                feel", "playful", "reskin it") → set a COMPLETE palette in one go — always
+                neutral_surface, neutral_ink, brand_primary, brand_accent together. Assume
+                stale values from a previous look; don't patch just one token.
+            (b) A SINGLE-AXIS adjustment ("lighten the background", "make the surface warmer",
+                "a softer accent", "darken the links", "change the border") → touch ONLY the
+                named token(s) and the contrast pair they force (e.g. lighten neutral_surface
+                → also set neutral_ink if AA needs it). Do NOT emit brand_primary or
+                brand_accent unless the instruction is explicitly about the primary/accent
+                colour. A background/surface change must NOT drift the brand colours.
+            When unsure whether a phrase is a mood or a single-axis tweak, treat it as (b) and
+            change the least — a scoped edit is always safe to widen next turn; an unwanted
+            palette sweep is the bug we're avoiding.
+          - RELATIVE CHANGES ("darker", "lighter", "warmer", "more muted", "less saturated")
+            are always relative to the CURRENT LOOK values below — NEVER to a colour named in
+            the instruction text (the orchestrator may restate a stale value). Read the
+            current value of the token being changed from CURRENT LOOK, then adjust IT.
+          - A SWATCH SITS ON A RAMP. If the current value is a Tailwind swatch (e.g.
+            var(--color-yellow-100)), CURRENT LOOK prints its ramp with the current rung
+            marked ◀. STEP ALONG THE RAMP — "darker" is a higher step, "lighter" a lower
+            one — and WRITE THE SWATCH BACK: "brand_primary": "var(--color-yellow-500)",
+            not a computed oklch(). The ramp already encodes how hue and chroma move with
+            lightness (Tailwind's yellow swings toward amber as it darkens — that IS the
+            designed darker yellow), so for a swatch-anchored token the ramp WINS over
+            "hold the hue". HOW FAR TO MOVE — look it up, do not guess:
+              · "darker" from 50/100/200 → 500 (a tint to a mid-tone; 200→300 is invisible)
+              · "darker" from 300/400 → 600 · from 500/600 → 800 · from 700+ → 900/950
+              · "lighter" is the mirror: 950/900 → 500, 800/700 → 400, 600/500 → 200, ≤400 → 100
+              · ONE rung ONLY for "slightly" / "a touch" / "a bit" in the ask.
+            The orchestrator's ask may say "step down its ramp" or "step along the ramp" —
+            that is a description of the MECHANISM, not a size: a plain "darker"/"lighter"
+            still uses the table above (200 → 500), never one rung. The on-colour for a
+            swatch fill is decided by CONTRAST, not by rung number: yellow / amber / lime /
+            cyan ramps stay LIGHT all the way to 600–700 (yellow-500 + white is 1.7:1, a
+            FAIL), so they keep the ramp's 950 ink; blue / indigo / violet / red / emerald
+            flip to white at 600. Unsure → 950: dark ink on a mid rung is always ≥ 4.5:1,
+            white on one usually is not. Leave the ramp for a
+            literal ONLY when no rung fits the ask ("just a touch darker" from a 500 has no
+            rung between 500 and 600) — and say so in the rationale.
+          - ABSOLUTE COLOUR ASKS ("make primary blue", "a forest-green accent") land on a
+            SWATCH too when one fits — var(--color-blue-600), var(--color-emerald-800) — so
+            the studio shows the pick lit and the colour stays nameable. This holds however
+            the ask is worded: "a blue hue", "change the hue to blue", "surgical: only
+            primary" all still mean var(--color-blue-600) — the word "hue" is NOT an
+            instruction to compute an oklch() literal, and a Locked brand prefers the
+            swatch even more (its pair contrast is known: blue-600 + white is 4.96:1,
+            whereas a hand-computed oklch(0.55 0.15 240) + near-white is 4.4:1 — a FAIL
+            you have called "AA-safe" before). Write a literal only for a colour no ramp
+            carries (a specific brand hex, a neutral with a particular warmth).
+          - LIGHTNESS AND CHROMA ARE COUPLED — for a LITERAL value (a swatch-anchored token
+            follows its ramp instead, above). When a relative change moves lightness,
+            HUE is what carries the colour's identity — hold it. Chroma must FOLLOW: a
+            pale tint carries a low chroma only because it is near-white
+            (oklch(0.973 0.071 103) is a pale yellow), so darkening it with chroma pinned
+            gives mud — oklch(0.65 0.071 103) renders #97915E, a khaki, not a yellow. At
+            L 0.65 that hue wants roughly C 0.13-0.15. Raise chroma as lightness falls and
+            lower it as lightness rises. If the ask you were handed says "lower lightness
+            only" or "don't change chroma", treat that as scope over TOKENS, not over the
+            axes of the token you are changing — keep the hue, move chroma to match.
+          - AN ON-COLOUR IS PART OF ITS SURFACE, not a separate token you need permission
+            for. Whenever you change a surface colour, emit its paired on-colour in the
+            SAME slice if the pair would otherwise drop below 4.5:1 — brand_primary with
+            brand_primary_foreground, and so on. This holds even when the ask says to
+            touch nothing else: shipping a WCAG Fail is never the smaller change.
+          - OKLCH NEUTRALS: a neutral (white / grey / black / "plain" background or
+            text) MUST use chroma EXACTLY 0 — e.g. oklch(0.98 0 0). In oklch any
+            chroma above 0 activates the hue axis even at extreme lightness:
+            oklch(0.98 0.01 0) is NOT white, it renders #FFF6F8 — visibly pink. Hue 0
+            means pink/red, not "no hue". Only give a neutral chroma > 0 when a tint
+            is deliberately asked for, and then choose the hue on purpose.
+          - COLOUR PAIRS: every surface has a paired on-colour. Set a surface and its
+            on-colour TOGETHER and keep them ≥4.5:1 (WCAG AA). Pairs: background/foreground,
+            primary/primary_foreground, accent/accent_foreground, muted/muted_foreground,
+            card/card_foreground, brand_primary/brand_primary_foreground, brand_accent/
+            brand_accent_foreground.
+          - BRAND PRIMARY IS A FILL — pick it VIVID. brand_primary renders on buttons and
+            active states with its paired brand_primary_foreground guaranteeing legibility,
+            so it is FREE to be any lightness. Do NOT darken or desaturate it to make it
+            readable as text — that produces a muted, dull primary. Accent TEXT (links,
+            markers) uses the DERIVED primary_on_surface token, which auto-blends primary
+            toward the page ink and stays legible on any surface by construction. Choose
+            brand_primary for brand impact and saturation, not text contrast.
+          - DARK/NEON: dark neutral_surface + light neutral_ink (+ glow handled elsewhere).
+            LIGHT/AIRY: light surface + dark ink.
+          - INTERACTION accents (selection = the text-highlight tint, drawn translucent;
+            focus_ring = the keyboard focus outline) DEFAULT to the accent and rarely need
+            touching. Set them ONLY when the instruction is explicitly about text selection
+            or the focus ring ("make the selection pink", "blue focus ring") — point them at
+            a palette token (var(--brand-accent) re-tracks the accent). Never emit them for a
+            general palette/mood change; a full re-look leaves them inheriting brand_accent.
+          - BUTTON BORDER (button_border_color) defaults transparent, so buttons are
+            borderless. Set it (to a palette reference) ONLY for an outlined/bordered-button
+            request ("give buttons a thin outline", "outlined buttons"); leave it otherwise.
+          - Touch ONLY colours. Do NOT emit typography, radius, shadow, or density tokens.
+          - If the instruction implies no colour change, return {}.
+
+          Example — instruction "make it neon":
+          {"tokens_json": {"neutral_surface":"oklch(0.15 0.02 270)","neutral_ink":"oklch(0.97 0 0)","brand_primary":"oklch(0.78 0.26 195)","brand_primary_foreground":"oklch(0.15 0.02 270)","brand_accent":"oklch(0.75 0.27 330)","brand_accent_foreground":"oklch(0.15 0.02 270)"}}
+          {% endverbatim %}
+          {% if brand_brief is defined and brand_brief %}
+
+          CURRENT LOOK — saved brand baseline:
+          {{ brand_brief }}
+          {% endif %}
+          {% if live_preview_state is defined and live_preview_state %}
+          CURRENT LOOK — unsaved preview edits layered on top (this is what is on screen NOW; it wins over the saved baseline):
+          {{ live_preview_state }}
+          {% endif %}
+        nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: prompt
+            -
+              id: template
+              exposed: false
+            -
+              id: variables
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: variables
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: prompt_template
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 261
+  -
+    id: simple_chat.1
+    position:
+      x: -20
+      'y': 300
+    data:
+      label: 'Colour reasoning'
+      config:
+        operation_type: 'aincient_role:task'
+        model: null
+        temperature: 0
+        maxTokens: 8192
+        systemPrompt: ''
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: response
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: message
+            -
+              id: systemPrompt
+            -
+              id: history
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: flowdrop_ai_provider_simple_chat
+      extensions:
+        ui:
+          hideUnconnectedHandles: false
+    measured:
+      width: 280
+      height: 381
+  -
+    id: chat_output.1
+    position:
+      x: 1700
+      'y': 680
+    data:
+      label: 'Chat Output'
+      config:
+        format: text
+        showTimestamp: false
+        nodeType: default
+        maxRetries: 0
+        ports:
+          outputs:
+            -
+              id: message
+            -
+              id: format
+              exposed: false
+            -
+              id: timestamp
+              exposed: false
+            -
+              id: metadata
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: message
+            -
+              id: trigger
+              exposed: false
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: chat_output
+      extensions:
+        ui:
+          hideUnconnectedHandles: true
+    measured:
+      width: 280
+      height: 241
+  -
+    id: aincient_flows_brand_validate_slice.1
+    position:
+      x: 840
+      'y': 520
+    data:
+      label: 'Validate brand slice'
+      config:
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          outputs:
+            -
+              id: slice
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: slice
+            -
+              id: trigger
+              exposed: false
+      metadata:
+        node_type_id: aincient_flows_brand_validate_slice
+    measured:
+      width: 280
+      height: 281
+  -
+    id: data_to_json.1
+    position:
+      x: 1280
+      'y': 600
+    data:
+      label: 'Data to JSON'
+      config:
+        maxRetries: 0
+        requiresConfirmation: ''
+        ports:
+          outputs:
+            -
+              id: json
+            -
+              id: success
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
+          inputs:
+            -
+              id: data
+            -
+              id: trigger
+              exposed: false
+      metadata:
+        node_type_id: data_to_json
+    measured:
+      width: 280
+      height: 261
+  -
+    id: json_to_data.1
+    position:
+      x: 400
+      'y': 480
+    data:
+      label: 'JSON to Data'
+      config:
+        parse_mode: tolerant
+        nodeType: default
+        maxRetries: 0
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: json_to_data
+    measured:
+      width: 280
+      height: 261
+edges:
+  -
+    id: xy-edge__chat_input.1chat_input.1-output-message-simple_chat.1simple_chat.1-input-message
+    source: chat_input.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: chat_input.1-output-message
+    targetHandle: simple_chat.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__prompt_template.1prompt_template.1-output-prompt-simple_chat.1simple_chat.1-input-systemPrompt
+    source: prompt_template.1
+    target: simple_chat.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: ai
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: prompt_template.1-output-prompt
+    targetHandle: simple_chat.1-input-systemPrompt
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__aincient_flows_brand_validate_slice.1aincient_flows_brand_validate_slice.1-output-slice-data_to_json.1data_to_json.1-input-data
+    source: aincient_flows_brand_validate_slice.1
+    target: data_to_json.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: data
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: aincient_flows_brand_validate_slice.1-output-slice
+    targetHandle: data_to_json.1-input-data
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__data_to_json.1data_to_json.1-output-json-chat_output.1chat_output.1-input-message
+    source: data_to_json.1
+    target: chat_output.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: processing
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: data_to_json.1-output-json
+    targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__simple_chat.1simple_chat.1-output-response-json_to_data.1json_to_data.1-input-json
+    source: simple_chat.1
+    target: json_to_data.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: data
+      metadata:
+        edgeType: data
+        sourcePortDataType: string
+    sourceHandle: simple_chat.1-output-response
+    targetHandle: json_to_data.1-input-json
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: xy-edge__json_to_data.1json_to_data.1-output-data-aincient_flows_brand_validate_slice.1aincient_flows_brand_validate_slice.1-input-slice
+    source: json_to_data.1
+    target: aincient_flows_brand_validate_slice.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: memories
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: json_to_data.1-output-data
+    targetHandle: aincient_flows_brand_validate_slice.1-input-slice
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+metadata:
+  createdAt: '2026-08-13T16:45:02.578Z'
+  updatedAt: '2026-08-13T16:52:08.654Z'
+created: 1782300000
+changed: 1786639928
+uid: 1
+input_ports:
+  -
+    name: ask
+    node_id: chat_input.1
+    port: message
+  -
+    name: current_state
+    node_id: prompt_template.1
+    port: variables
+output_ports:
+  -
+    name: slice
+    node_id: chat_output.1
+    port: message
+parameter_schema:
+  type: object
+  required:
+    - ask
+  properties:
+    ask:
+      type: string
+      description: 'The colour instruction to act on — what the user wants for the palette/mood. Pass the colour-relevant part of the request only; do NOT restate current colour values (the authoritative current look is supplied separately via current_state).'
+      default: ''
+      required: true
+    current_state:
+      type: object
+      description: 'The authoritative current look (saved-brand brief + live preview draft), injected from the brand_state node — NOT model-authored. Wire a data edge into this port; it is withheld from the model and supplied deterministically from run state.'
+      required: false
+output_schema:
+  type: object
+  properties:
+    slice:
+      type: string
+schema_version: 1.0.0

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { MouseEvent } from "react";
 import { useConsoleThread } from "./aui";
-import { makeSafeAssistantToolUI } from "./error-boundary";
+import { makeSafeAssistantToolUI } from "./kit/error-boundary";
 import { stageComposerPrefill } from "./composer-prefill";
 import { carriesPrefill, tourHeader, visibleTourRooms, type TourRoom } from "./tour-model";
 import { STUDIO_REGISTRY, studioAvailable } from "./studio-registry";
@@ -9,7 +9,7 @@ import type { StudioKey } from "./studios";
 import { sectionRoom } from "./rooms-core";
 import { consoleNav } from "./console-nav";
 import { opensNewTab, roomToPath } from "./console-url";
-import { ArrowRightIcon, PlayIcon } from "./icons";
+import { ArrowRightIcon, PlayIcon } from "./kit/icons";
 import { youtubeId } from "./youtube";
 
 /**

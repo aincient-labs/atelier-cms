@@ -1,0 +1,22 @@
+/* --- LoadingState (kit/loading-state.tsx): a browse list waiting for rows ---
+   Law 09: the list at its final size, bars where the values land. Row geometry
+   comes from .ain-browser__row (padding 9px 14px); the cell is held at the
+   real two-line height so a loaded row lands in exactly the same place. The
+   list fades in after 150ms (the account pane's pure-CSS delay, no timer). */
+.ain-loading { opacity: 0; animation: ain-skel-in .2s ease-out 150ms forwards; }
+/* Compound selectors: kit CSS loads before styles.css, where the browse row
+   and cell rules live, so equal specificity would lose to them. */
+.ain-browser__row.ain-loading__row { cursor: default; }
+.ain-browser__row.ain-loading__row:hover { background: transparent; }
+.ain-browser__cell.ain-loading__cell { min-height: 39px; justify-content: center; gap: 8px; }
+.ain-loading__title { height: 11px; }
+.ain-loading__facts { width: 28%; height: 8px; }
+.ain-loading__thumb { flex: none; width: 44px; height: 44px; border-radius: 7px; }
+.ain-loading__badge { flex: none; width: 52px; height: 20px; border-radius: 999px; }
+.ain-loading__time { flex: none; width: 34px; height: 9px; }
+/* fields: the rail body's own stack (moved from .ain-studio-loading__body). */
+.ain-loading--fields { display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; }
+.ain-loading--fields .ain-loading__last { width: 60%; }
+@media (prefers-reduced-motion: reduce) {
+  .ain-loading { animation-duration: .01ms; }
+}

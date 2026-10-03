@@ -1,16 +1,18 @@
 # AIncient chat-ui
 
 The AIncient operator console — an [assistant-ui](https://www.assistant-ui.com/)
-chat island (React 19 + Vite). It builds to a single self-mounting IIFE bundle at
-`../js/dist/`, which the `aincient_chat` Drupal module serves as a library. There is
-no build step at install time; the built artifact is committed.
+chat island (React 19 + Vite). It builds to an ES-module bundle at `../js/dist/` —
+`aincient-chat.js` (the entry Drupal serves as a `type="module"` library), `console.js`,
+and one lazy `studio-<module>.js` per studio module under `web/modules/studio/`
+(see `vite.chunks.ts`). There is no build step at install time; the built artifact is
+committed.
 
 ## Develop
 
 ```bash
 npm install
 npm run dev        # Vite dev server
-npm run build      # → ../js/dist/aincient-chat.{js,css} + THIRD-PARTY-NOTICES.txt
+npm run build      # → ../js/dist/{aincient-chat,console,studio-*}.js + aincient-chat.css + THIRD-PARTY-NOTICES.txt
 npm run test       # vitest
 npm run typecheck  # tsc --noEmit
 ```

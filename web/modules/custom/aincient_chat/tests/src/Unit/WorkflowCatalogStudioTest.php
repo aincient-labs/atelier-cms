@@ -6,6 +6,7 @@ namespace Drupal\Tests\aincient_chat\Unit;
 
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
 use Drupal\aincient_chat\Studio\StudioManager;
+use Drupal\aincient_chat\Studio\StudioSwitch;
 use Drupal\aincient_core\CapabilityVerbs;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -30,13 +31,16 @@ final class WorkflowCatalogStudioTest extends UnitTestCase {
    *   The stored `studios` config.
    * @param list<string> $existingIds
    *   The flowdrop_workflow entity ids present in storage.
+   * @param list<string> $disabled
+   *   The stored `disabled_studios` switch (DECISIONS 0430).
    */
-  private function catalog(array $studios, array $existingIds, string $defaultStudio = 'general'): WorkflowCatalog {
+  private function catalog(array $studios, array $existingIds, string $defaultStudio = 'general', array $disabled = []): WorkflowCatalog {
     $config = $this->createMock(ImmutableConfig::class);
     $config->method('get')->willReturnCallback(
       static fn(string $key): mixed => match ($key) {
         'studios' => $studios,
         'default_studio' => $defaultStudio,
+        StudioSwitch::KEY => $disabled,
         default => NULL,
       },
     );
@@ -68,7 +72,7 @@ final class WorkflowCatalogStudioTest extends UnitTestCase {
 
     return new WorkflowCatalog($configFactory, $etm, new CapabilityVerbs(
       $this->createMock(PluginManagerInterface::class),
-    ), $studios);
+    ), $studios, new StudioSwitch($configFactory));
   }
 
   /**
@@ -102,6 +106,30 @@ final class WorkflowCatalogStudioTest extends UnitTestCase {
     $this->assertSame(['general', 'design_system'], array_keys($resolved));
     $this->assertSame(['op'], array_keys($resolved['general']['agents']));
     $this->assertArrayNotHasKey('content', $resolved);
+  }
+
+  /**
+   * A switched-off studio leaves the catalog, and its agents stop resolving.
+   *
+   * DECISIONS 0430: its flows leave the switcher, and a POSTed id for one of
+   * them is refused like any unknown id (falls back to the default workflow).
+   *
+   * @covers ::studios
+   * @covers ::resolve
+   * @covers ::defaultStudio
+   */
+  public function testDisabledStudioIsDropped(): void {
+    $ids = ['op', 'weather', 'brand_agent'];
+    $on = $this->catalog($this->sampleStudios(), $ids, 'design_system');
+    $this->assertSame(['general', 'design_system'], array_keys($on->studios()));
+    $this->assertSame('brand_agent', $on->resolve('brand_agent'));
+
+    $off = $this->catalog($this->sampleStudios(), $ids, 'design_system', ['design_system']);
+    $this->assertSame(['general'], array_keys($off->studios()));
+    $this->assertNull($off->studioOf('brand_agent'));
+    $this->assertSame('op', $off->resolve('brand_agent'));
+    // The configured default studio is off → the first enabled one opens.
+    $this->assertSame('general', $off->defaultStudio());
   }
 
   /**

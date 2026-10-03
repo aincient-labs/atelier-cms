@@ -1,0 +1,90 @@
+/*
+ * The Checks studio's stylesheet (plans/studio-modules.md Phase E) — bundled by
+ * the ONE console build through `ui/index.tsx`'s import. Every class here is
+ * prefixed `.ain-checks` / `.ain-checks-*` / `.ain-checks__*` (the studio CSS
+ * guard, `studio-css.test.ts`); the findings report block that used to be
+ * `.ain-audit__*` is `.ain-checks-audit__*` now. No raw colours, no opacity
+ * dimming (0376) — muted text uses the faint/dim text tokens.
+ *
+ * The rail is the findings report beside the SHARED page preview (core's, reached
+ * through the sdk): summary counts, per-check groups, per-finding fix actions.
+ */
+
+.ain-checks__body { flex: 1; min-height: 0; overflow-y: auto; }
+.ain-checks__loading { padding: 16px 14px; font-size: 13px; color: var(--ain-color-text-muted); }
+
+.ain-checks-audit { display: flex; flex-direction: column; }
+.ain-checks-audit__summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px; border-bottom: 1px solid var(--ain-color-border);
+}
+.ain-checks-audit__url {
+  font-size: 11.5px; color: var(--ain-color-success); text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ain-checks-audit__url:hover { text-decoration: underline; }
+.ain-checks-audit__counts { display: inline-flex; gap: 6px; flex: none; }
+/* Severity counts are whisper chips — earth tints, mono, no borders (state
+   is a whisper; it must never out-shout the brand). */
+.ain-checks-audit__count {
+  font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 4px;
+}
+.ain-checks-audit__count[data-severity="fail"] { color: var(--ain-color-danger); background: color-mix(in oklch, var(--ain-color-danger) 10%, transparent); }
+.ain-checks-audit__count[data-severity="warn"] { color: var(--ain-color-warning); background: color-mix(in oklch, var(--ain-color-warning) 12%, transparent); }
+.ain-checks-audit__count[data-severity="pass"] { color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent); }
+
+.ain-checks-audit__check { padding: 0 0 6px; }
+.ain-checks-audit__checkhead {
+  margin: 0; padding: 12px 14px 8px;
+  font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ain-color-text-muted);
+}
+.ain-checks-audit__findings { list-style: none; margin: 0; padding: 0; }
+.ain-checks-audit__finding { display: flex; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--ain-color-border); }
+.ain-checks-audit__badge {
+  flex: none; align-self: flex-start; min-width: 38px; text-align: center;
+  font-family: var(--ain-font-mono); font-size: 8.5px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 6px; border-radius: 4px;
+}
+/* Findings never shout: even "fail" is a brick tint, a step away from the
+   cinnabar accent so errors and brand never blur. */
+.ain-checks-audit__badge[data-severity="fail"] { color: var(--ain-color-danger); background: color-mix(in oklch, var(--ain-color-danger) 12%, transparent); }
+.ain-checks-audit__badge[data-severity="warn"] { color: var(--ain-color-warning); background: color-mix(in oklch, var(--ain-color-warning) 12%, transparent); }
+.ain-checks-audit__badge[data-severity="pass"] { color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent); }
+.ain-checks-audit__finding-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* Phase 2: the axis a finding touches (meta / content / structure) — a mono
+   whisper above the title; a category is a label, not a badge. */
+.ain-checks-audit__dim {
+  align-self: flex-start; margin-bottom: 1px;
+  font-family: var(--ain-font-mono); font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ain-color-text-faint);
+}
+.ain-checks-audit__finding-title { font-size: 13px; font-weight: 500; }
+.ain-checks-audit__finding-detail { font-size: 12.5px; color: var(--ain-color-text-muted); }
+.ain-checks-audit__finding-loc { font-size: 11px; color: var(--ain-color-text-faint); }
+/* Folds the passing findings away — the rail leads with what needs action. */
+.ain-checks-audit__passtoggle {
+  display: block; width: 100%; text-align: left;
+  padding: 8px 14px; border: 0; border-top: 1px solid var(--ain-color-border);
+  background: none; cursor: pointer;
+  font-family: var(--ain-font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ain-color-text-muted);
+}
+.ain-checks-audit__passtoggle:hover { color: var(--ain-color-text); }
+
+/* --- checks studio: per-finding fix actions --- */
+/* "Fix all" sits under the summary counts, full-width so it reads as the primary
+   batch action for the whole report. */
+.ain-checks-audit__fixall { align-self: stretch; justify-content: center; margin-top: 6px; }
+/* A check head can carry a "Fix this check" button on its right. */
+.ain-checks-audit__checkhead-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* Per-finding action row (Fix with AI / Edit) under the finding text. */
+.ain-checks-audit__finding-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+/* Inline manual editor (title field) revealed under a finding. */
+.ain-checks-audit__manual { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.ain-checks-audit__manual-btns { display: flex; gap: 6px; }
+/* Live character gauge under a meta field (matches the audit's length guidance);
+   in-range turns positive, out-of-range stays muted. */
+.ain-checks-audit__manual-count { font-size: 11px; color: var(--ain-color-text-muted); align-self: flex-end; }
+.ain-checks-audit__manual-count[data-ok="true"] { color: var(--ain-color-success); }

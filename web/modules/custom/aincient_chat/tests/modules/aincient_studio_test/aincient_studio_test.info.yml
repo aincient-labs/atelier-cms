@@ -1,0 +1,8 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier studio test'
+type: module
+description: 'TEST ONLY: a studio declared by a *.studios.yml manifest (no PHP class), owning one capability and one studio-gated route, so kernel tests prove YAML discovery, the on/off switch, the 403 and the server-side capability refusal (plans/studio-modules.md, DECISIONS 0430).'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_chat

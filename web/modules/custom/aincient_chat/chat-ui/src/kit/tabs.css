@@ -1,0 +1,8 @@
+/*
+ * kit · Tabs (tabs.tsx) — the list IS the segmented control (.ain-seg), whose
+ * `[aria-selected="true"]` state Radix sets on the active trigger; this file
+ * only adds the panel. System tokens only (studio-css.test.ts rule 4).
+ */
+.ain-tabs { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ain-tabs__list { align-self: flex-start; }
+.ain-tabs__panel:focus-visible { outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: 2px; border-radius: var(--ain-radius-md); }

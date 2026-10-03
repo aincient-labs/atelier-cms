@@ -1,0 +1,27 @@
+{
+  "$description": "SYSTEM colour roles, LIGHT mode (gesso paper, the Atelier default) — what a colour is FOR. Same names as mode.dark.json.",
+  "color": {
+    "$type": "color",
+    "bg":             { "$value": "{ref.color.gesso.92}", "$description": "Gesso ground — the app canvas (paper-warm, not cream)." },
+    "surface":        { "$value": "{ref.color.gesso.99}", "$description": "Raised cards — the brightest paper." },
+    "surface-raised": { "$value": "{ref.color.gesso.95}", "$description": "The emphasised layer — hover fills, chips, chrome (recessed a touch on paper)." },
+    "border":         { "$value": "{ref.color.gesso.86}" },
+    "border-strong":  { "$value": "{ref.color.stone.58}", "$description": "Soft stone hairline." },
+    "text":           { "$value": "{ref.color.bistre.24}", "$description": "Bistre — warm near-black ink." },
+    "text-muted":     { "$value": "{ref.color.stone.47}" },
+    "text-faint":     { "$value": "{ref.color.stone.62}" },
+    "accent":         { "$value": "{ref.color.cinnabar.55}", "$description": "CINNABAR — a half-step deeper reads pigment, not safety-orange (study 02)." },
+    "accent-hover":   { "$value": "{ref.color.cinnabar.49}" },
+    "accent-tint":    { "$value": "color-mix(in oklch, {color.accent} 10%, transparent)" },
+    "on-accent":      { "$value": "{ref.color.gesso.99}" },
+    "focus-ring":     { "$value": "{color.accent}" },
+    "warning":        { "$value": "{ref.color.ochre.60}" },
+    "success":        { "$value": "{ref.color.verdigris.52}" },
+    "danger":         { "$value": "{ref.color.brick.52}" },
+    "shadow":         { "$value": "{ref.color.umber.30}", "$description": "Soft warm ink — diffuse lift, not hard offset." }
+  },
+  "mark": {
+    "$type": "color",
+    "ring": { "$value": "{ref.color.bistre.24}", "$description": "Mark ink on paper." }
+  }
+}

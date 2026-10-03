@@ -1,0 +1,10 @@
+# Gated by the studio's DERIVED permission only; the studio-enabled requirement
+# is added by aincient_chat's route subscriber, which is what the kernel test
+# proves (a disabled studio's routes 403 even for a user who holds the permission).
+aincient_studio_test.ping:
+  path: '/atelier/studio-test/ping'
+  defaults:
+    _controller: '\Drupal\aincient_studio_test\Controller\PingController::ping'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio studio_test'

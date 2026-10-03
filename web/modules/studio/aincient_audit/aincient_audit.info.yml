@@ -1,0 +1,20 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier Checks studio'
+type: module
+description: 'The Checks studio: read-only page health checks (SEO, meta tags, internal-link integrity) and the fix loop around them — the deterministic audit engine and its checks, the shipped default policies and their FlowDrop policy workflows, the policy_check node, the audit agent and its two capabilities (run_page_audit, read_meta_tags). Audits ONLY — it never writes; findings are computed deterministically (metatag.manager + Drupal''s router) so the agent narrates facts, not hallucinations. The third studio module (plans/studio-modules.md Phase E); keeps the machine name aincient_audit because it owns an entity type (DECISIONS 0433).'
+package: Atelier studios
+core_version_requirement: ^11
+dependencies:
+  - drupal:node
+  - metatag:metatag
+  # What this studio audits — pages (the store, moderation, the meta tags) and
+  # the inference layer the agent reasons through.
+  - aincient_pages
+  - aincient_core
+  # The studio frame: manifest discovery, the on/off switch, the derived
+  # permissions and the route gate.
+  - aincient_chat
+  # The policy workflows run synchronously through FlowDrop's orchestrator and
+  # are built from this module's own `policy_check` node processor.
+  - flowdrop:flowdrop_runtime
+  - flowdrop:flowdrop_workflow

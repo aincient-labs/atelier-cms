@@ -35,7 +35,7 @@ final class PackManifest {
    * Payload kinds a pack may declare in `provides:`.
    *
    * `studios` is the fourth (DECISIONS 0424): a pack may ship a console
-   * workspace as a `Plugin/Studio` plugin. What a pack may NOT ship is an agent
+   * workspace as a `<module>.studios.yml` manifest entry. What a pack may NOT ship is an agent
    * VERB — see {@see CapabilityFence}, which is a security floor, not a payload
    * we haven't got round to.
    */

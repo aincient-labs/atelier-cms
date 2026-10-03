@@ -1,0 +1,422 @@
+/* The Identity studio's own styles (plans/studio-modules.md Phase E.5, DECISIONS
+   0436) — the brand rail (token groups, the font and preset pickers, the colour
+   swatches, the shape / density controls, the advanced drawer, the status badge
+   and lock), the token-showcase preview chrome, and the five brand chat cards
+   (picker, live preview, status proposal, token admission, logo hand-off).
+   Every class here is prefixed `.ain-design-system-` — the studio id in kebab
+   form, which studio-css.test.ts accepts beside the literal id — and the rail
+   also USES the console's shared classes (.ain-field, .ain-studio__*,
+   .ain-topbtn, .ain-chip, .ain-seg, .ain-sr-only), which stay in the console
+   stylesheet. */
+
+/* --------------------------------------------------- quick brand picker widget */
+.ain-design-system-pick {
+  margin: 6px 2px 4px 0; padding: 12px 14px;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.ain-design-system-pick--error { color: var(--ain-color-text-muted); font-size: 13px; }
+.ain-design-system-pick__head { display: flex; align-items: baseline; gap: 8px; }
+.ain-design-system-pick__title { font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ain-color-text-muted); }
+.ain-design-system-pick__applied { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-design-system-pick__applied svg { font-size: 13px; color: var(--ain-color-success); }
+.ain-design-system-pick__hint { margin-left: auto; font-size: 11px; color: var(--ain-color-text-muted); }
+
+/* Brand status proposal — the HITL confirm card (the `brand_status_proposal`
+   tool). "AI proposes, you approve": the agent never sets status directly. */
+.ain-design-system-statusprop {
+  margin: 6px 2px 4px 0; padding: 12px 14px;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.ain-design-system-statusprop[data-state="applied"], .ain-design-system-statusprop[data-state="declined"] {
+  box-shadow: none; border-color: var(--ain-color-border);
+}
+.ain-design-system-statusprop__head { display: flex; align-items: center; gap: 7px; }
+.ain-design-system-statusprop__ico { display: inline-flex; color: var(--ain-color-text-muted); }
+.ain-design-system-statusprop__ico svg { width: 15px; height: 15px; }
+.ain-design-system-statusprop__title { font-size: 13px; font-weight: 600; color: var(--ain-color-text); }
+.ain-design-system-statusprop__change { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.ain-design-system-statusprop__from { color: var(--ain-color-text-muted); text-decoration: line-through; }
+.ain-design-system-statusprop__arrow { color: var(--ain-color-text-faint); }
+/* The proposed status is a whisper chip, not a second cinnabar fill — the
+   card's Apply button owns the pigment (one pigment, one place). */
+.ain-design-system-statusprop__to {
+  padding: 2px 8px; border-radius: 4px;
+  background: color-mix(in oklch, var(--ain-color-accent) 12%, transparent); color: var(--ain-color-text);
+  font-weight: 600; letter-spacing: .02em;
+}
+.ain-design-system-statusprop__why { font-size: 12px; line-height: 1.45; color: var(--ain-color-text-muted); margin: 0; }
+.ain-design-system-statusprop__result { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ain-color-text-muted); margin: 0; }
+.ain-design-system-statusprop__result[data-ok] svg { width: 14px; height: 14px; color: var(--ain-color-success); }
+.ain-design-system-statusprop__err { font-size: 12px; color: var(--ain-color-danger); margin: 0; }
+.ain-design-system-statusprop__actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Design-token admission card (design_token_admission) — the confirm seam for an
+   attached design file. Mirrors the status-proposal card's chrome. */
+.ain-design-system-tokenadmit {
+  margin: 6px 2px 4px 0; padding: 12px 14px;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.ain-design-system-tokenadmit[data-state="applied"], .ain-design-system-tokenadmit[data-state="dismissed"] {
+  box-shadow: none; border-color: var(--ain-color-border);
+}
+.ain-design-system-tokenadmit[data-historical] { box-shadow: none; }
+.ain-design-system-tokenadmit__head { display: flex; align-items: center; gap: 9px; }
+.ain-design-system-tokenadmit__ico {
+  display: inline-grid; place-items: center; flex: 0 0 auto;
+  width: 30px; height: 30px; border-radius: 6px;
+  background: var(--ain-color-surface); color: var(--ain-color-text-muted);
+}
+.ain-design-system-tokenadmit__ico svg { width: 16px; height: 16px; }
+.ain-design-system-tokenadmit__heading { display: flex; flex-direction: column; min-width: 0; }
+.ain-design-system-tokenadmit__title {
+  font-size: 13px; font-weight: 600; color: var(--ain-color-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ain-design-system-tokenadmit__count { font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-design-system-tokenadmit__rejected { font-size: 12px; color: var(--ain-color-text-muted); margin: 0; }
+.ain-design-system-tokenadmit__result { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ain-color-text-muted); margin: 0; }
+.ain-design-system-tokenadmit__result[data-ok] svg { width: 14px; height: 14px; color: var(--ain-color-success); }
+.ain-design-system-tokenadmit__err { font-size: 12px; color: var(--ain-color-danger); margin: 0; }
+.ain-design-system-tokenadmit__actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.ain-design-system-tokenadmit__actions button svg { width: 14px; height: 14px; }
+
+/* Logo handoff card (DECISIONS 0372, Phase 3): route an attached image to
+   Identity → Logo. Shares the admission card's visual language. */
+.ain-design-system-logohandoff {
+  margin: 6px 2px 4px 0; padding: 12px 14px;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+  display: flex; flex-direction: column; gap: 9px;
+}
+.ain-design-system-logohandoff__head { display: flex; align-items: center; gap: 9px; }
+.ain-design-system-logohandoff__ico {
+  display: inline-grid; place-items: center; flex: 0 0 auto;
+  width: 30px; height: 30px; border-radius: 6px;
+  background: var(--ain-color-surface); color: var(--ain-color-text-muted);
+}
+.ain-design-system-logohandoff__ico svg { width: 16px; height: 16px; }
+.ain-design-system-logohandoff__heading { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.ain-design-system-logohandoff__title { font-size: 13px; font-weight: 600; color: var(--ain-color-text); }
+.ain-design-system-logohandoff__sub { font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-design-system-logohandoff__actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.ain-design-system-logohandoff__actions button svg { width: 14px; height: 14px; }
+
+.ain-design-system-pick__colors { display: flex; gap: 18px; }
+.ain-design-system-pick__color { position: relative; display: flex; align-items: center; gap: 8px; }
+.ain-design-system-pick__swatch {
+  width: 30px; height: 30px; padding: 0; cursor: pointer;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+}
+.ain-design-system-pick__swatch:disabled { cursor: progress; filter: saturate(.3); }
+.ain-design-system-pick__colorlabel { font-size: 13px; font-weight: 600; color: var(--ain-color-text); }
+
+.ain-design-system-pick__pop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 20;
+  width: 248px; max-height: 240px; overflow-y: auto; padding: 8px;
+  background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md); box-shadow: 0 5px 14px -4px color-mix(in oklch, var(--ain-color-shadow) 40%, transparent);
+}
+.ain-design-system-pick__pophead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-design-system-pick__popclose { background: none; border: none; cursor: pointer; color: var(--ain-color-text-muted); display: inline-flex; padding: 2px; }
+.ain-design-system-pick__popclose:hover { color: var(--ain-color-text); }
+.ain-design-system-pick__grid { display: flex; flex-direction: column; gap: 3px; }
+.ain-design-system-pick__hue { display: flex; gap: 3px; }
+.ain-design-system-pick__cell {
+  flex: 1 1 0; height: 16px; padding: 0; cursor: pointer;
+  border: 1px solid var(--ain-color-border); border-radius: 4px;
+}
+.ain-design-system-pick__cell:hover { outline: 2px solid var(--ain-color-text); outline-offset: -1px; }
+
+.ain-design-system-pick__presets { display: flex; flex-direction: column; gap: 7px; border-top: 1px solid var(--ain-color-border); padding-top: 10px; }
+.ain-design-system-pick__presetlabel { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ain-color-text-muted); }
+.ain-design-system-pick__presetrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.ain-design-system-pick__preset {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px; cursor: pointer;
+  font-size: 12.5px; font-weight: 600; color: var(--ain-color-text);
+  background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md); box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+}
+.ain-design-system-pick__preset:hover { background: var(--ain-color-surface-raised); }
+.ain-design-system-pick__preset:disabled { cursor: progress; filter: saturate(.3); }
+.ain-design-system-pick__presetswatches { display: inline-flex; }
+.ain-design-system-pick__presetswatches span { width: 12px; height: 12px; border: 1px solid var(--ain-color-border); }
+.ain-design-system-pick__presetswatches span:first-child { border-radius: 4px 0 0 4px; }
+.ain-design-system-pick__presetswatches span:last-child { margin-left: -1px; border-radius: 0 4px 4px 0; }
+
+/* Brand design-intent status control (stage + lock). The badge reuses the flat
+   .ain-studio__statebadge idiom; stage-specific fills are scoped to this block
+   so they don't touch the editorial badge that shares the base class. Ideating
+   = neutral (base), Guided = accent, Polish = success, Locked = danger. */
+.ain-design-system-status {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 12px; border-bottom: 1px solid var(--ain-color-border);
+}
+.ain-design-system-status__head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ain-design-system-status__badge { gap: 4px; }
+.ain-design-system-status__badge svg { width: 11px; height: 11px; }
+/* Stage chips whisper like the editorial badge — a mode label never wears an
+   accent fill (study 02, Plate 12). */
+.ain-design-system-status__badge[data-state="guided"] {
+  color: color-mix(in oklch, var(--ain-color-accent) 85%, var(--ain-color-text));
+  border-color: color-mix(in oklch, var(--ain-color-accent) 42%, transparent);
+  background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
+}
+.ain-design-system-status__badge[data-state="polish"] {
+  color: color-mix(in oklch, var(--ain-color-success) 85%, var(--ain-color-text));
+  border-color: color-mix(in oklch, var(--ain-color-success) 42%, transparent);
+  background: color-mix(in oklch, var(--ain-color-success) 10%, transparent);
+}
+.ain-design-system-status__badge[data-locked] {
+  color: color-mix(in oklch, var(--ain-color-danger) 85%, var(--ain-color-text));
+  border-color: color-mix(in oklch, var(--ain-color-danger) 42%, transparent);
+  background: color-mix(in oklch, var(--ain-color-danger) 10%, transparent);
+}
+.ain-design-system-status__hint { flex: 1 1 auto; min-width: 0; font-size: 11.5px; line-height: 1.4; color: var(--ain-color-text-muted); }
+.ain-design-system-status__lock { margin-bottom: 0; }
+.ain-design-system-status__locklabel { display: inline-flex; align-items: center; gap: 5px; }
+.ain-design-system-status__locklabel svg { width: 13px; height: 13px; flex: none; }
+.ain-design-system-card { border: 1px solid var(--ain-color-border); background: var(--ain-color-surface); }
+/* The card head doubles as the collapse toggle: chevron · icon chip · title. */
+.ain-design-system-card__head {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  margin: 0; padding: 11px; border: 0; background: none; text-align: left; cursor: pointer;
+}
+.ain-design-system-card__head:hover { background: var(--ain-color-surface-raised); }
+.ain-design-system-card__chev { width: 13px; height: 13px; flex: none; color: var(--ain-color-text-muted); transition: transform .12s; }
+.ain-design-system-card__head[aria-expanded="false"] .ain-design-system-card__chev { transform: rotate(-90deg); }
+.ain-design-system-card__ico {
+  width: 22px; height: 22px; flex: none; display: grid; place-items: center;
+  font-size: 12px; color: var(--ain-color-text-muted);
+  background: color-mix(in oklch, var(--ain-color-text) 6%, transparent);
+}
+.ain-design-system-card__ct { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ain-design-system-card__h { font-size: 13.5px; font-weight: 600; color: var(--ain-color-text); }
+.ain-design-system-card__sub { font-size: 11.5px; color: var(--ain-color-text-faint); }
+/* Unsaved-change count on a card head — survives collapse so pending edits stay
+   visible even when the card (and its per-field markers) are folded away. */
+.ain-design-system-card__dirty {
+  flex: none; display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 5px;
+  font-size: 10px; font-weight: 600; line-height: 1; color: var(--ain-color-warning);
+  background: color-mix(in oklch, var(--ain-color-warning) 15%, transparent); border-radius: 999px;
+}
+.ain-design-system-card__body {
+  padding: 2px 12px 14px; display: flex; flex-direction: column; gap: 13px;
+  border-top: 1px solid var(--ain-color-border);
+}
+
+/* A high-level preset control: a label + its options. */
+.ain-design-system-preset { display: flex; flex-direction: column; gap: 5px; }
+.ain-design-system-preset__lbl { font-size: 11px; color: var(--ain-color-text-muted); }
+
+/* Direction pad — the 9-way shadow direction as a spatial radiogroup: each cell
+   sits where its shadow falls, the eight compass arrows around a centre glow. */
+.ain-design-system-dirpad {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+  width: 132px; align-self: start;
+}
+.ain-design-system-dirpad__cell { position: relative; display: block; margin: 0; cursor: pointer; }
+.ain-design-system-dirpad__radio {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); border: 0; white-space: nowrap;
+}
+.ain-design-system-dirpad__btn {
+  display: grid; place-items: center; aspect-ratio: 1;
+  border: 1px solid var(--ain-color-border); background: var(--ain-color-surface);
+  font-size: 14px; line-height: 1; color: var(--ain-color-text-muted);
+  transition: background .1s, color .1s, border-color .1s;
+}
+.ain-design-system-dirpad__cell:hover .ain-design-system-dirpad__btn { background: var(--ain-color-surface-raised); color: var(--ain-color-text); }
+.ain-design-system-dirpad__radio:checked + .ain-design-system-dirpad__btn {
+  background: var(--ain-color-accent); color: var(--ain-color-on-accent); border-color: var(--ain-color-accent);
+}
+.ain-design-system-dirpad__radio:focus-visible + .ain-design-system-dirpad__btn {
+  outline: 2px solid var(--ain-color-accent); outline-offset: 1px;
+}
+
+/* Font-pairing gallery — the typography lead, each card previewed in-typeface. */
+.ain-design-system-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ain-design-system-fp {
+  display: flex; flex-direction: column; gap: 5px; padding: 9px 10px; text-align: left;
+  border: 1px solid var(--ain-color-border); background: var(--ain-color-surface); cursor: pointer;
+  transition: border-color .1s, box-shadow .1s;
+}
+.ain-design-system-fp:hover { border-color: var(--ain-color-border-strong); }
+.ain-design-system-fp[aria-pressed="true"] { border-color: var(--ain-color-accent); box-shadow: inset 0 0 0 1px var(--ain-color-accent); }
+.ain-design-system-fp__ag { font-size: 21px; line-height: 1; color: var(--ain-color-text); display: flex; align-items: baseline; gap: 5px; }
+.ain-design-system-fp__b { font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-design-system-fp__nm { font-size: 12px; font-weight: 600; color: var(--ain-color-text); }
+.ain-design-system-fp__bl { font-size: 10.5px; line-height: 1.3; color: var(--ain-color-text-faint); }
+
+/* Advanced fold — the raw per-token controls, hidden until the user wants them. */
+.ain-design-system-adv { border-top: 1px dashed var(--ain-color-border); }
+.ain-design-system-adv__toggle {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  margin: 0; padding: 9px 0 2px; border: 0; background: none; text-align: left; cursor: pointer;
+  font-family: var(--ain-font-mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--ain-color-text-muted);
+}
+.ain-design-system-adv__toggle:hover { color: var(--ain-color-text); }
+.ain-design-system-adv__chev { width: 11px; height: 11px; flex: none; transition: transform .12s; }
+.ain-design-system-adv__toggle[aria-expanded="false"] .ain-design-system-adv__chev { transform: rotate(-90deg); }
+.ain-design-system-adv__body { padding-top: 8px; }
+/* Unsaved-change count on an Advanced fold — surfaces edits hiding in the
+   default-closed fold. Pushed to the row's right edge. */
+.ain-design-system-adv__dirty {
+  margin-left: auto; flex: none; display: inline-grid; place-items: center;
+  min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px;
+  font-size: 9.5px; font-weight: 600; line-height: 1; color: var(--ain-color-warning);
+  background: color-mix(in oklch, var(--ain-color-warning) 15%, transparent);
+}
+/* The identity description is prose, not code — drop the monospace + tall min. */
+.ain-design-system-textarea {
+  font-family: inherit; min-height: 64px;
+}
+/* Whisper chip (Plate 12 `.aa-new`): borderless mono tint, tag-first, 4px radius —
+   the state hue + the tint fill carry the verdict, no icon, no border. */
+.ain-design-system-pair-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  max-width: 100%; padding: 1px 6px;
+  font-family: var(--ain-font-mono); font-size: 10px; letter-spacing: .08em;
+  font-variant-numeric: tabular-nums; line-height: 1.45; white-space: nowrap;
+  border-radius: 4px;
+  color: var(--ain-color-danger);
+  background: color-mix(in srgb, var(--ain-color-danger) 12%, transparent);
+}
+.ain-design-system-pair-badge[data-pass] {
+  color: var(--ain-color-success);
+  background: color-mix(in srgb, var(--ain-color-success) 12%, transparent);
+}
+/* Sit the verdict at the left of the preview column, under its box. */
+.ain-design-system-pair__col--preview .ain-design-system-pair-badge { align-self: flex-start; }
+
+/* Colour trigger: shows the resolved colour; the code chip shows the reference. */
+.ain-design-system-swatchbtn {
+  flex: none; width: 28px; height: 28px; padding: 0; cursor: pointer;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent); transition: box-shadow .08s, transform .08s;
+}
+.ain-design-system-swatchbtn:active { transform: translateY(1px); box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent); }
+.ain-design-system-swatchbtn--open { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; }
+
+/* --- paired surface/on row: three aligned boxes — [surface] [text] [preview] —
+   each with its label above and its value/verdict below, so the swatches, the
+   text colour and the live preview all sit on one row. --- */
+.ain-design-system-pair {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 72px;
+  gap: 10px; align-items: start; margin-bottom: 14px;
+}
+.ain-design-system-pair__col { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ain-design-system-pair__label { min-height: 15px; }
+.ain-design-system-pair__labeltext { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The preview is the same 28px box as a swatch, but flat — it's a sample, not a
+   control — so the three boxes read as one row. */
+.ain-design-system-pair__tile {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex: none; overflow: hidden;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+}
+/* Sized to leave a comfortable margin inside the 28px tile (the box is fixed, so
+   the breathing room comes from the glyph, not padding that would clip it). */
+.ain-design-system-pair__ag { font-family: var(--ain-font-display); font-size: 11px; font-weight: 600; line-height: 1; }
+
+/* Popover: anchored under the trigger; dismissed by Esc, the ✕, an outside
+   pointer press, or picking a value (see ColorControl's document listener). */
+.ain-design-system-pop {
+  position: absolute; top: 34px; left: 0; z-index: 1201; width: 264px; max-height: 320px; overflow-y: auto;
+  padding: 8px; background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md); box-shadow: 0 5px 14px -4px color-mix(in oklch, var(--ain-color-shadow) 40%, transparent);
+}
+/* Sticky header: names the token being edited and gives an explicit exit. */
+.ain-design-system-pop__head {
+  position: sticky; top: -8px; z-index: 1; display: flex; align-items: center;
+  justify-content: space-between; gap: 8px; margin: -8px -8px 8px; padding: 6px 6px 6px 8px;
+  background: var(--ain-color-surface); border-bottom: 1px solid var(--ain-color-border);
+}
+.ain-design-system-pop__title {
+  font-family: var(--ain-font-display); font-size: 11px; font-weight: 600; color: var(--ain-color-text);
+}
+.ain-design-system-pop__close {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; cursor: pointer; color: var(--ain-color-text-muted);
+  background: none; border: 1px solid transparent; border-radius: var(--ain-radius-md);
+  transition: color .1s, background .1s, border-color .1s;
+}
+.ain-design-system-pop__close:hover { color: var(--ain-color-text); background: var(--ain-color-bg); border-color: var(--ain-color-border-strong); }
+.ain-design-system-pop__close svg { width: 14px; height: 14px; }
+/* The value in use, pinned at the top of the picker + highlighted, so it's
+   clear what the swatches below are being chosen against. */
+.ain-design-system-pop__current {
+  display: flex; align-items: flex-start; gap: 7px; margin-bottom: 8px; padding: 6px 7px;
+  border: 1px solid color-mix(in oklch, var(--ain-color-accent) 40%, transparent); border-radius: var(--ain-radius-md);
+  background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
+}
+.ain-design-system-pop__currentsw {
+  flex: none; width: 20px; height: 20px; margin-top: 1px;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+}
+/* The value column wraps both lines in full — the picker is the place you read
+   the exact value, so nothing here is ever truncated. */
+.ain-design-system-pop__currenttext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ain-design-system-pop__currentname {
+  overflow-wrap: anywhere; font-family: ui-monospace, monospace;
+  font-size: 11px; font-weight: 600; color: var(--ain-color-text);
+}
+.ain-design-system-pop__currentval {
+  overflow-wrap: anywhere; font-family: ui-monospace, monospace;
+  font-size: 10px; color: var(--ain-color-text-muted);
+}
+.ain-design-system-pop__section { margin-bottom: 8px; }
+.ain-design-system-pop__section:last-child { margin-bottom: 0; }
+.ain-design-system-pop__heading {
+  margin-bottom: 4px; font-family: var(--ain-font-mono); font-size: 9px;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--ain-color-text-muted);
+}
+.ain-design-system-pop__row { display: flex; flex-wrap: wrap; gap: 3px; }
+.ain-design-system-sw {
+  width: 18px; height: 18px; padding: 0; cursor: pointer;
+  border: 1px solid var(--ain-color-border); border-radius: 4px; transition: transform .06s;
+}
+.ain-design-system-sw:hover { transform: scale(1.18); border-color: var(--ain-color-border-strong); }
+.ain-design-system-sw--on { outline: 2px solid var(--ain-color-accent); outline-offset: 1px; border-color: var(--ain-color-accent); }
+.ain-design-system-pop__custom { display: flex; align-items: center; gap: 6px; }
+
+/* Scale chips: a small visual (radius/shadow) + the step name. */
+.ain-design-system-chiprow { display: flex; flex-wrap: wrap; gap: 4px; }
+.ain-design-system-fontpick { position: relative; flex: none; }
+.ain-design-system-fontpick__btn {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0; cursor: pointer;
+  font-family: var(--ain-font-display); font-size: 13px; line-height: 1; color: var(--ain-color-text-muted);
+  background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent); transition: box-shadow .08s, transform .08s, color .1s, border-color .1s;
+}
+.ain-design-system-fontpick__btn:hover { color: var(--ain-color-text); border-color: var(--ain-color-border-strong); }
+.ain-design-system-fontpick__btn:active { transform: translateY(1px); box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent); }
+.ain-design-system-fontpick__btn--open { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; }
+
+.ain-design-system-fontlist { display: flex; flex-direction: column; gap: 3px; }
+.ain-design-system-fontopt {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px; cursor: pointer;
+  padding: 7px 9px; font: inherit; text-align: left; color: var(--ain-color-text-muted);
+  background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  transition: border-color .1s, color .1s, box-shadow .1s;
+}
+.ain-design-system-fontopt:hover { border-color: var(--ain-color-border-strong); color: var(--ain-color-text); }
+.ain-design-system-fontopt--on { border-color: var(--ain-color-accent); color: var(--ain-color-text); box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent); }
+.ain-design-system-fontopt__name { font-size: 14px; line-height: 1.1; color: var(--ain-color-text); }
+.ain-design-system-fontopt__sample { flex: none; font-size: 16px; line-height: 1; color: var(--ain-color-text-faint); }
+.ain-design-system-prev { flex: none; display: inline-block; width: 18px; height: 18px; background: var(--ain-color-surface-raised); }
+.ain-design-system-prev--radius { border: 1.5px solid var(--ain-color-text-muted); }
+.ain-design-system-prev--shadow { background: var(--ain-color-surface); border: 1px solid var(--ain-color-border); }
+
+/* The base-palette heading row inside the colour picker carries a single
+   hands-on marker for the whole immutable Tier-0 foundation. */
+.ain-design-system-pop__basehead { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.ain-design-system-pop__basehead .ain-design-system-pop__heading { margin: 0; }

@@ -1,0 +1,41 @@
+# The site-wide studios (plans/studio-modules.md "The manifest", DECISIONS 0430)
+# — TWO studio ids in one module, because they are two slices of ONE surface:
+# the old Globals studio split three ways (DECISIONS 0372) into Identity
+# (`design_system`, still core), Navigation & Pages (`globals`) and Settings
+# (`settings`); the latter two read the same /atelier/chrome/manifest, stage
+# the same chrome draft and render the same live chrome preview, so they share
+# a module the way the Library family does. Both ids are frozen built-in ids
+# (0425): they live in `use aincient studio globals` / `use aincient studio
+# settings`, in the `studios` agents map and in stored deep links. The module
+# name namespaces nothing.
+#
+# `globals` is the one studio here with an agent (`aincient_chrome_agent`,
+# shipped in config/install and mirrored in config/sync — a unit test keeps the
+# two equal) and an owned capability: `preview_chrome` is refused at dispatch
+# while the studio is switched off. Its UI exports `Studio` (the menus / routing
+# / arrangement rail), `Preview` (the server-rendered chrome around a
+# placeholder body) and `ToolUIs` (the `chrome_preview` chat card).
+#
+# `settings` is editor-only (no agent). Its UI entry is a SECOND file in the
+# same `ui/`: the rail for site email + font delivery + the Freeze & Live
+# snapshots section, beside the same chrome preview. Its four snapshot action
+# routes are this module's (`routing.yml`); the read-only list and file routes
+# stay in `aincient_export`.
+globals:
+  label: 'Navigation & Pages'
+  description: 'The main and footer menus, the front / 404 / 403 page routing, and how the header and footer are arranged.'
+  help: 'Edit the menus and routing in the rail, or ask the chat to arrange the header and footer; nothing is live until you Publish.'
+  weight: 20
+  ui:
+    entry: ui/index.tsx
+    icon: layout
+  flows: [aincient_chrome_agent]
+  capabilities: [preview_chrome]
+settings:
+  label: 'Settings'
+  description: 'Site email, privacy and consent (font delivery), and Freeze & Live snapshots of the published site.'
+  help: 'These are set directly — the chat cannot reach them. Freeze the site to serve a snapshot; go Live to serve the current pages again.'
+  weight: 30
+  ui:
+    entry: ui/settings.tsx
+    icon: wrench

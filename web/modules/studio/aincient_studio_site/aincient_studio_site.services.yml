@@ -1,0 +1,9 @@
+services:
+  # The chrome-preview applier: turns a `preview_chrome`-shaped slice
+  # (identity/layout/reset) into the validated `chrome_preview` widget envelope
+  # the Navigation & Pages rail applies. Moved here with the verb (Phase E.3):
+  # its one caller is this studio's capability, and it validates against core's
+  # ChromeRepository::REGISTRY + SiteIdentity::GUIDELINE_KEYS, which stay in
+  # `aincient_pages` because the chrome must render with this studio off.
+  aincient_studio_site.chrome_preview_applier:
+    class: Drupal\aincient_studio_site\ChromePreviewApplier

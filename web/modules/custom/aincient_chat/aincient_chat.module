@@ -13,6 +13,31 @@ use Drupal\Core\Url;
 use Drupal\node\NodeInterface;
 
 /**
+ * Implements hook_library_info_alter().
+ *
+ * Versions the console library by its entry file's CONTENT, so the URL Drupal
+ * writes (`aincient-chat.js?v=<hash>`) changes with every build and never
+ * otherwise. The bundle is an ES module split into chunks: the chunks version
+ * each other at build time (chat-ui/vite.chunks.ts stamps every inter-chunk
+ * import with a build id) but the ENTRY is only ever named by this library,
+ * so this is the one place its cache can be busted. A fixed `version:` would
+ * leave a browser on a stale entry importing chunks that no longer exist.
+ *
+ * Library info is cached with the rest of discovery, so the hash is computed
+ * once per cache rebuild — a new build needs the usual `drush cr`, which every
+ * deploy path already runs.
+ */
+function aincient_chat_library_info_alter(array &$libraries, string $extension): void {
+  if ($extension !== 'aincient_chat' || !isset($libraries['console'])) {
+    return;
+  }
+  $entry = __DIR__ . '/js/dist/aincient-chat.js';
+  if (is_file($entry) && ($hash = @md5_file($entry)) !== FALSE) {
+    $libraries['console']['version'] = substr($hash, 0, 12);
+  }
+}
+
+/**
  * Implements hook_toolbar().
  *
  * Adds an "AIncient" tab to the admin toolbar so operators can jump back to
@@ -229,4 +254,65 @@ function _aincient_chat_editor_pill_anchor(string $href, string $label): Markup 
     . '<span class="aincient-editor-pill__label">' . htmlspecialchars($label, ENT_QUOTES) . '</span>'
     . '</a>'
   );
+}
+
+/**
+ * Implements hook_modules_installed().
+ *
+ * Seeds the on/off switch and the agents map from a studio's manifest when the
+ * module that provides it is installed (DECISIONS 0430). Install time is the
+ * only moment the manifest speaks: after that `disabled_studios` and
+ * `studios.<id>` are the admin's, so a later manifest edit never overrides a
+ * choice someone made. An existing agents row is therefore left alone too.
+ *
+ * Skipped during a config sync: the imported config already says what is on
+ * and which agents a studio has, and seeding on top of it would make the
+ * imported site differ from its source.
+ *
+ * Install is also a studio's FIRST ENABLE when it ships on, so its demo
+ * content is imported here ({@see \Drupal\aincient_chat\Studio\StudioDemoContent});
+ * a studio that ships off gets its examples when the switch first flips.
+ */
+function aincient_chat_modules_installed(array $modules, bool $is_syncing): void {
+  if ($is_syncing) {
+    return;
+  }
+  /** @var \Drupal\aincient_chat\Studio\StudioManager $manager */
+  $manager = \Drupal::service('plugin.manager.aincient.studios');
+  // The definitions may have been built (and cached) before these modules
+  // existed — in the same request as the install, for one.
+  $manager->clearCachedDefinitions();
+
+  /** @var \Drupal\aincient_chat\Studio\StudioSwitch $switch */
+  $switch = \Drupal::service('aincient_chat.studio_switch');
+  /** @var \Drupal\aincient_chat\Studio\StudioDemoContent $demo */
+  $demo = \Drupal::service('aincient_chat.studio_demo_content');
+  $agents = [];
+  foreach ($manager->studios() as $id => $studio) {
+    if (!in_array($studio->getPluginDefinition()['provider'] ?? NULL, $modules, TRUE)) {
+      continue;
+    }
+    if (!$studio->defaultEnabled()) {
+      $switch->setEnabled($id, FALSE);
+    }
+    else {
+      $demo->import($id);
+    }
+    $flows = $studio->flows();
+    if ($flows !== []) {
+      $agents[$id] = ['agents' => $flows, 'default' => $flows[0]];
+    }
+  }
+  if ($agents === []) {
+    return;
+  }
+  // Loaded only now, after the switch has saved: an editable config object
+  // read before that save would write the stale `disabled_studios` back.
+  $config = \Drupal::configFactory()->getEditable('aincient_chat.settings');
+  foreach ($agents as $id => $row) {
+    if ($config->get('studios.' . $id) === NULL) {
+      $config->set('studios.' . $id, $row);
+    }
+  }
+  $config->save();
 }
