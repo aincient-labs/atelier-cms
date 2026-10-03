@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { ReferenceField } from "./reference-field";
+import { SegmentedControl } from "./segmented";
 
 /**
  * The studio's ONE link-target control — a URL｜Page switch over a single value.
@@ -90,28 +91,16 @@ export function LinkField({
     <div className="ain-field ain-linkfield" data-dirty={dirty || undefined} title={meaning}>
       <span className="ain-field__label">
         {label && <span className="ain-field__labeltext">{label}</span>}
-        <span className="ain-facet ain-linkfield__mode" role="group" aria-label={`${label ?? "Link"} target type`}>
-          <button
-            type="button"
-            className="ain-facet__btn"
-            aria-pressed={mode === "url"}
-            onClick={() => toMode("url")}
-            disabled={disabled}
-            title="Type a path or an external address"
-          >
-            URL
-          </button>
-          <button
-            type="button"
-            className="ain-facet__btn"
-            aria-pressed={mode === "page"}
-            onClick={() => toMode("page")}
-            disabled={disabled}
-            title="Pick a page on this site"
-          >
-            Page
-          </button>
-        </span>
+        <SegmentedControl
+          className="ain-linkfield__mode"
+          label={`${label ?? "Link"} target type`}
+          options={[
+            { value: "url", label: "URL", title: "Type a path or an external address", disabled },
+            { value: "page", label: "Page", title: "Pick a page on this site", disabled },
+          ]}
+          value={mode}
+          onChange={toMode}
+        />
         {revert}
       </span>
       <div className="ain-linkfield__target">

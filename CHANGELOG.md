@@ -7,6 +7,13 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.16.2] — 2026-10-03
+
+**Link fields show their URL / Page switch properly again.** When you edit a menu link in Navigation
+& Pages, or a button link on a page, the switch between typing a URL and picking a page appeared as
+two plain, unstyled buttons. It is back to the normal toggle, and you can see which option is
+selected.
+
 ## [0.16.1] — 2026-10-03
 
 **The studios are back in the console.** In 0.16.0 the top bar showed no studios (Pages, Library,
