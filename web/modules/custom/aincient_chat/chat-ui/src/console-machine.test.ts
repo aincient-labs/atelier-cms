@@ -221,6 +221,20 @@ describe("navigation basics", () => {
     expect(h.nav.inNav("idle")).toBe(true);
   });
 
+  it("a same-room ENTER_ROOM naming another thread switches to it (deep link into the boot room)", () => {
+    // /atelier/general?thr=X boots IN General, so url-sync's enterRoom is
+    // same-room — it must still land on X, not swallow the thread with the room.
+    const h = harness();
+    h.nav.enterRoom(GENERAL, "thr_x");
+    expect(h.nav.inNav("idle")).toBe(true);
+    expect(h.switches[h.switches.length - 1]).toEqual([GENERAL, "thr_x"]);
+    expect(h.nav.room()).toEqual(GENERAL);
+    // Already on it → swallowed again.
+    const before = h.switches.length;
+    h.nav.enterRoom(GENERAL, "thr_x");
+    expect(h.switches.length).toBe(before);
+  });
+
   it("SEAL keeps the room and drops to a fresh thread (D8)", () => {
     const h = harness();
     navigate(h, NODE_A);

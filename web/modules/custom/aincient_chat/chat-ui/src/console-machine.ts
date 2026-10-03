@@ -179,6 +179,16 @@ export function consoleMachine(deps: Partial<ConsoleActions> = {}) {
       targetIsSameRoom: ({ context, event }) =>
         (event.type === "ENTER_ROOM" || event.type === "POPSTATE") &&
         sameRoom(event.room, context.room),
+      /**
+       * Same room, but naming a DIFFERENT thread — a deep link into the room we
+       * booted in (`/atelier/general?thr=X`). The room is swallowed; the thread
+       * is not.
+       */
+      targetIsSameRoomOtherThread: ({ context, event }) =>
+        (event.type === "ENTER_ROOM" || event.type === "POPSTATE") &&
+        sameRoom(event.room, context.room) &&
+        !!event.threadId &&
+        event.threadId !== context.threadId,
       isDirty: ({ context }) => context.dirty,
       /** A DOC-loadable room (Content node OR media item) → run the async load. */
       isDocRoom: ({ context }) => docIdentity(context.room) !== null,
@@ -209,6 +219,12 @@ export function consoleMachine(deps: Partial<ConsoleActions> = {}) {
       /** SWITCH_THREAD sets the target thread (null = start a fresh one). */
       assignSwitchThread: assign(({ event }) =>
         event.type === "SWITCH_THREAD" ? { threadId: event.threadId } : {},
+      ),
+      /** A same-room ENTER_ROOM / POPSTATE that names another thread. */
+      assignEventThread: assign(({ event }) =>
+        (event.type === "ENTER_ROOM" || event.type === "POPSTATE") && event.threadId
+          ? { threadId: event.threadId }
+          : {},
       ),
       /**
        * `switchingThread` entry: a same-room thread switch — commit ONLY the
@@ -321,11 +337,13 @@ export function consoleMachine(deps: Partial<ConsoleActions> = {}) {
             // browser already navigated). SET_DIRTY just mirrors the flag.
             on: {
               ENTER_ROOM: [
+                { guard: "targetIsSameRoomOtherThread", target: ".switchingThread", actions: "assignEventThread" },
                 { guard: "targetIsSameRoom" }, // swallow — already here
                 { guard: "isDirty", target: ".confirmDiscard", actions: "stashPending" },
                 { target: ".switching", actions: "assignTargetRoom" },
               ],
               POPSTATE: [
+                { guard: "targetIsSameRoomOtherThread", target: ".switchingThread", actions: "assignEventThread" },
                 { guard: "targetIsSameRoom" },
                 { target: ".switching", actions: "assignTargetRoom" },
               ],

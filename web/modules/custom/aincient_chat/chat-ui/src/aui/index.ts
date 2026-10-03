@@ -149,7 +149,8 @@ export interface ConsoleChat {
   subscribe(cb: () => void): () => void;
   switchToThread(id: string): void;
   switchToNewThread(): void;
-  /** Resolves once the sidebar list has loaded — the deep-link gate in url-sync. */
+  /** Resolves once the sidebar list is IN THE STORE (not merely fetched) — the
+   *  deep-link gate in url-sync. */
   listLoaded(): Promise<void>;
 }
 
@@ -208,7 +209,23 @@ export function useConsoleChat(): ConsoleChat {
       switchToNewThread: () => {
         void Promise.resolve(aui.threads().switchToNewThread()).catch(() => {});
       },
-      listLoaded: () => aui.threads().getLoadThreadsPromise(),
+      // `getLoadThreadsPromise()` settles BEFORE the list lands in the store: at
+      // that point `threadIds` is still `[]` and `isLoading` still true, so every
+      // `?thr=` deep link read as an unknown id and was dropped (cms#58). Gate on
+      // the store instead — the promise, then the first snapshot that isn't loading.
+      listLoaded: () =>
+        Promise.resolve(aui.threads().getLoadThreadsPromise())
+          .catch(() => {})
+          .then(() =>
+            new Promise<void>((resolve) => {
+              if (!aui.threads().getState().isLoading) return resolve();
+              const unsub = aui.subscribe(() => {
+                if (aui.threads().getState().isLoading) return;
+                unsub();
+                resolve();
+              });
+            }),
+          ),
     }),
     [aui],
   );

@@ -7,6 +7,12 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.16.3] — 2026-10-03
+
+**Links to a conversation open that conversation.** When you open a chat in the console, its link
+appears in the address bar. Reloading, bookmarking or sharing that link used to start a new, empty
+chat instead. It now opens the conversation you were in.
+
 ## [0.16.2] — 2026-10-03
 
 **Link fields show their URL / Page switch properly again.** When you edit a menu link in Navigation
