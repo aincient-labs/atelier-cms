@@ -20,8 +20,7 @@ namespace Drupal\aincient_chat\Studio;
  *
  * Pure on purpose — no Drupal services — so a UnitTestCase can call it and the
  * tree test can grade a manifest without booting a site. The only side-effect-
- * free outside reads are the filesystem (`ui.entry`, `ui.script`, `ui.style`,
- * `demo`) and the autoloader
+ * free outside reads are the filesystem (`ui.script`, `ui.style`, `demo`) and the autoloader
  * (`class`).
  */
 final class StudioManifest {
@@ -92,9 +91,9 @@ final class StudioManifest {
    *   The definition as discovery produces it (or as parsed from YAML, with
    *   `id` set from the entry's key).
    * @param string|null $moduleDir
-   *   The providing module's directory. When given, `ui.entry`, `ui.script`,
-   *   `ui.style` and `demo` must exist
-   *   under it; when NULL only their shape is checked.
+   *   The providing module's directory. When given, `ui.script`, `ui.style` and
+   *   `demo` must exist under it; when NULL only their shape is checked.
+   *   `ui.entry` is always shape-only (build input, absent from the image).
    *
    * @return list<string>
    *   Human-readable errors; empty when the definition is valid.
@@ -189,7 +188,12 @@ final class StudioManifest {
       }
     }
     if (array_key_exists('entry', $ui)) {
-      $error = self::relativePath('ui.entry', $ui['entry'], $moduleDir, FALSE);
+      // Shape only, never on disk: `ui.entry` is BUILD input, compiled into
+      // aincient_chat/js/dist and stripped from the appliance image
+      // (.dockerignore drops web/modules/studio/*/ui). An on-disk check here
+      // rejected every built-in studio in the released 0.16.0 image. The build
+      // (gen-studio-registry.mjs) is what fails on a missing entry.
+      $error = self::relativePath('ui.entry', $ui['entry'], NULL, FALSE);
       if ($error !== NULL) {
         $errors[] = $error;
       }

@@ -107,12 +107,12 @@ final class StudioManifestTest extends UnitTestCase {
       $base = ['id' => 'forms', 'label' => 'Forms'];
       $this->assertSame([], StudioManifest::validate($base + ['ui' => ['entry' => 'ui/index.tsx'], 'demo' => 'content/demo'], $dir));
 
-      $errors = StudioManifest::validate($base + ['ui' => ['entry' => 'ui/missing.tsx']], $dir);
-      $this->assertCount(1, $errors);
-      $this->assertStringContainsString('"ui.entry" points at "ui/missing.tsx", which is not a file', $errors[0]);
+      // `ui.entry` is build input the appliance image strips (.dockerignore
+      // drops web/modules/studio/*/ui), so a missing entry file is NOT a
+      // runtime error — 0.16.0 dropped every built-in studio over exactly this.
+      $this->assertSame([], StudioManifest::validate($base + ['ui' => ['entry' => 'ui/missing.tsx']], $dir));
 
-      // A directory is not a UI entry, and a file is not a demo source.
-      $this->assertNotSame([], StudioManifest::validate($base + ['ui' => ['entry' => 'ui']], $dir));
+      // A file is not a demo source.
       $this->assertNotSame([], StudioManifest::validate($base + ['demo' => 'ui/index.tsx'], $dir));
     }
     finally {

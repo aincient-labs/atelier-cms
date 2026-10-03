@@ -7,6 +7,12 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.16.1] — 2026-10-03
+
+**The studios are back in the console.** In 0.16.0 the top bar showed no studios (Pages, Library,
+Site), and chat replies that point you to a studio, like the guided tour, came up empty. Both work
+again. Upgrade from 0.16.0; nothing on your site was changed or lost.
+
 ## [0.16.0] — 2026-10-03
 
 **The console is easier to use with a keyboard and a screen reader.** Its dialogs, menus and pickers
