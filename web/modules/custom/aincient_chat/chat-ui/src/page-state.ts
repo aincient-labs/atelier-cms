@@ -425,10 +425,12 @@ export function closeDocToListing(): void {
 /**
  * Open an existing global block in the studio for editing — the parallel of
  * loadPageIntoStudio for the `aincient_block` bundle. Editing + Publishing the
- * block updates every page that references it.
+ * block updates every page that references it. `langcode` opens one translation
+ * (null = the source); a block translation always inherits the source layout.
  */
-export async function loadBlockIntoStudio(node: string): Promise<void> {
-  const res = await fetch(apiUrl(`/block/${encodeURIComponent(node)}/schema`), {
+export async function loadBlockIntoStudio(node: string, langcode?: string | null): Promise<void> {
+  const qs = langcode ? `?langcode=${encodeURIComponent(langcode)}` : "";
+  const res = await fetch(apiUrl(`/block/${encodeURIComponent(node)}/schema${qs}`), {
     credentials: "same-origin",
   });
   const data = await res.json().catch(() => null);
@@ -443,9 +445,9 @@ export async function loadBlockIntoStudio(node: string): Promise<void> {
   // A global block has no standalone page to open.
   currentUrl = null;
   current = data.schema as PageSchema;
-  currentLang = null;
-  currentMode = null;
-  currentTranslations = [];
+  currentLang = langcode ?? null;
+  currentMode = (data.layout_mode as string | null) ?? null;
+  currentTranslations = Array.isArray(data.translations) ? (data.translations as string[]) : [];
   setModeration(readModeration(data));
   for (const cb of loadSubscribers) cb(currentNode);
   emitNode();
@@ -781,6 +783,9 @@ export async function runTransition(
   const data = await writeRequest(`${apiBase(kind)}/${suffix}`, {
     node_id: node,
     ...baseVidArg(),
+    // Translations are moderated independently: say which one moves (the
+    // server can infer it from base_vid, but only narrowly).
+    ...(currentLang ? { langcode: currentLang } : {}),
     // Studio provenance (a transition isn't lock-fenced — a reviewer needn't
     // hold the pen — so no token, just the co-author studio).
     studio: activeStudioKey(),

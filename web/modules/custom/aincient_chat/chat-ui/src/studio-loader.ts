@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import type { ComponentType } from "react";
+import type { AnyCommandSurface } from "./sdk/commands";
 import type { StudioDef, StudioUiModule } from "./studio-module";
 import { STUDIO_REGISTRY } from "./studio-registry";
 
@@ -161,13 +162,45 @@ export function createStudioLoader(rows: () => Record<string, StudioDef>) {
     );
   }
 
+  /**
+   * Every LOADED studio's command surface (`StudioUiModule.Commands`), keyed by
+   * studio id — what the command adapters (P1+ of plans/studio-commands.md)
+   * read. A studio that is not loaded yet, or exports no `Commands`, is absent.
+   */
+  function commands(): Record<string, AnyCommandSurface> {
+    const out: Record<string, AnyCommandSurface> = {};
+    for (const [id, entry] of entries) {
+      if (entry.status === "ready" && entry.module.Commands) out[id] = entry.module.Commands;
+    }
+    return out;
+  }
+
+  /** One loaded studio's command surface, or undefined. */
+  function commandsFor(key: string | undefined): AnyCommandSurface | undefined {
+    return loaded(key)?.Commands;
+  }
+
   /** Test seam: forget everything. */
   function reset(): void {
     entries.clear();
     notify();
   }
 
-  return { subscribe, getVersion, loaded, status, error, load, retry, pending, preloadAll, toolUIs, reset };
+  return {
+    subscribe,
+    getVersion,
+    loaded,
+    status,
+    error,
+    load,
+    retry,
+    pending,
+    preloadAll,
+    toolUIs,
+    commands,
+    commandsFor,
+    reset,
+  };
 }
 
 /** The console's loader, bound to the studio registry. */
@@ -177,6 +210,8 @@ export const studioLoader = createStudioLoader(() => STUDIO_REGISTRY);
 export const loadStudio = studioLoader.load;
 /** Boot (moment 3): every other studio, at idle, for the cards in old threads. */
 export const preloadStudios = studioLoader.preloadAll;
+/** The loaded studios' command surfaces, keyed by studio id (no consumer yet — P1+). */
+export const loadedStudioCommands = studioLoader.commands;
 
 /**
  * A studio's lazy half for a component that renders it: kicks off the load on

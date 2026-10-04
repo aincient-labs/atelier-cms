@@ -173,6 +173,31 @@ aincient_pages.page_lock_status:
     _disable_route_normalizer: 'TRUE'
     _auth: ['cookie', 'basic_auth']
 
+# Read-only revision graph for the console's Pages → History rail
+# (plans/revision-graph-console.md). Beside the Content studio's
+# /atelier/page/{node}/schema. Contrib revision_graph's builder, renderer-shaped
+# (`refs`, palette + branchColors) with every `urls` stripped — the read-only
+# gate is server-side. The per-node floor (`view all revisions`) + the
+# aincient_page bundle check are in the controller. revision_graph is a SOFT
+# dependency: absent module → 404.
+aincient_pages.page_revisions:
+  path: '/atelier/page/{node}/revisions'
+  defaults:
+    _controller: '\Drupal\aincient_pages\Controller\RevisionGraphController::revisions'
+  methods: [GET]
+  requirements:
+    # History is a mode of the Content studio's preview: same permission as
+    # opening it (page_schema), so StudioRouteSubscriber stamps
+    # `_aincient_studio_enabled: content` and a switched-off studio 403s this.
+    _permission: 'use aincient studio content'
+    node: \d+
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      node:
+        type: 'entity:node'
+
 # ── Unified reference API (chat console) ────────────────────────────────────
 # One SEARCH + one DESCRIBE over every referenceable type (media, nodes, blocks —
 # Users/Brand later), behind the studio's <ReferenceField> and the agent's

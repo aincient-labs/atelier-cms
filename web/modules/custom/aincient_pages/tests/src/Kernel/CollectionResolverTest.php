@@ -9,6 +9,7 @@ use Drupal\aincient_pages\CollectionResolver;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 use Drupal\Tests\user\Traits\UserCreationTrait;
@@ -29,7 +30,7 @@ final class CollectionResolverTest extends KernelTestBase {
 
   use UserCreationTrait;
 
-  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
+  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'language', 'content_translation', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
 
   protected function setUp(): void {
     parent::setUp();
@@ -107,6 +108,40 @@ final class CollectionResolverTest extends KernelTestBase {
     $this->assertSame(2, $result['total'], 'total is unbounded by the limit.');
     $this->assertCount(1, $result['records'], 'limit bounds the returned records.');
     $this->assertSame('First', $result['records'][0]['title'], 'oldest first.');
+  }
+
+  /**
+   * Each language lists by ITS OWN post date (M10): `created` is translatable,
+   * so a DE listing sorts on the DE translation's date, an EN listing on EN's,
+   * and a post without a DE translation sorts on the source date it falls
+   * back to. The shown date is the listed translation's too.
+   */
+  public function testSortsByEachLanguagesOwnPostDate(): void {
+    $this->installEntitySchema('configurable_language');
+    $this->installConfig(['language']);
+    ConfigurableLanguage::createFromLangcode('de')->save();
+    \Drupal::service('content_translation.manager')->setEnabled('node', 'aincient_page', TRUE);
+
+    $a = $this->post('blog', 'A', 1000);
+    $a->addTranslation('de', ['title' => 'A de', 'status' => 1, 'created' => 3000])->save();
+    $b = $this->post('blog', 'B', 2000);
+    $b->addTranslation('de', ['title' => 'B de', 'status' => 1, 'created' => 500])->save();
+    // C has no DE translation: the DE listing shows (and sorts on) the source.
+    $c = $this->post('blog', 'C', 1500);
+
+    $ids = static fn (array $result): array => array_column($result['records'], 'id');
+
+    $en = $this->resolver()->resolve(['source' => 'blog', 'sort' => 'newest'], 'en');
+    $this->assertSame([(int) $b->id(), (int) $c->id(), (int) $a->id()], $ids($en), 'EN sorts on the EN dates.');
+    $this->assertSame([2000, 1500, 1000], array_column($en['records'], 'created'));
+
+    $de = $this->resolver()->resolve(['source' => 'blog', 'sort' => 'newest'], 'de');
+    $this->assertSame([(int) $a->id(), (int) $c->id(), (int) $b->id()], $ids($de), 'DE sorts on the DE dates; C falls back to its source date.');
+    $this->assertSame([3000, 1500, 500], array_column($de['records'], 'created'));
+    $this->assertSame(['A de', 'C', 'B de'], array_column($de['records'], 'title'));
+
+    $oldest = $this->resolver()->resolve(['source' => 'blog', 'sort' => 'oldest'], 'de', 1);
+    $this->assertSame([(int) $b->id()], $ids($oldest), 'The limit applies after the per-language sort.');
   }
 
   public function testUnpublishedPostsAreNeverListed(): void {

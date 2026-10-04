@@ -16,7 +16,13 @@ services:
     # pathauto.generator is OPTIONAL (@?) — NULL when pathauto is uninstalled;
     # it exists so a written translation gets its own alias (PageStore::
     # syncTranslationAlias), which pathauto's own hooks never do.
-    arguments: ['@entity_type.manager', '@current_user', '@uuid', '@language_manager', '@config.factory', '@aincient_pages.moderation', '@aincient_pages.catalog', '@?pathauto.generator']
+    arguments: ['@entity_type.manager', '@current_user', '@uuid', '@language_manager', '@config.factory', '@aincient_pages.moderation', '@aincient_pages.catalog', '@aincient_pages.schema_summariser', '@?pathauto.generator']
+  # Writes the draft revision log message — what the save changed, in the
+  # operator's words — for both stores' editRevision() funnel. Best-effort: a
+  # failure falls back to the caller's constant message, never breaks a save.
+  aincient_pages.schema_summariser:
+    class: Drupal\aincient_pages\PageSchemaSummariser
+    arguments: ['@aincient_pages.catalog', '@plugin.manager.sdc', '@language_manager', '@logger.channel.aincient_pages']
   # The component-catalog service (plans/byo-components.md W1): ONE discovery
   # path over the SDC plugin manager filtered on thirdPartySettings.atelier —
   # the same path a client pack's components travel. for($kind) returns the
@@ -43,7 +49,7 @@ services:
     arguments: ['@plugin.manager.sdc', '@extension.list.module', '@?plugin.manager.aincient.studios']
   aincient_pages.block_store:
     class: Drupal\aincient_pages\BlockStore
-    arguments: ['@entity_type.manager', '@current_user', '@language_manager', '@aincient_pages.store', '@aincient_pages.moderation']
+    arguments: ['@entity_type.manager', '@current_user', '@language_manager', '@aincient_pages.store', '@aincient_pages.moderation', '@aincient_pages.schema_summariser']
   aincient_pages.route_subscriber:
     class: Drupal\aincient_pages\Routing\PageRouteSubscriber
     tags:
@@ -93,7 +99,7 @@ services:
     arguments: ['@entity_type.manager', '@aincient_pages.catalog']
   aincient_pages.collection_resolver:
     class: Drupal\aincient_pages\CollectionResolver
-    arguments: ['@entity_type.manager', '@entity.repository', '@aincient_pages.embed_resolver', '@date.formatter', '@aincient_pages.collection_inventory']
+    arguments: ['@entity_type.manager', '@entity.repository', '@aincient_pages.embed_resolver', '@date.formatter', '@aincient_pages.collection_inventory', '@language_manager']
   # The unified reference layer: a catalog over tagged per-type providers. One
   # SEARCH + one DESCRIBE for media / nodes / blocks (Users/Brand drop in as new
   # tagged providers). Backs the studio's ReferenceField and the agent find tool.

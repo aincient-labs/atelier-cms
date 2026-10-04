@@ -54,6 +54,7 @@ final class BlockStore {
     private readonly LanguageManagerInterface $languageManager,
     private readonly PageStore $pages,
     private readonly NodeModeration $moderation,
+    private readonly PageSchemaSummariser $summariser,
   ) {}
 
   /**
@@ -136,8 +137,13 @@ final class BlockStore {
    *
    * @throws \Drupal\aincient_pages\Exception\RevisionConflictException
    */
-  public function transition(string $id, string $transitionId, ?int $baseVid = NULL): ?array {
-    $media = $this->moderation->loadLatestRevision($id, self::BUNDLE, NULL, self::ENTITY_TYPE);
+  public function transition(string $id, string $transitionId, ?int $baseVid = NULL, ?string $langcode = NULL): ?array {
+    // One translation's state (see PageStore::transition): given, else inferred
+    // from the studio's base_vid, else the source.
+    if ($langcode === NULL && $baseVid !== NULL) {
+      $langcode = $this->moderation->langcodeForBase($id, $baseVid, self::ENTITY_TYPE);
+    }
+    $media = $this->moderation->loadHead($id, self::BUNDLE, $langcode, self::ENTITY_TYPE);
     if ($media === NULL) {
       return NULL;
     }
@@ -145,7 +151,7 @@ final class BlockStore {
     if ($target === NULL) {
       return NULL;
     }
-    return $this->editRevision($id, NULL, $target, NULL, $baseVid, sprintf('Editorial transition: %s.', $transitionId));
+    return $this->editRevision($id, NULL, $target, $langcode, $baseVid, sprintf('Editorial transition: %s.', $transitionId));
   }
 
   /**
@@ -171,8 +177,9 @@ final class BlockStore {
    * a revision, save. Mirrors {@see PageStore::editRevision}.
    */
   private function editRevision(string $id, ?array $schema, string $targetState, ?string $langcode, ?int $baseVid, string $log): ?array {
-    $this->moderation->assertHead($id, $baseVid, self::ENTITY_TYPE);
-    $media = $this->moderation->loadLatestRevision($id, self::BUNDLE, NULL, self::ENTITY_TYPE);
+    // Per-language head + translation-aware revision, as in PageStore.
+    $this->moderation->assertHead($id, $baseVid, self::ENTITY_TYPE, $langcode);
+    $media = $this->moderation->loadHead($id, self::BUNDLE, $langcode, self::ENTITY_TYPE);
     if (!$media instanceof MediaInterface) {
       return NULL;
     }
@@ -180,26 +187,53 @@ final class BlockStore {
       && !$this->moderation->canReachState($media, $targetState)) {
       return NULL;
     }
-    if ($schema !== NULL) {
-      $target = $this->translationToWrite($media, $langcode);
+    $revision = $this->moderation->createRevision($media, $targetState);
+    if ($schema === NULL) {
+      $source = $revision->getUntranslated();
+      if ($langcode === NULL || $langcode === $source->language()->getId()) {
+        $target = $source;
+      }
+      elseif ($revision->hasTranslation($langcode)) {
+        $target = $revision->getTranslation($langcode);
+      }
+      else {
+        return NULL;
+      }
+    }
+    else {
+      $target = $this->translationToWrite($revision, $langcode);
       if ($target === NULL) {
         return NULL;
       }
+      // Say what changed (see PageStore::editRevision) — best-effort, the
+      // constant message stays the fallback.
+      $before = $this->summariser->before(fn (): ?array => $target->isNewTranslation() ? NULL : $this->pages->resolve($target));
       $this->pages->writeSchema($target, $this->stripNested($schema));
+      $log = $this->summariser->revisionLog(
+        $before,
+        fn (): array => $this->pages->resolve($target),
+        $target->isDefaultTranslation() ? NULL : $target->language()->getId(),
+        $log,
+      );
     }
-    $media->set('moderation_state', $targetState);
-    $media->setNewRevision(TRUE);
-    $media->setRevisionUserId((int) $this->currentUser->id());
-    $media->setRevisionLogMessage($log);
-    $media->save();
-    return $this->stateEnvelope($id);
+    // Per-translation moderation state on the written translation (isolated),
+    // else the whole-entity model on the source, as before.
+    $saved = $this->moderation->isolatesTranslations($revision) ? $target : $revision->getUntranslated();
+    $saved->set('moderation_state', $targetState);
+    if ($saved instanceof MediaInterface) {
+      $saved->setRevisionUserId((int) $this->currentUser->id());
+      $saved->setRevisionLogMessage($log);
+    }
+    $this->moderation->pinAffectedTranslation($saved);
+    $saved->save();
+    return $this->stateEnvelope($id, $langcode);
   }
 
   /**
    * The post-write state envelope for a block id (state + transitions + base vid).
    */
-  private function stateEnvelope(string $id): ?array {
-    $media = $this->moderation->loadLatestRevision($id, self::BUNDLE, NULL, self::ENTITY_TYPE);
+  private function stateEnvelope(string $id, ?string $langcode = NULL): ?array {
+    $media = $this->moderation->loadLatestRevision($id, self::BUNDLE, $langcode, self::ENTITY_TYPE);
     if ($media === NULL) {
       return NULL;
     }
@@ -249,6 +283,32 @@ final class BlockStore {
    */
   public function resolveMediaSections(string $id, ?string $langcode = NULL): array {
     return $this->resolveSections($id, $langcode);
+  }
+
+  /**
+   * The non-source langcodes a block already has a translation for — the block
+   * parallel of {@see PageStore::translationsOf}, read from each language's own
+   * head so a translation that exists only as a pending draft still counts.
+   *
+   * @return string[]
+   */
+  public function translationsOf(string $id): array {
+    $media = $this->moderation->loadHead($id, self::BUNDLE, NULL, self::ENTITY_TYPE);
+    if ($media === NULL) {
+      return [];
+    }
+    $source = $media->getUntranslated()->language()->getId();
+    $out = [];
+    foreach (array_keys($this->languageManager->getLanguages()) as $lc) {
+      if ($lc === $source) {
+        continue;
+      }
+      $head = $this->moderation->loadHead($id, self::BUNDLE, $lc, self::ENTITY_TYPE);
+      if ($head !== NULL && $head->hasTranslation($lc)) {
+        $out[] = $lc;
+      }
+    }
+    return $out;
   }
 
   /**

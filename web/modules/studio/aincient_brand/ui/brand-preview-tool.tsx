@@ -23,6 +23,8 @@ import { brandPreviewCardText } from "./brand-preview-card";
  *   tokens — { <css_var>: <css_value> } to layer onto the preview draft
  *   fonts  — Google family names to load in the preview iframe
  *   reset  — clear the whole draft back to the saved brand
+ * or, typed, `commands` — the Identity command batch (brand-preview-ops.ts,
+ * plans/studio-commands.md P1). Either form runs as ONE batch = one undo.
  *
  * Ops apply once per tool call (guarded below) and ONLY for a LIVE card — one the
  * agent just emitted as it acts. A HISTORICAL card (replayed from storage on load

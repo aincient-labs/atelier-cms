@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages;
 
 use Drupal\aincient_pages\Exception\RevisionConflictException;
+use Drupal\content_moderation\ContentModerationState;
 use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\content_moderation\StateTransitionValidationInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\ContentEntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\RevisionableStorageInterface;
+use Drupal\Core\Entity\TranslatableRevisionableStorageInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 
@@ -45,29 +48,58 @@ final class NodeModeration {
   }
 
   /**
-   * The latest revision id for a moderated entity (the editable HEAD — may be a
-   * forward draft ahead of the published default), or NULL if it's gone.
+   * Whether this entity moderates its translations INDEPENDENTLY.
    *
-   * $entityTypeId defaults to `node` so every existing Page/Block caller is
-   * unchanged; the block store passes `media` now that a global block is a media
-   * entity ({@see BlockStore}, DECISIONS 0138).
+   * TRUE for a translatable bundle on a multilingual site — then every
+   * translation has its own editable head (its latest translation-affecting
+   * revision) and a new revision is built with core's translation-aware
+   * {@see \Drupal\Core\Entity\ContentEntityStorageInterface::createRevision()},
+   * so publishing one language never publishes another language's pending
+   * draft. FALSE (monolingual site, or a bundle without content translation)
+   * keeps the whole-entity model: one head = the latest revision.
    */
-  public function latestVid(string $id, string $entityTypeId = 'node'): ?int {
-    $vid = $this->revisionStorage($entityTypeId)->getLatestRevisionId((int) $id);
+  public function isolatesTranslations(ContentEntityInterface $entity): bool {
+    return $entity->isTranslatable();
+  }
+
+  /**
+   * The editable HEAD revision id of one translation (may be a forward draft
+   * ahead of the published default), or NULL if the entity is gone.
+   *
+   * Per-language when {@see isolatesTranslations}: the latest revision that
+   * AFFECTED $langcode (core's `getLatestTranslationAffectedRevisionId()`), so
+   * an EN save never moves the DE head and vice versa. $langcode NULL means the
+   * SOURCE (default) translation. A translation that has never been written has
+   * no head of its own: it resolves to the DEFAULT revision, which is exactly
+   * the revision a new translation is built on (a pending source draft must not
+   * ride into another language's first save). Not isolated → the entity's latest
+   * revision, whatever language.
+   *
+   * $entityTypeId defaults to `node`; the block store passes `media`
+   * ({@see BlockStore}, DECISIONS 0138).
+   */
+  public function latestVid(string $id, string $entityTypeId = 'node', ?string $langcode = NULL): ?int {
+    $storage = $this->revisionStorage($entityTypeId);
+    $default = $storage->load((int) $id);
+    if ($default instanceof ContentEntityInterface
+      && $storage instanceof TranslatableRevisionableStorageInterface
+      && $this->isolatesTranslations($default)) {
+      $langcode ??= $default->getUntranslated()->language()->getId();
+      $vid = $storage->getLatestTranslationAffectedRevisionId((int) $id, $langcode);
+      return (int) ($vid ?? $default->getRevisionId());
+    }
+    $vid = $storage->getLatestRevisionId((int) $id);
     return $vid === NULL ? NULL : (int) $vid;
   }
 
   /**
-   * Load the LATEST revision of a moderated entity (the revision the studio
-   * edits), in the requested translation when present. This is the editable head
-   * — distinct from the default (published) revision the public route renders.
-   *
-   * Returns a {@see ContentEntityInterface} (a node for pages, a media entity for
-   * blocks), or NULL if it doesn't exist or isn't the expected bundle. Callers
-   * that need node-specific API re-narrow with `instanceof NodeInterface`.
+   * Load the raw editable HEAD revision of one translation ({@see latestVid}),
+   * in $langcode when that translation exists in it (else the untranslated
+   * entity). This is the base a WRITE starts from — pass it to
+   * {@see createRevision}. Reads use {@see loadLatestRevision}.
    */
-  public function loadLatestRevision(string $id, string $bundle, ?string $langcode = NULL, string $entityTypeId = 'node'): ?ContentEntityInterface {
-    $vid = $this->latestVid($id, $entityTypeId);
+  public function loadHead(string $id, string $bundle, ?string $langcode = NULL, string $entityTypeId = 'node'): ?ContentEntityInterface {
+    $vid = $this->latestVid($id, $entityTypeId, $langcode);
     if ($vid === NULL) {
       return NULL;
     }
@@ -79,6 +111,138 @@ final class NodeModeration {
       $entity = $entity->getTranslation($langcode);
     }
     return $entity;
+  }
+
+  /**
+   * Load the editable head of a moderated entity for READING (the revision the
+   * studio shows), in the requested translation when present — distinct from
+   * the default (published) revision the public route renders.
+   *
+   * The head of a non-source translation can be older than the default revision
+   * (another language was saved since). Its own fields are current, but the
+   * SOURCE translation riding in that old revision is not — and a symmetric
+   * translation inherits its layout from it. So the returned entity overlays the
+   * source translation's translatable fields from the DEFAULT revision: the same
+   * merge core's createRevision() performs on the next write, so what the studio
+   * shows is what that write will be based on. It is a read view: never save it
+   * (writes go through {@see loadHead} + {@see createRevision}).
+   *
+   * Returns a {@see ContentEntityInterface} (a node for pages, a media entity for
+   * blocks), or NULL if it doesn't exist or isn't the expected bundle. Callers
+   * that need node-specific API re-narrow with `instanceof NodeInterface`.
+   */
+  public function loadLatestRevision(string $id, string $bundle, ?string $langcode = NULL, string $entityTypeId = 'node'): ?ContentEntityInterface {
+    $entity = $this->loadHead($id, $bundle, $langcode, $entityTypeId);
+    if ($entity === NULL
+      || $entity->isDefaultRevision()
+      || $entity->isDefaultTranslation()
+      || !$this->isolatesTranslations($entity)) {
+      return $entity;
+    }
+    $default = $this->revisionStorage($entityTypeId)->load((int) $id);
+    if (!$default instanceof ContentEntityInterface) {
+      return $entity;
+    }
+    $view = clone $entity;
+    $source = $view->getUntranslated();
+    $skip = $this->mergeSkippedFields($view);
+    foreach ($default->getUntranslated()->getTranslatableFields(FALSE) as $name => $items) {
+      if (!in_array($name, $skip, TRUE)) {
+        $source->set($name, $items->getValue());
+      }
+    }
+    return $view;
+  }
+
+  /**
+   * Start the next revision of ONE translation: $head is the per-language head
+   * from {@see loadHead}, in the translation being written.
+   *
+   * Isolated ({@see isolatesTranslations}): core's translation-aware
+   * `createRevision()` — the active translation keeps its head values, every
+   * OTHER translation is taken from the current default revision, so the new
+   * revision carries no other language's pending draft. Not isolated: the
+   * whole-entity model, a new revision of $head itself.
+   *
+   * The `default` flag is derived from the workflow, never a hardcoded state:
+   * TRUE when $targetState is a default-revision state, or when the default
+   * revision isn't published yet (content_moderation's own rule — a draft of a
+   * never-published page IS the default). $targetState NULL (a content write
+   * that doesn't change state) uses the translation's current state.
+   * content_moderation re-derives the same flag on save; passing it here keeps
+   * the revision object honest in between.
+   */
+  public function createRevision(ContentEntityInterface $head, ?string $targetState = NULL): ContentEntityInterface {
+    $storage = $this->entityTypeManager->getStorage($head->getEntityTypeId());
+    if (!$this->isolatesTranslations($head) || !$storage instanceof ContentEntityStorageInterface) {
+      $head->setNewRevision(TRUE);
+      return $head;
+    }
+    return $storage->createRevision($head, $this->becomesDefault($head, $targetState ?? $this->state($head)));
+  }
+
+  /**
+   * Whether a revision moving $entity to $state becomes the default revision,
+   * per the entity's workflow (see {@see createRevision}). An unmoderated entity
+   * has no pending revisions — every save is the default.
+   */
+  public function becomesDefault(ContentEntityInterface $entity, string $state): bool {
+    $workflow = $this->moderationInformation->getWorkflowForEntity($entity);
+    if (!$workflow || !$workflow->getTypePlugin()->hasState($state)) {
+      return TRUE;
+    }
+    $definition = $workflow->getTypePlugin()->getState($state);
+    return ($definition instanceof ContentModerationState && $definition->isDefaultRevisionState())
+      || !$this->moderationInformation->isDefaultRevisionPublished($entity);
+  }
+
+  /**
+   * Mark ONLY $target's translation as affected by the revision about to be
+   * saved (no-op when not isolated).
+   *
+   * Core recomputes the flag from field changes, and a change to ANY
+   * untranslatable field (the revision co-authors, revision_graph's provenance
+   * field — both written on every save) counts as a change to every
+   * translation. Left alone, a DE save would become EN's head too and hide EN's
+   * own pending draft from the studio. Explicitly set flags are not recomputed.
+   */
+  public function pinAffectedTranslation(ContentEntityInterface $target): void {
+    if (!$this->isolatesTranslations($target)) {
+      return;
+    }
+    $written = $target->language()->getId();
+    foreach (array_keys($target->getTranslationLanguages()) as $langcode) {
+      $target->getTranslation($langcode)->setRevisionTranslationAffected($langcode === $written);
+    }
+  }
+
+  /**
+   * The translation a language-less write pinned to $baseVid is about, or NULL.
+   *
+   * A pure editorial transition carries the studio's `base_vid` but (from the
+   * console today) no langcode. When $baseVid is a revision that affected
+   * exactly one translation AND is still that translation's head, it can only
+   * have come from that language's studio — resolve to it. Anything else
+   * (ambiguous, stale, foreign) returns NULL and the caller falls back to the
+   * source translation, where a stale base still fails {@see assertHead}.
+   */
+  public function langcodeForBase(string $id, int $baseVid, string $entityTypeId = 'node'): ?string {
+    $revision = $this->revisionStorage($entityTypeId)->loadRevision($baseVid);
+    if (!$revision instanceof ContentEntityInterface
+      || (string) $revision->id() !== $id
+      || !$this->isolatesTranslations($revision)) {
+      return NULL;
+    }
+    $affected = [];
+    foreach (array_keys($revision->getTranslationLanguages()) as $langcode) {
+      if ($revision->getTranslation($langcode)->isRevisionTranslationAffected()) {
+        $affected[] = $langcode;
+      }
+    }
+    if (count($affected) !== 1) {
+      return NULL;
+    }
+    return $this->latestVid($id, $entityTypeId, $affected[0]) === $baseVid ? $affected[0] : NULL;
   }
 
   /**
@@ -178,12 +342,15 @@ final class NodeModeration {
    * and the node's current latest revision has moved past it — someone advanced
    * the document since the studio loaded it, so the write would clobber newer
    * work. A NULL $baseVid skips the check (create path / legacy callers).
+   *
+   * The head is $langcode's own ({@see latestVid}; NULL = the source), so a DE
+   * save is never rejected as stale because EN saved meanwhile, and vice versa.
    */
-  public function assertHead(string $id, ?int $baseVid, string $entityTypeId = 'node'): void {
+  public function assertHead(string $id, ?int $baseVid, string $entityTypeId = 'node', ?string $langcode = NULL): void {
     if ($baseVid === NULL) {
       return;
     }
-    $current = $this->latestVid($id, $entityTypeId);
+    $current = $this->latestVid($id, $entityTypeId, $langcode);
     if ($current !== $baseVid) {
       throw new RevisionConflictException($baseVid, $current);
     }
@@ -206,6 +373,23 @@ final class NodeModeration {
       'transitions' => $this->transitions($node),
       'base_vid' => (int) $node->getRevisionId(),
     ];
+  }
+
+  /**
+   * Fields never copied by the read overlay — the same revision bookkeeping
+   * core's createRevision() merge skips, plus the language keys.
+   *
+   * @return string[]
+   */
+  private function mergeSkippedFields(ContentEntityInterface $entity): array {
+    $type = $entity->getEntityType();
+    $skip = array_values($type->getRevisionMetadataKeys());
+    foreach (['id', 'revision', 'revision_translation_affected', 'langcode', 'default_langcode', 'uuid', 'bundle'] as $key) {
+      if ($type->hasKey($key)) {
+        $skip[] = $type->getKey($key);
+      }
+    }
+    return $skip;
   }
 
   private function revisionStorage(string $entityTypeId): RevisionableStorageInterface {

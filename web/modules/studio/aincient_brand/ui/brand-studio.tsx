@@ -28,6 +28,8 @@ import {
   subscribeBrandOverrides,
   setPendingFonts,
   reloadBrandPreview,
+  clearBrandDraftHistory,
+  setBrandRampContext,
   HandsOnMarker,
   apiUrl,
   consoleNav,
@@ -541,6 +543,8 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
       .then((data: Manifest) => {
         const saved = Object.fromEntries(data.tokens.map((t) => [t.css_var, t.current]));
         setManifest(data);
+        // step_token's ramps: the Tier-0 palette + the saved values it starts from.
+        setBrandRampContext({ palette: data.palette ?? [], saved });
         setBaseline(saved);
         setValues({ ...saved, ...getBrandOverrides() });
         // Status persists out-of-band from tokens, so re-seed it from the saved
@@ -715,6 +719,8 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
           if ((saved[cssVar] ?? "") === value) setBrandOverride(cssVar, "");
         }
         reloadBrandPreview();
+        // Published: undo must never resurrect a pre-Publish draft.
+        clearBrandDraftHistory();
         rejected = labelList(result?.rejected, tokens);
         const lowContrast = Array.isArray(result?.contrast_warnings) ? result.contrast_warnings.length : 0;
         contrastNote = lowContrast
@@ -813,6 +819,8 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
   // (`brand_state` brief) regardless of how the room resolves its active thread.
   const discard = () => {
     resetBrandOverrides();
+    // Discarded: undo must never resurrect the thrown-away draft.
+    clearBrandDraftHistory();
     setValues({ ...baseline });
     // Snap the identity half back to its saved baseline too (the compound draft).
     if (idBase) {

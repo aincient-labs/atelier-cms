@@ -124,6 +124,35 @@ echo "== assert: console reachability =="
 [ "$(http http://app/user/login)" = "200" ] && ok "/user/login 200"           || bad "/user/login not 200"
 [ "$(http http://app/atelier)" = "403" ]    && ok "/atelier 403 for anon"    || bad "/atelier not 403 for anon"
 
+echo "== assert: every studio manifest in the image is discovered =="
+# Regression guard for 0.16.0, which passed install, upgrade and owner-data checks
+# yet shipped with every built-in studio dropped: the manifest validator required
+# `ui.entry` sources that .dockerignore strips from the image, so discovery logged
+# a warning and skipped them. Only the image shows this — the dev tree has the
+# sources. Assert discovery found every studio an installed module's
+# `<module>.studios.yml` declares, and that no manifest has errors in the image.
+studio_check="$(drush php:eval '
+  $m = \Drupal::service("plugin.manager.aincient.studios");
+  $found = array_keys($m->getDefinitions());
+  $out = [];
+  foreach (\Drupal::moduleHandler()->getModuleDirectories() as $module => $dir) {
+    if (!is_file("$dir/$module.studios.yml")) { continue; }
+    foreach ($m->manifestErrors($module) as $id => $errors) {
+      if ($errors !== []) { $out[] = "$module:$id invalid: " . implode("; ", $errors); }
+      elseif (!in_array($id, $found, TRUE)) { $out[] = "$module:$id not discovered"; }
+      else { $out[] = "ok $id"; }
+    }
+  }
+  print implode("\n", $out);
+' 2>&1)" || true
+studio_ok="$(printf '%s\n' "$studio_check" | grep -c '^ok ' || true)"
+studio_bad="$(printf '%s\n' "$studio_check" | grep -v '^ok ' | grep -v '^$' || true)"
+if [ -z "$studio_bad" ] && [ "$studio_ok" -gt 0 ]; then
+  ok "all $studio_ok manifest studios discovered, no manifest errors"
+else
+  bad "studio discovery in the image (found $studio_ok ok):"; printf '%s\n' "$studio_bad" | sed 's/^/      /'
+fi
+
 echo "== assert: default brand seeded (config/install is skipped by --existing-config) =="
 # Regression guard: aincient_pages.brand is config-ignored, so it must ship in
 # config/sync to survive a fresh install-from-config — a module config/install
@@ -146,6 +175,35 @@ if [ -z "$strays" ]; then ok "no non-www-data paths under files/"; else bad "roo
 # upload landing in a month dir / an image style writing a derivative subtree.
 if "${COMPOSE[@]}" exec -T -u www-data app sh -c 'd=/opt/drupal/web/sites/default/files/.smoke/styles; mkdir -p "$d" && touch "$d/probe" && rm -rf /opt/drupal/web/sites/default/files/.smoke' 2>/dev/null; then
   ok "www-data can write a nested subtree under files/"; else bad "www-data CANNOT write under files/ (broken uploads/thumbnails)"; fi
+
+echo "== assert: the image's ImageMagick can WRITE avif + webp =="
+# image_convert_avif silently falls back to its WebP extension when the toolkit
+# can't encode AVIF, so a delegate regression is invisible without this check.
+# Dockerfile builds ImageMagick 7 (`magick`) WITHOUT modules, so `-list format`
+# has no module column (`AVIF  rw+`); a modular build (Debian IM6) prints one
+# (`AVIF  HEIC  rw+`) — accept both. Then actually ENCODE each format (as www-data,
+# the user that renders derivatives) and check the magic bytes: a listed coder
+# can still lack its encoder plugin at runtime.
+im_formats="$("${COMPOSE[@]}" exec -T app magick -list format 2>&1)" || true
+im_listed() { printf '%s\n' "$im_formats" | grep -qE "^[[:space:]]*$1\\*?[[:space:]]+([A-Z0-9]+[[:space:]]+)?rw"; }
+im_encode() {
+  "${COMPOSE[@]}" exec -T -u www-data app sh -c \
+    "magick -size 8x8 xc:red /tmp/smoke-probe.$1 && od -An -c -N 12 /tmp/smoke-probe.$1 | tr -d ' \\n'; rm -f /tmp/smoke-probe.$1" 2>/dev/null
+}
+for fmt in avif webp; do
+  FMT="$(printf '%s' "$fmt" | tr '[:lower:]' '[:upper:]')"
+  head="$(im_encode "$fmt")" || head=""
+  case "$fmt:$head" in
+    avif:*ftypavif*|avif:*ftypavis*|webp:RIFF*WEBP*) enc=1 ;;
+    *) enc=0 ;;
+  esac
+  if im_listed "$FMT" && [ "$enc" = 1 ]; then
+    ok "ImageMagick lists and encodes $FMT"
+  else
+    bad "ImageMagick in the image cannot write $FMT (listed: $(im_listed "$FMT" && echo yes || echo no), header: ${head:-none}) — image styles would silently fall back or fail"
+    printf '%s\n' "$im_formats" | grep -iE "^[[:space:]]*$FMT" | sed 's/^/      /'
+  fi
+done
 
 echo "== assert: upgrade branch (recreate on same DB) =="
 # Clear the prior converge result so we read THIS upgrade's outcome, not the

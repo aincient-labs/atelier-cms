@@ -68,6 +68,7 @@ nodes:
       label: 'Reason (agent step)'
       config:
         model: ''
+        operation_type: 'aincient_role:task'
         temperature: 0
         maxTokens: 8192
         systemPrompt: ''

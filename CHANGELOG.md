@@ -7,6 +7,34 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.17.0] — 2026-10-04
+
+**For pack authors: the old style variable names are gone.** As announced in 0.16, the console's
+old `--ain-*` names (`--ain-bg`, `--ain-text`, `--ain-text-dim`, `--ain-accent`, `--ain-border`, …)
+no longer resolve to anything, so pack CSS that still uses them silently falls back to browser
+defaults. Switch to the new names, for example `--ain-color-bg`, `--ain-color-text`,
+`--ain-color-text-muted`, `--ain-color-accent` and `--ain-color-border`. The full old → new list is
+the `RETIRED` map in `web/modules/custom/aincient_chat/chat-ui/scripts/gen-tokens.mjs`.
+
+**Each language publishes on its own.** Every language of a page keeps its own draft. Publishing the
+German page puts only the German changes live; an English draft you are still working on stays a
+draft until you publish it in English. Each language also keeps its own post date, and blog listings
+sort by it.
+
+**Translate reusable blocks.** Blocks now have the same language menu as pages. Translate a block's
+words in each language. The block keeps one layout across languages, and every page that uses it
+shows it in the visitor's language.
+
+**Drafts say what changed.** Each saved draft records what was edited (sections added, removed, moved
+or changed, a new title or image) instead of a generic "saved" line. You can read these on the page's
+Revisions tab in Drupal.
+
+**Reorder rows inside a section.** Feature cards, FAQ items, pricing tiers and other lists inside a
+section can be dragged into a new order, or moved up and down with the keyboard.
+
+**Security:** the Markdown library is updated to fix a slowdown that crafted tables could trigger and
+a way past its raw-HTML filter.
+
 ## [0.16.3] — 2026-10-03
 
 **Links to a conversation open that conversation.** When you open a chat in the console, its link

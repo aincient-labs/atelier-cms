@@ -12,6 +12,8 @@
  */
 
 export type BrandCardCopySource = {
+  /** The typed form (plans/studio-commands.md P1); counted instead of the fields below. */
+  commands?: readonly { verb: string; args?: unknown }[];
   tokens?: Record<string, string>;
   fonts?: string[];
   reset?: boolean;
@@ -24,14 +26,30 @@ export function brandPreviewCardText(payload: BrandCardCopySource): {
   note: string;
 } {
   const historical = payload.__historical === true;
-  const count = Object.keys(payload.tokens ?? {}).length + (payload.fonts?.length ?? 0);
+  const { count, reset } = Array.isArray(payload.commands)
+    ? countCommands(payload.commands)
+    : { count: Object.keys(payload.tokens ?? {}).length + (payload.fonts?.length ?? 0), reset: payload.reset };
   return {
     historical,
-    label: payload.reset
+    label: reset
       ? "Reverted the preview to the saved brand"
       : `Applied to preview · ${count} change${count === 1 ? "" : "s"}`,
     note: historical
       ? "staged earlier — no longer active"
       : "Preview only — Publish in the studio to apply it site-wide",
   };
+}
+
+/** Changes in a command batch, counted the way the legacy payload was: one per token, one per font. */
+function countCommands(commands: readonly { verb: string; args?: unknown }[]): { count: number; reset: boolean } {
+  let count = 0;
+  let reset = false;
+  for (const c of commands) {
+    const args = (c.args ?? {}) as { tokens?: Record<string, unknown>; fonts?: unknown[] };
+    if (c.verb === "reset") reset = true;
+    else if (c.verb === "set_tokens") count += Object.keys(args.tokens ?? {}).length;
+    else if (c.verb === "set_fonts") count += Array.isArray(args.fonts) ? args.fonts.length : 0;
+    else if (c.verb === "step_token") count += 1;
+  }
+  return { count, reset };
 }

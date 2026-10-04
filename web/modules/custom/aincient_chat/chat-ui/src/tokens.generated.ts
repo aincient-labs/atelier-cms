@@ -85,8 +85,8 @@ export type ComponentToken = (typeof COMPONENT_TOKENS)[number];
 /** Every token a stylesheet outside the system tier may use. */
 export type ConsoleToken = SystemToken | ComponentToken;
 
-/** Pre-0438 names, aliased for one release (removed after 0.16.0) and refused by the studio CSS rule. */
-export const DEPRECATED_TOKENS: Readonly<Record<string, ConsoleToken>> = {
+/** Pre-0438 names, retired in 0.17.0 (no stylesheet defines them) — refused by the studio CSS rule, which names the replacement. */
+export const RETIRED_TOKENS: Readonly<Record<string, ConsoleToken>> = {
   "--ain-bg": "--ain-color-bg",
   "--ain-surface": "--ain-color-surface",
   "--ain-surface-2": "--ain-color-surface-raised",

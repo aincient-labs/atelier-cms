@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ComponentType } from "react";
 import { createStudioLoader } from "./studio-loader";
+import { createCommandSurface } from "./sdk/commands";
+import type { AnyCommandSurface } from "./sdk/commands";
 import type { StudioDef, StudioUiModule } from "./studio-module";
 
 /**
@@ -102,6 +104,34 @@ describe("studio loader", () => {
     await p;
     expect(loader.toolUIs().map((t) => t.key)).toEqual(["media:0", "media:1"]);
     expect(b.load).not.toHaveBeenCalled();
+  });
+
+  it("collects the loaded studios' Commands keyed by studio id, and only the loaded ones", async () => {
+    const surface = (studio: string): AnyCommandSurface =>
+      createCommandSurface({ studio, descriptors: [], getDraft: () => ({}), setDraft: () => {}, apply: (d) => d });
+    const brand = surface("design_system");
+    const a = deferred();
+    const b = deferred();
+    const c = deferred();
+    const loader = createStudioLoader(() =>
+      rows({
+        design_system: { name: "Identity", Icon, load: a.load },
+        media: { name: "Library", Icon, load: b.load },
+        content: { name: "Content", Icon, load: c.load },
+      }),
+    );
+    expect(loader.commands()).toEqual({});
+    const pa = loader.load("design_system");
+    a.resolve({ Studio: Rail, Commands: brand });
+    await pa;
+    const pb = loader.load("media");
+    b.resolve({ Studio: Rail, ToolUIs: [Card] }); // no Commands
+    await pb;
+    expect(loader.commands()).toEqual({ design_system: brand });
+    expect(loader.commandsFor("design_system")).toBe(brand);
+    expect(loader.commandsFor("media")).toBeUndefined();
+    expect(loader.commandsFor("content")).toBeUndefined(); // not loaded
+    expect(c.load).not.toHaveBeenCalled();
   });
 
   it("preloads every not-yet-requested studio, one after another, at idle", async () => {

@@ -131,6 +131,14 @@ services:
       - '@logger.channel.aincient_chat'
       - '@aincient_chat.workflow_catalog'
       - '@aincient_chat.stale_turn_recovery'
+      - '@aincient_chat.turn_scratchpad_sweeper'
+
+  # Drops a finished turn's per-turn tool scratchpad (tier B; hygiene only —
+  # the next turn is a new pipeline). Best-effort; never on a paused turn.
+  aincient_chat.turn_scratchpad_sweeper:
+    class: Drupal\aincient_chat\Chat\TurnScratchpadSweeper
+    arguments:
+      - '@logger.channel.aincient_chat'
 
   # Releases a thread whose turn died without ending. FlowDrop's turn guard
   # gates on session status alone, so a vanished process leaves the thread

@@ -6,6 +6,8 @@ import {
   PlusIcon,
   ChevronDownIcon,
   GripIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
   MoreHorizontalIcon,
   ShieldCheckIcon,
   StudioActionsPortal,
@@ -77,6 +79,7 @@ import { useConsoleChat } from "@console/aui";
 import { SeoMetaGroup } from "./seo-meta-group";
 import { TeaserGroup } from "./teaser-group";
 import { BlogGroup } from "./blog-group";
+import { moveItem } from "./move-item";
 
 /** One site language (GET /atelier/page/manifest → translation.languages). */
 type Lang = { id: string; label: string; default: boolean };
@@ -611,8 +614,8 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
     setInsertAt(null);
     const to = index + delta;
     if (to < 0 || to >= sections.length) return;
-    const next = [...sections];
-    [next[index], next[to]] = [next[to], next[index]];
+    // Adjacent move: moveItem by ±1 is the swap.
+    const next = moveItem(sections, index, to);
     // Swap the two cards' open flags so a card stays open as it moves.
     setExpanded((prev) => {
       const set = new Set(prev);
@@ -632,9 +635,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
     if (layoutLocked || from === to || from < 0 || from >= sections.length) return;
     if (to < 0 || to >= sections.length) return;
     setInsertAt(null);
-    const next = [...sections];
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved);
+    const next = moveItem(sections, from, to);
     // Remap the open flags so each card's expansion follows it across the splice.
     setExpanded((prev) => {
       const set = new Set<number>();
@@ -652,9 +653,9 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
     commit({ ...draft, sections: next });
   };
 
-  // The langcode a write targets — pages carry per-language governance, blocks
-  // never do (a block is language-neutral). Centralised so every handler agrees.
-  const writeLang = !isBlock ? lang : null;
+  // The langcode a write targets (null = the source). Pages and blocks both
+  // translate per language. Centralised so every handler agrees.
+  const writeLang = lang;
 
   // Fold a write's returned envelope into the studio: adopt the saved schema as
   // the clean baseline, remember the (maybe newly-minted) node + url, track a
@@ -668,7 +669,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
         setPageNode(id);
       }
       if (!isBlock) setPageUrl(typeof result?.url === "string" ? (result.url as string) : null);
-      if (!isBlock && lang && !translations.includes(lang)) setTranslations((t) => [...t, lang]);
+      if (lang && !translations.includes(lang)) setTranslations((t) => [...t, lang]);
       reloadPreview();
     },
     [draft, isBlock, lang, translations],
@@ -770,7 +771,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
       }
       const result = await publishDoc(draft, kind, node, writeLang);
       absorbWrite(result);
-      const what = isBlock ? "Block" : lang ? `${langLabel} translation` : "Page";
+      const what = lang ? `${langLabel} translation` : isBlock ? "Block" : "Page";
       setNotice({ text: `${what} published`, url: typeof result?.url === "string" ? (result.url as string) : undefined });
       offerWrapup(runtime.activeThread().remoteId, wrapupRef(result));
     } catch (e) {
@@ -821,7 +822,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
       setConflict(null);
       return;
     }
-    const reload = isBlock ? loadBlockIntoStudio(nodeId) : loadPageIntoStudio(nodeId, writeLang);
+    const reload = isBlock ? loadBlockIntoStudio(nodeId, writeLang) : loadPageIntoStudio(nodeId, writeLang);
     void reload
       .then(() => setConflict(null))
       .catch((e) => setError(`Couldn’t reload: ${e instanceof Error ? e.message : e}`));
@@ -852,7 +853,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const loadLang = useCallback(
     (target: string | null) => {
       if (!nodeId) return;
-      void loadPageIntoStudio(nodeId, target)
+      void (isBlock ? loadBlockIntoStudio(nodeId, target) : loadPageIntoStudio(nodeId, target))
         .then(() =>
           consoleNav.adoptRoom({ kind: "node", doc: isBlock ? "block" : "page", nid: Number(nodeId), langcode: target }),
         )
@@ -1067,7 +1068,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                 </button>
               </div>
             )}
-            {kind === "page" && multilingual && nodeId && (
+            {multilingual && nodeId && (
               <Button
                 onClick={() => setSwitchingLang((s) => !s)}
                 disabled={publishing}
@@ -1261,7 +1262,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
               <span className="ain-studio__langnotetxt">
                 Layout inherited from <strong>{sourceLabel}</strong> — translate the copy here; layout edits follow the source.
               </span>
-              {allowDivergence && (
+              {allowDivergence && !isBlock && (
                 <Button
                   onClick={() => flipMode("asymmetric")}
                   disabled={publishing || readOnly}
@@ -2122,15 +2123,74 @@ function RowsControl({
   const addRow = () => onChange([...value, Object.fromEntries(fields.map((f) => [f, ""]))]);
   const removeRow = (rowIdx: number) => onChange(value.filter((_, i) => i !== rowIdx));
 
+  // Reorder — the section stack's two paths, at row scale: a hover grip that
+  // drags (any row is a drop target) and keyboard move up / move down buttons.
+  // Same onChange → page-state draft path as an edit; nothing server-side.
+  const rowsRef = useRef<HTMLDivElement>(null);
+  const dragRow = useRef<number | null>(null);
+  // After a button move, focus follows the moved row (same control, or its
+  // sibling when that one is now disabled at an end of the list).
+  const pendingFocus = useRef<{ index: number; dir: "up" | "down" } | null>(null);
+  const moveRow = (from: number, to: number, dir?: "up" | "down") => {
+    const next = moveItem(value, from, to);
+    if (next === value) return;
+    if (dir) pendingFocus.current = { index: to, dir };
+    onChange(next);
+  };
+  useEffect(() => {
+    const p = pendingFocus.current;
+    if (!p || !rowsRef.current) return;
+    pendingFocus.current = null;
+    const row = rowsRef.current.querySelector(`[data-row-index="${p.index}"]`);
+    const pick = (dir: string) =>
+      row?.querySelector<HTMLButtonElement>(`[data-row-move="${dir}"]:not(:disabled)`);
+    (pick(p.dir) ?? pick(p.dir === "up" ? "down" : "up"))?.focus();
+  }, [value]);
+
   return (
     <div className="ain-field" data-dirty={dirty || undefined}>
       <span className="ain-field__label">
         <span className="ain-field__labeltext">{humanize(prop.name)}</span>
         {revert}
       </span>
-      <div className="ain-rows">
+      <div className="ain-rows" ref={rowsRef}>
         {value.map((row, rowIdx) => (
-          <div className="ain-row" key={rowIdx}>
+          <div
+            className="ain-row ain-content-row"
+            key={rowIdx}
+            data-row-index={rowIdx}
+            // Any row of THIS list is a drop target while one of its grips
+            // drags; a drag from elsewhere (a section grip) bubbles on.
+            onDragOver={(e) => {
+              if (dragRow.current !== null) e.preventDefault();
+            }}
+            onDrop={(e) => {
+              if (dragRow.current === null) return;
+              e.preventDefault();
+              e.stopPropagation();
+              moveRow(dragRow.current, rowIdx);
+              dragRow.current = null;
+            }}
+          >
+            {value.length > 1 && (
+              <span
+                className="ain-content-row__grip"
+                draggable
+                aria-hidden
+                title="Drag to reorder"
+                onDragStart={(e) => {
+                  e.stopPropagation();
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", String(rowIdx));
+                  dragRow.current = rowIdx;
+                }}
+                onDragEnd={() => {
+                  dragRow.current = null;
+                }}
+              >
+                <GripIcon />
+              </span>
+            )}
             <div className="ain-row__fields">
               {fields.map((field) =>
                 imageProps.has(field) ? (
@@ -2163,12 +2223,34 @@ function RowsControl({
                 ),
               )}
             </div>
-            <IconButton
-              label="Remove row" className="ain-row__del"
-              onClick={() => removeRow(rowIdx)}
-            >
-              <XIcon />
-            </IconButton>
+            <div className="ain-content-row__actions">
+              <IconButton
+                label="Remove row" className="ain-row__del"
+                onClick={() => removeRow(rowIdx)}
+              >
+                <XIcon />
+              </IconButton>
+              {value.length > 1 && (
+                <>
+                  <IconButton
+                    label="Move row up" className="ain-content-row__move"
+                    data-row-move="up"
+                    disabled={rowIdx === 0}
+                    onClick={() => moveRow(rowIdx, rowIdx - 1, "up")}
+                  >
+                    <ArrowUpIcon />
+                  </IconButton>
+                  <IconButton
+                    label="Move row down" className="ain-content-row__move"
+                    data-row-move="down"
+                    disabled={rowIdx === value.length - 1}
+                    onClick={() => moveRow(rowIdx, rowIdx + 1, "down")}
+                  >
+                    <ArrowDownIcon />
+                  </IconButton>
+                </>
+              )}
+            </div>
           </div>
         ))}
         <button type="button" className="ain-chip" onClick={addRow}>

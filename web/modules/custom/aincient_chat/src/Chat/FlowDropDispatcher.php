@@ -117,6 +117,7 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     private readonly LoggerInterface $logger,
     private readonly WorkflowCatalog $catalog,
     private readonly StaleTurnRecovery $staleTurns,
+    private readonly TurnScratchpadSweeper $scratchpadSweeper,
   ) {}
 
   /**
@@ -209,6 +210,10 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
       yield ChatEvent::error('The flow hit an unexpected error. Please try again.');
       return;
     }
+
+    // Tier-B hygiene: a terminal turn's scratchpad is dead weight. Paused and
+    // awaiting-input turns continue in the same pipeline and keep it.
+    $this->scratchpadSweeper->dropIfTerminal((string) $turn->status, $turn->pipelineId);
 
     switch ($turn->status) {
       case $turn::STATUS_AWAITING_INPUT:
@@ -358,6 +363,11 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
       );
       return;
     }
+
+    // No further interrupt, but the resumed run may still be non-terminal (e.g.
+    // a budget pause), so drop the scratchpad only on the pipeline's real
+    // status — the same rule as dispatch(). Unreadable status: keep (TTL).
+    $this->scratchpadSweeper->dropIfTerminal($this->pipelineStatus($pipelineId), $pipelineId);
 
     // Surface any tool-produced widgets first (e.g. an approved weather lookup),
     // then the agent's prose — mirrors the completed path in dispatch().
@@ -818,6 +828,26 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     }
     $message = $storage->load((int) reset($ids));
     return $message !== NULL ? (int) $message->getSequenceNumber() : NULL;
+  }
+
+  /**
+   * A pipeline's status string, or 'unknown' when it cannot be read.
+   */
+  private function pipelineStatus(?string $pipelineId): string {
+    try {
+      if ($pipelineId === NULL || $pipelineId === '') {
+        return 'unknown';
+      }
+      $pipeline = \Drupal::entityTypeManager()
+        ->getStorage('flowdrop_pipeline')
+        ->load($pipelineId);
+      return $pipeline !== NULL && method_exists($pipeline, 'getStatus')
+        ? (string) $pipeline->getStatus()
+        : 'unknown';
+    }
+    catch (\Throwable) {
+      return 'unknown';
+    }
   }
 
   /**

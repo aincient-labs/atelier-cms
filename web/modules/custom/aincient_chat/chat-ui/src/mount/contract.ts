@@ -19,7 +19,7 @@
  *
  * Styling: the rail sits in the console's DOM, so the system `--ain-*` tokens
  * and the light/dark mode are inherited for free. Read SYSTEM tokens only
- * (`--ain-surface`, `--ain-text`, …) — never `--ain-ref-*` and never the kit's
+ * (`--ain-color-surface`, `--ain-color-text`, …) — never `--ain-ref-*` and never the kit's
  * classes; those are ours to move.
  *
  * WHAT WE PROMISE NOT TO BREAK within `apiVersion` 1: the `mount` / `unmount`

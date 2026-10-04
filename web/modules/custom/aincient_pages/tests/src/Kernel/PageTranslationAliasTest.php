@@ -179,20 +179,24 @@ final class PageTranslationAliasTest extends KernelTestBase {
    * A German draft written while the source is published is a FORWARD draft:
    * pathauto skips non-default revisions, so it correctly has no alias yet.
    * Publishing it through the editorial workflow (submit → approve) names no
-   * langcode — the store must still alias every translation on that save.
+   * langcode — translations are moderated independently (M9), so the DE
+   * studio's base_vid identifies the translation, and the store must still
+   * alias it on that save.
    */
   public function testTranslationPublishedByEditorialTransitionGetsItsAlias(): void {
     $id = $this->store()->store($this->schema('Pricing'));
     $this->store()->publish($id, $this->schema('Pricing'));
     $this->assertSame('/pricing', $this->aliasFor($id, 'en'));
 
-    $this->assertNotNull($this->store()->saveDraft($this->schema('Preise'), $id, 'de'));
+    $draft = $this->store()->saveDraft($this->schema('Preise'), $id, 'de');
+    $this->assertNotNull($draft);
     $this->assertNull($this->aliasFor($id, 'de'), 'A forward draft has no alias.');
 
-    $this->assertNotNull($this->store()->transition($id, 'submit_for_review'));
+    $review = $this->store()->transition($id, 'submit_for_review', $draft['base_vid']);
+    $this->assertNotNull($review);
     $this->assertNull($this->aliasFor($id, 'de'), 'Still a non-default revision.');
 
-    $this->assertNotNull($this->store()->transition($id, 'approve'));
+    $this->assertNotNull($this->store()->transition($id, 'approve', $review['base_vid']));
     $this->assertSame('/preise', $this->aliasFor($id, 'de'));
     $this->assertSame('/pricing', $this->aliasFor($id, 'en'));
   }

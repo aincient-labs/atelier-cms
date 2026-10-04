@@ -92,35 +92,6 @@
   --ain-color-accent-tint: color-mix(in oklch, var(--ain-color-accent) 16%, transparent);
   /** Focus is a tint ring, never a halo (Law 04). */
   --ain-color-focus-ring: var(--ain-color-accent);
-
-  /* Deprecated aliases (pre-0438 names) — removed in the release after 0.16.0. */
-  --ain-bg: var(--ain-color-bg);
-  --ain-surface: var(--ain-color-surface);
-  --ain-surface-2: var(--ain-color-surface-raised);
-  --ain-border: var(--ain-color-border);
-  --ain-border-strong: var(--ain-color-border-strong);
-  --ain-text: var(--ain-color-text);
-  --ain-text-dim: var(--ain-color-text-muted);
-  --ain-text-faint: var(--ain-color-text-faint);
-  --ain-accent: var(--ain-color-accent);
-  --ain-accent-2: var(--ain-color-warning);
-  --ain-accent-hover: var(--ain-color-accent-hover);
-  --ain-accent-muted: var(--ain-color-accent-tint);
-  --ain-on-accent: var(--ain-color-on-accent);
-  --ain-jade: var(--ain-color-success);
-  --ain-danger: var(--ain-color-danger);
-  --ain-shadow: var(--ain-color-shadow);
-  --ain-band-1: var(--ain-mark-band-1);
-  --ain-band-2: var(--ain-mark-band-2);
-  --ain-band-3: var(--ain-mark-band-3);
-  --ain-band-4: var(--ain-mark-band-4);
-  --ain-radius: var(--ain-radius-md);
-  --ain-max: var(--ain-size-column-max);
-  --ain-sidebar-w: var(--ain-sidebar-width);
-  --ain-topbar-h: var(--ain-topbar-height);
-  --ain-bar-h: var(--ain-panel-bar-height);
-  --ain-font: var(--ain-font-body);
-  --ain-mono: var(--ain-font-mono);
 }
 
 #aincient-chat-root[data-ain-theme="light"] {

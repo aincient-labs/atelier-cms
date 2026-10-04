@@ -2,7 +2,8 @@
  * `@console/sdk` — the console hooks a studio legitimately needs (DECISIONS 0430;
  * plans/studio-modules.md, "Front end: source-only split").
  *
- * RE-EXPORTS ONLY. Nothing here moved or was wrapped: each name below is the real
+ * RE-EXPORTS ONLY (one exception: the studio-commands contract at the bottom,
+ * which lives in `./commands` + `./validate`). Nothing here moved or was wrapped: each name below is the real
  * implementation in its console file, listed so a studio has ONE place to import
  * it from. That listing is the point — a console-internal rename (or a deletion)
  * then breaks THIS file at build time, where without it the same rename would
@@ -222,10 +223,14 @@ export {
   getPendingFonts,
   reloadPreview as reloadBrandPreview,
   subscribePreviewReload as subscribeBrandPreviewReload,
+  clearBrandDraftHistory,
 } from "../brand-state";
-export type { BrandOverrides } from "../brand-state";
-export { applyBrandPreviewOps } from "../brand-preview-ops";
-export type { BrandPreviewPayload } from "../brand-preview-ops";
+export type { BrandOverrides, BrandDraft } from "../brand-state";
+// The Identity command surface (plans/studio-commands.md P1): core-owned so the
+// adapter applies preview frames before the studio chunk loads; the studio
+// exports it as `Commands` and feeds `step_token` its palette ramps.
+export { applyBrandPreviewOps, brandCommands, setBrandRampContext } from "../brand-preview-ops";
+export type { BrandPreviewPayload, BrandCommand, BrandRampContext } from "../brand-preview-ops";
 
 // Sealing a thread from a rail's own Publish (Identity's compound publish seals
 // and resets the brand conversation itself rather than offering the wrap-up
@@ -233,3 +238,25 @@ export type { BrandPreviewPayload } from "../brand-preview-ops";
 // Identity (Phase E.5).
 export { rememberThreadSeal } from "../thread-seal";
 export { resetThreadMemory, sealThread } from "../adapter";
+
+// Studio commands (plans/studio-commands.md P0, DECISIONS 0447): the typed,
+// transport-free command contract a studio exports as `Commands`, its one batch
+// executor, and the arg validator. SDK-NATIVE — the one block here that is not
+// a re-export: the contract exists for studios, so it lives where they import it.
+export { createCommandSurface, createMemoryHistory, commandFailure, defineCommand } from "./commands";
+export type {
+  AnyCommandSurface,
+  Command,
+  CommandDescriptor,
+  CommandErrorCode,
+  CommandFailure,
+  CommandHistory,
+  CommandOf,
+  CommandSurfaceOptions,
+  DescriptorFor,
+  ExecuteResult,
+  StudioCommandSurface,
+  UndoResult,
+} from "./commands";
+export { validateArgs } from "./validate";
+export type { JsonSchema, JsonSchemaType, ValidationIssue } from "./validate";

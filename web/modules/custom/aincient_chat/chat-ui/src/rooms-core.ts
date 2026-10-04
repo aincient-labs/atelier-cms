@@ -42,9 +42,9 @@ export type Room =
   | { kind: "draft"; thread?: string }
   /**
    * A Content document room. `doc` distinguishes the two Content editables — an
-   * `aincient_page` (`loadPageIntoStudio`, translatable so it carries a langcode)
-   * or a global `aincient_block` (`loadBlockIntoStudio`, language-neutral). Both
-   * edit in the Content studio.
+   * `aincient_page` (`loadPageIntoStudio`) or a global `aincient_block`
+   * (`loadBlockIntoStudio`). Both are translatable, so both carry a langcode, and
+   * both edit in the Content studio.
    */
   | { kind: "node"; doc: "page" | "block"; nid: number; langcode: string | null; title?: string }
   /**

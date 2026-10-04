@@ -1,4 +1,5 @@
 import type { ComponentType, SVGProps } from "react";
+import type { AnyCommandSurface } from "./sdk/commands";
 
 /**
  * The contract a studio module's front end satisfies (DECISIONS 0430), in two
@@ -13,7 +14,7 @@ import type { ComponentType, SVGProps } from "react";
  * paint, before any studio code has loaded.
  *
  * THE LAZY HALF is `ui.entry`'s named exports — `Studio`, and optionally
- * `Preview` and `ToolUIs` — which the build compiles into that module's own
+ * `Preview`, `ToolUIs` and `Commands` — which the build compiles into that module's own
  * chunk (Phase C of plans/studio-modules.md; `vite.chunks.ts`). The chunk is
  * fetched the first time the studio opens, or at idle for its chat cards
  * (`studio-loader.ts`). A studio with no `ui.entry` is chat-only and has no
@@ -41,6 +42,13 @@ export type StudioUiModule = {
    * studio was switched off.
    */
   ToolUIs?: readonly ComponentType[];
+  /**
+   * The studio's typed command set over its own draft (plans/studio-commands.md,
+   * DECISIONS 0447) — built with the sdk's `createCommandSurface`. The loader
+   * collects it keyed by studio id for the adapters (chat frames, WebMCP). A
+   * studio never imports another's commands (the import fence).
+   */
+  Commands?: AnyCommandSurface;
 };
 
 /**

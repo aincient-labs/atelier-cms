@@ -191,3 +191,16 @@
   box-shadow: 0 1px 4px -1px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
 }
 .ain-content-facet__btn:not([aria-pressed="true"]):hover { color: var(--ain-color-text); }
+
+/* Repeatable rows: a hover grip (drag) + a stacked remove / move up / move down
+   column. Same grip idiom as the section stack; the buttons are the keyboard
+   path, always in the tab order. */
+.ain-content-row__grip {
+  flex: none; display: grid; place-items: center; width: 14px; align-self: stretch;
+  color: var(--ain-color-text-faint); cursor: grab; visibility: hidden;
+}
+.ain-content-row__grip svg { width: 13px; height: 13px; }
+.ain-content-row:hover > .ain-content-row__grip { visibility: visible; }
+.ain-content-row__grip:active { cursor: grabbing; }
+.ain-content-row__actions { flex: none; display: flex; flex-direction: column; gap: 2px; }
+.ain-content-row__move svg { width: 13px; height: 13px; }

@@ -16,7 +16,17 @@
  * the overrides on discard.
  */
 
+import { createMemoryHistory } from "./sdk/commands";
+import type { CommandHistory } from "./sdk/commands";
+
 export type BrandOverrides = Record<string, string>;
+
+/**
+ * The whole draft as one value — what the Identity command surface
+ * (brand-preview-ops.ts, plans/studio-commands.md P1) reads, replaces and keeps
+ * history of. `fonts` is null when nothing is staged.
+ */
+export type BrandDraft = { tokens: BrandOverrides; fonts: string[] | null };
 
 let current: BrandOverrides = {};
 let pendingFonts: string[] | null = null;
@@ -47,6 +57,39 @@ export function resetBrandOverrides(): void {
 export function setPendingFonts(fonts: string[] | null): void {
   pendingFonts = fonts && fonts.length ? fonts : null;
   emit();
+}
+
+/** A copy of the whole draft (tokens + staged fonts). */
+export function getBrandDraft(): BrandDraft {
+  return { tokens: { ...current }, fonts: pendingFonts ? [...pendingFonts] : null };
+}
+
+/**
+ * Replace the whole draft in one step (one notify). The command surface's
+ * commit and undo go through here, so a batch repaints the preview once.
+ */
+export function setBrandDraft(draft: BrandDraft): void {
+  current = { ...draft.tokens };
+  pendingFonts = draft.fonts && draft.fonts.length ? [...draft.fonts] : null;
+  emit();
+}
+
+/**
+ * Undo history for the draft: one entry per mutating command BATCH (a whole
+ * brand_preview apply is one batch), pushed by the Identity command surface.
+ * Direct writes above (the rail's sliders, a discard) record nothing — undo
+ * restores the draft from before the last batch.
+ */
+export const brandDraftHistory: CommandHistory<BrandDraft> = createMemoryHistory<BrandDraft>();
+
+/**
+ * Forget every undo entry. The studio calls it on Discard and after a
+ * successful Publish: undo must never resurrect a draft from before either.
+ */
+export function clearBrandDraftHistory(): void {
+  while (brandDraftHistory.pop() !== undefined) {
+    /* drain */
+  }
 }
 
 /** The fonts staged for the next Publish, if any. */

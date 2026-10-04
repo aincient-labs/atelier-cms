@@ -83,3 +83,18 @@ describe("pageDeepLink", () => {
     expect(pageDeepLink("content", "5", "/atelier", null)).toBe("/atelier/content/node/5");
   });
 });
+
+describe("block room ↔ path", () => {
+  it("round-trips a block translation like a page translation", () => {
+    at("/atelier/content/block/9/de");
+    const { room } = parseUrl();
+    expect(room).toEqual({ kind: "node", doc: "block", nid: 9, langcode: "de" });
+    expect(roomToPath(room)).toBe("/atelier/content/block/9/de");
+  });
+
+  it("keeps the bare path for the source language", () => {
+    at("/atelier/content/block/9");
+    expect(parseUrl().room).toEqual({ kind: "node", doc: "block", nid: 9, langcode: null });
+    expect(roomToPath({ kind: "node", doc: "block", nid: 9, langcode: null })).toBe("/atelier/content/block/9");
+  });
+});

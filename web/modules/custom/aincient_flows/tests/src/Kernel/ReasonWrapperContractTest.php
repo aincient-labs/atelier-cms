@@ -249,4 +249,59 @@ final class ReasonWrapperContractTest extends KernelTestBase {
     }
   }
 
+  /**
+   * Every shipped Reason node instance names its operation_type explicitly.
+   *
+   * Owed since DECISIONS 0257: an unset operation_type silently falls back to a
+   * default tier, so a placement that forgot it is a latent wrong-model bug no
+   * other test sees. Pure YAML over every shipped workflow (config/sync plus
+   * each custom/studio module's config/install and config/optional).
+   */
+  public function testEveryShippedReasonNodeNamesItsOperationType(): void {
+    $appRoot = dirname(__DIR__, 7);
+    $patterns = [
+      $appRoot . '/config/sync',
+      $appRoot . '/web/modules/custom/*/config/install',
+      $appRoot . '/web/modules/custom/*/config/optional',
+      $appRoot . '/web/modules/studio/*/config/install',
+      $appRoot . '/web/modules/studio/*/config/optional',
+    ];
+    $files = [];
+    foreach ($patterns as $dirPattern) {
+      foreach (glob($dirPattern . '/flowdrop_workflow.flowdrop_workflow.*.yml') ?: [] as $file) {
+        $files[] = $file;
+      }
+    }
+    $this->assertNotEmpty($files, 'No shipped flowdrop_workflow config found; the glob is broken.');
+
+    $reasonNodes = 0;
+    $missing = [];
+    foreach ($files as $file) {
+      $workflow = Yaml::parseFile($file);
+      if (!is_array($workflow)) {
+        continue;
+      }
+      $label = str_replace($appRoot . '/', '', $file);
+      foreach (($workflow['nodes'] ?? []) as $node) {
+        if (!is_array($node)) {
+          continue;
+        }
+        $type = $node['data']['metadata']['node_type_id'] ?? $node['type'] ?? NULL;
+        if ($type !== 'aincient_reason' && $type !== 'reason') {
+          continue;
+        }
+        $reasonNodes++;
+        $op = $node['data']['config']['operation_type'] ?? NULL;
+        if (!is_string($op) || trim($op) === '') {
+          $missing[] = $label . ' (workflow ' . ($workflow['id'] ?? '?') . ') node ' . ($node['id'] ?? '?');
+        }
+      }
+    }
+
+    $this->assertGreaterThan(0, $reasonNodes, 'Found no Reason nodes in any shipped workflow; the scan is vacuous.');
+    $this->assertSame([], $missing,
+      'Shipped Reason node(s) without an explicit, non-empty operation_type (DECISIONS 0257): '
+      . implode('; ', $missing));
+  }
+
 }

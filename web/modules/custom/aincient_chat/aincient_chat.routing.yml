@@ -113,7 +113,7 @@ aincient_chat.console_doc_translation:
   requirements:
     _permission: 'use aincient operator console'
     studio: '(?!chat$)[a-z][a-z0-9_-]*'
-    doc_type: 'node'
+    doc_type: 'node|block'
     nid: '\d+'
     langcode: '[a-z][a-z0-9-]*'
 

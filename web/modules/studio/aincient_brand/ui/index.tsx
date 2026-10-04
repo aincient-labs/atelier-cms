@@ -1,3 +1,4 @@
+import { brandCommands } from "@console/sdk";
 import { IdentityStudio } from "./brand-studio";
 import { BrandPreview } from "./brand-preview";
 import { BrandPickerToolUI } from "./brand-picker";
@@ -39,3 +40,10 @@ export const Studio = IdentityStudio;
 export const Preview = BrandPreview;
 /** The chat widgets this studio's agent renders. */
 export const ToolUIs = [BrandPickerToolUI, BrandPreviewToolUI, BrandStatusProposalToolUI, DesignTokenAdmissionToolUI, LogoHandoffToolUI];
+/**
+ * The typed command set over the brand draft (plans/studio-commands.md P1):
+ * set_tokens, step_token, set_fonts, reset, get_draft — one batch = one undo.
+ * Core-owned (brand-preview-ops.ts) because the chat adapter applies preview
+ * frames through it before this chunk may have loaded.
+ */
+export const Commands = brandCommands;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "yaml";
-import { DEPRECATED_TOKENS } from "./tokens.generated";
+import { RETIRED_TOKENS } from "./tokens.generated";
 
 /**
  * The studio CSS guards (plans/studio-modules.md "`kit/`", DECISIONS 0430),
@@ -21,8 +21,8 @@ import { DEPRECATED_TOKENS } from "./tokens.generated";
  *      a `--ain-ref-*` reference names what a colour IS, and a stylesheet that
  *      reaches past the role to the pigment is one a theme cannot restyle —
  *      that single rule is what makes a white-label override reach every
- *      pixel; and no pre-0438 name (`--ain-bg`, …) — those are aliases for
- *      CSS this tree does not own, gone in the release after 0.16.0.
+ *      pixel; and no pre-0438 name (`--ain-bg`, …) — retired in 0.17.0, they
+ *      resolve to nothing, so the rule names the replacement.
  *
  * Rule 4 also runs over the console's OWN stylesheets (`src/**\/*.css`, which
  * is `styles.css` and the kit's) — the same theme has to reach them.
@@ -84,8 +84,8 @@ export function tokenOffenders(selector: string, body: string): CssOffender[] {
     const name = m[1];
     if (name.startsWith("--ain-ref-")) {
       out.push({ selector, why: `reads the reference tier (${name}) — use the system role it stands for (docs/console-tokens.md).` });
-    } else if (name in DEPRECATED_TOKENS) {
-      out.push({ selector, why: `uses the pre-0438 name ${name} — it is ${DEPRECATED_TOKENS[name]} now.` });
+    } else if (name in RETIRED_TOKENS) {
+      out.push({ selector, why: `uses the retired pre-0438 name ${name} — it is ${RETIRED_TOKENS[name]} now.` });
     }
   }
   return out;

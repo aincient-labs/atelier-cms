@@ -156,7 +156,7 @@ export const consoleNav = createConsoleNav(
         room.kind === "media"
           ? loadMediaIntoStudio(mediaId)
           : room.doc === "block"
-            ? loadBlockIntoStudio(String(room.nid))
+            ? loadBlockIntoStudio(String(room.nid), room.langcode)
             : loadPageIntoStudio(String(room.nid), room.langcode);
       const docKind = room.kind === "media" ? "media" : room.doc;
       const id = room.kind === "media" ? String(mediaId) : String(room.nid);

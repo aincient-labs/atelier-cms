@@ -67,6 +67,10 @@ final class BlockController implements ContainerInjectionInterface {
     if ($data === NULL) {
       return new JsonResponse(['error' => 'That block has no schema.'], 404);
     }
+    // The page envelope's translation fields: a block translation always
+    // inherits the source layout (symmetric — blocks never diverge).
+    $data['layout_mode'] = $langcode !== NULL ? 'symmetric' : NULL;
+    $data['translations'] = $this->blocks->translationsOf($id);
     return new JsonResponse($data);
   }
 
@@ -167,11 +171,14 @@ final class BlockController implements ContainerInjectionInterface {
       return new JsonResponse(['error' => 'Expected a node_id.'], 400);
     }
     $baseVid = isset($data['base_vid']) && is_numeric($data['base_vid']) ? (int) $data['base_vid'] : NULL;
-    if ($requireUpdate && ($denied = $this->denyIfNoUpdate($nodeId, NULL)) !== NULL) {
+    // Translations are moderated independently: an optional `langcode` names
+    // the one whose state changes (absent → inferred from base_vid, else source).
+    $langcode = isset($data['langcode']) && $data['langcode'] !== '' ? (string) $data['langcode'] : NULL;
+    if ($requireUpdate && ($denied = $this->denyIfNoUpdate($nodeId, $langcode)) !== NULL) {
       return $denied;
     }
     try {
-      $result = $this->blocks->transition($nodeId, $transitionId, $baseVid);
+      $result = $this->blocks->transition($nodeId, $transitionId, $baseVid, $langcode);
     }
     catch (RevisionConflictException $e) {
       return $this->conflict($e);

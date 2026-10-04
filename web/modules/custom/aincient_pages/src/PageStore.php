@@ -109,6 +109,7 @@ final class PageStore {
     private readonly ConfigFactoryInterface $configFactory,
     private readonly NodeModeration $moderation,
     private readonly ComponentCatalogInterface $catalog,
+    private readonly PageSchemaSummariser $summariser,
     // OPTIONAL (@?): NULL when pathauto is uninstalled (kernel tests, a site
     // that opted out) — the alias sync then no-ops. See syncTranslationAlias().
     private readonly ?PathautoGeneratorInterface $pathautoGenerator = NULL,
@@ -1033,6 +1034,7 @@ final class PageStore {
     $this->writePageType($node, $clean['type']);
     // A blog post's authored date likewise mirrors onto the node's own
     // `created` — the sort axis a listing needs, and what "Authored on" means.
+    // Per translation: each language keeps its own post date.
     if ($this->isRecipe($clean['type'])) {
       $this->writePostDate($node, (string) ($clean['date'] ?? ''));
     }
@@ -1098,6 +1100,10 @@ final class PageStore {
    * alone rather than resetting it to now. A post whose date the author has
    * not filled in keeps its real creation time and still sorts sensibly, and
    * a typo can never silently reorder the blog.
+   *
+   * Written on THIS translation ($node is the translation being written):
+   * node `created` is translatable, so each language keeps its own post date —
+   * a DE date edit never moves EN's date, and goes live only with DE's publish.
    */
   private function writePostDate(ContentEntityInterface $node, string $date): void {
     if ($date === '' || !$node->hasField('created')) {
@@ -1107,7 +1113,7 @@ final class PageStore {
     if ($parsed === FALSE) {
       return;
     }
-    $node->getUntranslated()->set('created', $parsed);
+    $node->set('created', $parsed);
   }
 
   /**
@@ -1181,26 +1187,37 @@ final class PageStore {
    *   per its layout mode (symmetric inherits the source structure).
    */
   public function update(string $id, array $schema, ?string $langcode = NULL): bool {
-    // Edit the LATEST revision (the studio's head), not the published default —
-    // a write must never fork from a stale default and drop a pending draft, and
+    // Edit THIS language's head (the studio's), not the published default — a
+    // write must never fork from a stale default and drop a pending draft, and
     // the result must be the revision the studio reads back ({@see loadLatest}).
-    $node = $this->loadHead($id);
-    if ($node === NULL) {
+    // Other translations come from the default revision ({@see
+    // NodeModeration::createRevision}), never from another language's draft.
+    $head = $this->loadHead($id, $langcode);
+    if ($head === NULL) {
       return FALSE;
     }
-    $target = $this->translationToWrite($node, $langcode);
+    $revision = $this->moderation->createRevision($head);
+    $target = $this->translationToWrite($revision, $langcode);
     if ($target === NULL) {
       return FALSE;
     }
     $this->writeSchema($target, $schema);
-    if ($node instanceof NodeInterface) {
-      $node->setNewRevision(TRUE);
-      $node->setRevisionUserId((int) $this->currentUser->id());
-      $node->setRevisionLogMessage('Updated via the page studio.');
+    $saved = $this->savedObject($revision, $target);
+    if ($this->moderation->isolatesTranslations($revision) && $this->moderation->isModerated($saved)) {
+      // No state change here: the written translation keeps its head's state
+      // (a translation this write creates takes the page's — the source head's —
+      // state, as the whole-entity save did). Set explicitly: content_moderation
+      // would otherwise derive a NEW translation's state from its status.
+      $saved->set('moderation_state', $this->moderation->state($head));
     }
-    // Saving the node persists every translation it carries.
-    $node->save();
-    $this->syncTranslationAlias($node, $langcode);
+    if ($saved instanceof NodeInterface) {
+      $saved->setRevisionUserId((int) $this->currentUser->id());
+      $saved->setRevisionLogMessage('Updated via the page studio.');
+    }
+    $this->moderation->pinAffectedTranslation($saved);
+    // Saving persists every translation the revision carries.
+    $saved->save();
+    $this->syncTranslationAlias($saved, $langcode);
     return TRUE;
   }
 
@@ -1253,11 +1270,21 @@ final class PageStore {
    * workflow; the change is refused (returns NULL) if the transition isn't legal
    * for the current user from the node's current state.
    *
+   * $langcode names the translation whose state changes (each translation is
+   * moderated independently); NULL infers it from $baseVid
+   * ({@see NodeModeration::langcodeForBase}), else the source translation.
+   *
    * @throws \Drupal\aincient_pages\Exception\RevisionConflictException
    *   When $baseVid is stale.
    */
-  public function transition(string $id, string $transitionId, ?int $baseVid = NULL, ?array $coauthors = NULL): ?array {
-    $node = $this->moderation->loadLatestRevision($id, 'aincient_page');
+  public function transition(string $id, string $transitionId, ?int $baseVid = NULL, ?array $coauthors = NULL, ?string $langcode = NULL): ?array {
+    // Translations are moderated independently, so a transition is about ONE
+    // language: the given one, else the one whose studio head $baseVid is
+    // (the console sends no langcode on a transition), else the source.
+    if ($langcode === NULL && $baseVid !== NULL) {
+      $langcode = $this->moderation->langcodeForBase($id, $baseVid);
+    }
+    $node = $this->moderation->loadHead($id, 'aincient_page', $langcode);
     if ($node === NULL) {
       return NULL;
     }
@@ -1265,7 +1292,7 @@ final class PageStore {
     if ($target === NULL) {
       return NULL;
     }
-    return $this->editRevision($id, NULL, $target, NULL, $baseVid, sprintf('Editorial transition: %s.', $transitionId), $coauthors);
+    return $this->editRevision($id, NULL, $target, $langcode, $baseVid, sprintf('Editorial transition: %s.', $transitionId), $coauthors);
   }
 
   /**
@@ -1279,9 +1306,12 @@ final class PageStore {
    *   the state change is not a legal transition for the current user.
    */
   private function editRevision(string $id, ?array $schema, string $targetState, ?string $langcode, ?int $baseVid, string $log, ?array $coauthors = NULL): ?array {
-    // Pin the write to the revision the studio based it on (409 on a stale base).
-    $this->moderation->assertHead($id, $baseVid);
-    $node = $this->moderation->loadLatestRevision($id, 'aincient_page');
+    // Translations are moderated independently: the write is about $langcode
+    // ONLY (NULL = the source). Pin it to THAT language's head (409 on a stale
+    // base — another language saving meanwhile is not a conflict) and build on
+    // it, so a publish here never carries another language's pending draft.
+    $this->moderation->assertHead($id, $baseVid, 'node', $langcode);
+    $node = $this->moderation->loadHead($id, 'aincient_page', $langcode);
     if (!$node instanceof NodeInterface) {
       return NULL;
     }
@@ -1292,19 +1322,43 @@ final class PageStore {
       && !$this->moderation->canReachState($node, $targetState)) {
       return NULL;
     }
-    if ($schema !== NULL) {
-      $target = $this->translationToWrite($node, $langcode);
+    // The new revision: this translation from its head, every other translation
+    // from the current default revision (core createRevision()).
+    $revision = $this->moderation->createRevision($node, $targetState);
+    if ($schema === NULL) {
+      // A pure state change never creates a translation.
+      $target = $this->existingTranslation($revision, $langcode);
       if ($target === NULL) {
         return NULL;
       }
-      $this->writeSchema($target, $schema);
     }
-    $node->set('moderation_state', $targetState);
-    $node->setNewRevision(TRUE);
-    $node->setRevisionUserId((int) $this->currentUser->id());
-    $node->setRevisionLogMessage($log);
-    $this->stampCoauthors($node, $coauthors);
-    $node->save();
+    else {
+      $target = $this->translationToWrite($revision, $langcode);
+      if ($target === NULL) {
+        return NULL;
+      }
+      // Say what changed: diff the base revision's resolved schema (NULL for a
+      // translation this write creates) against the one written. Best-effort —
+      // an empty diff or any failure keeps the caller's constant message.
+      $before = $this->summariser->before(fn (): ?array => $target->isNewTranslation() ? NULL : $this->resolve($target));
+      $this->writeSchema($target, $schema);
+      $log = $this->summariser->revisionLog(
+        $before,
+        fn (): array => $this->resolve($target),
+        $target->isDefaultTranslation() ? NULL : $target->language()->getId(),
+        $log,
+      );
+    }
+    // The moderation state is per translation: set it on (and save) the
+    // translation being written, so content_moderation moderates THAT language.
+    $saved = $this->savedObject($revision, $target);
+    $saved->set('moderation_state', $targetState);
+    $saved->setRevisionUserId((int) $this->currentUser->id());
+    $saved->setRevisionLogMessage($log);
+    $this->stampCoauthors($saved, $coauthors);
+    $this->moderation->pinAffectedTranslation($saved);
+    $saved->save();
+    $node = $saved;
     if ($langcode === NULL) {
       // A pure state change (transition(), or a source-language publish) has no
       // single translation in play — but it may have just made a forward draft
@@ -1315,7 +1369,27 @@ final class PageStore {
     else {
       $this->syncTranslationAlias($node, $langcode);
     }
-    return $this->stateEnvelope($id);
+    return $this->stateEnvelope($id, $langcode);
+  }
+
+  /**
+   * The object a write sets its moderation state + revision metadata on and
+   * saves: the written translation when translations are moderated
+   * independently, else (whole-entity model) the source, as before.
+   */
+  private function savedObject(ContentEntityInterface $revision, ContentEntityInterface $target): ContentEntityInterface {
+    return $this->moderation->isolatesTranslations($revision) ? $target : $revision->getUntranslated();
+  }
+
+  /**
+   * The existing translation a language-scoped state change applies to — the
+   * source for a NULL/source langcode — or NULL if $langcode has none.
+   */
+  private function existingTranslation(ContentEntityInterface $node, ?string $langcode): ?ContentEntityInterface {
+    if ($langcode === NULL || $langcode === $node->getUntranslated()->language()->getId()) {
+      return $node->getUntranslated();
+    }
+    return $node->hasTranslation($langcode) ? $node->getTranslation($langcode) : NULL;
   }
 
   /**
@@ -1345,10 +1419,12 @@ final class PageStore {
 
   /**
    * The post-write state envelope for a node id (state + legal transitions + base
-   * vid + live url), reloaded fresh so it reflects the just-saved revision.
+   * vid + live url) in $langcode (NULL = source), reloaded fresh so it reflects
+   * the just-saved revision.
    */
-  private function stateEnvelope(string $id): ?array {
-    $node = $this->moderation->loadLatestRevision($id, 'aincient_page');
+  private function stateEnvelope(string $id, ?string $langcode = NULL): ?array {
+    // The written language's head, so the returned base_vid pins its next save.
+    $node = $this->moderation->loadLatestRevision($id, 'aincient_page', $langcode);
     if ($node === NULL) {
       return NULL;
     }
@@ -1411,6 +1487,10 @@ final class PageStore {
    * Returns the source entity for a NULL/source langcode; an existing or freshly
    * added translation otherwise; NULL if $langcode isn't a configured language
    * (so a typo can't silently spawn a bogus translation).
+   *
+   * A NEW translation starts with the source's `created` (its post date)
+   * instead of core's "now" default; from then on it is that language's own
+   * ({@see writePostDate}).
    */
   private function translationToWrite(ContentEntityInterface $node, ?string $langcode): ?ContentEntityInterface {
     $source = $node->getUntranslated()->language()->getId();
@@ -1420,9 +1500,14 @@ final class PageStore {
     if (!$this->languageManager->getLanguage($langcode)) {
       return NULL;
     }
-    return $node->hasTranslation($langcode)
-      ? $node->getTranslation($langcode)
-      : $node->addTranslation($langcode);
+    if ($node->hasTranslation($langcode)) {
+      return $node->getTranslation($langcode);
+    }
+    $translation = $node->addTranslation($langcode);
+    if ($translation->hasField('created')) {
+      $translation->set('created', $node->getUntranslated()->get('created')->value);
+    }
+    return $translation;
   }
 
   /**
@@ -1582,16 +1667,25 @@ final class PageStore {
    * @return string[]
    */
   public function translationsOf(string $id): array {
-    // Reflect the head (a translation may be pending), matching the studio reads.
+    // Reflect each language's own head (a translation may exist only as a
+    // pending draft, absent from the default and from other languages' heads),
+    // matching the studio reads.
     $node = $this->loadHead($id);
     if ($node === NULL) {
       return [];
     }
     $source = $node->getUntranslated()->language()->getId();
-    return array_values(array_filter(
-      array_keys($node->getTranslationLanguages()),
-      static fn(string $lc): bool => $lc !== $source,
-    ));
+    $out = [];
+    foreach (array_keys($this->languageManager->getLanguages()) as $lc) {
+      if ($lc === $source) {
+        continue;
+      }
+      $head = $this->loadHead($id, $lc);
+      if ($head !== NULL && $head->hasTranslation($lc)) {
+        $out[] = $lc;
+      }
+    }
+    return $out;
   }
 
   /**
@@ -1600,9 +1694,10 @@ final class PageStore {
    * structurally canonical and reports symmetric. Absent flag → symmetric.
    */
   public function layoutMode(string $id, string $langcode): string {
-    // Read the editable head so the mode reflects a pending diverge/converge the
-    // studio just made (consistent with loadLatest), not the published default.
-    $node = $this->loadHead($id);
+    // Read the translation's editable head so the mode reflects a pending
+    // diverge/converge the studio just made (consistent with loadLatest), not
+    // the published default.
+    $node = $this->loadHead($id, $langcode);
     if ($node === NULL) {
       return self::MODE_SYMMETRIC;
     }
@@ -1626,21 +1721,26 @@ final class PageStore {
     if (!$this->configFactory->get('aincient_pages.settings')->get('translation.allow_divergence')) {
       return FALSE;
     }
-    $node = $this->loadHead($id);
-    if ($node === NULL) {
+    $head = $this->loadHead($id, $langcode);
+    if ($head === NULL) {
       return FALSE;
     }
-    $source = $node->getUntranslated()->language()->getId();
-    if ($langcode === $source || !$node->hasTranslation($langcode)) {
+    $source = $head->getUntranslated()->language()->getId();
+    if ($langcode === $source || !$head->hasTranslation($langcode)) {
       return FALSE;
     }
+    // A layout change of THIS translation only (the source comes from the
+    // default revision — the skeleton it inherits today).
+    $node = $this->moderation->createRevision($head);
     $translation = $node->getTranslation($langcode);
     // Copy-on-write: seed the translation's structure from the source skeleton so
     // it starts identical, then owns it. (Content overlay is untouched.)
     $translation->set('field_page_structure', $node->getUntranslated()->get('field_page_structure')->value);
     $translation->set('field_layout_mode', self::MODE_ASYMMETRIC);
-    $this->stampRevision($node, sprintf('Diverged %s layout to asymmetric.', $langcode));
-    $node->save();
+    $saved = $this->savedObject($node, $translation);
+    $this->stampRevision($saved, sprintf('Diverged %s layout to asymmetric.', $langcode));
+    $this->moderation->pinAffectedTranslation($saved);
+    $saved->save();
     return TRUE;
   }
 
@@ -1653,18 +1753,21 @@ final class PageStore {
    * keeps its localised CONTENT — only the structural divergence is dropped.
    */
   public function converge(string $id, string $langcode): bool {
-    $node = $this->loadHead($id);
-    if ($node === NULL) {
+    $head = $this->loadHead($id, $langcode);
+    if ($head === NULL) {
       return FALSE;
     }
-    if ($node->getUntranslated()->language()->getId() === $langcode || !$node->hasTranslation($langcode)) {
+    if ($head->getUntranslated()->language()->getId() === $langcode || !$head->hasTranslation($langcode)) {
       return FALSE;
     }
+    $node = $this->moderation->createRevision($head);
     $translation = $node->getTranslation($langcode);
     $translation->set('field_page_structure', '');
     $translation->set('field_layout_mode', self::MODE_SYMMETRIC);
-    $this->stampRevision($node, sprintf('Converged %s layout back to symmetric (inherit source).', $langcode));
-    $node->save();
+    $saved = $this->savedObject($node, $translation);
+    $this->stampRevision($saved, sprintf('Converged %s layout back to symmetric (inherit source).', $langcode));
+    $this->moderation->pinAffectedTranslation($saved);
+    $saved->save();
     return TRUE;
   }
 
@@ -1865,13 +1968,14 @@ final class PageStore {
   }
 
   /**
-   * Load the LATEST revision of an aincient_page — the editable head the studio
-   * reads and writes (a forward draft may be ahead of the published default).
-   * NULL if the id isn't an aincient_page. The studio-facing read/write path uses
-   * this; {@see load} (default revision) is the public render path.
+   * Load the editable HEAD of one translation of an aincient_page (NULL = the
+   * source) — the raw revision a write builds on (a forward draft may be ahead
+   * of the published default). NULL if the id isn't an aincient_page. The
+   * studio-facing write path uses this; {@see load} (default revision) is the
+   * public render path. See {@see NodeModeration::loadHead}.
    */
-  private function loadHead(string $id): ?ContentEntityInterface {
-    return $this->moderation->loadLatestRevision($id, 'aincient_page');
+  private function loadHead(string $id, ?string $langcode = NULL): ?ContentEntityInterface {
+    return $this->moderation->loadHead($id, 'aincient_page', $langcode);
   }
 
   private function storage(): \Drupal\Core\Entity\EntityStorageInterface {

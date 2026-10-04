@@ -19,7 +19,9 @@ is a regression guard for the 2026-05-31 bug where health failures didn't roll b
 Builds the image, brings up an **isolated** compose project (`atelier_smoke`, port
 8099 — won't touch a running dev stack), and asserts the real UX: install-from-config
 brings up the stack, the console permission is granted, the front page + login serve (200),
-`/atelier` is 403 for anonymous, the upgrade branch snapshots + converges healthy, and
+`/atelier` is 403 for anonymous, every studio an installed module's `.studios.yml` declares
+is discovered with no manifest errors (the 0.16.0 regression: the image strips `ui/` sources,
+so only the built image shows a dropped studio), the upgrade branch snapshots + converges healthy, and
 the snapshot→restore round-trip reverts a change. Tears itself down.
 
 ```bash

@@ -8,6 +8,8 @@ use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\node\NodeInterface;
 
 /**
@@ -17,8 +19,9 @@ use Drupal\node\NodeInterface;
  *
  * Reads the real, indexed projection fields ({@see PageStore::writePageType}
  * for the type axis, the node's own `created` for the sort axis) so the query
- * is a genuine entity query — it filters and sorts in the database, never by
- * loading every node and filtering in PHP. Each record is flattened to the
+ * is a genuine entity query — it filters in the database and sorts on one
+ * aggregate read of the per-language `created` column, never by loading every
+ * node and filtering in PHP. Each record is flattened to the
  * shape both the `article-teaser` SDC (rendered HTML) and the JSON index
  * (client re-render) consume, with the media token already resolved to a
  * concrete derivative URL — the browser cannot resolve `media:<id>`, and an
@@ -46,6 +49,7 @@ final class CollectionResolver {
     private readonly EntityEmbedResolver $embed,
     private readonly DateFormatterInterface $dateFormatter,
     private readonly CollectionInventory $inventory,
+    private readonly LanguageManagerInterface $languageManager,
   ) {}
 
   /**
@@ -81,16 +85,17 @@ final class CollectionResolver {
       ->count()
       ->execute();
 
-    $query = $storage->getQuery()
+    $ids = $storage->getQuery()
       ->accessCheck(TRUE)
       ->condition('type', 'aincient_page')
       ->condition('status', 1)
       ->condition('field_page_type', $spec['source'])
-      ->sort('created', $spec['sort'] === 'oldest' ? 'ASC' : 'DESC');
+      ->execute();
+    $langcode ??= $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
+    $ids = $this->sortByPostDate(array_values($ids), $langcode, $spec['sort'] === 'oldest');
     if ($limit !== NULL && $limit > 0) {
-      $query->range(0, $limit);
+      $ids = array_slice($ids, 0, $limit);
     }
-    $ids = $query->execute();
 
     $records = [];
     foreach ($storage->loadMultiple($ids) as $node) {
@@ -102,6 +107,57 @@ final class CollectionResolver {
     }
 
     return ['records' => $records, 'total' => $total, 'cacheability' => $cacheability];
+  }
+
+  /**
+   * Order post ids by the post date of the translation the listing SHOWS.
+   *
+   * `created` is translatable — each language keeps its own post date
+   * ({@see PageStore::writePostDate}) — so the sort key is the $langcode
+   * translation's `created` when that translation is published, else the
+   * source translation's (the one an untranslated post falls back to). A
+   * plain entity-query sort on `created` would aggregate over every
+   * translation's row instead, letting another language's date reorder this
+   * listing. One aggregate query over the data table reads just (id, langcode,
+   * created) — no entities are loaded; ties break by id for a stable order.
+   *
+   * @param int[]|string[] $ids
+   *   The matching node ids (already filtered + access-checked).
+   *
+   * @return int[]|string[]
+   *   The same ids, newest first (or oldest first when $ascending).
+   */
+  private function sortByPostDate(array $ids, string $langcode, bool $ascending): array {
+    if ($ids === []) {
+      return [];
+    }
+    $rows = $this->entityTypeManager->getStorage('node')->getAggregateQuery()
+      ->accessCheck(FALSE)
+      ->condition('nid', $ids, 'IN')
+      ->groupBy('nid')
+      ->groupBy('langcode')
+      ->groupBy('default_langcode')
+      ->groupBy('status')
+      ->aggregate('created', 'MAX')
+      ->execute();
+    $own = [];
+    $source = [];
+    foreach ($rows as $row) {
+      $nid = (int) $row['nid'];
+      if ((int) $row['default_langcode'] === 1) {
+        $source[$nid] = (int) $row['created_max'];
+      }
+      if ($row['langcode'] === $langcode && (int) $row['status'] === 1) {
+        $own[$nid] = (int) $row['created_max'];
+      }
+    }
+    usort($ids, static function ($a, $b) use ($own, $source, $ascending): int {
+      $da = $own[(int) $a] ?? $source[(int) $a] ?? 0;
+      $db = $own[(int) $b] ?? $source[(int) $b] ?? 0;
+      $byDate = $ascending ? $da <=> $db : $db <=> $da;
+      return $byDate !== 0 ? $byDate : ((int) $a <=> (int) $b);
+    });
+    return $ids;
   }
 
   /**

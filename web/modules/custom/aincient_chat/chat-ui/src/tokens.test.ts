@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { COMPONENT_TOKENS, DEPRECATED_TOKENS, REF_TOKENS, SYSTEM_TOKENS } from "./tokens.generated";
+import { COMPONENT_TOKENS, REF_TOKENS, RETIRED_TOKENS, SYSTEM_TOKENS } from "./tokens.generated";
 // The generator is plain ESM; its pure half renders without writing.
 // @ts-expect-error — an .mjs script with no declaration file.
-import { DEPRECATED, SURFACES, TS_OUT, render, tierOf } from "../scripts/gen-tokens.mjs";
+import { RETIRED, SURFACES, TS_OUT, render, tierOf } from "../scripts/gen-tokens.mjs";
 
 /**
  * The console tokens (DECISIONS 0438, docs/console-tokens.md): one DTCG source
@@ -12,12 +12,11 @@ import { DEPRECATED, SURFACES, TS_OUT, render, tierOf } from "../scripts/gen-tok
  * surface) and this package's generated TS names. What is pinned here:
  *
  *   - the GRAMMAR — every name is in exactly one of the three tiers;
- *   - the ALIASES are faithful — a pre-0438 name resolves, in both modes and
- *     on every surface, to exactly what its grammar name resolves to;
+ *   - the pre-0438 names are RETIRED (0.17.0) — no surface defines one;
  *   - the generated files are FRESH — what `render()` produces now is what is
  *     committed (prebuild / pretest regenerate; this catches a hand edit);
- *   - every `--ain-*` a stylesheet READS is a token the source defines, a
- *     deprecated alias, or a property the same file defines itself — a typo
+ *   - every `--ain-*` a stylesheet READS is a token the source defines or a
+ *     property the same file defines itself — a typo
  *     silently resolves to nothing, which is the bug `--ain-text-muted` was.
  */
 
@@ -59,13 +58,13 @@ describe("the token grammar", () => {
     }
   });
 
-  it("keeps the deprecated names out of the live set", () => {
+  it("keeps the retired names out of the live set", () => {
     const live = new Set<string>([...REF_TOKENS, ...SYSTEM_TOKENS, ...COMPONENT_TOKENS]);
-    for (const [from, to] of Object.entries(DEPRECATED_TOKENS)) {
+    for (const [from, to] of Object.entries(RETIRED_TOKENS)) {
       expect(live.has(from), from).toBe(false);
       expect(live.has(to), to).toBe(true);
     }
-    expect(DEPRECATED_TOKENS).toEqual(DEPRECATED);
+    expect(RETIRED_TOKENS).toEqual(RETIRED);
   });
 });
 
@@ -80,11 +79,11 @@ describe("the generated files", async () => {
     expect(files[TS_OUT]).toBeDefined();
   });
 
-  it("alias every pre-0438 name to the same value as its grammar name, on every surface and in both modes", () => {
+  it("define no retired name and resolve every replacement, on every surface and in both modes", () => {
     for (const [id, surface] of Object.entries(SURFACES) as [string, { out: string }][]) {
       for (const [i, mode] of modesOf(files[surface.out]).entries()) {
-        for (const [from, to] of Object.entries(DEPRECATED_TOKENS)) {
-          expect(mode.get(from), `${id} mode ${i} ${from}`).toBe(mode.get(to));
+        for (const [from, to] of Object.entries(RETIRED_TOKENS)) {
+          expect(mode.has(from), `${id} mode ${i} ${from}`).toBe(false);
           expect(mode.get(to), `${id} mode ${i} ${to}`).not.toMatch(/var\(/);
         }
       }
@@ -101,7 +100,7 @@ describe("the generated files", async () => {
 });
 
 describe("every token a stylesheet reads", () => {
-  const known = new Set<string>([...REF_TOKENS, ...SYSTEM_TOKENS, ...COMPONENT_TOKENS, ...Object.keys(DEPRECATED_TOKENS)]);
+  const known = new Set<string>([...REF_TOKENS, ...SYSTEM_TOKENS, ...COMPONENT_TOKENS]);
   const sheets = [
     "custom/aincient_chat/chat-ui/src/styles.css",
     "custom/aincient_core/css/flowdrop-brand.css",

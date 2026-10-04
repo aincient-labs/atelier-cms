@@ -222,11 +222,14 @@ final class PageController implements ContainerInjectionInterface {
       return new JsonResponse(['error' => 'Expected a node_id.'], 400);
     }
     $baseVid = isset($data['base_vid']) && is_numeric($data['base_vid']) ? (int) $data['base_vid'] : NULL;
-    if ($requireUpdate && ($denied = $this->denyIfNoUpdate($nodeId, NULL)) !== NULL) {
+    // Translations are moderated independently: an optional `langcode` names
+    // the one whose state changes (absent → inferred from base_vid, else source).
+    $langcode = isset($data['langcode']) && $data['langcode'] !== '' ? (string) $data['langcode'] : NULL;
+    if ($requireUpdate && ($denied = $this->denyIfNoUpdate($nodeId, $langcode)) !== NULL) {
       return $denied;
     }
     try {
-      $result = $this->store->transition($nodeId, $transitionId, $baseVid, $this->coauthorsFrom($data));
+      $result = $this->store->transition($nodeId, $transitionId, $baseVid, $this->coauthorsFrom($data), $langcode);
     }
     catch (RevisionConflictException $e) {
       return $this->conflict($e);

@@ -27,6 +27,7 @@ export { consoleBase };
  *   /atelier/content/node/5           → a Content page node (aincient_page)
  *   /atelier/content/node/5/de        → …its `de` translation (source lang omits it)
  *   /atelier/content/block/9          → a Content block node (aincient_block)
+ *   /atelier/content/block/9/de       → …its `de` translation
  *   /atelier/checks/node/5            → a Checks audit room (read-only report)
  *   /atelier/library                  → the Library shelf (the media family's
  *                                        browse room; bare /media and the legacy
@@ -106,7 +107,7 @@ export function roomToPath(room: Room): string {
       return `${base}/media/image/${room.id ?? "new"}`;
     case "node": {
       const seg = room.doc === "block" ? "block" : "node";
-      const lang = room.doc === "page" && room.langcode ? `/${room.langcode}` : "";
+      const lang = room.langcode ? `/${room.langcode}` : "";
       return `${base}/content/${seg}/${room.nid}${lang}`;
     }
   }
@@ -183,7 +184,7 @@ export function parseUrl(): { room: Room; threadId: string | null } {
     return { room: { kind: "audit", nid, langcode: seg[3] ?? null }, threadId };
   }
   if (studio === COLLECTION_STUDIO && kind === "block") {
-    return { room: { kind: "node", doc: "block", nid, langcode: null }, threadId };
+    return { room: { kind: "node", doc: "block", nid, langcode: seg[3] ?? null }, threadId };
   }
   if (studio === COLLECTION_STUDIO && kind === "node") {
     const langcode = seg[3] ?? null;
