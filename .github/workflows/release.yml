@@ -91,6 +91,16 @@ jobs:
       - name: Assert the engine layer tier is intact
         run: bash docker/tests/assert-engine-tier.sh
 
+      # ImageStyleDerivativeFormatTest renders real AVIF/WebP derivatives through
+      # the site's ImageMagick toolkit (v6 `convert`) and FAILS, never skips, when
+      # a delegate is missing — so the runner needs IM6 with an AV1 encoder.
+      # Mirrors the cms CI step; keep the two in sync.
+      - name: Install ImageMagick with AVIF + WebP
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq imagemagick libheif-plugin-aomenc webp
+          convert -list format | grep -E '^ *(AVIF|WEBP)'
+
       # Functional (BrowserTestBase) tests in the sweep need a real HTTP server
       # serving the docroot (must start FROM the docroot so the router's
       # DOCUMENT_ROOT resolves index.php).
