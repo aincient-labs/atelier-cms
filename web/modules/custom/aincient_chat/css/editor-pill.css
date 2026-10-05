@@ -17,13 +17,17 @@
 
 .aincient-editor-pill {
   position: fixed;
-  bottom: 1rem;
+  /* Ride above the consent banner while it is open: it spans the full width
+     at the bottom with the same top-of-stack z-index, and otherwise buried the
+     pill (unclickable until consent was given). --ain-consent-h is published by
+     aincient_pages/js/consent.js and is unset when no banner shows. */
+  bottom: calc(1rem + var(--ain-consent-h, 0px));
   /* Bottom-RIGHT, deliberately: the consent re-open affordance
      (.aincient-consent-reopen, aincient_pages) owns the bottom-LEFT corner, so
      operator chrome and the visitor's privacy control take opposite corners
      instead of stacking. */
   right: 1rem;
-  z-index: 2147483000; /* above almost anything the site theme paints */
+  z-index: 2147483100; /* above anything the site theme paints, and the consent banner */
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;

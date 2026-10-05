@@ -7,6 +7,18 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.18.1] — 2026-10-05
+
+**Sign-in fixes.**
+- Opening a one-time sign-in link (such as **Open console** in the manager) while already signed in
+  no longer shows "Access denied". If it's your own link, you go straight to the console; if it's for
+  someone else, you're asked whether to switch accounts. An expired link now says so.
+- After signing in with a one-time link, you can set a password under My account without entering a
+  current one.
+- While your site can't send email yet, the sign-in and password-reset pages say so and explain how
+  to get back in, instead of offering a reset email that never arrives.
+- The **Edit in Console** button on your live site can be clicked while the privacy banner is open.
+
 ## [0.18.0] — 2026-10-05
 
 **A Components studio that shows what it governs.** The studio's centre is now a live preview of

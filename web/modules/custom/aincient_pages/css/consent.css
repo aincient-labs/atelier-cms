@@ -25,10 +25,15 @@
   position: fixed;
   inset-inline: 0;
   inset-block-end: 0;
-  z-index: 2147483000; /* above site chrome, below nothing of ours */
+  z-index: 2147483000; /* above site chrome */
   font-family: inherit;
   color: var(--acc-fg);
+  /* The wrapper spans the viewport but the panel is capped at 64rem: only the
+     panel takes clicks, so the page beside it stays usable. */
+  pointer-events: none;
 }
+
+.aincient-consent__panel { pointer-events: auto; }
 
 .aincient-consent[hidden] { display: none; }
 

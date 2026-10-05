@@ -45,6 +45,12 @@ services:
     class: Drupal\aincient_chat\Routing\StudioRouteSubscriber
     tags:
       - { name: event_subscriber }
+  # One-time login links admit a signed-in browser (same user → on to the
+  # console; another user → confirm the switch) instead of core's bare 403.
+  aincient_chat.one_time_login_route_subscriber:
+    class: Drupal\aincient_chat\Routing\OneTimeLoginRouteSubscriber
+    tags:
+      - { name: event_subscriber }
 
   # A studio's demo content, imported ONCE on its first enable and removed by
   # "Clear examples" (plans/studio-modules.md "Demo content", DECISIONS 0430 /

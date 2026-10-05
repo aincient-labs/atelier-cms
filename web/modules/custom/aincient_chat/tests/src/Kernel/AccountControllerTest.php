@@ -11,6 +11,8 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
@@ -221,6 +223,29 @@ final class AccountControllerTest extends KernelTestBase {
     $hash = $this->reloadUser((int) $account->id())->getPassword();
     $this->assertTrue($checker->check('brand-new-pass', $hash), 'The new password verifies.');
     $this->assertFalse($checker->check('old-pass', $hash), 'The old password no longer verifies.');
+  }
+
+  /**
+   * A session that signed in through a one-time link sets a password without
+   * knowing one — the way back in when email reset is unavailable — and the
+   * waiver is spent once the password is saved.
+   */
+  public function testOneTimeLinkSessionWaivesCurrentPassword(): void {
+    $account = $this->createUser([], 'kara', FALSE);
+    $this->setCurrentUser($account);
+
+    $session = new Session(new MockArraySessionStorage());
+    $session->set('pass_reset_' . $account->id(), 'token');
+    $get = Request::create('/atelier/account');
+    $get->setSession($session);
+    $data = json_decode($this->controller()->get($get)->getContent(), TRUE);
+    $this->assertFalse($data['requiresCurrentPassword']);
+
+    $request = Request::create('/atelier/account', 'POST', [], [], [], [], json_encode(['newPass' => 'first-pass']));
+    $request->setSession($session);
+    $this->assertSame(200, $this->controller()->save($request)->getStatusCode());
+    $this->assertTrue($this->container->get('password')->check('first-pass', $this->reloadUser((int) $account->id())->getPassword()));
+    $this->assertFalse($session->has('pass_reset_' . $account->id()), 'The waiver is spent.');
   }
 
   /**

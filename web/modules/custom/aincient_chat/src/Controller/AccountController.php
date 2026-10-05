@@ -70,7 +70,7 @@ final class AccountController implements ContainerInjectionInterface {
   /**
    * GET /atelier/account — the editable snapshot + option lists for the pane.
    */
-  public function get(): JsonResponse {
+  public function get(?Request $request = NULL): JsonResponse {
     $account = $this->loadAccount();
     return new JsonResponse([
       // The earned display name (study 02, Plate 15's "Name · optional" field);
@@ -85,7 +85,8 @@ final class AccountController implements ContainerInjectionInterface {
       // Whether editing the protected fields (email/password) demands the
       // current password. False for an admin (who may reset without it), so the
       // pane hides the field — mirroring AccountForm.
-      'requiresCurrentPassword' => !$this->currentUser->hasPermission('administer users'),
+      'requiresCurrentPassword' => !$this->currentUser->hasPermission('administer users')
+        && !($request && $this->usedOneTimeLink($request)),
       'viewer' => $this->viewerCard->build($account),
     ]);
   }
@@ -121,7 +122,7 @@ final class AccountController implements ContainerInjectionInterface {
     // waive the entity constraint exactly as AccountForm does — never trust the
     // client to have re-authed.
     if ($changingMail || $changingPass) {
-      if ($this->currentUser->hasPermission('administer users')) {
+      if ($this->currentUser->hasPermission('administer users') || $this->usedOneTimeLink($request)) {
         $account->_skipProtectedUserFieldConstraint = TRUE;
       }
       else {
@@ -155,6 +156,10 @@ final class AccountController implements ContainerInjectionInterface {
     }
 
     $account->save();
+    if ($changingPass && $request->hasSession()) {
+      // The one-time-link waiver is spent once a password exists (as AccountForm).
+      $request->getSession()->remove('pass_reset_' . $account->id());
+    }
 
     // Sanitized maître-d' style in ViewerCard ('' clears; a paste accident
     // stores nothing rather than echoing back forever).
@@ -227,6 +232,20 @@ final class AccountController implements ContainerInjectionInterface {
    * Loads the signed-in user as a full, editable entity (the session proxy
    * carries no fields).
    */
+  /**
+   * Whether this session signed in through a one-time login link.
+   *
+   * Core's resetPassLogin() leaves `pass_reset_<uid>` in the session so the
+   * user can set a password without knowing one — the only way in when email
+   * reset is unavailable and no password was ever set. AccountForm also wants
+   * the token echoed in the URL; here the session alone is the proof, since the
+   * pane is same-origin and never sees core's redirect URL.
+   */
+  private function usedOneTimeLink(Request $request): bool {
+    return $request->hasSession()
+      && $request->getSession()->has('pass_reset_' . $this->currentUser->id());
+  }
+
   private function loadAccount(): UserInterface {
     /** @var \Drupal\user\UserInterface $account */
     $account = $this->entityTypeManager->getStorage('user')->load($this->currentUser->id());
