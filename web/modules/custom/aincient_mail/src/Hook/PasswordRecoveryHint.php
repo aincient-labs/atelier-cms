@@ -40,7 +40,7 @@ final class PasswordRecoveryHint {
       '#type' => 'html_tag',
       '#tag' => 'p',
       '#attributes' => ['class' => ['ain-auth-alt']],
-      '#value' => $this->t("Can't sign in? This site can't send email yet, so password reset by email won't arrive. If the site runs in the Atelier manager, use <strong>Open console</strong> there."),
+      '#value' => $this->t("Can't sign in? This site can't send email yet, so password reset by email won't arrive. If the site runs in the Atelier manager, use <strong>Edit my site</strong> there."),
       '#weight' => 200,
     ];
   }
@@ -67,7 +67,7 @@ final class PasswordRecoveryHint {
       'manager' => [
         '#type' => 'html_tag',
         '#tag' => 'p',
-        '#value' => $this->t('If the site runs in the Atelier manager, use <strong>Open console</strong> there to sign in, then set a new password under <strong>My account</strong>.'),
+        '#value' => $this->t('If the site runs in the Atelier manager, use <strong>Edit my site</strong> there to sign in, then set a new password under <strong>My account</strong>.'),
       ],
       'admin' => [
         '#type' => 'html_tag',

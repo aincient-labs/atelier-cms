@@ -434,6 +434,9 @@ function aincient_pages_update_10014(): void {
   if (!$nids) {
     return;
   }
+  // Not from the memory cache: a page an earlier update in this request loaded
+  // carries a field list without field_page_type (atelier-cms#36).
+  $storage->resetCache();
   foreach ($storage->loadMultiple($nids) as $node) {
     $structure = json_decode((string) $node->get('field_page_structure')->value, TRUE);
     $type = is_array($structure) && ($structure['type'] ?? '') === 'blog' ? 'blog' : 'landing';
@@ -595,6 +598,16 @@ function aincient_pages_update_10017(array &$sandbox): void {
       }
     }
     $sandbox['total'] = count($sandbox['queue']);
+  }
+  // Drop every page/block an earlier update in this request already loaded: the
+  // storage memory cache keeps each revision with the field list it was built
+  // with, which predates the field created above, so set() on it would throw
+  // "Field field_component_usage is unknown" (atelier-cms#36 — upgrades from
+  // older releases run more updates, some of which load pages, in one request).
+  foreach (array_keys($targets) as $entityType) {
+    if (\Drupal::entityTypeManager()->hasDefinition($entityType)) {
+      \Drupal::entityTypeManager()->getStorage($entityType)->resetCache();
+    }
   }
   /** @var \Drupal\aincient_pages\PageStore $store */
   $store = \Drupal::service('aincient_pages.store');

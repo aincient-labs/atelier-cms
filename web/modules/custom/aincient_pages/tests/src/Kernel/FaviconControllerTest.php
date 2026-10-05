@@ -58,7 +58,7 @@ final class FaviconControllerTest extends KernelTestBase {
     return FaviconController::create($this->container);
   }
 
-  /** No upload → the bundled neutral default, cacheable, long-lived. */
+  /** No upload → the bundled default (the Atelier mark), cacheable, long-lived. */
   public function testServesBundledDefaultWhenNoFaviconIsSet(): void {
     $response = $this->controller()->icon();
 
@@ -102,6 +102,28 @@ final class FaviconControllerTest extends KernelTestBase {
 
     $this->assertSame(200, $response->getStatusCode());
     $this->assertSame('image/x-icon', $response->headers->get('Content-Type'));
+  }
+
+  /**
+   * No upload → themed pages link the bundled default in place of core's
+   * droplet, so the tab icon matches /favicon.ico (sign-in, 403, admin).
+   */
+  public function testThemedPagesLinkBundledDefaultNotCoreDroplet(): void {
+    $attachments = ['#attached' => ['html_head_link' => [[[
+      'rel' => 'icon',
+      'href' => '/core/misc/favicon.ico',
+      'type' => 'image/vnd.microsoft.icon',
+    ]]]]];
+
+    aincient_pages_page_attachments_alter($attachments);
+
+    $icons = array_values(array_filter(
+      $attachments['#attached']['html_head_link'],
+      static fn(array $link): bool => ($link[0]['rel'] ?? NULL) === 'icon',
+    ));
+    $this->assertCount(1, $icons);
+    $this->assertStringEndsWith('/aincient_pages/images/favicon.ico', $icons[0][0]['href']);
+    $this->assertSame('image/x-icon', $icons[0][0]['type']);
   }
 
 }

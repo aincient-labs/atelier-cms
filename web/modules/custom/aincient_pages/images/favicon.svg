@@ -1,9 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Master for images/favicon.ico — the NEUTRAL default favicon served when the
-     operator has not uploaded one (see FaviconController). Deliberately generic
-     (a dot in a rounded square), NOT the Atelier brand mark: a client site must
-     not silently wear our brand. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect x="32" y="32" width="448" height="448" rx="120" fill="#52525b"/>
-  <circle cx="256" cy="256" r="88" fill="#fafaf9"/>
+<!-- Master for images/favicon.ico: the DEFAULT site favicon served at /favicon.ico
+     (FaviconController) and linked from every page until the operator uploads
+     their own in the Globals studio: the Atelier mark (DECISIONS 0460).
+     Same art as aincient_chat/images/favicon.svg. The .ico frames (16/32/48) are
+     rendered from this geometry with the frame snapped to whole pixels
+     (1/2/3 px), full-bleed, the swipe clipped inside the frame so no corner chips. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="85.582977 85.582977 103.736113 103.736113" role="img" aria-label="Atelier">
+  <defs>
+    <clipPath id="ain-fav-panel"><rect x="90.1830" y="90.1830" width="94.5361" height="94.5361"/></clipPath>
+    <clipPath id="ain-fav-letter"><path d="m 137.58332,119.47935 -7.88927,20.60168 q 0.65456,0 1.8948,0.0344 3.89296,0.10336 5.30545,0.10336 1.72255,0 6.23563,-0.10336 0.99908,-0.0344 1.51584,-0.0344 z m -1.55029,-6.47679 h 5.92556 q 4.47863,13.67704 8.47494,24.97696 4.03077,11.29992 6.33898,16.98433 1.37804,3.27285 2.37712,4.03077 0.99908,0.75792 2.85943,0.75792 h 0.68902 v 2.41157 q -2.68717,-0.13781 -4.92649,-0.20671 -2.20486,-0.0689 -3.7207,-0.0689 -1.92926,0 -4.23747,0.0689 -2.30822,0.0689 -4.89204,0.20671 v -2.41157 h 0.65457 q 2.44602,0 3.34174,-0.55122 0.89573,-0.58566 0.89573,-2.10151 0,-0.55121 -0.13781,-1.20578 -0.1378,-0.68902 -0.44786,-1.6192 l -3.3762,-10.54199 q -1.30913,0 -3.5829,-0.0345 -4.13411,-0.10335 -5.30545,-0.10335 -2.34266,0 -4.44417,0.0344 -2.06706,0 -4.30638,0.0689 -2.44602,6.16673 -3.34174,8.99171 -0.89573,2.82498 -0.89573,4.03076 0,1.6881 0.89573,2.37712 0.89572,0.65457 3.20394,0.65457 h 0.93018 v 2.41157 q -2.51493,-0.13781 -4.71979,-0.20671 -2.17041,-0.0689 -3.89296,-0.0689 -1.37804,0 -3.4451,0.0689 -2.06705,0.0689 -4.47862,0.20671 v -2.37712 q 2.44602,-0.0689 3.85851,-0.96463 1.44694,-0.93017 2.51492,-3.06613 1.92925,-4.03077 6.82129,-16.12306 4.92649,-12.12675 10.36975,-26.63061 z"/></clipPath>
+  </defs>
+  <!-- warm-ink frame: a full-bleed square; everything else is clipped inside it so no corner chips -->
+  <rect x="85.582977" y="85.582977" width="103.736113" height="103.736113" fill="#23201d"/>
+  <g clip-path="url(#ain-fav-panel)">
+    <!-- gessoed panel body -->
+    <rect x="85.582977" y="85.582977" width="103.736113" height="103.736113" fill="#fbfaf7"/>
+    <!-- palette-knife swipe — the one pigment -->
+    <path fill="#c2452a" d="m 147.34886,87.685514 -59.76588,99.633596 40.07243,0.0598 59.6637,-99.795976 z"/>
+    <!-- the second knife pass — gesso through the letter -->
+    <g clip-path="url(#ain-fav-letter)"><path fill="#fbfaf7" transform="translate(-14.194849,18.623259)" d="m 161.67599,69.164683 -59.76587,99.633577 40.07242,0.0598 59.6637,-99.795964 z"/></g>
+  </g>
 </svg>

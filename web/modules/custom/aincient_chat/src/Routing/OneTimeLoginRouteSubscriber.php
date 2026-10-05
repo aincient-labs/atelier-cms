@@ -12,7 +12,7 @@ use Symfony\Component\Routing\RouteCollection;
  * Opens core's one-time login route to signed-in users.
  *
  * Core gates `user.reset.login` on `_user_is_logged_in: FALSE`, so a manager
- * "Open console" link (`drush user:login`) opened in a browser that is already
+ * "Edit my site" link (`drush user:login`) opened in a browser that is already
  * signed in lands on a bare 403. The route now admits everyone and
  * {@see OneTimeLoginController} decides: anonymous → core's own login, same
  * user → straight on, another user → confirm the switch.

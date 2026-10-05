@@ -988,7 +988,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
       $type = htmlspecialchars($favicon['type'], ENT_QUOTES);
     }
     else {
-      // Fall back to the bundled neutral default so the tab icon and the
+      // Fall back to the bundled default (the Atelier mark) so the tab icon and the
       // literal /favicon.ico request (FaviconController) agree. Link the module
       // asset directly — a plain static file every webserver serves — rather
       // than /favicon.ico, which stock .htaccess exempts from the rewrite.

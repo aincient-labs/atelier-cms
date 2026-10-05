@@ -150,11 +150,13 @@ function aincient_pages_metatags_alter(array &$metatags, array &$context): void 
 /**
  * Implements hook_page_attachments_alter().
  *
- * When the operator has uploaded a favicon in the Globals studio (stored on the
- * `aincient_pages.identity` config as a managed-file id), emit it as the site's
- * `<link rel="icon">` and drop core's default favicon link so ours is the only
- * one. Core adds its favicon in hook_page_attachments (BareHtmlPageRenderer),
- * which runs before this _alter, so the default link is present to replace here.
+ * Emit the site's one `<link rel="icon">`: the operator's favicon from the
+ * Globals studio (an `aincient_pages.identity` media token) when set, else the
+ * bundled default (images/favicon.ico, the Atelier mark — the same file
+ * /favicon.ico serves). Either way core's default link is dropped, so Drupal's
+ * droplet never shows on themed pages (sign-in, 403, admin). Core adds its
+ * favicon in hook_page_attachments (BareHtmlPageRenderer), which runs before
+ * this _alter, so the default link is present to replace here.
  * Cache-tagged on the identity config so a re-upload/removal invalidates pages.
  */
 function aincient_pages_page_attachments_alter(array &$attachments): void {
@@ -162,15 +164,14 @@ function aincient_pages_page_attachments_alter(array &$attachments): void {
     return;
   }
   // Tag every page on the identity config so uploading/removing a favicon busts
-  // the cache — even pages that rendered while no favicon was set (which is why
-  // this runs before the early return, not only in the has-favicon branch).
+  // the cache — including pages that rendered with the bundled default.
   $attachments['#cache']['tags'][] = 'config:aincient_pages.identity';
 
   /** @var array{href: string, type: string}|null $favicon */
-  $favicon = \Drupal::service('aincient_pages.site_identity')->faviconLink();
-  if ($favicon === NULL) {
-    return;
-  }
+  $favicon = \Drupal::service('aincient_pages.site_identity')->faviconLink() ?? [
+    'href' => base_path() . \Drupal::service('extension.list.module')->getPath('aincient_pages') . '/images/favicon.ico',
+    'type' => 'image/x-icon',
+  ];
   // Drop core's default favicon so the page carries exactly one rel="icon".
   foreach ($attachments['#attached']['html_head_link'] ?? [] as $i => $link) {
     if (($link[0]['rel'] ?? NULL) === 'icon') {

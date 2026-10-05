@@ -7,10 +7,21 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.18.2] — 2026-10-05
+
+**Upgrades from older releases work again.**
+- Upgrading straight from an older release (such as 0.10.3) to 0.18.1 stopped with "Field
+  field_component_usage is unknown" and rolled back. The upgrade now completes; your pages are
+  indexed for the Components studio as intended. If your site rolled back, switch to 0.18.2 and it
+  upgrades normally. Nothing on your site was changed or lost.
+- Your site's browser tab shows the Atelier mark instead of Drupal's default icon, including on the
+  sign-in and error pages.
+- Sign-in and password-reset messages name the manager's button correctly: **Edit my site**.
+
 ## [0.18.1] — 2026-10-05
 
 **Sign-in fixes.**
-- Opening a one-time sign-in link (such as **Open console** in the manager) while already signed in
+- Opening a one-time sign-in link (such as **Edit my site** in the manager) while already signed in
   no longer shows "Access denied". If it's your own link, you go straight to the console; if it's for
   someone else, you're asked whether to switch accounts. An expired link now says so.
 - After signing in with a one-time link, you can set a password under My account without entering a

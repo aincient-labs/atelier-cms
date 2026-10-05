@@ -135,6 +135,37 @@ final class UsageIndexUpdateTest extends KernelTestBase {
     $this->assertContains('c:hero', $keys, 'the backfill wrote the page');
   }
 
+  /**
+   * A page an EARLIER update in the same request already loaded (#36).
+   *
+   * Coming from an older release, more updates run in one request, and some
+   * load pages. The storage keeps those revisions in its memory cache, each
+   * holding the field list it was built with — which predates the field this
+   * update creates. Backfilling such a cached revision threw "Field
+   * field_component_usage is unknown" and rolled the whole upgrade back.
+   */
+  public function testBackfillsAPageAlreadyLoadedEarlierInTheRequest(): void {
+    $nid = $this->store()->store(['type' => 'landing', 'title' => 'Home', 'sections' => [
+      ['component' => 'hero', 'props' => ['variant' => 'split', 'heading' => 'Hi']],
+    ]]);
+    $storage = \Drupal::entityTypeManager()->getStorage('node');
+    $storage->resetCache();
+    // What an earlier update does: load the latest revision and read a field,
+    // which fixes that entity's field definitions in the memory cache.
+    $earlier = $storage->loadRevision($storage->getLatestRevisionId($nid));
+    $this->assertFalse($earlier->hasField(UsageIndex::FIELD));
+
+    \Drupal::moduleHandler()->loadInclude('aincient_pages', 'install');
+    $sandbox = [];
+    do {
+      aincient_pages_update_10017($sandbox);
+    } while (($sandbox['#finished'] ?? 1) < 1);
+
+    $storage->resetCache();
+    $keys = array_column(Node::load($nid)->get(UsageIndex::FIELD)->getValue(), 'value');
+    $this->assertContains('c:hero', $keys, 'the backfill wrote the page');
+  }
+
   private function store(): PageStore {
     return $this->container->get('aincient_pages.store');
   }

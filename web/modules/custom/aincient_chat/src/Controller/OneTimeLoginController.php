@@ -83,7 +83,7 @@ final class OneTimeLoginController implements ContainerInjectionInterface {
         'message' => [
           '#type' => 'html_tag',
           '#tag' => 'p',
-          '#value' => $this->t('This sign-in link has expired or has already been used. Open the console from the Atelier manager again to get a new one.'),
+          '#value' => $this->t('This sign-in link has expired or has already been used. Use Edit my site in the Atelier manager again to get a new one.'),
         ],
         'back' => [
           '#type' => 'link',

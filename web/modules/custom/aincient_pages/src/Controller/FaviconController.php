@@ -19,8 +19,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * Lighthouse Best Practices hit): the operator-uploaded favicon lives under
  * /sites/default/files/… and the no-upload case has no file at all. Serve the
  * operator's icon when one is set in the Globals studio, else the module's
- * bundled NEUTRAL default (images/favicon.ico — a generic dot-in-square mark,
- * NOT the Atelier brand mark: a client site must not silently wear our brand).
+ * bundled default (images/favicon.ico — the Atelier mark, until the operator
+ * uploads their own; DECISIONS 0460).
  *
  * CACHEABLE both ways (mirrors CollectionDataController): the response is a
  * CacheableResponse tagged with the identity config so internal page cache can
