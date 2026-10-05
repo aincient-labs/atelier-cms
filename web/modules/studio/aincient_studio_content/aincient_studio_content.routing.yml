@@ -133,6 +133,19 @@ aincient_studio_content.page_restore:
     _disable_route_normalizer: 'TRUE'
     _auth: ['cookie', 'basic_auth']
 
+# Any transition of the page's workflow by id (DECISIONS 0454) — the lifecycle
+# bar's path for a site-built workflow; the store validates it is held.
+aincient_studio_content.page_transition:
+  path: '/atelier/page/transition'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\PageController::runTransition'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
 
 # The component catalog the studio's structured section editor renders from.
 aincient_studio_content.page_manifest:
@@ -302,6 +315,19 @@ aincient_studio_content.block_restore:
   path: '/atelier/block/restore'
   defaults:
     _controller: '\Drupal\aincient_studio_content\Controller\BlockController::restore'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio content'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Any transition of the block's workflow by id (DECISIONS 0454) — the lifecycle
+# bar's path for a site-built workflow; the store validates it is held.
+aincient_studio_content.block_transition:
+  path: '/atelier/block/transition'
+  defaults:
+    _controller: '\Drupal\aincient_studio_content\Controller\BlockController::runTransition'
   methods: [POST]
   requirements:
     _permission: 'use aincient studio content'

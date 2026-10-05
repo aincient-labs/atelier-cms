@@ -82,6 +82,22 @@ final class ConstraintControllerTest extends KernelTestBase {
   }
 
   /**
+   * The site's FIRST publish creates the constraint config — core invalidates
+   * a config's tag on update only, so the cached compiled palette must still
+   * go stale (seen live: the first publish did nothing until a cache rebuild).
+   */
+  public function testFirstPublishInvalidatesTheCompiledCatalog(): void {
+    $this->assertTrue($this->config('aincient_pages.site_constraint')->isNew(), 'Precondition: the constraint is not shipped.');
+    $catalog = $this->container->get('aincient_pages.catalog');
+    $this->assertContains('newsletter', $catalog->for('landing')->placeableNames());
+
+    $result = $this->save(['components' => ['newsletter']]);
+    $this->assertNotContains('newsletter', $result['effective']['placeable']);
+    $catalog->reset();
+    $this->assertNotContains('newsletter', $catalog->for('landing')->placeableNames(), 'A later request recompiles.');
+  }
+
+  /**
    * Merge by provided key: publishing one axis leaves the others untouched.
    */
   public function testSaveMergesByProvidedKey(): void {
@@ -133,7 +149,7 @@ final class ConstraintControllerTest extends KernelTestBase {
     $this->container->get('router.builder')->rebuild();
     $provider = $this->container->get('router.route_provider');
     $this->assertInstanceOf(RouteProviderInterface::class, $provider);
-    foreach (['aincient_studio_components.constraint_manifest', 'aincient_studio_components.constraint_save'] as $name) {
+    foreach (['aincient_studio_components.constraint_manifest', 'aincient_studio_components.constraint_save', 'aincient_studio_components.constraint_usage', 'aincient_studio_components.render'] as $name) {
       $route = $provider->getRouteByName($name);
       $this->assertSame('use aincient studio components', $route->getRequirement('_permission'), $name);
       $this->assertSame('components', $route->getRequirement('_aincient_studio_enabled'), $name);
@@ -141,6 +157,55 @@ final class ConstraintControllerTest extends KernelTestBase {
     // And they still answer at the paths the console calls (apiUrl("/constraint/…")).
     $this->assertSame('/atelier/constraint/manifest', $provider->getRouteByName('aincient_studio_components.constraint_manifest')->getPath());
     $this->assertSame('/atelier/constraint/save', $provider->getRouteByName('aincient_studio_components.constraint_save')->getPath());
+  }
+
+
+  /**
+   * Manifest v2 (DECISIONS 0455): one entry per placeable with provenance, a
+   * fixed role group, its own variants + tones, usage and example names.
+   */
+  public function testManifestV2Entries(): void {
+    $state = json_decode((string) $this->controller()->manifest()->getContent(), TRUE);
+    $this->assertSame(2, $state['version']);
+    $byName = array_column($state['components'], NULL, 'name');
+    $hero = $byName['hero'];
+    $this->assertSame('aincient_pages', $hero['provider']);
+    $this->assertSame('openers', $hero['group']);
+    $this->assertSame(['centered', 'split'], $hero['variants']);
+    $this->assertContains('inverted', $hero['tones']);
+    $this->assertNotEmpty($hero['examples']);
+    $this->assertSame(0, $hero['usage']['pages']);
+    $this->assertSame('from_your_site', $byName['block']['group']);
+    $this->assertSame('', $byName['block']['provider']);
+    $this->assertSame('other', ConstraintController::groupOf('spotlight'));
+    $this->assertContains('other', $state['groups']);
+  }
+
+  /**
+   * Per-component tones: stored, compiled for that component only, and the
+   * last-tone / last-variant guards refuse a component with nothing left.
+   */
+  public function testComponentTonesAndGuards(): void {
+    $result = $this->save(['component_tones' => ['stats' => ['inverted']]]);
+    $this->assertSame(200, $result['status']);
+    $this->assertSame(['stats' => ['inverted']], $result['constraint']['component_tones']);
+    $catalog = $this->container->get('aincient_pages.catalog');
+    $catalog->reset();
+    $this->assertNotContains('inverted', $catalog->for('landing')->tonesFor('stats'));
+    $this->assertContains('inverted', $catalog->for('landing')->tonesFor('hero'));
+
+    $this->assertSame(422, $this->save(['component_tones' => ['stats' => ['default', 'muted', 'brand', 'inverted']]])['status']);
+    $this->assertSame(422, $this->save(['variants' => ['hero' => ['centered', 'split']]])['status']);
+  }
+
+  /**
+   * The usage endpoint validates its key.
+   */
+  public function testUsageEndpointValidatesTheKey(): void {
+    $bad = $this->controller()->usage(new Request(['key' => 'nope']));
+    $this->assertSame(400, $bad->getStatusCode());
+    $ok = json_decode((string) $this->controller()->usage(new Request(['key' => 'c:hero']))->getContent(), TRUE);
+    $this->assertSame(0, $ok['total']);
   }
 
 }

@@ -29,6 +29,14 @@ use Symfony\Component\HttpFoundation\Request;
  */
 final class BlockController implements ContainerInjectionInterface {
 
+  /**
+   * Transitions that carry the author's edits on to someone else (review), so
+   * they need update access on top of holding the transition. Every other
+   * transition is gated by its content_moderation permission alone (a reviewer
+   * approves without being able to edit).
+   */
+  private const UPDATE_GATED_TRANSITIONS = ['submit_for_review'];
+
   public function __construct(
     private readonly BlockStore $blocks,
     private readonly NodeModeration $moderation,
@@ -124,6 +132,30 @@ final class BlockController implements ContainerInjectionInterface {
     return $result === NULL
       ? new JsonResponse(['error' => "You don’t have permission to publish this block."], 403)
       : new JsonResponse($result);
+  }
+
+  /**
+   * POST /atelier/block/transition — run ANY transition of the block's workflow.
+   * Body: `{ transition, node_id, base_vid?, langcode? }`.
+   *
+   * The generic path the lifecycle bar uses for a site-built workflow
+   * (DECISIONS 0454): the store still refuses a transition the user doesn't
+   * hold from the current state, so this widens nothing. The shipped
+   * transitions keep their named routes; a transition that hands the doc on
+   * for review needs update access, exactly as there.
+   */
+  public function runTransition(Request $request): JsonResponse {
+    $data = $this->body($request);
+    $id = isset($data['transition']) && is_string($data['transition']) ? $data['transition'] : '';
+    if ($id === '' || !preg_match('/^[a-z0-9_]+$/', $id)) {
+      return new JsonResponse(['error' => 'Expected a transition id.'], 400);
+    }
+    // Publish and Save draft WRITE the schema behind the editor-lock fence on
+    // their own routes; as a bare state change here they would skip both.
+    if (in_array($id, ['publish', 'create_new_draft'], TRUE)) {
+      return new JsonResponse(['error' => "Use /atelier/block/" . ($id === 'publish' ? 'publish' : 'save') . " for that transition."], 400);
+    }
+    return $this->transition($request, $id, requireUpdate: in_array($id, self::UPDATE_GATED_TRANSITIONS, TRUE));
   }
 
   /**

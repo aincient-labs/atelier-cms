@@ -21,6 +21,7 @@ import { rememberThreadWorkflow } from "./flow";
 import { rememberThreadActivity } from "./thread-meta";
 import { rememberThreadWorkingNode } from "./thread-working-node";
 import { rememberThreadSeal } from "./thread-seal";
+import { rememberThreadEditorialState } from "./thread-editorial-state";
 import { loadLatestPage } from "./thread-pages";
 
 /**
@@ -71,6 +72,7 @@ const threadListAdapter: ThreadListSource = Object.assign(new LocalThreadListAda
       if (t.workflow) rememberThreadWorkflow(t.remoteId, t.workflow);
       if (t.lastActivity) rememberThreadActivity(t.remoteId, t.lastActivity);
       if (t.workingNode) rememberThreadWorkingNode(t.remoteId, t.workingNode);
+      rememberThreadEditorialState(t.remoteId, t.editorialState);
       if (typeof t.locked === "boolean") {
         rememberThreadSeal(t.remoteId, t.locked, t.published ?? undefined);
       }

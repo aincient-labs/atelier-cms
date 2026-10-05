@@ -6,6 +6,7 @@ namespace Drupal\aincient_pages\Controller;
 
 use Drupal\aincient_pages\BrandRepository;
 use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Drupal\aincient_pages\Catalog\ExampleRenderer;
 use Drupal\aincient_pages\Catalog\KindCheck;
 use Drupal\aincient_pages\Catalog\PackValidator;
 use Drupal\aincient_pages\SchemaLinter;
@@ -50,6 +51,7 @@ final class PackDevController implements ContainerInjectionInterface {
     private readonly RendererInterface $renderer,
     private readonly BrandRepository $brand,
     private readonly AiGateway $gateway,
+    private readonly ExampleRenderer $examples,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -62,6 +64,7 @@ final class PackDevController implements ContainerInjectionInterface {
       $container->get('renderer'),
       $container->get('aincient_pages.brand'),
       $container->get('aincient_core.inference.gateway'),
+      $container->get('aincient_pages.example_renderer'),
     );
   }
 
@@ -270,39 +273,20 @@ final class PackDevController implements ContainerInjectionInterface {
     $index = (int) $request->query->get('example', 0);
     $tone = (string) $request->query->get('tone', '');
 
-    $def = $this->rawDefinition($name);
-    if ($def === NULL) {
+    if ($this->rawDefinition($name) === NULL) {
       throw new NotFoundHttpException(sprintf('No atelier component "%s".', $name));
     }
-    $examples = $def['thirdPartySettings']['atelier']['examples'] ?? [];
-    if (!isset($examples[$index]) || !is_array($examples[$index])) {
+    $examples = $this->examples->examples($name);
+    if (!isset($examples[$index])) {
       throw new NotFoundHttpException(sprintf('Component "%s" declares no example #%d — add an `examples:` entry to its thirdPartySettings.atelier.', $name, $index));
     }
-    $example = $examples[$index];
-    $props = is_array($example['props'] ?? NULL) ? $example['props'] : [];
-    if ($tone !== '') {
-      $props['tone'] = $tone;
+    // A placeable renders through the page pipeline (its example is
+    // page-schema shaped); a blog part / chrome as a raw SDC (DECISIONS 0455).
+    if (in_array($name, $this->catalog->discovered()->placeableNames(), TRUE)) {
+      return $this->examples->render([['component' => $name, 'example' => $index, 'tone' => $tone]], (string) ($examples[$index]['name'] ?? "$name #$index"));
     }
-    $build = [
-      '#type' => 'component',
-      '#component' => (string) $def['id'],
-      '#props' => $props,
-    ];
-    if (is_array($example['slots'] ?? NULL)) {
-      $build['#slots'] = array_map(
-        static fn($slot) => ['#markup' => is_string($slot) ? $slot : ''],
-        $example['slots'],
-      );
-    }
-    try {
-      $content = (string) $this->renderer->renderInIsolation($build);
-    }
-    catch (\Throwable $e) {
-      // A broken example must render AS a failure, not 500 the gallery grid:
-      // the whole point of the surface is showing the developer what's wrong.
-      $content = '<pre style="padding:2rem;white-space:pre-wrap;color:#b91c1c">' . htmlspecialchars($e->getMessage(), ENT_QUOTES) . '</pre>';
-    }
-    return new Response($this->shell($content, (string) ($example['name'] ?? "$name #$index")));
+    $content = $this->examples->renderRaw($name, $index, $tone) ?? '';
+    return new Response($this->shell($content, (string) ($examples[$index]['name'] ?? "$name #$index")));
   }
 
   /**

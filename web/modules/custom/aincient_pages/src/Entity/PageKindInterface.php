@@ -73,4 +73,27 @@ interface PageKindInterface extends ConfigEntityInterface {
    */
   public function isCollectionSource(): bool;
 
+  /**
+   * TRUE for a composition that is not a page — no URL, no opener, never a
+   * collection source, never offered as a page type (the `block` kind,
+   * DECISIONS 0455). A fragment kind governs what a reusable block contains.
+   */
+  public function isFragment(): bool;
+
+  /**
+   * TRUE when components the allow map does not name are offered ("allowed
+   * automatically" — new pack components arrive on their own); FALSE when the
+   * map is an allow list ("off until I allow them"). DECISIONS 0455.
+   */
+  public function includesNew(): bool;
+
+  /**
+   * The deny list: component names this kind never offers. Applied after the
+   * allow list, so an empty allow list + a deny list = "every component,
+   * including new pack ones, except these" (DECISIONS 0455).
+   *
+   * @return string[]
+   */
+  public function removed(): array;
+
 }

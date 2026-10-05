@@ -48,6 +48,13 @@ final class BrandEvalAssertionsTest extends UnitTestCase {
     yield 'list mismatch' => [['rejected' => ['brand_primary']], $o, FALSE];
     yield 'exact string' => [['slice.brand_primary' => 'var(--color-yellow-500)'], $o, TRUE];
     yield 'missing key fails a regex' => [['slice.nothing' => '/x/'], $o, FALSE];
+    // Conditional: a claim that is only a lie when the measured fact says so.
+    $claim = ['prose' => 'White text on it now passes AA.'] + $o;
+    yield 'unless: guard holds → waived' => [['prose' => '!/passes AA/i unless contrast.brand_primary >= 4.5'], $claim, TRUE];
+    yield 'unless: guard fails → checked, claim caught' => [['prose' => '!/passes AA/i unless contrast.brand_primary >= 4.5'], ['contrast.brand_primary' => 3.4] + $claim, FALSE];
+    yield 'unless: guard fails → checked, honest prose passes' => [['prose' => '!/passes AA/i unless contrast.brand_primary >= 4.5'], ['contrast.brand_primary' => 3.4] + $o, TRUE];
+    yield 'unless: missing guard key does not hold' => [['prose' => '!/passes AA/i unless contrast.nothing >= 4.5'], $claim, FALSE];
+    yield 'unless: prose_not sugar' => [['prose_not' => '/passes AA/i unless contrast.brand_primary >= 4.5'], ['contrast.brand_primary' => 3.4] + $claim, FALSE];
   }
 
   #[DataProvider('forms')]

@@ -45,7 +45,7 @@ const subscribers = new Set<() => void>();
 /**
  * Cross-reload token carry (studio handover).
  *
- * A studio→studio handover that navigates the page (Content's "Run checks" →
+ * A studio→studio handover that navigates the page (Content's Checks row "Open Checks" →
  * Checks is a real navigation) drops this module's in-memory token, so the target
  * studio would re-acquire with no token and see the lock held_self — the pen it
  * legitimately holds, lost on the hop. We stash the token in sessionStorage

@@ -19,7 +19,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * node applies specialists' work end-of-turn), so it also lost `preview_brand`'s
  * `reset=true` path. This restores that one capability as a tiny dedicated tool:
  * "start over / revert / undo my changes" → the agent calls this, which emits a
- * `brand_preview` envelope with `reset: true`. It rides the EXISTING Invoke
+ * `brand_preview` envelope whose batch is `[{verb: reset}]`. It rides the EXISTING Invoke
  * widget-harvest path (it's a normal tool result, not a specialist slice), so
  * the merge node ignores it and the dispatcher surfaces it like any other
  * tool-produced widget. Draft-only, like every brand tool — it clears the

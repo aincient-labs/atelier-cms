@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_audit\Kernel;
 
+use Drupal\aincient_audit\AuditTarget;
 use Drupal\Component\Serialization\Yaml;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -14,8 +15,16 @@ use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**
- * Checks opened from a TRANSLATION audits that translation (M3, finding B).
+ * Which copy of a page Checks audits: the requested LANGUAGE and REVISION.
  *
+ * Revision (DECISIONS 0450): the live page by default, the latest saved draft
+ * on request, each falling to the other copy when the requested one doesn't
+ * exist — and the report's `audited` block names the copy actually read. The
+ * policy workflows re-load the page themselves, so the findings must come from
+ * that same copy, not just the envelope.
+ *
+ * Language (M3, finding B): Checks opened from a TRANSLATION audits that
+ * translation.
  * The console deep link now carries the langcode
  * (`/atelier/checks/node/5/de` → `?langcode=de` on the report endpoint), and
  * {@see \Drupal\aincient_audit\Controller\AuditController::report} loads that
@@ -25,9 +34,10 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
  *
  * @group aincient_audit
  * @covers \Drupal\aincient_audit\AuditEngine::audit
+ * @covers \Drupal\aincient_audit\AuditTarget
  */
 #[RunTestsInSeparateProcesses]
-final class AuditTranslationTest extends KernelTestBase {
+final class AuditTargetTest extends KernelTestBase {
 
   use EditorialWorkflowTestTrait;
   use UserCreationTrait;
@@ -232,6 +242,174 @@ final class AuditTranslationTest extends KernelTestBase {
 
     $enIds = $ids($check->evaluate($moderation->loadLatestRevision($nid, 'aincient_page')));
     $this->assertNotContains('links.fragment:pricing', $enIds, 'On the English page the anchor resolves.');
+  }
+
+
+  /** A landing page whose CTA points at #$fragment — no heading carries it. */
+  private function withBrokenAnchor(string $title, string $fragment): array {
+    return ['type' => 'landing', 'title' => $title, 'sections' => [
+      ['component' => 'cta', 'props' => ['heading' => 'Go', 'cta_label' => 'Go', 'cta_url' => '#' . $fragment]],
+    ]];
+  }
+
+  /** The finding ids of a report, across every check. */
+  private function findingIds(array $report): array {
+    return array_column(array_merge(...array_column($report['checks'], 'findings')), 'id');
+  }
+
+  /**
+   * Live by default; the draft on request — and the FINDINGS come from the same
+   * copy as the envelope (the policy workflows re-load through AuditTarget).
+   */
+  public function testLiveByDefaultDraftOnRequest(): void {
+    /** @var \Drupal\aincient_pages\PageStore $store */
+    $store = $this->container->get('aincient_pages.store');
+    $nid = $store->store($this->withBrokenAnchor('Our Story', 'live-anchor'));
+    $store->publish($nid, $this->withBrokenAnchor('Our Story', 'live-anchor'));
+    // Edit the LOADED page: sections are keyed by slot id, so a fresh schema
+    // would not replace the CTA.
+    $revised = $store->load($nid);
+    $revised['title'] = 'Our Story, revised';
+    $revised['sections'][0]['props']['cta_url'] = '#draft-anchor';
+    $store->saveDraft($revised, $nid);
+
+    $target = $this->container->get('aincient_audit.target');
+    $engine = $this->container->get('aincient_audit.engine');
+
+    $live = $engine->audit($target->load($nid));
+    $this->assertSame('Our Story', $live['title']);
+    $this->assertSame('live', $live['audited']['requested']);
+    $this->assertSame('live', $live['audited']['revision']);
+    $this->assertContains('links.fragment:live-anchor', $this->findingIds($live));
+    $this->assertNotContains('links.fragment:draft-anchor', $this->findingIds($live));
+
+    $draft = $engine->audit($target->load($nid, AuditTarget::DRAFT), AuditTarget::DRAFT);
+    $this->assertSame('Our Story, revised', $draft['title']);
+    $this->assertSame('draft', $draft['audited']['requested']);
+    $this->assertSame('draft', $draft['audited']['revision']);
+    $this->assertNotSame($live['audited']['revision_id'], $draft['audited']['revision_id']);
+    $this->assertContains('links.fragment:draft-anchor', $this->findingIds($draft));
+    $this->assertNotContains('links.fragment:live-anchor', $this->findingIds($draft));
+
+    // The header's language switcher (`hreflang` links) is built from the
+    // CURRENT request — here the CLI's `<none>` route — so it must not be
+    // graded as page content (it once failed as `links.broken:/%3Cnone%3E`).
+    $broken = array_filter(array_merge($this->findingIds($live), $this->findingIds($draft)), fn (string $id): bool => str_starts_with($id, 'links.broken:'));
+    $this->assertSame([], array_values($broken));
+  }
+
+  /**
+   * The unsaved draft (DECISIONS 0453): a schema written onto a CLONE of the
+   * latest revision is graded in memory — title and links included — saves
+   * nothing, and grades exactly as the same schema does once saved.
+   *
+   * @covers \Drupal\aincient_audit\AuditEngine::auditUnsaved
+   */
+  public function testUnsavedDraftIsGradedInMemory(): void {
+    /** @var \Drupal\aincient_pages\PageStore $store */
+    $store = $this->container->get('aincient_pages.store');
+    $nid = $store->store($this->withBrokenAnchor('Our Story', 'live-anchor'));
+    $store->publish($nid, $this->withBrokenAnchor('Our Story', 'live-anchor'));
+
+    $target = $this->container->get('aincient_audit.target');
+    $engine = $this->container->get('aincient_audit.engine');
+    $nodes = $this->container->get('entity_type.manager')->getStorage('node');
+    $head = $target->load($nid, AuditTarget::DRAFT);
+    $revisions = $nodes->revisionIds($head);
+
+    $schema = $store->load($nid);
+    $schema['title'] = 'Our Story, staged';
+    $schema['sections'][0]['props']['cta_url'] = '#staged-anchor';
+    $draft = clone $head;
+    $store->writeSchema($draft, $schema);
+    $unsaved = $engine->auditUnsaved($draft);
+
+    $this->assertSame('Our Story, staged', $unsaved['title']);
+    $this->assertSame(['draft', 'unsaved'], [$unsaved['audited']['requested'], $unsaved['audited']['revision']]);
+    $this->assertContains('links.fragment:staged-anchor', $this->findingIds($unsaved));
+    $this->assertNotContains('links.fragment:live-anchor', $this->findingIds($unsaved));
+
+    // Nothing was written: no new revision, and the loaded head is untouched.
+    $nodes->resetCache();
+    $this->assertSame($revisions, $nodes->revisionIds($head));
+    $this->assertSame('Our Story', $target->load($nid, AuditTarget::DRAFT)->label());
+    $this->assertSame('Our Story', $head->label());
+
+    // Saving the same schema grades identically: in memory is what Save stores.
+    $store->saveDraft($schema, $nid);
+    $saved = $engine->audit($target->load($nid, AuditTarget::DRAFT), AuditTarget::DRAFT);
+    $this->assertSame($saved['checks'], $unsaved['checks']);
+    $this->assertSame($saved['summary'], $unsaved['summary']);
+  }
+
+  /**
+   * A translation's unsaved draft is graded as that translation.
+   *
+   * @covers \Drupal\aincient_audit\AuditEngine::auditUnsaved
+   */
+  public function testUnsavedTranslationDraft(): void {
+    /** @var \Drupal\aincient_pages\PageStore $store */
+    $store = $this->container->get('aincient_pages.store');
+    $nid = $store->store($this->schema('Our Story'));
+    $store->publish($nid, $this->schema('Our Story'));
+    $store->publish($nid, $this->schema('Unsere Geschichte'), 'de');
+
+    $head = $this->container->get('aincient_audit.target')->load($nid, AuditTarget::DRAFT, 'de');
+    $draft = clone $head;
+    $store->writeSchema($draft, $this->schema('Unsere Geschichte, neu'));
+    $report = $this->container->get('aincient_audit.engine')->auditUnsaved($draft);
+
+    $this->assertSame('Unsere Geschichte, neu', $report['title']);
+    $this->assertSame('de', $report['audited']['langcode']);
+    $this->assertSame('Our Story', $store->load($nid)['title']);
+  }
+
+  /**
+   * A requested copy that doesn't exist falls to the other one, and the report
+   * says so: never published → the draft; no pending draft → the live page.
+   */
+  public function testMissingCopyFallsToTheOther(): void {
+    /** @var \Drupal\aincient_pages\PageStore $store */
+    $store = $this->container->get('aincient_pages.store');
+    $target = $this->container->get('aincient_audit.target');
+    $engine = $this->container->get('aincient_audit.engine');
+
+    $nid = $store->store($this->schema('Not yet live'));
+    $report = $engine->audit($target->load($nid));
+    $this->assertSame(['live', 'draft'], [$report['audited']['requested'], $report['audited']['revision']]);
+
+    $store->publish($nid, $this->schema('Now live'));
+    $report = $engine->audit($target->load($nid, AuditTarget::DRAFT), AuditTarget::DRAFT);
+    $this->assertSame('Now live', $report['title']);
+    $this->assertSame(['draft', 'live'], [$report['audited']['requested'], $report['audited']['revision']]);
+  }
+
+  /**
+   * A translation that exists only as a draft has no live copy: a live request
+   * for it reads the German draft, never the English live page.
+   */
+  public function testUnpublishedTranslationFallsToItsDraft(): void {
+    /** @var \Drupal\aincient_pages\PageStore $store */
+    $store = $this->container->get('aincient_pages.store');
+    $nid = $store->store($this->schema('Our Story'));
+    $store->publish($nid, $this->schema('Our Story'));
+    $store->saveDraft($this->schema('Unsere Geschichte'), $nid, 'de');
+
+    $node = $this->container->get('aincient_audit.target')->load($nid, AuditTarget::LIVE, 'de');
+    $report = $this->container->get('aincient_audit.engine')->audit($node);
+    $this->assertSame('Unsere Geschichte', $report['title']);
+    $this->assertSame('draft', $report['audited']['revision']);
+    $this->assertSame('de', $report['audited']['langcode']);
+  }
+
+  /**
+   * Only the names "live" and "draft" mean anything; anything else is live.
+   */
+  public function testNormalize(): void {
+    $this->assertSame('draft', AuditTarget::normalize('draft'));
+    foreach (['live', NULL, '', 'DRAFT', 'latest', 1] as $value) {
+      $this->assertSame('live', AuditTarget::normalize($value));
+    }
   }
 
 }

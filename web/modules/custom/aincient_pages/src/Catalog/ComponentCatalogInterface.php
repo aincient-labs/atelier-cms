@@ -29,7 +29,7 @@ interface ComponentCatalogInterface {
    *
    * @return array<string, array{label: string, hint: string, mode: string}>
    */
-  public function kinds(): array;
+  public function kinds(bool $includeFragments = FALSE): array;
 
   /**
    * The UNDIMINISHED discovered palette — no site constraint, no kind
@@ -54,5 +54,11 @@ interface ComponentCatalogInterface {
    * @return string[]
    */
   public function collectionSources(): array;
+
+  /**
+   * Compile a catalog for UNSAVED kind values and/or site constraint — the
+   * Components studio's dry run. Never cached, never saved.
+   */
+  public function compileDraft(string $kind, array $kindValues = [], ?array $constraint = NULL): EffectiveCatalog;
 
 }

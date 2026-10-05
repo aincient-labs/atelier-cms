@@ -3,10 +3,13 @@ import {
   Button,
   Checkbox,
   Chip,
+  COMPONENT_ICON_NAMES,
+  ComponentIcon,
   Dialog,
   DocumentIcon,
   EmptyState,
   LoadingState,
+  ComposingState,
   DialogClose,
   Field,
   FieldRevert,
@@ -230,6 +233,17 @@ export function KitGallery() {
           </Row>
         </Specimen>
 
+        <Specimen name="ComponentIcon" note="One line icon per built-in page component, a generic mark for anything else (packs). 16px, ink stroke; always beside the component's name.">
+          <div className="ain-kitgallery__icons">
+            {[...COMPONENT_ICON_NAMES, "acme_pack_ticker"].map((n) => (
+              <span key={n} className="ain-kitgallery__icon">
+                <ComponentIcon name={n} />
+                {n}
+              </span>
+            ))}
+          </div>
+        </Specimen>
+
         <Specimen name="SegmentedControl" note="A value that changes what one panel shows. The active option is raised paper, never the accent.">
           <SegmentedControl
             label="View"
@@ -390,6 +404,15 @@ export function KitGallery() {
           </div>
           <div className="ain-kitgallery__stage">
             <LoadingState label="Loading the shelf" rows={3} thumb />
+          </div>
+        </Specimen>
+
+        <Specimen name="ComposingState" note="A preview canvas waiting for its render: the shape of a page (or one section), its bars pulsing like every skeleton; nothing for the first 150ms.">
+          <div className="ain-kitgallery__stage">
+            <ComposingState label="Rendering the page" />
+          </div>
+          <div className="ain-kitgallery__stage">
+            <ComposingState label="Rendering the component" shape="section" />
           </div>
         </Specimen>
 

@@ -4,14 +4,134 @@
  * the same aincient-chat.css as the console's. Every class is prefixed with the
  * studio id (`.ain-components-`), values are system tokens only, no raw colours,
  * no opacity dimming (0376) — `studio-css.test.ts` holds the tree to it. Layout
- * primitives (`.ain-field`, `.ain-studio__*`, `.ain-btn`) are the console's and
- * are used, never redefined, here.
+ * primitives (`.ain-field`, `.ain-studio__*`, `.ain-preview*`, `.ain-btn`) are the
+ * console's and are used, never redefined, here.
  */
-.ain-components__tier { margin: 8px 0 4px; display: flex; flex-direction: column; gap: 4px; }
-.ain-components__tiertitle { margin: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ain-color-text-faint); }
-.ain-components__row { min-inline-size: 0; }
-.ain-components__glyph { flex: 0 0 auto; font-size: 12px; line-height: 1; color: var(--ain-color-text-faint); }
-.ain-components__use { flex: 1 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ain-color-text-faint); }
+
+/* ── Rail ─────────────────────────────────────────────────────────────────── */
+.ain-components__tools { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 4px; }
+.ain-components__filters { align-self: stretch; }
+.ain-components__empty { margin: 6px 0; font-size: 12px; color: var(--ain-color-text-muted); }
+
+.ain-components__group { margin: 8px 0 2px; }
+.ain-components__grouptitle { margin: 0 0 2px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ain-color-text-muted); }
+.ain-components__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+
+.ain-components__item { border-radius: var(--ain-radius-md); border: 1px solid var(--ain-color-surface); }
+.ain-components__item[data-selected] { border-color: var(--ain-color-border); background: var(--ain-color-surface-raised); }
+.ain-components__row { display: flex; align-items: center; gap: 8px; min-inline-size: 0; padding: 0 0 0 6px; }
+.ain-components__select {
+  flex: 1 1 auto; min-inline-size: 0; display: flex; align-items: center; gap: 8px;
+  padding: 6px 6px 6px 0; border: 0; background: none; cursor: pointer; text-align: left;
+  font: inherit; font-size: 13px; color: var(--ain-color-text);
+}
+.ain-components__select:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: -2px; border-radius: var(--ain-radius-md); }
+.ain-components__item[data-off] .ain-components__name { color: var(--ain-color-text-muted); text-decoration: line-through; }
+.ain-components__icon { flex: none; display: flex; color: var(--ain-color-text-muted); }
+.ain-components__name { flex: 0 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ain-components__tag {
+  flex: none; max-inline-size: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 1px 5px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  font-family: var(--ain-font-mono); font-size: 10px; line-height: 1.4; color: var(--ain-color-text-muted);
+}
+.ain-components__count { margin-left: auto; flex: none; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ain-color-text-muted); }
+
+.ain-components__panel { display: flex; flex-direction: column; gap: 8px; padding: 2px 10px 10px 30px; }
+.ain-components__use { margin: 0; font-size: 12px; line-height: 1.45; color: var(--ain-color-text); }
+.ain-components__hint { margin: 0; font-size: 11px; line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-components__subtitle { margin: 0 0 3px; font-size: 11px; font-weight: 600; color: var(--ain-color-text-muted); }
+.ain-components__ticks { display: flex; flex-direction: column; }
+.ain-components__tickrow { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.ain-components__tick { min-inline-size: 0; margin: 0; }
+
+.ain-components__usedon { display: flex; flex-direction: column; }
+.ain-components__usedlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.ain-components__useditem { display: flex; align-items: center; gap: 6px; min-inline-size: 0; font-size: 12px; }
+.ain-components__usedtitle { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ain-color-text); }
+.ain-components__usedmore { font-size: 11px; color: var(--ain-color-text-muted); }
+
 .ain-components__warnings { margin: 0 12px 4px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
 .ain-components__warning { display: flex; align-items: baseline; gap: 5px; font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); }
 .ain-components__warning svg { flex: 0 0 auto; translate: 0 2px; }
+
+/* ── Scopes (P1b) ─────────────────────────────────────────────────────────── */
+.ain-components__scope { padding: 8px 12px 0; }
+.ain-components__notice { margin: 4px 0; font-size: 13px; line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-components__regime { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px; }
+.ain-components__limit { max-inline-size: 96px; }
+.ain-components__doclink { min-inline-size: 0; display: inline-flex; color: var(--ain-color-text); text-decoration: underline; text-decoration-color: var(--ain-color-border); text-underline-offset: 2px; }
+.ain-components__doclink:hover { text-decoration-color: currentColor; }
+.ain-components__doclink:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 1px; border-radius: var(--ain-radius-md); }
+.ain-components__sitelink {
+  flex: none; padding: 0 6px 0 0; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 11px; color: var(--ain-color-text-muted); text-decoration: underline; text-underline-offset: 2px;
+}
+.ain-components__sitelink:hover { color: var(--ain-color-text); }
+.ain-components__sitelink:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 1px; }
+
+/* Packs (P3, P4b): the override badge + switch, the "Can't be used" rows. */
+.ain-components__override {
+  flex: none; max-inline-size: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 1px 5px; border: 1px solid var(--ain-color-accent); border-radius: var(--ain-radius-md);
+  font-size: 10px; line-height: 1.4; color: var(--ain-color-accent);
+}
+.ain-components__override[data-off] { border-color: var(--ain-color-border); color: var(--ain-color-text-muted); }
+.ain-components__override-switch { display: flex; flex-direction: column; gap: 2px; }
+.ain-components__blocked { display: flex; flex-direction: column; gap: 2px; padding: 6px 6px 6px 30px; cursor: default; }
+.ain-components__blockedhead { display: flex; align-items: center; gap: 8px; min-inline-size: 0; font-size: 13px; color: var(--ain-color-text-muted); }
+
+/* The impact list Publish shows first (D6). */
+.ain-components__impact {
+  margin: 4px 12px 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
+  border: 1px solid var(--ain-color-warning); border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised);
+}
+.ain-components__impacttitle { margin: 0; display: flex; align-items: baseline; gap: 6px; font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--ain-color-text); }
+.ain-components__impacttitle svg { flex: none; translate: 0 2px; color: var(--ain-color-warning); }
+.ain-components__impactlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; max-block-size: 240px; overflow-y: auto; }
+.ain-components__impactitem { display: flex; flex-direction: column; gap: 2px; }
+.ain-components__impactrows { margin: 0; padding: 0 0 0 12px; list-style: none; display: flex; flex-direction: column; gap: 1px; }
+.ain-components__impactrow { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); }
+.ain-components__impactactions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ── Canvas ───────────────────────────────────────────────────────────────── */
+.ain-components-preview__strip {
+  flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  padding: 6px 12px; border-bottom: 1px solid var(--ain-color-border); background: var(--ain-color-surface);
+}
+.ain-components-preview__caption { font-size: 12px; font-weight: 600; color: var(--ain-color-text); }
+.ain-components-preview__select { inline-size: auto; max-inline-size: 220px; }
+.ain-components-preview__width { margin-left: auto; font-variant-numeric: tabular-nums; }
+.ain-components-preview__note { font-size: 11px; color: var(--ain-color-text-muted); }
+/* The canvas: one browser window (or two for Compare) on the paper. Each
+   window holds the page at its TRUE width, scaled down to fit (BrowserWindow),
+   so nothing overflows sideways; a narrow width (375) sits at real size. */
+.ain-components-preview__canvas {
+  flex: 1; min-height: 0; display: flex; align-items: flex-start; justify-content: center; gap: 16px;
+  padding: 20px; overflow: hidden; background: var(--ain-color-bg);
+}
+.ain-components-preview__window {
+  flex: 1 1 0; min-inline-size: 0; display: flex; flex-direction: column;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-lg); overflow: hidden;
+  background: var(--ain-color-surface);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 10%, transparent),
+    0 12px 32px -16px color-mix(in oklch, var(--ain-color-shadow) 35%, transparent);
+}
+.ain-components-preview__chrome {
+  flex: none; display: flex; align-items: center; gap: 10px; min-inline-size: 0;
+  padding: 7px 10px; border-bottom: 1px solid var(--ain-color-border); background: var(--ain-color-surface-raised);
+}
+.ain-components-preview__dots { flex: none; display: flex; gap: 5px; }
+.ain-components-preview__dots i { inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--ain-color-border-strong); }
+.ain-components-preview__caption-bar {
+  flex: 1 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--ain-font-mono); font-size: 10.5px; color: var(--ain-color-text-muted);
+}
+.ain-components-preview__zoom {
+  flex: none; font-family: var(--ain-font-mono); font-size: 10.5px; font-variant-numeric: tabular-nums;
+  color: var(--ain-color-text-muted);
+}
+.ain-components-preview__viewport { position: relative; flex: none; overflow: hidden; background: var(--ain-color-surface); }
+.ain-components-preview__frame {
+  position: absolute; inset-block-start: 0; inset-inline-start: 0; block-size: 100%;
+  border: 0; transform-origin: 0 0; background: var(--ain-color-surface);
+}

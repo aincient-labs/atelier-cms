@@ -28,6 +28,10 @@ studios:
     agents:
       - aincient_audit_agent
     default: aincient_audit_agent
+  components:
+    agents:
+      - aincient_components_agent
+    default: aincient_components_agent
 workflow_metadata:
   aincient_operator_agent_loop:
     welcome: 'Welcome to your studio'
@@ -56,3 +60,10 @@ workflow_metadata:
     welcome: 'Let’s check a page'
     description: 'Pick a page and I’ll audit its SEO, meta tags, and internal links — I only report findings, I never change anything.'
     freeform_only: true
+  aincient_components_agent:
+    welcome: 'Let’s choose your components'
+    description: 'Ask me to review the components your site offers, or tell me what to turn on or off — I stage the change here for you to publish.'
+    sample_asks:
+      - 'Review my components'
+      - 'Which components fit a small bakery site?'
+      - 'Turn off what we never use'

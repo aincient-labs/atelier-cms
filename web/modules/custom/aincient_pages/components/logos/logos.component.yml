@@ -27,3 +27,34 @@ thirdPartySettings:
       tone: ''
       heading: ''
       logos: '[{name,image,url}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Software customers'
+        props:
+          heading: 'Trusted by teams at'
+          logos:
+            - name: 'Brightwater Studio'
+              image: 'placeholder:logo-1'
+              url: '/customers/brightwater'
+            - name: 'Halden Clinics'
+              image: 'placeholder:logo-2'
+              url: '/customers/halden'
+            - name: 'Okafor and Lee'
+              image: 'placeholder:logo-3'
+              url: '/customers/okafor-lee'
+            - name: 'Marlow Coffee'
+              image: 'placeholder:logo-4'
+              url: '/customers/marlow'
+            - name: 'Fernhill Dental'
+              image: 'placeholder:logo-5'
+              url: '/customers/fernhill'
+      - name: 'Bakery suppliers'
+        props:
+          heading: 'Flour and dairy from local partners'
+          logos:
+            - name: 'Elbmühle'
+              image: 'placeholder:logo-1'
+            - name: 'Hollerhof Dairy'
+              image: 'placeholder:logo-2'
+            - name: 'Nordgrain'
+              image: 'placeholder:logo-3'

@@ -529,3 +529,111 @@ function aincient_pages_update_10016(array &$sandbox): void {
   $sandbox['done'] += count($batch);
   $sandbox['#finished'] = $sandbox['ids'] ? $sandbox['done'] / max(1, $sandbox['total']) : 1;
 }
+
+/**
+ * Create + backfill `field_component_usage`, the derived component-usage index.
+ *
+ * DECISIONS 0455: the Components studio shows how many pages and blocks use
+ * each component / variant / tone. That lives inside the structure JSON, which
+ * a query cannot reach, so PageStore::writeSchema() projects it onto this
+ * multi-value field on every save (the field_page_type pattern, 0329). Created
+ * here because the appliance runs updatedb BEFORE config:import; the backfill
+ * writes each page's and block's LATEST revision in place (no new revision —
+ * not an editorial event). Idempotent.
+ *
+ * The fields are created FROM config/sync when it carries them, UUID included:
+ * a field created with a fresh UUID is a different entity to config:import,
+ * which deletes it (purging this backfill) and recreates it empty.
+ */
+function aincient_pages_update_10017(array &$sandbox): void {
+  $targets = ['node' => ['aincient_page', 'type'], 'media' => ['block', 'bundle']];
+  $sync = \Drupal::service('config.storage.sync');
+  $fromSync = static fn (string $name, array $fallback): array => ($sync->read($name) ?: []) + $fallback;
+  if (!isset($sandbox['queue'])) {
+    foreach ($targets as $entityType => [$bundle]) {
+      if (!\Drupal::entityTypeManager()->hasDefinition($entityType)) {
+        continue;
+      }
+      if (!FieldStorageConfig::loadByName($entityType, 'field_component_usage')) {
+        FieldStorageConfig::create($fromSync("field.storage.$entityType.field_component_usage", [
+          'field_name' => 'field_component_usage',
+          'entity_type' => $entityType,
+          'type' => 'string',
+          'cardinality' => -1,
+          'translatable' => FALSE,
+          'settings' => ['max_length' => 128, 'case_sensitive' => FALSE, 'is_ascii' => FALSE],
+          'indexes' => ['value' => ['value']],
+        ]))->save();
+      }
+      $bundleExists = $entityType === 'node'
+        ? \Drupal\node\Entity\NodeType::load($bundle) !== NULL
+        : \Drupal::entityTypeManager()->getStorage('media_type')->load($bundle) !== NULL;
+      if ($bundleExists && !FieldConfig::loadByName($entityType, $bundle, 'field_component_usage')) {
+        FieldConfig::create($fromSync("field.field.$entityType.$bundle.field_component_usage", [
+          'field_name' => 'field_component_usage',
+          'entity_type' => $entityType,
+          'bundle' => $bundle,
+          'label' => 'Component usage (derived)',
+          'description' => 'Derived index of the components, variants and tones the layout uses (c:/v:/t: keys). Written by PageStore on save — never edit by hand; the structure is canonical.',
+          'required' => FALSE,
+          'translatable' => FALSE,
+        ]))->save();
+      }
+    }
+    $sandbox['queue'] = [];
+    foreach ($targets as $entityType => [$bundle, $bundleKey]) {
+      if (!FieldConfig::loadByName($entityType, $bundle, 'field_component_usage')) {
+        continue;
+      }
+      $vids = \Drupal::entityTypeManager()->getStorage($entityType)->getQuery()
+        ->accessCheck(FALSE)
+        ->latestRevision()
+        ->condition($bundleKey, $bundle)
+        ->execute();
+      foreach (array_keys($vids) as $vid) {
+        $sandbox['queue'][] = [$entityType, (int) $vid];
+      }
+    }
+    $sandbox['total'] = count($sandbox['queue']);
+  }
+  /** @var \Drupal\aincient_pages\PageStore $store */
+  $store = \Drupal::service('aincient_pages.store');
+  foreach (array_splice($sandbox['queue'], 0, 25) as [$entityType, $vid]) {
+    $entity = \Drupal::entityTypeManager()->getStorage($entityType)->loadRevision($vid);
+    if (!$entity instanceof ContentEntityInterface) {
+      continue;
+    }
+    $entity = $entity->getUntranslated();
+    $entity->set('field_component_usage', \Drupal\aincient_pages\UsageIndex::keys($store->resolve($entity)));
+    $entity->setNewRevision(FALSE);
+    $entity->setSyncing(TRUE);
+    $entity->save();
+  }
+  $sandbox['#finished'] = $sandbox['total'] === 0 ? 1 : 1 - count($sandbox['queue']) / $sandbox['total'];
+}
+
+/**
+ * Create the built-in `block` page kind (DECISIONS 0455).
+ *
+ * A composition that is not a page: it governs what a reusable block may
+ * contain. Starts allowing everything (D7 — no block changes on upgrade).
+ * Idempotent: an existing (possibly owner-tuned) block kind is left alone.
+ */
+function aincient_pages_update_10018(): void {
+  $storage = \Drupal::entityTypeManager()->getStorage('page_kind');
+  if ($storage->load('block') === NULL) {
+    $storage->create([
+      'id' => 'block',
+      'label' => 'Block',
+      'hint' => 'A reusable fragment of sections placed on many pages — governs what a block may contain.',
+      'mode' => 'composition',
+      'components' => [],
+      'opener' => '',
+      'limits' => [],
+      'collection_source' => FALSE,
+      'fragment' => TRUE,
+      'removed' => [],
+    ])->save();
+  }
+}
+

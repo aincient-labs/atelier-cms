@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   subscribePageDraft,
   subscribePreviewReload,
@@ -10,6 +10,9 @@ import {
   getPageNode,
   getPageLang,
   getAuthoringNew,
+  isPageLoading,
+  getPageBaseline,
+  subscribePageBaseline,
   setSelectedSection,
   getSelectedSection,
   subscribeSelectedSection,
@@ -23,9 +26,11 @@ import {
   neutralizePreviewTabbing,
   paintSelection,
 } from "./preview-nav";
+import { ComposingState } from "./kit/composing-state";
 import { EmptyState } from "./kit/empty-state";
 import { Notice } from "./kit/notice";
 import { PanelBar } from "./kit/panel-bar";
+import { SegmentedControl } from "./kit/segmented";
 import { ContentBrowser } from "./content-browser";
 import { PresencePreview } from "./presence-preview";
 import { useFacet } from "./page-facet";
@@ -64,6 +69,51 @@ const DEBOUNCE_MS = 220;
 /** Crossfade duration — keep in sync with `.ain-preview__frame` transition. */
 const FADE_MS = 260;
 
+/**
+ * A second way to look at the open page, contributed by a studio (DECISIONS
+ * 0453, S3): the preview bar offers "Page" plus each lens, and an active lens
+ * paints over the rendered page (the page frames stay mounted underneath, so
+ * switching back keeps the scroll). `render` gets the working draft and its
+ * saved baseline — a lens compares them — and is called again on every draft
+ * or baseline change. `count` badges the lens's switch (e.g. findings in it).
+ */
+export type PreviewLens = {
+  id: string;
+  label: string;
+  count?: number;
+  render: (draft: PageSchema | null, base: PageSchema | null) => ReactNode;
+};
+
+/** A marker over one section of the rendered page — a studio's annotation
+ *  (Checks: a failing or changed section). `section` is the slot id the
+ *  preview render stamps as `data-ain-sec`. */
+export type PreviewPin = {
+  section: string;
+  tone: "fail" | "warn" | "fixed" | "changed";
+  label: string;
+};
+
+/** The lens id of the rendered page itself — always first in the switch. */
+export const PAGE_LENS = "page";
+
+/**
+ * What a studio adds to the shared preview. All optional: Content passes none
+ * and gets the plain preview.
+ *  - `lenses` + `lens` / `onLensChange` — the lens switch (controlled when
+ *    `lens` is given, so a studio can switch it from its rail);
+ *  - `pins` / `onPin` — section markers over the page, outside the iframe (its
+ *    inner tab stops stay neutralized, 0199); a pin click reports its section;
+ *  - `focus` — scroll the page to a section; `seq` re-fires the same section.
+ */
+export type PagePreviewProps = {
+  lenses?: readonly PreviewLens[];
+  lens?: string;
+  onLensChange?: (id: string) => void;
+  pins?: readonly PreviewPin[];
+  onPin?: (section: string) => void;
+  focus?: { section: string; seq: number } | null;
+};
+
 /** One stacked preview document. `shown` flips on once it has loaded + had the
  *  scroll position carried over, which fades it in over the layer below. */
 type Layer = { key: number; html: string; shown: boolean };
@@ -76,7 +126,7 @@ function hasContent(schema: PageSchema | null): boolean {
   return Array.isArray(schema.sections) && schema.sections.length > 0;
 }
 
-export function PagePreview() {
+export function PagePreview({ lenses, lens, onLensChange, pins, onPin, focus }: PagePreviewProps = {}) {
   // The Presence facet (Content studio, pages only) shows the SEO/social canvas
   // instead of the rendered-page iframe. Gated to Content so switching to Checks
   // (which reuses this preview) always shows the body render.
@@ -99,6 +149,28 @@ export function PagePreview() {
   // (a deliberate New). The values it reads (getPageNode/getAuthoringNew) are
   // module state, not props, so this tick is what forces the re-read.
   const [, setIdleTick] = useState(0);
+
+  // The lens switch: controlled when the studio passes `lens`, else local. A
+  // lens id the studio no longer offers falls back to the page.
+  const [localLens, setLocalLens] = useState(PAGE_LENS);
+  const wantLens = lens ?? localLens;
+  const activeLens = lenses?.find((l) => l.id === wantLens) ?? null;
+  const chooseLens = (id: string) => {
+    if (lens === undefined) setLocalLens(id);
+    onLensChange?.(id);
+  };
+  // A lens reads the draft + baseline at render: re-render on either.
+  const [, setLensTick] = useState(0);
+  useEffect(() => {
+    if (!activeLens) return;
+    const bump = () => setLensTick((t) => t + 1);
+    const offDraft = subscribePageDraft(bump);
+    const offBase = subscribePageBaseline(bump);
+    return () => {
+      offDraft();
+      offBase();
+    };
+  }, [activeLens]);
 
   // Bumps on each render request so a slow response can't overwrite a newer one.
   const reqSeq = useRef(0);
@@ -154,7 +226,9 @@ export function PagePreview() {
       headers: { "Content-Type": "application/json" },
       // The open translation, so internal hrefs preview with the same language
       // prefix + alias the published translation renders (null = source/unborn).
-      body: JSON.stringify({ schema, langcode: getPageLang() }),
+      // The open document (null id = a new draft): the server keeps its stored
+      // "No longer offered" sections in the preview, as Save will (0455 P0).
+      body: JSON.stringify({ schema, langcode: getPageLang(), doc: { kind: getPageKind(), id: getPageNode() } }),
     })
       .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((text) => {
@@ -212,6 +286,17 @@ export function PagePreview() {
     [],
   );
 
+  // `focus`: scroll the front page frame to a section (a row picked in a
+  // studio's rail). The frame's own document scrolls; the console never does.
+  const frontKey = [...layers].reverse().find((l) => l.shown)?.key ?? null;
+  useEffect(() => {
+    if (!focus || frontKey === null) return;
+    const doc = frameEls.current.get(frontKey)?.contentDocument;
+    sectionBox(doc, focus.section)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Only a new focus scrolls — a re-render carries the scroll over by itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.section, focus?.seq]);
+
   // Re-evaluate the idle empty-state (browser vs build placeholder) when the open
   // document or the authoring-new intent changes.
   useEffect(() => {
@@ -255,10 +340,34 @@ export function PagePreview() {
       <PanelBar
         title={updating ? "Updating preview…" : "Live preview · unsaved draft"}
         actions={
-          openUrl ? (
-            <a className="ain-preview__open" href={openUrl} target="_blank" rel="noreferrer">
-              Open ↗
-            </a>
+          lenses?.length || openUrl ? (
+            <>
+              {lenses && lenses.length > 0 && (
+                <SegmentedControl
+                  className="ain-preview__lenses"
+                  label="Preview lens"
+                  value={activeLens?.id ?? PAGE_LENS}
+                  onChange={chooseLens}
+                  options={[
+                    { value: PAGE_LENS, label: "Page" },
+                    ...lenses.map((l) => ({
+                      value: l.id,
+                      label: (
+                        <>
+                          {l.label}
+                          {l.count ? <span className="ain-preview__lenscount">{l.count}</span> : null}
+                        </>
+                      ),
+                    })),
+                  ]}
+                />
+              )}
+              {openUrl && (
+                <a className="ain-preview__open" href={openUrl} target="_blank" rel="noreferrer">
+                  Open ↗
+                </a>
+              )}
+            </>
           ) : undefined
         }
       />
@@ -268,6 +377,10 @@ export function PagePreview() {
       />
       {error ? (
         <Notice tone="error" panel>{error}</Notice>
+      ) : layers.length === 0 && (isPageLoading() || (updating && hasContent(getPageDraft()))) ? (
+        // A page is on its way (being fetched, or its first render requested):
+        // the composing wireframe, not the listing or an empty placeholder.
+        <ComposingState bare header className="ain-preview__composing-full" label="Rendering the page" />
       ) : layers.length === 0 ? (
         // Idle (nothing open, no deliberate New) → browse + pick a page from the
         // canvas. Mid-build / a deliberate New / an opened-but-empty page → the
@@ -330,8 +443,105 @@ export function PagePreview() {
               }}
             />
           ))}
+          {frontKey === null && !activeLens && (
+            // The first frame is still loading (it fades in when ready).
+            <ComposingState bare header className="ain-preview__composing" label="Rendering the page" />
+          )}
+          {!activeLens && pins && pins.length > 0 && frontKey !== null && (
+            <PreviewPins frame={frameEls.current.get(frontKey) ?? null} frameKey={frontKey} pins={pins} onPin={onPin} />
+          )}
+          {activeLens && (
+            <div className="ain-preview__lens" data-lens={activeLens.id}>
+              {activeLens.render(getPageDraft(), getPageBaseline())}
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A section's first painted box in a preview document. The `[data-ain-sec]`
+ * wrapper is `display: contents` (no box of its own), so position and scroll
+ * read its first element child.
+ */
+function sectionBox(doc: Document | null | undefined, id: string): Element | null {
+  const wrap = doc?.querySelector(`[data-ain-sec="${CSS.escape(id)}"]`);
+  return wrap?.firstElementChild ?? null;
+}
+
+/** Height of one pin, for clamping it inside the stage. */
+const PIN_H = 22;
+
+/**
+ * The pins over the front page frame: one per section, at the section's top
+ * edge, following the frame's scroll. A pin whose section is scrolled out of
+ * view is dropped (the rail lists everything). The pins are console buttons
+ * OVER the iframe, never inside it; they stay out of the tab order — the rail
+ * is the keyboard path to the same rows — and the click reports the section.
+ */
+function PreviewPins({
+  frame,
+  frameKey,
+  pins,
+  onPin,
+}: {
+  frame: HTMLIFrameElement | null;
+  frameKey: number;
+  pins: readonly PreviewPin[];
+  onPin?: (section: string) => void;
+}) {
+  const [tops, setTops] = useState<Map<string, number>>(new Map());
+  useEffect(() => {
+    const win = frame?.contentWindow;
+    const doc = frame?.contentDocument;
+    if (!win || !doc) return;
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const h = win.innerHeight;
+      const next = new Map<string, number>();
+      for (const pin of pins) {
+        const r = sectionBox(doc, pin.section)?.getBoundingClientRect();
+        if (!r || r.bottom <= 0 || r.top >= h) continue;
+        next.set(pin.section, Math.min(Math.max(r.top, 0), h - PIN_H) + 8);
+      }
+      setTops(next);
+    };
+    const schedule = () => {
+      if (!raf) raf = win.requestAnimationFrame(measure);
+    };
+    measure();
+    win.addEventListener("scroll", schedule, { passive: true });
+    win.addEventListener("resize", schedule);
+    return () => {
+      win.removeEventListener("scroll", schedule);
+      win.removeEventListener("resize", schedule);
+      if (raf) win.cancelAnimationFrame(raf);
+    };
+  }, [frame, frameKey, pins]);
+
+  return (
+    <div className="ain-preview__pins" data-testid="preview-pins">
+      {pins.map((pin) => {
+        const top = tops.get(pin.section);
+        if (top === undefined) return null;
+        return (
+          <button
+            key={pin.section}
+            type="button"
+            tabIndex={-1}
+            className="ain-preview__pin"
+            data-tone={pin.tone}
+            data-section={pin.section}
+            style={{ top }}
+            onClick={() => onPin?.(pin.section)}
+          >
+            {pin.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

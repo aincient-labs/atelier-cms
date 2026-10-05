@@ -37,6 +37,7 @@
 // first and `data-table` — the one with back-references — last: a studio's
 // top-level `makeSafeAssistantToolUI(...)` then always finds its factory.
 export * from "./icons";
+export * from "./component-icon";
 export * from "./cx";
 export * from "./button";
 export * from "./field";
@@ -46,6 +47,7 @@ export * from "./skeleton";
 export * from "./notice";
 export * from "./empty-state";
 export * from "./loading-state";
+export * from "./composing-state";
 export * from "./studio-group";
 export * from "./studio-status";
 export * from "./portal";

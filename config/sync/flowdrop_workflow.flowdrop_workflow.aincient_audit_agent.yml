@@ -409,9 +409,13 @@ nodes:
           and never touch a section a finding doesn't name.
 
           Tools:
-          - run_page_audit(node_id) — run the read-only audit (SEO, meta tags, internal
-            links). Your source of truth for what's wrong.
-          - read_meta_tags(node_id) — just the current effective meta tags.
+          - run_page_audit(node_id, revision) — run the read-only audit (SEO, meta tags,
+            internal links). Your source of truth for what's wrong. Always pass
+            revision "draft": you fix the page's saved draft, so audit what's about to
+            ship. The report's "audited" block says which copy it checked — if it says
+            "live", the page has no pending draft and that IS what visitors see.
+          - read_meta_tags(node_id, revision) — just the effective meta tags; pass
+            revision "draft" too, so they match the audit.
           - list_pages — show the user their pages (when they name a page, not an id, or ask
             "what pages do I have"). Read the node id from the result.
           - preview_page — STAGE a fix as an unsaved preview. Call it with a JSON array of

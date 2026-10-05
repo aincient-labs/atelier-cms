@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_chat\Chat;
 
+use Drupal\aincient_pages\PageModerationState;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -93,7 +94,8 @@ final class SessionThreadStore {
    * @return array<int, array<string, mixed>>
    *   One row per thread: remoteId, title, lastActivity, status, workflow
    *   (the session's pinned workflow as {id, label} — the console shows it in
-   *   the flow picker and as the assistant's speaker caption).
+   *   the flow picker and as the assistant's speaker caption), and
+   *   editorialState (see {@see self::attachEditorialStates()}).
    */
   public function listThreads(int $uid): array {
     if (!$this->sessionsAvailable()) {
@@ -139,6 +141,9 @@ final class SessionThreadStore {
         // it under a Node room in resource-first navigation. NULL for
         // General/singleton threads and threads that never touched a saved node.
         'workingNode' => $this->readWorkingNode($meta),
+        // The working node's moderation state in the thread's language, filled
+        // by attachEditorialStates() — NULL until then / when not applicable.
+        'editorialState' => NULL,
         'workflow' => [
           'id' => $workflowId,
           'label' => $labels[$workflowId] ?? $workflowId,
@@ -151,7 +156,93 @@ final class SessionThreadStore {
     // label its Node(nid, lang) room ("Home", "About") instead of a bare nid —
     // one bulk node load for the whole list rather than N per-thread loads.
     $this->attachWorkingNodeTitles($threads);
+    $this->attachEditorialStates($threads);
     return $threads;
+  }
+
+  /**
+   * Fill in each homed thread's `editorialState` — its working node's
+   * moderation state in the thread's language (Phase 4, content-workflow.md).
+   *
+   * READ MODEL ONLY: resolved fresh at list time (never stored on the thread —
+   * resource state is node-owned) through aincient_pages' PageModerationState,
+   * so the sidebar and the operator's list_pages read one truth. aincient_chat
+   * does not depend on aincient_pages, so the lookup is module-optional (like
+   * the FlowDrop services here): absent → every row stays NULL. Each distinct
+   * (nid, langcode) is described once, however many threads share it.
+   *
+   * @param array<int, array<string, mixed>> $threads
+   *   The thread rows, mutated in place: editorialState = {state, label, live}
+   *   (state = the workflow state id of the translation's latest revision,
+   *   label = its display text, live = a published copy is serving) or NULL
+   *   for unhomed threads, deleted nodes and unmoderated bundles.
+   */
+  private function attachEditorialStates(array &$threads): void {
+    $describer = $this->moderationDescriber();
+    if ($describer === NULL) {
+      return;
+    }
+    $wanted = [];
+    foreach ($threads as $row) {
+      $wn = $row['workingNode'] ?? NULL;
+      if (is_array($wn) && !empty($wn['nid'])) {
+        $wanted[(int) $wn['nid']] = TRUE;
+      }
+    }
+    if (!$wanted) {
+      return;
+    }
+    try {
+      // Statically cached from attachWorkingNodeTitles(): no second query.
+      $nodes = $this->entityTypeManager->getStorage('node')->loadMultiple(array_keys($wanted));
+    }
+    catch (\Throwable $e) {
+      return;
+    }
+    $resolved = [];
+    foreach ($threads as &$row) {
+      $wn = $row['workingNode'] ?? NULL;
+      if (!is_array($wn) || empty($wn['nid'])) {
+        continue;
+      }
+      $nid = (int) $wn['nid'];
+      $node = $nodes[$nid] ?? NULL;
+      if ($node === NULL) {
+        continue;
+      }
+      $langcode = is_string($wn['langcode'] ?? NULL) && $wn['langcode'] !== '' ? $wn['langcode'] : NULL;
+      $key = $nid . '|' . ($langcode ?? '');
+      if (!array_key_exists($key, $resolved)) {
+        try {
+          $resolved[$key] = $describer->describe($nid, $node->bundle(), $langcode);
+        }
+        catch (\Throwable $e) {
+          $this->logger->warning('Editorial state for node @nid unavailable: @msg', [
+            '@nid' => $nid,
+            '@msg' => $e->getMessage(),
+          ]);
+          $resolved[$key] = NULL;
+        }
+      }
+      $row['editorialState'] = $resolved[$key];
+    }
+    unset($row);
+  }
+
+  /**
+   * aincient_pages' moderation-state reader, or NULL when that module (or its
+   * content_moderation backing) isn't enabled. Built locally rather than
+   * injected: a cross-module service argument would break container compile in
+   * every kernel test that enables aincient_chat without aincient_pages.
+   */
+  private function moderationDescriber(): ?PageModerationState {
+    if (!class_exists(PageModerationState::class) || !\Drupal::hasService('aincient_pages.moderation')) {
+      return NULL;
+    }
+    return new PageModerationState(
+      \Drupal::service('aincient_pages.moderation'),
+      $this->entityTypeManager,
+    );
   }
 
   /**

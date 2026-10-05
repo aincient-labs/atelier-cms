@@ -145,6 +145,24 @@ describe("brand_preview payloads", () => {
     expect(getBrandOverrides()).toEqual({});
   });
 
+  it("applies the server's batch after PHP's round trip turned reset's {} into []", () => {
+    // The exact shape BrandPreviewApplier emits once the dispatcher has
+    // json_decode()d it to an array and re-encoded it (A4).
+    setBrandOverride("stale", "x");
+    const result = applyBrandPreviewOps({
+      commands: [
+        { verb: "reset", args: [] },
+        { verb: "set_tokens", args: { tokens: { "brand-primary": "oklch(0.6 0.2 260)" } } },
+        { verb: "set_fonts", args: { fonts: ["Inter"] } },
+      ] as unknown as BrandCommand[],
+      rejected: [],
+    });
+    expect(result).toMatchObject({ ok: true });
+    expect(getBrandDraft()).toEqual({ tokens: { "brand-primary": "oklch(0.6 0.2 260)" }, fonts: ["Inter"] });
+    expect(brandCommands.undo()).toMatchObject({ ok: true });
+    expect(getBrandOverrides()).toEqual({ stale: "x" });
+  });
+
   it("an invalid commands payload leaves the draft unchanged", () => {
     setBrandOverride("brand-primary", "red");
     const result = applyBrandPreviewOps({ commands: [{ verb: "publish", args: {} } as unknown as BrandCommand] });

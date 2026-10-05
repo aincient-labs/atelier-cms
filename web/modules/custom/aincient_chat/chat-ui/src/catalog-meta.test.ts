@@ -5,32 +5,13 @@ import {
   isBuiltInProvider,
   kindRegime,
   orderedKinds,
-  sectionIcon,
 } from "./catalog-meta";
 
 /**
- * Pins the W6 catalog-metadata rules: icon resolution (server glyph → local
- * map → neutral mark), provenance grouping (built-ins untouched and first,
- * add-ons headed + humanized), and the kind picker's ordering + never-empty
+ * Pins the W6 catalog-metadata rules: provenance grouping (built-ins
+ * untouched and first, add-ons headed + humanized), and the kind picker's ordering + never-empty
  * fallback contract.
  */
-
-describe("sectionIcon", () => {
-  it("prefers a non-empty server icon over the local map", () => {
-    expect(sectionIcon("hero", "≡")).toBe("≡");
-  });
-
-  it("falls back to the local map when the server icon is empty or missing", () => {
-    expect(sectionIcon("hero", "")).toBe("◆");
-    expect(sectionIcon("hero")).toBe("◆");
-    expect(sectionIcon("hero", "  ")).toBe("◆");
-  });
-
-  it("falls back to the neutral block mark for an unmapped component", () => {
-    expect(sectionIcon("mystery_widget")).toBe("▢");
-    expect(sectionIcon("mystery_widget", "")).toBe("▢");
-  });
-});
 
 describe("provider provenance", () => {
   it("treats aincient_pages and empty/missing providers as built-in", () => {

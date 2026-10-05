@@ -155,6 +155,7 @@ final class PolicyEvaluatorTest extends KernelTestBase {
       'node_id' => $nid,
       'title' => (string) $node->label(),
       'url' => $this->container->get('aincient_pages.store')->url($nid, FALSE),
+      'audited' => $this->container->get('aincient_audit.engine')->audited($node),
       'summary' => $summary,
       'checks' => $checks,
     ];
@@ -178,6 +179,52 @@ final class PolicyEvaluatorTest extends KernelTestBase {
     }
     // The two shipped policies both reported.
     $this->assertSame(['seo', 'links'], array_column($report['checks'], 'key'));
+  }
+
+  /**
+   * Parity (DECISIONS 0453): for a saved node, the unsaved-draft path — each
+   * policy's pinned check run directly — returns exactly what the workflow
+   * path returns. This is the guard that keeps the two paths from drifting.
+   *
+   * @covers ::evaluateUnsaved
+   */
+  public function testUnsavedPathMatchesTheWorkflowPath(): void {
+    $store = $this->container->get('aincient_pages.store');
+    $pages = [
+      $this->makePage(),
+      $store->store(['type' => 'landing', 'title' => 'A page with a broken anchor in its call to action', 'sections' => [
+        ['component' => 'markdown', 'props' => ['markdown' => "## Pricing\n\nBody."]],
+        ['component' => 'cta', 'props' => ['heading' => 'Go', 'cta_label' => 'Go', 'cta_url' => '#nowhere']],
+      ]]),
+    ];
+    // A tuned parameter must reach the check on both paths.
+    $seo = $this->policyStorage()->load('seo');
+    $seo->set('parameters', ['title_min' => 40] + $seo->getParameters())->save();
+
+    $evaluator = $this->container->get('aincient_audit.policy_evaluator');
+    foreach ($pages as $nid) {
+      $node = $this->head($nid);
+      $workflow = $evaluator->evaluate($node);
+      $this->assertNotSame([], $workflow['checks']);
+      $this->assertSame($workflow, $evaluator->evaluateUnsaved($node));
+    }
+  }
+
+  /**
+   * A policy whose workflow is more than one policy_check step can't be
+   * reproduced in memory — the unsaved path refuses rather than skip it.
+   *
+   * @covers ::evaluateUnsaved
+   */
+  public function testUnsavedPathRefusesAWorkflowItCannotReproduce(): void {
+    $workflow = \Drupal::entityTypeManager()->getStorage('flowdrop_workflow')->load('aincient_policy_links');
+    $nodes = $workflow->getNodes();
+    $extra = reset($nodes);
+    $extra['id'] = 'policy_check.2';
+    $workflow->setNodes([...$nodes, $extra])->save();
+
+    $this->expectException(\LogicException::class);
+    $this->container->get('aincient_audit.policy_evaluator')->evaluateUnsaved($this->head($this->makePage()));
   }
 
   /**

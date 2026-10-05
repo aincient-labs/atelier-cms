@@ -1,0 +1,25 @@
+# A5 (run #3) — the reply claimed contrast it did not have. Live 2026-10,
+# pipeline 307: "Make the primary colour a bit darker." → cyan-600 + a
+# near-white on-colour (3.4:1, a WCAG fail, graded by the end-of-turn apply),
+# reply: "with its on-colour adjusted to keep contrast". The orchestrator writes
+# its reply BEFORE the apply grades contrast, so it never saw the 3.4. Fixed by
+# putting the measured verdict into the colour specialist's tool result
+# (ValidateSlice → `contrast` lines, same grading as the apply) plus the
+# orchestrator's CONTRAST rule: no AA/contrast claim without a "passes" line.
+#
+# The ask names AA, so the model is tempted to echo it back. The prose may say
+# it passes ONLY when the applied pair actually does (conditional `unless`).
+# cyan-600 fails with white AND with cyan-950 (3.72:1); white needs cyan-700+.
+name: contrast-claim-needs-a-measured-pass
+status: polish
+saved_tokens: {}
+draft:
+  brand-primary: var(--color-cyan-500)
+  brand-primary-foreground: var(--color-cyan-950)
+ask: Make the primary darker so white text on it passes AA
+expect:
+  status: completed
+  delegations.colour: ">= 1"
+  slice.brand_primary: present
+  lightness_delta.brand_primary: falls
+  prose: "!/pass(es|ing)? (WCAG )?AA|meets? (WCAG )?AA|AA[- ]?(safe|compliant)|confirmed|(keep|kept|keeps|keeping) (the )?contrast|contrast[- ]safe/i unless contrast.brand_primary >= 4.5"

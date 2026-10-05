@@ -31,3 +31,68 @@ aincient_studio_components.constraint_save:
   options:
     _disable_route_normalizer: 'TRUE'
     _auth: ['cookie', 'basic_auth']
+
+# The studio's preview (DECISIONS 0455): renders components from their declared
+# `examples:` in the site shell with the PUBLISHED brand. POST body
+# `{ items: [{component, example?, variant?, tone?}], title? }` — the contact
+# sheet sends every component in scope, a selection sends one. Same gate.
+aincient_studio_components.render:
+  path: '/atelier/components/render'
+  defaults:
+    _controller: '\Drupal\aincient_studio_components\Controller\ComponentsPreviewController::render'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio components'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Where one usage key (c:/v:/t:) is used — the rail's "Used on", fetched when a
+# row expands (DECISIONS 0455). Pages + blocks, latest revision, titled, capped.
+aincient_studio_components.constraint_usage:
+  path: '/atelier/constraint/usage'
+  defaults:
+    _controller: '\Drupal\aincient_studio_components\Controller\ConstraintController::usage'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio components'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+# Per-kind scope (DECISIONS 0455, P1b): one kind's settings + compiled palette,
+# its save, and the dry run (KindCheck over UNSAVED site or kind changes).
+aincient_studio_components.kind_state:
+  path: '/atelier/constraint/kind/{kind}'
+  defaults:
+    _controller: '\Drupal\aincient_studio_components\Controller\KindController::state'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio components'
+    kind: '[a-z0-9_]+'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_components.kind_save:
+  path: '/atelier/constraint/kind/{kind}/save'
+  defaults:
+    _controller: '\Drupal\aincient_studio_components\Controller\KindController::save'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio components'
+    kind: '[a-z0-9_]+'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+
+aincient_studio_components.check:
+  path: '/atelier/constraint/check'
+  defaults:
+    _controller: '\Drupal\aincient_studio_components\Controller\KindController::check'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio components'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']

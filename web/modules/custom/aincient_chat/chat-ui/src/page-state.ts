@@ -113,6 +113,7 @@ export type StudioKind = "page" | "block";
 import { ensureStudio, activeStudioKey } from "./flow";
 import type { StudioKey } from "./studios";
 import { clearDocEnd } from "./doc-end-state";
+import { changedPaths, fieldValue } from "./page-fields";
 import {
   acquireLock,
   releaseLock,
@@ -137,8 +138,19 @@ export class DocLoadError extends Error {
 
 /** One editorial transition the current user may legally perform from the doc's
  *  current state — the source of truth for which workflow buttons the studio
- *  shows (read straight from content_moderation, never a hand-rolled map). */
-export type Transition = { id: string; label: string; to: string; to_label: string };
+ *  shows (read straight from content_moderation, never a hand-rolled map). The
+ *  weights and target-state flags order it in the lifecycle bar (DECISIONS
+ *  0454); optional so a thin envelope still parses. */
+export type Transition = {
+  id: string;
+  label: string;
+  to: string;
+  to_label: string;
+  weight?: number;
+  to_weight?: number;
+  to_published?: boolean;
+  to_default_revision?: boolean;
+};
 
 /**
  * The editorial-state envelope every studio read/write returns (DECISIONS 0094).
@@ -150,6 +162,10 @@ export type Transition = { id: string; label: string; to: string; to_label: stri
 export type Moderation = {
   state: string;
   stateLabel: string;
+  /** The current state's weight in its workflow — "forward" vs "back" (0454). */
+  stateWeight: number;
+  /** The current state is a published one (the page is live in it). */
+  statePublished: boolean;
   hasPendingDraft: boolean;
   canEdit: boolean;
   transitions: Transition[];
@@ -161,6 +177,8 @@ export type Moderation = {
 export const NEW_DRAFT: Moderation = {
   state: "draft",
   stateLabel: "Draft",
+  stateWeight: 0,
+  statePublished: false,
   hasPendingDraft: false,
   canEdit: true,
   transitions: [],
@@ -216,6 +234,8 @@ let currentKind: StudioKind = "page";
  * "Open ↗" link; lives here so the preview (a sibling of the studio) can read it.
  */
 let currentUrl: string | null = null;
+/** A page is being fetched into the studio (loadPageIntoStudio in flight). */
+let pageLoading = 0;
 /**
  * The language this draft is being edited in: null = the source/default language
  * (the canonical page), a langcode = that translation. Drives which translation
@@ -256,6 +276,23 @@ let authoringNew = false;
  * re-emits (even to the same id) so a repeat click re-runs the scroll.
  */
 let selectedSection: string | null = null;
+/**
+ * The last SAVED schema of the open doc — what "unsaved changes" are measured
+ * against. Set on every load / New / close and after a successful save or
+ * publish; null before anything is open (reads as the empty page). One source
+ * for both page studios (DECISIONS 0453): Content's dirty markers and revert,
+ * Checks' diff and "Fixed in draft".
+ */
+let baseline: PageSchema | null = null;
+/** Who staged a draft change: the agent ("Atelier") or the person ("You"). */
+export type DraftSource = "agent" | "user";
+/**
+ * Field path → who last changed it since the baseline (paths: page-fields.ts).
+ * Session state only: it clears whenever the baseline resets, and on Save it
+ * becomes one line of the revision message (`origin` on the write).
+ */
+let origins = new Map<string, DraftSource>();
+const baselineSubscribers = new Set<() => void>();
 const subscribers = new Set<(schema: PageSchema | null) => void>();
 const selectSubscribers = new Set<(id: string | null) => void>();
 const reloadSubscribers = new Set<() => void>();
@@ -309,6 +346,8 @@ function readModeration(data: unknown): Moderation {
   return {
     state: typeof d.moderation_state === "string" ? d.moderation_state : "draft",
     stateLabel: typeof d.state_label === "string" ? d.state_label : "Draft",
+    stateWeight: typeof d.state_weight === "number" ? d.state_weight : 0,
+    statePublished: typeof d.state_published === "boolean" ? d.state_published : d.moderation_state === "published",
     hasPendingDraft: d.has_pending_draft === true,
     canEdit: d.can_edit !== false,
     transitions: Array.isArray(d.transitions) ? (d.transitions as Transition[]) : [],
@@ -316,10 +355,65 @@ function readModeration(data: unknown): Moderation {
   };
 }
 
-/** Replace the working draft and notify the preview + studio. */
-export function setPageDraft(schema: PageSchema | null): void {
+/**
+ * Replace the working draft and notify the preview + studio. `source` says who
+ * made the change (the agent's staged ops pass "agent"); each field it touches
+ * is recorded in the origin map — or dropped from it when the field is back at
+ * its baseline value, so a revert removes the origin.
+ */
+export function setPageDraft(schema: PageSchema | null, opts: { source?: DraftSource } = {}): void {
+  const source = opts.source ?? "user";
+  if (schema && current) {
+    for (const path of changedPaths(current, schema)) {
+      if (fieldValue(schema, path) === fieldValue(baseline, path)) origins.delete(path);
+      else origins.set(path, source);
+    }
+  }
   current = schema;
   emit();
+}
+
+/** The last saved schema of the open doc (null = nothing loaded: the empty page). */
+export function getPageBaseline(): PageSchema | null {
+  return baseline;
+}
+
+/** Field path → who changed it since the baseline (read-only view). */
+export function getPageOrigins(): ReadonlyMap<string, DraftSource> {
+  return origins;
+}
+
+/** Subscribe to baseline resets (load / New / close / save / publish); returns an
+ *  unsubscribe fn. The origin map clears at the same moments. */
+export function subscribePageBaseline(cb: () => void): () => void {
+  baselineSubscribers.add(cb);
+  return () => {
+    baselineSubscribers.delete(cb);
+  };
+}
+
+/**
+ * Adopt `schema` as the saved baseline. Origins of fields that now match it are
+ * forgotten; a field the draft changed again while a save was in flight keeps
+ * its origin (on a load the draft IS the baseline, so every origin clears).
+ */
+function resetBaseline(schema: PageSchema | null): void {
+  baseline = schema;
+  origins = new Map([...origins].filter(([path]) => fieldValue(current, path) !== fieldValue(schema, path)));
+  for (const cb of baselineSubscribers) cb();
+}
+
+/**
+ * The write's `origin` fragment: the changed fields grouped by who changed
+ * them, for the revision message ("Atelier: … · You: …"). Absent when nothing
+ * has an origin.
+ */
+function originArg(): Record<string, unknown> {
+  if (origins.size === 0) return {};
+  const agent: string[] = [];
+  const user: string[] = [];
+  for (const [path, source] of origins) (source === "agent" ? agent : user).push(path);
+  return { origin: { agent, user } };
 }
 
 /** The current working draft (read by the adapter context + the preview tool). */
@@ -356,6 +450,7 @@ export function startNewPage(): void {
   currentTranslations = [];
   current = { ...EMPTY_PAGE, sections: [] };
   setModeration({ ...NEW_DRAFT });
+  resetBaseline(current);
   for (const cb of loadSubscribers) cb(currentNode);
   emitNode();
   emit();
@@ -380,6 +475,7 @@ export function startNewBlock(): void {
   currentTranslations = [];
   current = { ...EMPTY_BLOCK, sections: [] };
   setModeration({ ...NEW_DRAFT });
+  resetBaseline(current);
   for (const cb of loadSubscribers) cb(currentNode);
   emitNode();
   emit();
@@ -414,6 +510,7 @@ export function closeDocToListing(): void {
   currentTranslations = [];
   current = currentKind === "block" ? { ...EMPTY_BLOCK, sections: [] } : { ...EMPTY_PAGE, sections: [] };
   setModeration({ ...NEW_DRAFT });
+  resetBaseline(current);
   for (const cb of loadSubscribers) cb(currentNode);
   emitNode();
   emit();
@@ -449,6 +546,7 @@ export async function loadBlockIntoStudio(node: string, langcode?: string | null
   currentMode = (data.layout_mode as string | null) ?? null;
   currentTranslations = Array.isArray(data.translations) ? (data.translations as string[]) : [];
   setModeration(readModeration(data));
+  resetBaseline(current);
   for (const cb of loadSubscribers) cb(currentNode);
   emitNode();
   emit();
@@ -517,6 +615,13 @@ export function setPageUrl(url: string | null): void {
   currentUrl = url || null;
 }
 
+/** True while a page is being fetched into the studio — the preview shows the
+ *  composing wireframe instead of the listing or an empty placeholder. Changes
+ *  are announced through {@link subscribePageNode}. */
+export function isPageLoading(): boolean {
+  return pageLoading > 0;
+}
+
 /** Subscribe to "an existing page was loaded" — the studio resets its baseline
  *  to the loaded schema so it opens clean (not dirty). Returns an unsubscribe fn. */
 export function subscribePageLoad(cb: (node: string | null) => void): () => void {
@@ -553,6 +658,17 @@ export function subscribePageNode(cb: () => void): () => void {
  * draft is single-writer-safe across the two studios (Plan A lock).
  */
 export async function loadPageIntoStudio(node: string, langcode?: string | null, studio: StudioKey = "content"): Promise<void> {
+  pageLoading++;
+  emitNode();
+  try {
+    await fetchPageIntoStudio(node, langcode, studio);
+  } finally {
+    pageLoading--;
+    emitNode();
+  }
+}
+
+async function fetchPageIntoStudio(node: string, langcode: string | null | undefined, studio: StudioKey): Promise<void> {
   const qs = langcode ? `?langcode=${encodeURIComponent(langcode)}` : "";
   const res = await fetch(apiUrl(`/page/${encodeURIComponent(node)}/schema${qs}`), {
     credentials: "same-origin",
@@ -572,6 +688,7 @@ export async function loadPageIntoStudio(node: string, langcode?: string | null,
   currentMode = (data.layout_mode as string | null) ?? null;
   currentTranslations = Array.isArray(data.translations) ? (data.translations as string[]) : [];
   setModeration(readModeration(data));
+  resetBaseline(current);
   for (const cb of loadSubscribers) cb(currentNode);
   emitNode();
   emit();
@@ -695,8 +812,10 @@ export async function saveDraft(
     ...(langcode ? { langcode } : {}),
     ...baseVidArg(),
     ...writeMeta(),
+    ...originArg(),
   });
   applyWriteResult(data);
+  resetBaseline(schema);
   // A brand-new page just minted its node — acquire its lock so subsequent saves
   // hold the pen (the create path had no lock to fence). Page kind only (the
   // lock + co-authors are aincient_page-scoped for v1).
@@ -753,13 +872,17 @@ export async function publishDoc(
     ...(langcode ? { langcode } : {}),
     ...baseVidArg(),
     ...writeMeta(),
+    ...(schema ? originArg() : {}),
   });
   applyWriteResult(data);
+  if (schema) resetBaseline(schema);
   return data;
 }
 
-/** The transition id → endpoint suffix map (publish is its own save+go-live path;
- *  create_new_draft is the Save-draft button, so neither is a pure transition). */
+/** The shipped transitions' named endpoints (publish is its own save+go-live
+ *  path; create_new_draft is the Save-draft button, so neither is a pure
+ *  transition). Any other id — a site-built workflow's — goes to the generic
+ *  `/transition` route (DECISIONS 0454). */
 const TRANSITION_PATHS: Record<string, string> = {
   submit_for_review: "submit-review",
   approve: "approve",
@@ -778,9 +901,12 @@ export async function runTransition(
   kind: StudioKind,
   node: string,
 ): Promise<Record<string, unknown>> {
+  if (transitionId === "publish" || transitionId === "create_new_draft") {
+    throw new Error(`“${transitionId}” writes the page — use publishDoc / saveDraft.`);
+  }
   const suffix = TRANSITION_PATHS[transitionId];
-  if (!suffix) throw new Error(`Unsupported transition “${transitionId}”.`);
-  const data = await writeRequest(`${apiBase(kind)}/${suffix}`, {
+  const data = await writeRequest(`${apiBase(kind)}/${suffix ?? "transition"}`, {
+    ...(suffix ? {} : { transition: transitionId }),
     node_id: node,
     ...baseVidArg(),
     // Translations are moderated independently: say which one moves (the

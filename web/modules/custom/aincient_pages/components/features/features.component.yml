@@ -33,3 +33,45 @@ thirdPartySettings:
       subheading: ''
       columns: 2|3
       features: '[{icon,title,body,cta_label,cta_url}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Consultancy services'
+        props:
+          eyebrow: 'What we do'
+          heading: 'Practical help for growing firms'
+          subheading: 'Three ways we work with owners who have outgrown the spreadsheet.'
+          columns: 3
+          features:
+            - icon: '◆'
+              title: 'Financial clarity'
+              body: 'Monthly reporting you can read in ten minutes, with the three numbers that matter highlighted.'
+              cta_label: 'Learn more'
+              cta_url: '/services/finance'
+            - icon: '✶'
+              title: 'Hiring support'
+              body: 'Role design, interview structure and onboarding plans for your next five hires.'
+              cta_label: 'Learn more'
+              cta_url: '/services/hiring'
+            - icon: '○'
+              title: 'Growth planning'
+              body: 'A one-page plan for the next twelve months, reviewed with you every quarter.'
+              cta_label: 'Learn more'
+              cta_url: '/services/planning'
+      - name: 'Software highlights'
+        props:
+          eyebrow: 'Why teams switch'
+          heading: 'Invoicing without the paperwork'
+          columns: 2
+          features:
+            - icon: '◇'
+              title: 'Invoices in under a minute'
+              body: 'Pick a client, add your hours, send. Reminders go out on their own.'
+            - icon: '◆'
+              title: 'Paid faster'
+              body: 'Card and bank transfer on every invoice, reconciled automatically.'
+            - icon: '✶'
+              title: 'Ready for your accountant'
+              body: 'Export a clean quarter in one click, in the format they already use.'
+            - icon: '○'
+              title: 'Real people on support'
+              body: 'Questions answered by the team that builds the product, usually within the hour.'

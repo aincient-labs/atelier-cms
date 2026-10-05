@@ -28,7 +28,8 @@ export function brandPreviewCardText(payload: BrandCardCopySource): {
   const historical = payload.__historical === true;
   const { count, reset } = Array.isArray(payload.commands)
     ? countCommands(payload.commands)
-    : { count: Object.keys(payload.tokens ?? {}).length + (payload.fonts?.length ?? 0), reset: payload.reset };
+    : // remove after 0.18 — old {tokens,fonts,reset} payload (stored cards)
+      { count: Object.keys(payload.tokens ?? {}).length + (payload.fonts?.length ?? 0), reset: payload.reset };
   return {
     historical,
     label: reset

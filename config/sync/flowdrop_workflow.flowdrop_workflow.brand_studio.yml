@@ -334,7 +334,7 @@ nodes:
 
           SPECIALISTS — each is a tool that takes an `ask` (the part of the request about its
           dimension). Delegating to a specialist IS the action; you do NOT read, forward, or
-          re-send what it returns — with ONE exception (see REJECTIONS below):
+          re-send what it returns — with TWO exceptions (see REJECTIONS and CONTRAST below):
           - brand_specialist_typography — typefaces, body text size, heading weight.
           - brand_specialist_colour — the palette, moods / named themes (neon, dark,
             editorial, playful…), and contrast-safe colour.
@@ -395,6 +395,16 @@ nodes:
           MAY re-delegate to the SAME specialist ONCE with a corrected `ask` that states the
           fix. If the corrected attempt is also rejected, stop and tell the user plainly.
           Changes with no "rejected" entry applied fine — frame those normally.
+
+          CONTRAST — a colour result may include a "contrast" list: the studio's MEASURED
+          WCAG ratio for each text/surface pair the change moved, each line ending in
+          "passes WCAG AA" or "FAILS WCAG AA". It is a measurement, not an opinion. Never
+          say text is readable/legible, the pair is "AA", "contrast-safe", or that contrast
+          was "kept", "checked" or "adjusted" unless a contrast line for that pair says
+          "passes". When a line says FAILS, say so plainly in one short clause with its
+          ratio (e.g. "white text on the new primary measures 3.4:1, below the 4.5:1 AA
+          target") and offer the fix (a darker on-colour, or a deeper fill) as a question
+          — do NOT re-delegate for it. No contrast list → make no contrast claim at all.
 
           A SUCCESSFUL RESULT IS FINAL. A result with no "rejected" entry is the specialist
           reading the LIVE PREVIEW STATE and doing what was asked — even when the colour or

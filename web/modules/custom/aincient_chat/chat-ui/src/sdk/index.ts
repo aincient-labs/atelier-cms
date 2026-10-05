@@ -36,10 +36,20 @@ export { apiUrl, apiBase, consoleBase } from "../console-config";
 
 // Deep-link `?field=…`: anchor ids, the requested field, and landing on it.
 // Also Components (Phase B); every rail with addressable fields wants these.
-export { fieldAnchorId, focusStudioField, requestedFieldAnchor, REVEAL_FIELD_EVENT } from "../studio-field-anchor";
+export {
+  fieldAnchorId,
+  focusStudioField,
+  requestedFieldAnchor,
+  takeRequestedFieldAnchor,
+  REVEAL_FIELD_EVENT,
+  FIELD_ANCHOR_PARAM,
+} from "../studio-field-anchor";
+
+// A chat message addressed from a rail: Checks' "See Atelier's reply" (0453).
+export { revealMessage } from "../message-anchor";
 
 // Deep links: build and read the reflected URL axes.
-export { consoleHref, roomToUrl, roomToPath, parseUrl } from "../console-url";
+export { consoleHref, opensNewTab, roomToUrl, roomToPath, parseUrl } from "../console-url";
 export { openPageInPlace } from "../url-sync";
 
 // Editor lock: reads, plus `acquireLock` for the rail's explicit "Take over"
@@ -60,6 +70,9 @@ export {
   getPageDraft,
   setPageDraft,
   subscribePageDraft,
+  getPageBaseline,
+  getPageOrigins,
+  subscribePageBaseline,
   subscribePageLoad,
   getPageNode,
   setPageNode,
@@ -88,14 +101,30 @@ export {
   RevisionConflictError,
   LockConflictError,
 } from "../page-state";
-export type { PageMeta, PageSchema, PageSection, PageTeaser, PageBlog, StudioKind, Moderation, Transition } from "../page-state";
+export type { PageMeta, PageSchema, PageSection, PageTeaser, PageBlog, StudioKind, Moderation, Transition, DraftSource } from "../page-state";
+// Field paths over a page-schema — the unit of the review loop's diff, origin
+// and revert (DECISIONS 0453).
+export { changedPaths, fieldChanges, fieldValue, withFieldValue } from "../page-fields";
+// The page lifecycle bar (DECISIONS 0454): the state chip, Save draft and one
+// primary transition with a menu — the SAME top bar in every studio that edits
+// a page (Content, Checks). The studio passes its own write handlers.
+export { PageLifecycleBar } from "../page-lifecycle-bar";
+export type { PageLifecycleBarProps } from "../page-lifecycle-bar";
+export { planLifecycle, carriesEdits, transitionNotice } from "../page-lifecycle";
+export type { LifecyclePlan, LifecyclePrimary } from "../page-lifecycle";
+export type { FieldChange } from "../page-fields";
 
 // The shared page preview — the centre canvas BOTH page studios render: Content
 // beside its composer rail, Checks beside its findings (it audits the SAME draft
 // Content edits). It stays core (with the content browser and the Presence
 // cards it composes) because a studio may never import another studio, and it
 // reads only core stores. Content (Phase E.4) reaches it through here too.
-export { PagePreview } from "../page-preview";
+export { PagePreview, PAGE_LENS } from "../page-preview";
+// Lenses + pins: what a studio adds to that shared preview — Checks' Search
+// result / Share card lenses and its section pins (DECISIONS 0453, S3). The
+// two cards are the Presence canvas's own, so a lens and Presence never differ.
+export type { PagePreviewProps, PreviewLens, PreviewPin } from "../page-preview";
+export { SearchResultCard, ShareCard } from "../presence-preview";
 
 // The page facet (Content ↔ Presence) the preview and the composer rail share
 // — a core store because the preview is. Content (Phase E.4).
@@ -109,9 +138,9 @@ export { setPageDirty } from "../page-dirty";
 // The thread the rail edits in: sealed → the composer is read-only. Content (Phase E.4).
 export { useActiveThreadSealed } from "../thread-seal-hooks";
 
-// The component catalog's presentation helpers (the section glyph, grouping by
+// The component catalog's presentation helper (grouping by
 // pack provider) — core because the `+` birth form reads the same catalog.
-export { sectionIcon, groupByProvider } from "../catalog-meta";
+export { groupByProvider } from "../catalog-meta";
 
 // Studio deep links + access: the Checks hand-off link on the rail, and whether
 // this user may enter the studio it points at. Content (Phase E.4).
@@ -130,6 +159,9 @@ export { markSomethingMade } from "../name-invite-state";
 // machine, deep links and the close-on-leave path read it), so the Checks
 // studio reads and writes it through here. Checks (Phase E).
 export { getAuditLang, getAuditNode, setAuditNode, subscribeAuditNode } from "../audit-state";
+// The counts-only read Content's rail Checks row shows (DECISIONS 0454).
+export { fetchAuditSummary } from "../audit-state";
+export type { AuditSummary } from "../audit-state";
 
 // The thread end-state pane: a studio reports a document that went away or
 // was denied, and clears it when a load succeeds. Checks (Phase E).

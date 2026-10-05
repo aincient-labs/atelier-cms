@@ -43,6 +43,9 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
     'opener',
     'limits',
     'collection_source',
+    'fragment',
+    'removed',
+    'include_new',
   ],
 )]
 final class PageKind extends ConfigEntityBase implements PageKindInterface {
@@ -92,6 +95,27 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
   protected bool $collection_source = FALSE;
 
   /**
+   * TRUE for a composition that is not a page (the built-in `block` kind).
+   */
+  protected bool $fragment = FALSE;
+
+  /**
+   * The deny list: components this kind never offers, even when its allow
+   * list is empty ("allowed automatically", DECISIONS 0455).
+   *
+   * @var string[]
+   */
+  protected array $removed = [];
+
+  /**
+   * Whether components the allow map does not name are offered (TRUE =
+   * "allowed automatically", the map then only narrows variants/tones), or
+   * withheld (FALSE = "off until I allow them"). NULL = the legacy rule: an
+   * empty map offers everything, a non-empty one is an allow list.
+   */
+  protected ?bool $include_new = NULL;
+
+  /**
    * {@inheritdoc}
    */
   public function mode(): string {
@@ -136,6 +160,18 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
   /**
    * {@inheritdoc}
    */
+  public function includesNew(): bool {
+    return $this->include_new ?? $this->components === [];
+  }
+
+  public function isFragment(): bool {
+    return $this->fragment;
+  }
+
+  public function removed(): array {
+    return array_values(array_filter($this->removed, 'is_string'));
+  }
+
   public function isCollectionSource(): bool {
     return $this->collection_source;
   }

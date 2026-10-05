@@ -121,6 +121,21 @@ final class AdmissionGateTest extends UnitTestCase {
   }
 
   /**
+   * checkEach() keys by definition, so the def a collision did NOT refuse keeps
+   * its clean verdict — and a built-in claims its name before any pack, even
+   * when discovery lists the pack first.
+   */
+  public function testBuiltinWinsANameCollisionPerDefinition(): void {
+    $verdicts = AdmissionGate::checkEach([
+      'acme_pack:promo' => self::def('promo', self::section(), [], 'acme_pack'),
+      'aincient_pages:promo' => self::def('promo', self::section(), [], 'aincient_pages'),
+    ]);
+    $this->assertSame([], $verdicts['aincient_pages:promo']['errors']);
+    $this->assertCount(1, $verdicts['acme_pack:promo']['errors']);
+    $this->assertStringContainsString('name collides with "aincient_pages:promo"', $verdicts['acme_pack:promo']['errors'][0]);
+  }
+
+  /**
    * Reserved layout words cannot name a section — but the layout word IS the
    * layout tier's own name, so 'grid' as a layout def is admitted.
    */

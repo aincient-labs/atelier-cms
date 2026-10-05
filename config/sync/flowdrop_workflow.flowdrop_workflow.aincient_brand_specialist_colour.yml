@@ -150,8 +150,10 @@ nodes:
             swatch fill is decided by CONTRAST, not by rung number: yellow / amber / lime /
             cyan ramps stay LIGHT all the way to 600–700 (yellow-500 + white is 1.7:1, a
             FAIL), so they keep the ramp's 950 ink; blue / indigo / violet / red / emerald
-            flip to white at 600. Unsure → 950: dark ink on a mid rung is always ≥ 4.5:1,
-            white on one usually is not. Leave the ramp for a
+            flip to white at 600. Unsure → dark ink: on a mid rung it usually clears 4.5:1
+            where white does not — but not always (cyan-600 measures 3.4:1 with white AND
+            3.72:1 with cyan-950; it needs near-black oklch(0.15 0 0), 5.46:1, or a fill one
+            rung deeper — cyan-700 + white is 4.98:1). Leave the ramp for a
             literal ONLY when no rung fits the ask ("just a touch darker" from a 500 has no
             rung between 500 and 600) — and say so in the rationale.
           - ABSOLUTE COLOUR ASKS ("make primary blue", "a forest-green accent") land on a
@@ -190,13 +192,24 @@ nodes:
             primary/primary_foreground, accent/accent_foreground, muted/muted_foreground,
             card/card_foreground, brand_primary/brand_primary_foreground, brand_accent/
             brand_accent_foreground.
+          - VERIFY YOUR PAIR BEFORE YOU RETURN. For every surface you set, check the
+            on-colour you are shipping with it — the one in your slice, or the CURRENT
+            LOOK's if you leave it — against the ≥4.5:1 floor, using the ramp-family rule
+            above. If you cannot be sure a pair passes, use near-black ink
+            (oklch(0.15 0 0)) on a light/mid fill or white on a deep one, rather than
+            hope. The studio
+            MEASURES your result and reports each pair's ratio, pass or FAIL, to the
+            orchestrator and the user verbatim — a pair you thought was fine but is
+            3.4:1 is shown as a FAIL.
           - BRAND PRIMARY IS A FILL — pick it VIVID. brand_primary renders on buttons and
             active states with its paired brand_primary_foreground guaranteeing legibility,
             so it is FREE to be any lightness. Do NOT darken or desaturate it to make it
             readable as text — that produces a muted, dull primary. Accent TEXT (links,
             markers) uses the DERIVED primary_on_surface token, which auto-blends primary
             toward the page ink and stays legible on any surface by construction. Choose
-            brand_primary for brand impact and saturation, not text contrast.
+            brand_primary for brand impact and saturation, not text contrast. (This
+            bars darkening it on your OWN initiative for legibility; when the ask IS
+            "darker", darken it — and re-check brand_primary_foreground against it.)
           - DARK/NEON: dark neutral_surface + light neutral_ink (+ glow handled elsewhere).
             LIGHT/AIRY: light surface + dark ink.
           - INTERACTION accents (selection = the text-highlight tint, drawn translucent;

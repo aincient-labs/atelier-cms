@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_audit\Plugin\AiCapability;
 
 use Drupal\aincient_audit\AuditEngine;
-use Drupal\aincient_pages\NodeModeration;
+use Drupal\aincient_audit\AuditTarget;
 use Drupal\aincient_core\Attribute\Capability;
 use Drupal\aincient_core\Capability\CapabilityBase;
 use Drupal\aincient_core\Capability\ExecutableCapabilityInterface;
@@ -29,7 +29,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   id: 'aincient_audit:run_page_audit',
   function_name: 'aincient_run_page_audit',
   name: 'Run page audit',
-  description: 'Run read-only health checks (SEO, meta tags, internal-link integrity) on an existing page and return the findings. Call this when the user asks to audit / check / review a page for SEO, meta tags, or broken links. Takes the page node id. It only reports — it changes nothing.',
+  description: 'Run read-only health checks (SEO, meta tags, internal-link integrity) on an existing page and return the findings. Call this when the user asks to audit / check / review a page for SEO, meta tags, or broken links. Takes the page node id and optionally which copy to check: the live page (default) or "draft" (the latest saved draft). The report says which copy it checked. It only reports — it changes nothing.',
   context_definitions: [
     'node_id' => new ContextDefinition(
       data_type: 'integer',
@@ -37,13 +37,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
       description: new TranslatableMarkup('The aincient_page node id to audit.'),
       required: TRUE,
     ),
+    'revision' => new ContextDefinition(
+      data_type: 'string',
+      label: new TranslatableMarkup('Revision'),
+      description: new TranslatableMarkup('Which copy to audit: "draft" for the latest saved draft (what is about to ship). Omit for the live page visitors see.'),
+      required: FALSE,
+    ),
   ],
 )]
 final class RunPageAudit extends CapabilityBase implements ExecutableCapabilityInterface {
 
   protected AuditEngine $engine;
   protected EntityTypeManagerInterface $entityTypeManager;
-  protected NodeModeration $moderation;
+  protected AuditTarget $target;
   protected AccountInterface $currentUser;
   protected string $result = '';
 
@@ -54,7 +60,7 @@ final class RunPageAudit extends CapabilityBase implements ExecutableCapabilityI
     $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
     $instance->engine = $container->get('aincient_audit.engine');
     $instance->entityTypeManager = $container->get('entity_type.manager');
-    $instance->moderation = $container->get('aincient_pages.moderation');
+    $instance->target = $container->get('aincient_audit.target');
     $instance->currentUser = $container->get('current_user');
     return $instance;
   }
@@ -74,16 +80,16 @@ final class RunPageAudit extends CapabilityBase implements ExecutableCapabilityI
       return;
     }
 
-    // Audit the LATEST revision (the editable draft head) so the agent narrates
-    // the same findings as the studio panel and reflects a staged-then-saved
-    // draft fix, not the stale published default.
-    $node = $this->moderation->loadLatestRevision((string) $node_id, 'aincient_page');
+    // Live by default (DECISIONS 0450); the Checks agent passes "draft" so it
+    // narrates the same copy the studio panel grades. Same resolver as the panel.
+    $revision = AuditTarget::normalize($this->getContextValue('revision'));
+    $node = $this->target->load((string) $node_id, $revision);
     if ($node === NULL) {
       $this->result = sprintf('Error: node %s is not an AIncient page.', (string) $node_id);
       return;
     }
 
-    $report = $this->engine->audit($node);
+    $report = $this->engine->audit($node, $revision);
     $this->result = (string) json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
   }
 

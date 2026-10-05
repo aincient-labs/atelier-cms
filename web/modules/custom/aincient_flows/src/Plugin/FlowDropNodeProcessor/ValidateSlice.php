@@ -74,6 +74,9 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
     string $plugin_id,
     mixed $plugin_definition,
     private readonly DesignTokens $designTokens,
+    // Nullable so the pure-validation unit test can build the node without a
+    // brand repository; the container always supplies it.
+    private readonly ?BrandPreviewApplier $applier = NULL,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -87,6 +90,7 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
       $plugin_id,
       $plugin_definition,
       $container->get('aincient_pages.design_tokens'),
+      $container->get('aincient_pages.preview_applier'),
     );
   }
 
@@ -140,6 +144,21 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
       $out['rejected'] = $rejected;
     }
 
+    // The COMPUTED contrast of what this slice will render, one factual line
+    // per text/surface pair it moves ("brand_primary_foreground on
+    // brand_primary: 3.4:1 — FAILS WCAG AA …"). The orchestrator writes its
+    // final reply BEFORE the end-of-turn apply grades contrast, so this tool
+    // result is the only place it can learn the verdict — without it, it
+    // claimed "kept contrast" for a 3.4:1 pair. Same grading as the apply
+    // (BrandPreviewApplier, draft-over-saved, var() followed). The merge
+    // node's decodeSlice ignores the key.
+    if ($this->applier !== NULL && ($cleanTokens !== [] || isset($out['presets_json']))) {
+      $lines = array_column($this->applier->pairVerdicts($cleanTokens, (array) ($out['presets_json'] ?? [])), 'line');
+      if ($lines !== []) {
+        $out['contrast'] = $lines;
+      }
+    }
+
     return ['slice' => $out];
   }
 
@@ -176,7 +195,7 @@ class ValidateSlice extends AbstractFlowDropNodeProcessor {
       'properties' => [
         'slice' => [
           'type' => 'object',
-          'description' => 'The validated slice (invalid tokens stripped) with a `rejected` block of {token, value, reason}. Wire a Data to JSON node between this and chat_output — the sub-workflow returns a string across the tool boundary.',
+          'description' => 'The validated slice (invalid tokens stripped) with a `rejected` block of {token, value, reason} and a `contrast` list of computed WCAG verdicts for the text/surface pairs it moves. Wire a Data to JSON node between this and chat_output — the sub-workflow returns a string across the tool boundary.',
         ],
       ],
     ];

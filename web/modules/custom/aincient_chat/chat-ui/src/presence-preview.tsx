@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { getPageDraft, getPageUrl, subscribePageDraft, subscribePreviewReload, subscribePageLoad, type PageMeta, type PageTeaser } from "./page-state";
+import {
+  getPageDraft,
+  getPageUrl,
+  subscribePageDraft,
+  subscribePreviewReload,
+  subscribePageLoad,
+  type PageMeta,
+  type PageSchema,
+  type PageTeaser,
+} from "./page-state";
 import { PanelBar } from "./kit/panel-bar";
 import { apiUrl } from "./console-config";
 
@@ -38,12 +47,12 @@ function slug(title: string): string {
   );
 }
 
-function readPresence(): Presence {
-  const draft = getPageDraft();
+/** The presence a schema projects — fallbacks applied as the page renders them
+ *  (og_title → title, og_description → description). Pure. */
+export function presenceOf(draft: PageSchema | null, url: string | null): Presence {
   const meta = (draft?.meta ?? {}) as PageMeta;
   const teaser = (draft?.teaser ?? {}) as PageTeaser;
   const title = (draft?.title ?? "").trim() || "Untitled page";
-  const url = getPageUrl();
   let host = PLACEHOLDER_HOST;
   let path = "/" + slug(title);
   if (url) {
@@ -71,6 +80,87 @@ function readPresence(): Presence {
   };
 }
 
+const readPresence = (): Presence => presenceOf(getPageDraft(), getPageUrl());
+
+/**
+ * An image value as a display URL: a `media:<id>` / `entity:` token resolves
+ * through a display-sized crop (these cards render at real card size, so the
+ * small picker `thumb` would look blurry); a raw URL (og_image may be one) is
+ * used as-is. "" while resolving, for an empty value, or when it can't resolve.
+ */
+function useImageUrl(value: string, style: string): [string, () => void] {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    if (!value) {
+      setUrl("");
+      return;
+    }
+    if (!/^(media|entity):/.test(value)) {
+      setUrl(value);
+      return;
+    }
+    let live = true;
+    fetch(apiUrl(`/media/url?token=${encodeURIComponent(value)}&style=${style}`), { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (live) setUrl(typeof d?.url === "string" ? d.url : "");
+      })
+      .catch(() => {
+        if (live) setUrl("");
+      });
+    return () => {
+      live = false;
+    };
+  }, [value, style]);
+  return [url, () => setUrl("")];
+}
+
+const DASH = "—";
+
+/**
+ * A page as a search-result snippet (title, URL, meta description). Exported
+ * through the sdk so a studio's preview lens (Checks, DECISIONS 0453) draws the
+ * SAME card the Presence canvas does.
+ */
+export function SearchResultCard({ schema, url }: { schema: PageSchema | null; url: string | null }) {
+  const p = presenceOf(schema, url);
+  return (
+    <div className="ain-serp">
+      <div className="ain-serp__site">
+        <span className="ain-serp__fav" aria-hidden="true" />
+        <span className="ain-serp__id">
+          <b>{p.host}</b>
+          <span className="ain-serp__url">
+            {p.host}
+            {p.path}
+          </span>
+        </span>
+      </div>
+      <p className="ain-serp__title">{p.title}</p>
+      <p className="ain-serp__desc">{p.metaDescription || DASH}</p>
+    </div>
+  );
+}
+
+/** A page as a social-share unfurl (Open Graph), the share image resolved to
+ *  the 2:1 crop (~1.91:1 unfurl). Exported through the sdk like {@link SearchResultCard}. */
+export function ShareCard({ schema, url }: { schema: PageSchema | null; url: string | null }) {
+  const p = presenceOf(schema, url);
+  const [img, clearImg] = useImageUrl(p.ogImage, "960w480h");
+  return (
+    <div className="ain-social">
+      <div className="ain-social__img">
+        {img ? <img src={img} alt="" onError={clearImg} /> : <span className="ain-social__imgnote">share image</span>}
+      </div>
+      <div className="ain-social__body">
+        <span className="ain-social__domain">{p.host}</span>
+        <p className="ain-social__title">{p.ogTitle}</p>
+        <p className="ain-social__desc">{p.ogDescription || DASH}</p>
+      </div>
+    </div>
+  );
+}
+
 export function PresencePreview() {
   const [p, setP] = useState<Presence>(readPresence);
   useEffect(() => {
@@ -86,63 +176,9 @@ export function PresencePreview() {
     };
   }, []);
 
-  // The teaser image is a media:<id> token. These cards render the image at real
-  // card size, so resolve it through a display-sized crop (16:9 for the teaser,
-  // 2:1 for the social unfurl) rather than the small picker `thumb` — a thumbnail
-  // upscaled into these cards looks blurry. Re-runs whenever the token changes; a
-  // cleared/unresolvable token shows the placeholder.
-  const [teaserImg, setTeaserImg] = useState<string>("");
-  useEffect(() => {
-    const token = p.teaserImageToken;
-    if (!token) {
-      setTeaserImg("");
-      return;
-    }
-    let live = true;
-    fetch(apiUrl(`/media/url?token=${encodeURIComponent(token)}&style=960w540h`), { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (live) setTeaserImg(typeof d?.url === "string" ? d.url : "");
-      })
-      .catch(() => {
-        if (live) setTeaserImg("");
-      });
-    return () => {
-      live = false;
-    };
-  }, [p.teaserImageToken]);
-
-  // og_image may be a media:<id> token (picked in the Presence editor, resolved
-  // to an absolute URL at render) or a raw URL pasted directly. A token resolves
-  // through the 2:1 crop for the share-card mock (matching the ~1.91:1 unfurl); a
-  // raw URL is used as-is. Mirrors the teaser resolution above.
-  const [ogImg, setOgImg] = useState<string>("");
-  useEffect(() => {
-    const v = p.ogImage;
-    if (!v) {
-      setOgImg("");
-      return;
-    }
-    if (!/^(media|entity):/.test(v)) {
-      setOgImg(v);
-      return;
-    }
-    let live = true;
-    fetch(apiUrl(`/media/url?token=${encodeURIComponent(v)}&style=960w480h`), { credentials: "same-origin" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (live) setOgImg(typeof d?.url === "string" ? d.url : "");
-      })
-      .catch(() => {
-        if (live) setOgImg("");
-      });
-    return () => {
-      live = false;
-    };
-  }, [p.ogImage]);
-
-  const dash = "—";
-  const socialDesc = p.ogDescription || p.metaDescription;
+  // The teaser card renders at 16:9 card size (see useImageUrl).
+  const [teaserImg, clearTeaserImg] = useImageUrl(p.teaserImageToken, "960w540h");
+  const schema = getPageDraft();
 
   return (
     <div className="ain-preview">
@@ -165,14 +201,14 @@ export function PresencePreview() {
           <div className="ain-teasercard">
             <div className="ain-teasercard__img">
               {teaserImg ? (
-                <img src={teaserImg} alt="" onError={() => setTeaserImg("")} />
+                <img src={teaserImg} alt="" onError={clearTeaserImg} />
               ) : (
                 <span className="ain-teasercard__imgnote">teaser image</span>
               )}
             </div>
             <div className="ain-teasercard__body">
               <p className="ain-teasercard__title">{p.teaserTitle}</p>
-              <p className="ain-teasercard__desc">{p.teaserDescription || dash}</p>
+              <p className="ain-teasercard__desc">{p.teaserDescription || DASH}</p>
               <span className="ain-teasercard__more">Read more &rarr;</span>
             </div>
           </div>
@@ -183,20 +219,7 @@ export function PresencePreview() {
           <p className="ain-presence__label">
             Social share <span className="ain-presence__tag">Open Graph · LinkedIn / Slack / X</span>
           </p>
-          <div className="ain-social">
-            <div className="ain-social__img">
-              {ogImg ? (
-                <img src={ogImg} alt="" onError={() => setOgImg("")} />
-              ) : (
-                <span className="ain-social__imgnote">share image</span>
-              )}
-            </div>
-            <div className="ain-social__body">
-              <span className="ain-social__domain">{p.host}</span>
-              <p className="ain-social__title">{p.ogTitle}</p>
-              <p className="ain-social__desc">{socialDesc || dash}</p>
-            </div>
-          </div>
+          <ShareCard schema={schema} url={p.url} />
         </section>
 
         {/* Search result snippet. */}
@@ -204,20 +227,7 @@ export function PresencePreview() {
           <p className="ain-presence__label">
             Search result <span className="ain-presence__tag">Google snippet</span>
           </p>
-          <div className="ain-serp">
-            <div className="ain-serp__site">
-              <span className="ain-serp__fav" aria-hidden="true" />
-              <span className="ain-serp__id">
-                <b>{p.host}</b>
-                <span className="ain-serp__url">
-                  {p.host}
-                  {p.path}
-                </span>
-              </span>
-            </div>
-            <p className="ain-serp__title">{p.title}</p>
-            <p className="ain-serp__desc">{p.metaDescription || dash}</p>
-          </div>
+          <SearchResultCard schema={schema} url={p.url} />
         </section>
       </div>
     </div>

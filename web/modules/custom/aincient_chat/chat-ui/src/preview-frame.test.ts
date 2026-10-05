@@ -64,6 +64,25 @@ describe("live preview frames", () => {
     expect(content.filter((p) => p.type === "tool-call")).toHaveLength(0);
   });
 
+  it("applies a typed commands preview frame (the server's shape since A4)", async () => {
+    stubStream([
+      {
+        type: "preview",
+        data: {
+          name: "brand_preview",
+          arguments: { commands: [{ verb: "set_tokens", args: { tokens: { "brand-primary": "oklch(0.58 0.18 40)" } } }], rejected: [] },
+        },
+      },
+      { type: "result", data: { text: "Warmed the palette up." } },
+      { type: "done", data: {} },
+    ]);
+
+    const content = await runTurn();
+
+    expect(getBrandOverrides()["brand-primary"]).toBe("oklch(0.58 0.18 40)");
+    expect(content.filter((p) => p.type === "tool-call")).toHaveLength(0);
+  });
+
   it("still renders a card for the authoritative tool_call frame", async () => {
     stubStream([
       { type: "preview", data: { name: "brand_preview", arguments: { tokens: { "brand-primary": "oklch(0.58 0.18 40)" } } } },

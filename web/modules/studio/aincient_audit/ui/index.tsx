@@ -1,5 +1,5 @@
-import { PagePreview } from "@console/sdk";
 import { ChecksStudio } from "./checks-studio";
+import { ChecksPreview } from "./checks-preview";
 import "./styles.css";
 
 /**
@@ -13,7 +13,9 @@ import "./styles.css";
  *
  * The fix loop in one split-pane: `Preview` is the SHARED page preview — the
  * same centre canvas Content renders, reading the same page-state draft through
- * the sdk, so a fix the agent stages shows live — and `Studio` is the findings
+ * the sdk, so a fix the agent stages shows live, plus the Search result / Share
+ * card lenses and section pins Checks adds through the sdk's lens seam (0453
+ * S3) — and `Studio` is the findings
  * rail: the deterministic audit of the open page grouped by check, each
  * finding with "Fix with AI" (the agent stages a `preview_page` / `set_meta` op
  * into the draft) or an inline manual edit. The human Publishes; the audit
@@ -25,5 +27,5 @@ import "./styles.css";
 
 /** The findings rail. */
 export const Studio = ChecksStudio;
-/** The centre canvas: the shared page preview. */
-export const Preview = PagePreview;
+/** The centre canvas: the shared page preview, with Checks' lenses and pins. */
+export const Preview = ChecksPreview;

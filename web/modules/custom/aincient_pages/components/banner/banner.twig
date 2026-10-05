@@ -1,9 +1,12 @@
+{# Resolve the default ONCE, so on_dark agrees with the band (a toneless
+   banner is brand-toned; muted ink on cinnabar was unreadable). #}
+{% set tone = tone|default('brand') %}
 {% set tone_class = {
   default: 'bg-background text-foreground',
   muted: 'bg-muted text-muted-foreground',
   brand: 'bg-primary text-primary-foreground',
   inverted: 'bg-foreground text-background',
-}[tone|default('brand')] %}
+}[tone] %}
 {% set on_dark = tone in ['brand', 'inverted'] %}
 
 <section class="{{ tone_class }}">

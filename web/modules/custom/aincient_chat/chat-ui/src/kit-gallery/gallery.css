@@ -31,3 +31,6 @@
 .ain-kitgallery__col { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
 .ain-kitgallery__stage { display: flex; min-height: 140px; }
 .ain-kitgallery__stage + .ain-kitgallery__stage { border-top: 1px dashed var(--ain-color-border); }
+.ain-kitgallery__icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 12px; }
+.ain-kitgallery__icon { display: flex; align-items: center; gap: 8px; font-family: var(--ain-font-mono); font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-kitgallery__icon svg { flex: none; color: var(--ain-color-text); }

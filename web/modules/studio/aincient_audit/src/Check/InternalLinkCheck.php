@@ -53,7 +53,8 @@ final class InternalLinkCheck implements CheckInterface {
   public function evaluate(NodeInterface $node, array $params = []): array {
     // v1 has no tunable knobs — a broken link is broken at any threshold.
     $findings = [];
-    $html = $this->renderHtml($node);
+    $schema = $this->store->resolve($node);
+    $html = $this->renderHtml($node, $schema);
     if ($html === NULL) {
       $findings[] = $this->finding('links.render', self::WARN, 'No page content to scan', 'This page has no stored schema, so there are no links to check yet.', 'Links', 'content');
       return $findings;
@@ -71,10 +72,15 @@ final class InternalLinkCheck implements CheckInterface {
     // against.
     $ids = $this->extractIds($html);
 
+    // One finding per broken PATH (or dangling fragment), however often the
+    // page links to it: every href that reduced to the key, and how many
+    // links it has (0453 S4 — one fix for every copy).
     $internalOk = 0;
     $external = 0;
-    $brokenSeen = [];
-    $fragmentSeen = [];
+    /** @var array<string, array{hrefs: array<string, true>, count: int}> $broken */
+    $broken = [];
+    /** @var array<string, array{hrefs: array<string, true>, count: int}> $fragments */
+    $fragments = [];
     foreach ($hrefs as $href) {
       $kind = $this->classify($href);
       if ($kind === 'fragment') {
@@ -82,9 +88,9 @@ final class InternalLinkCheck implements CheckInterface {
         if (isset($ids[$fragment])) {
           $internalOk++;
         }
-        elseif (!isset($fragmentSeen[$fragment])) {
-          $fragmentSeen[$fragment] = TRUE;
-          $findings[] = $this->finding('links.fragment:' . $fragment, self::FAIL, 'Dangling in-page link', sprintf('“#%s” points at no section or heading on this page.', $fragment), 'Links', 'content', ['action' => 'edit_prop', 'target' => ['href' => $href], 'aiFixable' => TRUE]);
+        else {
+          $fragments[$fragment]['hrefs'][$href] = TRUE;
+          $fragments[$fragment]['count'] = ($fragments[$fragment]['count'] ?? 0) + 1;
         }
         continue;
       }
@@ -103,19 +109,31 @@ final class InternalLinkCheck implements CheckInterface {
       // Note: a cross-page `/other#x` fragment is left unchecked here — we'd
       // need the OTHER page's rendered HTML to validate its ids, which this
       // check (single-page, no-HTTP) doesn't have.
-      if ($this->pathValidator->getUrlIfValidWithoutAccessCheck($path)) {
+      if (isset($broken[$path])) {
+        $broken[$path]['hrefs'][$href] = TRUE;
+        $broken[$path]['count']++;
+      }
+      elseif ($this->pathValidator->getUrlIfValidWithoutAccessCheck($path)) {
         $internalOk++;
       }
-      elseif (!isset($brokenSeen[$path])) {
-        $brokenSeen[$path] = TRUE;
-        // `content` dimension: the broken href lives in a page section. The
-        // repair agent locates it by `target.href` and rewrites just that prop
-        // (no manual inline editor for links in v1 — Phase 2 keeps it AI-only).
-        $findings[] = $this->finding('links.broken:' . $path, self::FAIL, 'Broken internal link', sprintf('“%s” does not resolve to a page on this site.', $href), 'Links', 'content', ['action' => 'edit_prop', 'target' => ['href' => $href], 'aiFixable' => TRUE]);
+      else {
+        $broken[$path] = ['hrefs' => [$href => TRUE], 'count' => 1];
       }
     }
 
-    if ($brokenSeen === [] && $fragmentSeen === []) {
+    foreach ($fragments as $fragment => $seen) {
+      $href = (string) array_key_first($seen['hrefs']);
+      $findings[] = $this->finding('links.fragment:' . $fragment, self::FAIL, 'Dangling in-page link', sprintf('“#%s” points at no section or heading on this page.', $fragment) . $this->timesSuffix($seen['count']), 'Links', 'content', $this->linkRemediation($href, $seen, $schema));
+    }
+    foreach ($broken as $path => $seen) {
+      $href = (string) array_key_first($seen['hrefs']);
+      // `content` dimension: the broken href lives in page sections. The
+      // repair agent rewrites it at every `target.locations[]` entry in one
+      // edit (no manual inline editor for links — AI-only).
+      $findings[] = $this->finding('links.broken:' . $path, self::FAIL, 'Broken internal link', sprintf('“%s” does not resolve to a page on this site.', $href) . $this->timesSuffix($seen['count']), 'Links', 'content', $this->linkRemediation($href, $seen, $schema));
+    }
+
+    if ($broken === [] && $fragments === []) {
       $findings[] = $this->finding('links.internal_ok', self::PASS, 'Internal links resolve', sprintf('%d internal link%s checked — all valid.', $internalOk, $internalOk === 1 ? '' : 's'), 'Links', 'content');
     }
     if ($external > 0) {
@@ -131,16 +149,96 @@ final class InternalLinkCheck implements CheckInterface {
    * markup matches a live page exactly — in the node's OWN language, so a
    * translation's overlay, heading slugs and language-prefixed hrefs are what
    * get checked (a German page is graded on its German links, not the source's).
+   * The schema comes from THIS revision ({@see PageStore::resolve}), not the
+   * published default: a draft audit must grade the draft's links (0450).
+   *
+   * @param array<string, mixed> $schema
+   *   The revision's resolved schema ({@see PageStore::resolve}).
    */
-  private function renderHtml(NodeInterface $node): ?string {
+  private function renderHtml(NodeInterface $node, array $schema): ?string {
     $langcode = $node->language()->getId();
-    $schema = $this->store->load((string) $node->id(), $langcode);
-    if ($schema === NULL) {
-      return NULL;
-    }
     /** @var \Drupal\aincient_pages\Controller\PageSpikeController $spike */
     $spike = $this->classResolver->getInstanceFromDefinition(PageSpikeController::class);
     return (string) $spike->renderSchema($schema, $langcode)->getContent();
+  }
+
+  /**
+   * " Linked N times." for a target the page links to more than once.
+   */
+  private function timesSuffix(int $count): string {
+    return $count > 1 ? sprintf(' Linked %d times.', $count) : '';
+  }
+
+  /**
+   * The remediation for a broken link or dangling fragment: the href, every
+   * place in the schema that writes it, and how many links the page has to it.
+   *
+   * @param array{hrefs: array<string, true>, count: int} $seen
+   * @param array<string, mixed> $schema
+   *
+   * @return array<string, mixed>
+   */
+  private function linkRemediation(string $href, array $seen, array $schema): array {
+    return [
+      'action' => 'edit_prop',
+      'target' => [
+        'href' => $href,
+        'locations' => $this->locate($schema, array_keys($seen['hrefs'])),
+        'occurrences' => $seen['count'],
+      ],
+      'aiFixable' => TRUE,
+    ];
+  }
+
+  /**
+   * Where the schema writes any of `$hrefs`: one `{section, prop, href}` per
+   * section prop that carries it — as the whole value, a Markdown link target
+   * or an HTML `href` — walking nested props (`prop` is a dotted path, e.g.
+   * `items.2.url`). A rendered href the schema doesn't spell the same way (a
+   * language prefix the renderer added) has no location; the finding still
+   * stands on the rendered page.
+   *
+   * @param array<string, mixed> $schema
+   * @param list<string> $hrefs
+   *
+   * @return list<array{section: string, prop: string, href: string}>
+   */
+  private function locate(array $schema, array $hrefs): array {
+    $out = [];
+    foreach ($schema['sections'] ?? [] as $section) {
+      $id = (string) ($section['id'] ?? '');
+      if ($id === '' || !is_array($section['props'] ?? NULL)) {
+        continue;
+      }
+      $this->walkProps($section['props'], '', $id, $hrefs, $out);
+    }
+    return $out;
+  }
+
+  /**
+   * Recursive step of {@see self::locate}.
+   *
+   * @param array<array-key, mixed> $props
+   * @param list<string> $hrefs
+   * @param list<array{section: string, prop: string, href: string}> $out
+   */
+  private function walkProps(array $props, string $prefix, string $section, array $hrefs, array &$out): void {
+    foreach ($props as $key => $value) {
+      $path = $prefix === '' ? (string) $key : $prefix . '.' . $key;
+      if (is_array($value)) {
+        $this->walkProps($value, $path, $section, $hrefs, $out);
+        continue;
+      }
+      if (!is_string($value) || $value === '') {
+        continue;
+      }
+      foreach ($hrefs as $href) {
+        if ($value === $href || str_contains($value, '](' . $href) || str_contains($value, 'href="' . $href . '"')) {
+          $out[] = ['section' => $section, 'prop' => $path, 'href' => $href];
+          break;
+        }
+      }
+    }
   }
 
   /**
@@ -162,6 +260,14 @@ final class InternalLinkCheck implements CheckInterface {
 
     $hrefs = [];
     foreach ($dom->getElementsByTagName('a') as $anchor) {
+      // The language switcher (`hreflang` links) points at "this page in
+      // another language", built from the CURRENT REQUEST's route — the audit
+      // runs outside the page's own route (the report endpoint, a chat turn,
+      // drush), so those hrefs name that request (`/de/atelier/chat`), not the
+      // page. They aren't page content and no page edit could fix them.
+      if ($anchor->hasAttribute('hreflang')) {
+        continue;
+      }
       $href = trim((string) $anchor->getAttribute('href'));
       if ($href !== '') {
         $hrefs[] = $href;

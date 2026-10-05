@@ -1,3 +1,4 @@
+import { apiUrl } from "./console-config";
 /**
  * The Checks studio's "which node is being audited" — the audit parallel of
  * page-state's open-document identity, kept here (not in the ChecksStudio
@@ -46,4 +47,31 @@ export function subscribeAuditNode(cb: () => void): () => void {
   return () => {
     subscribers.delete(cb);
   };
+}
+
+/** A page's audit verdict in counts — what the Content rail's Checks row shows. */
+export type AuditSummary = { fail: number; warn: number; pass: number };
+
+/**
+ * Grade a page's latest saved draft (the translation `langcode`, null = the
+ * source) and return only the counts — the Content rail's Checks row
+ * (DECISIONS 0454). The same report endpoint the Checks studio reads, so the
+ * row and the studio never disagree. Null on any failure (Checks off, no
+ * access, a blip): the row then just offers "Open Checks".
+ */
+export async function fetchAuditSummary(node: string, langcode: string | null): Promise<AuditSummary | null> {
+  const url = apiUrl(
+    `/audit/${encodeURIComponent(node)}/report?revision=draft` +
+      (langcode ? `&langcode=${encodeURIComponent(langcode)}` : ""),
+  );
+  try {
+    const res = await fetch(url, { credentials: "same-origin" });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { summary?: Partial<AuditSummary> };
+    const s = data?.summary;
+    if (!s || typeof s.fail !== "number" || typeof s.warn !== "number" || typeof s.pass !== "number") return null;
+    return { fail: s.fail, warn: s.warn, pass: s.pass };
+  } catch {
+    return null;
+  }
 }

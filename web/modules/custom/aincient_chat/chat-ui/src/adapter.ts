@@ -510,6 +510,12 @@ export type ThreadSummary = {
    * the node was deleted (the console falls back to "Page {nid}").
    */
   workingNode?: { nid: number; langcode: string | null; title?: string } | null;
+  /**
+   * The working node's moderation state in the thread's language, resolved at
+   * list time ({state, label, live}) — the row's Draft / In review / Published
+   * marker. NULL for unhomed threads, deleted pages and unmoderated bundles.
+   */
+  editorialState?: { state: string; label: string; live: boolean } | null;
   /** The FlowDrop workflow this thread's session is pinned to. */
   workflow?: { id: string; label: string };
 };
@@ -763,7 +769,7 @@ function brandDraftContext(): { overrides: Record<string, string>; fonts: string
  * When the studio is editing a translation (not the source language) we also
  * carry the active `langcode` + layout `mode`, so the agent knows to translate
  * the copy into that language (and that structure is locked in symmetric mode).
- * Returns undefined for an empty draft so a fresh page sends no context.
+ * Returns undefined for an empty UNSAVED draft so a fresh page sends no context.
  */
 function pageDraftContext():
   | { schema: ReturnType<typeof getPageDraft>; langcode?: string; mode?: string }
@@ -771,7 +777,10 @@ function pageDraftContext():
   const schema = getPageDraft();
   if (!schema) return undefined;
   const sections = Array.isArray(schema.sections) ? schema.sections : [];
-  if (schema.type !== "blog" && sections.length === 0) return undefined;
+  // An empty NEW draft carries nothing to reason about; a SAVED page with no
+  // sections still does — its identity and meta are what Checks' repair agent
+  // fixes (a sectionless page used to reach it with no page at all, 0453).
+  if (schema.type !== "blog" && sections.length === 0 && !getPageNode()) return undefined;
   const langcode = getPageLang();
   const mode = getPageMode();
   return {

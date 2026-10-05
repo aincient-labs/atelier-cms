@@ -23,5 +23,6 @@
 @import "./notice.css";
 @import "./empty-state.css";
 @import "./loading-state.css";
+@import "./composing-state.css";
 @import "./studio-group.css";
 @import "./studio-status.css";

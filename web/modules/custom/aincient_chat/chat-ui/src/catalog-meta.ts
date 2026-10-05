@@ -1,30 +1,13 @@
 /**
- * Pure catalog-metadata helpers for the W6 manifest fields (`icon`, `provider`,
- * `kinds`) — kept UI-free so the icon-resolution, provenance-grouping and
- * kind-ordering rules are unit-testable (see catalog-meta.test.ts).
+ * Pure catalog-metadata helpers for the W6 manifest fields (`provider`,
+ * `kinds`) — kept UI-free so the provenance-grouping and kind-ordering rules
+ * are unit-testable (see catalog-meta.test.ts). Component icons are the kit's
+ * `ComponentIcon` (DECISIONS 0455 D10); the manifest's legacy glyph is unused.
  *
  * The manifest (GET /atelier/page/manifest) is the single source; these helpers
- * only ever DEGRADE gracefully: a missing icon falls back to the local glyph
- * map, a missing provider counts as built-in, an empty `kinds` map yields []
- * so the caller keeps its hardcoded fallback pair.
+ * only ever DEGRADE gracefully: a missing provider counts as built-in, an
+ * empty `kinds` map yields [] so the caller keeps its hardcoded fallback pair.
  */
-
-/** The built-in glyph map — the client-side fallback when a manifest entry
- *  carries no `icon`. A type glyph per placeable, so a collapsed section and a
- *  picker row read at a glance. */
-export const SECTION_ICONS: Record<string, string> = {
-  hero: "◆", banner: "▬", logos: "▤", stats: "▦", features: "⊞",
-  content: "¶", gallery: "▤", testimonials: "❝", team: "☻", pricing: "$",
-  faq: "?", newsletter: "✉", cta: "◈", divider: "—", embed: "⧉", block: "▣",
-};
-
-/** The glyph for a placeable: the server-declared icon wins when non-empty,
- *  then the local map, then a neutral block mark (forward-compatible). */
-export function sectionIcon(component: string, serverIcon?: string): string {
-  const s = (serverIcon ?? "").trim();
-  if (s) return s;
-  return SECTION_ICONS[component] ?? "▢";
-}
 
 /** The provider whose components are the default experience — rendered with no
  *  group header and no provenance chip. An entry with no provider at all is

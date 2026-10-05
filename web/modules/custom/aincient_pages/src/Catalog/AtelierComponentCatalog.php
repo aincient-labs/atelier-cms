@@ -31,6 +31,9 @@ final class AtelierComponentCatalog implements ComponentCatalogInterface {
   private const BUILTIN_KINDS = [
     'landing' => ['label' => 'Landing page', 'hint' => '', 'mode' => 'composition', 'collection_source' => FALSE],
     'blog' => ['label' => 'Blog post', 'hint' => '', 'mode' => 'recipe', 'collection_source' => TRUE],
+    // The reusable-block regime (DECISIONS 0455): a composition that is not a
+    // page. Everything allowed by default (D7); never a page type.
+    'block' => ['label' => 'Block', 'hint' => '', 'mode' => 'composition', 'collection_source' => FALSE, 'fragment' => TRUE],
   ];
 
   /**
@@ -71,15 +74,18 @@ final class AtelierComponentCatalog implements ComponentCatalogInterface {
     if ($entity instanceof PageKindInterface) {
       $kindId = $entity->id();
     }
+    elseif (isset(self::BUILTIN_KINDS[$kind])) {
+      // A built-in kind without its entity keeps its OWN floor — never
+      // landing's rules. A site that stored only some of its built-ins (the
+      // Components studio saves one kind at a time) must still treat a post as
+      // a post and a block as a block (DECISIONS 0455).
+      $entity = NULL;
+      $kindId = $kind;
+    }
     else {
-      // Unknown kind: landing semantics, exactly as the old literal clamp —
-      // except the built-in 'blog' regime, whose recipe mode is a code floor
-      // (a site with no kind entities must still treat a post as a post).
+      // Unknown kind: landing semantics, exactly as the old literal clamp.
       $entity = $storage->load('landing');
       $entity = $entity instanceof PageKindInterface ? $entity : NULL;
-      if ($entity === NULL && isset(self::BUILTIN_KINDS[$kind])) {
-        $kindId = $kind;
-      }
     }
     $fallback = self::BUILTIN_KINDS[$kindId] ?? [];
     $constraint = $this->configFactory->get('aincient_pages.site_constraint');
@@ -90,6 +96,7 @@ final class AtelierComponentCatalog implements ComponentCatalogInterface {
         'components' => $constraint->get('components') ?? [],
         'tones' => $constraint->get('tones') ?? [],
         'variants' => $constraint->get('variants') ?? [],
+        'component_tones' => $constraint->get('component_tones') ?? [],
       ],
       $kindId,
       $entity === NULL ? $fallback : [],
@@ -98,6 +105,10 @@ final class AtelierComponentCatalog implements ComponentCatalogInterface {
     $tags = [
       'config:aincient_pages.site_constraint',
       'config:aincient_pages.page_kind.' . ($entity?->id() ?? $kindId),
+      // The list tag: CREATING a kind entity (first save of a built-in that
+      // only existed as the code floor) invalidates only the list tag, never
+      // the per-entity one (DECISIONS 0455).
+      'config:page_kind_list',
       // The discovered set changes when the module set changes (a pack is
       // enabled/uninstalled) — core.extension's tag is the cross-process
       // invalidation that reaches an entry a converge-side drush flush might
@@ -111,30 +122,40 @@ final class AtelierComponentCatalog implements ComponentCatalogInterface {
   /**
    * {@inheritdoc}
    */
-  public function kinds(): array {
-    if ($this->kinds !== NULL) {
-      return $this->kinds;
-    }
-    $kinds = [];
-    foreach ($this->entityTypeManager->getStorage('page_kind')->loadMultiple() as $id => $entity) {
-      if ($entity instanceof PageKindInterface && $entity->status()) {
-        $kinds[$id] = [
-          'label' => (string) $entity->label(),
-          'hint' => $entity->hint(),
-          'mode' => $entity->mode(),
-        ];
+  public function kinds(bool $includeFragments = FALSE): array {
+    if ($this->kinds === NULL) {
+      $kinds = [];
+      $stored = $this->entityTypeManager->getStorage('page_kind')->loadMultiple();
+      foreach ($stored as $id => $entity) {
+        if ($entity instanceof PageKindInterface && $entity->status()) {
+          $kinds[$id] = [
+            'label' => (string) $entity->label(),
+            'hint' => $entity->hint(),
+            'mode' => $entity->mode(),
+            'fragment' => $entity->isFragment(),
+          ];
+        }
       }
+      // The code floor (see BUILTIN_KINDS): every built-in kind whose entity is
+      // missing — a site that never stored them, or stored only the one the
+      // Components studio saved first. Saving landing must not make blog
+      // vanish (seen live, DECISIONS 0455). A disabled entity still wins.
+      foreach (self::BUILTIN_KINDS as $id => $k) {
+        if (!isset($kinds[$id]) && !isset($stored[$id])) {
+          $kinds[$id] = [
+            'label' => $k['label'],
+            'hint' => $k['hint'],
+            'mode' => $k['mode'],
+            'fragment' => !empty($k['fragment']),
+          ];
+        }
+      }
+      ksort($kinds);
+      $this->kinds = $kinds;
     }
-    if ($kinds === []) {
-      // No kind entities at all — the code floor (see BUILTIN_KINDS).
-      $kinds = array_map(fn(array $k) => [
-        'label' => $k['label'],
-        'hint' => $k['hint'],
-        'mode' => $k['mode'],
-      ], self::BUILTIN_KINDS);
-    }
-    ksort($kinds);
-    return $this->kinds = $kinds;
+    // Page kinds by default: a fragment kind is never a page type (New page,
+    // the PAGE KINDS prompt, a page's type clamp).
+    return $includeFragments ? $this->kinds : array_filter($this->kinds, static fn(array $k): bool => empty($k['fragment']));
   }
 
   /**
@@ -143,6 +164,55 @@ final class AtelierComponentCatalog implements ComponentCatalogInterface {
   public function reset(): void {
     $this->compiled = [];
     $this->kinds = NULL;
+  }
+
+  /**
+   * Compile a catalog for UNSAVED changes — the Components studio's dry run
+   * (DECISIONS 0455): the kind's stored values overlaid with $kindValues, under
+   * $constraint (NULL = the stored site constraint). Never cached, never saved.
+   *
+   * @param string $kind
+   *   The kind id.
+   * @param array $kindValues
+   *   Kind entity values to overlay (components, removed, opener, limits…).
+   * @param array|null $constraint
+   *   A full site-constraint payload, or NULL for the stored one.
+   */
+  public function compileDraft(string $kind, array $kindValues = [], ?array $constraint = NULL): EffectiveCatalog {
+    $storage = $this->entityTypeManager->getStorage('page_kind');
+    $entity = $storage->load($kind);
+    if (!$entity instanceof PageKindInterface && isset(self::BUILTIN_KINDS[$kind])) {
+      $floor = self::BUILTIN_KINDS[$kind];
+      $entity = $storage->create([
+        'id' => $kind,
+        'label' => $floor['label'],
+        'mode' => $floor['mode'],
+        'collection_source' => $floor['collection_source'],
+        'fragment' => !empty($floor['fragment']),
+      ]);
+    }
+    if ($entity instanceof PageKindInterface) {
+      $entity = clone $entity;
+      foreach ($kindValues as $key => $value) {
+        $entity->set($key, $value);
+      }
+    }
+    if ($constraint === NULL) {
+      $stored = $this->configFactory->get('aincient_pages.site_constraint');
+      $constraint = [
+        'components' => $stored->get('components') ?? [],
+        'tones' => $stored->get('tones') ?? [],
+        'variants' => $stored->get('variants') ?? [],
+        'component_tones' => $stored->get('component_tones') ?? [],
+      ];
+    }
+    return CatalogCompiler::compile(
+      $this->componentManager->getDefinitions(),
+      $entity instanceof PageKindInterface ? $entity : NULL,
+      $constraint,
+      $kind,
+      self::BUILTIN_KINDS[$kind] ?? [],
+    );
   }
 
   /**

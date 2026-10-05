@@ -90,7 +90,8 @@ final class StudioManifestDiscoveryTest extends KernelTestBase {
 
   /**
    * The first real studio module reads through like the fixture: provider is
-   * the module, the UI entry is declared, nothing else is.
+   * the module, the UI entry, its agent flow and its one verb are declared
+   * (DECISIONS 0455).
    */
   public function testComponentsStudioComesFromItsModule(): void {
     $studio = $this->manager()->get('components');
@@ -99,8 +100,8 @@ final class StudioManifestDiscoveryTest extends KernelTestBase {
     $this->assertSame('Components', $studio->label());
     $this->assertSame(40, $studio->weight());
     $this->assertSame('ui/index.tsx', $studio->uiEntry());
-    $this->assertSame([], $studio->flows());
-    $this->assertSame([], $studio->capabilities());
+    $this->assertSame(['aincient_components_agent'], $studio->flows());
+    $this->assertSame(['aincient_studio_components:propose_component_constraint'], $studio->capabilities());
     $this->assertSame('use aincient studio components', $studio->permission());
   }
 

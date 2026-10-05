@@ -48,12 +48,32 @@ final class AdmissionGate {
    */
   public static function check(array $definitions, array $virtualNames = ['block']): array {
     $verdicts = [];
+    foreach (self::checkEach($definitions, $virtualNames) as $id => $verdict) {
+      $verdicts[(string) $definitions[$id]['machineName']] = $verdict;
+    }
+    return $verdicts;
+  }
+
+  /**
+   * The same verdicts keyed by definition (plugin id), not by name.
+   *
+   * On a name collision check() keeps only the LATER def's verdict, so a
+   * rejected pack component would read as the verdict of the built-in it
+   * collides with. Callers that act per definition use this.
+   *
+   * @return array<string, array{tier: ?string, provider: string, errors: string[], warnings: string[]}>
+   */
+  public static function checkEach(array $definitions, array $virtualNames = ['block']): array {
+    $verdicts = [];
     $seen = [];
     foreach ($virtualNames as $name) {
       $seen[$name] = '(virtual)';
     }
+    // Built-ins claim their names first: on a collision the pack is the one
+    // refused, whatever order discovery returned the providers in.
+    uasort($definitions, static fn (array $a, array $b): int => (($b['provider'] ?? '') === 'aincient_pages') <=> (($a['provider'] ?? '') === 'aincient_pages'));
 
-    foreach ($definitions as $definition) {
+    foreach ($definitions as $id => $definition) {
       $atelier = $definition['thirdPartySettings']['atelier'] ?? NULL;
       if (!is_array($atelier)) {
         continue;
@@ -176,7 +196,7 @@ final class AdmissionGate {
       }
 
       $seen[$name] = sprintf('"%s:%s"', $provider, $name);
-      $verdicts[$name] = ['tier' => $tier ?: NULL, 'provider' => $provider, 'errors' => $errors, 'warnings' => $warnings];
+      $verdicts[$id] = ['tier' => $tier ?: NULL, 'provider' => $provider, 'errors' => $errors, 'warnings' => $warnings];
     }
     return $verdicts;
   }

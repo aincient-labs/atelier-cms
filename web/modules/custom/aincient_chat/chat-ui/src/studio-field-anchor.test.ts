@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   FIELD_ANCHOR_PARAM,
   fieldAnchorId,
@@ -52,5 +52,25 @@ describe("studio-field-anchor", () => {
     it("is a no-op miss when the field isn't mounted yet", () => {
       expect(focusStudioField("identity.logo", document)).toBe(false);
     });
+  });
+});
+
+describe("takeRequestedFieldAnchor", () => {
+  it("returns the boot ?field= once, after url-sync has dropped it", async () => {
+    window.history.replaceState(null, "", "/atelier/checks/node/5?field=meta.description");
+    vi.resetModules();
+    const mod = await import("./studio-field-anchor");
+    // url-sync canonicalises the address bar before the studio mounts.
+    window.history.replaceState(null, "", "/atelier/checks/node/5");
+    expect(mod.takeRequestedFieldAnchor()).toBe("meta.description");
+    expect(mod.takeRequestedFieldAnchor()).toBeNull();
+  });
+
+  it("prefers the live ?field=", async () => {
+    window.history.replaceState(null, "", "/atelier/checks/node/5?field=title");
+    vi.resetModules();
+    const mod = await import("./studio-field-anchor");
+    expect(mod.takeRequestedFieldAnchor()).toBe("title");
+    window.history.replaceState(null, "", "/atelier/checks/node/5");
   });
 });

@@ -177,6 +177,7 @@ export const brandCommands: StudioCommandSurface<BrandDraft, BrandCommand> = cre
 export type BrandPreviewPayload = {
   /** The typed form: the batch to run. Wins over the legacy fields below. */
   commands?: BrandCommand[];
+  // remove after 0.18 — the legacy fields (stored cards only; the server emits `commands`)
   tokens?: Record<string, string>;
   fonts?: string[];
   reset?: boolean;
@@ -193,8 +194,8 @@ export type BrandPreviewPayload = {
  * a token-only op doesn't wipe fonts a previous op (or the studio) staged.
  */
 export function brandPreviewCommands(payload: BrandPreviewPayload): BrandCommand[] {
-  if (Array.isArray(payload.commands)) return payload.commands;
-  // remove after 0.18 — old {tokens,fonts,reset} payload (stored cards; server still emits it, see PR)
+  if (Array.isArray(payload.commands)) return payload.commands.map(phpEmptyArgs);
+  // remove after 0.18 — old {tokens,fonts,reset} payload (stored cards from before the server emitted `commands`)
   const batch: BrandCommand[] = [];
   if (payload.reset) batch.push({ verb: "reset", args: {} });
   const tokens: Record<string, string> = {};
@@ -207,6 +208,17 @@ export function brandPreviewCommands(payload: BrandPreviewPayload): BrandCommand
   const fonts = Array.isArray(payload.fonts) ? payload.fonts.filter((f): f is string => typeof f === "string" && f !== "") : [];
   if (fonts.length) batch.push({ verb: "set_fonts", args: { fonts } });
   return batch;
+}
+
+/**
+ * The server builds the batch in PHP and the dispatcher round-trips it through
+ * `json_decode(…, TRUE)`, which turns an empty args OBJECT (`reset`'s `{}`)
+ * into an empty ARRAY — and `[]` fails the `{type: object}` arg check, refusing
+ * the whole batch. An empty array carries no args either way, so read it as `{}`.
+ */
+function phpEmptyArgs(command: BrandCommand): BrandCommand {
+  const args: unknown = (command as { args?: unknown } | null)?.args;
+  return Array.isArray(args) && args.length === 0 ? ({ ...command, args: {} } as BrandCommand) : command;
 }
 
 /**

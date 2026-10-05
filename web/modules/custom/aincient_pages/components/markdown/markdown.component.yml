@@ -34,3 +34,21 @@ thirdPartySettings:
     props:
       tone: ''
       markdown: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Visiting the clinic'
+        props:
+          markdown: |
+            ## Before your first visit
+
+            Please arrive **ten minutes early** so we can complete a short health questionnaire together.
+
+            ### What to bring
+
+            - Comfortable clothing you can move in
+            - Any recent scans or letters from your doctor
+            - A list of medication you take regularly
+
+            > Running late? Call us on 040 123 456 and we will do our best to keep your slot.
+
+            Need to reschedule? You can change or cancel online up to 24 hours before — see [your appointments](/appointments).

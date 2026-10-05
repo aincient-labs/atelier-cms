@@ -51,6 +51,10 @@ final class CapabilityRosterTaintGuardTest extends UnitTestCase {
     'PreviewChrome',
     'PreviewPage',
     'ProposeBrandStatus',
+    // Stages a component-governance change in the Components studio draft;
+    // the human publishes it after the impact list. Writes nothing, never a
+    // pack (DECISIONS 0455, P2). Taint-safe.
+    'ProposeComponentConstraint',
     'ProposeDesignTokens',
     'ProposeMediaName',
     'ReadMetaTags',

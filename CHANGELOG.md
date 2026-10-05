@@ -7,6 +7,45 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.18.0] — 2026-10-05
+
+**A Components studio that shows what it governs.** The studio's centre is now a live preview of
+every component your site offers, rendered in your published brand, at the width you pick (phone,
+tablet or desktop). The side panel groups components by what they do, shows how many pages and
+blocks use each one, and lets you search and filter. Turn a component, or just one of its variants or
+tones, off everywhere, for one page type, or for reusable blocks. You can also choose which
+component a page type opens with and how many of a component a page may hold. Before you publish,
+the studio lists the pages and blocks the change affects. Their existing sections are kept; they're
+just no longer offered.
+
+**Ask the Components studio for advice.** Its chat can review the components your site offers, such
+as what's unused or which tones read poorly with your brand, and stage the changes you ask for. It
+never publishes; you review and publish yourself.
+
+**See which pack replaces a built-in component.** When a component pack replaces a built-in component,
+the studio says so. You can compare the two side by side and switch back to the original on your
+site. Pack components that don't meet Atelier's rules are listed with the reason.
+
+**One top bar for the page.** Pages and Checks show the same bar: the page's state, Save draft, and
+the next step your workflow allows, including your site's own review steps.
+
+**Checks reviews your staged changes before you save** (the Checks studio is off by default; switch
+it on in Settings). It grades the unsaved draft and shows each fix's value and who made it. It
+previews fixes as a search result or share card, and fixes every copy of a broken link at once.
+
+**Conversations show their page's state.** A chat about a page is marked Draft, In review or Live in
+the sidebar.
+
+**Fixes**
+- Pages saved after a component was turned off silently lost that section. They now keep it.
+- A banner without a chosen tone had grey text on the brand colour; it now uses readable light text.
+- The home page's title came out as "| Site name".
+- A pack component named like a built-in could remove the built-in. Now only the pack's component
+  is refused.
+- The Brand agent no longer claims colour contrast it hasn't checked.
+- Checkboxes, radios and focus rings now use your brand accent across the console, and previews
+  show the shape of a page while they load.
+
 ## [0.17.0] — 2026-10-04
 
 **For pack authors: the old style variable names are gone.** As announced in 0.16, the console's

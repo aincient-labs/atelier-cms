@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Plugin\AiCapability;
 
+use Drupal\aincient_pages\PageModerationState;
 use Drupal\aincient_pages\PageStore;
 use Drupal\aincient_core\Attribute\Capability;
 use Drupal\aincient_core\Capability\CapabilityBase;
 use Drupal\aincient_core\Capability\ExecutableCapabilityInterface;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -48,6 +51,16 @@ final class ListPages extends CapabilityBase implements ExecutableCapabilityInte
   protected AccountInterface $currentUser;
 
   /**
+   * The per-translation moderation state reader.
+   */
+  protected PageModerationState $states;
+
+  /**
+   * The language manager (current CONTENT language).
+   */
+  protected LanguageManagerInterface $languageManager;
+
+  /**
    * The readable output (the widget envelope).
    */
   protected string $result = '';
@@ -59,6 +72,11 @@ final class ListPages extends CapabilityBase implements ExecutableCapabilityInte
     $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
     $instance->store = $container->get('aincient_pages.store');
     $instance->currentUser = $container->get('current_user');
+    $instance->states = new PageModerationState(
+      $container->get('aincient_pages.moderation'),
+      $container->get('entity_type.manager'),
+    );
+    $instance->languageManager = $container->get('language_manager');
     return $instance;
   }
 
@@ -79,12 +97,17 @@ final class ListPages extends CapabilityBase implements ExecutableCapabilityInte
     $page_size = 10;
     $pages = $this->store->list($limit);
     $total = $this->store->count();
+    $langcode = $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
     $rows = [];
     foreach ($pages as $page) {
+      // Moderation state of the CURRENT content-language translation's latest
+      // revision (a published page with a forward draft reads "Draft · …").
+      $state = $this->states->describe($page['id'], 'aincient_page', $langcode);
       $rows[] = [
         'id' => $page['id'],
         'cells' => [
           'title' => $page['title'] !== '' ? $page['title'] : 'Untitled page',
+          'state' => $state['label'] ?? '',
           'changed' => $page['changed'],
         ],
         // Studio-agnostic "open this page" intent: just the node id. The console
@@ -107,6 +130,7 @@ final class ListPages extends CapabilityBase implements ExecutableCapabilityInte
     $payload = [
       'columns' => [
         ['key' => 'title', 'label' => 'Page'],
+        ['key' => 'state', 'label' => 'State'],
         ['key' => 'changed', 'label' => 'Updated', 'format' => 'datetime'],
       ],
       'rows' => $rows,

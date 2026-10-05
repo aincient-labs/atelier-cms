@@ -120,7 +120,9 @@ final class PageStore {
    * the same never-fatal fallback the old two-literal clamp had).
    */
   private function clampKind(mixed $type): string {
-    return is_string($type) && $type !== '' && isset($this->catalog->kinds()[$type]) ? $type : 'landing';
+    // Fragment kinds (block) included: a block's schema validates under its
+    // own kind. The node write path refuses one as a PAGE type (pinnedType).
+    return is_string($type) && $type !== '' && isset($this->catalog->kinds(TRUE)[$type]) ? $type : 'landing';
   }
 
   /**
@@ -134,7 +136,7 @@ final class PageStore {
   /**
    * Clamp an arbitrary schema to the grammar. Always returns a renderable page.
    */
-  public function validate(array $schema): array {
+  public function validate(array $schema, array $keep = []): array {
     $type = $this->clampKind($schema['type'] ?? '');
     $out = [
       'type' => $type,
@@ -182,10 +184,21 @@ final class PageStore {
     $catalog = $this->catalog->for($type);
     foreach ($schema['sections'] ?? [] as $section) {
       $name = $section['component'] ?? '';
+      // A slot the kind or site no longer offers is KEPT when it already exists
+      // (same slot id, same component) — narrowing stops new placements, it
+      // never deletes an editor's work on the next save (DECISIONS 0455, P0).
+      // It is clamped against the discovered palette (the admission-gated
+      // floor), so a kept slot is still a valid render of a real component.
+      $kept = $this->keptSlot($section, $keep);
       if (!in_array($name, $catalog->placeableNames(), TRUE)) {
-        continue;
+        if ($kept === NULL || !in_array($name, $this->catalog->discovered()->placeableNames(), TRUE)) {
+          continue;
+        }
+        $props = $this->clampProps($this->catalog->discovered(), $name, $section['props'] ?? NULL, FALSE, $kept);
       }
-      $props = $this->clampProps($catalog, $name, $section['props'] ?? NULL);
+      else {
+        $props = $this->clampProps($catalog, $name, $section['props'] ?? NULL, FALSE, $kept);
+      }
       // An anchor is an HTML id, so it must be unique on the page: a repeat
       // gets a numeric suffix (the first keeps the plain slug) rather than being
       // dropped — the author asked for a target and still gets one.
@@ -199,6 +212,63 @@ final class PageStore {
       ];
     }
     return $out;
+  }
+
+  /**
+   * The stored slot this section continues, or NULL when it is a new placement.
+   *
+   * A section continues a stored slot when it carries that slot's id AND the
+   * same component — a conversion to another component is a new placement and
+   * must pass the current catalog like any other.
+   *
+   * @param array $section
+   *   The incoming section.
+   * @param array<string, array> $keep
+   *   Stored slots by id ({@see keepSet()}).
+   */
+  private function keptSlot(array $section, array $keep): ?array {
+    $id = $section['id'] ?? NULL;
+    if (!is_string($id) || !isset($keep[$id])) {
+      return NULL;
+    }
+    return ($keep[$id]['component'] ?? NULL) === ($section['component'] ?? '') ? $keep[$id] : NULL;
+  }
+
+  /**
+   * The keep set of a stored page or block head — what an UNSAVED preview of
+   * that document validates against, so a kept "No longer offered" slot renders
+   * there exactly as it will after Save (DECISIONS 0455, P0).
+   *
+   * @return array<string, array{component: string, variant?: string, tone?: string}>
+   */
+  public function keepSetOf(ContentEntityInterface $entity): array {
+    return self::keepSet($this->storedStructure($entity));
+  }
+
+  /**
+   * Index a schema's existing sections by slot id — the set {@see validate()}
+   * keeps when the catalog has since narrowed. Carries the component plus the
+   * stored variant + tone (a kept slot keeps those too).
+   *
+   * @return array<string, array{component: string, variant?: string, tone?: string}>
+   */
+  public static function keepSet(array $schema): array {
+    $keep = [];
+    // Accepts a merged schema (`sections`) or a stored structure layer (`slots`).
+    foreach (array_merge($schema['sections'] ?? [], $schema['slots'] ?? []) as $section) {
+      if (!is_array($section) || !is_string($section['id'] ?? NULL) || !is_string($section['component'] ?? NULL)) {
+        continue;
+      }
+      $props = is_array($section['props'] ?? NULL) ? $section['props'] : $section;
+      $slot = ['component' => $section['component']];
+      foreach (['variant', 'tone'] as $key) {
+        if (is_string($props[$key] ?? NULL) && $props[$key] !== '') {
+          $slot[$key] = $props[$key];
+        }
+      }
+      $keep[$section['id']] = $slot;
+    }
+    return $keep;
   }
 
   /**
@@ -236,7 +306,7 @@ final class PageStore {
    * prop). Driven entirely by the compiled {@see EffectiveCatalog} so the
    * clamp and the SDC schemas stay in lock-step as the palette grows.
    */
-  private function clampProps(EffectiveCatalog $catalog, string $name, mixed $props, bool $nested = FALSE): array {
+  private function clampProps(EffectiveCatalog $catalog, string $name, mixed $props, bool $nested = FALSE, ?array $kept = NULL): array {
     $props = is_array($props) ? $props : [];
     // anchor: the universal in-page link target (`#<slug>`), accepted on every
     // TOP-LEVEL placeable and rendered as the slot wrapper's id — so it is not
@@ -245,13 +315,26 @@ final class PageStore {
     // own, so an anchor there would silently never render: dropped.
     $anchor = $nested ? NULL : AnchorSlug::slug($props['anchor'] ?? NULL);
     unset($props['anchor']);
+    // A kept slot keeps its STORED variant + tone even when the catalog no
+    // longer offers them — but only while the component itself still declares
+    // them (the discovered palette), so the SDC enum can never be tripped.
+    $discovered = $kept === NULL ? NULL : $this->catalog->discovered();
     // tone: drop an unknown surface enum — each SDC defaults its own tone.
-    if (isset($props['tone']) && !in_array($props['tone'], $catalog->tonesFor($name), TRUE)) {
+    $tones = $catalog->tonesFor($name);
+    if ($discovered !== NULL && isset($kept['tone']) && ($props['tone'] ?? NULL) === $kept['tone']
+      && in_array($kept['tone'], $discovered->tonesFor($name), TRUE)) {
+      $tones[] = $kept['tone'];
+    }
+    if (isset($props['tone']) && !in_array($props['tone'], $tones, TRUE)) {
       unset($props['tone']);
     }
     // variant: a required SDC enum — clamp an unknown OR missing value to the
     // component's default (the first listed) so it can never trip the enum.
     $allowed = $catalog->variantsFor($name);
+    if ($allowed !== NULL && $discovered !== NULL && isset($kept['variant']) && ($props['variant'] ?? NULL) === $kept['variant']
+      && in_array($kept['variant'], $discovered->variantsFor($name) ?? [], TRUE)) {
+      $allowed[] = $kept['variant'];
+    }
     if ($allowed !== NULL) {
       $props['variant'] = in_array($props['variant'] ?? '', $allowed, TRUE)
         ? $props['variant']
@@ -562,9 +645,12 @@ final class PageStore {
     // Carry forward only well-formed, allow-listed sections (reindexed 0..n),
     // preserving each slot id so id-addressed ops in this batch resolve. $used
     // tracks ids so add_section mints non-colliding ones.
+    // A slot the catalog no longer offers is carried too (validate() keeps it
+    // against the incoming schema's keep set — DECISIONS 0455, P0).
     $used = [];
+    $keep = self::keepSet($schema);
     foreach ($schema['sections'] ?? [] as $section) {
-      if (in_array($section['component'] ?? '', $this->catalog->for($work['type'])->placeableNames(), TRUE)) {
+      if (in_array($section['component'] ?? '', $this->catalog->discovered()->placeableNames(), TRUE)) {
         $work['sections'][] = [
           'id' => $this->slotId($section['id'] ?? NULL, $used),
           'component' => $section['component'],
@@ -743,7 +829,8 @@ final class PageStore {
             // accepted: guessing a row-level mapping would silently mistranslate.
             if (array_key_exists('component', $op) && $op['component'] !== NULL) {
               $name = is_string($op['component']) ? $op['component'] : '';
-              if (!in_array($name, $this->catalog->for($work['type'])->placeableNames(), TRUE)) {
+              // Re-stating a kept slot's own component is not a conversion.
+              if ($name !== $work['sections'][$idx]['component'] && !in_array($name, $this->catalog->for($work['type'])->placeableNames(), TRUE)) {
                 throw new \InvalidArgumentException(sprintf('unknown component "%s"', $name));
               }
               $work['sections'][$idx]['component'] = $name;
@@ -793,7 +880,7 @@ final class PageStore {
       }
     }
 
-    return ['schema' => $this->validate($work), 'rejected' => $rejected];
+    return ['schema' => $this->validate($work, $keep), 'rejected' => $rejected];
   }
 
   /**
@@ -1011,7 +1098,10 @@ final class PageStore {
     // authoritative: the client badge and the agent-facing rejection in
     // applyOps() are legibility, this is the fence.
     $schema['type'] = $this->pinnedType($node, $schema['type'] ?? NULL);
-    $clean = $this->validate($schema);
+    // The stored layout is the keep set: a slot that already exists survives a
+    // narrowed catalog (DECISIONS 0455, P0). A new node has nothing stored.
+    $keep = $node->isNew() ? [] : self::keepSet($this->storedStructure($node));
+    $clean = $this->validate($schema, $keep);
     $split = PageSchemaCodec::split($clean, $this->isRecipe($clean['type']));
     // The entity's own label key: `title` for a page node, `name` for a block
     // media entity (DECISIONS 0138) — so the same schema write drives both.
@@ -1032,6 +1122,14 @@ final class PageStore {
     // cannot reach it (DECISIONS 0329). Language-independent like the
     // structure it comes from, so it writes onto the source translation.
     $this->writePageType($node, $clean['type']);
+    // Which components / variants / tones the layout uses, projected onto the
+    // derived `field_component_usage` index the Components studio counts from
+    // (DECISIONS 0455) — the same derived-mirror pattern as the page type.
+    // Written from the layout's OWNER (the source translation), never from a
+    // symmetric translation that carries no structure of its own.
+    if ($node->getUntranslated()->language()->getId() === $node->language()->getId()) {
+      $this->writeUsage($node, $clean);
+    }
     // A blog post's authored date likewise mirrors onto the node's own
     // `created` — the sort axis a listing needs, and what "Authored on" means.
     // Per translation: each language keeps its own post date.
@@ -1073,11 +1171,31 @@ final class PageStore {
    */
   private function pinnedType(ContentEntityInterface $node, mixed $requested): string {
     $want = $this->clampKind($requested);
+    // A fragment kind is never a page type; a non-node (a block) always is one
+    // when the block kind exists (DECISIONS 0455).
+    if ($node->getEntityTypeId() === 'node' && !isset($this->catalog->kinds()[$want])) {
+      $want = 'landing';
+    }
     if ($node->isNew() || !$node->hasField('field_page_type')) {
       return $want;
     }
     $stored = (string) ($node->getUntranslated()->get('field_page_type')->value ?? '');
     return $stored !== '' && isset($this->catalog->kinds()[$stored]) ? $stored : $want;
+  }
+
+  /**
+   * Mirror the layout's component usage onto `field_component_usage`.
+   *
+   * Keys: `c:<component>`, `v:<component>:<variant>`, `t:<component>:<tone>` —
+   * one per distinct use, top-level slots only (accordion children are a fixed
+   * vocabulary no catalog narrows). Language-independent, on the untranslated
+   * entity; no-op on a bundle without the field.
+   */
+  private function writeUsage(ContentEntityInterface $node, array $schema): void {
+    if (!$node->hasField(UsageIndex::FIELD)) {
+      return;
+    }
+    $node->getUntranslated()->set(UsageIndex::FIELD, UsageIndex::keys($schema));
   }
 
   private function writePageType(ContentEntityInterface $node, string $type): void {
@@ -1170,6 +1288,17 @@ final class PageStore {
   }
 
   /**
+   * The structure layer a translation renders: the source owns it; a
+   * translation uses its own only when it has diverged to asymmetric layout,
+   * otherwise it inherits the source.
+   */
+  private function storedStructure(ContentEntityInterface $node): array {
+    return $this->ownsStructure($node)
+      ? $this->decode($node, 'field_page_structure')
+      : $this->decode($node->getUntranslated(), 'field_page_structure');
+  }
+
+  /**
    * Validate + persist a schema onto an EXISTING aincient_page node.
    *
    * The page studio's Publish for an already-saved page. The bundle has
@@ -1238,12 +1367,12 @@ final class PageStore {
    * @throws \Drupal\aincient_pages\Exception\RevisionConflictException
    *   When $baseVid is stale (the node advanced since it was loaded).
    */
-  public function saveDraft(array $schema, ?string $id = NULL, ?string $langcode = NULL, ?int $baseVid = NULL, ?array $coauthors = NULL): ?array {
+  public function saveDraft(array $schema, ?string $id = NULL, ?string $langcode = NULL, ?int $baseVid = NULL, ?array $coauthors = NULL, ?array $origin = NULL): ?array {
     if ($id === NULL) {
       $newId = $this->store($schema, $coauthors, $langcode);
       return $this->stateEnvelope($newId);
     }
-    return $this->editRevision($id, $schema, 'draft', $langcode, $baseVid, 'Saved draft via the page studio.', $coauthors);
+    return $this->editRevision($id, $schema, 'draft', $langcode, $baseVid, 'Saved draft via the page studio.', $coauthors, $origin);
   }
 
   /**
@@ -1258,8 +1387,8 @@ final class PageStore {
    * @throws \Drupal\aincient_pages\Exception\RevisionConflictException
    *   When $baseVid is stale.
    */
-  public function publish(string $id, ?array $schema = NULL, ?string $langcode = NULL, ?int $baseVid = NULL, ?array $coauthors = NULL): ?array {
-    return $this->editRevision($id, $schema, 'published', $langcode, $baseVid, 'Published via the page studio.', $coauthors);
+  public function publish(string $id, ?array $schema = NULL, ?string $langcode = NULL, ?int $baseVid = NULL, ?array $coauthors = NULL, ?array $origin = NULL): ?array {
+    return $this->editRevision($id, $schema, 'published', $langcode, $baseVid, 'Published via the page studio.', $coauthors, $origin);
   }
 
   /**
@@ -1305,7 +1434,7 @@ final class PageStore {
    *   The post-write state envelope, or NULL if the node/langcode is invalid or
    *   the state change is not a legal transition for the current user.
    */
-  private function editRevision(string $id, ?array $schema, string $targetState, ?string $langcode, ?int $baseVid, string $log, ?array $coauthors = NULL): ?array {
+  private function editRevision(string $id, ?array $schema, string $targetState, ?string $langcode, ?int $baseVid, string $log, ?array $coauthors = NULL, ?array $origin = NULL): ?array {
     // Translations are moderated independently: the write is about $langcode
     // ONLY (NULL = the source). Pin it to THAT language's head (409 on a stale
     // base — another language saving meanwhile is not a conflict) and build on
@@ -1347,6 +1476,7 @@ final class PageStore {
         fn (): array => $this->resolve($target),
         $target->isDefaultTranslation() ? NULL : $target->language()->getId(),
         $log,
+        $origin,
       );
     }
     // The moderation state is per translation: set it on (and save) the
@@ -1550,12 +1680,7 @@ final class PageStore {
    */
   public function resolve(ContentEntityInterface $node): array {
     $source = $node->getUntranslated();
-
-    // Structure: the source owns it; a translation uses its own only when it has
-    // diverged to asymmetric layout, otherwise it inherits the source.
-    $structure = $this->ownsStructure($node)
-      ? $this->decode($node, 'field_page_structure')
-      : $this->decode($source, 'field_page_structure');
+    $structure = $this->storedStructure($node);
 
     // Content: a non-source translation overlays the source copy (per-slot,
     // per-key fallback); the source translation IS the base.

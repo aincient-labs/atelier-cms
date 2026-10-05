@@ -8,6 +8,7 @@ use Drupal\aincient_chat\Chat\StreamRelay;
 use Drupal\aincient_chat\Event\ChatEvent;
 use Drupal\aincient_chat\Event\ChatEventType;
 use Drupal\aincient_chat\EventSubscriber\BrandSliceStreamSubscriber;
+use Drupal\aincient_pages\BrandPreviewApplier;
 use Drupal\flowdrop_job\FlowDropJobInterface;
 use Drupal\flowdrop_runtime\Event\JobCompletedEvent;
 use Drupal\KernelTests\KernelTestBase;
@@ -110,9 +111,12 @@ final class BrandSliceStreamTest extends KernelTestBase {
     // persisted (DECISIONS 0381).
     $this->assertSame(ChatEventType::PREVIEW, $event->type);
     $this->assertSame('brand_preview', $event->data['name']);
-    // The frame carries a VALIDATED css-var token map, not raw tokens_json.
-    $this->assertArrayHasKey('brand-primary', $event->data['arguments']['tokens']);
-    $this->assertSame('oklch(0.48 0.18 50)', $event->data['arguments']['tokens']['brand-primary']);
+    // The frame carries the typed command batch with a VALIDATED css-var token
+    // map, not raw tokens_json (and not the legacy {tokens, fonts, reset}).
+    $this->assertSame(['set_tokens'], array_column($event->data['arguments']['commands'], 'verb'));
+    $this->assertArrayNotHasKey('tokens', $event->data['arguments']);
+    $this->assertArrayHasKey('brand-primary', BrandPreviewApplier::changes($event->data['arguments'])['tokens']);
+    $this->assertSame('oklch(0.48 0.18 50)', BrandPreviewApplier::changes($event->data['arguments'])['tokens']['brand-primary']);
   }
 
   /**
@@ -135,7 +139,7 @@ final class BrandSliceStreamTest extends KernelTestBase {
     $this->subscriber()->onJobCompleted(new JobCompletedEvent($job, [], 'exec-1'));
 
     $this->assertCount(1, $this->emitted);
-    $tokens = $this->emitted[0]->data['arguments']['tokens'];
+    $tokens = BrandPreviewApplier::changes($this->emitted[0]->data['arguments'])['tokens'];
     $this->assertSame('0.5', $tokens['shadow-strength']);
     $this->assertSame('0.85', $tokens['density']);
   }

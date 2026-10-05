@@ -109,3 +109,14 @@ export function MenuRadioItem({ value, children, icon }: { value: string; childr
     </M.RadioItem>
   );
 }
+
+/** A group heading inside a `Menu` (the lifecycle bar's "Send back"): small
+ *  muted caps, not focusable — arrow keys skip it. */
+export function MenuLabel({ children }: { children: ReactNode }) {
+  return <M.Label className="ain-menu__label">{children}</M.Label>;
+}
+
+/** A hairline between groups inside a `Menu`. */
+export function MenuSeparator() {
+  return <M.Separator className="ain-menu__sep" />;
+}

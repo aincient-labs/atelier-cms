@@ -73,3 +73,24 @@ export function focusStudioField(key: string, root: ParentNode = document): bool
   window.setTimeout(() => focusable?.focus?.({ preventScroll: true }), 120);
   return true;
 }
+
+/**
+ * The `?field=` the console was OPENED with, captured when this module first
+ * loads — url-sync canonicalises the address bar to the room's own URL on the
+ * next tick, so a lazily loaded studio that mounts later would otherwise never
+ * see it (the Checks rail, deep-linked from a chat card's field link opened in
+ * a new tab, DECISIONS 0453).
+ */
+let bootField: string | null = typeof window !== "undefined" ? requestedFieldAnchor() : null;
+
+/**
+ * The requested field, ONCE: the live `?field=` if the URL still carries it,
+ * else the one the console booted with. Either way the boot capture is spent,
+ * so a later mount doesn't re-land on an old link.
+ */
+export function takeRequestedFieldAnchor(): string | null {
+  const live = typeof window !== "undefined" ? requestedFieldAnchor() : null;
+  const field = live ?? bootField;
+  bootField = null;
+  return field;
+}

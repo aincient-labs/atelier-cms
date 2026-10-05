@@ -37,3 +37,41 @@ thirdPartySettings:
       subheading: ''
       columns: 2|3|4
       images: '[{image,caption}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Bakery counter'
+        props:
+          eyebrow: 'From the oven'
+          heading: 'What we baked this week'
+          subheading: 'Everything is shaped by hand and sold the same day.'
+          columns: 3
+          images:
+            - image: 'placeholder:square'
+              caption: 'Country sourdough'
+            - image: 'placeholder:square'
+              caption: 'Cardamom buns'
+            - image: 'placeholder:square'
+              caption: 'Rye and sunflower loaf'
+      - name: 'Studio portfolio'
+        props:
+          eyebrow: 'Selected work'
+          heading: 'Recent projects'
+          columns: 2
+          images:
+            - image: 'placeholder:landscape'
+              caption: 'Harbour House, a timber-framed family home'
+            - image: 'placeholder:landscape'
+              caption: 'Linden Street offices, a converted print works'
+      - name: 'Product screens'
+        props:
+          heading: 'A closer look at the app'
+          columns: 4
+          images:
+            - image: 'placeholder:portrait'
+              caption: 'Today view'
+            - image: 'placeholder:portrait'
+              caption: 'Client list'
+            - image: 'placeholder:portrait'
+              caption: 'New invoice'
+            - image: 'placeholder:portrait'
+              caption: 'Monthly report'

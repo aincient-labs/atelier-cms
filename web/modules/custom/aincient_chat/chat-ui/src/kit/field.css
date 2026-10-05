@@ -14,7 +14,12 @@
 /* A boolean prop renders inline: checkbox · label (no stacked input). */
 .ain-field--check { flex-direction: row; align-items: center; gap: 7px; }
 .ain-field--check .ain-field__checkbox { flex: 0 0 auto; margin: 0; accent-color: var(--ain-color-accent); cursor: pointer; }
-.ain-field--check .ain-field__label { font-size: 12px; }
+/* A checkbox's label is the CHOICE, not a field heading: body type, sentence
+   case, full ink — the whisper label (mono small caps) is for headings only. */
+.ain-field--check .ain-field__label {
+  font-family: var(--ain-font-body); font-size: 12.5px; letter-spacing: normal;
+  text-transform: none; color: var(--ain-color-text);
+}
 .ain-field__label {
   /* The kit whisper label: mono small caps, tracking not weight (study 02 f-label). */
   font-family: var(--ain-font-mono); font-size: 10px; letter-spacing: .1em;
@@ -59,6 +64,11 @@
 .ain-field--radio:has(.ain-field__radio:checked) { border-color: var(--ain-color-accent); }
 .ain-field__radio { flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--ain-color-accent); cursor: pointer; }
 .ain-field__radiobody { display: flex; flex-direction: column; gap: 2px; }
+/* The radio card's label is the choice too: body type, the card's title. */
+.ain-field--radio .ain-field__label {
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 600; letter-spacing: normal;
+  text-transform: none; color: var(--ain-color-text);
+}
 .ain-field__hint { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-faint); }
 .ain-field__control { position: relative; }
 /* The `font` shorthand resets size to the inherited ~15px shell — re-pin the kit's

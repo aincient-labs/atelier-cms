@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_brand\Kernel;
 
+use Drupal\aincient_pages\BrandPreviewApplier;
 use Drupal\aincient_pages\BrandRepository;
 use Drupal\aincient_core\Capability\CapabilityManager;
 use Drupal\KernelTests\KernelTestBase;
@@ -179,13 +180,19 @@ final class BrandAgentTest extends KernelTestBase {
     $payload = $envelope['payload'];
     // Valid token is keyed by CSS-VAR (what the client preview store expects),
     // not the underscore token name.
-    $this->assertSame(['neutral-surface' => 'oklch(0.15 0.02 270)'], $payload['tokens']);
+    $this->assertSame([
+      ['verb' => 'set_tokens', 'args' => ['tokens' => ['neutral-surface' => 'oklch(0.15 0.02 270)']]],
+      ['verb' => 'set_fonts', 'args' => ['fonts' => ['Poppins']]],
+    ], $payload['commands']);
     // Invalid value + unknown name are rejected and named back.
     $this->assertContains('brand_primary', $payload['rejected']);
     $this->assertContains('no_such_token', $payload['rejected']);
     // Only the legal font survives (the validator drops the junk one).
-    $this->assertSame(['Poppins'], $payload['fonts']);
-    $this->assertFalse($payload['reset']);
+    // (The junk font is gone from set_fonts above.) No reset command, and no
+    // legacy {tokens, fonts, reset} maps beside the batch.
+    $this->assertArrayNotHasKey('tokens', $payload);
+    $this->assertArrayNotHasKey('fonts', $payload);
+    $this->assertArrayNotHasKey('reset', $payload);
     // Preview persists NOTHING — the saved brand is byte-for-byte unchanged.
     $this->assertSame($before, $this->brand()->tokens());
   }
@@ -196,10 +203,10 @@ final class BrandAgentTest extends KernelTestBase {
     $envelope = json_decode($out, TRUE);
     $this->assertIsArray($envelope);
     $this->assertSame('brand_preview', $envelope['__widget__']);
-    // A reset frame: the flag is set, no tokens/fonts forwarded.
-    $this->assertTrue($envelope['payload']['reset']);
-    $this->assertSame([], $envelope['payload']['tokens']);
-    $this->assertSame([], $envelope['payload']['fonts']);
+    // A reset frame: one `reset` command, no tokens/fonts forwarded. Its args
+    // are an empty object on the wire (`{}`), which decodes to [] here.
+    $this->assertSame([['verb' => 'reset', 'args' => []]], $envelope['payload']['commands']);
+    $this->assertStringContainsString('{"verb":"reset","args":{}}', $out);
     $this->assertStringContainsString('Reverted', $envelope['summary']);
     // Draft-only — the saved brand is untouched.
     $this->assertSame($before, $this->brand()->tokens());
@@ -277,13 +284,13 @@ final class BrandAgentTest extends KernelTestBase {
     $payload = json_decode($out, TRUE)['payload'];
     // Tokens are keyed by css_var (what the preview store expects): the pairing
     // set the two font families, roundness set the radius scale + button knob.
-    $this->assertSame('"Playfair Display", Georgia, "Times New Roman", serif', $payload['tokens']['font-family-display'] ?? NULL);
-    $this->assertArrayHasKey('font-family-base', $payload['tokens']);
-    $this->assertSame('var(--radius-md)', $payload['tokens']['button-radius'] ?? NULL);
-    $this->assertSame('0.375rem', $payload['tokens']['radius-md'] ?? NULL);
+    $this->assertSame('"Playfair Display", Georgia, "Times New Roman", serif', BrandPreviewApplier::changes($payload)['tokens']['font-family-display'] ?? NULL);
+    $this->assertArrayHasKey('font-family-base', BrandPreviewApplier::changes($payload)['tokens']);
+    $this->assertSame('var(--radius-md)', BrandPreviewApplier::changes($payload)['tokens']['button-radius'] ?? NULL);
+    $this->assertSame('0.375rem', BrandPreviewApplier::changes($payload)['tokens']['radius-md'] ?? NULL);
     // The pairing's web fonts are staged for the preview to load.
-    $this->assertContains('Playfair Display', $payload['fonts']);
-    $this->assertContains('Lora', $payload['fonts']);
+    $this->assertContains('Playfair Display', BrandPreviewApplier::changes($payload)['fonts']);
+    $this->assertContains('Lora', BrandPreviewApplier::changes($payload)['fonts']);
     $this->assertEmpty($payload['rejected_presets']);
   }
 
@@ -295,9 +302,9 @@ final class BrandAgentTest extends KernelTestBase {
       'tokens_json' => json_encode(['font_family_display' => '"Roboto", sans-serif']),
     ]);
     $payload = json_decode($out, TRUE)['payload'];
-    $this->assertSame('"Roboto", sans-serif', $payload['tokens']['font-family-display']);
+    $this->assertSame('"Roboto", sans-serif', BrandPreviewApplier::changes($payload)['tokens']['font-family-display']);
     // The pairing's OTHER token (base family) is untouched by the override.
-    $this->assertArrayHasKey('font-family-base', $payload['tokens']);
+    $this->assertArrayHasKey('font-family-base', BrandPreviewApplier::changes($payload)['tokens']);
   }
 
   public function testUnknownPresetReportedButValidOnesApply(): void {
@@ -307,7 +314,7 @@ final class BrandAgentTest extends KernelTestBase {
     $envelope = json_decode($out, TRUE);
     $payload = $envelope['payload'];
     // The valid preset applied (density:roomy sets the density token)…
-    $this->assertSame('1.15', $payload['tokens']['density'] ?? NULL);
+    $this->assertSame('1.15', BrandPreviewApplier::changes($payload)['tokens']['density'] ?? NULL);
     // … and the unknown group/option pairs are named back, not silently dropped.
     $this->assertContains('roundness:nope', $payload['rejected_presets']);
     $this->assertContains('bogus:x', $payload['rejected_presets']);
@@ -318,7 +325,8 @@ final class BrandAgentTest extends KernelTestBase {
     $out = $this->runCapability('aincient_brand:preview_brand', ['reset' => TRUE]);
     $envelope = json_decode($out, TRUE);
     $this->assertSame('brand_preview', $envelope['__widget__']);
-    $this->assertTrue($envelope['payload']['reset']);
+    $this->assertSame(['reset'], array_column($envelope['payload']['commands'], 'verb'));
+    $this->assertTrue(BrandPreviewApplier::changes($envelope['payload'])['reset']);
   }
 
   public function testPreviewBrandRefusesWithoutPermission(): void {
@@ -405,6 +413,8 @@ final class BrandAgentTest extends KernelTestBase {
     $this->assertContains('brand_primary', $payload['rejected']);
     $this->assertContains('no_such_token', $payload['rejected']);
     $this->assertSame('design.md', $payload['source_filename']);
+    // Its own widget, its own shape: css_var tokens + fonts, no command batch.
+    $this->assertArrayNotHasKey('commands', $payload);
     $this->assertStringContainsString('token', $envelope['summary']);
     // Proposal-only: persists NOTHING.
     $this->assertSame($before, $this->brand()->tokens());

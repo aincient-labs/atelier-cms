@@ -1,0 +1,8 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier test override pack'
+type: module
+description: 'TEST ONLY: a pack that OVERRIDES a built-in — its `hero` replaces aincient_pages:hero through core SDC `replaces:`, so kernel tests prove the override badge, Compare and "Use original instead" (DECISIONS 0455, P3/P4).'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_pages

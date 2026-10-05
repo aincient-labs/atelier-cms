@@ -6,7 +6,7 @@ dependencies:
     - aincient_flows
 id: aincient_flows_aincient_capability_read_meta_tags
 label: 'Capability: Read meta tags'
-description: 'Read the current effective meta tags (title, description, canonical, Open Graph) for a page, with tokens already resolved to real values. Call this when the user asks what meta / SEO tags a page currently has. Takes the page node id. Read-only.'
+description: 'Read the current effective meta tags (title, description, canonical, Open Graph) for a page, with tokens already resolved to real values. Call this when the user asks what meta / SEO tags a page currently has. Takes the page node id and optionally which copy to read: the live page (default) or "draft" (the latest saved draft). Read-only.'
 category: processing
 icon: 'mdi:cog'
 plugin_version: 1.0.0
@@ -16,6 +16,10 @@ parameters:
     configurable: true
     connectable: true
     required: true
+  revision:
+    configurable: true
+    connectable: true
+    required: false
 outputs:
   ok:
     exposed: true

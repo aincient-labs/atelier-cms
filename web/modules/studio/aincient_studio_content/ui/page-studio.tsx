@@ -5,11 +5,13 @@ import {
   XIcon,
   PlusIcon,
   ChevronDownIcon,
+  ShieldCheckIcon,
+  ArrowRightIcon,
   GripIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   MoreHorizontalIcon,
-  ShieldCheckIcon,
+  AlertCircleIcon,
   StudioActionsPortal,
   useStudioUI,
   ReferenceField,
@@ -22,6 +24,7 @@ import {
   Notice,
   StudioStatus,
   LoadingState,
+  ComponentIcon,
 } from "@console/kit";
 import {
   offerWrapup,
@@ -30,6 +33,8 @@ import {
   setPageDraft,
   subscribePageDraft,
   subscribePageLoad,
+  getPageBaseline,
+  subscribePageBaseline,
   subscribeSelectedSection,
   setSelectedSection,
   getPageNode,
@@ -70,9 +75,12 @@ import {
   apiUrl,
   pageDeepLink,
   isStudioAccessible,
+  PageLifecycleBar,
+  transitionNotice,
+  fetchAuditSummary,
+  type AuditSummary,
   activeStudioKey,
   openBlock,
-  sectionIcon,
   groupByProvider,
 } from "@console/sdk";
 import { useConsoleChat } from "@console/aui";
@@ -80,6 +88,7 @@ import { SeoMetaGroup } from "./seo-meta-group";
 import { TeaserGroup } from "./teaser-group";
 import { BlogGroup } from "./blog-group";
 import { moveItem } from "./move-item";
+import { retiredReason } from "./retired-slot";
 
 /** One site language (GET /atelier/page/manifest → translation.languages). */
 type Lang = { id: string; label: string; default: boolean };
@@ -123,8 +132,8 @@ type PropDef = {
 };
 
 /** One placeable section component + its prop schema. The W6 metadata (icon /
- *  tier / provider) rides along for the picker: `icon` is the server-declared
- *  glyph (may be '' → client fallback), `provider` the contributing module
+ *  tier / provider) rides along for the picker: `icon` is the legacy server
+ *  glyph (unused — the picker draws ComponentIcon), `provider` the contributing module
  *  (provenance grouping; ''/aincient_pages = built-in). */
 type SectionDef = {
   component: string;
@@ -139,8 +148,16 @@ type Manifest = {
   sections: SectionDef[];
   /** Reference placeables (embed / block) — merged into the editable palette. */
   reference?: SectionDef[];
+  /** Components this kind no longer offers but existing slots may still use
+   *  (DECISIONS 0455): their schema keeps a kept slot editable; never offered
+   *  in the add / replace picker. */
+  retired?: (SectionDef & { retired?: boolean })[];
   tones: string[];
   hero_variants: string[];
+  /** The narrowed per-component variant enums. */
+  variants?: Record<string, string[]>;
+  /** The un-narrowed (discovered) per-component variant enums. */
+  discovered_variants?: Record<string, string[]>;
   prop_vocab: Record<string, string>;
   /** Prop / row-field names that hold an image (render a media picker). */
   image_props: string[];
@@ -155,17 +172,6 @@ type Manifest = {
 
 const MANIFEST_URL = apiUrl("/page/manifest");
 
-/** Transitions handled by dedicated primary buttons / the Save-draft button, so
- *  they're not rendered again as generic secondary transition buttons. */
-const PRIMARY_TRANSITIONS = new Set(["publish", "approve", "create_new_draft"]);
-
-/** The transient success line shown after a pure editorial transition. */
-const TRANSITION_NOTICE: Record<string, string> = {
-  submit_for_review: "Sent for review",
-  reject: "Sent back to draft",
-  archive: "Archived — taken off the live site",
-  restore: "Restored to draft",
-};
 
 /** A compact, stable identity for dirty-detection (key order is fixed by us). */
 const snapshot = (s: PageSchema | null): string => JSON.stringify(s ?? EMPTY_PAGE);
@@ -218,8 +224,9 @@ function humanize(name: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/* Placeable glyphs: the manifest entry's server icon wins, then the local map,
- * then a neutral block mark — resolution lives in catalog-meta.ts (tested). */
+/* Placeable icons: the kit's ComponentIcon (inline SVG per built-in, a generic
+ * mark for packs — DECISIONS 0455 D10); the manifest's legacy `icon` glyph is
+ * no longer displayed. */
 
 /** The props worth showing as a one-line summary of a collapsed section, in
  *  priority order — the first non-empty string wins. */
@@ -263,10 +270,12 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const runtime = useConsoleChat();
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [draft, setDraftState] = useState<PageSchema>(() => getPageDraft() ?? EMPTY_PAGE);
-  // The last-saved schema snapshot the draft is diffed against for "dirty". When
-  // an existing page was loaded before mount, that loaded schema IS the saved
-  // baseline (so the studio opens clean, not dirty); otherwise the empty page.
-  const [baseline, setBaseline] = useState<string>(() => snapshot(getPageDraft() ?? EMPTY_PAGE));
+  // The last-saved schema snapshot the draft is diffed against for "dirty" —
+  // mirrored from the page-state store, which owns it for both page studios
+  // (DECISIONS 0453) and resets it on load / New / close / save / publish. Before
+  // anything was loaded, the draft at mount is the baseline (opens clean).
+  const [baseline, setBaseline] = useState<string>(() => snapshot(getPageBaseline() ?? getPageDraft() ?? EMPTY_PAGE));
+  useEffect(() => subscribePageBaseline(() => setBaseline(snapshot(getPageBaseline() ?? EMPTY_PAGE))), []);
   // The node this session is editing — set by loading an existing page or by the
   // first Publish, so a second Publish revisions it instead of creating a
   // duplicate. Owned by the page-state store (loadPageIntoStudio can set it
@@ -330,6 +339,17 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   // section would land at: 0 = top, n = after section n-1, sections.length =
   // end). null = no picker open. Only one is open at a time.
   const [insertAt, setInsertAt] = useState<number | null>(null);
+  // Which section's Replace picker is open (a kept, no-longer-offered slot is
+  // converted in place). Mutually exclusive with `insertAt` — one picker at a time.
+  const [replaceAt, setReplaceAt] = useState<number | null>(null);
+  const openInsert = useCallback((at: number) => {
+    setReplaceAt(null);
+    setInsertAt(at);
+  }, []);
+  const openReplace = useCallback((at: number) => {
+    setInsertAt(null);
+    setReplaceAt(at);
+  }, []);
   const toggleSection = useCallback(
     (index: number) =>
       setExpanded((prev) => {
@@ -363,7 +383,6 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
       subscribePageLoad((node) => {
         setNodeIdState(node);
         setKind(getPageKind());
-        setBaseline(snapshot(getPageDraft() ?? EMPTY_PAGE));
         // Mirror the loaded translation's language/mode/existing-translations.
         setLang(getPageLang());
         setMode(getPageMode());
@@ -472,16 +491,6 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const lockSince = lockHeldBy
     ? new Date(lockHeldBy.acquired_at * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
     : null;
-  const hasTransition = (id: string) => moderation.transitions.some((t) => t.id === id);
-  // The go-live primary: Publish a new page, a draft (the `publish` transition), or
-  // re-publish unsaved edits to an already-published page (no transition needed —
-  // the state doesn't change, the backend just writes a new published default).
-  const canPublish =
-    isNew || hasTransition("publish") || (moderation.state === "published" && dirty);
-  const approveTransition = moderation.transitions.find((t) => t.id === "approve") ?? null;
-  // Remaining lifecycle transitions rendered as plain buttons (submit-for-review /
-  // reject / archive / restore). Restore doubles as the unlock from Archived.
-  const secondaryTransitions = moderation.transitions.filter((t) => !PRIMARY_TRANSITIONS.has(t.id));
   // A live (published default) page carries a newer, not-yet-live revision — what
   // you're editing isn't what's live. After Save draft the latest revision's own
   // state is `draft`, so this keys off hasPendingDraft (the live default is still
@@ -547,9 +556,12 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
 
   const propDefs = useMemo(() => {
     const by = new Map<string, PropDef[]>();
+    // Retired defs first so an offered def of the same name wins: a kept slot
+    // whose component is no longer offered still finds its schema to edit.
+    for (const s of manifest?.retired ?? []) by.set(s.component, s.props);
     for (const s of palette) by.set(s.component, s.props);
     return by;
-  }, [palette]);
+  }, [palette, manifest]);
 
   // Image-bearing prop / row-field names (manifest-driven) → render a media
   // picker for them, in both top-level props and repeatable rows.
@@ -594,12 +606,25 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
       return set;
     });
     setInsertAt(null);
+    setReplaceAt(null);
+    commit({ ...draft, sections: next });
+  };
+
+  // Replace a section in place (the kept, no-longer-offered slot's Replace
+  // action): same slot id + position, the new component's props reset to its
+  // defaults exactly as a fresh add does. The card stays open for editing.
+  const replaceSection = (index: number, component: string) => {
+    if (layoutLocked || index < 0 || index >= sections.length) return;
+    const next = sections.map((s, i) => (i === index ? { id: s.id || slotUid(), component, props: {} } : s));
+    setReplaceAt(null);
+    setExpanded((prev) => new Set(prev).add(index));
     commit({ ...draft, sections: next });
   };
 
   const removeSection = (index: number) => {
     if (layoutLocked) return;
     setInsertAt(null);
+    setReplaceAt(null);
     // Drop the removed index and shift every higher open flag down one.
     setExpanded((prev) => {
       const next = new Set<number>();
@@ -612,6 +637,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const moveSection = (index: number, delta: number) => {
     if (layoutLocked) return;
     setInsertAt(null);
+    setReplaceAt(null);
     const to = index + delta;
     if (to < 0 || to >= sections.length) return;
     // Adjacent move: moveItem by ±1 is the swap.
@@ -635,6 +661,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
     if (layoutLocked || from === to || from < 0 || from >= sections.length) return;
     if (to < 0 || to >= sections.length) return;
     setInsertAt(null);
+    setReplaceAt(null);
     const next = moveItem(sections, from, to);
     // Remap the open flags so each card's expansion follows it across the splice.
     setExpanded((prev) => {
@@ -657,12 +684,12 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   // translate per language. Centralised so every handler agrees.
   const writeLang = lang;
 
-  // Fold a write's returned envelope into the studio: adopt the saved schema as
-  // the clean baseline, remember the (maybe newly-minted) node + url, track a
-  // freshly-created translation, and repaint the preview so it stays authoritative.
+  // Fold a write's returned envelope into the studio: remember the (maybe
+  // newly-minted) node + url, track a freshly-created translation, and repaint
+  // the preview so it stays authoritative. (The store already adopted the saved
+  // schema as the baseline.)
   const absorbWrite = useCallback(
     (result: Record<string, unknown>) => {
-      setBaseline(snapshot(draft));
       if (result?.node_id) {
         const id = String(result.node_id);
         setNodeIdState(id);
@@ -672,7 +699,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
       if (lang && !translations.includes(lang)) setTranslations((t) => [...t, lang]);
       reloadPreview();
     },
-    [draft, isBlock, lang, translations],
+    [isBlock, lang, translations],
   );
 
   // One catch for every write: a 409 raises the stale-write conflict banner (the
@@ -781,28 +808,29 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
     }
   }, [draft, kind, nodeId, writeLang, isBlock, lang, langLabel, absorbWrite, failWrite, wrapupRef, runtime]);
 
-  // A pure editorial transition (submit-for-review / approve / reject / archive /
-  // restore). Submit-for-review carries the current edits → save first if dirty
-  // (so the reviewer sees them). Approve lands on Published, so it wraps up too.
+  // A pure editorial transition (the shipped ones or a site's own). One that
+  // moves the page forward carries the unsaved edits — the lifecycle bar says so
+  // with `saveFirst` (page-lifecycle.ts) — so the next person sees them. Landing
+  // live (Approve, a fast-track) wraps up too.
   const commitTransition = useCallback(
-    async (t: Transition) => {
+    async (t: Transition, { saveFirst }: { saveFirst: boolean }) => {
       if (nodeId === null) return;
       setPublishing(true);
       setError(null);
       setNotice(null);
       try {
-        if (t.id === "submit_for_review" && dirty && moderation.canEdit) {
+        if (saveFirst) {
           absorbWrite(await saveDraft(draft, kind, nodeId, writeLang));
         }
         const result = await runTransition(t.id, kind, nodeId);
         reloadPreview();
-        if (t.id === "approve") {
+        if (t.to_published) {
           const what = isBlock ? "Block" : "Page";
           setNotice({ text: `${what} published`, url: typeof result?.url === "string" ? (result.url as string) : undefined });
         } else {
-          setNotice({ text: TRANSITION_NOTICE[t.id] ?? t.to_label });
+          setNotice({ text: transitionNotice(t) });
         }
-        if (t.to === "published") {
+        if (t.to_published) {
           offerWrapup(runtime.activeThread().remoteId, wrapupRef(result));
         }
       } catch (e) {
@@ -811,7 +839,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
         setPublishing(false);
       }
     },
-    [nodeId, dirty, moderation.canEdit, draft, kind, writeLang, isBlock, absorbWrite, failWrite, wrapupRef, runtime],
+    [nodeId, draft, kind, writeLang, isBlock, absorbWrite, failWrite, wrapupRef, runtime],
   );
 
   // Resolve a 409 by reloading the latest revision (rebase): the studio adopts the
@@ -883,10 +911,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
     (next: "asymmetric" | "symmetric") => {
       if (!nodeId || !lang) return;
       void setTranslationMode(nodeId, lang, next)
-        .then(() => {
-          setMode(getPageMode());
-          setBaseline(snapshot(getPageDraft() ?? EMPTY_PAGE));
-        })
+        .then(() => setMode(getPageMode()))
         .catch((e) => setError(`Couldn’t change layout mode: ${e instanceof Error ? e.message : e}`));
     },
     [nodeId, lang],
@@ -962,75 +987,24 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
           collapses to a sheet). The language switcher and "Open…" stay in the
           rail head — their popovers anchor to the rail. */}
       <StudioActionsPortal>
-        {dirty && !readOnly && <span className="ain-studio-actions__dirty" title="Unsaved changes">●</span>}
-        <Button
-          onClick={discard}
-          disabled={!dirty || publishing || readOnly}
-          title="Discard draft — revert to the last saved version"
-        >
-          Discard
-        </Button>
-        {/* Save draft — the decoupled "Update": persist a forward revision without
-            going live. Available whenever there are unsaved edits we can write. */}
-        <Button
-          onClick={() => void saveDraftAction()}
-          disabled={!hasContent || !dirty || publishing || readOnly}
-          title="Save your changes as a draft — not live yet"
-        >
-          {publishing ? "Working…" : "Save draft"}
-        </Button>
-        {/* Lifecycle transitions the user actually holds (submit-for-review /
-            reject / archive / restore) — read straight from content_moderation.
-            Restore doubles as the unlock control from an Archived (read-only) page. */}
-        {secondaryTransitions.map((t) => (
-          <Button
-            key={t.id}
-            onClick={() => void commitTransition(t)}
-            disabled={publishing}
-            title={t.label}
-          >
-            {t.label}
-          </Button>
-        ))}
-        {/* Approve (reviewer-gated needs_review → published) — a go-live primary. */}
-        {approveTransition && (
-          <Button
-            variant="primary"
-            onClick={() => void commitTransition(approveTransition)}
-            disabled={publishing}
-            title="Approve and publish this page"
-          >
-            Approve &amp; publish
-          </Button>
-        )}
-        {/* Publish — save+go-live in one click (creates the node first for a new
-            page). Hidden once a page is in review/archived (no publish transition). */}
-        {canPublish && (
-          <Button
-            variant="primary"
-            onClick={() => void commitPublish()}
-            disabled={!hasContent || publishing || (readOnly && !isNew)}
-            title={isBlock ? "Publish the block — goes live everywhere it's used" : "Publish — make this the live page"}
-          >
-            {publishing ? "Publishing…" : "Publish"}
-          </Button>
-        )}
-        {/* Hand the finished page over to the Checks studio. Page-only, and gated
-            on a clean save so the audit reflects the saved page, not an unsaved
-            draft (the audit reads stored node state). Deep-link nav re-seeds Checks
-            from ?audit= — robust across the studio/agent switch. Also gated on the
-            Checks studio being accessible, so a switched-off Checks (absent from
-            studioAccess — it ships off, DECISIONS 0440) hides this cross-studio
-            entry point too — not just the switcher tab. */}
-        {kind === "page" && nodeId && !dirty && isStudioAccessible("checks") && (
-          <Button
-            onClick={() =>
-              nodeId && window.location.assign(pageDeepLink("checks", nodeId, consoleBase(), getPageLang()))
-            }
-            title="Run checks on this page in the Checks studio"
-          >
-            <ShieldCheckIcon /> Run checks
-          </Button>
+        {/* The page's lifecycle — the same bar Checks renders (DECISIONS 0454):
+            state chip, Save draft, one primary with a menu for the rest. The
+            Checks hand-off is no longer here: it is the rail's Checks row. */}
+        {!atListing && (
+          <PageLifecycleBar
+            moderation={moderation}
+            docNoun={docNoun}
+            isNew={isNew}
+            dirty={dirty}
+            busy={publishing}
+            canWrite={!readOnly}
+            hasContent={hasContent}
+            note={legibility}
+            onDiscard={discard}
+            onSaveDraft={() => void saveDraftAction()}
+            onPublish={() => void commitPublish()}
+            onTransition={(t, opts) => void commitTransition(t, opts)}
+          />
         )}
         <IconButton
           label={atListing ? "Close page studio" : "Back to page list"} className="ain-topbar__leave"
@@ -1095,21 +1069,21 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
         </p>
       ) : (
       <>
-      {/* Editorial state strip: the status badge + the legibility line (DECISIONS
-          0094) — always says what state the doc is in and, when editing is blocked
-          or the draft differs from live, why + what to do about it. */}
-      <div className="ain-studio__modbar" data-state={moderation.state}>
-        <span
-          className="ain-studio__statebadge"
-          data-state={draftPending ? "published" : moderation.state}
-          data-pending={draftPending || undefined}
-        >
-          {/* "Live" is the owner's word for published (study 02, Plate 5). */}
-          {draftPending ? "Live" : moderation.stateLabel === "Published" ? "Live" : moderation.stateLabel}
-          {draftPending && <span className="ain-studio__statebadge-sub"> · draft pending</span>}
-        </span>
-        {legibility && <span className="ain-studio__modnote">{legibility}</span>}
-      </div>
+      {/* The legibility line (DECISIONS 0094): why editing is blocked, or how
+          the draft differs from live. The state itself is the top bar's chip
+          (0454) — one home, beside the buttons that change it. */}
+      {legibility && (
+        <div className="ain-studio__modbar" data-state={moderation.state}>
+          <span className="ain-studio__modnote">{legibility}</span>
+        </div>
+      )}
+
+      {/* Checks' verdict on the saved page, and the way into Checks (0454) —
+          a rail row, not a top-bar button: it changes nothing, it opens another
+          studio. Page-only; hidden when Checks is switched off (0440). */}
+      {kind === "page" && nodeId && isStudioAccessible("checks") && (
+        <ChecksRow nodeId={nodeId} lang={writeLang} dirty={dirty} savedVid={moderation.baseVid} />
+      )}
 
       {/* Stale-write conflict (HTTP 409): the page advanced under us. The only safe
           move is to take the latest revision (rebase) — never a blind retry. */}
@@ -1396,7 +1370,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                     active={insertAt === 0}
                     prominent
                     available={available}
-                    onOpen={setInsertAt}
+                    onOpen={openInsert}
                     onClose={() => setInsertAt(null)}
                     onPick={addSection}
                   />
@@ -1412,7 +1386,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                           index={index}
                           active
                           available={available}
-                          onOpen={setInsertAt}
+                          onOpen={openInsert}
                           onClose={() => setInsertAt(null)}
                           onPick={addSection}
                         />
@@ -1432,7 +1406,13 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                         onProp={setSectionProp}
                         onRemove={removeSection}
                         onMove={moveSection}
-                        onInsert={setInsertAt}
+                        onInsert={openInsert}
+                        onReplace={openReplace}
+                        replacing={!layoutLocked && replaceAt === index}
+                        available={available}
+                        onReplacePick={replaceSection}
+                        onReplaceClose={() => setReplaceAt(null)}
+                        retired={retiredReason(section, manifest)}
                         onDragStart={(i) => {
                           dragFrom.current = i;
                         }}
@@ -1455,7 +1435,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                       index={sections.length}
                       active
                       available={available}
-                      onOpen={setInsertAt}
+                      onOpen={openInsert}
                       onClose={() => setInsertAt(null)}
                       onPick={addSection}
                     />
@@ -1463,7 +1443,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                     <button
                       type="button"
                       className="ain-btn ain-content-addsec"
-                      onClick={() => setInsertAt(sections.length)}
+                      onClick={() => openInsert(sections.length)}
                     >
                       <PlusIcon /> Add section
                     </button>
@@ -1543,10 +1523,13 @@ function ComponentPicker({
   available,
   onPick,
   onClose,
+  label = "Add a section",
 }: {
   available: SectionDef[];
   onPick: (component: string) => void;
   onClose: () => void;
+  /** The dialog's accessible name ("Replace section" in replace mode). */
+  label?: string;
 }) {
   const [query, setQuery] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -1568,7 +1551,7 @@ function ComponentPicker({
     : available;
 
   return (
-    <div className="ain-content-picker" role="dialog" aria-label="Add a section" ref={ref}>
+    <div className="ain-content-picker" role="dialog" aria-label={label} ref={ref}>
       <input
         className="ain-field__input ain-content-picker__search"
         value={query}
@@ -1610,7 +1593,7 @@ function ComponentPicker({
                   title={s.use}
                   onClick={() => onPick(s.component)}
                 >
-                  <span className="ain-content-picker__ico" aria-hidden="true">{sectionIcon(s.component, s.icon)}</span>
+                  <span className="ain-content-picker__ico" aria-hidden="true"><ComponentIcon name={s.component} /></span>
                   <span className="ain-content-picker__text">
                     <span className="ain-content-picker__name">
                       {humanize(s.component)}
@@ -1716,6 +1699,12 @@ function SectionCard({
   onRemove,
   onMove,
   onInsert,
+  onReplace,
+  replacing,
+  available,
+  onReplacePick,
+  onReplaceClose,
+  retired,
   onDragStart,
   onDropOn,
   locked,
@@ -1744,6 +1733,17 @@ function SectionCard({
   onMove: (index: number, delta: number) => void;
   /** Open the component picker at an index (the ⋯ menu's insert above/below). */
   onInsert: (at: number) => void;
+  /** Open the component picker in REPLACE mode on this slot. */
+  onReplace: (index: number) => void;
+  /** Whether this slot's Replace picker is open. */
+  replacing: boolean;
+  /** The offered components (the add picker's list — never retired ones). */
+  available: SectionDef[];
+  /** Convert this slot in place to the picked component. */
+  onReplacePick: (index: number, component: string) => void;
+  onReplaceClose: () => void;
+  /** Why this kept slot is no longer offered (plain language), or null. */
+  retired: string | null;
   /** Grip drag lifecycle — the parent owns the reorder splice. */
   onDragStart: (index: number) => void;
   onDropOn: (index: number) => void;
@@ -1758,6 +1758,14 @@ function SectionCard({
 }) {
   const bodyId = `ain-content-section-${index}`;
   const summary = summarize(section, props);
+  // A select built from a narrowed enum must still show a kept slot's stored
+  // value (else it silently shows — and on the next change sends — another one).
+  const offeredEnum = (prop: PropDef): string[] | undefined => {
+    if (!prop.enum) return undefined;
+    const v = section.props[prop.name];
+    if (typeof v !== "string" || v === "" || prop.enum.includes(v)) return prop.enum;
+    return [...prop.enum, v];
+  };
   // The head badge: the count of changed props, so a collapsed card still
   // advertises unsaved edits inside it (the Brand-studio .ain-card__dirty idiom).
   const changed = diff?.changed ?? new Set<string>();
@@ -1772,6 +1780,7 @@ function SectionCard({
     <PropControl
       key={prop.name}
       prop={prop}
+      offered={offeredEnum(prop)}
       value={section.props[prop.name]}
       imageProps={imageProps}
       linkProps={linkProps}
@@ -1835,6 +1844,12 @@ function SectionCard({
           </span>
           <ChevronDownIcon className="ain-content-section__chev" />
         </button>
+        {retired && (
+          <span className="ain-content-section__retired" title={`${retired}. Kept on this page. It can’t be added again.`}>
+            <AlertCircleIcon aria-hidden="true" />
+            No longer offered
+          </span>
+        )}
         {changed.size > 0 && (
           <span
             className="ain-content-section__dirty"
@@ -1851,13 +1866,36 @@ function SectionCard({
               { label: "Move down", disabled: index === count - 1, onPick: () => onMove(index, 1) },
               { label: "Insert section above", onPick: () => onInsert(index) },
               { label: "Insert section below", onPick: () => onInsert(index + 1) },
+              ...(retired ? [{ label: "Replace section…", onPick: () => onReplace(index) }] : []),
               { label: "Remove section", danger: true, onPick: () => onRemove(index) },
             ]}
           />
         )}
       </div>
+      {replacing && (
+        <div className="ain-content-insert ain-content-insert--active">
+          <ComponentPicker
+            available={available}
+            label="Replace section"
+            onClose={onReplaceClose}
+            onPick={(component) => onReplacePick(index, component)}
+          />
+        </div>
+      )}
       {open && (
         <div className="ain-content-section__body" id={bodyId}>
+          {retired && (
+            <div className="ain-content-section__retirednote">
+              <p>
+                <strong>{retired}.</strong> Kept on this page. It can’t be added again.
+              </p>
+              {!locked && (
+                <Button variant="secondary" size="sm" onClick={() => onReplace(index)}>
+                  Replace…
+                </Button>
+              )}
+            </div>
+          )}
           {content.length === 0 && appearance.length === 0 ? (
             <p className="ain-content-section__noprops">This section has no editable fields.</p>
           ) : (
@@ -1881,6 +1919,7 @@ function SectionCard({
 
 function PropControl({
   prop,
+  offered,
   value,
   imageProps,
   linkProps,
@@ -1892,6 +1931,9 @@ function PropControl({
   onRevert,
 }: {
   prop: PropDef;
+  /** The select's options when they differ from `prop.enum` (a kept slot's
+   *  stored value appended — rendered with a "(no longer offered)" suffix). */
+  offered?: string[];
   value: unknown;
   /** Row-field names that hold an image (forwarded into the rows editor). */
   imageProps: Set<string>;
@@ -2063,9 +2105,9 @@ function PropControl({
         >
           {/* An empty option lets the renderer fall back to its default. */}
           <option value="">(default)</option>
-          {prop.enum.map((opt) => (
+          {(offered ?? prop.enum).map((opt) => (
             <option key={opt} value={opt}>
-              {humanize(opt)}
+              {prop.enum?.includes(opt) ? humanize(opt) : `${humanize(opt)} (no longer offered)`}
             </option>
           ))}
         </select>
@@ -2432,6 +2474,54 @@ function PanelsControl({
           <span className="ain-chip__label">Add panel</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The Content rail's Checks row (DECISIONS 0454): the saved page's fail / warn
+ * counts and "Open Checks". It grades the latest SAVED draft — the audit reads
+ * stored state — so it re-reads after every save (`savedVid`) and, while there
+ * are unsaved edits, says they aren't checked yet instead of vanishing.
+ */
+function ChecksRow({ nodeId, lang, dirty, savedVid }: { nodeId: string; lang: string | null; dirty: boolean; savedVid: number | null }) {
+  const [summary, setSummary] = useState<AuditSummary | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    setSummary(undefined);
+    void fetchAuditSummary(nodeId, lang).then((s) => live && setSummary(s));
+    return () => {
+      live = false;
+    };
+  }, [nodeId, lang, savedVid]);
+
+  const counts =
+    summary === undefined ? (
+      <span className="ain-content-checks__muted">Checking…</span>
+    ) : summary === null ? null : summary.fail + summary.warn === 0 ? (
+      <span className="ain-content-checks__count" data-severity="pass">All {summary.pass} pass</span>
+    ) : (
+      <>
+        {summary.fail > 0 && <span className="ain-content-checks__count" data-severity="fail">{summary.fail} fail</span>}
+        {summary.warn > 0 && <span className="ain-content-checks__count" data-severity="warn">{summary.warn} warn</span>}
+      </>
+    );
+
+  return (
+    <div className="ain-content-checks" data-testid="checks-row">
+      <span className="ain-content-checks__head">
+        <ShieldCheckIcon /> Checks
+      </span>
+      <span className="ain-content-checks__counts">{counts}</span>
+      {dirty && <span className="ain-content-checks__muted">Unsaved edits aren’t checked yet</span>}
+      <Button
+        size="sm"
+        className="ain-content-checks__open"
+        onClick={() => window.location.assign(pageDeepLink("checks", nodeId, consoleBase(), lang))}
+        title="Open this page in the Checks studio"
+      >
+        Open Checks <ArrowRightIcon />
+      </Button>
     </div>
   );
 }

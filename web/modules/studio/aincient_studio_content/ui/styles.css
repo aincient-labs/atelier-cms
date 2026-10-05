@@ -66,7 +66,7 @@
 }
 .ain-content-picker__item:last-child { border-bottom: none; }
 .ain-content-picker__item:hover { background: color-mix(in oklch, var(--ain-color-accent) 14%, var(--ain-color-surface-raised)); }
-.ain-content-picker__ico { flex: none; width: 16px; text-align: center; font-size: 13px; color: var(--ain-color-text-muted); line-height: 1.5; }
+.ain-content-picker__ico { flex: none; display: flex; width: 16px; margin-top: 2px; color: var(--ain-color-text-muted); }
 .ain-content-picker__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 /* The component name is read while scanning the picker (and varies per row), so
    it's the legible body font, not the pixel display face — pixel is reserved for
@@ -139,6 +139,22 @@
   font-size: 10px; font-weight: 600; line-height: 1; color: var(--ain-color-warning);
   background: color-mix(in oklch, var(--ain-color-warning) 15%, transparent); border-radius: 999px;
 }
+/* "No longer offered" (DECISIONS 0455): a kept slot whose component / variant /
+   tone the kind stopped offering. The warning tint of __dirty, the pill shape of
+   the picker's provenance chip; text at full warning colour, never opacity. */
+.ain-content-section__retired {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; height: 16px; padding: 0 6px;
+  font-size: 10px; font-weight: 600; line-height: 1; white-space: nowrap; color: var(--ain-color-warning);
+  background: color-mix(in oklch, var(--ain-color-warning) 15%, transparent); border-radius: 999px;
+}
+.ain-content-section__retired svg { width: 11px; height: 11px; }
+.ain-content-section__retirednote {
+  display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; padding: 6px 8px;
+  border: 1px solid color-mix(in oklch, var(--ain-color-warning) 35%, var(--ain-color-border));
+  border-radius: var(--ain-radius-md); background: color-mix(in oklch, var(--ain-color-warning) 8%, transparent);
+}
+.ain-content-section__retirednote p { flex: 1; margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--ain-color-text-muted); }
+.ain-content-section__retirednote strong { font-weight: 600; color: var(--ain-color-text); }
 /* The row's ⋯ — hover-revealed like the grip; holds reorder/insert/remove. */
 .ain-content-section__more { flex: none; visibility: hidden; }
 .ain-content-section__head:hover .ain-content-section__more,
@@ -204,3 +220,24 @@
 .ain-content-row__grip:active { cursor: grabbing; }
 .ain-content-row__actions { flex: none; display: flex; flex-direction: column; gap: 2px; }
 .ain-content-row__move svg { width: 13px; height: 13px; }
+
+/* The Checks row (DECISIONS 0454): the saved page's audit counts and the way
+   into Checks — a rail row because it changes nothing, it opens another
+   studio. Counts are the Checks rail's whisper chips. */
+.ain-content-checks {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
+  padding: 8px 12px; border-bottom: 1px solid var(--ain-color-border);
+  font-size: 12.5px;
+}
+.ain-content-checks__head { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.ain-content-checks__head svg { font-size: 13px; color: var(--ain-color-text-muted); }
+.ain-content-checks__counts { display: inline-flex; gap: 6px; }
+.ain-content-checks__count {
+  font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 4px;
+}
+.ain-content-checks__count[data-severity="fail"] { color: var(--ain-color-danger); background: color-mix(in oklch, var(--ain-color-danger) 10%, transparent); }
+.ain-content-checks__count[data-severity="warn"] { color: var(--ain-color-warning); background: color-mix(in oklch, var(--ain-color-warning) 12%, transparent); }
+.ain-content-checks__count[data-severity="pass"] { color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent); }
+.ain-content-checks__muted { color: var(--ain-color-text-muted); font-size: 12px; }
+.ain-content-checks__open { margin-left: auto; }

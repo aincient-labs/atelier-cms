@@ -37,3 +37,10 @@
 .ain-menu__item--radio { white-space: nowrap; gap: 8px; }
 .ain-menu__check { flex: none; display: inline-grid; place-items: center; width: 14px; color: var(--ain-color-text); }
 .ain-menu__check svg { font-size: 12px; }
+/* Group heading + hairline (MenuLabel / MenuSeparator) — the lifecycle bar's
+   "Move forward / Send back / Take offline" groups (DECISIONS 0454). */
+.ain-menu__label {
+  padding: 8px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ain-color-text-muted);
+}
+.ain-menu__sep { height: 1px; margin: 4px 2px; background: var(--ain-color-border); }

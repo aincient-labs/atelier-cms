@@ -20,8 +20,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * here → chat_output), reads the turn's conversation buffer, collects every
  * specialist slice the agent already delegated (colour `tokens_json`, shape
  * `presets_json`, typography `fonts`/`tokens_json`), deep-merges them, and emits
- * a SINGLE authoritative `brand_preview` widget envelope via the shared
- * {@see BrandPreviewApplier}.
+ * a SINGLE authoritative `brand_preview` widget envelope (its payload a typed
+ * `commands` batch) via the shared {@see BrandPreviewApplier}.
  *
  * Why this exists: when `preview_brand` was an LLM tool the agent saw its
  * (mid-turn) result and, when a change didn't visibly land in the live preview
@@ -149,9 +149,10 @@ class BrandApplySlices extends AbstractFlowDropNodeProcessor {
       return ['widget' => '', 'applied' => 0, 'summary' => (string) $envelope['error']];
     }
 
+    $changes = BrandPreviewApplier::changes($envelope['payload']);
     return [
       'widget' => (string) json_encode($envelope),
-      'applied' => count($envelope['payload']['tokens'] ?? []) + count($envelope['payload']['fonts'] ?? []),
+      'applied' => count($changes['tokens']) + count($changes['fonts']),
       'summary' => (string) ($envelope['summary'] ?? ''),
     ];
   }

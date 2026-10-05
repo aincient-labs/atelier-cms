@@ -15,7 +15,8 @@ namespace Drupal\aincient_flows\Eval;
  *
  * WATCHED — deliberately tight (every widening costs a ~$0.75 eval run per
  * change): the four brand workflow YAMLs (orchestrator + specialist prompts),
- * BrandState (the status directive + saved-brand brief), and the corpus itself
+ * BrandState (the status directive + saved-brand brief), ValidateSlice (what a
+ * specialist's tool result says back to the orchestrator), and the corpus itself
  * (a changed case must be re-run). Widen here, in one place, when a defect
  * proves another file behaviour-bearing.
  */
@@ -28,6 +29,9 @@ final class BrandEvalFingerprint {
     'config/sync/flowdrop_workflow.flowdrop_workflow.brand_studio.yml',
     'config/sync/flowdrop_workflow.flowdrop_workflow.aincient_brand_specialist_*.yml',
     'web/modules/custom/aincient_flows/src/Plugin/FlowDropNodeProcessor/BrandState.php',
+    // Its slice (rejections + measured contrast lines) is the tool result the
+    // orchestrator reads before it replies — behaviour-bearing (A5, run #3).
+    'web/modules/custom/aincient_flows/src/Plugin/FlowDropNodeProcessor/ValidateSlice.php',
     'web/modules/custom/aincient_flows/evals/brand/*.yml',
   ];
 

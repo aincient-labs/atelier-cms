@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_studio_content\Controller;
 
 use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Drupal\aincient_pages\Catalog\EffectiveCatalog;
 use Drupal\aincient_pages\ComponentCatalog;
 use Drupal\aincient_pages\Controller\PageSpikeController;
 use Drupal\aincient_pages\EditLock;
@@ -29,6 +30,14 @@ use Symfony\Component\HttpFoundation\Response;
  * path to a live page (mirroring the studio-only brand convention).
  */
 final class PageController implements ContainerInjectionInterface {
+
+  /**
+   * Transitions that carry the author's edits on to someone else (review), so
+   * they need update access on top of holding the transition. Every other
+   * transition is gated by its content_moderation permission alone (a reviewer
+   * approves without being able to edit).
+   */
+  private const UPDATE_GATED_TRANSITIONS = ['submit_for_review'];
 
   public function __construct(
     private readonly PageStore $store,
@@ -93,8 +102,25 @@ final class PageController implements ContainerInjectionInterface {
     $data = json_decode((string) $request->getContent(), TRUE);
     $schema = is_array($data) && is_array($data['schema'] ?? NULL) ? $data['schema'] : [];
     $langcode = is_array($data) && is_string($data['langcode'] ?? NULL) && $data['langcode'] !== '' ? $data['langcode'] : NULL;
-    $clean = $this->store->validate($schema);
+    $clean = $this->store->validate($schema, $this->previewKeepSet($data, $langcode));
     return $this->spike()->renderSchema($clean, $langcode);
+  }
+
+  /**
+   * The keep set for a preview of an OPEN document (`doc: {kind, id}`): its
+   * stored head's slots, so a kept "No longer offered" section still previews
+   * (DECISIONS 0455, P0). Empty for a new draft or a head the user can't view.
+   */
+  private function previewKeepSet(mixed $data, ?string $langcode): array {
+    $doc = is_array($data) && is_array($data['doc'] ?? NULL) ? $data['doc'] : [];
+    $id = $doc['id'] ?? NULL;
+    if ((!is_string($id) && !is_int($id)) || !ctype_digit((string) $id)) {
+      return [];
+    }
+    $head = ($doc['kind'] ?? 'page') === 'block'
+      ? $this->moderation->loadHead((string) $id, 'block', $langcode, 'media')
+      : $this->moderation->loadHead((string) $id, 'aincient_page', $langcode);
+    return $head !== NULL && $head->access('view') ? $this->store->keepSetOf($head) : [];
   }
 
   /**
@@ -128,7 +154,7 @@ final class PageController implements ContainerInjectionInterface {
       return $locked;
     }
     try {
-      $result = $this->store->saveDraft($data['schema'], $nodeId, $langcode, $baseVid, $this->coauthorsFrom($data));
+      $result = $this->store->saveDraft($data['schema'], $nodeId, $langcode, $baseVid, $this->coauthorsFrom($data), $this->originFrom($data));
     }
     catch (RevisionConflictException $e) {
       return $this->conflict($e);
@@ -161,7 +187,7 @@ final class PageController implements ContainerInjectionInterface {
     }
     $schema = is_array($data['schema'] ?? NULL) ? $data['schema'] : NULL;
     try {
-      $result = $this->store->publish($nodeId, $schema, $langcode, $baseVid, $this->coauthorsFrom($data));
+      $result = $this->store->publish($nodeId, $schema, $langcode, $baseVid, $this->coauthorsFrom($data), $this->originFrom($data));
     }
     catch (RevisionConflictException $e) {
       return $this->conflict($e);
@@ -170,6 +196,30 @@ final class PageController implements ContainerInjectionInterface {
     return $result === NULL
       ? new JsonResponse(['error' => "You don’t have permission to publish this page."], 403)
       : new JsonResponse($result);
+  }
+
+  /**
+   * POST /atelier/page/transition — run ANY transition of the page's workflow.
+   * Body: `{ transition, node_id, base_vid?, langcode? }`.
+   *
+   * The generic path the lifecycle bar uses for a site-built workflow
+   * (DECISIONS 0454): the store still refuses a transition the user doesn't
+   * hold from the current state, so this widens nothing. The shipped
+   * transitions keep their named routes; a transition that hands the doc on
+   * for review needs update access, exactly as there.
+   */
+  public function runTransition(Request $request): JsonResponse {
+    $data = $this->body($request);
+    $id = isset($data['transition']) && is_string($data['transition']) ? $data['transition'] : '';
+    if ($id === '' || !preg_match('/^[a-z0-9_]+$/', $id)) {
+      return new JsonResponse(['error' => 'Expected a transition id.'], 400);
+    }
+    // Publish and Save draft WRITE the schema behind the editor-lock fence on
+    // their own routes; as a bare state change here they would skip both.
+    if (in_array($id, ['publish', 'create_new_draft'], TRUE)) {
+      return new JsonResponse(['error' => "Use /atelier/page/" . ($id === 'publish' ? 'publish' : 'save') . " for that transition."], 400);
+    }
+    return $this->transition($request, $id, requireUpdate: in_array($id, self::UPDATE_GATED_TRANSITIONS, TRUE));
   }
 
   /**
@@ -258,6 +308,15 @@ final class PageController implements ContainerInjectionInterface {
       isset($data['langcode']) && $data['langcode'] !== '' ? (string) $data['langcode'] : NULL,
       isset($data['base_vid']) && is_numeric($data['base_vid']) ? (int) $data['base_vid'] : NULL,
     ];
+  }
+
+  /**
+   * Who staged which field (`{agent: [path…], user: [path…]}`, DECISIONS 0453)
+   * — the revision message's last line. Labelled server-side, so only the
+   * shape is checked here.
+   */
+  private function originFrom(array $data): ?array {
+    return is_array($data['origin'] ?? NULL) ? $data['origin'] : NULL;
   }
 
   /**
@@ -360,6 +419,15 @@ final class PageController implements ContainerInjectionInterface {
       // Reference placeables (embed / block) — surfaced so the studio can offer +
       // edit them; their `entity`/`ref` props carry a picker flag (see below).
       'reference' => array_map([$this, 'manifestEntry'], array_keys($catalog->reference()), $catalog->reference()),
+      // Components this kind no longer offers (site or kind narrowed them) but
+      // that existing slots may still use: PageStore keeps such a slot, so the
+      // studio still needs its prop schema to edit it — and marks it "No longer
+      // offered" with a Replace action. Never offered in the add picker
+      // (DECISIONS 0455, P0).
+      'retired' => $this->retiredEntries($catalog),
+      // The discovered (un-narrowed) variant + tone enums per component, so a
+      // kept slot's stored variant/tone stays selectable while it is set.
+      'discovered_variants' => $this->catalog->discovered()->variants() === [] ? new \stdClass() : $this->catalog->discovered()->variants(),
       'tones' => $catalog->tones(),
       'hero_variants' => $catalog->variantsFor('hero') ?? [],
       'variants' => $catalog->variants() === [] ? new \stdClass() : $catalog->variants(),
@@ -379,6 +447,23 @@ final class PageController implements ContainerInjectionInterface {
       // language switcher + inherit/diverge affordance.
       'translation' => $this->store->translationContext(),
     ]);
+  }
+
+  /**
+   * Manifest entries for the discovered placeables this kind does not offer.
+   *
+   * @return list<array>
+   */
+  private function retiredEntries(EffectiveCatalog $catalog): array {
+    $discovered = $this->catalog->discovered();
+    $out = [];
+    foreach (array_diff($discovered->placeableNames(), $catalog->placeableNames()) as $name) {
+      $def = $discovered->placeable($name);
+      if ($def !== NULL) {
+        $out[] = $this->manifestEntry($name, $def) + ['retired' => TRUE];
+      }
+    }
+    return $out;
   }
 
   /**

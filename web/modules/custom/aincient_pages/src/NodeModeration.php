@@ -274,24 +274,61 @@ final class NodeModeration {
 
   /**
    * The transitions the current user may legally perform FROM the node's current
-   * state, as `[ { id, label, to, to_label } ]` — the source of truth for which
-   * workflow buttons the studio shows. Read straight from
-   * content_moderation, never a hand-rolled map.
+   * state — the source of truth for which workflow buttons the studio shows.
+   * Read straight from content_moderation, never a hand-rolled map.
    *
-   * @return array<int, array{id: string, label: string, to: string, to_label: string}>
+   * Each carries the workflow facts the console's lifecycle bar orders them by
+   * (DECISIONS 0454): the transition's `weight`, and its target state's
+   * `to_weight`, `to_published` and `to_default_revision`. A site-built workflow
+   * then sorts into primary / forward / back / take-offline without the console
+   * knowing a single transition id.
+   *
+   * @return array<int, array{id: string, label: string, to: string, to_label: string, weight: int, to_weight: int, to_published: bool, to_default_revision: bool}>
    */
   public function transitions(ContentEntityInterface $node, ?AccountInterface $account = NULL): array {
     $account ??= $this->currentUser;
     $out = [];
     foreach ($this->transitionValidation->getValidTransitions($node, $account) as $transition) {
+      $to = $transition->to();
       $out[] = [
         'id' => $transition->id(),
         'label' => (string) $transition->label(),
-        'to' => $transition->to()->id(),
-        'to_label' => (string) $transition->to()->label(),
+        'to' => $to->id(),
+        'to_label' => (string) $to->label(),
+        'weight' => (int) $transition->weight(),
+        'to_weight' => (int) $to->weight(),
+        'to_published' => $to instanceof ContentModerationState && $to->isPublishedState(),
+        'to_default_revision' => $to instanceof ContentModerationState && $to->isDefaultRevisionState(),
       ];
     }
     return $out;
+  }
+
+  /**
+   * Whether the node's current state is a published one — "live" for a site
+   * whose workflow names that state something other than `published`.
+   */
+  public function statePublished(ContentEntityInterface $node): bool {
+    $workflow = $this->moderationInformation->getWorkflowForEntity($node);
+    $stateId = $this->state($node);
+    if (!$workflow || !$workflow->getTypePlugin()->hasState($stateId)) {
+      return FALSE;
+    }
+    $state = $workflow->getTypePlugin()->getState($stateId);
+    return $state instanceof ContentModerationState && $state->isPublishedState();
+  }
+
+  /**
+   * The weight of the node's current state in its workflow (0 when unknown) —
+   * the lifecycle bar's reference point for "forward" vs "back".
+   */
+  public function stateWeight(ContentEntityInterface $node): int {
+    $workflow = $this->moderationInformation->getWorkflowForEntity($node);
+    $stateId = $this->state($node);
+    if ($workflow && $workflow->getTypePlugin()->hasState($stateId)) {
+      return (int) $workflow->getTypePlugin()->getState($stateId)->weight();
+    }
+    return 0;
   }
 
   /**
@@ -362,12 +399,14 @@ final class NodeModeration {
    * to pin the next write to. `can_edit` is the SURFACED result of the access
    * call the caller passes in — not a second source of truth.
    *
-   * @return array{moderation_state: string, state_label: string, has_pending_draft: bool, can_edit: bool, transitions: array<int, array{id: string, label: string, to: string, to_label: string}>, base_vid: int}
+   * @return array{moderation_state: string, state_label: string, state_weight: int, state_published: bool, has_pending_draft: bool, can_edit: bool, transitions: array<int, array<string, mixed>>, base_vid: int}
    */
   public function legibility(ContentEntityInterface $node, bool $canEdit): array {
     return [
       'moderation_state' => $this->state($node),
       'state_label' => $this->stateLabel($node),
+      'state_weight' => $this->stateWeight($node),
+      'state_published' => $this->statePublished($node),
       'has_pending_draft' => $this->hasPendingDraft($node),
       'can_edit' => $canEdit,
       'transitions' => $this->transitions($node),

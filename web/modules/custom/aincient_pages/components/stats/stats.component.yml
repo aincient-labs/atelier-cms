@@ -22,3 +22,25 @@ thirdPartySettings:
     props:
       tone: ''
       items: '[{value,label}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Software traction'
+        props:
+          items:
+            - value: '12,000+'
+              label: 'Invoices sent each month'
+            - value: '9 days'
+              label: 'Faster average payment'
+            - value: '98%'
+              label: 'Support replies within the hour'
+      - name: 'Clinic at a glance'
+        props:
+          items:
+            - value: '25 years'
+              label: 'Caring for the neighbourhood'
+            - value: '6'
+              label: 'Specialist practitioners'
+            - value: '4.9 / 5'
+              label: 'Average patient rating'
+            - value: 'Same week'
+              label: 'Typical first appointment'

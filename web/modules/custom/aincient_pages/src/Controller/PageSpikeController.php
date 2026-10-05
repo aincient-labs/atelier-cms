@@ -105,6 +105,30 @@ final class PageSpikeController implements ContainerInjectionInterface {
   }
 
   /**
+   * Render a bare list of sections — no header, footer or page record — in the
+   * real shell: module CSS, pack stylesheets and the PUBLISHED brand tokens.
+   *
+   * The Components studio's preview seam ({@see \Drupal\aincient_pages\Catalog\ExampleRenderer},
+   * DECISIONS 0455): each section carries its own id, stamped as `data-ain-sec`
+   * so a click in the canvas can select that component. Sections render through
+   * the same pipeline as a page (image tokens, markdown, collections), against
+   * the DISCOVERED palette — the studio shows what is switched off, too.
+   */
+  public function renderFragment(array $sections, string $title, ?string $langcode = NULL): Response {
+    $inner = $this->composeLanding(['type' => 'landing', 'sections' => $sections], $langcode, TRUE);
+    $build = [
+      '#type' => 'html_tag',
+      '#tag' => 'main',
+      '#attributes' => ['id' => 'main-content'],
+      'content' => $inner,
+    ];
+    $content = (string) $this->renderer->renderInIsolation($build);
+    $path = $this->moduleList->getPath('aincient_pages');
+    $css = base_path() . $path . '/assets/aincient-pages.css?v=' . @filemtime("$path/assets/aincient-pages.css");
+    return new Response($this->shell($content, $css, $title, $this->brand->cssVariables(), '', FALSE));
+  }
+
+  /**
    * Render the site chrome (header + footer) around a placeholder body, WITHOUT
    * persisting — the Header/Footer studios' live-preview seam.
    *
@@ -307,7 +331,10 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // sections don't blur together. (A guardrail the agent gets for free.)
     $rhythm = ['default', 'muted'];
     $r = 0;
-    $placeable = $this->catalog->for((string) ($data['type'] ?? ''))->placeableNames();
+    // The DISCOVERED palette, not the kind's: a slot the site or kind has since
+    // stopped offering is kept by PageStore and must still render (DECISIONS
+    // 0455, P0). Narrowing governs new placements; the admission gate is the floor.
+    $placeable = $this->catalog->discovered()->placeableNames();
     foreach ($data['sections'] ?? [] as $section) {
       $name = $section['component'] ?? '';
       // Guardrail: only known placeable components (sections + layout + refs).

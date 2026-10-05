@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { makeSafeAssistantToolUI } from "@console/kit";
 import {
   getPageDraft,
@@ -12,6 +12,12 @@ import {
   deriveRoomFromStores,
   markSomethingMade,
   apiUrl,
+  fieldChanges,
+  setSelectedSection,
+  opensNewTab,
+  REVEAL_FIELD_EVENT,
+  FIELD_ANCHOR_PARAM,
+  type FieldChange,
 } from "@console/sdk";
 
 /**
@@ -74,16 +80,20 @@ let chain: Promise<unknown> = Promise.resolve();
 /** One op the server refused, with the reason it names back to the agent. */
 type Rejection = { op?: string; reason?: string };
 
+/** What one apply did: the ops the server refused, and the fields that changed. */
+type Applied = { rejections: Rejection[]; changes: FieldChange[] };
+
 /**
  * POST the ops against the current draft and write the validated result back.
  *
  * The open node's id rides along: a page that already exists has its type locked
  * at birth (DECISIONS 0378), so the server refuses a landing⇄blog flip by name
  * instead of staging it. Returns the server's rejections so the card can show
- * them — they used to be dropped on the floor here.
+ * them — they used to be dropped on the floor here — and the fields the result
+ * changed (before → after), which is what the card counts (DECISIONS 0453).
  */
-async function applyOps(ops: PageOp[]): Promise<Rejection[]> {
-  if (!ops || ops.length === 0) return [];
+async function applyOps(ops: PageOp[]): Promise<Applied> {
+  if (!ops || ops.length === 0) return { rejections: [], changes: [] };
   const schema = getPageDraft() ?? EMPTY_PAGE;
   const res = await fetch(APPLY_URL, {
     method: "POST",
@@ -93,8 +103,42 @@ async function applyOps(ops: PageOp[]): Promise<Rejection[]> {
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = (await res.json()) as { schema?: PageSchema; rejected?: Rejection[] };
-  if (data.schema) setPageDraft(data.schema);
-  return Array.isArray(data.rejected) ? data.rejected : [];
+  // The agent staged these: record it as the origin of every field they touched.
+  if (data.schema) setPageDraft(data.schema, { source: "agent" });
+  return {
+    rejections: Array.isArray(data.rejected) ? data.rejected : [],
+    changes: data.schema ? fieldChanges(schema, data.schema) : [],
+  };
+}
+
+/** The section slot a field path sits in (`sections.<id>[.props.<p>]`), if any. */
+const sectionOf = (path: string): string | null => {
+  const [head, id] = path.split(".");
+  return head === "sections" && id ? id : null;
+};
+
+/** The card's link to a field: this room's URL with `?field=` — a modifier
+ *  click opens it in a new tab, where the Checks rail lands on that row. */
+const fieldHref = (path: string): string => {
+  const url = new URL(window.location.href);
+  url.searchParams.set(FIELD_ANCHOR_PARAM, path);
+  return url.pathname + url.search;
+};
+
+/**
+ * Open a changed field from the card, in place: in Checks, ask the rail to
+ * select that field's row (it listens for {@link REVEAL_FIELD_EVENT}); in
+ * Content, select the section the field belongs to.
+ */
+function openField(e: MouseEvent, path: string) {
+  if (opensNewTab(e)) return;
+  e.preventDefault();
+  if (activeStudioKey() === "checks") {
+    window.dispatchEvent(new CustomEvent(REVEAL_FIELD_EVENT, { detail: path }));
+    return;
+  }
+  const section = sectionOf(path);
+  if (section) setSelectedSection(section);
 }
 
 function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload; toolCallId: string }) {
@@ -103,6 +147,9 @@ function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload;
   // changes nothing, and the user has to be able to see that — the failure this
   // whole lock exists to stop was an edit that reported success and vanished.
   const [refused, setRefused] = useState<Rejection[]>([]);
+  // The fields this card's ops changed — null until it applies (a read-only
+  // historical card never does, and falls back to counting its ops).
+  const [changes, setChanges] = useState<FieldChange[] | null>(null);
   // Apply once per tool call; opening a page studio ensures the preview is
   // visible. Keep the current page-editing studio — the Checks repair agent
   // stages into the SAME shared draft, so switching it to Content would yank the
@@ -127,8 +174,9 @@ function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload;
     // where replaying these ops is what rebuilds the draft).
     chain = chain
       .then(() => applyOps(payload.ops ?? []))
-      .then((rejections) => {
+      .then(({ rejections, changes }) => {
         setRefused(rejections);
+        setChanges(changes);
         // The studio just built something, live, in front of the owner — the
         // moment the name invite waits for (see name-invite.ts). Gated on LIVE
         // only: a historical card replaying from a reloaded thread would fire
@@ -141,18 +189,35 @@ function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload;
 
   // Count what LANDED, not what was sent: a refused op changed nothing, so
   // counting it here would reprint the agent's own false "done" on the card.
+  // Once applied, the count is FIELDS changed (one op can set five meta tags —
+  // "1 edit" undersold it, DECISIONS 0453); before that, the ops that landed.
   const sent = payload.ops?.length ?? 0;
   const count = Math.max(0, sent - refused.length);
   const label =
-    count === 0 && refused.length > 0
-      ? "Nothing applied"
-      : `Applied to preview · ${count} edit${count === 1 ? "" : "s"}`;
+    changes !== null
+      ? changes.length === 0
+        ? "Nothing changed"
+        : `Applied to preview · ${changes.length} field${changes.length === 1 ? "" : "s"} changed`
+      : count === 0 && refused.length > 0
+        ? "Nothing applied"
+        : `Applied to preview · ${count} edit${count === 1 ? "" : "s"}`;
 
   return (
     <div className="ain-brandprev">
       <span className="ain-brandprev__dot" aria-hidden="true" />
       <div className="ain-brandprev__body">
         <span className="ain-brandprev__label">{label}</span>
+        {changes !== null && changes.length > 0 && (
+          <ul className="ain-brandprev__fields" aria-label="Fields changed">
+            {changes.map((c) => (
+              <li key={c.path}>
+                <a href={fieldHref(c.path)} onClick={(e) => openField(e, c.path)}>
+                  {c.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
         <span className="ain-brandprev__hint">Preview only — Publish in the studio to save the page</span>
         {refused.length > 0 && (
           <span className="ain-brandprev__rejected">

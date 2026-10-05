@@ -26,9 +26,15 @@ namespace Drupal\aincient_pages;
  * is the dependency-clean home for the shared applier (aincient_brand and
  * aincient_flows both already depend on aincient_pages).
  *
- * The `payload` this returns is the client-ready shape
- * (`tokens` = css_var → value map, `fonts` = family names) consumed by
- * `brand-preview-tool.tsx#applyOps` — NOT the raw `*_json` arg shape.
+ * The `payload` this returns carries the validated change as the Identity
+ * studio's typed command batch (`commands`, plans/studio-commands.md P1,
+ * DECISIONS 0447) — the exact `{verb, args}` shape chat-ui's
+ * `brand-preview-ops.ts#brandPreviewCommands` executes as ONE undoable batch:
+ * `reset` first, then `set_tokens` (css_var → value), then `set_fonts` (family
+ * names) — each only when it has something to say. NOT the raw `*_json` arg
+ * shape, and no longer the legacy `{tokens, fonts, reset}` maps (the client
+ * still reads those for stored cards until 0.18). Server-side readers that
+ * need the maps back use {@see self::changes()}.
  */
 final class BrandPreviewApplier {
 
@@ -87,7 +93,8 @@ final class BrandPreviewApplier {
    *
    * @return array
    *   On success, a widget envelope:
-   *   `['__widget__' => 'brand_preview', 'payload' => […], 'summary' => '…']`.
+   *   `['__widget__' => 'brand_preview', 'payload' => ['commands' => […],
+   *   'rejected' => […], …], 'summary' => '…']` (see {@see self::commands()}).
    *   On a hard input error (malformed JSON, or nothing valid to apply), a
    *   single-key `['error' => '…']` — callers that can't surface prose (the
    *   merge node, the streamer) treat this as a no-op and emit no widget.
@@ -184,7 +191,7 @@ final class BrandPreviewApplier {
     $contrast = [];
     $accent = [];
     if (!$reset && $byName) {
-      $draft = $byName + $this->draftBaseline + $this->brand->tokens();
+      $draft = $byName + $this->contrastBaseline();
       foreach ($this->colorContrast->failures($draft) as $f) {
         $contrast[] = [
           'surface' => $f['surface'],
@@ -207,19 +214,20 @@ final class BrandPreviewApplier {
         $parts[] = sprintf('%s-as-text on %s %.1f:1', $f['text'], $f['surface'], $f['ratio']);
       }
       if ($parts) {
+        // No "do not darken brand_primary" here: this text is read on turns
+        // where darkening the primary is exactly what the user asked for. The
+        // fix that never fights the ask is the on-colour, so name that.
         $summary .= ' ⚠ Low contrast (needs 4.5:1 for AA): ' . implode(', ', $parts)
           . ' — adjust the surface or its on-colour so text stays legible.'
-          . ' (Brand-coloured text uses the derived primary_on_surface token, so'
-          . ' brand_primary itself stays free to be vivid — do not darken it.)';
+          . ' (For a fill such as brand_primary, switching its on-colour between'
+          . ' light and dark ink usually fixes the pair without touching the fill.)';
       }
     }
 
     return [
       '__widget__' => 'brand_preview',
       'payload' => [
-        'tokens' => $tokens,
-        'fonts' => $fonts,
-        'reset' => $reset,
+        'commands' => self::commands($reset, $tokens, $fonts),
         'rejected' => $rejected,
         'rejected_presets' => $badPresets,
         'contrast_warnings' => $contrast,
@@ -227,6 +235,188 @@ final class BrandPreviewApplier {
       ],
       'summary' => $summary,
     ];
+  }
+
+  /**
+   * The contrast verdict for every pair a token change MOVES, as facts.
+   *
+   * The same grading {@see self::apply()} bakes into its advisory (this call's
+   * tokens layered over the staged studio draft, then the saved brand, through
+   * {@see ColorContrast} — which follows var() references), but reported per
+   * pair, passes AND fails, and only for the pairs the change touches: a pair
+   * whose surface or on-colour is in the change, or whose ratio the change
+   * moved (brand_primary moves primary/primary_foreground through its var()
+   * reference). Legibility combos are reported only when moved AND failing.
+   *
+   * Why it exists: the Brand orchestrator writes its final reply BEFORE the
+   * end-of-turn apply computes `contrast_warnings`, so it used to claim "kept
+   * contrast" for a 3.4:1 pair it had never seen graded. The specialist's
+   * slice validator calls this and puts the lines into the tool result the
+   * orchestrator reads before it replies (aincient_flows ValidateSlice).
+   *
+   * @param array<string, mixed> $tokens
+   *   Token name => value (a specialist slice's `tokens_json`). Invalid
+   *   entries are skipped, exactly as apply() would drop them.
+   * @param array<string, mixed> $presets
+   *   Optional {group: option} preset choices; expanded under the tokens.
+   *
+   * @return list<array{surface: string, on: string, ratio: float, passes: bool, line: string}>
+   *   One entry per moved pair; `on` is the text token (the on-colour, or the
+   *   legibility combo's text token), `line` the agent-facing sentence.
+   */
+  public function pairVerdicts(array $tokens, array $presets = []): array {
+    $merged = [];
+    foreach ($presets as $group => $option) {
+      $expanded = is_string($option) ? $this->presets->expand((string) $group, $option) : NULL;
+      if ($expanded !== NULL) {
+        $merged = $expanded['tokens'] + $merged;
+      }
+    }
+    $merged = $tokens + $merged;
+
+    $byName = [];
+    foreach ($merged as $name => $value) {
+      $css = self::scalarToCss($value);
+      if ($css !== NULL && $this->designTokens->validate((string) $name, $css)) {
+        $byName[(string) $name] = $this->designTokens->normalize((string) $name, $css);
+      }
+    }
+    if ($byName === []) {
+      return [];
+    }
+
+    $baseline = $this->contrastBaseline();
+    $after = $byName + $baseline;
+    $moved = static fn (?float $was, ?float $now): bool => $was === NULL || abs($was - (float) $now) >= 0.005;
+
+    $before = [];
+    foreach ($this->colorContrast->pairReport($baseline) as $pair) {
+      $before[$pair['surface'] . '|' . $pair['on']] = $pair['ratio'];
+    }
+    $out = [];
+    foreach ($this->colorContrast->pairReport($after) as $pair) {
+      if ($pair['ratio'] === NULL) {
+        continue;
+      }
+      $touched = isset($byName[$pair['surface']]) || isset($byName[$pair['on']])
+        || $moved($before[$pair['surface'] . '|' . $pair['on']] ?? NULL, $pair['ratio']);
+      if ($touched) {
+        $out[] = self::verdict($pair['surface'], $pair['on'], (float) $pair['ratio'], $pair['on'] . ' on ' . $pair['surface']);
+      }
+    }
+
+    $beforeText = [];
+    foreach ($this->colorContrast->legibilityReport($baseline) as $combo) {
+      $beforeText[$combo['text'] . '|' . $combo['surface']] = $combo['ratio'];
+    }
+    foreach ($this->colorContrast->legibilityFailures($after) as $combo) {
+      if ($moved($beforeText[$combo['text'] . '|' . $combo['surface']] ?? NULL, $combo['ratio'])) {
+        $out[] = self::verdict($combo['surface'], $combo['text'], (float) $combo['ratio'], $combo['text'] . ' as text on ' . $combo['surface']);
+      }
+    }
+    return $out;
+  }
+
+  /**
+   * One graded pair, with the sentence an agent reads.
+   *
+   * @return array{surface: string, on: string, ratio: float, passes: bool, line: string}
+   *   The pair, its ratio and AA verdict, and the agent-facing line.
+   */
+  private static function verdict(string $surface, string $on, float $ratio, string $label): array {
+    $passes = $ratio >= ColorContrast::AA_NORMAL;
+    $shown = rtrim(rtrim(sprintf('%.2f', $ratio), '0'), '.');
+    return [
+      'surface' => $surface,
+      'on' => $on,
+      'ratio' => $ratio,
+      'passes' => $passes,
+      'line' => $passes
+        ? sprintf('%s: %s:1 — passes WCAG AA for body text (needs 4.5:1)', $label, $shown)
+        : sprintf('%s: %s:1 — FAILS WCAG AA for body text (needs 4.5:1)', $label, $shown),
+    ];
+  }
+
+  /**
+   * What a change is contrast-graded against: the staged draft over saved.
+   *
+   * @return array<string, string>
+   *   Token name => value.
+   */
+  private function contrastBaseline(): array {
+    return $this->draftBaseline + $this->brand->tokens();
+  }
+
+  /**
+   * The validated change as the Identity studio's command batch.
+   *
+   * Order is the client's contract (brand-preview-ops.ts): `reset` first, then
+   * `set_tokens`, then `set_fonts` — fonts ONLY when there are some, so a
+   * token-only preview doesn't wipe fonts a previous preview (or the studio)
+   * staged. `reset`'s args are an empty OBJECT: the client validates them
+   * against `{type: object}`, and a PHP `[]` would encode as a JSON array.
+   *
+   * @param bool $reset
+   *   Clear the draft back to the saved brand first.
+   * @param array<string, string> $tokens
+   *   Validated css_var => CSS value.
+   * @param list<string> $fonts
+   *   Validated Google family names.
+   *
+   * @return list<array{verb: string, args: object|array<string, mixed>}>
+   *   The batch.
+   */
+  public static function commands(bool $reset, array $tokens, array $fonts): array {
+    $commands = [];
+    if ($reset) {
+      $commands[] = ['verb' => 'reset', 'args' => new \stdClass()];
+    }
+    if ($tokens !== []) {
+      $commands[] = ['verb' => 'set_tokens', 'args' => ['tokens' => $tokens]];
+    }
+    if ($fonts !== []) {
+      $commands[] = ['verb' => 'set_fonts', 'args' => ['fonts' => array_values($fonts)]];
+    }
+    return $commands;
+  }
+
+  /**
+   * Read a `brand_preview` payload's command batch back as plain maps.
+   *
+   * For server-side readers that count or inspect what a preview staged (the
+   * merge node's `applied`, the design-file proposal card, the brand eval
+   * runner) — so none of them re-derives the command shape on its own. Later
+   * `set_tokens` win per css_var; `step_token` is client-only (it needs the
+   * palette the studio loads) and is not produced server-side.
+   *
+   * @param array $payload
+   *   A `brand_preview` payload (`['commands' => […], …]`).
+   *
+   * @return array{tokens: array<string, string>, fonts: list<string>, reset: bool}
+   *   The css_var => value overrides, the staged fonts, and whether it resets.
+   */
+  public static function changes(array $payload): array {
+    $out = ['tokens' => [], 'fonts' => [], 'reset' => FALSE];
+    foreach ((array) ($payload['commands'] ?? []) as $command) {
+      if (!is_array($command)) {
+        continue;
+      }
+      $args = (array) ($command['args'] ?? []);
+      switch ($command['verb'] ?? NULL) {
+        case 'reset':
+          $out = ['tokens' => [], 'fonts' => [], 'reset' => TRUE];
+          break;
+
+        case 'set_tokens':
+          $out['tokens'] = (array) ($args['tokens'] ?? []) + $out['tokens'];
+          break;
+
+        case 'set_fonts':
+          $out['fonts'] = array_values((array) ($args['fonts'] ?? []));
+          break;
+      }
+    }
+    return $out;
   }
 
   /**

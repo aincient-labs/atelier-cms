@@ -1,0 +1,19 @@
+uuid: dbe77d44-c452-4766-ba97-b78b7f220bd3
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.field_component_usage
+    - media.type.block
+id: media.block.field_component_usage
+field_name: field_component_usage
+entity_type: media
+bundle: block
+label: 'Component usage (derived)'
+description: 'Derived index of the components, variants and tones the layout uses (c:/v:/t: keys). Written by PageStore on save — never edit by hand; the structure is canonical.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

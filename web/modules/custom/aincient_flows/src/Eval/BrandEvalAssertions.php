@@ -34,6 +34,13 @@ namespace Drupal\aincient_flows\Eval;
  *  - `[]` (a list)       the value must equal that list
  *  - anything else       exact string equality
  *  - `prose_not: /re/`   legacy spelling of `prose: !/re/`
+ *  - `<spec> unless <key> <spec>`   CONDITIONAL: when the guard holds (its key
+ *                        compared with its own spec, any form above), the
+ *                        assertion is waived and passes; otherwise <spec> is
+ *                        checked. For claims that are only false when a fact is:
+ *                        `prose: "!/passes AA/i unless contrast.brand_primary >= 4.5"`.
+ *                        A guard on a key that was never observed holds only
+ *                        when its spec is `absent`.
  *
  * A key the runner never observed (e.g. `slice.brand_primary` on a turn that
  * delegated nothing) compares as missing: `absent` passes, everything else fails
@@ -65,6 +72,22 @@ final class BrandEvalAssertions {
     foreach ($expect as $key => $expected) {
       $key = (string) $key;
       $lookup = $key;
+      $shown = $expected;
+      // `<spec> unless <key> <spec>` → waived when the guard holds.
+      $guard = is_string($expected) ? self::splitGuard($expected) : NULL;
+      if ($guard !== NULL) {
+        [$expected, $guardKey, $guardSpec] = $guard;
+        $guardHas = array_key_exists($guardKey, $observed) && $observed[$guardKey] !== NULL && $observed[$guardKey] !== '';
+        if (self::compare($guardSpec, $guardHas ? $observed[$guardKey] : NULL, $guardHas)) {
+          $results[] = [
+            'key' => $key,
+            'expected' => self::describe($shown),
+            'actual' => sprintf('(waived: %s = %s)', $guardKey, $guardHas ? self::describe($observed[$guardKey]) : '(missing)'),
+            'pass' => TRUE,
+          ];
+          continue;
+        }
+      }
       // `prose_not: /re/` → negative regex on `prose`.
       if (str_ends_with($key, '_not') && is_string($expected) && preg_match('#^/.*/[a-z]*$#s', $expected)) {
         $lookup = substr($key, 0, -4);
@@ -74,12 +97,25 @@ final class BrandEvalAssertions {
       $actual = $has ? $observed[$lookup] : NULL;
       $results[] = [
         'key' => $key,
-        'expected' => self::describe($expected),
+        'expected' => self::describe($shown),
         'actual' => $has ? self::describe($actual) : '(missing)',
         'pass' => self::compare($expected, $actual, $has),
       ];
     }
     return $results;
+  }
+
+  /**
+   * Split `<spec> unless <key> <spec>` into its parts, or NULL.
+   *
+   * @return array{0: string, 1: string, 2: string}|null
+   *   [main spec, guard key, guard spec].
+   */
+  private static function splitGuard(string $expected): ?array {
+    if (!preg_match('/^(.*\S)\s+unless\s+([A-Za-z0-9_.\-]+)\s+(\S.*)$/s', $expected, $m)) {
+      return NULL;
+    }
+    return [$m[1], $m[2], trim($m[3])];
   }
 
   private static function compare(mixed $expected, mixed $actual, bool $has): bool {

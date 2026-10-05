@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_audit;
 
 use Drupal\aincient_audit\Check\CheckInterface;
+use Drupal\aincient_audit\Check\CheckRegistry;
 use Drupal\aincient_audit\Entity\PolicyInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\flowdrop_runtime\Service\Orchestrator\SynchronousOrchestrator;
@@ -60,23 +61,62 @@ final class PolicyEvaluator {
    */
   private const REMEDIATION_ACTIONS = ['edit_field', 'edit_prop', 'none'];
 
+  /**
+   * The node type a shipped policy workflow's single step is — the
+   * `policy_check` processor, which {@see self::runInMemory} stands in for.
+   */
+  private const POLICY_CHECK_NODE_TYPE = 'aincient_audit_policy_check';
+
   public function __construct(
     private readonly SynchronousOrchestrator $orchestrator,
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly LoggerInterface $logger,
+    private readonly AuditTarget $target,
+    private readonly CheckRegistry $checks,
   ) {}
 
   /**
    * Evaluate a node against the applicable policies.
    *
    * @param \Drupal\node\NodeInterface $node
-   *   The resolved page revision (the caller has already loaded the draft head).
+   *   The resolved page revision ({@see AuditTarget::load}); the policy
+   *   workflows re-load the same copy from the `revision` initial data.
    *
    * @return array{summary: array{pass: int, warn: int, fail: int, total: int}, checks: list<array{key: string, label: string, findings: list<array<string, mixed>>}>}
    *   The report body — the check groups + the pass/warn/fail summary. Merged
    *   into the envelope by {@see AuditEngine::audit()}.
    */
   public function evaluate(NodeInterface $node): array {
+    return $this->collect($node, $this->run(...));
+  }
+
+  /**
+   * Evaluate an UNSAVED revision — an in-memory node the caller built by
+   * writing a draft schema onto a clone (DECISIONS 0453). The policy workflows
+   * can't grade it: the `policy_check` node re-loads the page by id. So each
+   * policy's pinned check runs directly with the same parameters the node
+   * would forward; selection, validation and the report shape are shared with
+   * {@see self::evaluate}. PolicyEvaluatorTest's parity case holds the two
+   * paths to identical findings for a saved node.
+   *
+   * @throws \LogicException
+   *   When a policy's workflow is anything but one `policy_check` step: its
+   *   other steps can't be reproduced here, and a report that silently
+   *   skipped them would show findings as fixed that aren't.
+   */
+  public function evaluateUnsaved(NodeInterface $node): array {
+    return $this->collect($node, $this->runInMemory(...));
+  }
+
+  /**
+   * The shared policy loop: select, run (via $runner), stamp, summarise.
+   *
+   * @param callable(\Drupal\aincient_audit\Entity\PolicyInterface, \Drupal\node\NodeInterface): list<array<string, mixed>> $runner
+   *   Produces one policy's validated findings.
+   *
+   * @return array{summary: array{pass: int, warn: int, fail: int, total: int}, checks: list<array{key: string, label: string, findings: list<array<string, mixed>>}>}
+   */
+  private function collect(NodeInterface $node, callable $runner): array {
     $checks = [];
     $summary = ['pass' => 0, 'warn' => 0, 'fail' => 0, 'total' => 0];
 
@@ -92,7 +132,7 @@ final class PolicyEvaluator {
       }
 
       $policyId = $policy->id();
-      $findings = $this->run($policy, $node);
+      $findings = $runner($policy, $node);
       foreach ($findings as &$finding) {
         // `policyId` is purely additive; the check `key` below is the group's.
         $finding['policyId'] = $policyId;
@@ -177,6 +217,9 @@ final class PolicyEvaluator {
       $response = $this->orchestrator->executeWorkflow($workflow, [
         'node_id' => (string) $node->id(),
         'langcode' => $node->language()->getId(),
+        // Which copy: the policy_check node re-loads through AuditTarget, so
+        // it reads the same revision the caller resolved.
+        'revision' => $this->target->kind($node),
         // The tunable knobs; the policy_check node forwards them to the check.
         'parameters' => $policy->getParameters(),
       ]);
@@ -187,6 +230,32 @@ final class PolicyEvaluator {
     }
 
     return $this->validate($this->extractFindings($response));
+  }
+
+  /**
+   * Run one policy's pinned check directly against an in-memory node — the
+   * {@see self::evaluateUnsaved} counterpart of {@see self::run}, passing what
+   * the `policy_check` node would: the node and the policy's parameters.
+   *
+   * @return list<array<string, mixed>>
+   */
+  private function runInMemory(PolicyInterface $policy, NodeInterface $node): array {
+    $workflowId = $policy->getWorkflow();
+    $workflow = $this->loadWorkflow($workflowId);
+    if ($workflow === NULL) {
+      $this->logger->warning('Policy workflow @id is missing — skipping.', ['@id' => $workflowId]);
+      return [];
+    }
+    $steps = $workflow->getNodes();
+    $step = count($steps) === 1 ? reset($steps) : NULL;
+    $checkId = is_array($step) && ($step['data']['metadata']['node_type_id'] ?? NULL) === self::POLICY_CHECK_NODE_TYPE
+      ? (string) ($step['data']['config']['check'] ?? '')
+      : '';
+    $check = $this->checks->get($checkId);
+    if ($check === NULL) {
+      throw new \LogicException(sprintf('Policy %s cannot grade an unsaved draft: its workflow %s is not a single policy_check step.', $policy->id(), $workflowId));
+    }
+    return $this->validate($check->evaluate($node, $policy->getParameters()));
   }
 
   /**

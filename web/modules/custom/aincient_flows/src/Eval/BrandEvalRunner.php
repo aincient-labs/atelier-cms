@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_flows\Eval;
 
+use Drupal\aincient_pages\BrandPreviewApplier;
 use Drupal\aincient_pages\BrandRepository;
 use Drupal\aincient_pages\ColorContrast;
 use Drupal\aincient_pages\TokenResolver;
@@ -285,9 +286,7 @@ final class BrandEvalRunner {
         elseif ($type === 'aincient_flows_brand_apply_slices') {
           $envelope = json_decode((string) ($out['widget'] ?? ''), TRUE);
           $payload = is_array($envelope) ? ($envelope['payload'] ?? []) : [];
-          if (is_array($payload['tokens'] ?? NULL)) {
-            $applied = $payload['tokens'];
-          }
+          $applied = BrandPreviewApplier::changes((array) $payload)['tokens'];
           $o['rejected'] = array_values((array) ($payload['rejected'] ?? []));
         }
         elseif ($type === 'aincient_reason') {

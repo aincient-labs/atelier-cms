@@ -75,6 +75,7 @@ import {
   type ThreadRow,
 } from "./rooms";
 import { subscribeWorkingNodes, workingNodeVersion } from "./thread-working-node";
+import { ThreadRowStateMarker } from "./thread-state-marker";
 import { bindRuntime, consoleNav, roomVersion, subscribeRoom } from "./console-nav";
 import { getPageNode, subscribePageNode } from "./page-state";
 import { getAuditNode, subscribeAuditNode } from "./audit-state";
@@ -145,6 +146,7 @@ import { useThreadRemoteId, useThreadSealed } from "./thread-seal-hooks";
 import { subscribeLock } from "./page-lock";
 import { composerMode } from "./console-machine";
 import { consoleBase, apiUrl } from "./console-config";
+import { MESSAGE_ANCHOR_ATTR } from "./message-anchor";
 import {
   addAttachment,
   getAttachments,
@@ -360,6 +362,7 @@ function ThinkingIndicator() {
 }
 
 function AssistantMessage() {
+  const id = useTurnState((m) => m.id);
   const time = messageTime(useTurnState((m) => m.createdAt));
   const running = useTurnState((m) => m.status?.type === "running");
   const hasText = useTurnState((m) =>
@@ -369,7 +372,7 @@ function AssistantMessage() {
   // agent served the turn (study 02, Plate 9); the per-thread workflow stays
   // visible in the top-bar picker. Timestamps surface on hover.
   return (
-    <MessagePrimitive.Root className="ain-msg ain-msg--assistant">
+    <MessagePrimitive.Root className="ain-msg ain-msg--assistant" {...{ [MESSAGE_ANCHOR_ATTR]: id }}>
       <div className="ain-msg__col">
         <span className="ain-msg__name">
           <AtelierMark className="ain-msg__mark" aria-hidden />
@@ -1226,7 +1229,9 @@ function ChatColumn({
  * (via the crash-safe {@link ThreadListPrimitive.Items}) and self-filters to the
  * current SECTION — a row shows only when its home room's studio is the one we're
  * in. Its badge names the Content work-in-progress kind ("New" draft / "#<nid>"
- * page); other sections carry none. Only LIVE threads render — sealed/archived
+ * page); other sections carry none. A thread homed to a page also shows that
+ * page's editorial marker (Draft / In review / Published, in the thread's
+ * language — {@link ThreadRowStateMarker}). Only LIVE threads render — sealed/archived
  * history isn't listed (D8). Time order is applied via CSS `order` (most-recent
  * first) since the primitive iterates in store order.
  */
@@ -1276,6 +1281,8 @@ function WipRow() {
           {badge && (
             <span className="ain-tli__badge" data-kind={room.kind}>{badge}</span>
           )}
+          {/* The page's editorial state in this thread's language (Phase 4). */}
+          <ThreadRowStateMarker remoteId={remoteId} />
           {time && <span className="ain-tli__time">{badge ? `· ${time}` : time}</span>}
         </span>
       </button>

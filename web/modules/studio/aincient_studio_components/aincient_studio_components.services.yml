@@ -1,0 +1,7 @@
+services:
+  # Validates the Components agent's `propose_component_constraint` args into
+  # the `components_proposal` widget envelope the studio draft adopts
+  # (DECISIONS 0455, P2). Stages only — Publish stays the human's.
+  aincient_studio_components.proposal_applier:
+    class: Drupal\aincient_studio_components\ComponentProposalApplier
+    arguments: ['@aincient_pages.catalog']

@@ -101,7 +101,7 @@ final class PolicyCheckTest extends KernelTestBase {
       'aincient_audit:policy_check',
       [],
       $this->container->get('aincient_audit.check_registry'),
-      $this->container->get('aincient_pages.moderation'),
+      $this->container->get('aincient_audit.target'),
     );
   }
 

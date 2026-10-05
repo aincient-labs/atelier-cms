@@ -163,4 +163,43 @@ final class PageSchemaSummariserTest extends UnitTestCase {
     $this->assertSame('Saved draft.', $summariser->revisionLog(['schema' => $this->page()], static fn () => throw new \RuntimeException('boom'), NULL, 'Saved draft.'));
   }
 
+
+  /**
+   * DECISIONS 0453: the studio's origin map becomes one labelled line.
+   *
+   * @covers ::originLine
+   */
+  public function testOriginLineLabelsWhoChangedWhat(): void {
+    $line = $this->summariser()->originLine([
+      'agent' => ['meta.description', 'meta.og_title', 'sections.s2.props.heading', 'sections.s2.props.body'],
+      'user' => ['title', 'lead', 'sections', 'sections.gone1', 'bogus.path', 42],
+    ], $this->page());
+    $this->assertSame(
+      'Atelier: Meta description, Open Graph title, Section 2 (Features, "Why teams switch") · You: Page title, Lead, Section order, A removed section',
+      $line,
+    );
+    $this->assertSame('', $this->summariser()->originLine(['agent' => 'nope'], $this->page()));
+    $this->assertSame('You: Teaser title', $this->summariser()->originLine(['user' => ['teaser.title']], $this->page()));
+  }
+
+  /**
+   * The origin line is appended to the summary — or to the fallback when
+   * nothing itemisable changed.
+   *
+   * @covers ::revisionLog
+   */
+  public function testRevisionLogAppendsTheOriginLine(): void {
+    $summariser = $this->summariser();
+    $new = $this->page();
+    $new['meta'] = ['description' => 'Fresh'];
+    $this->assertSame(
+      "Meta description → \"Fresh\"\nAtelier: Meta description",
+      $summariser->revisionLog(['schema' => $this->page()], fn () => $new, NULL, 'Saved draft.', ['agent' => ['meta.description']]),
+    );
+    $this->assertSame(
+      "Saved draft.\nYou: Page title",
+      $summariser->revisionLog(['schema' => $this->page()], fn () => $this->page(), NULL, 'Saved draft.', ['user' => ['title']]),
+    );
+  }
+
 }

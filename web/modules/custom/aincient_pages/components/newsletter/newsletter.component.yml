@@ -26,3 +26,17 @@ thirdPartySettings:
       subheading: ''
       cta_label: ''
       placeholder: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Bakery weekly'
+        props:
+          heading: 'Fresh from the oven, every Friday'
+          subheading: 'The weekend bake list, new seasonal pastries and the odd recipe — one short email a week.'
+          cta_label: 'Subscribe'
+          placeholder: 'Your email address'
+      - name: 'Consultancy insights'
+        props:
+          heading: 'Monthly notes for owner-led firms'
+          subheading: 'One practical idea on finance, hiring or planning. No sales pitch, unsubscribe in one click.'
+          cta_label: 'Get the notes'
+          placeholder: 'Your work email'

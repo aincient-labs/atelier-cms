@@ -44,6 +44,12 @@ final class BlockStore {
   private const BUNDLE = 'block';
 
   /**
+   * The page kind a block validates under (DECISIONS 0455) — a built-in
+   * fragment kind: composition, not a page.
+   */
+  public const KIND = 'block';
+
+  /**
    * The block entity type — a media entity (DECISIONS 0138).
    */
   private const ENTITY_TYPE = 'media';
@@ -167,7 +173,7 @@ final class BlockStore {
     return [
       'node_id' => $id,
       'langcode' => $langcode,
-      'schema' => $this->pages->resolve($media),
+      'schema' => ['type' => self::KIND] + $this->pages->resolve($media),
     ] + $this->moderation->legibility($media, (bool) $media->access('update'));
   }
 
@@ -251,7 +257,7 @@ final class BlockStore {
     if ($langcode !== NULL && $media->hasTranslation($langcode)) {
       $media = $media->getTranslation($langcode);
     }
-    return $this->pages->resolve($media);
+    return ['type' => self::KIND] + $this->pages->resolve($media);
   }
 
   /**
@@ -340,6 +346,9 @@ final class BlockStore {
    * sections — render-time expansion is therefore always one level deep.
    */
   private function stripNested(array $schema): array {
+    // A block validates under the built-in `block` kind — its own rules, never
+    // the schema's stated type (DECISIONS 0455).
+    $schema['type'] = self::KIND;
     if (!is_array($schema['sections'] ?? NULL)) {
       return $schema;
     }

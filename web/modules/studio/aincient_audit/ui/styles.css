@@ -23,6 +23,9 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ain-checks-audit__url:hover { text-decoration: underline; }
+/* Which copy the report read (DECISIONS 0450) — a quiet line, full-width so it
+   never squeezes the counts. */
+.ain-checks-audit__audited { flex-basis: 100%; order: -1; font-size: 11.5px; color: var(--ain-color-text-muted); }
 .ain-checks-audit__counts { display: inline-flex; gap: 6px; flex: none; }
 /* Severity counts are whisper chips — earth tints, mono, no borders (state
    is a whisper; it must never out-shout the brand). */
@@ -41,7 +44,9 @@
   text-transform: uppercase; color: var(--ain-color-text-muted);
 }
 .ain-checks-audit__findings { list-style: none; margin: 0; padding: 0; }
-.ain-checks-audit__finding { display: flex; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--ain-color-border); }
+/* One column, no badge gutter: status rides the kicker line so the title and
+   value get the rail's full width. */
+.ain-checks-audit__finding { padding: 10px 14px; border-top: 1px solid var(--ain-color-border); }
 .ain-checks-audit__badge {
   flex: none; align-self: flex-start; min-width: 38px; text-align: center;
   font-family: var(--ain-font-mono); font-size: 8.5px; letter-spacing: .08em; text-transform: uppercase;
@@ -53,13 +58,21 @@
 .ain-checks-audit__badge[data-severity="warn"] { color: var(--ain-color-warning); background: color-mix(in oklch, var(--ain-color-warning) 12%, transparent); }
 .ain-checks-audit__badge[data-severity="pass"] { color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent); }
 .ain-checks-audit__finding-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-/* Phase 2: the axis a finding touches (meta / content / structure) — a mono
-   whisper above the title; a category is a label, not a badge. */
-.ain-checks-audit__dim {
-  align-self: flex-start; margin-bottom: 1px;
+/* The row's kicker: status · axis (meta / content / structure) · who changed it —
+   one mono line above the title; a category is a label, not a badge. */
+.ain-checks-audit__kicker {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; margin-bottom: 1px;
   font-family: var(--ain-font-mono); font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--ain-color-text-faint);
+  line-height: 1.6; color: var(--ain-color-text-faint);
 }
+.ain-checks-audit__kicker > * + *::before { content: "·"; margin-right: 6px; color: var(--ain-color-text-faint); }
+/* Status carries the severity hue plus a dot, so it never relies on colour alone. */
+.ain-checks-audit__status { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+.ain-checks-audit__status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ain-checks-audit__status[data-severity="fail"] { color: var(--ain-color-danger); }
+.ain-checks-audit__status[data-severity="warn"] { color: var(--ain-color-warning); }
+.ain-checks-audit__status[data-severity="pass"],
+.ain-checks-audit__status[data-severity="fixed"] { color: var(--ain-color-success); }
 .ain-checks-audit__finding-title { font-size: 13px; font-weight: 500; }
 .ain-checks-audit__finding-detail { font-size: 12.5px; color: var(--ain-color-text-muted); }
 .ain-checks-audit__finding-loc { font-size: 11px; color: var(--ain-color-text-faint); }
@@ -88,3 +101,122 @@
    in-range turns positive, out-of-range stays muted. */
 .ain-checks-audit__manual-count { font-size: 11px; color: var(--ain-color-text-muted); align-self: flex-end; }
 .ain-checks-audit__manual-count[data-ok="true"] { color: var(--ain-color-success); }
+
+/* --- checks studio: the review loop (DECISIONS 0453) --- */
+/* "Fixed in draft": the server graded the unsaved draft and the finding is gone
+   or passing — the success tint, so it reads as resolved but not yet saved. */
+.ain-checks-audit__badge[data-severity="fixed"],
+.ain-checks-audit__count[data-severity="fixed"] {
+  color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent);
+}
+.ain-checks-audit__badge[data-severity="fixed"] { min-width: 0; }
+.ain-checks-audit__finding[data-selected] { background: var(--ain-color-surface-raised); }
+/* A resolved row, closed: one line — status, the field's name, its value
+   (truncated). The axis word drops; who changed it stays. */
+.ain-checks-audit__finding[data-compact] { padding-block: 7px; }
+.ain-checks-audit__finding[data-compact] .ain-checks-audit__rowhead {
+  flex-direction: row; align-items: baseline; gap: 8px; white-space: nowrap;
+}
+.ain-checks-audit__finding[data-compact] .ain-checks-audit__kicker { flex: none; flex-wrap: nowrap; margin: 0; }
+.ain-checks-audit__finding[data-compact] .ain-checks-audit__dim { display: none; }
+.ain-checks-audit__finding[data-compact] .ain-checks-audit__finding-title { flex: none; }
+.ain-checks-audit__finding[data-compact] .ain-checks-audit__value {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--ain-color-text-muted);
+}
+/* The row's text is the select toggle: a bare button, laid out as the body. */
+.ain-checks-audit__rowhead {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ain-checks-audit__rowhead:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; border-radius: 2px; }
+/* Who changed the field: Atelier (the agent) or You — a mono whisper beside the title. */
+.ain-checks-audit__origin {
+  margin-left: 6px; padding: 1px 5px; border-radius: 3px; vertical-align: 1px;
+  font-family: var(--ain-font-mono); font-size: 8.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ain-color-text-muted); border: 1px solid var(--ain-color-border);
+}
+/* In the kicker the origin is a word, not a chip. */
+.ain-checks-audit__kicker .ain-checks-audit__origin { margin: 0; padding: 0; border: 0; vertical-align: baseline; letter-spacing: inherit; }
+.ain-checks-audit__origin[data-origin="agent"] { color: var(--ain-color-accent); border-color: color-mix(in oklch, var(--ain-color-accent) 40%, transparent); }
+/* The field's current draft value, one line. */
+.ain-checks-audit__value {
+  font-size: 12.5px; color: var(--ain-color-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ain-checks-audit__value[data-empty] { color: var(--ain-color-text-faint); font-style: italic; }
+/* The selected row, opened: diff, gauge, Revert. */
+.ain-checks-audit__detail { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.ain-checks-audit__detail-note { margin: 4px 0 0; font-size: 11.5px; color: var(--ain-color-text-muted); }
+.ain-checks-audit__diff { margin: 0; font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.ain-checks-audit__diff del {
+  color: var(--ain-color-danger); background: color-mix(in oklch, var(--ain-color-danger) 10%, transparent);
+}
+.ain-checks-audit__diff ins {
+  text-decoration: none; color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent);
+}
+/* Screen-reader-only text (the chip's "changed by" lead-in). */
+.ain-checks-audit__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* --- checks studio: reviewing staged changes (DECISIONS 0453, S2) --- */
+/* The change banner: what is staged, what needs you, how far you've read, and
+   Previous / Next (J / K). Sticky, so the walk controls stay in reach. */
+.ain-checks-audit__banner {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  padding: 8px 14px; border-bottom: 1px solid var(--ain-color-border);
+  background: var(--ain-color-surface-raised); font-size: 12.5px;
+}
+.ain-checks-audit__banner-text { flex: 1 1 auto; min-width: 0; }
+.ain-checks-audit__banner-text strong { font-weight: 600; color: var(--ain-color-warning); }
+.ain-checks-audit__banner-nav { display: inline-flex; gap: 2px; }
+.ain-checks-audit__meter { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ain-color-text-muted); }
+.ain-checks-audit__meter-bar {
+  display: inline-block; width: 48px; height: 4px; border-radius: 2px; overflow: hidden;
+  background: var(--ain-color-border);
+}
+.ain-checks-audit__meter-bar > span { display: block; height: 100%; background: var(--ain-color-success); transition: width .2s; }
+/* Needs you · Changed · All. */
+.ain-checks-audit__filters { margin: 8px 14px 4px; align-self: flex-start; }
+.ain-checks-audit__filtercount { margin-left: 4px; font-variant-numeric: tabular-nums; color: var(--ain-color-text-muted); }
+.ain-checks-audit__empty { margin: 6px 14px 12px; font-size: 12.5px; color: var(--ain-color-text-muted); }
+/* A finding the last fix turn sent that still fails. */
+.ain-checks-audit__finding[data-needs-you] { box-shadow: inset 2px 0 0 var(--ain-color-warning); }
+/* An opened group (the Share card, 0453 S4): one block per tag, and a link
+   finding's list of places it is written. */
+.ain-checks-audit__members { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ain-checks-audit__member {
+  display: flex; flex-direction: column; gap: 2px; padding: 6px 0 0;
+  border-top: 1px solid var(--ain-color-border);
+}
+.ain-checks-audit__member-head { display: flex; align-items: center; gap: 8px; }
+.ain-checks-audit__member-label { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; }
+.ain-checks-audit__locations { margin: 0; padding-left: 16px; font-size: 12px; }
+.ain-checks-audit__locations li { margin: 2px 0; }
+.ain-checks-audit__needs { margin: 4px 0 0; font-size: 11.5px; color: var(--ain-color-warning); }
+.ain-checks-audit__replylink {
+  padding: 0; border: 0; background: none; font: inherit; cursor: pointer;
+  color: var(--ain-color-text); text-decoration: underline; text-underline-offset: 2px;
+}
+.ain-checks-audit__replylink:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; border-radius: 2px; }
+
+/* --- checks studio: the canvas lenses (DECISIONS 0453, S3) --- */
+/* Search result / Share card: the saved page beside the draft (stacked when
+   the canvas is narrow), then the findings the lens covers. */
+.ain-checks-lens { display: flex; flex-direction: column; gap: 18px; padding: 18px 16px; }
+.ain-checks-lens__pair { display: grid; gap: 16px; grid-template-columns: minmax(0, 560px); justify-content: center; }
+.ain-checks-lens__pair[data-compare] { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.ain-checks-lens__side { margin: 0; min-width: 0; }
+.ain-checks-lens__cap {
+  margin: 0 0 8px; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ain-color-text-muted);
+}
+.ain-checks-lens__rows { list-style: none; margin: 0 auto; padding: 0; width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 4px; }
+.ain-checks-lens__pair[data-compare] + .ain-checks-lens__rows { max-width: none; }
+.ain-checks-lens__row {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px;
+  border: 1px solid var(--ain-color-border); border-radius: 4px; background: var(--ain-color-surface);
+  color: var(--ain-color-text); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer;
+}
+.ain-checks-lens__row:hover { background: var(--ain-color-surface-raised); }
+.ain-checks-lens__row:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; }
+@media (max-width: 640px) { .ain-checks-lens { padding: 14px 12px; } }

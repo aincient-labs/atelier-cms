@@ -28,3 +28,12 @@ thirdPartySettings:
       subheading: ''
       cta_label: ''
       cta_url: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Mission line'
+        props:
+          eyebrow: 'Why we exist'
+          heading: 'Good advice should be clear enough to act on by Monday.'
+          subheading: 'Twelve years helping small firms untangle finance, hiring and growth.'
+          cta_label: 'Talk to us'
+          cta_url: '/contact'

@@ -114,7 +114,7 @@ final class KindCheckTest extends KernelTestBase {
     $this->assertSame((string) $nid, $row['nid']);
     $this->assertSame('s2', $row['slot']);
     $this->assertSame('newsletter', $row['component']);
-    $this->assertSame('component removed', $row['impact']);
+    $this->assertSame('component no longer offered', $row['impact']);
     $this->assertSame('landing', $row['kind']);
     $this->assertSame('published', $row['status']);
   }
@@ -135,7 +135,7 @@ final class KindCheckTest extends KernelTestBase {
     $this->assertSame((string) $nid, $row['nid']);
     $this->assertSame('s1', $row['slot']);
     $this->assertSame('hero', $row['component']);
-    $this->assertSame('variant removed', $row['impact']);
+    $this->assertSame('variant no longer offered', $row['impact']);
     $this->assertStringContainsString('variant "split"', $row['detail']);
   }
 

@@ -103,6 +103,7 @@ const CAPABILITY_PHRASES: Record<string, [present: string, past: string]> = {
   propose_brand_status: ["Reviewing the brand", "Reviewed the brand"],
   brand_picker: ["Opening the brand picker", "Opened the brand picker"],
   preview_chrome: ["Previewing the header and footer", "Previewed the header and footer"],
+  propose_component_constraint: ["Staging component changes", "Staged component changes"],
   studio_tour: ["Showing you around", "Showed you around"],
   onboarding_panel: ["Opening setup", "Opened setup"],
 };

@@ -36,3 +36,34 @@ thirdPartySettings:
       subheading: ''
       exclusive: ''
       panels: '[{label,open,blocks:[{component,props}]}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Getting started guide'
+        props:
+          eyebrow: 'Help centre'
+          heading: 'Set up your account in three steps'
+          subheading: 'Most teams are sending their first invoice within fifteen minutes.'
+          exclusive: true
+          panels:
+            - label: '1. Add your business details'
+              open: true
+              blocks:
+                - component: markdown
+                  props:
+                    markdown: "Open **Settings → Business** and fill in your company name, address and tax number. These appear on every invoice, so double-check the spelling.\n\nYou can upload your logo here too — a square PNG works best."
+                - component: image
+                  props:
+                    image: 'placeholder:wide'
+                    caption: 'The business settings screen.'
+            - label: '2. Import your clients'
+              open: false
+              blocks:
+                - component: markdown
+                  props:
+                    markdown: "Upload a CSV from your old tool, or add clients one by one. Required columns:\n\n- Name\n- Email\n- Billing address"
+            - label: '3. Send your first invoice'
+              open: false
+              blocks:
+                - component: markdown
+                  props:
+                    markdown: "Choose **New invoice**, pick a client and add line items. Hit *Send* and we email a PDF with a payment link. Questions? [Contact support](/support)."

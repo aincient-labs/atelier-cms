@@ -19,12 +19,12 @@ import { brandPreviewCardText } from "./brand-preview-card";
  * preview reskins instantly and the change shows as an unsaved edit in the
  * studio. The one deliberate global write stays the studio's Publish button.
  *
- * The payload speaks the brand DSL the backend validated:
- *   tokens — { <css_var>: <css_value> } to layer onto the preview draft
- *   fonts  — Google family names to load in the preview iframe
- *   reset  — clear the whole draft back to the saved brand
- * or, typed, `commands` — the Identity command batch (brand-preview-ops.ts,
- * plans/studio-commands.md P1). Either form runs as ONE batch = one undo.
+ * The payload carries `commands` — the Identity command batch the backend
+ * validated (`reset`, `set_tokens`, `set_fonts`; brand-preview-ops.ts,
+ * plans/studio-commands.md P1) — run as ONE batch = one undo. Cards stored
+ * before the server moved to `commands` carry the legacy `{tokens, fonts,
+ * reset}` maps instead; brandPreviewCommands still translates those
+ * (remove after 0.18).
  *
  * Ops apply once per tool call (guarded below) and ONLY for a LIVE card — one the
  * agent just emitted as it acts. A HISTORICAL card (replayed from storage on load

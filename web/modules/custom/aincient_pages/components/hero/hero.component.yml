@@ -50,3 +50,27 @@ thirdPartySettings:
       secondary_label: ''
       secondary_url: ''
       image: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Studio opener'
+        props:
+          variant: split
+          eyebrow: 'Architecture · Hamburg'
+          heading: 'Quiet buildings for busy lives'
+          subheading: 'We design homes and small workplaces that age well — clear plans, honest materials, and light where you need it.'
+          cta_label: 'See our work'
+          cta_url: '/work'
+          secondary_label: 'Book a call'
+          secondary_url: '/contact'
+          image: 'placeholder:landscape'
+      - name: 'Bakery welcome'
+        props:
+          variant: centered
+          eyebrow: 'Open daily from 7 am'
+          heading: 'Sourdough, baked before sunrise'
+          subheading: 'A neighbourhood bakery with slow-fermented loaves, seasonal pastries and coffee from a roaster down the street.'
+          cta_label: 'Order for pickup'
+          cta_url: '/order'
+          secondary_label: 'Visit us'
+          secondary_url: '/visit'
+          image: 'placeholder:wide'

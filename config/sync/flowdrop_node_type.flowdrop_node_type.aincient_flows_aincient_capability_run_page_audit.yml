@@ -6,7 +6,7 @@ dependencies:
     - aincient_flows
 id: aincient_flows_aincient_capability_run_page_audit
 label: 'Capability: Run page audit'
-description: 'Run read-only health checks (SEO, meta tags, internal-link integrity) on an existing page and return the findings. Call this when the user asks to audit / check / review a page for SEO, meta tags, or broken links. Takes the page node id. It only reports — it changes nothing.'
+description: 'Run read-only health checks (SEO, meta tags, internal-link integrity) on an existing page and return the findings. Call this when the user asks to audit / check / review a page for SEO, meta tags, or broken links. Takes the page node id and optionally which copy to check: the live page (default) or "draft" (the latest saved draft). The report says which copy it checked. It only reports — it changes nothing.'
 category: processing
 icon: 'mdi:cog'
 plugin_version: 1.0.0
@@ -16,6 +16,10 @@ parameters:
     configurable: true
     connectable: true
     required: true
+  revision:
+    configurable: true
+    connectable: true
+    required: false
 outputs:
   ok:
     exposed: true

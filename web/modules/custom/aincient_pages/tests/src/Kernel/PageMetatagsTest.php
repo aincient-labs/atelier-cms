@@ -26,7 +26,7 @@ final class PageMetatagsTest extends KernelTestBase {
 
   protected static $modules = [
     'system', 'user', 'field', 'text', 'token', 'path', 'path_alias', 'node',
-    'metatag', 'file', 'media', 'workflows', 'content_moderation',
+    'metatag', 'file', 'image', 'media', 'workflows', 'content_moderation',
     'aincient_core', 'aincient_pages',
   ];
 
@@ -65,6 +65,28 @@ final class PageMetatagsTest extends KernelTestBase {
     $tags = $this->metatags()->tags($node);
     $this->assertSame('[site:url]', $tags['canonical_url']);
     $this->assertSame('[site:url]', $tags['shortlink']);
+  }
+
+  /**
+   * The front page's title names the NODE, not the current request.
+   *
+   * The global default title is `[current-page:title] | [site:name]`, which
+   * metatag's entity chain overrides with `[node:title]` everywhere except the
+   * front page. `[current-page:title]` reads the current ROUTE: empty under CLI
+   * (the static export), the audit endpoint's under Checks — so the home page
+   * rendered and graded as "| Site", and a draft title edit never reached it.
+   */
+  public function testFrontPageTitleResolvesFromTheNode(): void {
+    $node = $this->makePage('Home');
+    $this->setFront('/node/' . $node->id());
+
+    $this->assertSame('[node:title] | [site:name]', $this->metatags()->tags($node)['title']);
+
+    // An unsaved title edit (Checks grades a clone) is what resolves.
+    $draft = clone $node;
+    $draft->setTitle('A Calm Place to Write and Publish');
+    $title = $this->container->get('token')->replace($this->metatags()->tags($draft)['title'], ['node' => $draft]);
+    $this->assertStringStartsWith('A Calm Place to Write and Publish | ', $title);
   }
 
   /**

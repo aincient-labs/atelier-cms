@@ -26,3 +26,17 @@ thirdPartySettings:
       subheading: ''
       cta_label: ''
       cta_url: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Consultancy close'
+        props:
+          heading: 'Ready to see your numbers clearly?'
+          subheading: 'Book a free 30-minute call and leave with one thing you can fix this month.'
+          cta_label: 'Book a call'
+          cta_url: '/contact'
+      - name: 'Software trial'
+        props:
+          heading: 'Send your first invoice today'
+          subheading: 'Free for 30 days, no card required.'
+          cta_label: 'Start free trial'
+          cta_url: '/pricing'

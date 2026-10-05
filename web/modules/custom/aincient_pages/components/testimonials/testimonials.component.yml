@@ -33,3 +33,37 @@ thirdPartySettings:
       subheading: ''
       columns: 2|3
       quotes: '[{quote,author,role,avatar}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Consultancy clients'
+        props:
+          eyebrow: 'Kind words'
+          heading: 'What owners tell us'
+          subheading: 'A few of the firms we have worked with over the past year.'
+          columns: 3
+          quotes:
+            - quote: 'For the first time I know our cash position without opening a spreadsheet.'
+              author: 'Marta Lindqvist'
+              role: 'Owner, Lindqvist Joinery'
+              avatar: 'placeholder:avatar-1'
+            - quote: 'They helped us hire four people in a quarter, and all four are still here.'
+              author: 'Daniel Okafor'
+              role: 'Managing director, Northbank Logistics'
+              avatar: 'placeholder:avatar-2'
+            - quote: 'Clear, calm and practical. Our planning day is now the best meeting of the year.'
+              author: 'Priya Raman'
+              role: 'Co-founder, Fernhill Dental'
+              avatar: 'placeholder:avatar-3'
+      - name: 'Bakery regular'
+        props:
+          heading: 'From our regulars'
+          columns: 2
+          quotes:
+            - quote: 'The Saturday rye is the reason I get up early. Worth every minute of the queue.'
+              author: 'Jonas Weber'
+              role: 'Neighbour since 2019'
+              avatar: 'placeholder:avatar-1'
+            - quote: 'They baked our wedding bread and still remembered our order a year later.'
+              author: 'Elena Costa'
+              role: 'Customer'
+              avatar: 'placeholder:avatar-3'

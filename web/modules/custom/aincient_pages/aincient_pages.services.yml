@@ -35,6 +35,16 @@ services:
   # page structure against today's effective catalog and reports the slots a
   # kind/constraint change would orphan. A service (not drush code) so the
   # analysis is kernel-testable and the W9 MCP tool can render the same rows.
+  # Renders components from their declared `examples:` — the Components
+  # studio preview + the pack dev surfaces (DECISIONS 0455).
+  aincient_pages.example_renderer:
+    class: Drupal\aincient_pages\Catalog\ExampleRenderer
+    arguments: ['@aincient_pages.catalog', '@class_resolver', '@extension.list.module', '@renderer']
+  # Where components are used: reads the derived field_component_usage index
+  # PageStore writes on save (DECISIONS 0455).
+  aincient_pages.usage_index:
+    class: Drupal\aincient_pages\UsageIndex
+    arguments: ['@entity_type.manager', '@database', '@entity_field.manager']
   aincient_pages.kind_check:
     class: Drupal\aincient_pages\Catalog\KindCheck
     arguments: ['@entity_type.manager', '@aincient_pages.catalog']
@@ -238,3 +248,12 @@ services:
   logger.channel.aincient_pages:
     parent: logger.channel_base
     arguments: ['aincient_pages']
+  # Core SDC negotiation with a way back to the ORIGINAL component (DECISIONS
+  # 0455, P4a): the site's `overrides_off` ids and the Components studio's
+  # Compare (withOriginals) bypass a pack's `replaces:` override. Replaces the
+  # core service outright — it extends the core class, so the inner one is
+  # unused.
+  aincient_pages.component_negotiator:
+    class: Drupal\aincient_pages\Theme\OverrideAwareComponentNegotiator
+    decorates: Drupal\Core\Theme\ComponentNegotiator
+    arguments: ['@theme.manager', '@config.factory']

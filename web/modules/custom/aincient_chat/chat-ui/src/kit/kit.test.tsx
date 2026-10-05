@@ -22,8 +22,10 @@ import { SegmentedControl } from "./segmented";
 import { Notice } from "./notice";
 import { EmptyState } from "./empty-state";
 import { LoadingState } from "./loading-state";
+import { ComposingState } from "./composing-state";
 import { StudioGroup } from "./studio-group";
 import { StudioStatus } from "./studio-status";
+import { COMPONENT_ICON_NAMES, ComponentIcon } from "./component-icon";
 
 beforeAll(() => {
   // Radix's popper measures its anchor; jsdom has no ResizeObserver.
@@ -351,5 +353,49 @@ describe("Notice, EmptyState and StudioGroup", () => {
     rerender(<StudioStatus dirty={false} saved={null}>Matches the saved page</StudioStatus>);
     expect(line.textContent).toBe("Matches the saved page");
     expect(line.querySelector("svg")).toBeNull();
+  });
+});
+
+describe("ComponentIcon", () => {
+  it("draws a distinct decorative SVG per built-in and a generic mark for anything else", () => {
+    const { container } = render(
+      <>
+        <ComponentIcon name="hero" />
+        <ComponentIcon name="acme_pack_ticker" />
+      </>,
+    );
+    const [hero, pack] = Array.from(container.querySelectorAll("svg"));
+    expect(hero.getAttribute("aria-hidden")).toBe("true");
+    expect(hero.getAttribute("viewBox")).toBe("0 0 16 16");
+    expect(hero.getAttribute("data-component-icon")).toBe("hero");
+    expect(pack.getAttribute("data-component-icon")).toBe("generic");
+    expect(hero.innerHTML).not.toBe(pack.innerHTML);
+  });
+
+  it("covers every built-in placeable", () => {
+    for (const n of ["hero", "banner", "content", "features", "markdown", "accordion", "faq", "image", "gallery",
+      "testimonials", "logos", "stats", "team", "cta", "pricing", "newsletter", "grid", "divider", "collection",
+      "embed", "block"]) {
+      expect(COMPONENT_ICON_NAMES).toContain(n);
+    }
+  });
+});
+
+describe("ComposingState", () => {
+  it("is a busy status named for the wait, shaped like a page or one section", () => {
+    const { container } = render(
+      <>
+        <ComposingState label="Rendering the page" />
+        <ComposingState label="Rendering hero" shape="section" bare />
+      </>,
+    );
+    const page = screen.getByRole("status", { name: "Rendering the page" });
+    expect(page.getAttribute("aria-busy")).toBe("true");
+    expect(page.querySelectorAll(".ain-composing__sec")).toHaveLength(3);
+    const section = screen.getByRole("status", { name: "Rendering hero" });
+    expect(section.querySelectorAll(".ain-composing__sec")).toHaveLength(1);
+    expect(section.className).toContain("ain-composing--bare");
+    // The wireframe is decorative: nothing inside it reaches assistive tech.
+    expect(container.querySelectorAll(".ain-composing__page[aria-hidden='true']")).toHaveLength(2);
   });
 });

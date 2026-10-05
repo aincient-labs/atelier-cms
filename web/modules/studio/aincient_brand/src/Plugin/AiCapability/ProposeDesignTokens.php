@@ -105,8 +105,15 @@ final class ProposeDesignTokens extends CapabilityBase implements ExecutableCapa
       return;
     }
 
+    // The admission card is its own widget with its own (unchanged) payload:
+    // css_var-keyed `tokens` + `fonts` its Preview button stages. It is not a
+    // `brand_preview` frame, so it does not carry the applier's command batch —
+    // read the batch back as maps instead.
     $payload = $envelope['payload'];
-    $count = count($payload['tokens'] ?? []) + count($payload['fonts'] ?? []);
+    $changes = BrandPreviewApplier::changes($payload);
+    unset($payload['commands']);
+    $payload = ['tokens' => $changes['tokens'], 'fonts' => $changes['fonts']] + $payload;
+    $count = count($changes['tokens']) + count($changes['fonts']);
     $filename = trim((string) $this->getContextValue('source_filename'));
     $payload['source_filename'] = $filename !== '' ? $filename : 'the attached file';
     $payload['count'] = $count;

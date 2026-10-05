@@ -192,6 +192,18 @@ aincient_pages.page_kind.*:
     collection_source:
       type: boolean
       label: 'Whether a collection may list pages of this kind'
+    include_new:
+      type: boolean
+      nullable: true
+      label: 'Offer components the map does not name (null = legacy: empty map offers all)'
+    fragment:
+      type: boolean
+      label: 'A composition that is not a page (the block kind) — never offered as a page type'
+    removed:
+      type: sequence
+      label: 'Deny list: components this kind never offers (applied after the allow list)'
+      sequence:
+        type: string
 
 # The site-wide constraint layer (plans/byo-components.md W1b, decision #2):
 # tones/variants/components REMOVED across every kind — one decision, one home.
@@ -219,3 +231,16 @@ aincient_pages.site_constraint:
         label: 'Removed variants'
         sequence:
           type: string
+    component_tones:
+      type: sequence
+      label: 'Per-component tones removed site-wide (on top of the global tones removal)'
+      sequence:
+        type: sequence
+        label: 'Removed tones'
+        sequence:
+          type: string
+    overrides_off:
+      type: sequence
+      label: 'Built-in components rendered as the ORIGINAL although a pack overrides them (SDC ids, e.g. aincient_pages:hero)'
+      sequence:
+        type: string

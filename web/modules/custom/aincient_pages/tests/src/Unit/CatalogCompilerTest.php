@@ -120,6 +120,9 @@ final class CatalogCompilerTest extends UnitTestCase {
     string $mode = PageKindInterface::MODE_COMPOSITION,
     bool $collectionSource = FALSE,
     string $hint = '',
+    array $removed = [],
+    ?bool $includesNew = NULL,
+    bool $fragment = FALSE,
   ): PageKindInterface {
     $kind = $this->createMock(PageKindInterface::class);
     $kind->method('id')->willReturn($id);
@@ -130,6 +133,9 @@ final class CatalogCompilerTest extends UnitTestCase {
     $kind->method('limits')->willReturn($limits);
     $kind->method('isCollectionSource')->willReturn($collectionSource);
     $kind->method('hint')->willReturn($hint);
+    $kind->method('removed')->willReturn($removed);
+    $kind->method('includesNew')->willReturn($includesNew ?? $components === []);
+    $kind->method('isFragment')->willReturn($fragment);
     return $kind;
   }
 
@@ -149,6 +155,22 @@ final class CatalogCompilerTest extends UnitTestCase {
     // The bare compile stamps landing semantics.
     $this->assertSame('landing', $catalog->kind());
     $this->assertTrue($catalog->isComposition());
+  }
+
+  /**
+   * A pack component that reuses a built-in's name is refused on its own: the
+   * built-in stays in the palette, whichever order discovery listed them in.
+   */
+  public function testCollidingPackDoesNotDropTheBuiltin(): void {
+    $builtins = $this->fixtureDefinitions();
+    $pack = ['acme_pack:alpha' => ['provider' => 'acme_pack'] + $builtins['aincient_pages:alpha']];
+    foreach ([$pack + $builtins, $builtins + $pack] as $definitions) {
+      $catalog = CatalogCompiler::compile($definitions, NULL);
+      $this->assertSame(['omega', 'alpha'], $catalog->sectionNames());
+      $this->assertSame('aincient_pages', $catalog->sections()['alpha']['provider']);
+      $this->assertCount(1, $catalog->warnings());
+      $this->assertStringContainsString('"acme_pack:alpha" rejected', $catalog->warnings()[0]);
+    }
   }
 
   /**
@@ -217,6 +239,54 @@ final class CatalogCompilerTest extends UnitTestCase {
     $this->assertStringContainsString('variant(centered|split)', $degraded->signature('alpha'));
     $this->assertCount(1, $degraded->warnings());
     $this->assertStringContainsString('every variant', $degraded->warnings()[0]);
+  }
+
+  /**
+   * Per-component tone removal (DECISIONS 0455) narrows tonesFor() for that
+   * component only; the site-wide tones stay; removing all is ignored + warned.
+   */
+  public function testConstraintComponentToneRemoval(): void {
+    $catalog = CatalogCompiler::compile($this->fixtureDefinitions(), NULL, [
+      'component_tones' => ['omega' => ['inverted']],
+    ]);
+    $this->assertNotContains('inverted', $catalog->tonesFor('omega'));
+    $this->assertContains('inverted', $catalog->tones());
+    $this->assertContains('inverted', $catalog->tonesFor('alpha'));
+    $this->assertSame([], $catalog->warnings());
+
+    $degraded = CatalogCompiler::compile($this->fixtureDefinitions(), NULL, [
+      'component_tones' => ['omega' => ComponentCatalog::TONES],
+    ]);
+    $this->assertSame(ComponentCatalog::TONES, $degraded->tonesFor('omega'));
+    $this->assertStringContainsString('every tone of "omega"', $degraded->warnings()[0]);
+  }
+
+  /**
+   * DECISIONS 0455: a kind's deny list removes components after the allow
+   * list; "allowed automatically" (includesNew) turns the map into a
+   * narrowing-only map; a fragment kind never offers a nested `block`.
+   */
+  public function testKindDenyListIncludeNewAndFragment(): void {
+    $names = CatalogCompiler::compile($this->fixtureDefinitions(), NULL)->placeableNames();
+    $this->assertContains('alpha', $names);
+
+    $denied = CatalogCompiler::compile($this->fixtureDefinitions(), $this->kind(removed: ['alpha']));
+    $this->assertNotContains('alpha', $denied->placeableNames());
+    $this->assertContains('omega', $denied->placeableNames());
+
+    // Automatic: the map names alpha only to narrow its variants; everything
+    // else (omega, block…) stays offered.
+    $auto = CatalogCompiler::compile($this->fixtureDefinitions(), $this->kind(components: ['alpha' => ['variants' => ['centered']]], includesNew: TRUE));
+    $this->assertContains('omega', $auto->placeableNames());
+    $this->assertSame(['centered'], $auto->variantsFor('alpha'));
+
+    // Hold: the same map is an allow list.
+    $hold = CatalogCompiler::compile($this->fixtureDefinitions(), $this->kind(components: ['alpha' => []], includesNew: FALSE));
+    $this->assertSame(['alpha'], $hold->sectionNames());
+
+    $fragment = CatalogCompiler::compile($this->fixtureDefinitions(), $this->kind(id: 'block', fragment: TRUE));
+    $this->assertNotContains('block', $fragment->placeableNames());
+    $this->assertContains('block', CatalogCompiler::compile($this->fixtureDefinitions(), $this->kind())->placeableNames());
   }
 
   /**

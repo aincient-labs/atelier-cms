@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.node.aincient_page.field_component_usage
     - field.field.node.aincient_page.field_layout_mode
     - field.field.node.aincient_page.field_metatag
     - field.field.node.aincient_page.field_page_content
@@ -97,6 +98,7 @@ content:
     settings: {  }
     third_party_settings: {  }
 hidden:
+  field_component_usage: true
   field_layout_mode: true
   field_page_content: true
   field_page_structure: true

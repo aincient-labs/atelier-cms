@@ -69,3 +69,25 @@ thirdPartySettings:
       per_page: integer
       cta_label: ''
       cta_url: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Latest posts strip'
+        props:
+          eyebrow: 'From the journal'
+          heading: 'Recent notes from the workshop'
+          columns: 3
+          mode: strip
+          source: blog
+          sort: newest
+          limit: 3
+          cta_label: 'View all posts'
+          cta_url: '/journal'
+      - name: 'Blog index'
+        props:
+          heading: 'All articles'
+          subheading: 'Recipes, behind-the-scenes stories and news from the bakery.'
+          columns: 2
+          mode: index
+          source: blog
+          sort: newest
+          per_page: 12

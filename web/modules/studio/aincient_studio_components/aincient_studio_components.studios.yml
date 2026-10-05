@@ -4,15 +4,23 @@
 # `use aincient studio components` permission, in `aincient_chat.settings` and in
 # stored deep links. The module name namespaces nothing.
 #
-# EDITOR-ONLY, PANEL-ONLY: no agent (`flows` is empty), no Preview — its rail is
-# the centre canvas (the Checks shape). It owns no capability yet: the
-# constraint is edited through its two JSON routes (`routing.yml`), gated by the
-# derived permission, which the studio switch turns into a 403 when it is off.
+# The standard studio frame (DECISIONS 0455): chat, a live Preview in the centre
+# (the components rendered from their examples) and the editor rail on the right.
+# The rail edits the constraint through its JSON routes (`routing.yml`), gated by
+# the derived permission, which the studio switch turns into a 403 when it is off.
+#
+# Its agent (`aincient_components_agent`, shipped in config/install and mirrored
+# in config/sync — ComponentsConfigMirrorTest keeps the two equal) reads the
+# governance through this module's `components_state` node and owns one verb,
+# `propose_component_constraint`, which stages a change in the studio draft and
+# is refused at dispatch while the studio is switched off. It never publishes.
 components:
   label: 'Components'
   description: 'Which components, tones and variants this site uses — a narrowing layer over the discovered component vocabulary.'
-  help: 'Untick what this site should never place. Existing uses stay; the agent and the studios stop offering it.'
+  help: 'Untick what this site should never place. Sections already on pages stay and still render (marked "No longer offered" in Content); the agent and the studios stop offering it.'
   weight: 40
   ui:
     entry: ui/index.tsx
     icon: blocks
+  flows: [aincient_components_agent]
+  capabilities: [propose_component_constraint]

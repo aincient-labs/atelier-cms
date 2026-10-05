@@ -42,6 +42,15 @@
   color: var(--ain-color-text);
 }
 
+/* Brand floor for native controls: any checkbox, radio, range or progress in
+   the island takes the cinnabar accent, and any focus outline the focus-ring
+   token — so a raw <input> a studio renders without a kit class can never fall
+   back to the browser's blue. Component rules may still refine it. */
+#aincient-chat-root :is(input[type="checkbox"], input[type="radio"], input[type="range"], progress) {
+  accent-color: var(--ain-color-accent);
+}
+#aincient-chat-root :focus-visible { outline-color: var(--ain-color-focus-ring); }
+
 /* Light theme (gesso paper) is toggled via data-ain-theme, default from Drupal
    config — its values are the light block of tokens.generated.css. */
 
@@ -201,6 +210,13 @@
   flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
   font-family: var(--ain-font-mono); font-size: 10px; line-height: 1.5;
   letter-spacing: .02em; color: var(--ain-color-text-muted);
+}
+/* The page's editorial marker (Phase 4): the Content browser's whisper chip
+   (.ain-studio__statebadge — tint + ink per data-state, full-strength text),
+   tightened to sit on the 11px meta line without growing the row. Doubled
+   class: the chip's own rule comes later in this file. */
+.ain-studio__statebadge.ain-tli__state {
+  align-self: center; padding: 0 6px; line-height: 15px;
 }
 .ain-tli__dot {
   flex: none; width: 6px; height: 6px; border-radius: 50%;
@@ -564,6 +580,8 @@
 .ain-msg { width: 100%; max-width: var(--ain-size-column-max); margin: 0 auto; display: flex; gap: 12px; animation: ain-rise .25s cubic-bezier(.2, .7, .3, 1) both; }
 .ain-msg--user { justify-content: flex-end; }
 .ain-msg--assistant { justify-content: flex-start; }
+/* A message another surface pointed at (revealMessage: Checks' "See Atelier's reply"). */
+.ain-msg[data-revealed] .ain-msg__col { outline: 2px solid var(--ain-color-accent); outline-offset: 4px; border-radius: 4px; transition: outline-color .4s; }
 /* HITL action event — a centered system-style chip ("✓ admin approved · 8:56 PM"),
    not a chat bubble: the account clicked, didn't type. Square sprite corners
    (no pill — nothing in this theme is a pill), hairline + surface-2 fill, so
@@ -1225,6 +1243,10 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-brandprev__label { font-size: 13px; color: var(--ain-color-text); }
 .ain-brandprev__hint { font-size: 11px; color: var(--ain-color-text-muted); }
 .ain-brandprev__rejected { font-size: 11px; color: var(--ain-color-warning); }
+/* The page card's changed fields — each a link to its row in Checks (0453). */
+.ain-brandprev__fields { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 2px 0; padding: 0; list-style: none; font-size: 12px; }
+.ain-brandprev__fields a { color: var(--ain-color-text); text-decoration: underline; text-decoration-color: var(--ain-color-border-strong); text-underline-offset: 2px; }
+.ain-brandprev__fields a:hover { text-decoration-color: currentColor; }
 /* A replayed (historical) card applies nothing and its in-memory draft is gone —
    de-emphasise it so the transcript reads as a record, not as live state. */
 .ain-brandprev.is-historical { background: transparent; }
@@ -1938,11 +1960,40 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 /* Double-buffered preview: layers stack in this box; the incoming one fades in
    on top of the current one, which is then dropped — no reload blink. */
 .ain-preview__stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--ain-color-surface); }
+/* The first frame's wait (kit ComposingState) sits over the stage until the
+   frame fades in on top of it. */
+.ain-preview__composing { position: absolute; inset: 0; background: var(--ain-color-surface); }
+/* Before any frame exists the wireframe fills the stage the page will fill —
+   edge to edge on the page's paper, like the rendered page (bare: no card). */
+.ain-preview__composing-full { background: var(--ain-color-surface); }
 .ain-preview__frame {
   position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--ain-color-surface);
   opacity: 0; transition: opacity .26s ease;
 }
 .ain-preview__frame.is-shown { opacity: 1; }
+
+/* Preview lenses + pins (DECISIONS 0453, S3): a studio's other ways to look at
+   the page. The lens switch sits in the bar; an active lens paints over the
+   page frames (kept mounted, so the scroll survives a switch back). */
+.ain-preview__lenses { flex: none; }
+.ain-preview__lenscount { margin-left: 4px; font-variant-numeric: tabular-nums; color: var(--ain-color-text-muted); }
+.ain-preview__lens { position: absolute; inset: 0; z-index: 3; overflow: auto; background: var(--ain-color-surface); }
+/* Pins ride OVER the iframe (console buttons, never inside the page), opaque so
+   they read on any section; the layer passes clicks through to the page. */
+.ain-preview__pins { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.ain-preview__pin {
+  position: absolute; right: 12px; pointer-events: auto; cursor: pointer;
+  height: 22px; padding: 0 8px; border-radius: 4px;
+  font-family: var(--ain-font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ain-color-text); background: var(--ain-color-surface);
+  border: 1px solid var(--ain-color-border); border-left-width: 3px;
+  box-shadow: 0 3px 10px -3px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+}
+.ain-preview__pin[data-tone="fail"] { border-left-color: var(--ain-color-danger); color: var(--ain-color-danger); }
+.ain-preview__pin[data-tone="warn"] { border-left-color: var(--ain-color-warning); color: var(--ain-color-warning); }
+.ain-preview__pin[data-tone="fixed"] { border-left-color: var(--ain-color-success); color: var(--ain-color-success); }
+.ain-preview__pin[data-tone="changed"] { border-left-color: var(--ain-color-accent); }
+.ain-preview__pin:hover { background: var(--ain-color-surface-raised); }
 
 /* Indeterminate progress line under the bar: a jade sliver sweeping across a
    faint track, shown only while the preview is updating. */
@@ -2026,6 +2077,29 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 /* top-bar studio controls (Discard/Publish/leave portal here from the studio) */
 .ain-studio-actions { display: inline-flex; align-items: center; gap: 8px; }
 .ain-studio-actions:empty { display: none; }
+/* The page lifecycle bar (page-lifecycle-bar.tsx, DECISIONS 0454): state chip ·
+   Save draft · one primary with a menu. A hairline after it sets the page's
+   verbs apart from the window controls (close, language, account). */
+.ain-lifecycle {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding-right: 12px; border-right: 1px solid var(--ain-color-border);
+}
+.ain-lifecycle__state { white-space: nowrap; }
+.ain-lifecycle__split { display: inline-flex; }
+.ain-lifecycle__split > .ain-btn:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.ain-lifecycle__split > .ain-btn + .ain-btn {
+  border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: 1px; padding-inline: 7px;
+}
+.ain-lifecycle__to { margin-left: auto; padding-left: 16px; font-size: 12px; color: var(--ain-color-text-muted); white-space: nowrap; }
+/* Narrow top bars shed the chip's qualifier, then (phone) the chip and Discard:
+   the rail's state note still says it, and Publish stays reachable. */
+@media (max-width: 1099px) {
+  .ain-lifecycle .ain-studio__statebadge-sub { display: none; }
+}
+@media (max-width: 767px) {
+  .ain-lifecycle { padding-right: 0; border-right: 0; }
+  .ain-lifecycle__state, .ain-lifecycle .ain-topbtn--quiet { display: none; }
+}
 .ain-studio-actions__dirty {
   display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
   font-size: 11px; font-weight: 600; line-height: 1; color: var(--ain-color-warning);

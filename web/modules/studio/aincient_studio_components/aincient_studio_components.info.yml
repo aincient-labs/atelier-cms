@@ -13,3 +13,8 @@ dependencies:
   # render-time application stay in core: the site must keep honouring a saved
   # constraint with this studio switched off. Only the editing surface is here.
   - aincient_pages
+  # The Components agent (DECISIONS 0455, P2): its one verb is an AiCapability
+  # (aincient_core's plugin type) and its context is this module's own
+  # `components_state` FlowDrop node processor.
+  - aincient_core
+  - flowdrop:flowdrop

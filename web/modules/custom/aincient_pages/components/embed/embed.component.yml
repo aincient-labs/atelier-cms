@@ -34,3 +34,13 @@ thirdPartySettings:
       heading: ''
       subheading: ''
       entity: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Featured story'
+        props:
+          eyebrow: 'Featured'
+          heading: 'How we restored a 1920s townhouse'
+          subheading: 'The full case study, from survey to the final coat of lime paint.'
+      - name: 'Opening hours'
+        props:
+          heading: 'Opening hours'

@@ -63,8 +63,16 @@ final class PageMetatags {
     if (!$this->isFrontPage($node)) {
       return $this->metatagManager->tagsFromEntityWithDefaults($node);
     }
-    // Front page: the node's own overrides, then global + `front`.
-    return $this->metatagManager->tagsFromEntity($node) + $this->frontDefaults();
+    // Front page: the node's own overrides, then global + `front`. The page
+    // being rendered IS this node, so `[current-page:title]` (global's title)
+    // becomes `[node:title]`: the route-based token is empty under CLI (the
+    // static export) and names the audit endpoint under Checks, which graded
+    // the home page "| Site" and never saw a draft title edit.
+    $tags = $this->metatagManager->tagsFromEntity($node) + $this->frontDefaults();
+    return array_map(
+      static fn ($value) => is_string($value) ? str_replace('[current-page:title]', '[node:title]', $value) : $value,
+      $tags,
+    );
   }
 
   /**

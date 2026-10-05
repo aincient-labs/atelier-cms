@@ -47,3 +47,32 @@ thirdPartySettings:
       image: ''
       cta_label: ''
       cta_url: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Our approach'
+        props:
+          variant: image-right
+          eyebrow: 'How we work'
+          heading: 'Every project starts at the kitchen table'
+          subheading: 'Before we draw a line, we listen.'
+          body: 'We spend the first weeks understanding how you actually live — the morning rush, where the post piles up, which window gets the evening sun. The plan follows from that, not the other way round. You see sketches early and often, so nothing on site comes as a surprise.'
+          image: 'placeholder:portrait'
+          cta_label: 'Read about our process'
+          cta_url: '/process'
+      - name: 'Clinic team'
+        props:
+          variant: image-left
+          eyebrow: 'Physiotherapy'
+          heading: 'Care that fits around your week'
+          body: 'Our four physiotherapists treat sports injuries, back pain and post-surgery recovery. Appointments run from early morning to late evening, and every first visit includes a full assessment and a written plan you can take home.'
+          image: 'placeholder:landscape'
+          cta_label: 'Book an appointment'
+          cta_url: '/appointments'
+      - name: 'Founder note'
+        props:
+          variant: text-only
+          eyebrow: 'Our story'
+          heading: 'Software we wanted to use ourselves'
+          body: 'We started Ledgerline after years of watching small teams fight their invoicing tools. So we built the opposite: one screen, sensible defaults, and support from the people who wrote the code. Today more than two thousand businesses send their invoices with us.'
+          cta_label: 'Meet the team'
+          cta_url: '/about'

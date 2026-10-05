@@ -33,3 +33,54 @@ thirdPartySettings:
       subheading: ''
       columns: 2|3|4
       members: '[{name,role,bio,avatar}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Architecture studio'
+        props:
+          eyebrow: 'The studio'
+          heading: 'Small team, close attention'
+          subheading: 'Every project is led by a partner from first sketch to handover.'
+          columns: 3
+          members:
+            - name: 'Clara Brandt'
+              role: 'Founding partner'
+              bio: 'Twenty years designing homes and small workplaces across northern Germany.'
+              avatar: 'placeholder:avatar-1'
+            - name: 'Tomás Rivera'
+              role: 'Partner, timber and structure'
+              bio: 'Leads our work in cross-laminated timber and low-carbon construction.'
+              avatar: 'placeholder:avatar-2'
+            - name: 'Hanna Iversen'
+              role: 'Project architect'
+              bio: 'Keeps plans, budgets and builders moving in the same direction.'
+              avatar: 'placeholder:avatar-3'
+      - name: 'Clinic practitioners'
+        props:
+          heading: 'Meet the practitioners'
+          columns: 2
+          members:
+            - name: 'Dr. Samuel Achebe'
+              role: 'Physiotherapist'
+              bio: 'Specialises in sports injuries and return-to-running programmes.'
+              avatar: 'placeholder:avatar-2'
+            - name: 'Dr. Lea Fischer'
+              role: 'Osteopath'
+              bio: 'Works with desk-bound backs, new parents and long-standing pain.'
+              avatar: 'placeholder:avatar-1'
+      - name: 'Software founders'
+        props:
+          heading: 'The people building it'
+          columns: 4
+          members:
+            - name: 'Noor Haddad'
+              role: 'Co-founder, product'
+              avatar: 'placeholder:avatar-3'
+            - name: 'Felix Brandt'
+              role: 'Co-founder, engineering'
+              avatar: 'placeholder:avatar-2'
+            - name: 'Mia Johansson'
+              role: 'Customer support lead'
+              avatar: 'placeholder:avatar-1'
+            - name: 'Arjun Mehta'
+              role: 'Designer'
+              avatar: 'placeholder:avatar-2'

@@ -41,3 +41,13 @@ thirdPartySettings:
       tone: ''
       image: ''
       caption: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Studio interior'
+        props:
+          image: 'placeholder:landscape'
+          caption: 'The reading room at our Altona studio, finished in oiled oak and lime plaster.'
+      - name: 'Clinic portrait'
+        props:
+          image: 'placeholder:portrait'
+          caption: 'Our new treatment room, opened in spring with natural light on three sides.'

@@ -59,7 +59,8 @@ final class CatalogCompiler {
    *   kind id degrades to landing semantics — never fatal).
    * @param array $constraint
    *   The aincient_pages.site_constraint payload:
-   *   {components?: string[], tones?: string[], variants?: {name: string[]}} —
+   *   {components?: string[], tones?: string[], variants?: {name: string[]},
+   *   component_tones?: {name: string[]}} —
    *   each list REMOVES site-wide (narrowing-only; empty = no-op).
    * @param string $kindId
    *   The kind id to stamp on the catalog (used when $kind is NULL).
@@ -74,9 +75,11 @@ final class CatalogCompiler {
     // AFTER the admission gate (§3.3, the hard floor): a rejected def is
     // EXCLUDED and surfaced as a warning, never fatal (a bad pack must not
     // take a client site down).
-    $verdicts = AdmissionGate::check($definitions, array_keys(self::VIRTUAL_REFERENCE));
+    // Per definition: a rejected pack component that collides with a built-in
+    // must not take the built-in down with it.
+    $verdicts = AdmissionGate::checkEach($definitions, array_keys(self::VIRTUAL_REFERENCE));
     $tiers = ['section' => [], 'layout' => [], 'reference' => [], 'chrome' => [], 'content' => []];
-    foreach ($definitions as $definition) {
+    foreach ($definitions as $id => $definition) {
       $atelier = $definition['thirdPartySettings']['atelier'] ?? NULL;
       if (!is_array($atelier)) {
         continue;
@@ -86,8 +89,8 @@ final class CatalogCompiler {
       if ($name === '' || !isset($tiers[$tier])) {
         continue;
       }
-      if (($verdicts[$name]['errors'] ?? []) !== []) {
-        $warnings[] = sprintf('component "%s:%s" rejected by the admission gate: %s', (string) ($definition['provider'] ?? ''), $name, implode(' ', $verdicts[$name]['errors']));
+      if (($verdicts[$id]['errors'] ?? []) !== []) {
+        $warnings[] = sprintf('component "%s:%s" rejected by the admission gate: %s', (string) ($definition['provider'] ?? ''), $name, implode(' ', $verdicts[$id]['errors']));
         continue;
       }
       $tiers[$tier][$name] = [
@@ -148,10 +151,15 @@ final class CatalogCompiler {
       }
     }
     $variantRemovals = is_array($constraint['variants'] ?? NULL) ? $constraint['variants'] : [];
+    // Per-component tone removals (DECISIONS 0455): a tone can be off for one
+    // component while the site keeps it — e.g. inverted fails contrast on stats.
+    $toneRemovals = is_array($constraint['component_tones'] ?? NULL) ? $constraint['component_tones'] : [];
 
     // 3. Kind narrowing — an allow-list when non-empty; empty = whole palette.
     $allow = $kind?->components() ?? [];
-    if ($allow !== []) {
+    // "Allowed automatically" (includesNew): the map only narrows variants /
+    // tones of the components it names; the deny list (3b) turns things off.
+    if ($allow !== [] && !($kind?->includesNew() ?? FALSE)) {
       foreach (self::PLACEABLE_TIERS as $tier) {
         foreach (array_keys($tiers[$tier]) as $name) {
           if (!array_key_exists($name, $allow)) {
@@ -163,6 +171,20 @@ final class CatalogCompiler {
         if (!isset($tiers['section'][$name]) && !isset($tiers['layout'][$name]) && !isset($tiers['reference'][$name])) {
           $warnings[] = sprintf('kind "%s" allows unknown component "%s" — skipped.', $kind?->id() ?? $kindId, $name);
         }
+      }
+    }
+
+    // 3b. Kind deny list — applied after the allow list, so an empty allow
+    // list + a deny list = every component (new pack ones included) except
+    // these (DECISIONS 0455). A fragment kind (block) never holds a `block`
+    // slot: the one-level-deep floor BlockStore also enforces.
+    $deny = $kind?->removed() ?? [];
+    if ($kind?->isFragment() ?? !empty($fallback['fragment'])) {
+      $deny[] = 'block';
+    }
+    foreach (array_unique($deny) as $name) {
+      foreach (self::PLACEABLE_TIERS as $tier) {
+        unset($tiers[$tier][$name]);
       }
     }
 
@@ -198,16 +220,31 @@ final class CatalogCompiler {
             $tiers[$tier][$name]['props']['variant'] = implode('|', $narrowed);
           }
         }
-        // Per-component tone subset (kind narrowing; same never-fatal floor).
+        // Per-component tones: the site's removals for this component, then
+        // the kind's subset (same never-fatal floor — never zero tones).
+        $componentTones = $tones;
+        $removedTones = $toneRemovals[$name] ?? NULL;
+        if (is_array($removedTones) && $removedTones !== []) {
+          $kept = array_values(array_diff($componentTones, $removedTones));
+          if ($kept === []) {
+            $warnings[] = sprintf('every tone of "%s" removed — ignored.', $name);
+          }
+          else {
+            $componentTones = $kept;
+          }
+        }
         $toneSubset = $allow[$name]['tones'] ?? NULL;
         if (is_array($toneSubset) && $toneSubset !== []) {
-          $kept = array_values(array_intersect($tones, $toneSubset));
+          $kept = array_values(array_intersect($componentTones, $toneSubset));
           if ($kept === []) {
             $warnings[] = sprintf('kind tone subset for "%s" matches nothing — ignored.', $name);
           }
-          elseif ($kept !== $tones) {
-            $tiers[$tier][$name]['tones'] = $kept;
+          else {
+            $componentTones = $kept;
           }
+        }
+        if ($componentTones !== $tones) {
+          $tiers[$tier][$name]['tones'] = $componentTones;
         }
       }
     }

@@ -1,0 +1,16 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - aincient_pages
+id: block
+label: 'Block'
+hint: 'A reusable fragment of sections placed on many pages — governs what a block may contain.'
+mode: composition
+components: {  }
+opener: ''
+limits: {  }
+collection_source: false
+fragment: true
+removed: {  }

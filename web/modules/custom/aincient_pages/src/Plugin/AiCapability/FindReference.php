@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Plugin\AiCapability;
 
+use Drupal\aincient_pages\PageModerationState;
 use Drupal\aincient_pages\Reference\ReferenceCatalog;
 use Drupal\aincient_core\Attribute\Capability;
 use Drupal\aincient_core\Capability\CapabilityBase;
 use Drupal\aincient_core\Capability\ExecutableCapabilityInterface;
 use Drupal\Core\Plugin\Context\ContextDefinition;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -62,6 +65,16 @@ final class FindReference extends CapabilityBase implements ExecutableCapability
   protected AccountInterface $currentUser;
 
   /**
+   * The per-translation moderation state reader.
+   */
+  protected PageModerationState $states;
+
+  /**
+   * The language manager (current CONTENT language).
+   */
+  protected LanguageManagerInterface $languageManager;
+
+  /**
    * The readable output (a token list, or a note that nothing matched).
    */
   protected string $result = '';
@@ -73,6 +86,11 @@ final class FindReference extends CapabilityBase implements ExecutableCapability
     $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
     $instance->catalog = $container->get('aincient_pages.reference_catalog');
     $instance->currentUser = $container->get('current_user');
+    $instance->states = new PageModerationState(
+      $container->get('aincient_pages.moderation'),
+      $container->get('entity_type.manager'),
+    );
+    $instance->languageManager = $container->get('language_manager');
     return $instance;
   }
 
@@ -128,6 +146,12 @@ final class FindReference extends CapabilityBase implements ExecutableCapability
     if (($row['status'] ?? NULL) === 'unpublished') {
       $gloss = $gloss !== '' ? $gloss . ' — unpublished' : 'unpublished';
     }
+    // Pages carry a moderation state too (latest revision of the current
+    // content-language translation) — only where a status already exists.
+    $state = $this->moderationText($row);
+    if ($state !== NULL) {
+      $gloss = $gloss !== '' ? $gloss . ' — ' . $state : $state;
+    }
     return sprintf(
       '- %s — "%s" (%s)%s',
       $row['token'],
@@ -135,6 +159,21 @@ final class FindReference extends CapabilityBase implements ExecutableCapability
       $tag,
       $gloss !== '' ? ' — ' . $gloss : '',
     );
+  }
+
+  /**
+   * "state: Draft · published copy live" for a page row, else NULL.
+   */
+  private function moderationText(array $row): ?string {
+    if (($row['type'] ?? '') !== 'node'
+      || ($row['meta']['bundle'] ?? '') !== 'aincient_page'
+      || ($row['status'] ?? NULL) === NULL
+      || !preg_match('/^entity:node:(\d+)/', (string) $row['token'], $m)) {
+      return NULL;
+    }
+    $langcode = $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
+    $state = $this->states->describe($m[1], 'aincient_page', $langcode);
+    return $state === NULL ? NULL : 'state: ' . $state['label'];
   }
 
   /**

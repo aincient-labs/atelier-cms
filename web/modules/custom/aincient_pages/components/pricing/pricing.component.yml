@@ -28,3 +28,70 @@ thirdPartySettings:
       heading: ''
       subheading: ''
       tiers: '[{name,price,period,description,features,cta_label,cta_url,featured}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Software plans'
+        props:
+          eyebrow: 'Pricing'
+          heading: 'Simple plans that grow with you'
+          subheading: 'Every plan includes unlimited invoices and email support. Cancel any time.'
+          tiers:
+            - name: 'Starter'
+              price: '€9'
+              period: 'per month'
+              description: 'For freelancers sending a handful of invoices.'
+              features:
+                - 'Up to 3 clients'
+                - 'Recurring invoices'
+                - 'Bank export'
+              cta_label: 'Start free trial'
+              cta_url: '/signup?plan=starter'
+              featured: false
+            - name: 'Studio'
+              price: '€29'
+              period: 'per month'
+              description: 'For small teams who bill by the hour.'
+              features:
+                - 'Unlimited clients'
+                - 'Time tracking'
+                - 'Payment reminders'
+                - 'Three team seats'
+              cta_label: 'Start free trial'
+              cta_url: '/signup?plan=studio'
+              featured: true
+            - name: 'Agency'
+              price: '€79'
+              period: 'per month'
+              description: 'For agencies running several brands.'
+              features:
+                - 'Everything in Studio'
+                - 'Multiple companies'
+                - 'Priority support'
+              cta_label: 'Talk to us'
+              cta_url: '/contact'
+              featured: false
+      - name: 'Yoga memberships'
+        props:
+          heading: 'Class passes and memberships'
+          tiers:
+            - name: 'Ten-class pass'
+              price: '€120'
+              period: 'valid 4 months'
+              description: 'Drop in whenever your week allows.'
+              features:
+                - 'Any group class'
+                - 'Mat and props included'
+              cta_label: 'Buy a pass'
+              cta_url: '/passes'
+              featured: false
+            - name: 'Unlimited'
+              price: '€89'
+              period: 'per month'
+              description: 'For a steady practice, as often as you like.'
+              features:
+                - 'Unlimited group classes'
+                - 'One private session per quarter'
+                - 'Guest pass each month'
+              cta_label: 'Join now'
+              cta_url: '/membership'
+              featured: true

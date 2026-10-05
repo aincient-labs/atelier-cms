@@ -92,6 +92,22 @@ final class CatalogServiceTest extends KernelTestBase {
   }
 
   /**
+   * A site that stored only SOME built-in kinds (the Components studio saves
+   * one at a time) keeps the others from the code floor: blog stays listed and
+   * stays a recipe instead of vanishing or compiling as landing (seen live).
+   */
+  public function testMissingBuiltInKindKeepsItsFloor(): void {
+    $this->container->get('entity_type.manager')->getStorage('page_kind')->load('blog')->delete();
+
+    $kinds = $this->freshCatalog()->kinds(TRUE);
+    $this->assertSame(['block', 'blog', 'landing'], array_keys($kinds));
+    $this->assertSame('recipe', $kinds['blog']['mode']);
+    $blog = $this->freshCatalog()->for('blog');
+    $this->assertSame('blog', $blog->kind());
+    $this->assertSame('recipe', $blog->mode());
+  }
+
+  /**
    * Saving a kind entity invalidates its cached catalog (config cache tag):
    * a fresh service instance recompiles rather than serving the stale hit.
    */

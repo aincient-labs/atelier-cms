@@ -5,12 +5,14 @@
 # narration and the panel always show the same findings.
 
 # Run the read-only audit for an existing page → a JSON findings report. The
-# studio panel fetches/refreshes this directly (no chat needed).
+# studio panel fetches/refreshes this directly (no chat needed). POST {schema,
+# langcode} grades the studio's unsaved draft in memory — nothing is saved
+# (DECISIONS 0453).
 aincient_audit.report:
   path: '/atelier/audit/{node}/report'
   defaults:
     _controller: '\Drupal\aincient_audit\Controller\AuditController::report'
-  methods: [GET]
+  methods: [GET, POST]
   requirements:
     _permission: 'use aincient studio checks'
   options:

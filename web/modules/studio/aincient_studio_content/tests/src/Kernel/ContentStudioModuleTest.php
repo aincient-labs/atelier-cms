@@ -83,6 +83,7 @@ final class ContentStudioModuleTest extends KernelTestBase {
       'reject' => ['/atelier/page/reject', 'POST', 'reject'],
       'archive' => ['/atelier/page/archive', 'POST', 'archive'],
       'restore' => ['/atelier/page/restore', 'POST', 'restore'],
+      'transition' => ['/atelier/page/transition', 'POST', 'runTransition'],
       'manifest' => ['/atelier/page/manifest', 'GET', 'manifest'],
       'list' => ['/atelier/page/list', 'GET', 'list'],
       'schema' => ['/atelier/page/{node}/schema', 'GET', 'pageSchema'],
@@ -112,6 +113,7 @@ final class ContentStudioModuleTest extends KernelTestBase {
       'reject' => ['/atelier/block/reject', 'POST', 'reject'],
       'archive' => ['/atelier/block/archive', 'POST', 'archive'],
       'restore' => ['/atelier/block/restore', 'POST', 'restore'],
+      'transition' => ['/atelier/block/transition', 'POST', 'runTransition'],
       'schema' => ['/atelier/block/{media}/schema', 'GET', 'blockSchema'],
     ];
     foreach ($blocks as $name => [$path, $method, $action]) {

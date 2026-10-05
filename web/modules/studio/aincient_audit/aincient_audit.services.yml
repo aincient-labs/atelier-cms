@@ -64,6 +64,15 @@ services:
       - '@flowdrop_runtime.synchronous_orchestrator'
       - '@entity_type.manager'
       - '@logger.channel.aincient_audit'
+      - '@aincient_audit.target'
+      - '@aincient_audit.check_registry'
+
+  # Picks the page revision an audit reads (DECISIONS 0450: live by default,
+  # the Checks studio asks for the draft). Shared by the report endpoint, both
+  # audit capabilities and the policy_check node so they read the same copy.
+  aincient_audit.target:
+    class: Drupal\aincient_audit\AuditTarget
+    arguments: ['@entity_type.manager', '@aincient_pages.moderation']
 
   # The deterministic, read-only page auditor — the single source of findings for
   # BOTH the Checks studio panel (AuditController) and the page agent
@@ -76,3 +85,4 @@ services:
       - '@aincient_pages.store'
       - '@aincient_audit.meta_reader'
       - '@aincient_audit.policy_evaluator'
+      - '@aincient_audit.target'

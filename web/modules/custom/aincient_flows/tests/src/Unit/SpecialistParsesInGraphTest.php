@@ -219,4 +219,53 @@ final class SpecialistParsesInGraphTest extends TestCase {
     }
   }
 
+  /**
+   * The validator's output IS the tool result the orchestrator reads.
+   *
+   * The orchestrator writes its final reply before the end-of-turn apply
+   * grades contrast, so the validator's `contrast` lines (and `rejected`
+   * block) reach it only if the validator feeds the workflow's output port:
+   * brand_validate_slice → data_to_json → chat_output → output_ports.slice.
+   * A node inserted after the validator that rebuilds the slice would drop
+   * them silently — the "kept contrast" lie (pipeline 307) would return.
+   */
+  public function testValidatorOutputIsTheToolResult(): void {
+    foreach ($this->specialists() as $id => $config) {
+      $types = $this->nodeTypes($config);
+      $next = [];
+      foreach ($config['edges'] ?? [] as $edge) {
+        $next[$edge['source']][] = $edge['target'];
+      }
+      $validator = array_search(self::VALIDATOR, $types, TRUE);
+      $toJson = $next[$validator] ?? [];
+      $this->assertCount(1, $toJson, "$id: the validator must feed exactly one node.");
+      $this->assertSame('data_to_json', $types[$toJson[0]] ?? '', "$id: the validator must feed data_to_json directly.");
+      $output = $next[$toJson[0]] ?? [];
+      $this->assertCount(1, $output, "$id: data_to_json must feed exactly one node.");
+      $this->assertSame('chat_output', $types[$output[0]] ?? '', "$id: data_to_json must feed chat_output.");
+      $ports = array_column($config['output_ports'] ?? [], 'node_id', 'name');
+      $this->assertSame($output[0], $ports['slice'] ?? NULL, "$id: the `slice` output port must read that chat_output.");
+    }
+  }
+
+  /**
+   * Contrast claims are licensed only by a measured "passes".
+   */
+  public function testContrastIsReadFromTheMeasurementNotClaimed(): void {
+    $orchestrator = (string) file_get_contents(dirname(__DIR__, 7) . '/config/sync/flowdrop_workflow.flowdrop_workflow.brand_studio.yml');
+    foreach ([
+      'CONTRAST — a colour result may include a "contrast" list' => 'the orchestrator is not told the verdict exists',
+      'unless a contrast line for that pair says' => 'no bar on claiming AA without a measured pass',
+      'No contrast list → make no contrast claim at all' => 'silence can still be narrated as "kept contrast"',
+      'do NOT re-delegate for it' => 'a FAIL could start a retry loop (and break case 06\'s single delegation)',
+    ] as $needle => $why) {
+      self::assertStringContainsString($needle, $orchestrator, "Orchestrator: $why.");
+    }
+
+    $colour = json_encode($this->specialists()['aincient_brand_specialist_colour'] ?? []);
+    self::assertStringContainsString('VERIFY YOUR PAIR BEFORE YOU RETURN', $colour, 'Colour specialist: no self-check of its own pair.');
+    self::assertStringContainsString('when the ask IS', $colour, 'Colour specialist: "keep the primary vivid" still reads as "never darken it", even when asked to.');
+    self::assertStringNotContainsString('dark ink on a mid rung is always', $colour, 'Colour specialist: the false "950 always passes" claim is back (cyan-600 + cyan-950 is 3.72:1).');
+  }
+
 }

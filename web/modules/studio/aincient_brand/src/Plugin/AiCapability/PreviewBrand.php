@@ -19,8 +19,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * The branding agent's ONLY edit tool — and it writes NOTHING to the live site.
  * Brand direction can only ever be changed server-side through the Brand studio
  * (there is no "set brand" tool); the agent's job is to drive that studio's live
- * preview. This emits a small declarative brand DSL as a generative-UI widget
- * envelope (`{"__widget__": "brand_preview", "payload": …}`). The dispatcher
+ * preview. This emits the validated change as a typed Identity command batch
+ * in a generative-UI widget envelope
+ * (`{"__widget__": "brand_preview", "payload": {"commands": […]}}`, see
+ * {@see BrandPreviewApplier::commands()}). The dispatcher
  * harvests it out of the agent's tool results; the `brand_preview` widget applies
  * the tokens to the SAME unsaved-draft store the brand-studio sliders write, so
  * the user's live preview reskins instantly and the change shows as an unsaved

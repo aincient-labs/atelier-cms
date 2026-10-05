@@ -60,9 +60,42 @@ final class BrandPreviewApplierTest extends KernelTestBase {
     ]);
 
     $this->assertSame('brand_preview', $env['__widget__'] ?? NULL, (string) ($env['error'] ?? ''));
-    $this->assertSame('0.9', $env['payload']['tokens']['density']);
-    $this->assertSame('0.25', $env['payload']['tokens']['shadow-strength']);
+    $this->assertSame('0.9', BrandPreviewApplier::changes($env['payload'])['tokens']['density']);
+    $this->assertSame('0.25', BrandPreviewApplier::changes($env['payload'])['tokens']['shadow-strength']);
     $this->assertSame([], $env['payload']['rejected']);
+  }
+
+  /**
+   * The payload is the Identity command batch, in the client's order.
+   *
+   * chat-ui's brandPreviewCommands executes `commands` verbatim: reset first,
+   * then set_tokens (css_var-keyed), then set_fonts — each only when present —
+   * and reset's args must encode as a JSON OBJECT (`{}`), not an array.
+   */
+  public function testPayloadIsTypedCommandBatch(): void {
+    $tokensOnly = $this->applier()->apply(['tokens_json' => json_encode(['density' => '0.9'])]);
+    $this->assertSame(
+      [['verb' => 'set_tokens', 'args' => ['tokens' => ['density' => '0.9']]]],
+      $tokensOnly['payload']['commands'],
+    );
+    $this->assertArrayNotHasKey('tokens', $tokensOnly['payload']);
+    $this->assertArrayNotHasKey('fonts', $tokensOnly['payload']);
+    $this->assertArrayNotHasKey('reset', $tokensOnly['payload']);
+
+    $withFonts = $this->applier()->apply([
+      'tokens_json' => json_encode(['density' => '0.9']),
+      'fonts' => 'Poppins',
+    ]);
+    $this->assertSame(['set_tokens', 'set_fonts'], array_column($withFonts['payload']['commands'], 'verb'));
+    $this->assertSame(['fonts' => ['Poppins']], $withFonts['payload']['commands'][1]['args']);
+
+    $reset = $this->applier()->apply(['reset' => TRUE]);
+    $this->assertSame(['reset'], array_column($reset['payload']['commands'], 'verb'));
+    $this->assertSame('{"commands":[{"verb":"reset","args":{}}]}', json_encode(['commands' => $reset['payload']['commands']]));
+    $this->assertSame(['tokens' => [], 'fonts' => [], 'reset' => TRUE], BrandPreviewApplier::changes($reset['payload']));
+
+    $resetThenTokens = $this->applier()->apply(['reset' => TRUE, 'tokens_json' => json_encode(['density' => '0.9'])]);
+    $this->assertSame(['reset', 'set_tokens'], array_column($resetThenTokens['payload']['commands'], 'verb'));
   }
 
   /**
@@ -92,7 +125,7 @@ final class BrandPreviewApplierTest extends KernelTestBase {
     $this->assertArrayNotHasKey('error', $env);
     $this->assertSame('brand_preview', $env['__widget__']);
     // Normalised by the token registry, present, and not silently dropped.
-    $this->assertArrayHasKey('shadow-strength', $env['payload']['tokens']);
+    $this->assertArrayHasKey('shadow-strength', BrandPreviewApplier::changes($env['payload'])['tokens']);
   }
 
   /**
@@ -112,9 +145,9 @@ final class BrandPreviewApplierTest extends KernelTestBase {
 
     $this->assertSame('brand_preview', $env['__widget__']);
     $this->assertContains('brand_primary', $env['payload']['rejected']);
-    $this->assertArrayNotHasKey('brand-primary', $env['payload']['tokens']);
+    $this->assertArrayNotHasKey('brand-primary', BrandPreviewApplier::changes($env['payload'])['tokens']);
     // The valid sibling still applied.
-    $this->assertSame('0.9', $env['payload']['tokens']['density']);
+    $this->assertSame('0.9', BrandPreviewApplier::changes($env['payload'])['tokens']['density']);
     $this->assertStringContainsString('brand_primary', $env['summary']);
   }
 

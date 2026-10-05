@@ -153,8 +153,45 @@ final class CheckRulesTest extends KernelTestBase {
     $this->assertSame('fail', $f['severity']);
     $this->assertSame('Dangling in-page link', $f['title']);
     $this->assertSame('content', $f['dimension']);
-    $this->assertSame(['action' => 'edit_prop', 'target' => ['href' => '#nowhere'], 'aiFixable' => TRUE], $f['remediation']);
+    $section = (string) $this->container->get('aincient_pages.store')->resolve($node)['sections'][0]['id'];
+    $this->assertSame([
+      'action' => 'edit_prop',
+      'target' => [
+        'href' => '#nowhere',
+        'locations' => [['section' => $section, 'prop' => 'cta_url', 'href' => '#nowhere']],
+        'occurrences' => 1,
+      ],
+      'aiFixable' => TRUE,
+    ], $f['remediation']);
     $this->assertArrayNotHasKey('links.internal_ok', $findings, 'A dangling fragment means not everything resolved.');
+  }
+
+  /**
+   * (b2) A broken path linked from several places is ONE finding (0453 S4):
+   * it names every place the schema writes it — nested props and Markdown
+   * link targets included — and counts the links on the rendered page.
+   */
+  public function testBrokenPathListsEveryLocation(): void {
+    $node = $this->makePage([
+      ['component' => 'cta', 'props' => ['heading' => 'One', 'cta_label' => 'Go', 'cta_url' => '/no-such-page']],
+      ['component' => 'cta', 'props' => ['heading' => 'Two', 'cta_label' => 'Go', 'cta_url' => '/no-such-page']],
+    ]);
+    $ids = array_column($this->container->get('aincient_pages.store')->resolve($node)['sections'], 'id');
+
+    $findings = $this->byId($this->container->get('aincient_audit.check.internal_links')->evaluate($node));
+
+    $broken = array_filter(array_keys($findings), fn (string $id): bool => str_starts_with($id, 'links.broken:'));
+    $this->assertSame(['links.broken:/no-such-page'], array_values($broken));
+    $target = $findings['links.broken:/no-such-page']['remediation']['target'];
+    $this->assertSame(2, $target['occurrences']);
+    $this->assertSame(
+      [
+        ['section' => $ids[0], 'prop' => 'cta_url', 'href' => '/no-such-page'],
+        ['section' => $ids[1], 'prop' => 'cta_url', 'href' => '/no-such-page'],
+      ],
+      $target['locations'],
+    );
+    $this->assertStringEndsWith('Linked 2 times.', $findings['links.broken:/no-such-page']['detail']);
   }
 
   /**

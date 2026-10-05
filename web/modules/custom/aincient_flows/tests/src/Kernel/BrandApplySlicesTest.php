@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_flows\Kernel;
 
 use Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\BrandApplySlices;
+use Drupal\aincient_pages\BrandPreviewApplier;
 use Drupal\flowdrop\DTO\ParameterBag;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -116,7 +117,12 @@ final class BrandApplySlicesTest extends KernelTestBase {
 
     $this->assertNotNull($env, 'A widget envelope was emitted.');
     $this->assertSame('brand_preview', $env['__widget__']);
-    $tokens = $env['payload']['tokens'];
+    // The persisted card carries the typed command batch (no reset: a merge
+    // only layers) and no longer the legacy {tokens, fonts, reset} maps.
+    $this->assertSame(['set_tokens', 'set_fonts'], array_column($env['payload']['commands'], 'verb'));
+    $this->assertArrayNotHasKey('tokens', $env['payload']);
+    $this->assertArrayNotHasKey('reset', $env['payload']);
+    $tokens = BrandPreviewApplier::changes($env['payload'])['tokens'];
     $names = array_keys($tokens);
 
     // Colour landed.
@@ -124,8 +130,8 @@ final class BrandApplySlicesTest extends KernelTestBase {
     $this->assertSame('oklch(0.48 0.18 50)', $tokens['brand-primary']);
     // Typography landed (preset font tokens + the fonts list).
     $this->assertNotEmpty(array_filter($names, static fn(string $n): bool => str_contains($n, 'font')));
-    $this->assertContains('Playfair Display', $env['payload']['fonts']);
-    $this->assertContains('Lora', $env['payload']['fonts']);
+    $this->assertContains('Playfair Display', BrandPreviewApplier::changes($env['payload'])['fonts']);
+    $this->assertContains('Lora', BrandPreviewApplier::changes($env['payload'])['fonts']);
     // Shape landed (radius + shadow tokens from the presets).
     $this->assertNotEmpty(array_filter($names, static fn(string $n): bool => str_contains($n, 'radius')));
     $this->assertNotEmpty(array_filter($names, static fn(string $n): bool => str_contains($n, 'shadow')));
@@ -146,7 +152,7 @@ final class BrandApplySlicesTest extends KernelTestBase {
     ];
 
     $env = $this->widget($this->node()->process(new ParameterBag(['messages' => $messages])));
-    $this->assertSame('oklch(0.55 0.22 30)', $env['payload']['tokens']['brand-primary']);
+    $this->assertSame('oklch(0.55 0.22 30)', BrandPreviewApplier::changes($env['payload'])['tokens']['brand-primary']);
   }
 
   /**
@@ -188,8 +194,8 @@ final class BrandApplySlicesTest extends KernelTestBase {
     $env = $this->widget($result);
 
     $this->assertNotNull($env, 'An unquoted number must not silence the whole merge.');
-    $this->assertSame('0', $env['payload']['tokens']['shadow-strength']);
-    $this->assertSame('0.85', $env['payload']['tokens']['density']);
+    $this->assertSame('0', BrandPreviewApplier::changes($env['payload'])['tokens']['shadow-strength']);
+    $this->assertSame('0.85', BrandPreviewApplier::changes($env['payload'])['tokens']['density']);
     $this->assertSame([], $env['payload']['rejected']);
     $this->assertSame(2, $result['applied']);
   }
@@ -214,7 +220,7 @@ final class BrandApplySlicesTest extends KernelTestBase {
 
     $env = $this->widget($this->node()->process(new ParameterBag(['messages' => $messages])));
     $this->assertNotNull($env);
-    $this->assertSame('oklch(0.55 0.22 30)', $env['payload']['tokens']['brand-primary']);
+    $this->assertSame('oklch(0.55 0.22 30)', BrandPreviewApplier::changes($env['payload'])['tokens']['brand-primary']);
   }
 
   /**

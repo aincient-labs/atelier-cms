@@ -37,3 +37,59 @@ thirdPartySettings:
       subheading: ''
       columns: 2|3|4
       cards: '[{title,body,icon,image,cta_label,cta_url}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Guesthouse rooms'
+        props:
+          eyebrow: 'Stay with us'
+          heading: 'Six rooms, each with a view'
+          subheading: 'All rooms include breakfast, linen and a parking space.'
+          columns: 3
+          cards:
+            - title: 'Garden room'
+              body: 'Ground floor, opening onto the orchard. Sleeps two.'
+              image: 'placeholder:landscape'
+              cta_label: 'Check dates'
+              cta_url: '/rooms/garden'
+            - title: 'Loft suite'
+              body: 'Under the beams, with a reading nook and a deep bath.'
+              image: 'placeholder:landscape'
+              cta_label: 'Check dates'
+              cta_url: '/rooms/loft'
+            - title: 'Family room'
+              body: 'A double and two singles, with space for a cot.'
+              image: 'placeholder:landscape'
+              cta_label: 'Check dates'
+              cta_url: '/rooms/family'
+      - name: 'Workshop resources'
+        props:
+          heading: 'Guides for new customers'
+          columns: 2
+          cards:
+            - icon: '◆'
+              title: 'Caring for oiled oak'
+              body: 'How often to re-oil, which products to use and what to avoid.'
+              cta_label: 'Read the guide'
+              cta_url: '/guides/oiled-oak'
+            - icon: '○'
+              title: 'Delivery and assembly'
+              body: 'What to expect on the day, and how to prepare the room.'
+              cta_label: 'Read the guide'
+              cta_url: '/guides/delivery'
+      - name: 'Florist occasions'
+        props:
+          heading: 'Flowers for every occasion'
+          columns: 4
+          cards:
+            - title: 'Weddings'
+              image: 'placeholder:portrait'
+              cta_url: '/occasions/weddings'
+            - title: 'Sympathy'
+              image: 'placeholder:portrait'
+              cta_url: '/occasions/sympathy'
+            - title: 'Birthdays'
+              image: 'placeholder:portrait'
+              cta_url: '/occasions/birthdays'
+            - title: 'Workplaces'
+              image: 'placeholder:portrait'
+              cta_url: '/occasions/workplaces'

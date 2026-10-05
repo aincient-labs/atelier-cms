@@ -1,0 +1,75 @@
+/*
+ * kit · ComposingState (composing-state.tsx) — a preview canvas waiting for its
+ * render: a page-shaped wireframe (opener, band, cards) whose placeholder bars
+ * pulse exactly like every other skeleton (kit/skeleton.css) — same pulse, same
+ * 150ms-late fade-in (Law 09). Hairlines and dim ink only — no colour,
+ * no glow (Law 04). System tokens only.
+ */
+.ain-composing {
+  flex: 1; min-block-size: 0; display: flex; justify-content: center; align-items: flex-start;
+  padding: 24px; overflow: hidden;
+  opacity: 0; animation: ain-skel-in .2s ease-out 150ms forwards;
+}
+.ain-composing__page {
+  inline-size: 100%; max-inline-size: 880px; display: flex; flex-direction: column;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-lg); overflow: hidden;
+  background: var(--ain-color-surface);
+}
+.ain-composing--bare { padding: 0; }
+.ain-composing--bare .ain-composing__page { border: 0; border-radius: 0; max-inline-size: none; }
+
+.ain-composing__sec { padding: 36px 32px; }
+.ain-composing__header {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 20px 24px; border-bottom: 1px solid var(--ain-color-border);
+}
+.ain-composing__nav { display: flex; gap: 18px; }
+.ain-composing__header + .ain-composing__sec { border-top: 0; }
+.ain-composing__sec + .ain-composing__sec { border-top: 1px solid var(--ain-color-border); }
+.ain-composing__sec--opener { display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; align-items: center; }
+.ain-composing--section .ain-composing__sec--opener { padding: 48px 40px; }
+.ain-composing__copy { display: flex; flex-direction: column; gap: 10px; min-inline-size: 0; }
+.ain-composing__media {
+  aspect-ratio: 4 / 3; border-radius: var(--ain-radius-lg);
+  background: color-mix(in oklch, var(--ain-color-text) 6%, transparent);
+  border: 1px solid var(--ain-color-border);
+  animation: ain-mic-pulse 1.4s ease-in-out infinite;
+}
+.ain-composing__sec--band {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: color-mix(in oklch, var(--ain-color-text) 4%, var(--ain-color-surface));
+}
+.ain-composing__sec--cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.ain-composing__card {
+  display: flex; flex-direction: column; gap: 8px; padding: 14px;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+}
+
+/* A placeholder bar: the skeleton's own fill and pulse. */
+.ain-composing__ink {
+  display: block; block-size: 8px; inline-size: 100%; border-radius: 999px;
+  background: color-mix(in oklch, var(--ain-color-text) 8%, transparent);
+  animation: ain-mic-pulse 1.4s ease-in-out infinite;
+}
+.ain-composing__ink--pill { inline-size: 26%; block-size: 14px; }
+.ain-composing__ink--display { inline-size: 88%; block-size: 22px; border-radius: 6px; background: color-mix(in oklch, var(--ain-color-text) 12%, transparent); }
+.ain-composing__ink--heading { inline-size: 52%; block-size: 16px; border-radius: 5px; background: color-mix(in oklch, var(--ain-color-text) 12%, transparent); }
+.ain-composing__ink--title { inline-size: 64%; block-size: 11px; background: color-mix(in oklch, var(--ain-color-text) 12%, transparent); }
+.ain-composing__ink--icon { inline-size: 22px; block-size: 22px; border-radius: var(--ain-radius-sm); }
+.ain-composing__ink--short { inline-size: 58%; }
+.ain-composing__ink--shorter { inline-size: 44%; }
+.ain-composing__actions { display: flex; align-items: center; gap: 14px; margin-block-start: 8px; }
+.ain-composing__ink--action { inline-size: 96px; block-size: 28px; }
+.ain-composing__ink--link { inline-size: 64px; }
+.ain-composing__ink--brand { inline-size: 84px; block-size: 14px;; flex: none; }
+.ain-composing__ink--navitem { inline-size: 48px;; flex: none; }
+
+
+@media (max-width: 720px) {
+  .ain-composing__sec--opener { grid-template-columns: 1fr; }
+  .ain-composing__sec--cards { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ain-composing { animation-duration: .01ms; }
+  .ain-composing__ink, .ain-composing__media { animation: none; }
+}

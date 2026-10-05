@@ -28,3 +28,18 @@ thirdPartySettings:
       heading: ''
       subheading: ''
       questions: '[{question,answer}]'
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Bakery questions'
+        props:
+          eyebrow: 'Good to know'
+          heading: 'Questions we hear at the counter'
+          questions:
+            - question: 'Can I order a cake for a specific date?'
+              answer: 'Yes. Celebration cakes need three days notice; order online or in the shop and choose your pickup time.'
+            - question: 'Do you bake anything gluten-free?'
+              answer: 'We bake a gluten-free loaf on Fridays and Saturdays. Our kitchen handles wheat, so we cannot guarantee it is free of traces.'
+            - question: 'Where can we park?'
+              answer: 'There is free parking for thirty minutes on the side street, and a bike rack right by the door.'
+            - question: 'Do you supply cafés and restaurants?'
+              answer: 'We deliver bread to a handful of local businesses each morning. Get in touch and we will send our wholesale list.'

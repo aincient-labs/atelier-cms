@@ -112,19 +112,85 @@ final class PageSchemaSummariser {
    * @param string $fallback
    *   The caller's constant message — used when nothing itemisable changed or
    *   the summary could not be computed.
+   * @param array|null $origin
+   *   Who staged which field ({@see originLine}), appended as the last line.
    */
-  public function revisionLog(?array $before, callable $after, ?string $langcode, string $fallback): string {
+  public function revisionLog(?array $before, callable $after, ?string $langcode, string $fallback, ?array $origin = NULL): string {
     if ($before === NULL) {
       return $fallback;
     }
     try {
-      $summary = $this->summarise($before['schema'] ?? NULL, $after(), $langcode);
+      $written = $after();
+      $summary = $this->summarise($before['schema'] ?? NULL, $written, $langcode);
+      $line = $origin !== NULL ? $this->originLine($origin, $written) : '';
     }
     catch (\Throwable $e) {
       $this->logger->warning('Could not summarise a page revision: @msg', ['@msg' => $e->getMessage()]);
       return $fallback;
     }
-    return $summary !== '' ? $summary : $fallback;
+    $message = $summary !== '' ? $summary : $fallback;
+    return $line !== '' ? $message . "\n" . $line : $message;
+  }
+
+  /**
+   * Who changed what, as one line: "Atelier: Meta description · You: Page title".
+   *
+   * `$origin` is the studio's session origin map grouped by source
+   * (DECISIONS 0453) — `{agent: [path…], user: [path…]}`, paths as
+   * `chat-ui/src/page-fields.ts` names them. Each path is labelled in the same
+   * operator vocabulary as the summary; an unknown path is dropped, so a
+   * malformed body costs a label, never the save.
+   *
+   * @param array $origin
+   *   The `origin` body fragment, untrusted.
+   * @param array $schema
+   *   The schema as written (names a section by its slot id).
+   */
+  public function originLine(array $origin, array $schema): string {
+    $parts = [];
+    foreach (['agent' => 'Atelier', 'user' => 'You'] as $source => $who) {
+      $paths = is_array($origin[$source] ?? NULL) ? array_slice($origin[$source], 0, 100) : [];
+      $labels = [];
+      foreach ($paths as $path) {
+        $label = is_string($path) ? $this->pathLabel($path, $schema) : NULL;
+        if ($label !== NULL) {
+          $labels[$label] = TRUE;
+        }
+      }
+      if ($labels !== []) {
+        $parts[] = $who . ': ' . implode(', ', array_keys($labels));
+      }
+    }
+    return implode(' · ', $parts);
+  }
+
+  /**
+   * One field path → its operator label, or NULL when it names nothing known.
+   */
+  private function pathLabel(string $path, array $schema): ?string {
+    $segments = explode('.', $path);
+    $head = $segments[0];
+    if ($path === 'title') {
+      return 'Page title';
+    }
+    if ($head === 'meta' && count($segments) === 2) {
+      return self::META_LABELS[$segments[1]] ?? NULL;
+    }
+    if ($head === 'teaser' && count($segments) === 2) {
+      return self::TEASER_LABELS[$segments[1]] ?? NULL;
+    }
+    if ($path === 'sections') {
+      return 'Section order';
+    }
+    if ($head === 'sections' && isset($segments[1])) {
+      foreach ($this->keyed(is_array($schema['sections'] ?? NULL) ? $schema['sections'] : []) as $key => [$pos, $section]) {
+        if ($key === 'id:' . $segments[1] || $key === 'pos:' . ltrim($segments[1], '#')) {
+          return $this->sectionName($pos, $section);
+        }
+      }
+      return 'A removed section';
+    }
+    return count($segments) === 1 ? (self::POST_LABELS[$head][0] ?? NULL) : NULL;
   }
 
   /**

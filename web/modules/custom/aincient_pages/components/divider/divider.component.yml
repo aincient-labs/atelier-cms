@@ -25,3 +25,15 @@ thirdPartySettings:
       variant: line|space|label
       tone: ''
       label: ''
+    # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
+    examples:
+      - name: 'Rule'
+        props:
+          variant: line
+      - name: 'Breathing space'
+        props:
+          variant: space
+      - name: 'Section label'
+        props:
+          variant: label
+          label: 'From the journal'

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_audit\Plugin\FlowDropNodeProcessor;
 
+use Drupal\aincient_audit\AuditTarget;
 use Drupal\aincient_audit\Check\CheckRegistry;
-use Drupal\aincient_pages\NodeModeration;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
 use Drupal\flowdrop\DTO\ExecutionContextDTO;
@@ -38,10 +38,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *    output" the evaluator reads back. Same `{id,severity,title,detail,location}`
  *    shape the checks have always emitted; the evaluator stamps `policyId`.
  *
- * Revision contract: it re-resolves the LATEST revision (the editable draft head)
- * via {@see NodeModeration::loadLatestRevision} — the exact resolver both current
- * audit callers use — so the workflow-backed report is byte-identical to the old
- * direct-call one. A misconfiguration (unknown check id, missing/gone node)
+ * Revision contract: it re-resolves the page through {@see AuditTarget::load} —
+ * the resolver every audit caller uses — with the `revision` (live / draft) the
+ * evaluator passes, so it reads the same copy the report names (DECISIONS 0450;
+ * no `revision` = live). A misconfiguration (unknown check id, missing/gone node)
  * returns empty findings rather than throwing, so one broken policy can't abort
  * the whole evaluation.
  */
@@ -54,11 +54,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class PolicyCheck extends AbstractFlowDropNodeProcessor implements ExecutionContextAwareInterface {
 
   /**
-   * The bundle these checks apply to — mirrors the audit callers' guard.
-   */
-  private const BUNDLE = 'aincient_page';
-
-  /**
    * The workflow's execution context (carries the initial data), when running
    * inside an orchestration; NULL if the node is executed standalone.
    */
@@ -69,7 +64,7 @@ class PolicyCheck extends AbstractFlowDropNodeProcessor implements ExecutionCont
     string $plugin_id,
     mixed $plugin_definition,
     private readonly CheckRegistry $checks,
-    private readonly NodeModeration $moderation,
+    private readonly AuditTarget $target,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
   }
@@ -83,7 +78,7 @@ class PolicyCheck extends AbstractFlowDropNodeProcessor implements ExecutionCont
       $plugin_id,
       $plugin_definition,
       $container->get('aincient_audit.check_registry'),
-      $container->get('aincient_pages.moderation'),
+      $container->get('aincient_audit.target'),
     );
   }
 
@@ -105,7 +100,8 @@ class PolicyCheck extends AbstractFlowDropNodeProcessor implements ExecutionCont
     }
 
     $langcode = $this->resolve($params, 'langcode');
-    $node = $this->moderation->loadLatestRevision($nodeId, self::BUNDLE, $langcode !== '' ? $langcode : NULL);
+    $revision = AuditTarget::normalize($this->resolve($params, 'revision'));
+    $node = $this->target->load($nodeId, $revision, $langcode !== '' ? $langcode : NULL);
     if ($node === NULL) {
       return ['findings' => []];
     }
