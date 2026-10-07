@@ -1,0 +1,6 @@
+/* Tailwind entry. */
+@import "tailwindcss";
+@source "../components/**/*.twig";
+@import "./atelier/tw-palette.generated.css";
+@import "./atelier/tokens.generated.css";
+@import "./pack.css";

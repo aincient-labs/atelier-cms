@@ -138,6 +138,15 @@ services:
       - '@aincient_chat.workflow_catalog'
       - '@aincient_chat.stale_turn_recovery'
       - '@aincient_chat.turn_scratchpad_sweeper'
+      - '@aincient_chat.turn_pipelines'
+      - '@aincient_chat.turn_recap_recorder'
+
+  # Appends a one-line recap of a turn's cards to the model's conversation
+  # buffer (DECISIONS 0464). Best-effort; FlowDrop memory resolved lazily.
+  aincient_chat.turn_recap_recorder:
+    class: Drupal\aincient_chat\Chat\TurnRecapRecorder
+    arguments:
+      - '@logger.channel.aincient_chat'
 
   # Drops a finished turn's per-turn tool scratchpad (tier B; hygiene only —
   # the next turn is a new pipeline). Best-effort; never on a paused turn.
@@ -145,6 +154,14 @@ services:
     class: Drupal\aincient_chat\Chat\TurnScratchpadSweeper
     arguments:
       - '@logger.channel.aincient_chat'
+      - '@aincient_chat.turn_pipelines'
+
+  # A console turn is a tree of pipelines once a studio places the shared agent
+  # engine (0463): root = the studio's run, descendants = sub-workflow runs.
+  aincient_chat.turn_pipelines:
+    class: Drupal\aincient_chat\Chat\TurnPipelines
+    arguments:
+      - '@entity_type.manager'
 
   # Releases a thread whose turn died without ending. FlowDrop's turn guard
   # gates on session status alone, so a vanished process leaves the thread

@@ -85,8 +85,9 @@ final class UsageLog {
    *   Output tokens, thinking included.
    * @param int $cachedTokens
    *   Cache-read tokens, a subset of the input figure.
-   * @param float $costUsd
-   *   What the call cost, per Atelier's rate table.
+   * @param float|null $costUsd
+   *   What the call cost, per Atelier's rate table, or NULL when it could not
+   *   be priced in full. Stored as SQL NULL so no sum or display reads it as $0.
    * @param string|null $contextId
    *   The call-site tag, or NULL when the caller has none.
    * @param string|null $tokenDetails
@@ -100,7 +101,7 @@ final class UsageLog {
     int $inputTokens,
     int $outputTokens,
     int $cachedTokens,
-    float $costUsd,
+    ?float $costUsd,
     ?string $contextId = NULL,
     ?string $tokenDetails = NULL,
   ): void {

@@ -1053,7 +1053,9 @@ export function makeHttpAdapter(getThreadId: () => Promise<string>): TurnAdapter
               input: Number(data.input ?? 0),
               output: Number(data.output ?? 0),
               cached: Number(data.cached ?? 0),
-              cost: Number(data.cost_usd ?? 0),
+              // null = the backend could not price this call. Kept as null
+              // (never 0) so the footer hides the $ instead of under-stating it.
+              cost: data.cost_usd == null ? null : Number(data.cost_usd),
             };
             usage = addUsage(usage, delta);
             addSessionUsage(threadId, delta);

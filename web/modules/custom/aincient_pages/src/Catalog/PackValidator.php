@@ -18,6 +18,11 @@ use Drupal\Core\Theme\ComponentPluginManager;
  */
 final class PackValidator {
 
+  /**
+   * The pack's Tailwind entry, relative to the pack root.
+   */
+  private const BUILD_ENTRY = 'build/input.css';
+
   public function __construct(
     private readonly ComponentPluginManager $componentManager,
     private readonly ModuleExtensionList $moduleList,
@@ -68,19 +73,32 @@ final class PackValidator {
       }
     }
 
-    // W5 advisory CSS lint: read each declared stylesheet and warn on the
-    // machine-checkable contract breaches (hardcoded colours, fractional
-    // opacity). Warnings only — the gate never rejects on taste.
+    // W5 advisory CSS lint: warn on the machine-checkable contract breaches
+    // (hardcoded colours, fractional opacity). Warnings only — the gate never
+    // rejects on taste. A pack with a Tailwind build entry (build/input.css)
+    // is linted on the CSS its author WROTE, not the compiled stylesheet
+    // (preflight's literals are not the developer's code — W10d); a pack
+    // without one keeps its declared stylesheet as the authored source.
     $cssIssues = [];
+    $authoredByRoot = [];
     foreach ($definitions as $definition) {
       $name = (string) ($definition['machineName'] ?? '');
       $sheet = (string) ($definition['thirdPartySettings']['atelier']['stylesheet'] ?? '');
       if ($sheet === '' || !isset($verdicts[$name])) {
         continue;
       }
-      $file = $this->moduleList->getPath((string) ($definition['provider'] ?? '')) . '/' . $sheet;
+      $root = $this->moduleList->getPath((string) ($definition['provider'] ?? ''));
+      $file = $root . '/' . $sheet;
       if (!is_file($file)) {
         $cssIssues[$name][] = sprintf('declared stylesheet "%s" is missing on disk — the shell will skip it.', $sheet);
+        continue;
+      }
+      if (is_file($root . '/' . self::BUILD_ENTRY)) {
+        // Once per pack; every component of the pack reports the same set.
+        $authoredByRoot[$root] ??= $this->lintAuthored($root);
+        foreach ($authoredByRoot[$root] as $issue) {
+          $cssIssues[$name][] = $issue;
+        }
         continue;
       }
       foreach (StylesheetLint::lint((string) file_get_contents($file)) as $issue) {
@@ -108,6 +126,49 @@ final class PackValidator {
     }
 
     return ['rows' => $rows, 'rejected' => $rejected, 'pack' => $pack];
+  }
+
+  /**
+   * Lint the files a pack author wrote: the build entry + its local imports.
+   *
+   * Follows the entry's direct relative `@import`s (one level). Skips bare
+   * package imports (`tailwindcss`), the synced preset under `build/atelier/`,
+   * `*.generated.css`, and any path that resolves outside the pack root.
+   *
+   * @return string[]
+   *   Messages prefixed with the pack-relative file name.
+   */
+  private function lintAuthored(string $root): array {
+    $entry = $root . '/' . self::BUILD_ENTRY;
+    $realRoot = realpath($root);
+    $source = (string) file_get_contents($entry);
+    $files = [self::BUILD_ENTRY => $source];
+    // Imports are read from the comment-stripped source.
+    $stripped = (string) preg_replace('#/\*.*?\*/#s', '', $source);
+    if (preg_match_all('/@import\s+(?:url\(\s*)?["\']([^"\']+)["\']/', $stripped, $m)) {
+      foreach ($m[1] as $import) {
+        if (!str_starts_with($import, './') && !str_starts_with($import, '../')) {
+          // Bare package import (or absolute/remote URL) — not authored here.
+          continue;
+        }
+        $path = realpath(dirname($entry) . '/' . $import);
+        if ($path === FALSE || $realRoot === FALSE || !is_file($path) || !str_starts_with($path, $realRoot . '/')) {
+          continue;
+        }
+        $relative = substr($path, strlen($realRoot) + 1);
+        if (str_starts_with($relative, 'build/atelier/') || str_ends_with($relative, '.generated.css')) {
+          continue;
+        }
+        $files[$relative] ??= (string) file_get_contents($path);
+      }
+    }
+    $issues = [];
+    foreach ($files as $relative => $css) {
+      foreach (StylesheetLint::lint($css) as $issue) {
+        $issues[] = "$relative $issue";
+      }
+    }
+    return $issues;
   }
 
   /**

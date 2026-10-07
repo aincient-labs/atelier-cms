@@ -200,16 +200,21 @@ config objects a site owns — `cim` never imports over them:
 | ---------------------------------------------------------------- | ---------------------------------------- |
 | `system.site`                                                      | site name, slogan, mail, front page      |
 | `aincient_core.model_roles`                                        | role → provider:model bindings + default |
+| `aincient_core.pricing`                                            | the owner's own model rates (Model rates) |
+| `aincient_core.model_preferences`                                  | models this site prefers / avoids        |
+| `aincient_chat.settings:disabled_studios` (one key)                | which studios are switched off           |
 | `aincient_pages.brand` / `.chrome` / `.identity`                   | the site's look, chrome and identity     |
 | `aincient_mail.settings`                                           | transport + sender identity              |
 | `language.entity.*` / `language.negotiation`                       | which languages exist, and how they route |
 
 (See [`config/sync/config_ignore.settings.yml`](../config/sync/config_ignore.settings.yml).
-Model rates are **not** on this list: `aincient_core.pricing`
-(`/admin/config/aincient/pricing`) is shipped config, so a release can correct a
-wrong rate on every site. A row an operator has edited locally would be overwritten
-by `cim` — that is the trade, and it is the right one for numbers that turn into an
-invoice.
+Our suggested rates are not config: they ship in `aincient_core/model-pricing.yml`,
+so a release still corrects a wrong rate on every site, while `aincient_core.pricing`
+holds only what the owner set and survives upgrades (0305, 0462). A pattern added to
+the file is in force on the upgrade that ships it: config_ignore applies the INCOMING
+`config/sync` list on import (its default `config_ignore_storage`), so no update hook is
+needed. A fresh install (`site:install --existing-config`) does not run config_ignore,
+so it still gets every shipped default.
 Provider credentials live in Drupal **State** (named by a Key entity), not config,
 so they were never at risk — and since the per-vendor `ai_provider_*` modules were
 removed there is no per-provider config object left to fence off.)

@@ -1,6 +1,7 @@
 import { useRef, type FormEventHandler, type ReactElement, type ReactNode, type RefObject } from "react";
 import { Dialog as D } from "radix-ui";
 import { usePortalContainer } from "./portal";
+import { IconButton } from "./button";
 import { XIcon } from "./icons";
 import { cx } from "./cx";
 
@@ -66,9 +67,9 @@ export function Dialog({
         <div className="ain-dialog__head">
           {titleEl}
           <D.Close asChild>
-            <button type="button" className="ain-btn ain-dialog__close" aria-label="Close" title="Close (Esc)">
+            <IconButton className="ain-dialog__close" label="Close" title="Close (Esc)">
               <XIcon />
-            </button>
+            </IconButton>
           </D.Close>
         </div>
       ) : (

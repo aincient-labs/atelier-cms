@@ -113,10 +113,10 @@ final class CallSites {
    * while the money column is under-reporting, which is precisely the condition
    * this page has to survive.
    *
-   * @param list<array{context_id: ?string, calls: int, tokens: int, spend: float}> $rows
+   * @param list<array{context_id: ?string, calls: int, tokens: int, spend: float|null}> $rows
    *   Aggregate rows, one per distinct tag.
    *
-   * @return list<array{context_id: string, label: string, description: string, known: bool, calls: int, tokens: int, spend: float, share: float}>
+   * @return list<array{context_id: string, label: string, description: string, known: bool, calls: int, tokens: int, spend: float|null, share: float}>
    *   The same rows, largest by tokens first, each with a 0–100 share.
    */
   public function decorate(array $rows): array {
@@ -135,7 +135,9 @@ final class CallSites {
         'known' => $this->isKnown($tag),
         'calls' => (int) $row['calls'],
         'tokens' => (int) $row['tokens'],
-        'spend' => (float) $row['spend'],
+        // NULL stays NULL: a call site with no priced call has no spend figure,
+        // and a cast here would print it as $0.00.
+        'spend' => $row['spend'] === NULL ? NULL : (float) $row['spend'],
         // Relative to the LARGEST row, not to the total: with four call sites
         // the shares of a total are all short stubs and the ranking is the thing
         // being read. Zero rows can't divide, and a share of 0 is right for them.

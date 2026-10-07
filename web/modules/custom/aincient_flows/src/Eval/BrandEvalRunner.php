@@ -41,6 +41,11 @@ final class BrandEvalRunner {
   public const WORKFLOW = 'brand_studio';
 
   /**
+   * The shared agent engine the studio places (DECISIONS 0463).
+   */
+  private const ENGINE = 'aincient_agent_engine';
+
+  /**
    * Specialist executor node-type prefix → axis name.
    */
   private const AXES = [
@@ -210,13 +215,52 @@ final class BrandEvalRunner {
    * @return array{0: string, 1: string}
    */
   private function sessionBufferConfig(object $workflow): array {
+    // The buffer lives in the shared agent engine the studio places (0463);
+    // read the studio itself first so a studio-owned buffer still wins.
+    $workflows = [$workflow];
     foreach ((array) $workflow->getNodes() as $node) {
-      $cfg = $node['data']['config'] ?? [];
-      if (is_array($cfg) && ($cfg['scope'] ?? '') === 'session' && isset($cfg['key'])) {
-        return [(string) $cfg['key'], (string) ($cfg['backend'] ?? 'entity')];
+      if (($node['data']['metadata']['node_type_id'] ?? '') === self::ENGINE) {
+        $engine = $this->entityTypeManager->getStorage('flowdrop_workflow')->load(self::ENGINE);
+        if ($engine !== NULL) {
+          $workflows[] = $engine;
+        }
+      }
+    }
+    foreach ($workflows as $candidate) {
+      foreach ((array) $candidate->getNodes() as $node) {
+        $cfg = $node['data']['config'] ?? [];
+        if (is_array($cfg) && ($cfg['scope'] ?? '') === 'session' && isset($cfg['key'])) {
+          return [(string) $cfg['key'], (string) ($cfg['backend'] ?? 'entity')];
+        }
       }
     }
     throw new \RuntimeException(self::WORKFLOW . ' has no session-scoped conversation buffer — the eval cannot seed history.');
+  }
+
+  /**
+   * Every job of a turn: its root pipeline and every pipeline below it.
+   *
+   * The loop (reason, tool calls, the specialist delegations) runs in the
+   * agent engine's child pipeline; the merge stays in the studio's own run.
+   *
+   * @return list<object>
+   *   The jobs, root pipeline first.
+   */
+  private function turnJobs(object $root): array {
+    $storage = $this->entityTypeManager->getStorage('flowdrop_pipeline');
+    $ids = $storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('root_pipeline_id', (int) $root->id())
+      ->condition('id', (int) $root->id(), '<>')
+      ->sort('id')
+      ->execute();
+    $jobs = method_exists($root, 'getJobs') ? $root->getJobs() : [];
+    foreach ($storage->loadMultiple($ids) as $pipeline) {
+      if (method_exists($pipeline, 'getJobs')) {
+        $jobs = array_merge($jobs, $pipeline->getJobs());
+      }
+    }
+    return $jobs;
   }
 
   /**
@@ -264,8 +308,8 @@ final class BrandEvalRunner {
     $lastProse = '';
     $model = '';
 
-    if ($pipeline !== NULL && method_exists($pipeline, 'getJobs')) {
-      foreach ($pipeline->getJobs() as $job) {
+    if ($pipeline !== NULL) {
+      foreach ($this->turnJobs($pipeline) as $job) {
         $type = (string) $job->getMetadataValue('node_type_id', '');
         $out = $job->getOutputData();
         if (isset(self::AXES[$type])) {
@@ -346,7 +390,7 @@ final class BrandEvalRunner {
     $usage = \Drupal::service('aincient_core.usage_query');
     $totals = $usage->totals($since);
     $o['calls'] = $totals['calls'];
-    $o['cost_usd'] = round((float) $totals['spend'], 4);
+    $o['cost_usd'] = $totals['spend'] === NULL ? NULL : round($totals['spend'], 4);
     $o['model'] = $model;
     return $o;
   }

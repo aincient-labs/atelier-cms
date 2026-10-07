@@ -15,8 +15,10 @@ import { type UsageTotal, useActiveThreadUsage } from "./usage-state";
  * /admin/reports/aincient/usage.
  *
  * Input tokens carry an up arrow (sent to the model), output a down arrow
- * (returned). Cost shows only when at least one call reported pricing
- * (`hasCost`); a tokens-only model (or a local provider) shows tokens alone.
+ * (returned). Cost shows only when EVERY call was priced (`hasCost`): a model
+ * Atelier has no rate for would otherwise make the sum a partial figure that
+ * reads as the price. Unpriced or local calls show tokens alone; the tooltip
+ * says why the $ is missing.
  * Both surfaces wear console-chrome tokens — this is operator furniture, never
  * the site's own brand tokens.
  */
@@ -60,10 +62,16 @@ function UsageBits({ usage }: { usage: UsageTotal }) {
   );
 }
 
+/** Tooltip suffix when unpriced calls are hiding the $ figure. */
+function unpricedNote(usage: UsageTotal): string {
+  if (usage.unpriced === 0) return "";
+  return ` — cost not shown: ${usage.unpriced} call${usage.unpriced === 1 ? "" : "s"} used a model with no rate (set one under Model rates)`;
+}
+
 function UsageFooter({ usage }: { usage: UsageTotal }) {
   if (!usage || usage.calls === 0) return null;
   return (
-    <div className="ain-usage" title="Estimated tokens and cost for this turn">
+    <div className="ain-usage" title={`Estimated tokens and cost for this turn${unpricedNote(usage)}`}>
       <UsageBits usage={usage} />
     </div>
   );
@@ -88,7 +96,7 @@ export function SessionUsageChip() {
   return (
     <div
       className="ain-usage ain-usage--session"
-      title={`Session total — ${usage.calls} AI call${usage.calls === 1 ? "" : "s"} this session (resets on reload)`}
+      title={`Session total — ${usage.calls} AI call${usage.calls === 1 ? "" : "s"} this session (resets on reload)${unpricedNote(usage)}`}
     >
       <span className="ain-usage__label">Session</span>
       <UsageBits usage={usage} />

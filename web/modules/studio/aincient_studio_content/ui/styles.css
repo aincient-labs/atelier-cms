@@ -241,3 +241,17 @@
 .ain-content-checks__count[data-severity="pass"] { color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent); }
 .ain-content-checks__muted { color: var(--ain-color-text-muted); font-size: 12px; }
 .ain-content-checks__open { margin-left: auto; }
+
+/* "Add to menu" (atelier-cms#35) — a rail row in the Checks row's metric. */
+.ain-content-menu {
+  padding: 8px 12px; border-bottom: 1px solid var(--ain-color-border);
+  font-size: 12.5px;
+}
+.ain-content-menu__line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.ain-content-menu__open { margin-left: auto; }
+.ain-content-menu__added { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; color: var(--ain-color-text); }
+.ain-content-menu__review svg { font-size: 12px; }
+.ain-content-menu__form { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.ain-content-menu__actions { display: flex; justify-content: flex-end; gap: 6px; }
+.ain-content-menu__note { margin: 2px 0 0; }
+.ain-content-menu__error { color: var(--ain-color-danger); font-size: 12px; }

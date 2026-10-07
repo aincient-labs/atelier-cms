@@ -8,6 +8,7 @@ use Drupal\aincient_core\Usage\ModelPricing;
 use Drupal\aincient_core\Usage\RateFreshness;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Tests\UnitTestCase;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * The one behaviour here is "what day is it", so the clock is the test subject.
@@ -48,7 +49,9 @@ final class RateFreshnessTest extends UnitTestCase {
   }
 
   /**
-   * The real sonnet-5 entry: an introductory rate with a published end date.
+   * An introductory rate with a published end date, as sonnet-5 once shipped.
+   *
+   * A fixture, not the shipped entry: the real one no longer carries `expires`.
    *
    * @return list<array<string, mixed>>
    *   One entry.
@@ -64,6 +67,23 @@ final class RateFreshnessTest extends UnitTestCase {
         'expires' => '2026-08-31',
       ],
     ];
+  }
+
+  /**
+   * The shipped suggestions file must never ship an already-lapsed rate.
+   *
+   * Reads the real `model-pricing.yml` and runs it at the real current date, so
+   * it fails the day any shipped `expires` passes. Staleness is deliberately not
+   * asserted: that is a request to re-check, not a known error.
+   */
+  public function testTheShippedRatesAreNotLapsed(): void {
+    $parsed = Yaml::parseFile(dirname(__DIR__, 4) . '/model-pricing.yml');
+    $this->assertNotEmpty($parsed['models']);
+
+    $problems = $this->service($parsed['models'], gmdate('Y-m-d'))->problems();
+    $lapsed = array_filter($problems, static fn (array $p): bool => $p['state'] === RateFreshness::LAPSED);
+
+    $this->assertSame([], array_values(array_column($lapsed, 'binding')));
   }
 
   /**

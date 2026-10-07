@@ -31,9 +31,8 @@ models:
     cache_read_per_mtok: 0.2
     cache_write_per_mtok: 2.5
     source: 'https://platform.claude.com/docs/en/pricing'
-    checked: '2026-08-02'
-    expires: '2026-08-31'
-    note: 'Introductory rate, in force through 2026-08-31; list price is $3/$15 per Mtok. Re-check on 2026-09-01 — this entry silently becomes a 33% under-report the day it lapses.'
+    checked: '2026-10-05'
+    note: 'The $2/$10 introductory price became the standard price; the announced 2026-09-01 increase to $3/$15 was cancelled, so a sheet quoting $3/$15 over-reports.'
   -
     provider: anthropic
     model: claude-haiku-4-5-20251001
@@ -42,7 +41,7 @@ models:
     cache_read_per_mtok: 0.1
     cache_write_per_mtok: 1.25
     source: 'https://platform.claude.com/docs/en/pricing'
-    checked: '2026-08-02'
+    checked: '2026-10-05'
     note: 'The rate table Atelier shipped before this one carried $0.25/$1.25 for this model — those are Haiku 3.5 rates, 4x too low. Pinned here so the correct figure cannot be lost again.'
   -
     provider: anthropic
@@ -52,7 +51,7 @@ models:
     cache_read_per_mtok: 0.5
     cache_write_per_mtok: 6.25
     source: 'https://platform.claude.com/docs/en/pricing'
-    checked: '2026-08-02'
+    checked: '2026-10-05'
   -
     provider: openai
     model: gpt-5.6-sol

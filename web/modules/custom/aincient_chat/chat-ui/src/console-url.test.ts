@@ -27,7 +27,7 @@ vi.mock("./studios", async () => {
   };
 });
 
-import { parseUrl, roomToPath } from "./console-url";
+import { landingThread, parseUrl, roomToPath } from "./console-url";
 import { pageDeepLink } from "./studios";
 import { roomId, type Room } from "./rooms-core";
 
@@ -96,5 +96,25 @@ describe("block room ↔ path", () => {
     at("/atelier/content/block/9");
     expect(parseUrl().room).toEqual({ kind: "node", doc: "block", nid: 9, langcode: null });
     expect(roomToPath({ kind: "node", doc: "block", nid: 9, langcode: null })).toBe("/atelier/content/block/9");
+  });
+});
+
+describe("landingThread", () => {
+  const known = (id: string) => id === "thr_known";
+
+  it("keeps a thread the user already sent on before the list arrived", () => {
+    // The early-send race: entering the room on a fresh thread here would
+    // orphan the in-flight turn and blank the chat.
+    expect(landingThread(null, "thr_started", known)).toBe("thr_started");
+    expect(landingThread("thr_known", "thr_started", known)).toBe("thr_started");
+  });
+
+  it("lands on the URL's thread when the list knows it", () => {
+    expect(landingThread("thr_known", null, known)).toBe("thr_known");
+  });
+
+  it("starts fresh for an unknown or absent thread", () => {
+    expect(landingThread("thr_gone", null, known)).toBeNull();
+    expect(landingThread(null, null, known)).toBeNull();
   });
 });

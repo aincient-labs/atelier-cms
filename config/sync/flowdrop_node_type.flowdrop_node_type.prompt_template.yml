@@ -14,6 +14,11 @@ icon: 'mdi:code-block-braces'
 plugin_version: 1.0.0
 enabled: true
 parameters:
+  dynamicInputs:
+    configurable: true
+    connectable: false
+    required: false
+    default: {  }
   template:
     configurable: true
     connectable: false

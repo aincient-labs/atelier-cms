@@ -44,6 +44,7 @@ final class TurnScratchpadSweeper {
 
   public function __construct(
     private readonly LoggerInterface $logger,
+    private readonly TurnPipelines $pipelines,
   ) {}
 
   /**
@@ -61,10 +62,15 @@ final class TurnScratchpadSweeper {
   }
 
   /**
-   * Drops the scratchpad records of one pipeline. Never throws.
+   * Drops the scratchpad records of a turn's pipeline tree. Never throws.
+   *
+   * The agent engine (0463) runs as a sub-workflow, so its scratchpad is
+   * addressed by the ENGINE's pipeline id, not the turn's: drop every pipeline
+   * below the given one too, or engine scratchpads wait out the TTL.
    *
    * @param string|null $pipelineId
-   *   The pipeline id; NULL or empty is a no-op (never the global bucket).
+   *   The turn's pipeline id; NULL or empty is a no-op (never the global
+   *   bucket).
    */
   public function drop(?string $pipelineId): void {
     if ($pipelineId === NULL || $pipelineId === '') {
@@ -74,8 +80,10 @@ final class TurnScratchpadSweeper {
       if (!\Drupal::hasService('flowdrop_memory.manager')) {
         return;
       }
-      \Drupal::service('flowdrop_memory.manager')
-        ->delete(self::SCOPE, $pipelineId, self::KEY, self::BACKEND);
+      $memory = \Drupal::service('flowdrop_memory.manager');
+      foreach ($this->pipelines->withDescendants($pipelineId) as $id) {
+        $memory->delete(self::SCOPE, $id, self::KEY, self::BACKEND);
+      }
     }
     catch (\Throwable $e) {
       $this->logger->warning('Could not drop the scratchpad of pipeline @id: @m', [

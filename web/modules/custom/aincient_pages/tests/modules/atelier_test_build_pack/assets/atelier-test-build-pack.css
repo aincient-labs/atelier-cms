@@ -1,0 +1,4 @@
+/* Tailwind preflight-like build output. */
+*, ::before { border-color: #e5e7eb; color: #000; }
+.opacity-50 { opacity: .5; }
+.card { background: var(--neutral-surface); color: var(--neutral-ink); padding: 1rem; }

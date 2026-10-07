@@ -1,0 +1,8 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'atelier_test_dirty_pack'
+type: module
+description: 'TEST ONLY: CSS-lint fixture pack (dirty) for PackValidator (W10d).'
+package: Testing
+core_version_requirement: ^11
+dependencies:
+  - aincient_pages

@@ -1,0 +1,2 @@
+.card { background: var(--neutral-surface); color: var(--neutral-ink); padding: 1rem; }
+.card--bad { color: #fff; }

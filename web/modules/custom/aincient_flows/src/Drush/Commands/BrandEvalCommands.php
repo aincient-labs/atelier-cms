@@ -96,6 +96,9 @@ final class BrandEvalCommands extends DrushCommands {
     $unexpected = 0;
     $passes = 0;
     $totalCost = 0.0;
+    // Cases whose calls could not be priced: their cost is unknown, not $0,
+    // so the total is marked partial rather than printed as complete.
+    $unpricedCases = 0;
     foreach ($cases as $c) {
       $this->io()->writeln(sprintf('<comment>▶ %s</comment> — %s%s', $c->name, $c->ask, $c->issue ? " (cms #{$c->issue})" : ''));
       try {
@@ -134,7 +137,12 @@ final class BrandEvalCommands extends DrushCommands {
       if ($ok) {
         $passes++;
       }
-      $totalCost += (float) ($o['cost_usd'] ?? 0);
+      if (($o['cost_usd'] ?? NULL) === NULL) {
+        $unpricedCases++;
+      }
+      else {
+        $totalCost += (float) $o['cost_usd'];
+      }
 
       foreach ($results as $r) {
         if (!$r['pass'] || $options['verbose-assertions']) {
@@ -153,7 +161,7 @@ final class BrandEvalCommands extends DrushCommands {
         'contrast' => $this->contrastSummary($o),
         'delegations' => sprintf('c%d s%d t%d', $o['delegations.colour'] ?? 0, $o['delegations.shape'] ?? 0, $o['delegations.typography'] ?? 0),
         'model' => (string) ($o['model'] ?? ''),
-        'cost' => number_format((float) ($o['cost_usd'] ?? 0), 4),
+        'cost' => ($o['cost_usd'] ?? NULL) === NULL ? 'n/a' : number_format((float) $o['cost_usd'], 4),
         'seconds' => (string) round($run['seconds'], 1),
         'pipeline' => (string) ($run['pipeline_id'] ?? '—'),
         'failed' => implode('; ', array_map(static fn (array $r) => $r['key'], $failed)),
@@ -164,7 +172,8 @@ final class BrandEvalCommands extends DrushCommands {
       // Only a FULL run of the shipped corpus is a record the guard may trust.
       $this->recordRun($dir, count($cases), $passes, $unexpected);
     }
-    $this->io()->writeln(sprintf('%d case(s), %d green, %d unexpected failure(s), $%s.', count($cases), $passes, $unexpected, number_format($totalCost, 4)));
+    $this->io()->writeln(sprintf('%d case(s), %d green, %d unexpected failure(s), $%s%s.', count($cases), $passes, $unexpected, number_format($totalCost, 4),
+      $unpricedCases > 0 ? sprintf(' (partial: %d case(s) used an unpriced model)', $unpricedCases) : ''));
     if ($unexpected > 0) {
       $this->logger()->error(dt('@n case(s) failed that were expected to pass.', ['@n' => $unexpected]));
       return CommandResult::dataWithExitCode(new RowsOfFields($rows), self::EXIT_FAILURE);

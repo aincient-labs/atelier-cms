@@ -33,7 +33,7 @@ parameters:
     default: claude-sonnet-4-5-20250929
   operation_type:
     configurable: true
-    connectable: false
+    connectable: true
     required: false
     default: 'aincient_role:task'
   systemPrompt:

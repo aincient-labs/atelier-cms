@@ -30,6 +30,12 @@ describe("describeStep", () => {
       "conversation_normalize",
       "message_assemble",
       "aincient_flows_aincient_invoke",
+      // The agent engine (0463) and the wiring inside it.
+      "aincient_agent_engine",
+      "text_input",
+      "text_output",
+      "aincient_flows_approval_gate",
+      "decline_synthesize",
     ]) {
       expect(isWork({ label: "Whatever", status: "completed", nodeTypeId })).toBe(false);
     }

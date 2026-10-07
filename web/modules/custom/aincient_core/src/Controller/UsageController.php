@@ -358,16 +358,15 @@ final class UsageController extends ControllerBase {
    *
    * `context_id` AND the label it resolves to. The raw tag is first because it is
    * the stable key a spreadsheet should pivot on; the label is a convenience that
-   * can change wording between releases. `unpriced` is derived rather than left
-   * to the reader — a zero in the cost column beside a non-zero token count is
-   * exactly the thing an export is used to go looking for.
+   * can change wording between releases. `unpriced` is spelled out rather than
+   * left to the reader — an empty cost cell is exactly the thing an export is
+   * used to go looking for, and a filter on a boolean beats one on a blank.
    *
-   * @return array<string, string|int|float|bool>
+   * @return array<string, string|int|float|bool|null>
    *   One row, keyed by {@see self::EXPORT_COLUMNS}.
    */
   private function exportRow(object $row): array {
-    $tokens = (int) $row->input_tokens + (int) $row->output_tokens;
-    $cost = (float) $row->cost_usd;
+    $cost = $row->cost_usd === NULL ? NULL : (float) $row->cost_usd;
     return [
       'id' => (int) $row->id,
       'timestamp' => (int) $row->timestamp,
@@ -382,7 +381,7 @@ final class UsageController extends ControllerBase {
       'output_tokens' => (int) $row->output_tokens,
       'cached_tokens' => (int) $row->cached_tokens,
       'cost_usd' => $cost,
-      'unpriced' => $tokens > 0 && $cost === 0.0,
+      'unpriced' => $cost === NULL,
     ];
   }
 
@@ -390,7 +389,7 @@ final class UsageController extends ControllerBase {
    * The call-site table: label, what it is, and a bar drawn on tokens.
    *
    * The bar is scaled by TOKENS and never by spend — see
-   * {@see CallSites::decorate()}. An unpriced model records $0.00, so a bar drawn
+   * {@see CallSites::decorate()}. An unpriced model records no cost, so a bar drawn
    * on money would show the biggest consumer on the page as the smallest bar.
    * That used to be said in a caption under the table; the caption is gone with
    * the rest of the page's prose, and the rule it protects lives with the code
@@ -445,11 +444,9 @@ final class UsageController extends ControllerBase {
   private function modelTable(int|null $since): array {
     $rows = [];
     foreach ($this->sortByTokens($this->usage->byModel($since)) as $row) {
-      // A `free` entry's zero is a fact about local inference, not a gap. The
-      // query counts zero-cost calls without knowing that, so the rate table
-      // decides here whether the count is worth showing — the same rule
-      // UnpricedNotice::recorded() applies to the warning above, so the flag and
-      // the warning cannot disagree about which rows are a problem.
+      // Same rule as UnpricedNotice::recorded(), so the flag and the warning
+      // above cannot disagree about which rows are a problem. A `free` entry
+      // records 0.0, never NULL, so its rows are not counted to begin with.
       $rate = $this->pricing->rate((string) $row['provider_id'], (string) $row['model_id']);
       $unpriced = $row['unpriced_calls'] > 0 && !($rate !== NULL && ($rate['free'] ?? FALSE));
       $rows[] = [
@@ -472,7 +469,7 @@ final class UsageController extends ControllerBase {
               '#context' => [
                 'model' => $row['provider_id'] . ':' . $row['model_id'],
                 // PAST TENSE, and only past tense when a rate exists today: the
-                // flag is derived from `cost = 0` on rows already written, so a
+                // flag is derived from `cost IS NULL` on rows already written, so a
                 // model priced since those rows landed is not a gap to close,
                 // and saying "has no rate" about one sends the operator to an
                 // entry that is already there. Same split as
@@ -480,8 +477,8 @@ final class UsageController extends ControllerBase {
                 // cannot disagree about which rows are a problem.
                 'flag' => $unpriced
                   ? ($rate === NULL
-                    ? $this->t('@count of these calls have no rate and are counted as $0.00', ['@count' => $row['unpriced_calls']])
-                    : $this->t('@count of these calls were recorded before this model had a rate, and stay at $0.00', ['@count' => $row['unpriced_calls']]))
+                    ? $this->t('@count of these calls have no rate and are left out of the spend', ['@count' => $row['unpriced_calls']])
+                    : $this->t('@count of these calls were recorded before this model had a rate, and stay without a cost', ['@count' => $row['unpriced_calls']]))
                   : '',
               ],
             ],
@@ -541,7 +538,7 @@ final class UsageController extends ControllerBase {
         $account?->getDisplayName() ?? $this->t('Deleted or anonymous (uid @uid)', ['@uid' => (int) $row['uid']]),
         number_format((int) $row['input_tokens']),
         number_format((int) $row['output_tokens']),
-        $this->money((float) $row['cost_usd']),
+        $this->money($row['cost_usd'] === NULL ? NULL : (float) $row['cost_usd']),
       ];
     }
 
@@ -671,16 +668,20 @@ final class UsageController extends ControllerBase {
    * two-decimal money would print every such row — and the columns they add up
    * to — as "$0.00", which is the exact appearance this page has to reserve for a
    * real zero.
+   *
+   * NULL — a call, or a group of calls, with no price — prints as a dash and
+   * never as $0.00: no figure is better than one that reads as free.
    */
-  private function money(float $value): string {
+  private function money(?float $value): string {
+    if ($value === NULL) {
+      return '—';
+    }
     if ($value === 0.0) {
       return '$0.00';
     }
     if ($value < 0.0001) {
-      // A real fraction of a cent, printed as "$0.0000", is the one thing this
-      // page must never show: it is pixel-identical to the recorded zero that
-      // means "unpriced", and the two are opposite facts. Say it is small
-      // instead of rounding it into the failure state.
+      // A real fraction of a cent, printed as "$0.0000", reads as free. Say it
+      // is small instead of rounding it into a zero.
       return '<$0.0001';
     }
     return '$' . number_format($value, $value < 1 ? 4 : 2);

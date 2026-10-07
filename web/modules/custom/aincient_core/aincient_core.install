@@ -112,9 +112,9 @@ function aincient_core_schema(): array {
         'type' => 'numeric',
         'precision' => 12,
         'scale' => 8,
-        'not null' => TRUE,
-        'default' => 0.0,
-        'description' => 'What ModelPricing charged, in USD. DECIMAL(12,8) because a haiku call can cost less than a millionth of a dollar.',
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => 'What ModelPricing charged, in USD; NULL when the call could not be priced in full, 0 only for a `free` model. DECIMAL(12,8) because a haiku call can cost less than a millionth of a dollar.',
       ],
       'context_id' => [
         'type' => 'varchar',
@@ -643,5 +643,39 @@ function aincient_core_update_11012(): void {
   $schema = \Drupal::database()->schema();
   if (!$schema->tableExists('aincient_demo_content')) {
     $schema->createTable('aincient_demo_content', aincient_core_demo_content_table());
+  }
+}
+
+/**
+ * Unpriced calls store a NULL cost instead of $0.00.
+ *
+ * A zero in `cost_usd` meant both "free" and "we had no rate", and every
+ * surface that showed it — the console footer above all — presented the
+ * second as a price. Existing zero rows with real tokens become NULL unless the
+ * rate table marks that model `free` today; that is the same test the usage
+ * dashboard already applied to tell the two apart.
+ */
+function aincient_core_update_11013(): void {
+  $database = \Drupal::database();
+  $schema = $database->schema();
+  if (!$schema->tableExists('aincient_ai_usage')) {
+    return;
+  }
+  $schema->changeField('aincient_ai_usage', 'cost_usd', 'cost_usd', aincient_core_schema()['aincient_ai_usage']['fields']['cost_usd']);
+
+  $pricing = \Drupal::service('aincient_core.model_pricing');
+  $models = $database->query('SELECT DISTINCT [provider_id], [model_id] FROM {aincient_ai_usage} WHERE [cost_usd] = 0 AND ([input_tokens] + [output_tokens]) > 0')->fetchAll();
+  foreach ($models as $model) {
+    $rate = $pricing->rate((string) $model->provider_id, (string) $model->model_id);
+    if ($rate !== NULL && ($rate['free'] ?? FALSE)) {
+      continue;
+    }
+    $database->update('aincient_ai_usage')
+      ->expression('cost_usd', 'NULL')
+      ->condition('provider_id', $model->provider_id)
+      ->condition('model_id', $model->model_id)
+      ->condition('cost_usd', 0)
+      ->where('([input_tokens] + [output_tokens]) > 0')
+      ->execute();
   }
 }

@@ -57,9 +57,9 @@ final class UsageRecordedEvent extends Event {
    *   Output tokens, thinking included.
    * @param int $cachedTokens
    *   Cache-read tokens, a subset of the input figure above.
-   * @param float $costUsd
-   *   What the call cost, per Atelier's own rate table. A zero here can mean
-   *   "free" or "unpriced"; the log line the recorder writes tells them apart.
+   * @param float|null $costUsd
+   *   What the call cost, per Atelier's own rate table. NULL means unpriced;
+   *   0.0 means a model the table marks `free`.
    */
   public function __construct(
     private readonly int $uid,
@@ -69,7 +69,7 @@ final class UsageRecordedEvent extends Event {
     private readonly int $inputTokens,
     private readonly int $outputTokens,
     private readonly int $cachedTokens,
-    private readonly float $costUsd,
+    private readonly ?float $costUsd,
   ) {}
 
   /**
@@ -122,9 +122,9 @@ final class UsageRecordedEvent extends Event {
   }
 
   /**
-   * What the call cost in USD.
+   * What the call cost in USD, or NULL when it could not be priced.
    */
-  public function getCostUsd(): float {
+  public function getCostUsd(): ?float {
     return $this->costUsd;
   }
 

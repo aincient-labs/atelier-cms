@@ -46,35 +46,36 @@ class AincientCoreServiceProvider extends ServiceProviderBase {
     $container->getDefinition('flowdrop.chat_reasoner')
       ->setClass(SymfonyAiReasoner::class)
       ->setArguments([
-        new Reference('aincient_core.inference.registry'),
-        new Reference('aincient_core.inference.model_targets'),
-        new Reference('aincient_core.inference.message_mapper'),
-        new Reference('aincient_core.inference.tool_schema'),
-        new Reference('aincient_core.inference.result_unpacker'),
+        '$registry' => new Reference('aincient_core.inference.registry'),
+        '$targets' => new Reference('aincient_core.inference.model_targets'),
+        '$messages' => new Reference('aincient_core.inference.message_mapper'),
+        '$tools' => new Reference('aincient_core.inference.tool_schema'),
+        '$unpacker' => new Reference('aincient_core.inference.result_unpacker'),
         // The metering recorder. This list is the LIVE agent-turn wiring — the
         // `aincient_core.inference.reasoner` definition in the .yml is only ever
         // instantiated directly by tests — so a constructor argument added there
         // and not here is an agent loop that records nothing, which is the exact
         // regression this argument repairs.
-        new Reference('aincient_core.usage_recorder'),
-        new Reference('logger.channel.aincient_core'),
+        '$usage' => new Reference('aincient_core.usage_recorder'),
+        '$logger' => new Reference('logger.channel.aincient_core'),
         // The retrying call wrapper. Same rule again, and this time the omission
         // actually shipped: added to the .yml definition and not here, it made
         // every live agent turn a TypeError — the dispatcher below landed in the
         // ProviderCall slot — while the tests, which build from the .yml, stayed
-        // green. Positional arguments cannot be trusted to fail loudly here.
-        new Reference('aincient_core.inference.provider_call'),
+        // green. The list is now NAMED (keys are constructor parameter names), so
+        // a misplaced or unknown argument fails loudly at container compile.
+        '$providerCall' => new Reference('aincient_core.inference.provider_call'),
         // Trust-the-wire tool-call recovery. Same rule as the recorder and
         // ProviderCall above: THIS list is the live agent-turn wiring, so a
         // codec added to the .yml and not here would recover dropped tool calls
         // in tests and nowhere else — the lying-gateway silence back in
         // production while the suite stays green.
-        new Reference('aincient_core.inference.tool_call_codec'),
+        '$codec' => new Reference('aincient_core.inference.tool_call_codec'),
         // The event dispatcher, for InferenceStartedEvent. Same rule as the
         // recorder above: THIS list is the live agent-turn wiring, so leaving it
         // out here would mean the one call that takes ~50s announces itself in
         // tests and nowhere else — a console silent for the whole wait.
-        new Reference('event_dispatcher'),
+        '$dispatcher' => new Reference('event_dispatcher'),
       ]);
   }
 

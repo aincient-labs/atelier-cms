@@ -227,7 +227,7 @@ final class PricingForm extends ConfigFormBase {
       $form['models']['_retired'] = [
         '#type' => 'details',
         '#title' => $this->t('Models no role uses (@count)', ['@count' => count($retired)]),
-        '#description' => $this->t('Nothing on this site will call these again. They are listed because past calls may have been recorded at $0.00, and because a rate set here can still be corrected or cleared.'),
+        '#description' => $this->t('Nothing on this site will call these again. They are listed because past calls may have been recorded without a cost, and because a rate set here can still be corrected or cleared.'),
         '#attributes' => ['class' => ['ain-pricing__retired']],
       ];
       foreach ($retired as $key => $subject) {
@@ -338,7 +338,7 @@ final class PricingForm extends ConfigFormBase {
 
     $badge = '';
     if ($effective === NULL) {
-      $badge = $this->badge('unpriced', (string) $this->t('unpriced'), (string) $this->t('Unpriced: calls to this model are recorded at $0.00.'));
+      $badge = $this->badge('unpriced', (string) $this->t('unpriced'), (string) $this->t('Unpriced: calls to this model are recorded without a cost and left out of spend.'));
     }
     elseif ($this->disagrees($stored, $exact)) {
       $badge = $this->badge('disagrees', (string) $this->t('differs'), (string) $this->t('This rate differs from the one we now publish.'));
@@ -414,7 +414,7 @@ final class PricingForm extends ConfigFormBase {
    */
   private function presence(array $subject): string {
     if ($subject['calls'] > 0) {
-      return (string) $this->t('billed @count calls at $0.00', ['@count' => number_format($subject['calls'])]);
+      return (string) $this->t('recorded @count calls without a cost', ['@count' => number_format($subject['calls'])]);
     }
     return $subject['origin'] === self::ORIGIN_PRICED
       ? (string) $this->t('priced on this site, unused')
@@ -436,7 +436,7 @@ final class PricingForm extends ConfigFormBase {
    */
   private function choice(string $key, array $subject, ?array $stored, array $candidates, ?array $exact): array {
     $options = [
-      'none' => $this->t('Not set — record $0.00 and keep reporting the gap'),
+      'none' => $this->t('Not set — record no cost and keep reporting the gap'),
       'free' => $this->t('Free — self-hosted or local, so $0.00 is the true price'),
     ];
     $descriptions = [
@@ -573,11 +573,11 @@ final class PricingForm extends ConfigFormBase {
 
     if ($effective === NULL && $subject['origin'] === self::ORIGIN_SPENDING) {
       $class .= ' ain-pricing__status--unpriced';
-      $message = $this->t('This model has been called and has no rate, so those calls were recorded at $0.00. Every total on the usage dashboard is under-reported until you set one.');
+      $message = $this->t('This model has been called and has no rate, so those calls were recorded without a cost. Every total on the usage dashboard is under-reported until you set one.');
     }
     elseif ($effective === NULL) {
       $class .= ' ain-pricing__status--unpriced';
-      $message = $this->t('No rate. Calls to this model will record $0.00 and the dashboard will under-report until you set one.');
+      $message = $this->t('No rate. Calls to this model will be recorded without a cost and the dashboard will under-report until you set one.');
     }
     elseif ($this->disagrees($stored, $exact)) {
       // The line the contrib table could never print, and the reason a stale

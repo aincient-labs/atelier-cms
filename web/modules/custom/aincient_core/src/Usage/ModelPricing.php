@@ -383,6 +383,7 @@ final class ModelPricing {
 
     $cost = [];
     $unpriced = [];
+    $free = (bool) ($rate['free'] ?? FALSE);
     foreach (self::CLASSES as $class) {
       $perToken = $rate[$class] ?? NULL;
       $cost[$class] = $perToken === NULL ? 0.0 : $counts[$class] * $perToken;
@@ -390,8 +391,11 @@ final class ModelPricing {
       // Anthropic publishes no cache rate for an image model, and a call that
       // used no cache should not be nagged about it. A rate of exactly 0.0 on a
       // NON-free entry counts as missing too — no paid model bills nothing, so
-      // a literal zero there is a typo or an unfilled field, not a price.
-      $missing = $perToken === NULL || ($perToken === 0.0 && !($rate['free'] ?? FALSE));
+      // a literal zero there is a typo or an unfilled field, not a price. A
+      // `free` entry prices EVERY class at zero, published or not: the shipped
+      // `ollama:*` entry has no cache rates, and a local call reporting cached
+      // tokens must still record 0.0, not an unpriced NULL.
+      $missing = !$free && ($perToken === NULL || $perToken === 0.0);
       if ($counts[$class] > 0 && $missing) {
         $unpriced[] = $class;
       }
@@ -399,7 +403,7 @@ final class ModelPricing {
 
     return $cost + [
       'total' => array_sum($cost),
-      'free' => (bool) ($rate['free'] ?? FALSE),
+      'free' => $free,
       'unpriced' => $unpriced,
     ];
   }

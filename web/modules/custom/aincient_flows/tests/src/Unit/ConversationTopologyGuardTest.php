@@ -352,9 +352,18 @@ final class ConversationTopologyGuardTest extends TestCase {
         "$id: the transcript and scratchpad ports read the same buffer node — the two stores must be separate.",
       );
 
+      // The user turn arrives on an edge (a studio's chat_input) or, in the
+      // shared engine sub-workflow (0463), through its interface `message`
+      // input bound to the reader's port.
+      $bound = array_filter(
+        $config['input_ports'] ?? [],
+        static fn (array $port): bool => ($port['node_id'] ?? '') === $transcript
+          && in_array($port['port'] ?? '', ['content', 'message'], TRUE),
+      );
       $userTurn = array_merge(
         $this->edgesInto($config, $transcript, 'content'),
         $this->edgesInto($config, $transcript, 'message'),
+        $bound,
       );
       $this->assertNotEmpty(
         $userTurn,

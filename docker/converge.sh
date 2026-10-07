@@ -590,9 +590,10 @@ upgrade() {
   # Re-assert the product's canonical config from the baked-in config/sync, so a
   # release ships config changes (new studios, fields, flows, blocks) without
   # hand-writing a post_update hook for each. This is SAFE because config_ignore
-  # fences off the site-owned objects (system.site, model_roles, the brand/chrome/
-  # identity trio, mail, language) — cim never touches them, so a site's name,
-  # model picks and look survive every update. Credentials were never at risk:
+  # fences off the site-owned objects (system.site, model_roles, pricing, model
+  # preferences, disabled studios, the brand/chrome/identity trio, mail,
+  # language) — cim never touches them, so a site's name, model picks, rates and
+  # look survive every update. Credentials were never at risk:
   # they live in State, not config. See docker/README.md "Config on update" and
   # config/sync/config_ignore.settings.yml. Escape hatch: set
   # AINCIENT_IMPORT_CONFIG=0 to skip the import for a release.

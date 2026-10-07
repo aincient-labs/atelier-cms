@@ -13,12 +13,45 @@ nodes:
   -
     id: chat_input.1
     position:
-      x: 240
-      'y': 140
+      x: 0
+      'y': 0
     data:
       label: 'Chat Input'
       config:
         nodeType: default
+        ports:
+          inputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+            -
+              id: loop_back
+          outputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+            -
+              id: error
       metadata:
         node_type_id: chat_input
     measured:
@@ -27,8 +60,8 @@ nodes:
   -
     id: aincient_flows_aincient_capability_onboarding_panel.1
     position:
-      x: 680
-      'y': 320
+      x: 420
+      'y': 160
     data:
       label: 'Capability: Connect AI (onboarding)'
       config: {  }
@@ -40,14 +73,40 @@ nodes:
   -
     id: chat_output.1
     position:
-      x: 1200
-      'y': 380
+      x: 840
+      'y': 320
     data:
       label: 'Chat Output'
       config:
         format: text
         showTimestamp: false
         nodeType: default
+        ports:
+          inputs:
+            -
+              id: message
+            -
+              id: trigger
+              exposed: false
+            -
+              id: loop_back
+          outputs:
+            -
+              id: message
+            -
+              id: format
+              exposed: false
+            -
+              id: timestamp
+              exposed: false
+            -
+              id: metadata
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
       metadata:
         node_type_id: chat_output
     measured:

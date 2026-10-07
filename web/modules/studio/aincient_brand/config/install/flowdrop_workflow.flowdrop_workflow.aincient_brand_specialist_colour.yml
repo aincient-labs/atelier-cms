@@ -16,14 +16,31 @@ nodes:
   -
     id: chat_input.1
     position:
-      x: -480
-      'y': -20
+      x: 420
+      'y': -60
     data:
       label: 'Chat Input'
       config:
         nodeType: default
         maxRetries: 0
         ports:
+          inputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: loop_back
           outputs:
             -
               id: message
@@ -41,18 +58,6 @@ nodes:
               exposed: false
             -
               id: error
-          inputs:
-            -
-              id: message
-            -
-              id: history
-            -
-              id: sessionId
-            -
-              id: messageId
-            -
-              id: trigger
-              exposed: false
         requiresConfirmation: ''
       metadata:
         node_type_id: chat_input
@@ -61,12 +66,12 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 441
+      height: 262
   -
     id: prompt_template.1
     position:
-      x: -480
-      'y': 460
+      x: 420
+      'y': 240
     data:
       label: 'Colour system prompt'
       config:
@@ -266,12 +271,12 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 261
+      height: 262
   -
     id: simple_chat.1
     position:
-      x: -20
-      'y': 300
+      x: 820
+      'y': 0
     data:
       label: 'Colour reasoning'
       config:
@@ -282,6 +287,19 @@ nodes:
         systemPrompt: ''
         maxRetries: 0
         ports:
+          inputs:
+            -
+              id: message
+            -
+              id: systemPrompt
+            -
+              id: history
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: loop_back
           outputs:
             -
               id: response
@@ -290,16 +308,6 @@ nodes:
               exposed: false
             -
               id: error
-          inputs:
-            -
-              id: message
-            -
-              id: systemPrompt
-            -
-              id: history
-            -
-              id: trigger
-              exposed: false
         requiresConfirmation: ''
       metadata:
         node_type_id: flowdrop_ai_provider_simple_chat
@@ -308,12 +316,12 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 381
+      height: 322
   -
     id: chat_output.1
     position:
-      x: 1700
-      'y': 680
+      x: 2260
+      'y': 320
     data:
       label: 'Chat Output'
       config:
@@ -353,12 +361,12 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 241
+      height: 242
   -
     id: aincient_flows_brand_validate_slice.1
     position:
-      x: 840
-      'y': 520
+      x: 1540
+      'y': 160
     data:
       label: 'Validate brand slice'
       config:
@@ -383,12 +391,12 @@ nodes:
         node_type_id: aincient_flows_brand_validate_slice
     measured:
       width: 280
-      height: 281
+      height: 282
   -
     id: data_to_json.1
     position:
-      x: 1280
-      'y': 600
+      x: 1900
+      'y': 240
     data:
       label: 'Data to JSON'
       config:
@@ -416,12 +424,12 @@ nodes:
         node_type_id: data_to_json
     measured:
       width: 280
-      height: 261
+      height: 262
   -
     id: json_to_data.1
     position:
-      x: 400
-      'y': 480
+      x: 1180
+      'y': 120
     data:
       label: 'JSON to Data'
       config:
@@ -433,7 +441,7 @@ nodes:
         node_type_id: json_to_data
     measured:
       width: 280
-      height: 261
+      height: 262
 edges:
   -
     id: xy-edge__chat_input.1chat_input.1-output-message-simple_chat.1simple_chat.1-input-message
@@ -551,15 +559,16 @@ edges:
     class: flowdrop--edge--data
 metadata:
   createdAt: '2026-08-13T16:45:02.578Z'
-  updatedAt: '2026-08-13T16:52:08.654Z'
+  updatedAt: '2026-10-06T22:02:54.353Z'
 created: 1782300000
-changed: 1786639928
+changed: 1791324174
 uid: 1
 input_ports:
   -
     name: ask
     node_id: chat_input.1
     port: message
+    required: true
   -
     name: current_state
     node_id: prompt_template.1
@@ -576,16 +585,15 @@ parameter_schema:
   properties:
     ask:
       type: string
-      description: 'The colour instruction to act on — what the user wants for the palette/mood. Pass the colour-relevant part of the request only; do NOT restate current colour values (the authoritative current look is supplied separately via current_state).'
+      x-data-type: string
       default: ''
-      required: true
     current_state:
-      type: object
-      description: 'The authoritative current look (saved-brand brief + live preview draft), injected from the brand_state node — NOT model-authored. Wire a data edge into this port; it is withheld from the model and supplied deterministically from run state.'
-      required: false
+      x-data-type: mixed
+      default: {  }
 output_schema:
   type: object
   properties:
     slice:
       type: string
-schema_version: 1.0.0
+      x-data-type: string
+schema_version: 2.0.0

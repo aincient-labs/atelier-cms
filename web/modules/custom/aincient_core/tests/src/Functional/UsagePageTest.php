@@ -155,17 +155,22 @@ final class UsagePageTest extends BrowserTestBase {
   }
 
   /**
-   * Tokens recorded at $0.00 say so, and say what it costs the reader.
+   * Tokens recorded without a cost say so, and say what it costs the reader.
    *
    * The single most important behaviour on the page. The row below burned 17,162
    * tokens and recorded nothing; without the warning the totals do not look
    * broken, they look cheap.
    */
   public function testTokensWithNoCostRaiseTheUnderReportWarning(): void {
-    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'claude-sonnet-5', 15000, 2162, 0.0);
+    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'claude-sonnet-5', 15000, 2162, NULL);
 
     $this->drupalGet(self::PATH);
     $assert = $this->assertSession();
+
+    // An all-unpriced period has no spend figure, not a $0.00 nobody paid.
+    $assert->elementTextEquals('css', '.ain-usage__totals li:first-child .ain-usage__stat-value', '—');
+    $assert->elementTextNotContains('css', 'tr.ain-usage__row--unpriced', '$0.00');
+    $assert->elementTextNotContains('css', '.ain-usage__table--sites', '$0.00');
 
     // The consequence, not merely the condition.
     $assert->pageTextContains('The spend below is an under-report');
@@ -179,7 +184,7 @@ final class UsagePageTest extends BrowserTestBase {
   /**
    * A model with no rate TODAY is the actionable case: add a rate.
    *
-   * Its future calls will keep recording $0.00, so this is the only group the
+   * Its future calls will keep recording no cost, so this is the only group the
    * page may tell an operator to go and fix.
    */
   public function testAModelWithNoRateIsReportedAsActionable(): void {
@@ -188,7 +193,7 @@ final class UsagePageTest extends BrowserTestBase {
     // could look up. `openai:gpt-4o` used to stand here and stopped working as a
     // fixture the moment gpt-4o gained a suggested rate — an unpriced example
     // has to be one we have no way to price, not merely one we had not got to.
-    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'production-fast', 5000, 500, 0.0, provider: 'openai_compatible');
+    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'production-fast', 5000, 500, NULL, provider: 'openai_compatible');
 
     $this->drupalGet(self::PATH);
     $assert = $this->assertSession();
@@ -202,14 +207,14 @@ final class UsagePageTest extends BrowserTestBase {
   /**
    * A model priced SINCE those rows landed has nothing left to fix, and says so.
    *
-   * The derivation is `cost = 0 AND tokens > 0`, which cannot tell "unpriced now"
+   * The derivation is `cost IS NULL`, which cannot tell "unpriced now"
    * from "was unpriced then" — so the rate table is asked. Sending an operator to
    * add a rate that is already in the config object is how a correct page gets
    * read as a broken one. `claude-sonnet-5` is the real case: it was unpriced for
    * as long as it took to notice, and those rows are still in the table.
    */
   public function testAModelPricedSinceIsReportedAsHistorical(): void {
-    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'claude-sonnet-5', 15000, 2162, 0.0);
+    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'claude-sonnet-5', 15000, 2162, NULL);
 
     $this->drupalGet(self::PATH);
     $assert = $this->assertSession();
@@ -291,7 +296,7 @@ final class UsagePageTest extends BrowserTestBase {
    * The exports carry `context_id` — the column contrib's exports omit.
    */
   public function testTheExportsCarryTheCallSite(): void {
-    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'claude-sonnet-5', 9000, 1000, 0.0);
+    $this->seed(UsageRecorder::TAG_AGENT_TURN, 'claude-sonnet-5', 9000, 1000, NULL);
 
     $this->drupalGet(self::PATH . '/export/csv');
     $csv = $this->getSession()->getPage()->getContent();
@@ -299,7 +304,7 @@ final class UsagePageTest extends BrowserTestBase {
     $this->assertStringContainsString('call_site', $csv);
     $this->assertStringContainsString(UsageRecorder::TAG_AGENT_TURN, $csv);
     $this->assertStringContainsString('Agent turn', $csv);
-    // The derived flag, so a $0.00 row is findable with a filter rather than by
+    // The derived flag, so an unpriced row is findable with a filter rather than by
     // eye down a column of numbers.
     $this->assertStringContainsString('unpriced', $csv);
     // The cost column under the name the table gives it. It was
@@ -322,6 +327,8 @@ final class UsagePageTest extends BrowserTestBase {
     $this->assertSame(UsageRecorder::TAG_AGENT_TURN, $json['calls'][0]['context_id']);
     $this->assertSame('Agent turn', $json['calls'][0]['call_site']);
     $this->assertTrue($json['calls'][0]['unpriced']);
+    // No price is no number — never a 0 that reads as free.
+    $this->assertNull($json['calls'][0]['cost_usd']);
     // Both containers carry the same columns, or a spreadsheet and a script
     // reading the same period disagree about what this site spent.
     $this->assertArrayHasKey('cost_usd', $json['calls'][0]);
@@ -503,7 +510,7 @@ final class UsagePageTest extends BrowserTestBase {
     string $model,
     int $input,
     int $output,
-    float $cost,
+    ?float $cost,
     string $provider = 'anthropic',
     int $age = 0,
   ): void {

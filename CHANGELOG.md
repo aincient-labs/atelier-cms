@@ -7,6 +7,43 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.19.0] — 2026-10-07
+
+**Arrange your menus by dragging.** In the Header and Footer menu editors, drag a link by its grip
+to reorder it, drop it on another link to nest it as a submenu item, or drop it on a breadcrumb to
+move it up a level. From the keyboard, **Nest under previous link** and **Move out of submenu** sit
+next to Move up and Move down.
+
+**Add a page to a menu from the page itself.** A saved page's rail in the Content studio has
+**Add to menu**: pick the main or footer menu and where the link goes. The link is staged in
+Navigation & Pages for you to review and publish. If the page is already in that menu, the rail
+says so.
+
+**Assistants remember the cards they showed you.** After a list of pages or a brand preview, you can
+say "open the second one" on the next turn.
+
+**Upgrades keep your settings.** Rates you entered on **Model rates**, your model preferences and the
+studios you switched off in Settings now survive every upgrade, starting with this one. Our suggested
+rates still update with each release.
+
+**No more $0.00 for calls Atelier can't price.** A model without a rate, typically one reached through
+a proxy or an OpenAI-compatible endpoint, used to be recorded at $0.00, so turn and session totals
+looked complete when they weren't. Those calls now carry no cost: the console hides the figure and
+says why, the usage dashboard shows a dash, and exports leave the cost empty. Models you marked free
+still show $0.00.
+
+- All studio assistants now share one agent engine under the hood. Nothing changes in how they
+  behave; it makes them easier to improve together.
+- Asking the Checks assistant to "check this page" audits the page you have open, instead of asking
+  which page you mean.
+- A message sent right after opening a studio no longer disappears from view when your conversations
+  finish loading.
+- The ✕ on the setup wizard, **My account** and the **+ New page** form is styled again.
+- `atelier:pack-validate` checks the CSS you wrote instead of the compiled bundle, so a fresh pack
+  scaffold validates without warnings.
+- The suggested rate for Claude Sonnet 5 stays at $2/$10 per million tokens; Anthropic made the
+  introductory price permanent.
+
 ## [0.18.2] — 2026-10-05
 
 **Upgrades from older releases work again.**

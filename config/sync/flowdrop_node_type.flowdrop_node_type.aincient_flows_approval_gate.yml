@@ -1,0 +1,45 @@
+uuid: ac0c79cc-f2b5-403d-8427-7c0f700de340
+langcode: en
+status: true
+dependencies:
+  module:
+    - aincient_flows
+id: aincient_flows_approval_gate
+label: 'Approval gate'
+description: "TRUE when any of the step's tool calls is in the approval list (a CSV of capability_* names); an empty list never asks."
+category: agents
+icon: 'mdi:shield-check-outline'
+plugin_version: 1.0.0
+enabled: true
+parameters:
+  approval_tools:
+    configurable: true
+    connectable: true
+    exposed_by_default: true
+    required: false
+    default: ''
+  tool_calls:
+    configurable: false
+    connectable: true
+    exposed_by_default: true
+    required: false
+outputs:
+  needs_approval:
+    exposed: true
+    exposed_by_default: true
+tags:
+  - aincient
+  - agent
+executor_plugin: 'aincient_flows:approval_gate'
+visual_type: default
+supported_visual_types:
+  - default
+unified_input_exposed: false
+unified_output_exposed: false
+tool_exposed: false
+confirmation:
+  author_controls:
+    - waive
+    - require
+  dynamic_controls: {  }
+reserved_port_exposure: {  }

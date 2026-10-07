@@ -52,27 +52,27 @@ final class AincientCoreServiceProviderTest extends TestCase {
       $definition->getArguments(),
     );
     $this->assertSame([
-      'aincient_core.inference.registry',
-      'aincient_core.inference.model_targets',
-      'aincient_core.inference.message_mapper',
-      'aincient_core.inference.tool_schema',
-      'aincient_core.inference.result_unpacker',
-      'aincient_core.usage_recorder',
-      'logger.channel.aincient_core',
+      '$registry' => 'aincient_core.inference.registry',
+      '$targets' => 'aincient_core.inference.model_targets',
+      '$messages' => 'aincient_core.inference.message_mapper',
+      '$tools' => 'aincient_core.inference.tool_schema',
+      '$unpacker' => 'aincient_core.inference.result_unpacker',
+      '$usage' => 'aincient_core.usage_recorder',
+      '$logger' => 'logger.channel.aincient_core',
       // The retrying call wrapper. Added to the .yml and to the constructor in
       // 0326 and NOT here, which shipped a v0.4.1 whose reasoner could not be
       // constructed at all (DECISIONS 0331).
-      'aincient_core.inference.provider_call',
+      '$providerCall' => 'aincient_core.inference.provider_call',
       // The trust-the-wire codec (Phase 4): re-reads a tool call the config
       // bridge dropped from a lying gateway's raw body. Same hazard as the
       // recorder and ProviderCall — wired here because THIS list is the live
       // agent loop, so an omission would recover in tests and nowhere else.
-      'aincient_core.inference.tool_call_codec',
+      '$codec' => 'aincient_core.inference.tool_call_codec',
       // The dispatcher that announces InferenceStartedEvent. Wired here as well
       // as in the .yml because THIS list is the live agent loop: without it the
       // one call that takes ~50s would report itself starting in tests only,
       // leaving the console silent for the whole wait.
-      'event_dispatcher',
+      '$dispatcher' => 'event_dispatcher',
     ], $ids);
   }
 
@@ -88,9 +88,8 @@ final class AincientCoreServiceProviderTest extends TestCase {
    *
    * This compares against the constructor's real signature via reflection, so a
    * new parameter fails here the moment it is added, in the only place that
-   * matters: the positional list the runtime container actually builds. The
-   * container binds by position and any two services satisfy each other's slots
-   * until PHP checks the type at construction, so nothing later will complain.
+   * matters: the named list the runtime container actually builds. Names are
+   * matched exactly, both ways: a missing parameter and an unknown key both fail.
    *
    * @covers ::alter
    */
@@ -99,22 +98,30 @@ final class AincientCoreServiceProviderTest extends TestCase {
 
     (new AincientCoreServiceProvider())->alter($container);
 
-    $expected = (new \ReflectionClass(SymfonyAiReasoner::class))
-      ->getConstructor()
-      ->getNumberOfParameters();
-
-    $this->assertCount(
-      $expected,
-      $container->getDefinition('flowdrop.chat_reasoner')->getArguments(),
-      sprintf(
-        'SymfonyAiReasoner takes %d constructor parameters, so the live wiring in '
-        . 'AincientCoreServiceProvider must pass %d arguments. A parameter added to '
-        . 'the class (and to the test-only .yml definition) but not to that '
-        . 'positional list is a TypeError on every agent turn — see DECISIONS 0331.',
-        $expected,
-        $expected,
-      ),
+    $names = array_map(
+      static fn (\ReflectionParameter $parameter): string => '$' . $parameter->getName(),
+      (new \ReflectionClass(SymfonyAiReasoner::class))
+        ->getConstructor()
+        ->getParameters(),
     );
+
+    $wired = array_keys($container->getDefinition('flowdrop.chat_reasoner')->getArguments());
+
+    $this->assertSame(
+      [],
+      array_values(array_diff($names, $wired)),
+      'SymfonyAiReasoner constructor parameters NOT wired by name in '
+      . 'AincientCoreServiceProvider: a parameter added to the class (and to the '
+      . 'test-only .yml definition) but not to that list is a TypeError on every '
+      . 'agent turn — see DECISIONS 0331.',
+    );
+    $this->assertSame(
+      [],
+      array_values(array_diff($wired, $names)),
+      'AincientCoreServiceProvider passes arguments that match no SymfonyAiReasoner '
+      . 'constructor parameter (a misspelt or stale name, or a positional entry).',
+    );
+    $this->assertSame($names, $wired, 'Entries must be in constructor order.');
   }
 
   /**

@@ -30,7 +30,7 @@ import {
 } from "./kit/icons";
 import { ModelPicker, type ModelPickerOption } from "./model-picker";
 import { apiUrl, consoleBase } from "./console-config";
-import { Button } from "./kit/button";
+import { Button, IconButton } from "./kit/button";
 
 /**
  * First-run onboarding wizard — the product's handshake.
@@ -817,15 +817,14 @@ export function OnboardingWizard() {
       <div className="ain-wiz__card">
         {/* A re-run can be dismissed back to the console; first-run cannot. */}
         {closable && (
-          <button
-            type="button"
-            className="ain-btn ain-pop__close ain-wiz__close"
+          <IconButton
+            className="ain-wiz__close"
             onClick={skip}
-            aria-label="Close"
+            label="Close"
             title="Close — back to the console"
           >
             <XIcon />
-          </button>
+          </IconButton>
         )}
         <ProgressDots step={step} />
 

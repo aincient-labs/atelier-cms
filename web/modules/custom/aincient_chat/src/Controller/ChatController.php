@@ -169,6 +169,9 @@ final class ChatController extends ControllerBase {
         'nid' => (int) $wn['nid'],
         'langcode' => trim((string) ($wn['langcode'] ?? '')),
       ];
+      // The open page's id also rides turn state, so the Checks agent can audit
+      // "this page" without asking — the draft JSON carries no node id.
+      $clientContext['variables']['working_node_id'] = $workingNode['nid'];
     }
 
     $processor = $this->processor;

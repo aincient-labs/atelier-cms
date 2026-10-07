@@ -144,7 +144,10 @@ final class UsageRecorder {
         inputTokens: $input + $cacheWrite,
         outputTokens: $output,
         cachedTokens: $cacheRead,
-        costUsd: $cost['total'],
+        // NULL, not 0.0, when any billed class had no rate. A partial sum
+        // would read as the call's price and a zero as "free"; only a call we
+        // could price in full gets a number. A `free` entry still writes 0.0.
+        costUsd: $cost['unpriced'] === [] ? $cost['total'] : NULL,
         // The call-site tag rides in context_id, which is now OUR column and
         // documents that meaning outright — contrib's version held a run UUID
         // and, on this site, never held anything at all (0 non-null rows across
@@ -194,7 +197,7 @@ final class UsageRecorder {
       return;
     }
 
-    $this->logger->warning('No price for @provider:@model — @classes tokens were recorded at $0 (@tag). Cost reporting under-counts this model until it is added to aincient_core.pricing.', [
+    $this->logger->warning('No price for @provider:@model — @classes tokens have no rate, so the call was recorded without a cost (@tag). Spend figures leave this model out until it has a rate on Model rates.', [
       '@provider' => $providerId,
       '@model' => $modelId,
       '@classes' => implode(', ', $cost['unpriced']),

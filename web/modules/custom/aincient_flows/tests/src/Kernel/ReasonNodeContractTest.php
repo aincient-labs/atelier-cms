@@ -11,16 +11,14 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Yaml\Yaml;
 
 /**
- * Pins the shipped reason node's (and wrapper's) load-bearing config choices.
+ * Pins the shipped reason node's load-bearing config choices.
  *
- * Every agent places the `aincient_reason` node directly, so the choices this
- * test guards are choices about EVERY agent. (The `reason` wrapper workflow also
- * exists and is pinned here, but the STOP-AND-REPORT recovery is no longer
- * authored inside it — it lives in the node's own PHP, {@see
- * \Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\AincientReason}, which
- * catches a provider failure and ends the step on its `error_detail` output. The
- * wrapper's per-tier contract stays guarded for any placement that still uses
- * it.)
+ * Every agent step is the `aincient_reason` node placed once, inside the shared
+ * `aincient_agent_engine` sub-workflow (DECISIONS 0463), so the choices this
+ * test guards are choices about EVERY agent. The STOP-AND-REPORT recovery lives
+ * in the node's own PHP ({@see
+ * \Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\AincientReason}), which
+ * catches a provider failure and ends the step on its `error_detail` output.
  *
  * 1. THE ERROR PORT IS EXPOSED. A provider that says "come back later" is not
  *    the same failure as a bug. The node handles the common case in PHP
@@ -33,20 +31,17 @@ use Symfony\Component\Yaml\Yaml;
  *    the real NodeMetadataResolver through NodesController and reads the built
  *    port list the canvas gets. (Mirrors upstream's ErrorPortInjectionTest.)
  *
- * 2. THE TIER IS ONE CONFIGURABLE PARAM, NOT THREE WORKFLOWS. `reason`, `task`
- *    and `fast` were byte-identical but for `operation_type`. Three copies of
- *    one graph is three places a recovery policy drifts — and FlowDrop node
- *    instances do not auto-update when their type changes, so drift there is
- *    permanent. `task` and `fast` are gone; the tier is a per-placement
- *    setting. For that to work the wrapper must declare `operation_type` as an
- *    input port mapped at the inner node, or WorkflowNode::process() drops it
- *    (it forwards only declared input ports) and every placement silently runs
- *    the wrapper's own default.
+ * 2. THE TIER IS ONE PARAM, NOT A FORKED GRAPH. The model role is the node's
+ *    `operation_type`, set per placement or bound by the engine's own
+ *    `operation_type` input. The old `reason` wrapper workflow (and before it
+ *    the per-tier `task` / `fast` forks) were second copies of the agent step;
+ *    FlowDrop node instances do not auto-update when their type changes, so a
+ *    copy is permanent drift. They are gone and must stay gone.
  *
  * @group aincient_flows
  */
 #[RunTestsInSeparateProcesses]
-final class ReasonWrapperContractTest extends KernelTestBase {
+final class ReasonNodeContractTest extends KernelTestBase {
 
   /**
    * {@inheritdoc}
@@ -61,15 +56,13 @@ final class ReasonWrapperContractTest extends KernelTestBase {
   ];
 
   /**
-   * The node types whose error port must be revealed, and why each one is.
+   * The node types whose error port must be revealed.
    *
-   * The node itself so an agent can author an optional semantic recovery around
-   * the step the node already stop-and-reports in PHP; the wrapper's own so a
-   * placement that still uses the wrapper keeps the same seam.
+   * The node itself, so an agent can author an optional semantic recovery
+   * around the step the node already stop-and-reports in PHP.
    */
   private const ERROR_PORT_NODE_TYPES = [
     'aincient_reason',
-    'flowdrop_workflow_executor_flowdrop_workflow_reason',
   ];
 
   /**
@@ -134,7 +127,7 @@ final class ReasonWrapperContractTest extends KernelTestBase {
   }
 
   /**
-   * Both reason node types reveal the reserved error port on the canvas.
+   * The reason node type reveals the reserved error port on the canvas.
    *
    * An exposed port omits `exposedByDefault` entirely — exposed is the lean
    * default in the payload, so the presence of the key IS the hidden state.
@@ -192,59 +185,24 @@ final class ReasonWrapperContractTest extends KernelTestBase {
   }
 
   /**
-   * The tier is a per-placement setting that actually reaches the inner node.
+   * There is one agent step and no wrapper copy of it.
    *
-   * Three things have to agree or the setting is decoration: the node type
-   * marks `operation_type` configurable, the workflow declares it in its
-   * parameter schema (so the config form has it), and the workflow maps it to
-   * the inner node as an input port (so WorkflowNode::process() forwards it).
+   * `task` and `fast` were per-tier forks of the `reason` wrapper; the wrapper
+   * itself was placed nowhere once every agent bound `aincient_reason` directly,
+   * and the engine (0463) is now the one place the step lives. A reappearance
+   * of any of them means someone forked the graph again instead of setting
+   * `operation_type`, and the step has copies to drift.
    */
-  public function testTierIsOneConfigurableParamWiredToTheInnerNode(): void {
-    $nodeType = $this->shipped(
-      'flowdrop_node_type.flowdrop_node_type.flowdrop_workflow_executor_flowdrop_workflow_reason'
-    );
-    $param = $nodeType['parameters']['operation_type'] ?? NULL;
-
-    $this->assertIsArray($param,
-      'The wrapper node type must declare operation_type, or the tier cannot be set per placement.');
-    $this->assertTrue($param['configurable'] ?? FALSE,
-      'operation_type must be configurable: the tier is a setting, not a data edge.');
-    $this->assertSame('aincient_role:task', $param['default'] ?? NULL,
-      'The default tier is task — the middle tier, so an unconsidered placement is not the expensive one.');
-
-    $workflow = $this->shipped('flowdrop_workflow.flowdrop_workflow.reason');
-
-    $this->assertArrayHasKey(
-      'operation_type',
-      $workflow['parameter_schema']['properties'] ?? [],
-      'The wrapper must declare operation_type in its parameter schema or it never reaches the config form.',
-    );
-
-    $mapped = array_values(array_filter(
-      $workflow['input_ports'] ?? [],
-      static fn (array $port): bool => ($port['name'] ?? '') === 'operation_type',
-    ));
-    $this->assertCount(1, $mapped,
-      'operation_type must be a declared input port: WorkflowNode::process() forwards only '
-      . 'declared input ports, so without this the placement setting is silently dropped and '
-      . 'every agent runs the wrapper default.');
-    $this->assertSame('operation_type', $mapped[0]['port'] ?? NULL,
-      'The input port must target the inner node parameter of the same name.');
-  }
-
-  /**
-   * There is exactly one agent-step wrapper, so there is one place to change.
-   *
-   * `task` and `fast` were this workflow with a different operation_type. They
-   * are deleted; a reappearance means someone forked the graph again instead of
-   * setting the param, and the recovery policy now has copies to drift.
-   */
-  public function testNoForkedPerTierWrappers(): void {
-    foreach (['task', 'fast'] as $id) {
+  public function testNoWrapperCopiesOfTheReasonStep(): void {
+    foreach (['reason', 'task', 'fast'] as $id) {
       $this->assertFileDoesNotExist(
         $this->configSyncDir() . '/flowdrop_workflow.flowdrop_workflow.' . $id . '.yml',
-        "A per-tier fork of the reason wrapper is back as '$id'. The tier is the "
-        . 'operation_type param on the one wrapper — fork the setting, not the graph.',
+        "A wrapper copy of the reason step is back as '$id'. The tier is the "
+        . 'operation_type param on aincient_reason: set the param, do not fork the graph.',
+      );
+      $this->assertFileDoesNotExist(
+        $this->configSyncDir() . '/flowdrop_node_type.flowdrop_node_type.flowdrop_workflow_executor_flowdrop_workflow_' . $id . '.yml',
+        "The node type of a wrapper copy '$id' is back.",
       );
     }
   }

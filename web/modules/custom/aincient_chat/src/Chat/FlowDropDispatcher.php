@@ -118,6 +118,8 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     private readonly WorkflowCatalog $catalog,
     private readonly StaleTurnRecovery $staleTurns,
     private readonly TurnScratchpadSweeper $scratchpadSweeper,
+    private readonly TurnPipelines $pipelines,
+    private readonly TurnRecapRecorder $recaps,
   ) {}
 
   /**
@@ -312,6 +314,7 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
           yield ChatEvent::toolCall($widget['widget'], $widget['payload']);
         }
         $this->persistTurnWidgets((int) $session->id(), $widgets, $turn->assistantMessageIds);
+        $this->recaps->record((int) $session->id(), $widgets);
         yield from $this->resultEvents($text);
     }
   }
@@ -335,20 +338,30 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
       yield ChatEvent::error('That choice has expired or was already answered.');
       return;
     }
-    // Capture the session before resolving (the field persists either way).
-    $sessionId = (int) ($interrupt->getSessionId() ?? 0);
     // Capture the paused pipeline NOW, before resolving: a workflow-as-tool that
     // produced a widget envelope runs in this same pipeline once resumed (the
     // operator's confirmation gate pauses here, then the Invoke node runs), and
     // the session's current_pipeline_id is cleared on completion — so this is the
     // only reliable handle for the post-resume widget harvest below.
     $pipelineId = $interrupt->getPipelineId();
+    // An interrupt raised inside the agent engine (0463) belongs to the
+    // ENGINE's pipeline, a child of the turn's. The turn's chat_output, its
+    // session and the tree its widgets live in all hang off the ROOT.
+    $rootId = $this->pipelines->root($pipelineId);
+    $nested = $rootId !== NULL && $rootId !== '' && $rootId !== $pipelineId;
+    // Capture the session before resolving (the field persists either way). A
+    // nested interrupt carries none, so read it off the root run.
+    $sessionId = (int) ($interrupt->getSessionId() ?? 0);
+    if ($sessionId === 0 && $nested) {
+      $sessionId = $this->pipelines->sessionId($rootId) ?? 0;
+    }
 
     yield ChatEvent::status('Recording your choice…', ['flow' => 'flowdrop']);
 
     // Resolving dispatches an event that resumes the pipeline synchronously
     // (routed to the workflow's declared orchestrator via the executor
-    // resolver, so a stategraph agent loop resumes as a stategraph).
+    // resolver, so a stategraph agent loop resumes as a stategraph; a nested
+    // interrupt resumes the engine and then the studio run above it).
     $interrupts->resolveInterrupt($interruptId, $response, (int) \Drupal::currentUser()->id());
 
     // The flow may pause again (chained HITL) or have finished.
@@ -365,18 +378,71 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     }
 
     // No further interrupt, but the resumed run may still be non-terminal (e.g.
-    // a budget pause), so drop the scratchpad only on the pipeline's real
-    // status — the same rule as dispatch(). Unreadable status: keep (TTL).
-    $this->scratchpadSweeper->dropIfTerminal($this->pipelineStatus($pipelineId), $pipelineId);
+    // a budget pause), so drop the scratchpad only on the turn's real status —
+    // the same rule as dispatch(). Unreadable status: keep (TTL).
+    $turnId = $nested ? $rootId : $pipelineId;
+    $this->scratchpadSweeper->dropIfTerminal($this->pipelineStatus($turnId), $turnId);
 
     // Surface any tool-produced widgets first (e.g. an approved weather lookup),
     // then the agent's prose — mirrors the completed path in dispatch().
-    $widgets = $this->harvestTurnWidgets($pipelineId);
+    $widgets = $this->harvestTurnWidgets($turnId);
     foreach ($widgets as $widget) {
       yield ChatEvent::toolCall($widget['widget'], $widget['payload']);
     }
-    $this->persistTurnWidgets($sessionId, $widgets, []);
-    yield from $this->resultEvents($this->finalAssistantText($sessions, $sessionId));
+    // FlowDrop writes a resumed turn's reply only for an interrupt bound to a
+    // session, which a nested one is not — so the reply would stream once and
+    // be gone on reload. Persist the root's chat_output as the turn's
+    // assistant message here, and hang the widgets on it.
+    $text = $nested ? $this->chatOutputMessage($rootId) : '';
+    $messageIds = $text !== '' ? $this->persistNestedReply($sessions, $sessionId, (string) $rootId, $text, $interruptId) : [];
+    $this->persistTurnWidgets($sessionId, $widgets, $messageIds);
+    $this->recaps->record($sessionId, $widgets);
+    yield from $this->resultEvents($text !== '' ? $text : $this->finalAssistantText($sessions, $sessionId));
+  }
+
+  /**
+   * Stores a nested resume's reply as the turn's assistant message, once.
+   *
+   * Idempotent on the root run: if an assistant message with this text is
+   * already stamped with the root's execution id (a second resume, or a
+   * FlowDrop version that learns to write it), that one is returned.
+   *
+   * @return array<int, string>
+   *   The assistant message id(s) carrying the reply; empty on failure.
+   */
+  private function persistNestedReply(object $sessions, int $sessionId, string $rootId, string $text, string $interruptId): array {
+    if ($sessionId === 0) {
+      return [];
+    }
+    try {
+      $storage = \Drupal::entityTypeManager()->getStorage('flowdrop_session_message');
+      foreach ($sessions->getAssistantMessageIdsForExecution((string) $sessionId, $rootId) as $id) {
+        $existing = $storage->load($id);
+        if ($existing !== NULL && trim((string) $existing->getContent()) === $text) {
+          return [(string) $id];
+        }
+      }
+      $session = $sessions->getSession($sessionId);
+      if ($session === NULL) {
+        return [];
+      }
+      $message = $sessions->addAssistantMessage($session, $text, 'chat_output', [
+        'source' => 'aincient_nested_resume',
+        'interrupt_id' => $interruptId,
+        'execution_id' => $rootId,
+      ]);
+      $message->setExecutionId($rootId);
+      $message->setStatus('completed');
+      $message->save();
+      return [(string) $message->id()];
+    }
+    catch (\Throwable $e) {
+      $this->logger->warning('Could not persist a resumed turn reply (pipeline @id): @m', [
+        '@id' => $rootId,
+        '@m' => $e->getMessage(),
+      ]);
+      return [];
+    }
   }
 
   /**
@@ -646,10 +712,17 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     if ($pipelineId === NULL || $pipelineId === '') {
       return [];
     }
-    $pipeline = \Drupal::entityTypeManager()
-      ->getStorage('flowdrop_pipeline')
-      ->load($pipelineId);
-    if ($pipeline === NULL || !method_exists($pipeline, 'getJobs')) {
+    // The whole turn tree: the shared agent engine (0463) runs as a
+    // sub-workflow, so its Invoke jobs — and every tool envelope — sit in a
+    // descendant pipeline, not the turn's own.
+    $storage = \Drupal::entityTypeManager()->getStorage('flowdrop_pipeline');
+    $jobs = [];
+    foreach ($storage->loadMultiple($this->pipelines->withDescendants($pipelineId)) as $pipeline) {
+      if (method_exists($pipeline, 'getJobs')) {
+        $jobs = array_merge($jobs, $pipeline->getJobs());
+      }
+    }
+    if ($jobs === []) {
       return [];
     }
     $widgets = [];
@@ -658,7 +731,7 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     // than one identical brand_apply_slices job. Keep only the LAST one so the
     // turn shows exactly one merged brand card (the authoritative end state).
     $mergeWidget = NULL;
-    foreach ($pipeline->getJobs() as $job) {
+    foreach ($jobs as $job) {
       $output = (string) ($job->get('output_data')->value ?? '');
       if ($output === '' || !str_contains($output, '__widget__')) {
         continue;

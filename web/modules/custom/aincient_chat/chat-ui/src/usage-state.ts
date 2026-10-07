@@ -23,20 +23,27 @@ export type UsageTotal = {
   input: number;
   output: number;
   cached: number;
-  /** Estimated USD cost. 0 when no metered call had pricing (then hide $). */
+  /** Estimated USD cost of the PRICED calls only — never shown on its own. */
   cost: number;
-  /** Whether any call contributed a non-zero cost (drives "show $?"). */
+  /** Calls the backend could not price (`cost_usd: null`). */
+  unpriced: number;
+  /**
+   * Whether the $ figure may be shown: every call was priced and the total is
+   * non-zero. One unpriced call makes the sum a partial figure that reads as
+   * the whole price, so the $ is hidden rather than understated; an all-free
+   * (local) total has nothing to show either.
+   */
   hasCost: boolean;
   /** Number of metered AI calls folded in. */
   calls: number;
 };
 
-/** One metered call as it arrives off the stream. */
+/** One metered call as it arrives off the stream. `cost` null = unpriced. */
 export type UsageDelta = {
   input: number;
   output: number;
   cached: number;
-  cost: number;
+  cost: number | null;
 };
 
 export const EMPTY_USAGE: UsageTotal = {
@@ -44,18 +51,22 @@ export const EMPTY_USAGE: UsageTotal = {
   output: 0,
   cached: 0,
   cost: 0,
+  unpriced: 0,
   hasCost: false,
   calls: 0,
 };
 
 /** Fold one call's usage into a running total (pure). */
 export function addUsage(total: UsageTotal, d: UsageDelta): UsageTotal {
+  const cost = total.cost + (d.cost ?? 0);
+  const unpriced = total.unpriced + (d.cost === null ? 1 : 0);
   return {
     input: total.input + d.input,
     output: total.output + d.output,
     cached: total.cached + d.cached,
-    cost: total.cost + d.cost,
-    hasCost: total.hasCost || d.cost > 0,
+    cost,
+    unpriced,
+    hasCost: unpriced === 0 && cost > 0,
     calls: total.calls + 1,
   };
 }

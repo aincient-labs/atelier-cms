@@ -133,6 +133,20 @@ final class ModelPricingTest extends UnitTestCase {
   }
 
   /**
+   * Free covers token classes the entry publishes no rate for.
+   *
+   * The fixture's ollama entry, like the shipped one, has no cache rates. A
+   * local call reporting cached tokens is still free, not unpriced — otherwise
+   * the recorder writes NULL and the console hides a cost that really is 0.
+   */
+  public function testAFreeEntryPricesUnpublishedClassesAtZero(): void {
+    $cost = $this->pricing()->cost('ollama', 'llama4:70b', 5000, 900, 1200, 300);
+
+    $this->assertSame(0.0, $cost['total']);
+    $this->assertSame([], $cost['unpriced']);
+  }
+
+  /**
    * Bound-but-unpriced is computed once, for both places that report it.
    */
   public function testUnpricedListsBoundRolesOnly(): void {

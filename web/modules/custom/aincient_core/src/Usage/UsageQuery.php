@@ -70,9 +70,10 @@ final class UsageQuery {
    * @param int|null $since
    *   Unix timestamp to count from, or NULL for the whole log.
    *
-   * @return array{calls: int, spend: float, input: int, output: int, cached: int, tokens: int}
+   * @return array{calls: int, spend: float|null, input: int, output: int, cached: int, tokens: int}
    *   Zeroes throughout when there is nothing to report — including when the
-   *   table has not been created yet.
+   *   table has not been created yet. `spend` is NULL when calls were made but
+   *   none of them could be priced: no figure, rather than a $0.00 nobody paid.
    */
   public function totals(?int $since): array {
     $empty = ['calls' => 0, 'spend' => 0.0, 'input' => 0, 'output' => 0, 'cached' => 0, 'tokens' => 0];
@@ -93,11 +94,12 @@ final class UsageQuery {
       return $empty;
     }
 
-    // SUM() over an empty set is NULL, and on PostgreSQL a SUM over NUMERIC
-    // arrives as a string. Both are cast here so nothing downstream has to know.
+    // SUM() skips NULL (unpriced) rows and is NULL when there is nothing to
+    // sum; on PostgreSQL a SUM over NUMERIC arrives as a string. Cast here so
+    // nothing downstream has to know.
     $totals = [
       'calls' => (int) $row['calls'],
-      'spend' => (float) $row['spend'],
+      'spend' => self::spend($row['spend'], (int) $row['calls']),
       'input' => (int) $row['input'],
       'output' => (int) $row['output'],
       'cached' => (int) $row['cached'],
@@ -111,16 +113,17 @@ final class UsageQuery {
   /**
    * The models that were charged nothing while consuming real tokens.
    *
-   * THE MOST IMPORTANT QUERY ON THE PAGE. A row with tokens and
-   * `cost_usd = 0` is a call Atelier could not price when it recorded
-   * it, and the only trace it leaves is a total that is too low — a small
+   * THE MOST IMPORTANT QUERY ON THE PAGE. A row with `cost_usd IS NULL` is a
+   * call Atelier could not price when it recorded it (before update 11013 such
+   * rows were written as 0; that hook converted them). The sums skip it, so the
+   * only trace it leaves is a total that is too low — a small
    * plausible number, which is the one kind of wrong nobody questions. Grouped by
    * model because that is the fact needed to fix it: the rate goes into
    * `aincient_core.pricing` under a `provider:model`.
    *
-   * Rows with no tokens at all are excluded. Those are calls where the provider
-   * filed no accounting (`usage_reported: false` in `token_details`), which is a
-   * different silence and not one a rate would cure.
+   * Rows with no tokens never carry NULL: a call whose provider filed no
+   * accounting (`usage_reported: false` in `token_details`) has nothing to
+   * price, which is a different silence and not one a rate would cure.
    *
    * @return list<array{provider_id: string, model_id: string, calls: int, tokens: int}>
    *   One row per model, unordered.
@@ -137,8 +140,7 @@ final class UsageQuery {
     $query->addExpression('SUM([t].[input_tokens] + [t].[output_tokens])', 'tokens');
     $query->groupBy('t.provider_id');
     $query->groupBy('t.model_id');
-    $query->condition('t.cost_usd', 0);
-    $query->where('([t].[input_tokens] + [t].[output_tokens]) > 0');
+    $query->isNull('t.cost_usd');
     $this->period($query, $since);
 
     $rows = [];
@@ -156,7 +158,7 @@ final class UsageQuery {
   /**
    * Spend, calls and tokens per call site — the section this page exists for.
    *
-   * @return list<array{context_id: ?string, calls: int, tokens: int, spend: float}>
+   * @return list<array{context_id: ?string, calls: int, tokens: int, spend: float|null}>
    *   One row per distinct tag, unordered. NULL and '' are one row: both mean
    *   "no tag", and splitting them would put the same fact on two lines.
    */
@@ -167,14 +169,17 @@ final class UsageQuery {
       if (isset($rows[$tag])) {
         $rows[$tag]['calls'] += (int) $row->calls;
         $rows[$tag]['tokens'] += (int) $row->tokens;
-        $rows[$tag]['spend'] += (float) $row->spend;
+        $spend = self::spend($row->spend, (int) $row->calls);
+        if ($spend !== NULL) {
+          $rows[$tag]['spend'] = ($rows[$tag]['spend'] ?? 0.0) + $spend;
+        }
         continue;
       }
       $rows[$tag] = [
         'context_id' => $tag,
         'calls' => (int) $row->calls,
         'tokens' => (int) $row->tokens,
-        'spend' => (float) $row->spend,
+        'spend' => self::spend($row->spend, (int) $row->calls),
       ];
     }
     return array_values($rows);
@@ -183,7 +188,7 @@ final class UsageQuery {
   /**
    * Spend, calls and tokens per `provider:model`.
    *
-   * @return list<array{provider_id: string, model_id: string, calls: int, tokens: int, spend: float, unpriced_calls: int}>
+   * @return list<array{provider_id: string, model_id: string, calls: int, tokens: int, spend: float|null, unpriced_calls: int}>
    *   One row per model, unordered.
    */
   public function byModel(?int $since): array {
@@ -194,7 +199,7 @@ final class UsageQuery {
         'model_id' => (string) $row->model_id,
         'calls' => (int) $row->calls,
         'tokens' => (int) $row->tokens,
-        'spend' => (float) $row->spend,
+        'spend' => self::spend($row->spend, (int) $row->calls),
         'unpriced_calls' => (int) $row->unpriced_calls,
       ];
     }
@@ -242,7 +247,7 @@ final class UsageQuery {
   }
 
   /**
-   * The shared GROUP BY: calls, tokens, spend and the zero-cost count.
+   * The shared GROUP BY: calls, tokens, spend and the unpriced count.
    *
    * `unpriced_calls` travels with every aggregate because a section that shows a
    * spend figure has to be able to say when that figure is short. Counting it in
@@ -273,12 +278,26 @@ final class UsageQuery {
     // CASE rather than a second query: one pass, and the two numbers cannot
     // disagree about which rows they counted.
     $query->addExpression(
-      'SUM(CASE WHEN [t].[cost_usd] = 0 AND ([t].[input_tokens] + [t].[output_tokens]) > 0 THEN 1 ELSE 0 END)',
+      'SUM(CASE WHEN [t].[cost_usd] IS NULL THEN 1 ELSE 0 END)',
       'unpriced_calls',
     );
     $this->period($query, $since);
 
     return $query->execute() ?? [];
+  }
+
+  /**
+   * A SUM(cost_usd) as a number, or NULL when calls were made but none priced.
+   *
+   * SUM skips NULL rows, so it is NULL only when every row in the group is
+   * unpriced (or there are none). With no calls there is honestly nothing
+   * spent; with calls and no price there is no figure to show.
+   */
+  private static function spend(mixed $sum, int $calls): ?float {
+    if ($sum === NULL) {
+      return $calls > 0 ? NULL : 0.0;
+    }
+    return (float) $sum;
   }
 
   /**

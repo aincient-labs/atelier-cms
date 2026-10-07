@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { ConsoleChat } from "./aui";
 import { activeRoom, consoleNav, deriveRoomFromStores } from "./console-nav";
-import { parseUrl, roomToUrl } from "./console-url";
+import { landingThread, parseUrl, roomToUrl } from "./console-url";
 import { startNewBlock, startNewPage } from "./page-state";
 import { roomOfThread } from "./rooms";
 import { roomId, sameRoom, type Room } from "./rooms-core";
@@ -156,7 +156,7 @@ export function useConsoleUrl(runtime: ConsoleChat) {
     runtime.listLoaded().then(() => {
       if (disposed) return;
       const { room, threadId } = resolveUrl();
-      const landing = threadId && isKnown(threadId) ? threadId : null;
+      const landing = landingThread(threadId, activeThreadId(), isKnown);
       // enterRoom sets context.room synchronously (studio/doc derive over the next
       // tick); if the URL names the boot room it's swallowed. Either way the room
       // is correct immediately, so we can canonicalise on the next tick.

@@ -306,7 +306,7 @@ final class UsageRecorderTest extends UnitTestCase {
    * An unpriced model still records its tokens — and says so, by name.
    *
    * THE FAILURE THIS WHOLE CHANGE IS ABOUT. The row lands (the call happened and
-   * the tokens are real), the cost is honestly 0.00 because we have no rate, and
+   * the tokens are real), the cost is NULL — not 0.00 — because we have no rate, and
    * a warning names the provider and model so the gap is findable. Silence here
    * is what let four sonnet-5 rows read as free.
    */
@@ -321,7 +321,7 @@ final class UsageRecorderTest extends UnitTestCase {
     );
 
     $this->assertSame(900, $this->row['input_tokens'], 'The row was dropped instead of flagged.');
-    $this->assertSame(0.0, $this->row['cost_usd']);
+    $this->assertNull($this->row['cost_usd'], 'An unpriced call was recorded as a $0 price.');
     $this->assertCount(1, $this->warnings, 'A $0 cost on 1020 real tokens was recorded silently.');
     $this->assertStringContainsString('openai', $this->warnings[0]);
     $this->assertStringContainsString('gpt-5.6-terra', $this->warnings[0]);

@@ -16,14 +16,31 @@ nodes:
   -
     id: chat_input.1
     position:
-      x: -560
-      'y': -20
+      x: 420
+      'y': -240
     data:
       label: 'Chat Input'
       config:
         nodeType: default
         maxRetries: 0
         ports:
+          inputs:
+            -
+              id: message
+            -
+              id: history
+              exposed: false
+            -
+              id: sessionId
+              exposed: false
+            -
+              id: messageId
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: loop_back
           outputs:
             -
               id: message
@@ -41,18 +58,6 @@ nodes:
               exposed: false
             -
               id: error
-          inputs:
-            -
-              id: message
-            -
-              id: history
-            -
-              id: sessionId
-            -
-              id: messageId
-            -
-              id: trigger
-              exposed: false
         requiresConfirmation: ''
       metadata:
         node_type_id: chat_input
@@ -61,12 +66,12 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 441
+      height: 262
   -
     id: prompt_template.1
     position:
-      x: -560
-      'y': 460
+      x: 420
+      'y': 60
     data:
       label: 'Typography system prompt'
       config:
@@ -148,12 +153,12 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 501
+      height: 262
   -
     id: simple_chat.1
     position:
-      x: -80
-      'y': 220
+      x: 800
+      'y': -180
     data:
       label: 'Typography reasoning'
       config:
@@ -162,6 +167,28 @@ nodes:
         temperature: 0
         maxTokens: 8192
         systemPrompt: ''
+        ports:
+          inputs:
+            -
+              id: message
+            -
+              id: systemPrompt
+            -
+              id: history
+              exposed: false
+            -
+              id: trigger
+              exposed: false
+            -
+              id: loop_back
+          outputs:
+            -
+              id: response
+            -
+              id: trigger
+              exposed: false
+            -
+              id: error
       metadata:
         node_type_id: flowdrop_ai_provider_simple_chat
       extensions:
@@ -169,12 +196,12 @@ nodes:
           hideUnconnectedHandles: false
     measured:
       width: 280
-      height: 501
+      height: 322
   -
     id: chat_output.1
     position:
-      x: 1420
-      'y': 660
+      x: 2380
+      'y': 140
     data:
       label: 'Chat Output'
       config:
@@ -214,12 +241,12 @@ nodes:
           hideUnconnectedHandles: true
     measured:
       width: 280
-      height: 541
+      height: 242
   -
     id: data_to_json.1
     position:
-      x: 1020
-      'y': 580
+      x: 2000
+      'y': 60
     data:
       label: 'Data to JSON'
       config:
@@ -229,12 +256,12 @@ nodes:
         node_type_id: data_to_json
     measured:
       width: 280
-      height: 261
+      height: 262
   -
     id: json_to_data.1
     position:
-      x: 280
-      'y': 460
+      x: 1200
+      'y': -60
     data:
       label: 'JSON to Data'
       config:
@@ -246,12 +273,12 @@ nodes:
         node_type_id: json_to_data
     measured:
       width: 280
-      height: 261
+      height: 262
   -
     id: aincient_flows_brand_validate_slice.1
     position:
-      x: 640
-      'y': 500
+      x: 1580
+      'y': -20
     data:
       label: 'Validate brand slice'
       config:
@@ -276,7 +303,7 @@ nodes:
         node_type_id: aincient_flows_brand_validate_slice
     measured:
       width: 280
-      height: 281
+      height: 282
 edges:
   -
     id: xy-edge__chat_input.1chat_input.1-output-message-simple_chat.1simple_chat.1-input-message
@@ -394,15 +421,16 @@ edges:
     class: flowdrop--edge--data
 metadata:
   createdAt: '2026-08-13T16:58:27.912Z'
-  updatedAt: '2026-08-13T17:08:38.858Z'
+  updatedAt: '2026-10-06T22:01:23.978Z'
 created: 1782300000
-changed: 1786640918
+changed: 1791324084
 uid: 1
 input_ports:
   -
     name: ask
     node_id: chat_input.1
     port: message
+    required: true
   -
     name: current_state
     node_id: prompt_template.1
@@ -419,16 +447,15 @@ parameter_schema:
   properties:
     ask:
       type: string
-      description: 'The typography instruction to act on — what the user wants for typefaces / type scale. Pass the typography-relevant part of the request only; do NOT restate current values (the authoritative current look is supplied separately via current_state).'
+      x-data-type: string
       default: ''
-      required: true
     current_state:
-      type: object
-      description: 'The authoritative current look (saved-brand brief + live preview draft), injected from the brand_state node — NOT model-authored. Wire a data edge into this port; it is withheld from the model and supplied deterministically from run state.'
-      required: false
+      x-data-type: mixed
+      default: {  }
 output_schema:
   type: object
   properties:
     slice:
       type: string
-schema_version: 1.0.0
+      x-data-type: string
+schema_version: 2.0.0

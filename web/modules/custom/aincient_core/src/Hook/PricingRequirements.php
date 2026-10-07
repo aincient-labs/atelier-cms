@@ -85,7 +85,7 @@ final class PricingRequirements {
         // config key gets read as pedantry and ignored.
         'description' => [
           'intro' => [
-            '#markup' => $this->t('These roles are bound to models Atelier has no rate for, so every call they serve is recorded at $0.00 and the usage dashboard under-reports what this site spends. Add a rate to the <code>aincient_core.pricing</code> config object.'),
+            '#markup' => $this->t('These roles are bound to models Atelier has no rate for, so every call they serve is recorded without a cost and the usage dashboard under-reports what this site spends. Set a rate on Model rates.'),
           ],
           'roles' => [
             '#theme' => 'item_list',
@@ -104,9 +104,9 @@ final class PricingRequirements {
    * announces itself — the check above, a warning on the models form, a log line
    * on the first call. A rate that has quietly stopped being correct announces
    * nothing at all: the dashboard keeps producing confident figures that are
-   * simply too low. `claude-sonnet-5` ships at an introductory $2/$10 with a
-   * published end date; the day it lapses, every spend number on this site
-   * under-reports by 33% and not one thing about the site has changed.
+   * simply too low. `claude-sonnet-5` shipped at an introductory $2/$10 with a
+   * published end date; had the price risen on that day, every spend number on
+   * this site would have under-reported by 33% with nothing about the site changed.
    *
    * The status report is the right home because this fires on a DATE, not on an
    * action. There is no page an operator visits and no button they press on the

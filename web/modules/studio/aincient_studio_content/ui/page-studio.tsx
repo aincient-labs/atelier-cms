@@ -89,6 +89,7 @@ import { TeaserGroup } from "./teaser-group";
 import { BlogGroup } from "./blog-group";
 import { moveItem } from "./move-item";
 import { retiredReason } from "./retired-slot";
+import { AddToMenuRow } from "./add-to-menu";
 
 /** One site language (GET /atelier/page/manifest → translation.languages). */
 type Lang = { id: string; label: string; default: boolean };
@@ -1083,6 +1084,18 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
           studio. Page-only; hidden when Checks is switched off (0440). */}
       {kind === "page" && nodeId && isStudioAccessible("checks") && (
         <ChecksRow nodeId={nodeId} lang={writeLang} dirty={dirty} savedVid={moderation.baseVid} />
+      )}
+
+      {/* "Add to menu" (atelier-cms#35): stages a link to this page in the
+          Navigation & Pages chrome DRAFT — never publishes. Page-only; hidden
+          when that studio is switched off / not accessible. Keyed on the node
+          so a staged-confirmation never carries over to another page. */}
+      {kind === "page" && isStudioAccessible("globals") && (
+        <AddToMenuRow
+          key={nodeId ?? "new"}
+          nodeId={nodeId}
+          title={(baselineSchema.title ?? "").trim() || (draft.title ?? "").trim() || "Untitled page"}
+        />
       )}
 
       {/* Stale-write conflict (HTTP 409): the page advanced under us. The only safe

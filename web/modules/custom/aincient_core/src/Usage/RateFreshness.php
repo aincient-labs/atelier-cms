@@ -15,10 +15,12 @@ use Drupal\Core\Config\ConfigFactoryInterface;
  * four places. It did nothing about a rate that is present, plausible, and wrong,
  * which is strictly worse: an unpriced model announces itself, while a lapsed one
  * keeps producing confident numbers that are quietly too low. `claude-sonnet-5`
- * ships at an INTRODUCTORY $2/$10 that Anthropic has published an end date for;
- * on 2026-09-01 the list price is $3/$15 and every figure on the usage dashboard
- * silently becomes a 33% under-report. Nothing about the site changes on that day.
- * No call fails. The only thing that changed is a date.
+ * shipped at an INTRODUCTORY $2/$10 with a published end date, after which the
+ * list price was announced as $3/$15 and every figure on the usage dashboard
+ * would have silently become a 33% under-report. Nothing about the site changes
+ * on such a day. No call fails. The only thing that changes is a date. (Anthropic
+ * later cancelled that increase and kept $2/$10; the mechanism is why it was
+ * worth recording the end date.)
  *
  * WHY A DATE AND NOT A CHECK. An appliance cannot ask a vendor what it charges:
  * there may be no route to the internet, and there is deliberately no pricing

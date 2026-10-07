@@ -123,6 +123,24 @@ export function roomToUrl(room: Room, threadId: string | null): string {
 }
 
 /**
+ * The thread the deep link lands on once the thread list is in.
+ *
+ * A turn sent BEFORE the list arrived already owns the active thread (`started`,
+ * its remote id). Entering the URL's room on a fresh thread then would orphan
+ * that turn — its reply streams into a runtime nobody shows, and the user sees
+ * their message vanish. So a started thread wins; otherwise the URL's thread
+ * when the list knows it; otherwise null (a fresh thread).
+ */
+export function landingThread(
+  urlThread: string | null,
+  started: string | null,
+  isKnown: (id: string) => boolean,
+): string | null {
+  if (started) return started;
+  return urlThread && isKnown(urlThread) ? urlThread : null;
+}
+
+/**
  * Parse the current location into the room it names + the thread in `?thr=`.
  * Forgiving: an unknown studio or a non-numeric node id falls back to the
  * server-default studio room; a legacy (non-thr_*) `?thr=` is dropped.

@@ -177,12 +177,11 @@ final class UsageMeteringTest extends KernelTestBase {
   }
 
   /**
-   * A model with no price records its tokens at $0 and SAYS SO in the log.
+   * A model with no price records its tokens with a NULL cost and SAYS SO in the log.
    *
    * The end-to-end version of the failure this change exists to fix. Nothing
-   * about the row itself can distinguish "free" from "we have no rate" — the
-   * column is 0.00 either way — so the distinction has to be carried by a log
-   * line that names the model. Asserted against the real watchdog table, because
+   * NULL in the column (a free model writes 0.00) keeps the row from reading as
+   * a price, and the log line names the model so the gap can be closed. Asserted against the real watchdog table, because
    * a warning nobody can find is the same as no warning.
    */
   public function testAnUnpricedModelIsRecordedAndAnnounced(): void {
@@ -200,7 +199,7 @@ final class UsageMeteringTest extends KernelTestBase {
 
     $row = $this->rows()[0];
     $this->assertSame(1240, (int) $row['input_tokens'], 'The row was dropped rather than flagged.');
-    $this->assertEqualsWithDelta(0.0, (float) $row['cost_usd'], 1.0e-10);
+    $this->assertNull($row['cost_usd']);
 
     $logged = $this->container->get('database')->select('watchdog', 'w')
       ->fields('w', ['message', 'variables'])

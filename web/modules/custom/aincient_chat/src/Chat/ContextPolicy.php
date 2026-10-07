@@ -43,6 +43,10 @@ CONTEXT RULES
   absence that an edit did or did not happen — the live state above shows what
   exists. If it is already the way the user asked for, say so instead of redoing
   the work.
+- A line starting "[shown to the user:" records what a card displayed in an
+  earlier turn. Use it to understand what the user refers to ("the second one",
+  "that page"), but call the tool again before acting on anything from an
+  earlier card: it shows what was true then, not now.
 TXT;
 
 }

@@ -58,6 +58,7 @@ final class ScriptedReasoner implements AincientReasonerInterface {
   public function getModelChoices(string $operationType = 'chat'): ModelChoices {
     return new ModelChoices([], '', [
       ['value' => 'aincient_role:task', 'label' => 'Task'],
+      ['value' => 'aincient_role:reasoning', 'label' => 'Reasoning'],
       ['value' => 'chat', 'label' => 'Chat'],
     ]);
   }

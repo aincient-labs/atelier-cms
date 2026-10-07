@@ -69,6 +69,14 @@ const PLUMBING_PHRASES: Record<string, [present: string, past: string]> = {
   message_assemble: ["Preparing the messages", "Prepared the messages"],
   aincient_flows_aincient_invoke: ["Using its tools", "Used its tools"],
   aincient_flows_brand_state: ["Reading the brand", "Read the brand"],
+  // The shared agent engine (0463) and its own wiring: the loop runs as a
+  // sub-workflow, so its job frames arrive alongside the studio's. The engine
+  // node spans the whole loop; the work inside it (reasoning, tools) is named.
+  aincient_agent_engine: ["Working on it", "Worked on it"],
+  text_input: ["Reading the instructions", "Read the instructions"],
+  text_output: ["Writing the reply", "Wrote the reply"],
+  aincient_flows_approval_gate: ["Checking what needs your OK", "Checked what needs your OK"],
+  decline_synthesize: ["Noting your answer", "Noted your answer"],
 };
 
 /** Wiring with no phrase worth writing — its authored label will do. */

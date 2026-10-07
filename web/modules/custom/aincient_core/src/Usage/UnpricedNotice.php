@@ -13,13 +13,13 @@ use Drupal\Core\Url;
  * THREE SURFACES SAY THIS SENTENCE — the models form, where a model is chosen,
  * the pricing page, where the rate table is read, and the usage dashboard, where
  * the consequence finally shows up as a number. They must say the SAME
- * sentence: the failure is silent (an unpriced call is recorded at $0.00 and
- * looks exactly like a free one), so an operator who meets the warning on one
+ * sentence: the failure is quiet (an unpriced call is recorded without a cost
+ * and simply drops out of every spend figure), so an operator who meets the warning on one
  * page and a softer version of it on the other has no way to tell whether they
  * are looking at one problem or two.
  *
  * The dashboard's is a different TENSE, not a different warning — the other two
- * say "calls on this binding will be recorded at $0.00", it says "these calls
+ * say "calls on this binding will be recorded without a cost", it says "these calls
  * were" — which is why {@see self::recorded()} lives here beside
  * {@see self::build()} rather than in the controller that renders it.
  *
@@ -64,7 +64,7 @@ final class UnpricedNotice {
       '#attributes' => ['class' => ['ain-pricing__unpriced']],
       'text' => [
         '#type' => 'item',
-        '#markup' => $this->t('Atelier has no price for some of the models bound on this site, so their calls are recorded as costing nothing and usage reporting will understate what this site spends. The models still work — only the accounting is missing. Rates live in the <code>aincient_core.pricing</code> config object.'),
+        '#markup' => $this->t('Atelier has no price for some of the models bound on this site, so their calls are recorded without a cost and usage reporting will understate what this site spends. The models still work — only the accounting is missing. Rates live in the <code>aincient_core.pricing</code> config object.'),
       ],
       'roles' => [
         '#theme' => 'item_list',
@@ -74,7 +74,7 @@ final class UnpricedNotice {
   }
 
   /**
-   * The warning for calls ALREADY RECORDED at $0.00, or [] when there are none.
+   * The warning for calls ALREADY RECORDED without a cost, or [] when there are none.
    *
    * THE SINGLE MOST IMPORTANT THING ON THE USAGE DASHBOARD. Every other number
    * there is a sum of `cost_usd`, and a row with real tokens and a zero
@@ -89,9 +89,9 @@ final class UnpricedNotice {
    * cost nothing, and warning about it would make the warning meaningless on
    * every site that runs one.
    *
-   * THE REST SPLIT IN TWO, AND THE ADVICE IS OPPOSITE. "Recorded at $0.00" is
-   * derived — `cost = 0 AND tokens > 0` — because the table has no column saying
-   * whether a row was priced when it was written. So it cannot distinguish a model
+   * THE REST SPLIT IN TWO, AND THE ADVICE IS OPPOSITE. "Recorded without a
+   * cost" is `cost_usd IS NULL`, which says the row was unpriced when it was
+   * written — not whether it still is. So it cannot distinguish a model
    * that is unpriced NOW from one that was unpriced THEN and has since been given
    * a rate. The rate table can: ask it. A model with no rate today is a live gap
    * and the fix is to add one; a model that already has a rate has no gap left to
@@ -150,7 +150,7 @@ final class UnpricedNotice {
       '#attributes' => ['class' => ['ain-usage__unpriced']],
       'text' => [
         '#type' => 'item',
-        '#markup' => $this->t('The spend below is an under-report. @calls calls consuming @tokens tokens were recorded as costing $0.00 — they are counted in the token and call figures and missing from the money. A recorded row is never recomputed, so these stay at zero whatever happens to the rates.', [
+        '#markup' => $this->t('The spend below is an under-report. @calls calls consuming @tokens tokens could not be priced and were recorded without a cost — they are counted in the token and call figures and missing from the money. A recorded row is never recomputed, so these stay unpriced whatever happens to the rates.', [
           '@calls' => number_format($calls),
           '@tokens' => number_format($tokens),
         ]),
@@ -162,7 +162,7 @@ final class UnpricedNotice {
     if ($stillUnpriced !== []) {
       $build['unpriced_text'] = [
         '#type' => 'item',
-        '#markup' => $this->t('Atelier still has no rate for these, so their <em>future</em> calls will be recorded at $0.00 too. Set one on <a href=":url">Model rates</a>:', [
+        '#markup' => $this->t('Atelier still has no rate for these, so their <em>future</em> calls will be recorded without a cost too. Set one on <a href=":url">Model rates</a>:', [
           // Was "add them to the aincient_core.pricing config object", which was
           // the only way to do it when rates were not editable. They are now
           // (DECISIONS 0304), and a notice that names a config object instead of

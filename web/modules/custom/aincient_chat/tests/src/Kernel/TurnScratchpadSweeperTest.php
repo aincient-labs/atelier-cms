@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_chat\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\aincient_chat\Chat\TurnPipelines;
 use Drupal\aincient_chat\Chat\TurnScratchpadSweeper;
 use Psr\Log\LoggerInterface;
 
@@ -40,6 +41,16 @@ final class TurnScratchpadSweeperTest extends KernelTestBase {
   }
 
   /**
+   * A sweeper over this site's (pipeline-less) tree: each id is its own turn.
+   *
+   * Descendant sweeping runs against real nested pipelines in
+   * {@see \Drupal\Tests\aincient_flows\Kernel\NestedTurnDispatchTest}.
+   */
+  private function sweeper(LoggerInterface $logger): TurnScratchpadSweeper {
+    return new TurnScratchpadSweeper($logger, new TurnPipelines($this->container->get('entity_type.manager')));
+  }
+
+  /**
    * Seeds a scratchpad and (optionally) a transcript for a pipeline.
    */
   private function seed(string $pipelineId): void {
@@ -60,7 +71,7 @@ final class TurnScratchpadSweeperTest extends KernelTestBase {
    * Terminal statuses drop; paused/awaiting/running keep; others untouched.
    */
   public function testTerminalDropsAndContinuingKeeps(): void {
-    $sweeper = new TurnScratchpadSweeper($this->createMock(LoggerInterface::class));
+    $sweeper = $this->sweeper($this->createMock(LoggerInterface::class));
     foreach (['p-done', 'p-failed', 'p-hitl', 'p-budget', 'p-other'] as $p) {
       $this->seed($p);
     }
@@ -85,7 +96,7 @@ final class TurnScratchpadSweeperTest extends KernelTestBase {
     $this->seed('p1');
     $memory = $this->container->get('flowdrop_memory.manager');
     $memory->set('global', '', 'scratchpad', 'g', 86400, 'entity');
-    $sweeper = new TurnScratchpadSweeper($this->createMock(LoggerInterface::class));
+    $sweeper = $this->sweeper($this->createMock(LoggerInterface::class));
     $sweeper->drop(NULL);
     $sweeper->drop('');
     $this->assertTrue($memory->has('global', '', 'scratchpad', 'entity'));
@@ -109,7 +120,7 @@ final class TurnScratchpadSweeperTest extends KernelTestBase {
 
     };
     $this->container->set('flowdrop_memory.manager', $broken);
-    (new TurnScratchpadSweeper($logger))->drop('p1');
+    $this->sweeper($logger)->drop('p1');
   }
 
 }
