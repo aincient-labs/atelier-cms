@@ -26,9 +26,12 @@ use Symfony\Component\Yaml\Yaml;
  * by `apps/website/bin/sync-recommendations`). This service is the seam between the
  * two:
  *
- * - {@see self::document()} returns the fetched document when one is cached and
- *   understood, else the bundled snapshot. Everything downstream reads through
- *   here and never needs to know which it got.
+ * - {@see self::document()} returns the fetched document when one is cached,
+ *   understood and at least as new as the bundled snapshot, else the bundled
+ *   snapshot. Everything downstream reads through here and never needs to know
+ *   which it got. "As new" matters: a fetch is never repeated on its own, so
+ *   without the date check a site that clicked "Check for updates" once would
+ *   keep that copy through every later upgrade, ignoring each newer bundle.
  * - {@see self::refresh()} performs the fetch. It is called ONLY from an explicit
  *   operator action ("Check for updates" in onboarding / the models settings form /
  *   `drush aincient:models-refresh`). There is no cron, no on-install fetch, and no
@@ -123,6 +126,13 @@ final class RecommendationSource {
    */
   private ?array $document = NULL;
 
+  /**
+   * The parsed bundled snapshot, memoised per request.
+   *
+   * @var array<string, mixed>|null
+   */
+  private ?array $bundled = NULL;
+
   public function __construct(
     private readonly ModuleExtensionList $moduleList,
     private readonly StateInterface $state,
@@ -139,10 +149,8 @@ final class RecommendationSource {
    */
   public function document(): array {
     if ($this->document === NULL) {
-      $remote = $this->state->get(self::STATE_DOC);
-      $this->document = (is_array($remote) && $this->isUsable($remote))
-        ? $remote
-        : $this->bundled();
+      $remote = $this->remoteInForce();
+      $this->document = $remote ?? $this->bundled();
     }
     return $this->document;
   }
@@ -155,8 +163,7 @@ final class RecommendationSource {
    *   fetched, and the URL a refresh would call.
    */
   public function meta(): array {
-    $remote = $this->state->get(self::STATE_DOC);
-    $isRemote = is_array($remote) && $this->isUsable($remote);
+    $isRemote = $this->remoteInForce() !== NULL;
     return [
       'updated' => (string) ($this->document()['updated'] ?? ''),
       'source' => $isRemote ? 'remote' : 'bundled',
@@ -344,15 +351,55 @@ final class RecommendationSource {
   }
 
   /**
+   * The fetched document, if it is the one in force; NULL means the bundle is.
+   *
+   * A fetched copy wins only while it is at least as new as the bundled snapshot
+   * (ties go to the fetch, which is what the operator last asked for). An upgrade
+   * that ships a newer snapshot therefore takes over from an older fetch with no
+   * action on the site, and the stale fetch is left in State untouched — it is
+   * simply outranked, and a later "Check for updates" replaces it.
+   *
+   * @return array<string, mixed>|null
+   *   The fetched document, or NULL when the bundled snapshot is in force.
+   */
+  private function remoteInForce(): ?array {
+    $remote = $this->state->get(self::STATE_DOC);
+    if (!is_array($remote) || !$this->isUsable($remote)) {
+      return NULL;
+    }
+    return self::updatedOf($remote) >= self::updatedOf($this->bundled()) ? $remote : NULL;
+  }
+
+  /**
+   * A document's `updated` date as a comparable `Y-m-d` string ('' if absent).
+   *
+   * The published file quotes the date, but an unquoted one parses to a Unix
+   * timestamp, so both shapes are normalised rather than trusting the quotes.
+   *
+   * @param array<string, mixed> $document
+   *   The parsed document.
+   */
+  private static function updatedOf(array $document): string {
+    $updated = $document['updated'] ?? '';
+    if (is_int($updated)) {
+      return gmdate('Y-m-d', $updated);
+    }
+    return is_string($updated) ? $updated : '';
+  }
+
+  /**
    * The snapshot shipped in the module root.
    *
    * @return array<string, mixed>
    *   The parsed snapshot, or an empty array if it is missing or unreadable.
    */
   private function bundled(): array {
-    $path = $this->moduleList->getPath('aincient_core') . '/model-recommendations.yml';
-    $parsed = is_file($path) ? Yaml::parseFile($path) : [];
-    return is_array($parsed) ? $parsed : [];
+    if ($this->bundled === NULL) {
+      $path = $this->moduleList->getPath('aincient_core') . '/model-recommendations.yml';
+      $parsed = is_file($path) ? Yaml::parseFile($path) : [];
+      $this->bundled = is_array($parsed) ? $parsed : [];
+    }
+    return $this->bundled;
   }
 
 }

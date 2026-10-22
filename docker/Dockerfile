@@ -103,6 +103,12 @@ RUN find /app /split -exec touch -h -t 202401010000 {} +
 # --- Stage 2: runtime -------------------------------------------------------
 FROM php:8.4-apache AS runtime
 
+# Refuse to build on a PHP below the PHP2Shell fix (CVE-2026-109618/109619, fixed in
+# 8.4.27): a stale cached base layer must fail the build, not ship. Raise the floor
+# with the next PHP security release.
+RUN php -r 'exit(version_compare(PHP_VERSION, "8.4.27", "<") ? 1 : 0);' \
+    || { echo "PHP $(php -r 'echo PHP_VERSION;') is below the 8.4.27 security floor" >&2; exit 1; }
+
 # PHP extensions Drupal needs plus ImageMagick compiled with explicit AVIF support.
 # We build ImageMagick from source to guarantee the libheif-plugin-aomenc encoder is
 # linked (config/sync pins the imagemagick toolkit and every image style runs

@@ -113,6 +113,28 @@ final class RecommendationSourceTest extends UnitTestCase {
   }
 
   /**
+   * A fetch older than the bundled snapshot is outranked by it.
+   *
+   * The site that clicked "Check for updates" once and then upgraded: without
+   * the date check it would keep the old fetch forever, ignoring every newer
+   * bundle the upgrades brought.
+   */
+  public function testAnOlderFetchIsOutrankedByTheBundle(): void {
+    $state = new MemoryState();
+    $stale = Yaml::parse(str_replace("'2099-01-01'", "'2000-01-01'", $this->publishedYaml()));
+    $state->set('aincient.model_recommendations', $stale);
+    $state->set('aincient.model_recommendations_fetched', 946684800);
+
+    $source = $this->source($this->client(new Response(200, [], '')), $state);
+    $meta = $source->meta();
+    $this->assertSame('bundled', $meta['source']);
+    $this->assertNull($meta['fetchedAt']);
+    $this->assertNotSame('2000-01-01', $source->document()['updated']);
+    // Outranked, not deleted: the next refresh replaces it.
+    $this->assertIsArray($state->get('aincient.model_recommendations'));
+  }
+
+  /**
    * A newer schema is refused wholesale; the bundled document stays in force.
    *
    * Half-understanding a document is worse than being slightly out of date.

@@ -7,6 +7,24 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.19.1] — 2026-10-22
+
+**Security release. Update now.**
+- Drupal core is updated to 11.4.11. This fixes a critical remote code execution flaw
+  (SA-CORE-2026-014) and two cross-site scripting flaws (SA-CORE-2026-015, SA-CORE-2026-016).
+- The image runs PHP 8.4.27, which fixes the PHP2Shell remote code execution flaws
+  (CVE-2026-109618, CVE-2026-109619). The image build now stops if the PHP version is older
+  than 8.4.27.
+- Rabbit Hole is updated to 1.3.0, which fixes an access bypass (SA-CONTRIB-2026-252). The
+  Symfony expression parser is updated to 8.1.9, which fixes a crash caused by deeply nested
+  expressions (CVE-2026-109449).
+- Suggested model recommendations bundled with an upgrade now take precedence over an older copy
+  your site fetched earlier. Suggested rates are added for Mistral Medium 3.5, Small 4, Large 3
+  and Ministral 3 8B, Gemini 3.5 Flash-Lite and Nano Banana Pro.
+
+To update, re-run the installer as described in the quickstart's **Upgrade** section. It pulls the
+new image and upgrades your site in place.
+
 ## [0.19.0] — 2026-10-07
 
 **Arrange your menus by dragging.** In the Header and Footer menu editors, drag a link by its grip

@@ -141,6 +141,63 @@ models:
     checked: '2026-08-25'
     note: 'Same model as the nanobanana entry, listed under BOTH provider ids because matching is exact on provider: a site whose image role is bound through the shared-key gemini provider records rows as gemini:gemini-2.5-flash-image, and the nanobanana entry can never match those.'
   -
+    provider: nanobanana
+    model: gemini-3-pro-image
+    input_per_mtok: 2.0
+    output_per_mtok: 120.0
+    source: 'https://ai.google.dev/gemini-api/docs/pricing'
+    checked: '2026-10-21'
+    note: 'Nano Banana Pro, the Best quality image pick. Output is the image-token rate ($0.134 per 1K/2K image, $0.24 per 4K); text and thinking output is $12/Mtok, so a text-heavy call is slightly over-reported.'
+  -
+    provider: gemini
+    model: gemini-3-pro-image
+    input_per_mtok: 2.0
+    output_per_mtok: 120.0
+    source: 'https://ai.google.dev/gemini-api/docs/pricing'
+    checked: '2026-10-21'
+    note: 'Same model as the nanobanana entry, under both provider ids for the same reason as gemini-2.5-flash-image.'
+  -
+    provider: gemini
+    model: gemini-3.5-flash-lite
+    input_per_mtok: 0.3
+    output_per_mtok: 2.5
+    cache_read_per_mtok: 0.03
+    source: 'https://ai.google.dev/gemini-api/docs/pricing'
+    checked: '2026-10-21'
+    note: 'Paid tier, standard (non-batch). No cache_write rate: Google bills cache STORAGE per hour ($1.00/Mtok/hour), not a per-token write premium, so it has no place in a per-call figure.'
+  -
+    provider: mistral
+    model: mistral-medium-2604
+    input_per_mtok: 1.5
+    output_per_mtok: 7.5
+    source: 'https://docs.mistral.ai/models/mistral-medium-3-5-26-04'
+    checked: '2026-10-21'
+    note: 'Mistral Medium 3.5. No cache rate: Mistral publishes only "up to 90%" off cached input, not a figure, so cached tokens report as unpriced rather than guessed.'
+  -
+    provider: mistral
+    model: mistral-small-2603
+    input_per_mtok: 0.15
+    output_per_mtok: 0.6
+    source: 'https://docs.mistral.ai/models/mistral-small-4-0-26-03'
+    checked: '2026-10-21'
+    note: 'Mistral Small 4. No cache rate, as for mistral-medium-2604.'
+  -
+    provider: mistral
+    model: mistral-large-2512
+    input_per_mtok: 0.5
+    output_per_mtok: 1.5
+    source: 'https://docs.mistral.ai/models/mistral-large-3-25-12'
+    checked: '2026-10-21'
+    note: 'Mistral Large 3 — cheaper than Medium 3.5, which is newer. No cache rate, as for mistral-medium-2604.'
+  -
+    provider: mistral
+    model: ministral-8b-2512
+    input_per_mtok: 0.15
+    output_per_mtok: 0.15
+    source: 'https://docs.mistral.ai/models/ministral-3-8b-25-12'
+    checked: '2026-10-21'
+    note: 'Ministral 3 8B. The model card gives the id as ministral-8b-2512 — the curated profiles name ministral-3-8b-2512, which the card does not list. No cache rate, as for mistral-medium-2604.'
+  -
     provider: ollama
     model: '*'
     input_per_mtok: 0.0
