@@ -74,7 +74,7 @@ services:
     # requests from the frozen snapshot without touching PHP and proxies the rest
     # to `app`; while `app` restarts on upgrade, frozen visitors never notice and
     # everyone else gets a "starting" page instead of a connection error.
-    image: nginx:1.28-alpine
+    image: nginx:1.30-alpine
     depends_on:
       - app
     ports:

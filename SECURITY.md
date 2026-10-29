@@ -56,6 +56,17 @@ the way to receive a security fix — there are no backported patches for prior 
 | Older image tags | ⚠️ upgrade to receive fixes |
 | The `atelier` CLI ([manager](https://github.com/aincient-labs/manager)) — latest release | ✅ |
 
+## Security announcements
+
+Every release that fixes a security issue, in Atelier itself or in Drupal, PHP or another
+component it ships, gets an advisory at **[aincient-labs.com/security](https://aincient-labs.com/security/)**
+with its severity and the affected and fixed versions. To hear about them first, subscribe
+to the Atom feed, which carries security releases only:
+
+```
+https://aincient-labs.com/security/feed.xml
+```
+
 ## Verifying what you run
 
 Every published image is **signed with [cosign](https://docs.sigstore.dev/)**. The public

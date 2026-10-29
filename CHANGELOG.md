@@ -7,6 +7,19 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.19.2] — 2026-10-29
+
+**Security maintenance release.**
+- The web server in front of your site (the `edge` container) moves from nginx 1.28 to nginx 1.30.
+  nginx no longer publishes security fixes for 1.28. We know of no way to exploit the recent nginx
+  flaws through Atelier's default web server setup, but a site's only public port should run a
+  version that still gets fixes. Advisory: ATELIER-SA-2026-002.
+- Nothing changes in how your site behaves. If you edited `edge.conf` yourself, read the advisory.
+
+To update, run `atelier app update` (the Atelier manager 0.12.1 or newer moves the web server even
+when your site is already on the latest version), or re-run the installer as described in the
+quickstart's **Upgrade** section.
+
 ## [0.19.1] — 2026-10-22
 
 **Security release. Update now.**

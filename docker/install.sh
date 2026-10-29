@@ -100,7 +100,7 @@ services:
       - private:/opt/drupal/private
     restart: unless-stopped
   edge:
-    image: nginx:1.28-alpine
+    image: nginx:1.30-alpine
     depends_on:
       - app
     ports:
