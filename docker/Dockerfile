@@ -330,6 +330,20 @@ RUN chmod -R a+rX /opt/drupal
 RUN mkdir -p /opt/drupal/private/snapshots /opt/drupal/web/sites/default/files \
     && chown -R www-data:www-data /opt/drupal/web/sites/default/files /opt/drupal/private
 
+# The build fingerprint: one content hash of everything converge brings a
+# database TO — the code tree, config/sync, recipes, converge's own scripts and
+# the upgrade floor. converge.sh records it in State after a converge succeeds;
+# a later start of the same build on that database (a restart, a woken resting
+# site) skips the upgrade work it would only repeat. After every COPY above, so
+# any code or config change is a new fingerprint and a full upgrade. Contents
+# and paths only (no mtimes), so it is as reproducible as the layers it hashes.
+RUN { find /opt/drupal \( -path /opt/drupal/web/sites/default/files -o -path /opt/drupal/private \) -prune \
+        -o -type f -print0; \
+      printf '%s\0' /usr/local/bin/converge.sh /usr/local/bin/healthcheck.sh \
+        /usr/local/bin/entrypoint.sh /etc/atelier/upgrade-floor; } \
+    | sort -z | xargs -0 sha256sum | sha256sum | cut -c1-64 > /etc/atelier/build-fingerprint \
+    && touch -h -t 202401010000 /etc/atelier/build-fingerprint
+
 # settings.php is expected to read DB creds + hash salt from the environment
 # (DATABASE_URL, HASH_SALT) and the config sync dir — standard containerised
 # Drupal wiring. (Left to the deployment to mount/template; noted in README.)

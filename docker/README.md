@@ -53,6 +53,18 @@ idempotent:
   `drush updatedb` (runs this image's `hook_update_N` / `hook_post_update`) →
   `drush config:import` (re-asserts this image's `config/sync`) → `cache:rebuild` →
   **health check** → **roll back to the snapshot** if anything fails.
+- **Existing database, already converged by this very build** (a restart, a host
+  reboot, a resting site woken by the Atelier engine) → **restart**: only the
+  missing-code check, packs and (when the environment names some) credential seeds
+  run; no snapshot, updates, import, rebuild or health gate, because none would change
+  anything. "This very build" is the content hash the Dockerfile writes to
+  `/etc/atelier/build-fingerprint` (code, config, recipes, these scripts), recorded in
+  State (`aincient.appliance_converged`) only after a converge succeeds — so any new
+  image, a restored or rolled-back database from another build, or a dev stack with
+  mounted pack sources always gets the full upgrade. `AINCIENT_FAST_RESTART=0` turns it
+  off. It saves ~20 s per start on a 2-vCPU server (C-03, wake under 20 s). A consequence:
+  a hand edit to non-ignored config is no longer reset by a plain restart, only by the
+  next image.
 - **Existing database, site cannot bootstrap** → **refuse.** Nothing is installed,
   nothing is migrated, the database is not touched, and `converge.result` is
   `missing-code` (when a module's code is gone — the usual cause, named in the log)

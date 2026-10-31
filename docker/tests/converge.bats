@@ -627,3 +627,132 @@ pack_env() {
   [[ "$output" == *"declares no valid 'module:' key"* ]]
   ! grep -q "pm:install" "$DRUSH_LOG"
 }
+
+# --- The restart fast path (C-03: a woken resting site boots in seconds) -----
+# The fingerprint is recorded in State after a successful converge; the same
+# build on the same database then skips the upgrade work. Anything else — a new
+# build, a rolled-back or restored database, no fingerprint file — upgrades.
+
+fp_setup() {
+  export AINCIENT_FINGERPRINT_FILE="$BATS_TEST_TMPDIR/build-fingerprint"
+  export AINCIENT_PACKS_SRC="$BATS_TEST_TMPDIR/packs-src"
+  mkdir -p "$AINCIENT_PACKS_SRC"
+  printf 'abc123\n' > "$AINCIENT_FINGERPRINT_FILE"
+}
+# What converge derives from the file (plus the import switch it reads).
+fp_of() { { cat "$AINCIENT_FINGERPRINT_FILE"; printf 'import-config=%s\n' "${AINCIENT_IMPORT_CONFIG:-1}"; } | sha256sum | cut -c1-64; }
+
+@test "a successful upgrade records this build's fingerprint" {
+  fp_setup
+  export MOCK_INSTALLED=1
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "state:set aincient.appliance_converged $(fp_of)" "$DRUSH_LOG"
+}
+
+@test "a fresh install records the fingerprint too" {
+  fp_setup
+  export MOCK_INSTALLED=0
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "state:set aincient.appliance_converged $(fp_of)" "$DRUSH_LOG"
+}
+
+@test "the same build on the same database restarts: no snapshot, updates, import, rebuild or health gate" {
+  fp_setup
+  export MOCK_INSTALLED=1
+  export MOCK_STATE_aincient_appliance_converged="$(fp_of)"
+  export HEALTHCHECK_CMD=false   # would fail the converge if it ran
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"restart (no snapshot"* ]]
+  ! grep -q "sql:dump" "$DRUSH_LOG"
+  ! grep -q "updatedb" "$DRUSH_LOG"
+  ! grep -q "config:import" "$DRUSH_LOG"
+  ! grep -q "cache:rebuild" "$DRUSH_LOG"
+  ! grep -q "TRUNCATE" "$DRUSH_LOG"
+  ! grep -q "state:set" "$DRUSH_LOG"
+  [ "$(result)" = "ok" ]
+}
+
+@test "a restart still runs the missing-code check first" {
+  fp_setup
+  export MOCK_INSTALLED=1
+  export MOCK_STATE_aincient_appliance_converged="$(fp_of)"
+  stage_docroot node
+  export MOCK_CORE_EXTENSION="$(core_extension node ai)"
+  run bash "$CONVERGE"
+  [ "$status" -ne 0 ]
+  [ "$(result)" = "missing-code" ]
+}
+
+@test "a different build (or a restored older database) upgrades in full" {
+  fp_setup
+  export MOCK_INSTALLED=1
+  export MOCK_STATE_aincient_appliance_converged=0000000000000000000000000000000000000000000000000000000000000000
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "sql:dump" "$DRUSH_LOG"
+  grep -q "updatedb" "$DRUSH_LOG"
+  grep -q "config:import" "$DRUSH_LOG"
+}
+
+@test "a rolled-back upgrade does NOT record the fingerprint" {
+  fp_setup
+  export MOCK_INSTALLED=1 MOCK_UPDATEDB_FAIL=1
+  run bash "$CONVERGE"
+  [ "$status" -ne 0 ]
+  ! grep -q "state:set aincient.appliance_converged" "$DRUSH_LOG"
+}
+
+@test "no fingerprint file → always the full upgrade, nothing recorded" {
+  export MOCK_INSTALLED=1
+  export AINCIENT_FINGERPRINT_FILE="$BATS_TEST_TMPDIR/absent"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "updatedb" "$DRUSH_LOG"
+  ! grep -q "state:get aincient.appliance_converged" "$DRUSH_LOG"
+  ! grep -q "state:set aincient.appliance_converged" "$DRUSH_LOG"
+}
+
+@test "mounted pack sources (a dev stack) → always the full upgrade" {
+  fp_setup
+  mkdir -p "$AINCIENT_PACKS_SRC/my_pack"
+  export MOCK_INSTALLED=1
+  export MOCK_STATE_aincient_appliance_converged="$(fp_of)"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "updatedb" "$DRUSH_LOG"
+}
+
+@test "AINCIENT_FAST_RESTART=0 → always the full upgrade" {
+  fp_setup
+  export MOCK_INSTALLED=1 AINCIENT_FAST_RESTART=0
+  export MOCK_STATE_aincient_appliance_converged="$(fp_of)"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "updatedb" "$DRUSH_LOG"
+}
+
+@test "turning config import off changes the fingerprint → full upgrade" {
+  fp_setup
+  export MOCK_INSTALLED=1
+  export MOCK_STATE_aincient_appliance_converged="$(fp_of)"
+  export AINCIENT_IMPORT_CONFIG=0
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "updatedb" "$DRUSH_LOG"
+}
+
+@test "a restart applies credential seeds only when the environment names some" {
+  fp_setup
+  export MOCK_INSTALLED=1
+  export MOCK_STATE_aincient_appliance_converged="$(fp_of)"
+  run bash "$CONVERGE"
+  ! grep -q "aincient:seed-credentials" "$DRUSH_LOG"
+  : > "$DRUSH_LOG"
+  export ATELIER_DEFAULT_OPENAI_KEY=x
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  grep -q "aincient:seed-credentials" "$DRUSH_LOG"
+}

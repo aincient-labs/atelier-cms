@@ -7,6 +7,19 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.20.0] — 2026-10-31
+
+**Faster restarts.**
+- Starting your site again on the same version now skips the upgrade work it used to repeat at
+  every start (snapshot, database updates, configuration import, cache rebuild, health check),
+  which saves about 20 seconds on a small server. A new version, or a database restored from
+  another version, still gets the full upgrade. Set `AINCIENT_FAST_RESTART=0` to always run it.
+- Settings you changed outside the protected configuration are no longer reset at every start;
+  they are still reset when you upgrade to a new version, as before.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.19.2] — 2026-10-29
 
 **Security maintenance release.**

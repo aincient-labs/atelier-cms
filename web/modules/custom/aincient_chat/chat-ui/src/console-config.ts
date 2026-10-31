@@ -17,7 +17,7 @@
  * depend on it without a cycle. Keep it dependency-free.
  */
 
-type UrlSettings = { basePath?: string; apiBase?: string; technicalDetail?: boolean; chatReach?: string[] };
+type UrlSettings = { basePath?: string; apiBase?: string; technicalDetail?: boolean; chatReach?: string[]; csrfTokenUrl?: string };
 
 function urlSettings(): UrlSettings {
   const w = window as unknown as {
@@ -96,4 +96,13 @@ export function isChatReachable(key: string): boolean {
 export function apiUrl(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${apiBase()}${p}`;
+}
+
+/**
+ * Where a console write to a route with `_csrf_request_header_token` gets the
+ * session CSRF token (Drupal's own /session/token, injected by the shell from
+ * its route name). Null in a harness with no injected settings.
+ */
+export function csrfTokenUrl(): string | null {
+  return urlSettings().csrfTokenUrl ?? null;
 }

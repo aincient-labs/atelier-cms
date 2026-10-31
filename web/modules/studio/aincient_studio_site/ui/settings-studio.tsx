@@ -20,6 +20,7 @@ import {
 } from "@console/sdk";
 import { SnapshotsSection } from "./snapshots-section";
 import { ExamplesSection } from "./examples-section";
+import { ManagersSection } from "./managers-section";
 
 /**
  * The Settings studio (DECISIONS 0372): the operator settings that belong to
@@ -322,6 +323,10 @@ export function SettingsStudio({ onClose }: { onClose: () => void }) {
           {/* Example content (DECISIONS 0441) — "Clear examples"; renders nothing
               unless a studio's examples are still present. Own state + API. */}
           <ExamplesSection />
+
+          {/* Managers (Manager Instances M4) — renders nothing unless this
+              site runs the engine. Own state + API; nothing here pairs. */}
+          <ManagersSection />
         </div>
       )}
     </div>

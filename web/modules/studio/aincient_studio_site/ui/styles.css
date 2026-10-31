@@ -3,7 +3,7 @@
    (`ui/index.tsx` and `ui/settings.tsx` both import it; Vite emits it once).
    Every class is prefixed with one of the module's studio ids
    (`.ain-globals__*`, `.ain-globals-menu__*`, `.ain-settings-snapshots__*`,
-   `.ain-settings-examples__*`),
+   `.ain-settings-examples__*`, `.ain-settings-managers__*`),
    takes colour from `var(--ain-…)` only and never dims with opacity
    (`studio-css.test.ts`). Shared looks — the field chrome, `.ain-studio__*`,
    `.ain-preview__*`, the buttons — are the console's and are only USED here. */
@@ -241,3 +241,45 @@ button.ain-globals-menu__crumb:hover { color: var(--ain-color-text); text-decora
 .ain-settings-examples__count { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); font-variant-numeric: tabular-nums; }
 .ain-settings-examples__clearbtn { flex: none; white-space: nowrap; }
 .ain-settings-examples__actions { display: flex; justify-content: flex-end; }
+
+/* === Settings · Managers (Manager Instances M4) ============================
+   Below Example content, same hairline. One row per paired Manager, the
+   primary badged and without Revoke. Rendered only when the engine is on. */
+.ain-settings-managers {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--ain-color-border);
+}
+.ain-settings-managers__head { display: flex; flex-direction: column; gap: 4px; }
+.ain-settings-managers__title {
+  display: flex; align-items: center; gap: 6px; margin: 0;
+  font-family: var(--ain-font-display); font-weight: 500; font-size: 15px; line-height: 1.3;
+  color: var(--ain-color-text);
+}
+.ain-settings-managers__title svg { font-size: 14px; color: var(--ain-color-accent); }
+.ain-settings-managers__explainer,
+.ain-settings-managers__howto,
+.ain-settings-managers__empty,
+.ain-settings-managers__footnote { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-settings-managers__howto { padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+.ain-settings-managers__howto code {
+  font-family: var(--ain-font-mono); font-size: 11px; overflow-wrap: anywhere;
+  color: var(--ain-color-text);
+}
+.ain-settings-managers__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ain-settings-managers__row {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-bg);
+}
+.ain-settings-managers__row[data-busy] { border-style: dashed; }
+.ain-settings-managers__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ain-settings-managers__name {
+  display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere;
+  font-size: 12.5px; font-weight: 600; line-height: 1.3; color: var(--ain-color-text);
+}
+.ain-settings-managers__badge {
+  flex: none; padding: 1px 6px; border-radius: var(--ain-radius-sm);
+  border: 1px solid var(--ain-color-accent); color: var(--ain-color-accent);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
+}
+.ain-settings-managers__meta { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); font-variant-numeric: tabular-nums; }
+.ain-settings-managers__revokebtn { flex: none; white-space: nowrap; }

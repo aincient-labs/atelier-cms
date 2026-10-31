@@ -32,7 +32,7 @@ export { offerWrapup } from "../thread-seal";
 
 // The injected API base: a studio's own JSON routes live under it. Also added
 // by the Components studio; a studio never hardcodes `/atelier`.
-export { apiUrl, apiBase, consoleBase } from "../console-config";
+export { apiUrl, apiBase, consoleBase, csrfTokenUrl } from "../console-config";
 
 // Deep-link `?field=…`: anchor ids, the requested field, and landing on it.
 // Also Components (Phase B); every rail with addressable fields wants these.

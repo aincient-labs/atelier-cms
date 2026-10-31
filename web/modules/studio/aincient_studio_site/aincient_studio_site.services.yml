@@ -7,3 +7,13 @@ services:
   # `aincient_pages` because the chrome must render with this studio off.
   aincient_studio_site.chrome_preview_applier:
     class: Drupal\aincient_studio_site\ChromePreviewApplier
+
+  # Manager Instances M4: the console's side of the engine's file protocol —
+  # reads the outbox's pairings.json, writes the inbox's revoke.request. Paths
+  # from settings.php (atelier_engine_outbox / atelier_engine_inbox).
+  logger.channel.aincient_engine:
+    parent: logger.channel_base
+    arguments: ['aincient_engine']
+  aincient_studio_site.engine_pairings:
+    class: Drupal\aincient_studio_site\Engine\EnginePairings
+    arguments: ['@logger.channel.aincient_engine']

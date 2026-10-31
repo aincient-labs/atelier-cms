@@ -1,0 +1,7 @@
+# Manager Instances M4: see and revoke the Managers paired with this site's
+# engine. Restricted: a revoke cuts an owner's device off the site. No role is
+# granted it by default; the administrator role has every permission.
+administer atelier managers:
+  title: 'Administer paired Managers'
+  description: 'See the Atelier Manager apps paired with this site''s engine and revoke them. Nothing here can pair a Manager.'
+  restrict access: true

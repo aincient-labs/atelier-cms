@@ -77,3 +77,35 @@ aincient_studio_site.examples_clear:
     _permission: 'use aincient studio settings'
   options:
     _auth: ['cookie', 'basic_auth']
+
+# Managers (Manager Instances M4, m4-1 + m4-3): the Managers paired with this
+# site's experimental engine, read from the engine's read-only outbox, and a
+# revoke of a non-primary one written to its inbox. Nothing here pairs (E-02).
+# AND-ed permissions (Settings studio + the restricted `administer atelier
+# managers`), so the route subscriber does not stamp them: the studio switch is
+# stamped by hand. The write also needs Drupal's session CSRF header token.
+
+aincient_studio_site.managers:
+  path: '/atelier/managers'
+  defaults:
+    _controller: '\Drupal\aincient_studio_site\Controller\ManagersController::list'
+  methods: [GET]
+  requirements:
+    _permission: 'use aincient studio settings,administer atelier managers'
+    _aincient_studio_enabled: 'settings'
+  options:
+    _auth: ['cookie']
+    no_cache: TRUE
+
+aincient_studio_site.managers_revoke:
+  path: '/atelier/managers/revoke'
+  defaults:
+    _controller: '\Drupal\aincient_studio_site\Controller\ManagersController::revoke'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio settings,administer atelier managers'
+    _aincient_studio_enabled: 'settings'
+    _csrf_request_header_token: 'TRUE'
+  options:
+    _auth: ['cookie']
+    no_cache: TRUE

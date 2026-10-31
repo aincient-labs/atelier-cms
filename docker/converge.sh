@@ -47,6 +47,10 @@ UPGRADE_FLOOR_FILE="${AINCIENT_UPGRADE_FLOOR_FILE:-/etc/atelier/upgrade-floor}"
 # The floor is meaningless without it: the image knows what it needs, only the
 # site knows where it is coming from.
 VERSION_STATE_KEY="aincient.appliance_version"
+# The restart fast path: the build fingerprint this image carries, and the State
+# key recording the fingerprint that last converged this database.
+FINGERPRINT_FILE="${AINCIENT_FINGERPRINT_FILE:-/etc/atelier/build-fingerprint}"
+FINGERPRINT_STATE_KEY="aincient.appliance_converged"
 # When the updater mounts /shared, converge reports its outcome here so the
 # sidecar can tell a healthy upgrade from one that rolled back (the server is
 # started either way, so container-start alone can't signal failure).
@@ -629,6 +633,57 @@ seed_credentials() {
   $DRUSH aincient:seed-credentials || log "WARNING: credential seeding failed; the site will ask for a key in the wizard"
 }
 
+# --- The restart fast path ---------------------------------------------------
+#
+# Converge exists to bring a database to the code of a NEW image. Started again
+# on the build that already converged it — a restart, a host reboot, a resting
+# site woken by the Atelier engine (C-03: a working console in under 20 s on
+# 2 vCPU) — there is nothing to bring it to: no pending update, config/sync
+# unchanged, and every cache the upgrade drops is still the one this build
+# wrote. The snapshot, updatedb, config:import, cache:rebuild and the health
+# gate cost ~20 s on a 2-vCPU server and change nothing.
+#
+# "The same build" is a content hash of the image's code, config, recipes and
+# these scripts, taken at build time (docker/Dockerfile → FINGERPRINT_FILE),
+# plus the one runtime switch the upgrade reads (AINCIENT_IMPORT_CONFIG). It is
+# recorded in the DATABASE after a converge succeeds, never in a file, so:
+#   - a new image (any code or config change) has a new hash → full upgrade;
+#   - a database restored from a backup or rolled back to a pre-converge
+#     snapshot carries the hash of the build it was converged by → full upgrade
+#     unless that is this very build;
+#   - a failed converge never records one.
+# No fingerprint file (an older or test image), a dev stack with mounted pack
+# sources (their code changes without the image), or AINCIENT_FAST_RESTART=0
+# → always the full upgrade.
+
+# Echo this start's fingerprint, or nothing when the fast path is unavailable.
+converge_fingerprint() {
+  [ "${AINCIENT_FAST_RESTART:-1}" = "1" ] || return 0
+  [ -s "$FINGERPRINT_FILE" ] || return 0
+  if [ -d "$PACKS_SRC" ] && [ -n "$(ls -A "$PACKS_SRC" 2>/dev/null)" ]; then
+    return 0
+  fi
+  { cat "$FINGERPRINT_FILE"; printf 'import-config=%s\n' "${AINCIENT_IMPORT_CONFIG:-1}"; } \
+    | sha256sum | cut -c1-64
+}
+
+# True when this build already converged this database.
+already_converged() {
+  local want have
+  want="$1"
+  [ -n "$want" ] || return 1
+  have="$($DRUSH state:get "$FINGERPRINT_STATE_KEY" --format=string 2>/dev/null | tr -d '[:space:]')"
+  [ "$have" = "$want" ]
+}
+
+# Record that this build converged this database. Last, after every step
+# succeeded; a failure to record only costs the next start a full upgrade.
+record_fingerprint() {
+  [ -n "$1" ] || return 0
+  $DRUSH state:set "$FINGERPRINT_STATE_KEY" "$1" >/dev/null 2>&1 \
+    || log "WARN: could not record the converged build (the next start upgrades in full)"
+}
+
 # --- Branch 3: data present, site unbootable → refuse -------------------------
 #
 # The state that used to be silently reinstalled over. We know there is data and
@@ -717,6 +772,8 @@ enable_packs() {
 # never on whether Drupal can boot, which is a different question with the same
 # answer only on a healthy site (see the header).
 main() {
+  local fingerprint restart=0
+  fingerprint="$(converge_fingerprint)"
   wait_for_db
   ensure_pgvector
 
@@ -732,9 +789,14 @@ main() {
     check_installed_code_present
 
     if site_installed; then
-      # upgrade() runs its own health check under the rollback trap; on failure it
-      # writes result=rolledback and exits non-zero before we reach here.
-      upgrade
+      if already_converged "$fingerprint"; then
+        restart=1
+        log "this build already converged this database → restart (no snapshot, updates, import, rebuild or health gate)"
+      else
+        # upgrade() runs its own health check under the rollback trap; on failure
+        # it writes result=rolledback and exits non-zero before we reach here.
+        upgrade
+      fi
     else
       refuse_unbootable
     fi
@@ -748,9 +810,22 @@ main() {
     log "running health check"
     "$HEALTHCHECK_CMD" || { write_result install-failed; recovery_hint; die "post-install health check failed"; }
   fi
+  # Packs on every start: a drop-in that failed to enable last time is retried,
+  # and pm:install on an enabled module is a no-op.
   enable_packs
+  if [ "$restart" = "1" ]; then
+    # Seeds are applied once per provider, ever, so a restart only has one to
+    # apply when the environment names some.
+    if [ -n "$(compgen -v ATELIER_DEFAULT_)" ]; then
+      seed_credentials
+    fi
+    write_result ok
+    log "converge OK — restart of the build that converged this site"
+    return 0
+  fi
   seed_credentials
   record_version
+  record_fingerprint "$fingerprint"
   write_result ok
   log "converge OK — site is on $($DRUSH status --field=drupal-version 2>/dev/null || echo '?')"
 }
