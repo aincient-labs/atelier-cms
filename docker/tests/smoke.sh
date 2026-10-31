@@ -210,7 +210,10 @@ echo "== assert: upgrade branch (recreate on same DB) =="
 # fresh-install one (converge writes /shared/converge.result = ok|rolledback on
 # every boot; the upgrade-signal volume carries it across the recreate).
 "${COMPOSE[@]}" exec -T app sh -c 'rm -f /shared/converge.result' 2>/dev/null || true
-"${COMPOSE[@]}" up -d --force-recreate app >/dev/null
+# The same image converged this DB at install, so a plain recreate takes the
+# fast restart path (asserted below); AINCIENT_FAST_RESTART=0 forces the full
+# upgrade this section is about.
+AINCIENT_FAST_RESTART=0 "${COMPOSE[@]}" up -d --force-recreate app >/dev/null
 # Wait for the upgrade converge to record its deterministic result FILE — not a
 # `compose logs` grep, which can buffer/drop the line under some Docker engines
 # (the snapshot assert below already uses a file for this same reason). updatedb
@@ -237,6 +240,23 @@ else
   "${COMPOSE[@]}" logs app 2>&1 | grep -E '\[converge\]|\[health\]|\[entrypoint\]' | tail -40
   echo "--------------------------------------------"
 fi
+
+echo "== assert: fast restart (recreate the same build) skips the upgrade =="
+# Install recorded this build's fingerprint (the forced upgrade above records
+# none), so a plain recreate must skip snapshot, updates, import and gate.
+"${COMPOSE[@]}" exec -T app sh -c 'rm -f /shared/converge.result' 2>/dev/null || true
+snaps_before="$("${COMPOSE[@]}" exec -T app sh -c 'ls /opt/drupal/private/snapshots/pre-converge-*.sql.gz 2>/dev/null | wc -l' | tr -d '[:space:]')" || true
+"${COMPOSE[@]}" up -d --force-recreate app >/dev/null
+result=""
+for _ in $(seq 1 80); do
+  result="$("${COMPOSE[@]}" exec -T app sh -c 'cat /shared/converge.result 2>/dev/null' | tr -d '[:space:]')" || true
+  [ -n "$result" ] && break
+  sleep 3
+done
+snaps_after="$("${COMPOSE[@]}" exec -T app sh -c 'ls /opt/drupal/private/snapshots/pre-converge-*.sql.gz 2>/dev/null | wc -l' | tr -d '[:space:]')" || true
+if [ "$result" = "ok" ]; then ok "fast restart converged ok"; else bad "fast restart did not converge (converge.result='${result:-<none>}')"; fi
+if [ "$snaps_after" = "$snaps_before" ]; then ok "fast restart took no snapshot"; else bad "fast restart snapshotted ($snaps_before → $snaps_after)"; fi
+if "${COMPOSE[@]}" logs app 2>&1 | grep -q 'restart of the build that converged this site'; then ok "fast restart logged the restart path"; else bad "no restart-path log line"; fi
 
 echo "== assert: rollback round-trip reverts a change =="
 drush config:set system.site name "SMOKE-GOOD" -y >/dev/null

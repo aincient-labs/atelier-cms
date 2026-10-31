@@ -57,6 +57,10 @@ services:
       # (REMOTE_ADDR = the immediate peer): Drupal sees real client IPs and the
       # outer scheme. See docker/settings.appliance.php.
       AINCIENT_REVERSE_PROXY: "1"
+      # `0`: every start runs the full upgrade (snapshot, updates, config
+      # import, rebuild, health gate), even for the build that already
+      # converged this database. See docker/converge.sh.
+      AINCIENT_FAST_RESTART: ${AINCIENT_FAST_RESTART:-1}
     # No published port: `edge` fronts it.
     # Let the console reach services on the host machine (e.g. a locally-run
     # Ollama at host.docker.internal:11434). Docker Desktop provides this name
