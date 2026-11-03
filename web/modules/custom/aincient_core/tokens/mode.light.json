@@ -1,27 +1,27 @@
 {
-  "$description": "SYSTEM colour roles, LIGHT mode (gesso paper, the Atelier default) — what a colour is FOR. Same names as mode.dark.json.",
+  "$description": "SYSTEM colour roles, LIGHT mode (Monograph paper, 0500) — what a colour is FOR. Same names as mode.dark.json.",
   "color": {
     "$type": "color",
-    "bg":             { "$value": "{ref.color.gesso.92}", "$description": "Gesso ground — the app canvas (paper-warm, not cream)." },
-    "surface":        { "$value": "{ref.color.gesso.99}", "$description": "Raised cards — the brightest paper." },
-    "surface-raised": { "$value": "{ref.color.gesso.95}", "$description": "The emphasised layer — hover fills, chips, chrome (recessed a touch on paper)." },
-    "border":         { "$value": "{ref.color.gesso.86}" },
-    "border-strong":  { "$value": "{ref.color.stone.58}", "$description": "Soft stone hairline." },
-    "text":           { "$value": "{ref.color.bistre.24}", "$description": "Bistre — warm near-black ink." },
-    "text-muted":     { "$value": "{ref.color.stone.47}" },
-    "text-faint":     { "$value": "{ref.color.stone.62}" },
-    "accent":         { "$value": "{ref.color.cinnabar.55}", "$description": "CINNABAR — a half-step deeper reads pigment, not safety-orange (study 02)." },
-    "accent-hover":   { "$value": "{ref.color.cinnabar.49}" },
-    "accent-tint":    { "$value": "color-mix(in oklch, {color.accent} 10%, transparent)" },
-    "on-accent":      { "$value": "{ref.color.gesso.99}" },
-    "focus-ring":     { "$value": "{color.accent}" },
-    "warning":        { "$value": "{ref.color.ochre.60}" },
-    "success":        { "$value": "{ref.color.verdigris.52}" },
-    "danger":         { "$value": "{ref.color.brick.52}" },
-    "shadow":         { "$value": "{ref.color.umber.30}", "$description": "Soft warm ink — diffuse lift, not hard offset." }
+    "bg": { "$value": "{ref.color.paper.100}", "$description": "Paper — the app canvas." },
+    "surface": { "$value": "{ref.color.paper.100}", "$description": "Panels sit on the same paper; hairlines separate them, not tints." },
+    "surface-raised": { "$value": "{ref.color.paper.96}", "$description": "The well — the one tinted surface: inputs, preview plate, hover and selected rows, user messages." },
+    "border": { "$value": "{ref.color.paper.90}", "$description": "The 1px hairline between rows and panes." },
+    "border-strong": { "$value": "{ref.color.ink.16}", "$description": "The strong 1px ink rule that opens a block." },
+    "text": { "$value": "{ref.color.ink.16}", "$description": "Ink." },
+    "text-muted": { "$value": "{ref.color.graphite.50}", "$description": "Caption grey — AA on paper and well; never dim with opacity (0376)." },
+    "text-faint": { "$value": "{ref.color.graphite.64}", "$description": "Placeholders only — must read as absence, not content." },
+    "accent": { "$value": "{ref.color.ink.16}", "$description": "Highlight is INK (0501): primary fill, selected segment, active underline. Red is reserved for problems." },
+    "accent-hover": { "$value": "{ref.color.ink.29}", "$description": "Soft ink — the primary's hover and press." },
+    "accent-tint": { "$value": "{ref.color.paper.96}", "$description": "The selected/hover fill — the well." },
+    "on-accent": { "$value": "{ref.color.paper.100}", "$description": "Paper text on an ink fill." },
+    "focus-ring": { "$value": "{ref.color.ink.16}", "$description": "Focus = a 2px ink outline (0501)." },
+    "warning": { "$value": "{ref.color.ochre.56}" },
+    "success": { "$value": "{ref.color.moss.53}" },
+    "danger": { "$value": "{ref.color.brick.51}", "$description": "Errors — always with an icon and words (0501)." },
+    "shadow": { "$value": "{ref.color.umber.30}", "$description": "Shadow ink — for what sits above the page only." }
   },
   "mark": {
     "$type": "color",
-    "ring": { "$value": "{ref.color.bistre.24}", "$description": "Mark ink on paper." }
+    "ring": { "$value": "{ref.color.ink.16}", "$description": "Mark ink on paper." }
   }
 }

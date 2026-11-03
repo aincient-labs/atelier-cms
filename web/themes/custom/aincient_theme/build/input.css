@@ -184,6 +184,8 @@
   }
 
   .ain-auth-alt { @apply mt-6 text-sm text-muted-foreground; }
+  /* Maintenance mode: core's message, set as body copy under the heading. */
+  .ain-auth-message { @apply text-base text-muted-foreground; line-height: 1.6; }
   .ain-auth-alt a { @apply font-medium text-foreground underline underline-offset-4 hover:no-underline; }
 
   /* Full-width primary action: the obvious next step, and a real target. */

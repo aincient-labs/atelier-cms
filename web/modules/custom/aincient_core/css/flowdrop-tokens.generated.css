@@ -4,49 +4,44 @@
    Tiers and grammar: docs/console-tokens.md (DECISIONS 0438). */
 
 :root {
-  --ain-ref-color-charcoal-20: oklch(0.205 0.006 72);
-  --ain-ref-color-charcoal-25: oklch(0.245 0.007 72);
-  --ain-ref-color-charcoal-28: oklch(0.285 0.008 72);
-  --ain-ref-color-charcoal-34: oklch(0.34 0.008 72);
-  --ain-ref-color-charcoal-46: oklch(0.46 0.010 72);
-  --ain-ref-color-gesso-86: oklch(0.86 0.007 88);
-  --ain-ref-color-gesso-92: oklch(0.923 0.009 82);
-  --ain-ref-color-gesso-93: oklch(0.93 0.008 85);
-  --ain-ref-color-gesso-95: oklch(0.951 0.007 82);
-  --ain-ref-color-gesso-99: oklch(0.986 0.004 82);
-  --ain-ref-color-stone-47: oklch(0.47 0.010 78);
-  --ain-ref-color-stone-55: oklch(0.55 0.010 82);
-  --ain-ref-color-stone-58: oklch(0.58 0.010 85);
-  --ain-ref-color-stone-62: oklch(0.62 0.010 80);
-  --ain-ref-color-stone-70: oklch(0.70 0.010 85);
-  --ain-ref-color-bistre-24: oklch(0.24 0.008 70);
-  --ain-ref-color-chalk-97: oklch(0.97 0.005 290);
-  --ain-ref-color-cinnabar-49: oklch(0.49 0.155 32);
-  --ain-ref-color-cinnabar-55: oklch(0.545 0.155 32);
-  --ain-ref-color-cinnabar-66: oklch(0.66 0.155 34);
-  --ain-ref-color-cinnabar-72: oklch(0.72 0.155 34);
-  --ain-ref-color-ochre-60: oklch(0.60 0.100 66);
-  --ain-ref-color-ochre-72: oklch(0.72 0.095 66);
-  --ain-ref-color-verdigris-52: oklch(0.52 0.090 163);
-  --ain-ref-color-verdigris-72: oklch(0.72 0.085 165);
-  --ain-ref-color-brick-52: oklch(0.52 0.160 28);
-  --ain-ref-color-brick-62: oklch(0.62 0.150 25);
+  --ain-ref-color-paper-90: oklch(0.901 0.007 89);
+  --ain-ref-color-paper-96: oklch(0.958 0.007 89);
+  --ain-ref-color-paper-100: oklch(1 0 0);
+  --ain-ref-color-ink-16: oklch(0.159 0 0);
+  --ain-ref-color-ink-29: oklch(0.289 0 0);
+  --ain-ref-color-graphite-50: oklch(0.50 0 0);
+  --ain-ref-color-graphite-64: oklch(0.635 0.010 78);
+  --ain-ref-color-night-18: oklch(0.178 0.003 68);
+  --ain-ref-color-night-22: oklch(0.218 0.004 85);
+  --ain-ref-color-night-29: oklch(0.286 0.006 78);
+  --ain-ref-color-bone-53: oklch(0.527 0.012 77);
+  --ain-ref-color-bone-70: oklch(0.701 0.013 80);
+  --ain-ref-color-bone-86: oklch(0.859 0.011 82);
+  --ain-ref-color-bone-96: oklch(0.956 0.006 85);
+  --ain-ref-color-cinnabar-56: oklch(0.560 0.165 34);
+  --ain-ref-color-moss-53: oklch(0.528 0.089 153);
+  --ain-ref-color-moss-71: oklch(0.713 0.072 154);
+  --ain-ref-color-ochre-56: oklch(0.561 0.112 76);
+  --ain-ref-color-ochre-74: oklch(0.740 0.118 80);
+  --ain-ref-color-brick-51: oklch(0.505 0.149 31);
+  --ain-ref-color-brick-70: oklch(0.700 0.123 33);
   --ain-ref-color-umber-12: oklch(0.12 0.010 60);
   --ain-ref-color-umber-30: oklch(0.30 0.010 60);
+  --ain-ref-color-chalk-97: oklch(0.97 0.005 290);
   --ain-ref-color-coral-66: oklch(0.66 0.21 27);
   --ain-ref-color-amber-78: oklch(0.78 0.17 70);
   --ain-ref-color-mint-74: oklch(0.74 0.17 163);
   --ain-ref-color-violet-58: oklch(0.58 0.21 292);
-  /** Body sans = the study-02 system stack. Schibsted Grotesk is retired from the UI. */
-  --ain-font-body: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-  /** The maker's hand — panel titles and UPPERCASE eyebrows. Fraunces is self-hosted (aincient_chat/fonts). */
-  --ain-font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  /** Utility mono — whisper chips, micro-labels, machine text (Law 13). */
+  /** IBM Plex Sans throughout (0500) — the crossbarred capital I (0492). Self-hosted (aincient_chat/fonts, aincient_core/fonts). */
+  --ain-font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  /** Headings use the same face at weight 500 with tight tracking; Fraunces is retired from the app (0500). */
+  --ain-font-display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  /** Machine text only — ids, tokens, addresses, paths in a well chip (Law 13). Never eyebrows or panel heads (0500). */
   --ain-font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
-  --ain-radius-sm: 4px;
-  --ain-radius-md: 7px;
-  --ain-radius-lg: 10px;
-  --ain-radius-xl: 14px;
+  --ain-radius-sm: 0px;
+  --ain-radius-md: 0px;
+  --ain-radius-lg: 0px;
+  --ain-radius-xl: 0px;
   /** The reading column — chat and forms never grow wider. */
   --ain-size-column-max: 760px;
   --ain-sidebar-width: 264px;
@@ -58,67 +53,77 @@
   --ain-mark-band-2: var(--ain-ref-color-amber-78);
   --ain-mark-band-3: var(--ain-ref-color-mint-74);
   --ain-mark-band-4: var(--ain-ref-color-violet-58);
-  /** Gesso ground — the app canvas (paper-warm, not cream). */
-  --ain-color-bg: var(--ain-ref-color-gesso-92);
-  /** Raised cards — the brightest paper. */
-  --ain-color-surface: var(--ain-ref-color-gesso-99);
-  /** The emphasised layer — hover fills, chips, chrome (recessed a touch on paper). */
-  --ain-color-surface-raised: var(--ain-ref-color-gesso-95);
-  --ain-color-border: var(--ain-ref-color-gesso-86);
-  /** Soft stone hairline. */
-  --ain-color-border-strong: var(--ain-ref-color-stone-58);
-  /** Bistre — warm near-black ink. */
-  --ain-color-text: var(--ain-ref-color-bistre-24);
-  --ain-color-text-muted: var(--ain-ref-color-stone-47);
-  --ain-color-text-faint: var(--ain-ref-color-stone-62);
-  /** CINNABAR — a half-step deeper reads pigment, not safety-orange (study 02). */
-  --ain-color-accent: var(--ain-ref-color-cinnabar-55);
-  --ain-color-accent-hover: var(--ain-ref-color-cinnabar-49);
-  --ain-color-on-accent: var(--ain-ref-color-gesso-99);
-  --ain-color-warning: var(--ain-ref-color-ochre-60);
-  --ain-color-success: var(--ain-ref-color-verdigris-52);
-  --ain-color-danger: var(--ain-ref-color-brick-52);
-  /** Soft warm ink — diffuse lift, not hard offset. */
+  /** The stripe of the Atelier CMS mark — the only cinnabar in the app (0501). */
+  --ain-mark-pigment: var(--ain-ref-color-cinnabar-56);
+  /** Paper — the app canvas. */
+  --ain-color-bg: var(--ain-ref-color-paper-100);
+  /** Panels sit on the same paper; hairlines separate them, not tints. */
+  --ain-color-surface: var(--ain-ref-color-paper-100);
+  /** The well — the one tinted surface: inputs, preview plate, hover and selected rows, user messages. */
+  --ain-color-surface-raised: var(--ain-ref-color-paper-96);
+  /** The 1px hairline between rows and panes. */
+  --ain-color-border: var(--ain-ref-color-paper-90);
+  /** The strong 1px ink rule that opens a block. */
+  --ain-color-border-strong: var(--ain-ref-color-ink-16);
+  /** Ink. */
+  --ain-color-text: var(--ain-ref-color-ink-16);
+  /** Caption grey — AA on paper and well; never dim with opacity (0376). */
+  --ain-color-text-muted: var(--ain-ref-color-graphite-50);
+  /** Placeholders only — must read as absence, not content. */
+  --ain-color-text-faint: var(--ain-ref-color-graphite-64);
+  /** Highlight is INK (0501): primary fill, selected segment, active underline. Red is reserved for problems. */
+  --ain-color-accent: var(--ain-ref-color-ink-16);
+  /** Soft ink — the primary's hover and press. */
+  --ain-color-accent-hover: var(--ain-ref-color-ink-29);
+  /** The selected/hover fill — the well. */
+  --ain-color-accent-tint: var(--ain-ref-color-paper-96);
+  /** Paper text on an ink fill. */
+  --ain-color-on-accent: var(--ain-ref-color-paper-100);
+  /** Focus = a 2px ink outline (0501). */
+  --ain-color-focus-ring: var(--ain-ref-color-ink-16);
+  --ain-color-warning: var(--ain-ref-color-ochre-56);
+  --ain-color-success: var(--ain-ref-color-moss-53);
+  /** Errors — always with an icon and words (0501). */
+  --ain-color-danger: var(--ain-ref-color-brick-51);
+  /** Shadow ink — for what sits above the page only. */
   --ain-color-shadow: var(--ain-ref-color-umber-30);
   /** Mark ink on paper. */
-  --ain-mark-ring: var(--ain-ref-color-bistre-24);
-  --ain-color-accent-tint: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
-  --ain-color-focus-ring: var(--ain-color-accent);
+  --ain-mark-ring: var(--ain-ref-color-ink-16);
 }
 
 [data-theme="dark"] {
-  /** The app canvas. */
-  --ain-color-bg: var(--ain-ref-color-charcoal-20);
-  /** Panels and chrome. */
-  --ain-color-surface: var(--ain-ref-color-charcoal-25);
-  /** The emphasised layer — hover fills, chips, raised cards. */
-  --ain-color-surface-raised: var(--ain-ref-color-charcoal-28);
-  /** The 1px hairline (Law 06). */
-  --ain-color-border: var(--ain-ref-color-charcoal-34);
-  --ain-color-border-strong: var(--ain-ref-color-charcoal-46);
+  /** Night paper — the app canvas. */
+  --ain-color-bg: var(--ain-ref-color-night-18);
+  /** Panels sit on the same paper; hairlines separate them. */
+  --ain-color-surface: var(--ain-ref-color-night-18);
+  /** The well — inputs, preview plate, hover and selected rows, user messages. */
+  --ain-color-surface-raised: var(--ain-ref-color-night-22);
+  /** The 1px hairline. */
+  --ain-color-border: var(--ain-ref-color-night-29);
+  /** The strong 1px ink rule that opens a block. */
+  --ain-color-border-strong: var(--ain-ref-color-bone-96);
   /** Ink. */
-  --ain-color-text: var(--ain-ref-color-gesso-93);
-  /** Secondary ink — stays WCAG AA; never dim with opacity (0376). */
-  --ain-color-text-muted: var(--ain-ref-color-stone-70);
-  /** Placeholders only — must read as absence, not content. */
-  --ain-color-text-faint: var(--ain-ref-color-stone-55);
-  /** Cinnabar, lifted for the dark ground — the one pigment (Law 01). */
-  --ain-color-accent: var(--ain-ref-color-cinnabar-66);
-  --ain-color-accent-hover: var(--ain-ref-color-cinnabar-72);
-  /** Paper ink on a cinnabar fill. */
-  --ain-color-on-accent: var(--ain-ref-color-gesso-99);
-  /** Draft / dirty / attention — a tint, never a fill (Law 02). */
-  --ain-color-warning: var(--ain-ref-color-ochre-72);
-  /** Positive state and links. */
-  --ain-color-success: var(--ain-ref-color-verdigris-72);
-  /** Blocked / archived / destructive. */
-  --ain-color-danger: var(--ain-ref-color-brick-62);
-  /** The shadow ink, mixed into every box-shadow. */
+  --ain-color-text: var(--ain-ref-color-bone-96);
+  /** Caption grey — stays WCAG AA; never dim with opacity (0376). */
+  --ain-color-text-muted: var(--ain-ref-color-bone-70);
+  /** Placeholders only. */
+  --ain-color-text-faint: var(--ain-ref-color-bone-53);
+  /** Highlight is INK (0501) — light ink on night. */
+  --ain-color-accent: var(--ain-ref-color-bone-96);
+  /** Soft ink — the primary's hover and press. */
+  --ain-color-accent-hover: var(--ain-ref-color-bone-86);
+  /** The selected/hover fill — the well. */
+  --ain-color-accent-tint: var(--ain-ref-color-night-22);
+  /** Night paper text on an ink fill. */
+  --ain-color-on-accent: var(--ain-ref-color-night-18);
+  /** Focus = a 2px ink outline (0501). */
+  --ain-color-focus-ring: var(--ain-ref-color-bone-96);
+  --ain-color-warning: var(--ain-ref-color-ochre-74);
+  --ain-color-success: var(--ain-ref-color-moss-71);
+  /** Errors — always with an icon and words (0501). */
+  --ain-color-danger: var(--ain-ref-color-brick-70);
+  /** Shadow ink — for what sits above the page only. */
   --ain-color-shadow: var(--ain-ref-color-umber-12);
   /** The mark's ring — a white sticker on the dark ground. */
   --ain-mark-ring: var(--ain-ref-color-chalk-97);
-  /** A whisper of the accent for selected / focus fills. */
-  --ain-color-accent-tint: color-mix(in oklch, var(--ain-color-accent) 16%, transparent);
-  /** Focus is a tint ring, never a halo (Law 04). */
-  --ain-color-focus-ring: var(--ain-color-accent);
 }

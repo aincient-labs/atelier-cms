@@ -1,0 +1,55 @@
+{#
+/**
+ * @file
+ * Maintenance mode — the site's front door while it is offline.
+ *
+ * The same centred split card as the auth screens (page--auth.html.twig, DECISIONS
+ * 0422): the SITE's ink + primary panel beside the message, never Atelier's brand.
+ * Identity vars come from aincient_theme_preprocess_maintenance_page(); the
+ * heading and message are core's (the message is the operator's setting).
+ #}
+<div class="ain-auth-screen">
+  <div class="ain-auth-card">
+
+  <main id="main-content" tabindex="-1" class="ain-auth-main">
+    <div class="ain-auth-inner">
+
+      {# The panel is hidden below 1024px, so the site names itself here instead. #}
+      <div class="ain-auth-id">
+        {% if ain_auth.logo_url %}
+          <img src="{{ ain_auth.logo_url }}" alt="{{ ain_auth.name }}" class="ain-auth-id__logo" />
+        {% else %}
+          <span class="ain-auth-id__name">{{ ain_auth.name }}</span>
+        {% endif %}
+      </div>
+
+      {% if title %}
+        <h1 class="ain-auth-heading">{{ title }}</h1>
+      {% endif %}
+
+      <div class="ain-auth-message">
+        {{ page.highlighted }}
+        {{ page.content }}
+      </div>
+
+    </div>
+  </main>
+
+  <aside class="ain-auth-panel">
+    <div class="ain-auth-panel__id">
+      {% if ain_auth.logo_url %}
+        <img src="{{ ain_auth.logo_url }}" alt="{{ ain_auth.name }}" class="ain-auth-panel__logo" />
+      {% else %}
+        <p class="ain-auth-panel__name">{{ ain_auth.name }}</p>
+      {% endif %}
+      {% if ain_auth.tagline %}
+        <p class="ain-auth-panel__tagline">{{ ain_auth.tagline }}</p>
+      {% endif %}
+    </div>
+    {% if ain_auth.build_with %}
+      <p class="ain-auth-panel__foot">{{ 'Build with Atelier'|t }}</p>
+    {% endif %}
+  </aside>
+
+  </div>
+</div>

@@ -14,12 +14,10 @@
  * attaching us to `flowdrop_ui_components/flowdrop`), so we cascade after the
  * Svelte bundle's `component`-bucket flowdrop.css and win.
  *
- * Identity: the warm-paper craftsman look (docs/brand.md) — gesso grounds, a
- * single CINNABAR pigment, soft craft corners, soft diffuse shadows. The old
- * neo-brutalist skin this file used to carry (signature violet, the four-band
- * spectrum stripe, sharp 2px corners, hard ink-offset shadows) is RETIRED
- * (DECISIONS 0190/0191) — history lives in the archive; none of it survives
- * here.
+ * Identity: the Monograph app tier (DECISIONS 0500/0501) — paper and ink,
+ * 1px hairlines instead of shadows, square corners, IBM Plex Sans, ink as the
+ * only highlight. Shadows survive only on what sits above the canvas
+ * (menus, popovers, the settings modal).
  *
  * Polarity: FlowDrop's own tokens are LIGHT-default — design-tokens.css sets
  * `:root {light}` then `[data-theme="dark"] {dark}` (dark wins by order when
@@ -27,47 +25,43 @@
  * in each mode: light resolves to our `:root`, dark to our `[data-theme]`.
  * Both are branded because the operator can flip the editor theme from
  * FlowDrop's Settings -> Theme panel. Only the surface neutrals + shadow ink
- * differ per mode; cinnabar, the Schibsted body font and the soft corners are
+ * differ per mode; the ink accent, the Plex body font and the square corners are
  * mode-agnostic.
  *
- * @see docs/brand.md (§2.2 cinnabar, §2.4 type, §3 palettes, §10 laws)
+ * @see docs/brand.md (console look) · docs/console-tokens.md
  */
 
 /* =========================================================================
-   MODE-AGNOSTIC BRAND — body font + soft craft corners. These live on `:root`
+   MODE-AGNOSTIC BRAND — body font + square corners. These live on `:root`
    (always matches) and are NOT redefined per mode, so they hold in both light
    and dark.
    ========================================================================= */
 :root {
-  /* Body / UI font — Schibsted Grotesk replaces Inter (§2.4). Delivered by the
+  /* Body / UI font — IBM Plex Sans replaces Inter (0500). Delivered by the
      library's self-hosted external font entry (never Google). */
-  --fd-font-family-sans: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fd-font-family-sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
 
-  /* Soft craft corners — the sharp 2px arcade edge is retired (§10). The
-     console commits to a single soft radius (--ain-radius-md: 7px); we let the
-     scale rise gently around it rather than pinning everything flat. */
-  --fd-radius-sm: 5px;
-  --fd-radius-md: 7px;
-  --fd-radius-lg: 9px;
-  --fd-radius-xl: 12px;
-  --fd-radius-2xl: 16px;
+  /* Square corners — the console's radius scale is 0 (0500). */
+  --fd-radius-sm: var(--ain-radius-sm);
+  --fd-radius-md: var(--ain-radius-md);
+  --fd-radius-lg: var(--ain-radius-lg);
+  --fd-radius-xl: var(--ain-radius-xl);
+  --fd-radius-2xl: var(--ain-radius-xl);
 
-  /* Status badges/pills stay intentionally pill-shaped (round chips). */
-  --fd-badge-radius: var(--fd-radius-full);
+  /* Status badges are square too — no pills. */
+  --fd-badge-radius: var(--ain-radius-md);
 }
 
 /* =========================================================================
    THE PALETTE is css/flowdrop-tokens.generated.css (listed before this file in
    the `flowdrop_brand` library), generated from aincient_core/tokens/*.json:
-   `:root` is gesso paper, `[data-theme="dark"]` is studio night, mirroring
-   FlowDrop's own light-default / attribute-dark shape. Only the canvas wash,
-   which no other surface has, is defined here.
+   `:root` is paper, `[data-theme="dark"]` is the dark mode, mirroring
+   FlowDrop's own light-default / attribute-dark shape. The canvas is the flat
+   page ground (the gradient wash is retired, 0500).
    ========================================================================= */
-:root {
-  --ain-flowdrop-canvas: linear-gradient(135deg, oklch(0.94 0.008 82) 0%, oklch(0.92 0.010 82) 100%);
-}
+:root,
 [data-theme="dark"] {
-  --ain-flowdrop-canvas: linear-gradient(135deg, oklch(0.19 0.006 72) 0%, oklch(0.22 0.007 72) 100%);
+  --ain-flowdrop-canvas: var(--ain-color-bg);
 }
 
 /* =========================================================================
@@ -77,8 +71,7 @@
    resolve to whichever mode is active, so this single map serves both.
 
    Status semantics (success/warning/danger) are LEFT at FlowDrop's mode-correct
-   defaults — meaning colours are deliberately distinct from the cinnabar brand
-   accent (§10). We only recolour the brand accent family + neutrals + shadows.
+   defaults — meaning colours are deliberately distinct from the ink accent. We only recolour the brand accent family + neutrals + shadows.
    ========================================================================= */
 :root,
 [data-theme="dark"] {
@@ -92,7 +85,7 @@
   --fd-card-foreground: var(--ain-color-text);
   --fd-header: var(--ain-color-surface);
   --fd-header-foreground: var(--ain-color-text);
-  --fd-header-gradient: linear-gradient(180deg, var(--ain-color-surface) 0%, var(--ain-color-bg) 100%);
+  --fd-header-gradient: var(--ain-color-surface);
   --fd-surface-tint: var(--ain-color-accent-tint);
 
   /* Borders */
@@ -102,18 +95,18 @@
   --fd-node-border: var(--ain-color-border);
   --fd-node-border-hover: var(--ain-color-border-strong);
 
-  /* Single cinnabar accent — the interface commits to one pigment (§2.2), on
-     at most a couple of elements per screen. Primary + accent + ring + info all
-     resolve to cinnabar; success/warning/danger keep their own meaning colours. */
+  /* Ink is the one highlight. Primary + accent + ring + info all resolve to
+     ink; success/warning/danger keep their own meaning colours. The foreground
+     on the accent is the on-accent role (paper), which flips with the mode. */
   --fd-primary: var(--ain-color-accent);
   --fd-primary-hover: var(--ain-color-accent-hover);
-  --fd-primary-foreground: #fff;
+  --fd-primary-foreground: var(--ain-color-on-accent);
   --fd-primary-muted: var(--ain-color-accent-tint);
   --fd-accent: var(--ain-color-accent);
   --fd-accent-hover: var(--ain-color-accent-hover);
-  --fd-accent-foreground: #fff;
+  --fd-accent-foreground: var(--ain-color-on-accent);
   --fd-accent-muted: var(--ain-color-accent-tint);
-  --fd-ring: var(--ain-color-accent);
+  --fd-ring: var(--ain-color-focus-ring);
   --fd-info: var(--ain-color-accent);
   --fd-info-muted: var(--ain-color-accent-tint);
 
@@ -121,7 +114,7 @@
   --fd-secondary-hover: var(--ain-color-border);
   --fd-secondary-foreground: var(--ain-color-text);
 
-  /* Canvas backdrop (the node-graph gradient). Node-port contrast rings
+  /* Canvas backdrop (flat). Node-port contrast rings
      (--fd-handle-border) and the modal scrim (--fd-backdrop) keep FlowDrop's
      mode-correct defaults. */
   --fd-layout-background: var(--ain-flowdrop-canvas);
@@ -131,20 +124,20 @@
   --fd-scrollbar-thumb-hover: var(--ain-color-border-strong);
   --fd-scrollbar-track: var(--ain-color-bg);
 
-  /* Edges — selected snaps to cinnabar in both modes. */
+  /* Edges — selected snaps to ink in both modes. */
   --fd-edge-trigger-selected: var(--ain-color-accent);
   --fd-edge-data-selected: var(--ain-color-accent);
   --fd-edge-loopback-selected: var(--ain-color-accent);
 
-  /* Shadows are SOFT + diffuse — the warm-paper lift (§3, Law 08): a blurred,
-     low-offset shadow so surfaces read as caught light, never a hard ink block.
-     This single scale swap re-softens everything that lifts — nodes, tool /
-     gateway nodes, cards, inputs, the component sidebar, canvas FABs and the
-     settings modal. Recipe mirrors the console (0 Ny Bpx color-mix ain-shadow). */
-  --fd-shadow-sm: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
-  --fd-shadow-md: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 22%, transparent);
-  --fd-shadow-lg: 0 6px 16px -4px color-mix(in oklch, var(--ain-color-shadow) 26%, transparent);
-  --fd-shadow-xl: 0 12px 28px -6px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent);
+  /* Shadows: the two small steps (nodes, cards, inputs, canvas FABs — things
+     ON the canvas) are flat; hairlines carry them. The two large steps (menus,
+     popovers, the settings modal — things ABOVE it) take the console's overlay
+     shadow. A zero shadow, not `none`, so a var() inside a shadow list stays
+     valid. */
+  --fd-shadow-sm: 0 0 0 0 transparent;
+  --fd-shadow-md: 0 0 0 0 transparent;
+  --fd-shadow-lg: 0 26px 46px -22px color-mix(in oklch, var(--ain-color-shadow) 50%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
+  --fd-shadow-xl: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
 
   /* Header lift = a clean flat hairline (no drop shadow). */
   --fd-header-shadow: 0 1px 0 var(--ain-color-border);

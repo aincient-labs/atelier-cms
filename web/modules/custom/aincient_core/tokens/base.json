@@ -3,33 +3,46 @@
   "font": {
     "$type": "fontFamily",
     "body": {
-      "$value": "system-ui, -apple-system, \"Segoe UI\", Helvetica, Arial, sans-serif",
-      "$description": "Body sans = the study-02 system stack. Schibsted Grotesk is retired from the UI."
+      "$value": "\"IBM Plex Sans\", \"Helvetica Neue\", Arial, sans-serif",
+      "$description": "IBM Plex Sans throughout (0500) — the crossbarred capital I (0492). Self-hosted (aincient_chat/fonts, aincient_core/fonts)."
     },
     "display": {
-      "$value": "\"Fraunces\", \"Iowan Old Style\", \"Palatino Linotype\", Palatino, Georgia, serif",
-      "$description": "The maker's hand — panel titles and UPPERCASE eyebrows. Fraunces is self-hosted (aincient_chat/fonts)."
+      "$value": "\"IBM Plex Sans\", \"Helvetica Neue\", Arial, sans-serif",
+      "$description": "Headings use the same face at weight 500 with tight tracking; Fraunces is retired from the app (0500)."
     },
     "mono": {
       "$value": "ui-monospace, \"SF Mono\", \"JetBrains Mono\", Menlo, monospace",
-      "$description": "Utility mono — whisper chips, micro-labels, machine text (Law 13)."
+      "$description": "Machine text only — ids, tokens, addresses, paths in a well chip (Law 13). Never eyebrows or panel heads (0500)."
     }
   },
   "radius": {
     "$type": "dimension",
-    "$description": "One radius family — 4 / 7 / 10 / 14 px: chips, controls, cards, panels (Law 06).",
-    "sm": { "$value": "4px" },
-    "md": { "$value": "7px" },
-    "lg": { "$value": "10px" },
-    "xl": { "$value": "14px" }
+    "$description": "Square (0500): everything that belongs to the page has 0 radius. The names stay so a theme can round them.",
+    "sm": {
+      "$value": "0px"
+    },
+    "md": {
+      "$value": "0px"
+    },
+    "lg": {
+      "$value": "0px"
+    },
+    "xl": {
+      "$value": "0px"
+    }
   },
   "size": {
     "$type": "dimension",
-    "column-max": { "$value": "760px", "$description": "The reading column — chat and forms never grow wider." }
+    "column-max": {
+      "$value": "760px",
+      "$description": "The reading column — chat and forms never grow wider."
+    }
   },
   "sidebar": {
     "$type": "dimension",
-    "width": { "$value": "264px" }
+    "width": {
+      "$value": "264px"
+    }
   },
   "topbar": {
     "$type": "dimension",
@@ -40,16 +53,31 @@
   },
   "panel-bar": {
     "$type": "dimension",
-    "height": { "$value": "36px", "$description": "Shared height of every panel head (chat / preview / rail) so the column heads line up flush." }
+    "height": {
+      "$value": "36px",
+      "$description": "Shared height of every panel head (chat / preview / rail) so the column heads line up flush."
+    }
   },
   "mark": {
     "$type": "color",
     "$description": "The brand mark's spectrum chip — the ONLY place the four vivid bands appear (Law 01).",
     "band": {
-      "1": { "$value": "{ref.color.coral.66}" },
-      "2": { "$value": "{ref.color.amber.78}" },
-      "3": { "$value": "{ref.color.mint.74}" },
-      "4": { "$value": "{ref.color.violet.58}" }
+      "1": {
+        "$value": "{ref.color.coral.66}"
+      },
+      "2": {
+        "$value": "{ref.color.amber.78}"
+      },
+      "3": {
+        "$value": "{ref.color.mint.74}"
+      },
+      "4": {
+        "$value": "{ref.color.violet.58}"
+      }
+    },
+    "pigment": {
+      "$value": "{ref.color.cinnabar.56}",
+      "$description": "The stripe of the Atelier CMS mark — the only cinnabar in the app (0501)."
     }
   }
 }

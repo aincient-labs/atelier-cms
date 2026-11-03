@@ -8,13 +8,13 @@
  * feature rule of equal specificity still overrides the kit — never the reverse.
  */
 .ain-skeleton {
-  display: block; border-radius: 4px;
+  display: block; border-radius: 0;
   background: color-mix(in oklch, var(--ain-color-text) 8%, transparent);
   animation: ain-mic-pulse 1.4s ease-in-out infinite;
 }
 /* The 150ms-late fade-in a skeleton container uses (Law 09: under ~150ms show nothing). */
 @keyframes ain-skel-in { to { opacity: 1; } }
 .ain-skeleton--input { width: 100%; height: 30px; }
-.ain-skeleton--avatar { flex: none; width: 44px; height: 44px; border-radius: 999px; }
+.ain-skeleton--avatar { flex: none; width: 44px; height: 44px; border-radius: 0; }
 .ain-skeleton--btn { width: 120px; height: 26px; }
 .ain-skeleton--short { width: 60%; }

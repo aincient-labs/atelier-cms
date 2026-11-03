@@ -11,5 +11,5 @@
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; text-align: center; color: var(--ain-color-text-muted);
 }
-.ain-browser__empty svg { width: 26px; height: 26px; opacity: .5; }
+.ain-browser__empty svg { width: 26px; height: 26px; color: var(--ain-color-text-faint); }
 .ain-browser__empty p { margin: 0; font-size: 13.5px; max-width: 340px; }

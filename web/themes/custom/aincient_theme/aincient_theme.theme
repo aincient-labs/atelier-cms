@@ -188,19 +188,12 @@ function aincient_theme_preprocess_page(array &$variables): void {
   // visitor can move between sign-in and reset.
   $route = \Drupal::routeMatch()->getRouteName();
   if (in_array($route, AINCIENT_THEME_AUTH_ROUTES, TRUE)) {
-    $identity = \Drupal::service('aincient_pages.site_identity');
     // Per-route heading + the single cross-link to the counterpart surface.
     $copy = _aincient_theme_auth_copy($route);
-    $variables['ain_auth'] = [
-      'name' => $identity->name() ?: \Drupal::config('system.site')->get('name'),
-      'tagline' => $identity->tagline(),
-      'logo_url' => $identity->logoUrl(),
+    $variables['ain_auth'] = _aincient_theme_identity_panel() + [
       'messages' => ['#type' => 'status_messages'],
       'heading' => $copy['heading'],
       'alt' => $copy['alt'],
-      // The one Atelier mark on an otherwise site-owned screen. Operator-removable
-      // (aincient_pages.identity: build_with), default on.
-      'build_with' => $identity->buildWith(),
     ];
 
     // The auth template prints its OWN <h1>, so drop core's page-title block
@@ -212,6 +205,42 @@ function aincient_theme_preprocess_page(array &$variables): void {
       ->addCacheTags(['config:aincient_pages.identity'])
       ->applyTo($variables);
   }
+}
+
+/**
+ * The site-owned identity panel shared by the auth and maintenance screens.
+ *
+ * Both are the SITE's front door (DECISIONS 0422): its name, tagline and logo,
+ * never Atelier's brand. The one Atelier mark is the operator-removable
+ * "Build with Atelier" line (aincient_pages.identity: build_with, default on).
+ */
+function _aincient_theme_identity_panel(): array {
+  $identity = \Drupal::service('aincient_pages.site_identity');
+  return [
+    'name' => $identity->name() ?: \Drupal::config('system.site')->get('name'),
+    'tagline' => $identity->tagline(),
+    'logo_url' => $identity->logoUrl(),
+    'build_with' => $identity->buildWith(),
+  ];
+}
+
+/**
+ * Implements hook_preprocess_maintenance_page().
+ *
+ * Maintenance mode shows visitors the same site-branded card as sign-in
+ * (maintenance-page.html.twig) instead of core's unstyled stack, whose theme
+ * logo pointed at a file that is not the site's logo. The heading and message
+ * stay core's (the message is the operator's system.maintenance setting).
+ */
+function aincient_theme_preprocess_maintenance_page(array &$variables): void {
+  // Without a working site (DB down, mid-install) the service is absent: fall
+  // back to the plain site name so the template still renders.
+  $variables['ain_auth'] = \Drupal::hasService('aincient_pages.site_identity')
+    ? _aincient_theme_identity_panel()
+    : ['name' => $variables['site_name'] ?? '', 'tagline' => '', 'logo_url' => '', 'build_with' => FALSE];
+  CacheableMetadata::createFromRenderArray($variables)
+    ->addCacheTags(['config:aincient_pages.identity'])
+    ->applyTo($variables);
 }
 
 /**

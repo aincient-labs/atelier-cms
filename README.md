@@ -1,29 +1,28 @@
 <div align="center">
 
-<img src="logo.png" alt="Atelier" width="120" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme/hero-dark.jpg" />
+  <img src=".github/readme/hero-light.jpg" alt="Atelier CMS. A website worthy of your work. Free and open source, built on Drupal, runs on your computer." width="1000" />
+</picture>
 
-# Atelier
+**Atelier CMS by [AIncient Labs](https://aincient-labs.com)** is a site builder you talk to.
+Tell it about your business and it makes the pages, which you can change word by word.
+It runs on your computer, and the site, the files and the keys stay with you.
 
-### Run your website by *talking* to it.
-
-**The AI-native CMS, by [AIncient Labs](https://aincient-labs.com).**
-Create, find, update, and publish content through an AI operator console —
-no admin forms, no jargon, no SaaS login.
-
-[![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-blue.svg)](LICENSE)
-[![Container image](https://img.shields.io/badge/image-ghcr.io%2Faincient--labs%2Fatelier--cms-000?logo=docker&logoColor=white)](https://github.com/aincient-labs/atelier-cms/pkgs/container/atelier-cms)
-[![Self-hosted](https://img.shields.io/badge/self--hosted-no%20account%20required-c0392b.svg)](#running-atelier)
-[![Built on Drupal](https://img.shields.io/badge/built%20on-Drupal-0678BE.svg)](https://www.drupal.org)
+[![License: GPL-2.0-or-later](https://img.shields.io/badge/License-GPL--2.0--or--later-2B2B2B.svg)](LICENSE)
+[![Container image](https://img.shields.io/badge/image-ghcr.io%2Faincient--labs%2Fatelier--cms-2B2B2B?logo=docker&logoColor=white)](https://github.com/aincient-labs/atelier-cms/pkgs/container/atelier-cms)
+[![Self-hosted](https://img.shields.io/badge/self--hosted-no%20account%20required-2B2B2B.svg)](#running-atelier)
+[![Built on Drupal](https://img.shields.io/badge/built%20on-Drupal-2B2B2B.svg)](https://www.drupal.org)
 
 [**Quick start**](#quick-start) · [**See it work**](#see-it-work-in-30-seconds) · [**Publish anywhere**](#publish-your-site-anywhere) · [**Why Atelier**](#why-we-build-this) · [**Whats inside**](#whats-inside) · [**License**](#license)
 
 <br />
 
-<a href="https://aincient-labs.com/#demo" title="Watch the full demo">
-  <img src="https://aincient-labs.com/assets/video/hero.gif" alt="Type one sentence; Atelier builds a real page live" width="720" />
+<a href="https://aincient-labs.com/#made" title="Watch the recording">
+  <img src="https://aincient-labs.com/assets/video/hero.gif" alt="A request typed into the Atelier console becomes a real page" width="720" />
 </a>
 
-<sub><em>One sentence → a real page. <a href="https://aincient-labs.com/#demo">Watch the full ~2-minute demo →</a></em></sub>
+<sub>A request typed into the console becomes a page. <a href="https://aincient-labs.com/#made">Watch the full recording</a></sub>
 
 </div>
 
@@ -57,7 +56,7 @@ rollback, and `atelier data backup` / `restore` snapshot your whole site.
 > ▶ **Watch the full demo** — one sentence builds a coffee-roaster site, then
 > `atelier site export` ships it to Cloudflare Pages:
 > **[Watch on YouTube](https://youtu.be/AJqLBHqNTcM)** ·
-> [on the site](https://aincient-labs.com/#demo) ·
+> [on the site](https://aincient-labs.com/#made) ·
 > [direct MP4](https://aincient-labs.com/assets/video/demo.mp4).
 
 1. **Log in.** Atelier drops you straight into the operator console at **`/atelier`**.

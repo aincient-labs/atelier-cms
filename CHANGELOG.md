@@ -7,6 +7,24 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.21.0] — 2026-11-03
+
+**A new look for the console.**
+- The console, onboarding, the admin pages and the workflow editor take the look of
+  aincient-labs.com: paper and ink, thin rules instead of boxes, square corners, IBM Plex Sans
+  (served from your own site, no external font requests), and the new Atelier CMS mark.
+- Red now only means something is wrong. Selected items, active tabs, focus and the main button
+  are ink, and field errors show an icon and words, not only colour.
+- Your public site is not affected: it keeps its own brand, fonts and colours.
+- Maintenance mode now shows visitors your site's own sign-in style card (name, tagline, logo,
+  colours) instead of an unstyled page with a broken image.
+- The "Atelier is starting" page shown while your site starts or upgrades has the new look and
+  follows the visitor's light or dark setting.
+
+To update, run `atelier app update` (Atelier Manager 0.14.0 or newer also brings the new
+starting page to existing installs), or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.20.0] — 2026-10-31
 
 **Faster restarts.**

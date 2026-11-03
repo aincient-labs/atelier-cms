@@ -20,7 +20,9 @@
 .ain-kitgallery__note { margin: 0; font-size: 12px; line-height: 1.45; color: var(--ain-color-text-muted); }
 .ain-kitgallery__stage { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .ain-kitgallery__row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.ain-kitgallery__rowlabel { flex: 0 0 72px; font-family: var(--ain-font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ain-color-text-faint); }
+.ain-kitgallery__rowlabel { flex: 0 0 72px; font-size: 13px; color: var(--ain-color-text-muted); }
+/* Row labels are authored lowercase ("ghost", "with icon"); show them sentence case (0500: no uppercase mono eyebrows). */
+.ain-kitgallery__rowlabel::first-letter { text-transform: uppercase; }
 .ain-kitgallery__rowbody { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ain-kitgallery__fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 16px; }
 .ain-kitgallery__fieldset { margin: 4px 0 0; padding: 0; border: 0; min-inline-size: 0; display: flex; flex-direction: column; gap: 6px; }

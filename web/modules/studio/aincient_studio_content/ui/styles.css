@@ -16,27 +16,25 @@
   position: relative; display: flex; align-items: center; justify-content: center;
   height: 6px; margin: 0; z-index: 1;
 }
-/* On hover the seam fills with a soft accent bar spanning the gap (the "+" sits
+/* On hover the seam fills with the well spanning the gap (the "+" sits
    on it) — an unmistakable insert target, vs a thin line that reads as broken. */
 .ain-content-insert::before {
   content: ""; position: absolute; left: 6px; right: 6px; top: 50%; transform: translateY(-50%);
   height: 18px; border-radius: var(--ain-radius-md);
-  background: color-mix(in oklch, var(--ain-color-accent) 16%, transparent);
+  background: var(--ain-color-accent-tint);
   visibility: hidden;
 }
 .ain-content-insert:hover::before { visibility: visible; }
-/* Flat neobrutalist chip idiom (matches .ain-chip): sharp 2px corners + a hard
-   offset shadow on hover — NOT a rounded pebble. */
+/* The chip idiom (matches .ain-chip): square, one hairline that darkens to
+   ink on hover — no shadow. */
 .ain-content-insert__btn {
   position: relative; display: inline-flex; align-items: center; gap: 5px;
   padding: 1px 7px; font: inherit; font-size: 11px; color: var(--ain-color-text-muted);
   background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  cursor: pointer; transition: border-color .1s, color .1s, box-shadow .1s;
+  cursor: pointer; transition: border-color .1s, color .1s;
 }
-.ain-content-insert__btn:hover {
-  border-color: var(--ain-color-border-strong); color: var(--ain-color-text);
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
-}
+.ain-content-insert__btn:hover { border-color: var(--ain-color-text); color: var(--ain-color-text); }
+.ain-content-insert__btn:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-content-insert__btn svg { width: 12px; height: 12px; }
 /* Prominent variant — the empty-state / first-section trigger (gets its own row;
    no seam bar — it's a standalone button, not a between-cards target). */
@@ -52,7 +50,7 @@
 /* Searchable component picker, opened inline at an insertion point. */
 .ain-content-picker {
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent); overflow: hidden;
+  background: var(--ain-color-surface); overflow: hidden;
 }
 .ain-content-picker__search {
   width: 100%; border: 0; border-bottom: 1px solid var(--ain-color-border);
@@ -65,25 +63,24 @@
   padding: 8px 12px; background: none; border: 0; border-bottom: 1px solid var(--ain-color-border);
 }
 .ain-content-picker__item:last-child { border-bottom: none; }
-.ain-content-picker__item:hover { background: color-mix(in oklch, var(--ain-color-accent) 14%, var(--ain-color-surface-raised)); }
+.ain-content-picker__item:hover { background: var(--ain-color-surface-raised); }
+.ain-content-picker__item:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 .ain-content-picker__ico { flex: none; display: flex; width: 16px; margin-top: 2px; color: var(--ain-color-text-muted); }
 .ain-content-picker__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 /* The component name is read while scanning the picker (and varies per row), so
-   it's the legible body font, not the pixel display face — pixel is reserved for
-   the fixed top-of-panel titles. */
-.ain-content-picker__name { font-family: var(--ain-font-body); font-size: 13px; font-weight: 600; color: var(--ain-color-text); }
+   it's the legible body font. */
+.ain-content-picker__name { font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text); }
 .ain-content-picker__use { font-size: 11px; color: var(--ain-color-text-faint); line-height: 1.3; }
 /* Provenance (W6): components from add-on modules sit under a small group
    header, each row carrying a subtle chip. Built-in rows render untouched. */
 .ain-content-picker__grouphead {
-  padding: 6px 12px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
-  text-transform: uppercase; color: var(--ain-color-text-faint);
+  padding: 6px 12px 4px; font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
   background: var(--ain-color-surface-raised); border-bottom: 1px solid var(--ain-color-border);
 }
 .ain-content-picker__prov {
   display: inline-block; margin-left: 6px; padding: 0 5px; vertical-align: 1px;
-  font-size: 9.5px; font-weight: 500; line-height: 1.6; letter-spacing: 0.02em;
-  color: var(--ain-color-text-muted); border: 1px solid var(--ain-color-border); border-radius: 999px;
+  font-size: 10.5px; font-weight: 400; line-height: 1.6;
+  color: var(--ain-color-text-muted); border: 1px solid var(--ain-color-border); border-radius: 0;
 }
 
 /* The section STACK (study 02, Plate 11): rows share ONE panel with hairline
@@ -102,6 +99,7 @@
    (Controls are siblings of the toggle, not nested — no button-in-button.) */
 .ain-content-section__head { display: flex; align-items: center; gap: 2px; padding: 0 6px 0 2px; }
 .ain-content-section__head:hover { background: var(--ain-color-surface-raised); }
+.ain-content-section__toggle:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 /* The drag grip — hidden at rest (visibility, so it also leaves the tab order
    until the row is hovered), revealed by the row hover. */
 .ain-content-section__grip {
@@ -116,15 +114,15 @@
   margin: 0; padding: 7px 4px 7px 2px; border: 0; background: none; text-align: left; cursor: pointer;
   font: inherit; color: var(--ain-color-text);
 }
-/* Name over its mono fact line — an outline of names, not machinery. */
+/* Name over its fact line — an outline of names, not machinery. */
 .ain-content-section__cell { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
 .ain-content-section__name {
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 600;
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500;
   color: var(--ain-color-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ain-content-section__sum {
-  min-width: 0; font-family: var(--ain-font-mono); font-size: 10px; letter-spacing: .01em;
+  min-width: 0; font-family: var(--ain-font-body); font-size: 11.5px;
   color: var(--ain-color-text-faint);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -136,25 +134,26 @@
    the brand studio's .ain-card__dirty. */
 .ain-content-section__dirty {
   flex: none; display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 5px;
-  font-size: 10px; font-weight: 600; line-height: 1; color: var(--ain-color-warning);
-  background: color-mix(in oklch, var(--ain-color-warning) 15%, transparent); border-radius: 999px;
+  font-size: 10px; font-weight: 500; line-height: 1; color: var(--ain-color-text);
+  border-radius: 0; box-shadow: inset 0 0 0 1px var(--ain-color-warning);
 }
 /* "No longer offered" (DECISIONS 0455): a kept slot whose component / variant /
-   tone the kind stopped offering. The warning tint of __dirty, the pill shape of
-   the picker's provenance chip; text at full warning colour, never opacity. */
+   tone the kind stopped offering. A state line — ink text led by an ochre 8px
+   square (the square replaces the glyph); never opacity. */
 .ain-content-section__retired {
-  flex: none; display: inline-flex; align-items: center; gap: 4px; height: 16px; padding: 0 6px;
-  font-size: 10px; font-weight: 600; line-height: 1; white-space: nowrap; color: var(--ain-color-warning);
-  background: color-mix(in oklch, var(--ain-color-warning) 15%, transparent); border-radius: 999px;
+  flex: none; display: inline-flex; align-items: center; gap: 5px; height: 16px; padding: 0;
+  font-size: 11px; font-weight: 400; line-height: 1; white-space: nowrap; color: var(--ain-color-text);
 }
-.ain-content-section__retired svg { width: 11px; height: 11px; }
+.ain-content-section__retired::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--ain-color-warning); }
+.ain-content-section__retired svg { display: none; }
 .ain-content-section__retirednote {
   display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; padding: 6px 8px;
-  border: 1px solid color-mix(in oklch, var(--ain-color-warning) 35%, var(--ain-color-border));
-  border-radius: var(--ain-radius-md); background: color-mix(in oklch, var(--ain-color-warning) 8%, transparent);
+  border: 1px solid var(--ain-color-border);
+  border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised);
+  box-shadow: inset 2px 0 0 var(--ain-color-warning);
 }
 .ain-content-section__retirednote p { flex: 1; margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--ain-color-text-muted); }
-.ain-content-section__retirednote strong { font-weight: 600; color: var(--ain-color-text); }
+.ain-content-section__retirednote strong { font-weight: 500; color: var(--ain-color-text); }
 /* The row's ⋯ — hover-revealed like the grip; holds reorder/insert/remove. */
 .ain-content-section__more { flex: none; visibility: hidden; }
 .ain-content-section__head:hover .ain-content-section__more,
@@ -173,7 +172,8 @@
   padding: 5px 8px; border: 0; background: none; border-radius: var(--ain-radius-md);
   font: inherit; font-size: 12px; color: var(--ain-color-text-muted);
 }
-.ain-content-addsec:hover { background: var(--ain-color-surface-raised); color: var(--ain-color-text); }
+.ain-content-addsec:hover { color: var(--ain-color-text); }
+.ain-content-addsec:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-content-addsec svg { width: 12px; height: 12px; }
 
 .ain-content-block {
@@ -183,29 +183,27 @@
 .ain-content-block__head { display: flex; align-items: center; gap: 6px; }
 .ain-content-block__pick { flex: 1; min-width: 0; }
 .ain-content-block__type {
-  flex: 1; font-size: 11px; font-weight: 600; letter-spacing: .02em;
-  text-transform: uppercase; color: var(--ain-color-text-muted);
+  flex: 1; font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
 }
 .ain-content-block__props { display: flex; flex-direction: column; gap: 6px; }
 
-/* Body ｜ Presence facet — the kit's segmented grammar: recessed track,
-   active = RAISED PAPER (the accent fill on segments is banned — study 02,
-   Plate 12; a facet is a mode, and a mode never wears the pigment). */
+/* Body ｜ Presence facet — the kit's segmented grammar: one hairline track,
+   square; active = filled ink with paper text. */
 .ain-content-facet {
   display: inline-flex; gap: 2px; padding: 2px; flex: none;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: color-mix(in oklch, var(--ain-color-shadow) 5%, var(--ain-color-surface-raised));
+  background: none;
 }
 .ain-content-facet__btn {
-  font: inherit; font-size: 11.5px; font-weight: 600; line-height: 16px;
-  padding: 3px 10px; border: 0; border-radius: 4px;
+  font: inherit; font-size: 11.5px; font-weight: 500; line-height: 16px;
+  padding: 3px 10px; border: 0; border-radius: 0;
   background: none; color: var(--ain-color-text-muted); cursor: pointer;
-  transition: background .1s, color .1s, box-shadow .1s;
+  transition: background .1s, color .1s;
 }
 .ain-content-facet__btn[aria-pressed="true"] {
-  background: var(--ain-color-surface); color: var(--ain-color-text);
-  box-shadow: 0 1px 4px -1px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+  background: var(--ain-color-accent); color: var(--ain-color-on-accent);
 }
+.ain-content-facet__btn:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-content-facet__btn:not([aria-pressed="true"]):hover { color: var(--ain-color-text); }
 
 /* Repeatable rows: a hover grip (drag) + a stacked remove / move up / move down
@@ -223,22 +221,23 @@
 
 /* The Checks row (DECISIONS 0454): the saved page's audit counts and the way
    into Checks — a rail row because it changes nothing, it opens another
-   studio. Counts are the Checks rail's whisper chips. */
+   studio. Counts are the Checks rail's state lines. */
 .ain-content-checks {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
   padding: 8px 12px; border-bottom: 1px solid var(--ain-color-border);
   font-size: 12.5px;
 }
-.ain-content-checks__head { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.ain-content-checks__head { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
 .ain-content-checks__head svg { font-size: 13px; color: var(--ain-color-text-muted); }
 .ain-content-checks__counts { display: inline-flex; gap: 6px; }
 .ain-content-checks__count {
-  font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
-  padding: 3px 7px; border-radius: 4px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--ain-font-body); font-size: 12px; color: var(--ain-color-text);
 }
-.ain-content-checks__count[data-severity="fail"] { color: var(--ain-color-danger); background: color-mix(in oklch, var(--ain-color-danger) 10%, transparent); }
-.ain-content-checks__count[data-severity="warn"] { color: var(--ain-color-warning); background: color-mix(in oklch, var(--ain-color-warning) 12%, transparent); }
-.ain-content-checks__count[data-severity="pass"] { color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent); }
+.ain-content-checks__count::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--ain-content-state, var(--ain-color-text-muted)); }
+.ain-content-checks__count[data-severity="fail"] { --ain-content-state: var(--ain-color-danger); }
+.ain-content-checks__count[data-severity="warn"] { --ain-content-state: var(--ain-color-warning); }
+.ain-content-checks__count[data-severity="pass"] { --ain-content-state: var(--ain-color-success); }
 .ain-content-checks__muted { color: var(--ain-color-text-muted); font-size: 12px; }
 .ain-content-checks__open { margin-left: auto; }
 

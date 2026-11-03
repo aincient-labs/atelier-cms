@@ -11,8 +11,8 @@
 .ain-browser__cell.ain-loading__cell { min-height: 39px; justify-content: center; gap: 8px; }
 .ain-loading__title { height: 11px; }
 .ain-loading__facts { width: 28%; height: 8px; }
-.ain-loading__thumb { flex: none; width: 44px; height: 44px; border-radius: 7px; }
-.ain-loading__badge { flex: none; width: 52px; height: 20px; border-radius: 999px; }
+.ain-loading__thumb { flex: none; width: 44px; height: 44px; border-radius: 0; }
+.ain-loading__badge { flex: none; width: 52px; height: 20px; border-radius: 0; }
 .ain-loading__time { flex: none; width: 34px; height: 9px; }
 /* fields: the rail body's own stack (moved from .ain-studio-loading__body). */
 .ain-loading--fields { display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; }

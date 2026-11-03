@@ -1,5 +1,6 @@
 import { createContext, useContext, useId, type ComponentProps, type ReactNode } from "react";
 import { cx } from "./cx";
+import { AlertCircleIcon } from "./icons";
 
 /**
  * Form fields (kit/field.css). `Field` is the column — a whisper label, the
@@ -63,7 +64,9 @@ export function Field({ label, children, hint, error, dirty, revert, className }
         {children}
         {errorId && (
           <span id={errorId} className="ain-field__error" role="alert">
-            {error}
+            {/* Errors never rely on colour alone (0501): icon + words. */}
+            <AlertCircleIcon className="ain-field__error-icon" aria-hidden="true" />
+            <span>{error}</span>
           </span>
         )}
         {hintId && (

@@ -10,10 +10,10 @@
   padding: 12px; font-size: 13px; line-height: 1.45; color: var(--ain-color-text);
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
   border-radius: var(--ain-radius-md);
-  box-shadow: 0 8px 22px -6px color-mix(in oklch, var(--ain-color-shadow) 42%, transparent);
+  box-shadow: 0 26px 46px -22px color-mix(in oklch, var(--ain-color-shadow) 50%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
 }
 .ain-popover:focus-visible { outline: none; }
-.ain-popover__title { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+.ain-popover__title { margin: 0 0 8px; font-size: 13px; font-weight: 500; }
 /* A menu rendered by Radix is positioned by its wrapper: drop the fixed-position
    offset the hand-placed .ain-menu still uses. */
 .ain-menu--anchored { position: static; transform: none; z-index: 1400; }

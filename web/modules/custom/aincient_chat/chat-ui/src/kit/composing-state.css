@@ -12,7 +12,7 @@
 }
 .ain-composing__page {
   inline-size: 100%; max-inline-size: 880px; display: flex; flex-direction: column;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-lg); overflow: hidden;
+  border: 1px solid var(--ain-color-border); border-radius: 0; overflow: hidden;
   background: var(--ain-color-surface);
 }
 .ain-composing--bare { padding: 0; }
@@ -30,7 +30,7 @@
 .ain-composing--section .ain-composing__sec--opener { padding: 48px 40px; }
 .ain-composing__copy { display: flex; flex-direction: column; gap: 10px; min-inline-size: 0; }
 .ain-composing__media {
-  aspect-ratio: 4 / 3; border-radius: var(--ain-radius-lg);
+  aspect-ratio: 4 / 3; border-radius: 0;
   background: color-mix(in oklch, var(--ain-color-text) 6%, transparent);
   border: 1px solid var(--ain-color-border);
   animation: ain-mic-pulse 1.4s ease-in-out infinite;
@@ -47,22 +47,22 @@
 
 /* A placeholder bar: the skeleton's own fill and pulse. */
 .ain-composing__ink {
-  display: block; block-size: 8px; inline-size: 100%; border-radius: 999px;
+  display: block; block-size: 8px; inline-size: 100%; border-radius: 0;
   background: color-mix(in oklch, var(--ain-color-text) 8%, transparent);
   animation: ain-mic-pulse 1.4s ease-in-out infinite;
 }
 .ain-composing__ink--pill { inline-size: 26%; block-size: 14px; }
-.ain-composing__ink--display { inline-size: 88%; block-size: 22px; border-radius: 6px; background: color-mix(in oklch, var(--ain-color-text) 12%, transparent); }
-.ain-composing__ink--heading { inline-size: 52%; block-size: 16px; border-radius: 5px; background: color-mix(in oklch, var(--ain-color-text) 12%, transparent); }
+.ain-composing__ink--display { inline-size: 88%; block-size: 22px; border-radius: 0; background: color-mix(in oklch, var(--ain-color-text) 12%, transparent); }
+.ain-composing__ink--heading { inline-size: 52%; block-size: 16px; border-radius: 0; background: color-mix(in oklch, var(--ain-color-text) 12%, transparent); }
 .ain-composing__ink--title { inline-size: 64%; block-size: 11px; background: color-mix(in oklch, var(--ain-color-text) 12%, transparent); }
-.ain-composing__ink--icon { inline-size: 22px; block-size: 22px; border-radius: var(--ain-radius-sm); }
+.ain-composing__ink--icon { inline-size: 22px; block-size: 22px; border-radius: 0; }
 .ain-composing__ink--short { inline-size: 58%; }
 .ain-composing__ink--shorter { inline-size: 44%; }
 .ain-composing__actions { display: flex; align-items: center; gap: 14px; margin-block-start: 8px; }
 .ain-composing__ink--action { inline-size: 96px; block-size: 28px; }
 .ain-composing__ink--link { inline-size: 64px; }
-.ain-composing__ink--brand { inline-size: 84px; block-size: 14px;; flex: none; }
-.ain-composing__ink--navitem { inline-size: 48px;; flex: none; }
+.ain-composing__ink--brand { inline-size: 84px; block-size: 14px; flex: none; }
+.ain-composing__ink--navitem { inline-size: 48px; flex: none; }
 
 
 @media (max-width: 720px) {

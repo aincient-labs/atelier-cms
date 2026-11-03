@@ -7,23 +7,23 @@
  * (studio-css.test.ts rule 4). Loaded through kit.css, BEFORE styles.css, so a
  * feature rule of equal specificity still overrides the kit — never the reverse.
  */
-.ain-field__error { font-size: 11.5px; color: var(--ain-color-danger); }
-/* --- one token control: matches the console's "physical control" idiom
-   (border-strong + hard offset shadow on the swatch, accent on focus). --- */
+.ain-field__error { display: flex; align-items: flex-start; gap: 5px; font-size: 12px; line-height: 1.4; color: var(--ain-color-danger); }
+.ain-field__error-icon { flex: none; width: 13px; height: 13px; margin-top: 1px; }
+/* --- one token control: the well, one hairline, square; focus = ink border
+   + the 2px ink outline (Monograph app tier, DECISIONS 0500/0501). --- */
 .ain-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
 /* A boolean prop renders inline: checkbox · label (no stacked input). */
 .ain-field--check { flex-direction: row; align-items: center; gap: 7px; }
 .ain-field--check .ain-field__checkbox { flex: 0 0 auto; margin: 0; accent-color: var(--ain-color-accent); cursor: pointer; }
-/* A checkbox's label is the CHOICE, not a field heading: body type, sentence
-   case, full ink — the whisper label (mono small caps) is for headings only. */
+/* A checkbox's label is the CHOICE, not a field heading: full ink, not muted. */
 .ain-field--check .ain-field__label {
   font-family: var(--ain-font-body); font-size: 12.5px; letter-spacing: normal;
   text-transform: none; color: var(--ain-color-text);
 }
 .ain-field__label {
-  /* The kit whisper label: mono small caps, tracking not weight (study 02 f-label). */
-  font-family: var(--ain-font-mono); font-size: 10px; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--ain-color-text-muted);
+  /* The field label: sentence case, body type, muted ink. */
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 400;
+  color: var(--ain-color-text-muted);
 }
 /* Labels that carry an inner text span also carry a per-field revert marker, so
    they lay out as a row: text (truncates) · marker (fixed). Scoped to the brand
@@ -37,14 +37,13 @@
 .ain-field__input {
   flex: 1; min-width: 0; font: inherit; font-size: 12px; color: var(--ain-color-text);
   padding: 6px 8px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  /* Raised paper, same as the card it sits on (spec .f-input): the recede is
-     the hairline + inset shade doing the work — a darker ground fill reads as
-     a generic "filled input" slab, not paper pressed in (Plate 15 feedback). */
-  background: var(--ain-color-surface); transition: border-color .12s, background .12s;
-  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
+  /* The well + one hairline — no inset shade. */
+  background: var(--ain-color-surface-raised); transition: border-color .12s, background .12s;
 }
-.ain-field__input:hover { background: var(--ain-color-surface-raised); }
-.ain-field__input:focus { outline: none; border-color: color-mix(in oklch, var(--ain-color-accent) 40%, transparent); background: var(--ain-color-surface); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ain-color-accent) 10%, transparent); }
+.ain-field__input:hover { border-color: var(--ain-color-border-strong); }
+.ain-field__input:focus { border-color: var(--ain-color-text); outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
+/* Error = a 2px brick rule (inset, so the box does not move). */
+.ain-field__input[aria-invalid="true"] { border-color: var(--ain-color-danger); box-shadow: inset 0 0 0 1px var(--ain-color-danger); }
 /* Long-form text prop (Markdown source) — a resizable monospace textarea. */
 .ain-field__textarea {
   display: block; width: 100%; flex: none; resize: vertical; min-height: 120px;
@@ -58,15 +57,16 @@
   flex-direction: row; align-items: flex-start; gap: 8px;
   padding: 8px 10px; margin-bottom: 6px; cursor: pointer;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-bg); transition: background .12s, border-color .12s;
+  background: transparent; transition: background .12s, border-color .12s;
 }
-.ain-field--radio:hover { background: var(--ain-color-surface-raised); }
-.ain-field--radio:has(.ain-field__radio:checked) { border-color: var(--ain-color-accent); }
+.ain-field--radio:hover { border-color: var(--ain-color-text); }
+.ain-field--radio:has(.ain-field__radio:checked) { border-color: var(--ain-color-accent); background: var(--ain-color-accent-tint); }
+.ain-field--radio:has(.ain-field__radio:focus-visible) { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-field__radio { flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--ain-color-accent); cursor: pointer; }
 .ain-field__radiobody { display: flex; flex-direction: column; gap: 2px; }
 /* The radio card's label is the choice too: body type, the card's title. */
 .ain-field--radio .ain-field__label {
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 600; letter-spacing: normal;
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; letter-spacing: normal;
   text-transform: none; color: var(--ain-color-text);
 }
 .ain-field__hint { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-faint); }

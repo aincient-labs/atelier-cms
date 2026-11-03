@@ -1,18 +1,17 @@
 /* Atelier operator console — chat island styles (scoped under #aincient-chat-root).
 
-   Theme: "studio craft" — a maker's atelier rendered with modern discipline:
-   OKLCH gesso-paper palette, soft hairlines, diffuse shadows, soft corners.
-   Light = gesso paper (default). Dark = studio night (warm charcoal).
-   One signature pigment: CINNABAR. Display type: Fraunces (humanist serif).
-   Body: the study-02 system sans stack — the arcade-era Schibsted Grotesk is
-   retired from the UI (its @font-face rules remain in fonts/console-fonts.css
-   but nothing references them, so the files never download).
+   Theme: the Monograph app tier (DECISIONS 0500/0501). Paper and ink; 1px
+   hairlines instead of boxes and shadows; square corners; IBM Plex Sans for
+   body and display, system mono only for machine text (ids, tokens, paths).
+   Ink is the only highlight (primary fill, selection, active rule, focus);
+   red (danger) appears only for errors and destructive steps. Shadows only on
+   things that sit above the page: dialogs, drawers, popovers, menus, toasts.
    (Machine names stay aincient_*; brand is Atelier.) */
 
-/* Press Start 2P + Schibsted Grotesk are SELF-HOSTED, not hot-linked from Google
-   — the @font-face declarations ship as a separate Drupal-served stylesheet
+/* IBM Plex Sans is SELF-HOSTED, not hot-linked from Google — the @font-face
+   declarations ship as a separate Drupal-served stylesheet
    (fonts/console-fonts.css, attached via the `console` library) so the console
-   leaks no operator IP (DECISIONS 0058 posture). Regenerate both with
+   leaks no operator IP (DECISIONS 0058 posture). Regenerate with
    aincient_core/scripts/fetch-brand-fonts.php, then `npm run build`. */
 
 @import "./tokens.generated.css";
@@ -31,8 +30,8 @@
   /* The design tokens themselves live in tokens.generated.css (imported at the
      top of this file): the reference palette, the system roles for both modes
      and the component exceptions, generated from aincient_core/tokens/*.json.
-     Studio night (dark) is the base mode; gesso paper is the light override
-     under data-ain-theme="light". Edit the JSON, never the CSS. */
+     Dark is the base mode; paper is the light override under
+     data-ain-theme="light". Edit the JSON, never the CSS. */
 
   /* Typographic baseline for the whole island — set HERE (not only on
      .ain-shell) so overlays portaled into the root but OUTSIDE the shell
@@ -43,7 +42,7 @@
 }
 
 /* Brand floor for native controls: any checkbox, radio, range or progress in
-   the island takes the cinnabar accent, and any focus outline the focus-ring
+   the island takes the ink accent, and any focus outline the focus-ring
    token — so a raw <input> a studio renders without a kit class can never fall
    back to the browser's blue. Component rules may still refine it. */
 #aincient-chat-root :is(input[type="checkbox"], input[type="radio"], input[type="range"], progress) {
@@ -51,7 +50,7 @@
 }
 #aincient-chat-root :focus-visible { outline-color: var(--ain-color-focus-ring); }
 
-/* Light theme (gesso paper) is toggled via data-ain-theme, default from Drupal
+/* Light theme (paper) is toggled via data-ain-theme, default from Drupal
    config — its values are the light block of tokens.generated.css. */
 
 .ain-shell {
@@ -76,7 +75,7 @@
    these ::-webkit-scrollbar rules in Chrome, so they're Firefox-only below. */
 #aincient-chat-root ::-webkit-scrollbar { width: 8px; height: 8px; }
 #aincient-chat-root ::-webkit-scrollbar-track { background: transparent; }
-#aincient-chat-root ::-webkit-scrollbar-thumb { background: var(--ain-color-border-strong); border-radius: 999px; }
+#aincient-chat-root ::-webkit-scrollbar-thumb { background: var(--ain-color-text-faint); border-radius: 0; }
 #aincient-chat-root ::-webkit-scrollbar-thumb:hover { background: var(--ain-color-text-muted); }
 @supports not selector(::-webkit-scrollbar) {
   /* Firefox can't shape the thumb; at least keep it thin and theme-colored. */
@@ -119,15 +118,14 @@
   transition: color .12s, background .12s, border-color .12s;
 }
 .ain-wipaction:hover { background: var(--ain-color-surface-raised); }
-.ain-wipaction:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; }
+.ain-wipaction:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-wipaction svg { flex: none; font-size: 15px; color: var(--ain-color-text-muted); }
-/* Browse, when it's the room we're in, reads as selected (fill + accent glyph). */
+/* Browse, when it's the room we're in, reads as selected (the well + an ink bar). */
 .ain-wipaction[data-active] {
-  background: var(--ain-color-surface-raised); font-weight: 600;
-  border-color: color-mix(in oklch, var(--ain-color-accent) 22%, var(--ain-color-border));
+  background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent); font-weight: 500;
 }
 .ain-wipaction[data-active] svg { color: var(--ain-color-accent); }
-/* New page is a quiet nav pin too — the solid cinnabar CTA in the listing is
+/* New page is a quiet nav pin too — the solid ink CTA in the listing is
    the one primary "create". Here the accent lives only in the leading glyph, so
    it reads as "create" without competing with, or duplicating, that button. */
 .ain-wipaction--new svg { color: var(--ain-color-accent); }
@@ -136,8 +134,7 @@
 .ain-roomthreads { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .ain-roomthreads__head {
   flex: none; margin: 10px 12px 2px; padding: 0 2px;
-  font-family: var(--ain-font-mono); font-size: 9.5px;
-  text-transform: uppercase; letter-spacing: .08em; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ain-threadlist { display: flex; flex-direction: column; min-height: 0; flex: 1; padding: 12px; gap: 10px; }
@@ -145,27 +142,25 @@
   /* Same control metrics as .ain-topbtn (16px line + 6px pad + 1px border = 30px),
      just stretched full-width — both "new chat" affordances read as one control. */
   display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; cursor: pointer;
-  background: var(--ain-color-surface); color: var(--ain-color-text);
+  background: transparent; color: var(--ain-color-text);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   padding: 6px 12px; font: inherit; font-size: 13.5px; line-height: 16px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
-  transition: border-color .12s, background .12s, box-shadow .08s, transform .08s;
+  transition: border-color .12s;
 }
-.ain-newchat:hover { background: var(--ain-color-surface-raised); }
-.ain-newchat:active { transform: translateY(1px); box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent); }
+.ain-newchat:hover { border-color: var(--ain-color-text); }
+.ain-newchat:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-threadlist__scroll {
   overflow-y: auto; display: flex; flex-direction: column; gap: 2px;
   /* Room for the active card's 2px hard shadow at the edges; the right side
      gets 4px so the shadow keeps visible separation from the scrollbar. */
   padding: 0 4px 2px 0;
 }
-/* Date-group eyebrows (Today / This week / Earlier) — mono whispers over the
-   ledger (study 02, Plate 8). Positioned among the CSS-ordered rows by their
+/* Date-group headings (Today / This week / Earlier) — sentence-case labels
+   over the ledger. Positioned among the CSS-ordered rows by their
    own `order` (set inline by ThreadGroups). */
 .ain-tlgroup {
   flex: none; margin: 12px 0 3px; padding: 0 10px;
-  font-family: var(--ain-font-mono); font-size: 9.5px; font-weight: 400;
-  text-transform: uppercase; letter-spacing: .12em; color: var(--ain-color-text-faint);
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
 }
 .ain-threadlist__empty {
   margin: 4px 2px; padding: 12px 10px;
@@ -185,12 +180,12 @@
   border: 1px solid transparent;
 }
 .ain-tli:hover { background: var(--ain-color-surface-raised); }
-/* Rows are FLAT — hover ground, no borders (Plate 8); the active thread sits
-   on the accent TINT, the same active grammar as every selection control. */
+/* Rows are FLAT — hover ground, no borders; the active thread sits on the
+   well with a 2px ink bar, the selected-row grammar of every list. */
 .ain-tli[data-active], .ain-tli[data-state="active"] {
-  background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
+  background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent);
 }
-.ain-tli[data-active] .ain-tli__title, .ain-tli[data-state="active"] .ain-tli__title { font-weight: 600; }
+.ain-tli[data-active] .ain-tli__title, .ain-tli[data-state="active"] .ain-tli__title { font-weight: 500; }
 .ain-tli__trigger {
   flex: 1; min-width: 0; display: block; cursor: pointer;
   background: transparent; border: 0; color: var(--ain-color-text); font: inherit; text-align: left;
@@ -203,32 +198,31 @@
 }
 .ain-tli__flow { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ain-tli__time { flex: none; }
-/* The row's mono CONTEXT LABEL (study 02, Plate 8): the page the thread
-   touches, by NAME — never a boxed "#<nid>" chip (ids are a debug log's
+/* The row's CONTEXT LABEL: the page the thread touches, by NAME — never a boxed "#<nid>" chip (ids are a debug log's
    voice). A draft row leads with a quiet accent dot + "New page". */
 .ain-tli__badge {
   flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-  font-family: var(--ain-font-mono); font-size: 10px; line-height: 1.5;
-  letter-spacing: .02em; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: 11px; line-height: 1.5;
+  color: var(--ain-color-text-muted);
 }
 /* The page's editorial marker (Phase 4): the Content browser's whisper chip
    (.ain-studio__statebadge — tint + ink per data-state, full-strength text),
    tightened to sit on the 11px meta line without growing the row. Doubled
    class: the chip's own rule comes later in this file. */
 .ain-studio__statebadge.ain-tli__state {
-  align-self: center; padding: 0 6px; line-height: 15px;
+  align-self: center; padding: 0; line-height: 15px; font-size: 11px;
 }
 .ain-tli__dot {
-  flex: none; width: 6px; height: 6px; border-radius: 50%;
+  flex: none; width: 6px; height: 6px; border-radius: 0;
   background: var(--ain-color-accent); align-self: center;
 }
 /* Sealed/archived threads auto-archive out of the room and aren't listed (D8),
    so the sidebar row only ever shows live conversations — no read-only marker. */
-.ain-tli__more { flex: none; opacity: 0; transition: opacity .12s; }
+.ain-tli__more { flex: none; opacity: 0; transition: opacity .12s, color .12s; color: var(--ain-color-text-muted); }
 .ain-tli:hover .ain-tli__more,
 .ain-tli__more:focus-visible,
-.ain-tli__more[data-open] { opacity: .65; }
-.ain-tli__more:hover, .ain-tli__more[data-open] { opacity: 1; }
+.ain-tli__more[data-open] { opacity: 1; }
+.ain-tli__more:hover, .ain-tli__more[data-open] { color: var(--ain-color-text); }
 
 /* ------------------------------------------------------------------ main */
 .ain-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -236,8 +230,7 @@
 .ain-topbar {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 16px; border-bottom: 1px solid var(--ain-color-border);
-  /* Raised paper, not the ground (study 02, Plate 1): the bar is a surface the
-     chrome sits ON — on the ground it reads dull and the nav sinks into it. */
+  /* Paper with one hairline below — no shadow. */
   background: var(--ain-color-surface);
   /* Above the WIP-list drawer (1100) + its scrim (1050): the header — and the
      section menu it now carries — stays reachable while the drawer overlays the
@@ -261,20 +254,17 @@
    tiers out of the row when the menu inflates scrollHeight. The row only renders on wide
    viewports (it collapses to one crumb when narrow), so it never needs a horizontal clip. */
 .ain-sections { display: flex; align-items: center; gap: 8px; min-width: 0; margin-left: 10px; }
-/* Nav = places, not buttons (study 02, Plate 13): quiet text LINKS with an
-   active underline — the bordered-pill treatment and per-item icons are
-   retired. The underline is CINNABAR per the Plate 1/13 spec CSS — an active
-   state is inside the pigment budget, and an ink underline reads as
-   text-decoration, not a highlight. */
+/* Nav = places, not buttons: quiet text LINKS with a 2px INK underline on the
+   active one (the accent is ink in the Monograph app tier). */
 .ain-section {
   position: relative; display: inline-flex; align-items: center;
   cursor: pointer; color: var(--ain-color-text-muted);
-  background: transparent; border: 0; border-radius: 4px;
+  background: transparent; border: 0; border-radius: 0;
   padding: 6px 4px; font: inherit; font-size: 13px; line-height: 16px;
   transition: color .12s;
 }
 .ain-section:hover { color: var(--ain-color-text); }
-.ain-section:focus-visible { outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: 1px; }
+.ain-section:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-section[data-active] { color: var(--ain-color-text); font-weight: 600; }
 .ain-section[data-active]::after {
   content: ""; position: absolute; left: 4px; right: 4px; bottom: 0;
@@ -288,7 +278,7 @@
 .ain-sections__tier { display: flex; align-items: center; gap: 2px; min-width: 0; }
 .ain-sections__divider {
   flex: none; width: 1px; align-self: stretch; margin: 4px 6px;
-  background: var(--ain-color-border-strong); opacity: .6;
+  background: var(--ain-color-border);
 }
 /* The Site Information group crumb is Tier 2 — de-emphasized: flat + muted like a
    section button, not the raised card the breadcrumb crumbs use. It lifts to the
@@ -298,7 +288,7 @@
   color: var(--ain-color-text-muted); padding: 5px 10px; font-size: 13px;
 }
 /* The group trigger is a nav LINK like its siblings (Plate 13): same type,
-   a bare ▾, active = the same cinnabar underline — never a raised card. */
+   a bare ▾, active = the same ink underline — never a raised card. */
 .ain-crumb--group .ain-crumb__trigger { position: relative; padding: 6px 4px; }
 .ain-crumb--group .ain-crumb__trigger:hover,
 .ain-crumb--group .ain-crumb__trigger[data-open] {
@@ -317,29 +307,29 @@
   display: inline-flex; align-items: center; padding: 0; margin: 0;
   background: none; border: none; cursor: pointer; border-radius: var(--ain-radius-md);
 }
-.ain-brand__home:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 3px; }
+.ain-brand__home:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 
 /* Mid-range: the text links are compact enough to keep their labels (the
    icon-only collapse retired with the nav icons); tighten the gaps a touch. */
 @media (max-width: 1040px) {
   .ain-sections { gap: 4px; }
 }
-/* Brand wordmark — the handcrafted mark + outlined "Atelier" lettering
-   (masters in the umbrella's docs/brand-assets/atelier/). Both are
-   currentColor, so the lockup themes from `color` (ink). */
-.ain-wordmark { display: inline-flex; align-items: center; gap: 8px; width: auto; vertical-align: middle; color: var(--ain-color-text); }
-.ain-wordmark__mark { width: 21px; height: 21px; flex: none; }
-.ain-wordmark__text { height: 14px; width: auto; display: block; }
-/* The two-tone "t" is a DISPLAY-size gesture only (study 02, Plate 1): at
-   chrome sizes it reads as a typo highlight, so the top-bar wordmark stays
-   solid ink and the monogram carries the pigment. Display contexts (the
-   onboarding hero, ≥40px) opt back in below. */
-.ain-wordmark__t { fill: currentColor; }
+/* Brand lockup (0497) — the mark + the outlined "Atelier CMS" lettering
+   (masters in the umbrella's brand/masters/). Mark and name render at the SAME
+   height, the name right after the mark with a gap of 0.11 × that height; the
+   name is currentColor, so it themes from `color` (ink). A context resizes the
+   lockup by setting --ain-wordmark-height only. */
+.ain-wordmark {
+  --ain-wordmark-height: 22px;
+  display: inline-flex; align-items: center; gap: calc(var(--ain-wordmark-height) * .11);
+  width: auto; vertical-align: middle; color: var(--ain-color-text);
+}
+.ain-wordmark__mark,
+.ain-wordmark__text { height: var(--ain-wordmark-height); width: auto; flex: none; display: block; }
 .ain-brand { flex: none; display: inline-flex; align-items: center; }
 .ain-tag {
-  /* A group label is a mono whisper, not a badge — tracking carries it. */
-  font-family: var(--ain-font-mono);
-  font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: var(--ain-color-text-faint);
+  /* A group label: sentence case, muted — not a badge. */
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted);
   padding: 2px 0;
 }
 
@@ -356,13 +346,13 @@
      one height in the bar. */
   display: inline-flex; align-items: center; gap: 7px; min-width: 0;
   font: inherit; font-size: 13.5px; line-height: 16px; color: var(--ain-color-text);
-  background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
+  background: transparent; border: 1px solid var(--ain-color-border);
   border-radius: var(--ain-radius-md); padding: 6px 10px; max-width: 200px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
 }
 .ain-crumb__trigger { cursor: pointer; transition: border-color .12s, background .12s; }
 .ain-crumb__trigger:hover,
-.ain-crumb__trigger[data-open] { border-color: var(--ain-color-accent); background: var(--ain-color-surface-raised); }
+.ain-crumb__trigger[data-open] { border-color: var(--ain-color-text); }
+.ain-crumb__trigger:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-crumb.ain-crumb--static { box-shadow: none; background: transparent; border-color: transparent; cursor: default; }
 .ain-crumb__value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ain-crumb__icon { flex: none; font-size: 15px; color: var(--ain-color-text-muted); }
@@ -393,11 +383,11 @@
 }
 .ain-usermenu__avatar {
   flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px;
-  font-family: var(--ain-font-display); font-size: 11px; line-height: 1;
+  font-family: var(--ain-font-display); font-size: 11px; font-weight: 500; line-height: 1;
   color: var(--ain-color-text);
-  background: color-mix(in oklch, var(--ain-color-warning) 22%, var(--ain-color-surface));
-  border: 1px solid color-mix(in oklch, var(--ain-color-warning) 55%, transparent);
-  border-radius: calc(var(--ain-radius-md) - 2px);
+  background: var(--ain-color-accent-tint);
+  border: 1px solid var(--ain-color-border);
+  border-radius: 0;
 }
 .ain-usermenu__avatar--img { object-fit: cover; }
 /* caret — same dim chevron as .ain-crumb__caret; flips open */
@@ -417,11 +407,11 @@
 .ain-usermenu__cardhead { display: flex; align-items: center; gap: 10px; }
 .ain-usermenu__cardavatar {
   flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px;
-  font-family: var(--ain-font-display); font-size: 13px; line-height: 1;
+  font-family: var(--ain-font-display); font-size: 13px; font-weight: 500; line-height: 1;
   color: var(--ain-color-text);
-  background: color-mix(in oklch, var(--ain-color-warning) 22%, var(--ain-color-surface));
-  border: 1px solid color-mix(in oklch, var(--ain-color-warning) 55%, transparent);
-  border-radius: var(--ain-radius-md);
+  background: var(--ain-color-accent-tint);
+  border: 1px solid var(--ain-color-border);
+  border-radius: 0;
 }
 .ain-usermenu__cardavatar--img { object-fit: cover; }
 .ain-usermenu__ident { min-width: 0; }
@@ -433,27 +423,23 @@
   font-size: 12px; color: var(--ain-color-text-muted); margin-top: 1px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* Roles are mono WHISPER chips in owner words ("Owner"), with the joined date
-   beside them ("since Jul 2") — no status pill, no tenure math (Plate 14). */
+/* Roles are plain muted words ("Owner"), with the joined date beside them
+   ("since Jul 2") — no status pill, no tenure math. */
 .ain-usermenu__roles { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 9px; }
 .ain-usermenu__role {
-  font-family: var(--ain-font-mono); font-size: 9.5px; font-weight: 400;
-  letter-spacing: .12em; text-transform: uppercase;
-  padding: 2px 7px; border-radius: 999px;
-  color: var(--ain-color-text-muted); background: color-mix(in oklch, var(--ain-color-text-muted) 8%, transparent);
-  border: 1px solid var(--ain-color-border);
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted);
 }
 .ain-usermenu__since { font-size: 11px; color: var(--ain-color-text-faint); }
 
 .ain-confirm__code {
   font-family: var(--ain-font-mono); font-size: 12px;
-  padding: 1px 5px; border-radius: 4px; word-break: break-all;
+  padding: 1px 5px; border-radius: 0; word-break: break-all;
   background: var(--ain-color-surface-raised); color: var(--ain-color-text-muted);
 }
 
 /* --- the "+" birth form (new page modal, studio-navigation.md §3.2) --- */
 .ain-newpage { width: 380px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 14px; }
-.ain-newpage__title { margin: 0; font-family: var(--ain-font-display); font-size: 15px; color: var(--ain-color-text); }
+.ain-newpage__title { margin: 0; font-family: var(--ain-font-display); font-size: 15px; font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
 /* The type field: a <select> once more than one type is ratified (landing +
    blog today), falling back to a read-only contract tile when only one exists.
    Either way it names the composition contract the page is born under — and
@@ -468,14 +454,13 @@
 .ain-newpage__typehint { font-size: 12px; color: var(--ain-color-text-muted); line-height: 1.4; }
 /* Under the <select> (not inside the tile, whose flex gap already spaces it). */
 .ain-field > .ain-newpage__typehint { margin-top: 4px; }
-.ain-newpage__note { margin: 4px 0 0; font-size: 11.5px; color: var(--ain-color-text-muted); font-style: italic; }
+.ain-newpage__note { margin: 4px 0 0; font-size: 11.5px; color: var(--ain-color-text-muted); }
 .ain-newpage__error { margin: 0; font-size: 12.5px; color: var(--ain-color-danger); }
 
 /* --- in-console "My Account" pane (DECISIONS 0157, Tier 2; anatomy = study 02, Plate 15) --- */
 .ain-account { width: 420px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 48px); overflow-y: auto; }
-/* Serif title at the plate's scale (.t2: ~17px, weight 600 — an h2 left alone
-   renders 700, which reads chunky in Fraunces). */
-.ain-account__title { margin: 0; font-family: var(--ain-font-display); font-size: 17px; font-weight: 600; color: var(--ain-color-text); }
+/* Display title at ~17px, weight 500 (an h2 left alone renders 700). */
+.ain-account__title { margin: 0; font-family: var(--ain-font-display); font-size: 17px; font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
 /* Modal forms breathe at the kit's full form scale (spec .f-input: ~14px ink,
    8×11 padding) — the studio rail's 12px density reads cramped on a centered
    pane. Scoped to .ain-confirm so the account pane and the "+" birth form stay
@@ -484,13 +469,13 @@
 .ain-confirm .ain-field__input,
 .ain-confirm .ain-selfield__trigger { font-size: 13.5px; padding: 8px 11px; }
 .ain-account__avatarrow { display: flex; align-items: center; gap: 12px; padding-bottom: 4px; }
-/* A circle, like every other identity avatar (top bar, flyout) — the pane is
+/* Square, like every other identity avatar (top bar, flyout) — the pane is
    the same person, not a different shape. */
 .ain-account__avatar {
-  flex: 0 0 auto; width: 52px; height: 52px; border-radius: 999px;
-  border: 1px solid var(--ain-color-border); background: color-mix(in oklch, var(--ain-color-accent) 15%, transparent);
-  color: var(--ain-color-accent); display: grid; place-items: center;
-  font-family: var(--ain-font-display); font-size: 20px; font-weight: 600;
+  flex: 0 0 auto; width: 52px; height: 52px; border-radius: 0;
+  border: 1px solid var(--ain-color-border); background: var(--ain-color-accent-tint);
+  color: var(--ain-color-text); display: grid; place-items: center;
+  font-family: var(--ain-font-display); font-size: 20px; font-weight: 500;
 }
 .ain-account__avatar--img { object-fit: cover; padding: 0; background: var(--ain-color-surface-raised); color: transparent; }
 .ain-account__avatarctl { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
@@ -502,8 +487,7 @@
 .ain-account__pw { display: flex; flex-direction: column; margin-top: 2px; }
 .ain-account__pwlegend {
   display: flex; align-items: center; gap: 8px; margin: 0 0 10px;
-  font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
 }
 .ain-account__pwlegend::after { content: ""; flex: 1; height: 1px; background: var(--ain-color-border); }
 /* "Confirm it's you" — the VISIBLE re-auth group (study 02, Plate 15): a
@@ -558,30 +542,26 @@
 .ain-logo { width: 64px; height: 64px; }
 .ain-welcome h1 {
   font-family: var(--ain-font-display); font-weight: 500;
-  font-size: clamp(24px, 3.4vw, 34px); line-height: 1.2; letter-spacing: -.015em;
+  font-size: clamp(24px, 3.4vw, 34px); line-height: 1.2; letter-spacing: -0.02em;
   margin: 14px 0 0; text-wrap: balance;
 }
 .ain-welcome p { color: var(--ain-color-text-muted); margin: 0 0 8px; }
 .ain-suggestions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 8px; }
 .ain-suggestion {
-  border: 1px solid var(--ain-color-border); background: var(--ain-color-surface); color: var(--ain-color-text);
+  border: 1px solid var(--ain-color-border); background: transparent; color: var(--ain-color-text);
   padding: 9px 14px; border-radius: var(--ain-radius-md); font-size: 13.5px; cursor: pointer;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
-  transition: border-color .12s, background .12s, box-shadow .08s, transform .08s;
+  transition: border-color .12s;
 }
-/* Hover = a quiet fill, matching the rest of the console's hover language
-   (.ain-newchat/.ain-tli/.ain-menu__item). The border shifts only a hair
-   toward the accent — no jump to --ain-color-border-strong, whose crisp hairline
-   read too sharp against the calm chrome (user feedback 2026-07-13). */
-.ain-suggestion:hover { border-color: color-mix(in oklch, var(--ain-color-accent) 22%, var(--ain-color-border)); background: var(--ain-color-surface-raised); }
-.ain-suggestion:active { transform: translateY(1px); box-shadow: 0 1px 4px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent); }
+/* Hover = the hairline darkens to ink, the secondary-button grammar. */
+.ain-suggestion:hover { border-color: var(--ain-color-text); }
+.ain-suggestion:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 
 /* messages */
 .ain-msg { width: 100%; max-width: var(--ain-size-column-max); margin: 0 auto; display: flex; gap: 12px; animation: ain-rise .25s cubic-bezier(.2, .7, .3, 1) both; }
 .ain-msg--user { justify-content: flex-end; }
 .ain-msg--assistant { justify-content: flex-start; }
 /* A message another surface pointed at (revealMessage: Checks' "See Atelier's reply"). */
-.ain-msg[data-revealed] .ain-msg__col { outline: 2px solid var(--ain-color-accent); outline-offset: 4px; border-radius: 4px; transition: outline-color .4s; }
+.ain-msg[data-revealed] .ain-msg__col { outline: 2px solid var(--ain-color-accent); outline-offset: 4px; transition: outline-color .4s; }
 /* HITL action event — a centered system-style chip ("✓ admin approved · 8:56 PM"),
    not a chat bubble: the account clicked, didn't type. Square sprite corners
    (no pill — nothing in this theme is a pill), hairline + surface-2 fill, so
@@ -600,7 +580,7 @@
 .ain-msg--assistant .ain-msg__col { flex: 1 1 auto; min-width: 0; }
 /* Two voices, zero chrome between them (study 02, Plate 9): the studio signs
    once per turn with the A-monogram + "Atelier"; the user's words carry no
-   byline at all — right alignment + the one cinnabar-tinted surface IS the
+   byline at all — right alignment + the one ink-filled surface IS the
    attribution. The boxed speaker tiles (terminal / person) are retired. */
 .ain-msg__name {
   display: inline-flex; align-items: center; gap: 6px;
@@ -610,9 +590,9 @@
 /* Timestamps live in the thread header; per-message they surface on hover. */
 .ain-msg__time { opacity: 0; transition: opacity .15s; }
 .ain-msg:hover .ain-msg__time,
-.ain-msg:focus-within .ain-msg__time { opacity: .75; }
+.ain-msg:focus-within .ain-msg__time { opacity: 1; }
 .ain-msg__hovertime {
-  font-family: var(--ain-font-mono); font-size: 10.5px; color: var(--ain-color-text-faint);
+  font-family: var(--ain-font-body); font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ain-color-text-faint);
   padding: 0 2px; opacity: 0; transition: opacity .15s;
 }
 .ain-msg--user:hover .ain-msg__hovertime { opacity: 1; }
@@ -621,17 +601,15 @@
    shrink-wrap the bubble wider than the column and overflow off-screen;
    overflow-wrap:anywhere lets that run break so the box can actually narrow. */
 .ain-bubble { padding: 11px 15px; border-radius: var(--ain-radius-md); white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; min-width: 0; }
-/* Player one speaks in the ONE cinnabar surface on screen (study 02,
-   Plate 9): a solid accent fill, paper ink on it, no border — the pigment
-   IS the attribution. Each voice tucks the corner nearest its speaker. */
+/* The user speaks in the ONE ink-filled surface on screen: a solid accent
+   fill, paper text on it, no border — the fill IS the attribution. The
+   assistant sits on paper inside one hairline. Square, no shadow. */
 .ain-msg--user .ain-bubble {
   background: var(--ain-color-accent);
   color: var(--ain-color-on-accent);
-  border-bottom-right-radius: 4px;
 }
 .ain-msg--assistant .ain-bubble {
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
-  border-bottom-left-radius: 4px;
 }
 
 /* message action bar (copy only) */
@@ -652,7 +630,7 @@
 .ain-bubble :where(h1, h2, h3) { margin: .9em 0 .35em; line-height: 1.35; font-family: var(--ain-font-body); font-weight: 600; font-size: 1.05em; }
 .ain-bubble :where(h1, h2, h3):first-child { margin-top: .2em; }
 .ain-bubble ul, .ain-bubble ol { padding-left: 1.3em; }
-.ain-bubble a { color: var(--ain-color-success); text-decoration-color: color-mix(in oklch, var(--ain-color-success) 50%, transparent); }
+.ain-bubble a { color: var(--ain-color-text); text-decoration-color: var(--ain-color-border-strong); }
 .ain-bubble code { background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); padding: .08em .35em; font-size: .9em; }
 .ain-bubble pre { background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); padding: 12px 14px; overflow-x: auto; }
 .ain-bubble pre code { background: none; border: 0; padding: 0; }
@@ -662,7 +640,7 @@
   position: sticky; bottom: 8px; align-self: center; width: 34px; height: 34px;
   border-radius: var(--ain-radius-md);
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border); color: var(--ain-color-text);
-  cursor: pointer; box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  cursor: pointer;
 }
 .ain-scrollbtn[data-state="hidden"] { display: none; }
 
@@ -673,21 +651,14 @@
   display: flex; flex-direction: column; align-items: stretch; gap: 6px;
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
   border-radius: var(--ain-radius-md); padding: 10px 12px 8px;
-  box-shadow: 0 4px 12px -4px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent);
-  transition: border-color .12s, box-shadow .12s;
+  transition: border-color .12s;
 }
-/* Focus / generating — the quiet ring (Atelier study 02, Plate 4): in an
-   atelier light falls on surfaces, nothing emits. The rotating gradient halo
-   is retired; focus warms the border to the accent line and adds a 3px accent
-   TINT ring + a slightly deeper lift. The same treatment doubles as the
-   "assistant is working" cue (detected via the stop button, no JS needed). */
+/* Focus / generating — the hairline darkens to ink; that ink line IS the focus
+   cue (a textarea is :focus-visible on every focus, so an extra outline would
+   sit on the always-focused composer). The ink border doubles as the "assistant is working" cue
+   (detected via the stop button, no JS needed). No shadow, no lift. */
 .ain-composer:focus-within,
-.ain-composer:has(.ain-composer__send--stop) {
-  border-color: color-mix(in oklch, var(--ain-color-accent) 40%, transparent);
-  box-shadow:
-    0 0 0 3px color-mix(in oklch, var(--ain-color-accent) 10%, transparent),
-    0 8px 20px -8px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
-}
+.ain-composer:has(.ain-composer__send--stop) { border-color: var(--ain-color-text); }
 .ain-composer__input { width: 100%; resize: none; border: 0; outline: 0; background: transparent; color: var(--ain-color-text); font: inherit; line-height: 1.5; max-height: 200px; padding: 4px 2px; }
 /* Action toolbar — the second row. Buttons stay their fixed 36px; the spacer
    pushes send to the trailing edge. Wraps if a narrow dock can't hold the row. */
@@ -699,7 +670,7 @@
 .ain-composer__convotoggle {
   min-width: 36px; width: 36px; height: 36px; padding: 0;
   font-size: 18px; background: var(--ain-color-surface-raised);
-  border: 0; border-radius: 4px; color: var(--ain-color-text-muted);
+  border: 0; border-radius: 0; color: var(--ain-color-text-muted);
 }
 .ain-composer__convotoggle:not(:disabled):hover {
   background: var(--ain-color-surface-raised); border: 0; color: var(--ain-color-text);
@@ -712,16 +683,16 @@
   flex: 0 0 auto; width: 36px; height: 36px; border: 0;
   cursor: pointer; color: var(--ain-color-text-muted); font-size: 18px; line-height: 1;
   background: var(--ain-color-surface-raised);
-  border-radius: 4px;
-  transition: background .15s, color .15s, transform .05s;
+  border-radius: 0;
+  transition: background .15s, color .15s;
 }
 .ain-composer__send:disabled { cursor: default; }
 .ain-composer__send:not(:disabled) {
   background: var(--ain-color-accent);
   color: var(--ain-color-on-accent);
 }
-.ain-composer__send:not(:disabled):hover { background: color-mix(in oklch, var(--ain-color-accent) 90%, var(--ain-color-text)); }
-.ain-composer__send:not(:disabled):active { transform: translateY(1px); }
+.ain-composer__send:not(:disabled):hover,
+.ain-composer__send:not(:disabled):active { background: var(--ain-color-accent-hover); }
 .ain-composer__send--stop, .ain-composer__send--stop:not(:disabled) {
   background: var(--ain-color-surface-raised); color: var(--ain-color-text); animation: none;
 }
@@ -732,11 +703,10 @@
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; color: var(--ain-color-text-muted); font-size: 18px; line-height: 1;
   background: var(--ain-color-surface-raised);
-  border-radius: 4px;
-  transition: background .15s, color .15s, transform .05s;
+  border-radius: 0;
+  transition: background .15s, color .15s;
 }
 .ain-composer__mic:hover { color: var(--ain-color-text); }
-.ain-composer__mic:active { transform: translateY(1px); }
 .ain-composer__mic--active {
   background: var(--ain-color-accent); color: var(--ain-color-on-accent);
   animation: ain-mic-pulse 1.2s ease-in-out infinite;
@@ -749,17 +719,16 @@
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; color: var(--ain-color-text-muted); font-size: 18px; line-height: 1;
   background: var(--ain-color-surface-raised);
-  border-radius: 4px;
-  transition: background .15s, color .15s, transform .05s;
+  border-radius: 0;
+  transition: background .15s, color .15s;
 }
 .ain-composer__attach:not(:disabled):hover { color: var(--ain-color-text); }
-.ain-composer__attach:not(:disabled):active { transform: translateY(1px); }
 .ain-composer__attach--busy { cursor: default; color: var(--ain-color-text-faint); }
 .ain-spin { animation: ain-spin .9s linear infinite; }
 /* Upload failure — full-width line above the input, in the alert register. */
 .ain-composer__attach-error {
   width: 100%; order: -1; margin: 0 2px 4px;
-  font-size: 11.5px; line-height: 1.3; color: var(--ain-color-danger, var(--ain-color-accent));
+  font-size: 11.5px; line-height: 1.3; color: var(--ain-color-danger);
 }
 /* Pending-attachment tray — a full-width block above the composer input. */
 .ain-composer__attachments { width: 100%; margin: 0 2px 4px; }
@@ -771,11 +740,11 @@
   display: inline-flex; align-items: center; gap: 6px; max-width: 220px;
   padding: 3px 4px 3px 3px;
   background: var(--ain-color-surface-raised); border: 1px solid var(--ain-color-border);
-  border-radius: 6px;
+  border-radius: 0;
 }
 .ain-attach-chip__thumb {
   flex: 0 0 auto; width: 28px; height: 28px; object-fit: cover;
-  border-radius: 4px; display: block;
+  border-radius: 0; display: block;
 }
 .ain-attach-chip__name {
   min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -783,14 +752,14 @@
 }
 .ain-attach-chip__remove {
   flex: 0 0 auto; display: inline-grid; place-items: center;
-  width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px;
+  width: 20px; height: 20px; padding: 0; border: 0; border-radius: 0;
   cursor: pointer; color: var(--ain-color-text-muted); background: transparent; font-size: 13px;
   transition: color .12s, background .12s;
 }
 .ain-attach-chip__remove:hover { color: var(--ain-color-text); background: var(--ain-color-surface); }
 .ain-attach-chip__icon {
   flex: 0 0 auto; display: inline-grid; place-items: center;
-  width: 28px; height: 28px; border-radius: 4px;
+  width: 28px; height: 28px; border-radius: 0;
   background: var(--ain-color-surface); color: var(--ain-color-text-muted);
 }
 .ain-attach-chip__icon svg { width: 16px; height: 16px; }
@@ -800,7 +769,7 @@
    cut, DECISIONS 0347) — rendered as an inert click-to-open citation instead. */
 .ain-remote-image {
   display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
-  padding: 1px 6px; border: 1px solid var(--ain-color-border); border-radius: 6px;
+  padding: 1px 6px; border: 1px solid var(--ain-color-border); border-radius: 0;
   color: var(--ain-color-text-muted); text-decoration: none; vertical-align: baseline;
 }
 .ain-remote-image:hover { color: var(--ain-color-text); background: var(--ain-color-surface); }
@@ -827,21 +796,21 @@
 }
 .ain-cap__glyph { font-size: 13px; flex: 0 0 auto; }
 .ain-cap--on { color: var(--ain-color-text-muted); }
-/* Needs setup: the glyph and label fade back, and the reason carries the link. */
-.ain-cap--setup { opacity: .62; }
-/* Not this room's job: struck out, and dimmer still — it is not an invitation. */
-.ain-cap--unused { opacity: .5; }
+/* Needs setup: the glyph and label step back to faint ink, and the reason
+   carries the link. */
+.ain-cap--setup { color: var(--ain-color-text-faint); }
+/* Not this room's job: struck out in faint ink — it is not an invitation. */
+.ain-cap--unused { color: var(--ain-color-text-faint); }
 .ain-cap--unused .ain-cap__label { text-decoration: line-through; text-decoration-thickness: 1px; }
-.ain-cap--unused .ain-cap__glyph { opacity: .7; }
 .ain-cap__hint { color: var(--ain-color-text-muted); }
-a.ain-cap--setup:hover { opacity: 1; }
-a.ain-cap--setup:hover .ain-cap__hint { text-decoration: underline; }
-a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; border-radius: 3px; }
+a.ain-cap--setup:hover { color: var(--ain-color-text-muted); }
+a.ain-cap--setup:hover .ain-cap__hint { color: var(--ain-color-text); text-decoration: underline; }
+a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-disclaimer { text-align: center; color: var(--ain-color-text-muted); font-size: 11.5px; margin: 8px 0 0; }
 /* Composer frozen because the open page's editor lock is held elsewhere. */
 .ain-composer-locked {
   text-align: center; color: var(--ain-color-text-muted); font-size: 13px; line-height: 1.4;
-  padding: 14px 16px; border: 1px solid var(--ain-color-border); border-radius: 10px;
+  padding: 14px 16px; border: 1px solid var(--ain-color-border); border-radius: 0;
   background: var(--ain-color-surface);
 }
 
@@ -856,36 +825,34 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 8px 16px; margin-bottom: 8px;
   padding: 10px 12px 10px 14px;
-  border: 1px solid var(--ain-color-border); border-radius: 10px;
+  border: 1px solid var(--ain-color-border); border-radius: 0;
   background: var(--ain-color-surface);
 }
 .ain-nameinvite__say { font-size: 13px; line-height: 1.4; }
 .ain-nameinvite__lead { color: var(--ain-color-text); font-weight: 500; }
 .ain-nameinvite__ask { color: var(--ain-color-text-muted); }
 .ain-nameinvite__row { display: flex; align-items: center; gap: 6px; }
-/* Inputs recede (Law 08) — pressed into the paper, matching the composer. */
+/* Inputs recede — the well + one hairline, like every kit input. */
 .ain-nameinvite__input {
   width: 11rem; min-width: 0; font: inherit; font-size: 13px;
-  color: var(--ain-color-text); background: var(--ain-color-bg);
-  border: 1px solid var(--ain-color-border); border-radius: 7px; padding: 5px 9px;
-  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 18%, transparent);
+  color: var(--ain-color-text); background: var(--ain-color-surface-raised);
+  border: 1px solid var(--ain-color-border); border-radius: 0; padding: 5px 9px;
 }
 .ain-nameinvite__input:focus-visible {
-  outline: none;
-  border-color: color-mix(in oklch, var(--ain-color-accent) 45%, var(--ain-color-border));
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ain-color-accent) 14%, transparent);
+  border-color: var(--ain-color-text);
+  outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px;
 }
 .ain-nameinvite__icon { width: 13px; height: 13px; }
 /* Declining is a peer of answering, not a grey afterthought — same quiet voice
    the console gives every other "no thanks". */
 .ain-nameinvite__dismiss {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 7px;
+  width: 28px; height: 28px; border-radius: 0;
   color: var(--ain-color-text-muted); background: transparent; border: 0; cursor: pointer;
 }
 .ain-nameinvite__dismiss:hover {
   color: var(--ain-color-text);
-  background: color-mix(in oklch, var(--ain-color-text) 6%, transparent);
+  background: var(--ain-color-surface-raised);
 }
 @media (max-width: 560px) {
   .ain-nameinvite__input { width: 100%; }
@@ -894,9 +861,10 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 /* Inline text-button (e.g. "Start a new thread" in the archived-thread notice). */
 .ain-linkbtn {
   background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
-  color: var(--ain-color-success); text-decoration: underline; text-underline-offset: 2px;
+  color: var(--ain-color-text); text-decoration: underline; text-underline-offset: 2px;
+  text-decoration-color: var(--ain-color-border-strong);
 }
-.ain-linkbtn:hover { color: var(--ain-color-text); }
+.ain-linkbtn:hover { color: var(--ain-color-text); text-decoration-thickness: 2px; }
 
 /* token-usage + cost — per-turn footer + session-total chip. Console-chrome
    furniture: chrome tokens, flat --ain-radius-md, tabular numerals. */
@@ -906,15 +874,14 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   font-variant-numeric: tabular-nums;
 }
 .ain-usage__metric { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
-.ain-usage__arrow { flex: none; width: 11px; height: 11px; opacity: .7; }
-.ain-usage__metric--cached { opacity: .8; }
+.ain-usage__arrow { flex: none; width: 11px; height: 11px; color: var(--ain-color-text-faint); }
+.ain-usage__metric--cached { color: var(--ain-color-text-faint); }
 .ain-usage__cost { color: var(--ain-color-text); font-weight: 600; }
 .ain-usage__label {
-  text-transform: uppercase; letter-spacing: .07em; font-size: 10px;
-  color: var(--ain-color-text-muted); opacity: .85;
+  font-size: 11.5px; color: var(--ain-color-text-muted);
 }
 /* per-turn footer: a quiet line under the message, set off from the prose */
-.ain-msg .ain-usage { margin-top: 6px; opacity: .82; }
+.ain-msg .ain-usage { margin-top: 6px; }
 /* session chip: pinned above the composer input, right-aligned */
 .ain-usage--session {
   width: fit-content; margin: 0 0 8px auto;
@@ -924,7 +891,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 
 /* scrollbars */
 .ain-viewport::-webkit-scrollbar, .ain-threadlist__scroll::-webkit-scrollbar { width: 10px; }
-.ain-viewport::-webkit-scrollbar-thumb, .ain-threadlist__scroll::-webkit-scrollbar-thumb { background: var(--ain-color-border); border-radius: 999px; }
+.ain-viewport::-webkit-scrollbar-thumb, .ain-threadlist__scroll::-webkit-scrollbar-thumb { background: var(--ain-color-border); border-radius: 0; }
 
 /* motion */
 @keyframes ain-rise {
@@ -950,37 +917,32 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 /* ---- Human-in-the-loop request card (FlowDrop pause) ----------------------
    A labelled card: header strip (kind + outcome badge), prompt, choices.
    Answering appends a real user bubble; the card itself just settles.
-   Emphasis follows the theme's physical-control idiom (cf. .ain-tli active):
-   a pending card is LIFTED off the page by a strong border + hard offset
-   shadow — no accent left-bar (the theme rejects that idiom). Settling
-   (answered/dismissed) drops the shadow and dims the border. */
-.ain-hitl { margin: 6px 2px 4px 0; padding: 12px 14px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent); display: flex; flex-direction: column; gap: 10px; transition: border-color .12s, box-shadow .12s; }
+   A pending card carries the strong (ink) rule; settling (answered/dismissed)
+   steps it back to a hairline. No shadow — the card is on the page. */
+.ain-hitl { margin: 6px 2px 4px 0; padding: 12px 14px; border: 1px solid var(--ain-color-border-strong); border-radius: var(--ain-radius-md); background: var(--ain-color-surface); display: flex; flex-direction: column; gap: 10px; transition: border-color .12s; }
 .ain-hitl[data-state="answered"],
-.ain-hitl[data-state="dismissed"] { border-color: var(--ain-color-border); box-shadow: none; }
-.ain-hitl[data-state="dismissed"] { opacity: .7; }
+.ain-hitl[data-state="dismissed"] { border-color: var(--ain-color-border); }
+.ain-hitl[data-state="dismissed"] .ain-hitl__prompt { color: var(--ain-color-text-muted); }
 .ain-hitl__head { display: flex; align-items: center; gap: 7px; min-height: 20px; }
 .ain-hitl__headicon { color: var(--ain-color-text-muted); font-size: 15px; flex: none; }
 .ain-hitl[data-state="answered"] .ain-hitl__headicon,
 .ain-hitl[data-state="dismissed"] .ain-hitl__headicon { color: var(--ain-color-text-muted); }
-/* arcade micro-label, same anatomy as .ain-tlgroup */
-.ain-hitl__title { font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ain-color-text-muted); }
-/* outcome chip — the .ain-tag anatomy (hairline in currentColor + tinted
-   fill + sprite corners), body font kept: answers are arbitrary text. */
-/* The settled answer is a WHISPER chip (state colors never fill — study 02,
-   Plate 5 idiom): mono label, tinted ground, hairline in the state's hue. */
+/* the card's label, same anatomy as .ain-tlgroup */
+.ain-hitl__title { font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted); }
+/* The settled answer is a STATE LINE, not a chip: ink text led by an 8px
+   square in the state's colour (no fill, no pill, no border). The square
+   replaces the old check/cross glyph. */
 .ain-hitl__badge {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
-  padding: 2px 8px; border-radius: 999px;
-  font-family: var(--ain-font-mono); font-size: 10px; font-weight: 400;
-  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  padding: 0; font-family: var(--ain-font-body); font-size: 12.5px; font-weight: 400;
   --ain-hitl-badge-color: var(--ain-color-success);
-  color: color-mix(in oklch, var(--ain-hitl-badge-color) 85%, var(--ain-color-text));
-  border: 1px solid color-mix(in oklch, var(--ain-hitl-badge-color) 42%, transparent);
-  background: color-mix(in oklch, var(--ain-hitl-badge-color) 10%, transparent);
+  color: var(--ain-color-text);
 }
-.ain-hitl__badge svg { font-size: 11px; }
+.ain-hitl__badge::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--ain-hitl-badge-color); }
+.ain-hitl__badge svg { display: none; }
 .ain-hitl__badge[data-declined] { --ain-hitl-badge-color: var(--ain-color-danger); }
-.ain-hitl__badge--muted { --ain-hitl-badge-color: var(--ain-color-text-muted); }
+.ain-hitl__badge--muted { color: var(--ain-color-text-muted); }
+.ain-hitl__badge--muted::before { background: transparent; box-shadow: inset 0 0 0 1px var(--ain-color-text-muted); }
 /* The prompt is rendered markdown: regular weight so **emphasis** can speak,
    bubble-style paragraph rhythm. */
 .ain-hitl__prompt { font-size: 14px; line-height: 1.55; color: var(--ain-color-text); }
@@ -992,7 +954,9 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-hitl__options { display: flex; flex-direction: column; gap: 6px; }
 .ain-hitl__option { display: flex; align-items: baseline; gap: 9px; padding: 9px 12px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface); cursor: pointer; transition: border-color .12s, background .12s; }
 .ain-hitl__option:hover { border-color: var(--ain-color-border-strong); }
-.ain-hitl__option.is-selected { border-color: var(--ain-color-accent); background: var(--ain-color-surface-raised); }
+.ain-hitl__option:hover { border-color: var(--ain-color-text); }
+.ain-hitl__option.is-selected { border-color: var(--ain-color-accent); background: var(--ain-color-accent-tint); }
+.ain-hitl__option:has(input:focus-visible) { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-hitl__option input { accent-color: var(--ain-color-accent); margin: 0; }
 .ain-hitl__label { color: var(--ain-color-text); font-size: 14px; }
 .ain-hitl__desc { color: var(--ain-color-text-muted); font-size: 12.5px; margin-left: auto; }
@@ -1004,42 +968,38 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
    A 5-cell pixel bar that escalates with elapsed time (data-stage set by the
    component, see ThinkingIndicator): 0–10s the first three cells blink in
    sequence (two cells parked dim — a hint there's more bar to wake); 10–30s
-   a lit cell sweeps all five; 30s+ the sweep doubles speed. The lit cell
-   walks the LOGO's spectrum as the run escalates — band-3 mint → band-4
-   violet → band-2 amber, the chip working harder — while unlit cells stay
-   text-dim so only one cell carries brand saturation at a time. The vivid
-   spectrum is otherwise brand-only (cf. .ain-avatar note); a machine-state
-   readout is the one place the machine's own colors are the message.
-   steps(1) throughout — the theme's blink/wake idiom, no easing. */
+   a lit cell sweeps all five; 30s+ the sweep doubles speed. The lit cell is
+   full INK (the one highlight), unlit cells stay a faint ink, so the
+   escalation reads in rhythm, not in colour. steps(1) throughout — no easing. */
 .ain-thinking { display: flex; align-items: center; gap: 10px; min-height: 22px; }
 .ain-thinking__cells { display: inline-flex; gap: 3px; }
 .ain-thinking__cells span { width: 6px; height: 6px; background: var(--ain-color-text-muted); opacity: .25; }
-/* stage 0 — arcade blink, mint */
+/* stage 0 — blink */
 .ain-thinking[data-stage="0"] .ain-thinking__cells span:nth-child(-n+3) { animation: ain-cellblink 1.05s steps(1) infinite; }
 .ain-thinking[data-stage="0"] .ain-thinking__cells span:nth-child(2) { animation-delay: .35s; }
 .ain-thinking[data-stage="0"] .ain-thinking__cells span:nth-child(3) { animation-delay: .7s; }
 @keyframes ain-cellblink {
-  0%, 33% { opacity: 1; background: var(--ain-mark-band-3); }
+  0%, 33% { opacity: 1; background: var(--ain-color-text); }
   34%, 100% { opacity: .25; background: var(--ain-color-text-muted); }
 }
-/* stage 1 — scanner sweep, violet */
+/* stage 1 — sweep */
 .ain-thinking[data-stage="1"] .ain-thinking__cells span { animation: ain-cellsweep 1.25s steps(1) infinite; }
 .ain-thinking[data-stage="1"] .ain-thinking__cells span:nth-child(2) { animation-delay: .25s; }
 .ain-thinking[data-stage="1"] .ain-thinking__cells span:nth-child(3) { animation-delay: .5s; }
 .ain-thinking[data-stage="1"] .ain-thinking__cells span:nth-child(4) { animation-delay: .75s; }
 .ain-thinking[data-stage="1"] .ain-thinking__cells span:nth-child(5) { animation-delay: 1s; }
 @keyframes ain-cellsweep {
-  0%, 20% { opacity: 1; background: var(--ain-mark-band-4); }
+  0%, 20% { opacity: 1; background: var(--ain-color-text); }
   21%, 100% { opacity: .25; background: var(--ain-color-text-muted); }
 }
-/* stage 2 — hot scanner, amber, double speed */
+/* stage 2 — double-speed sweep */
 .ain-thinking[data-stage="2"] .ain-thinking__cells span { animation: ain-cellsweephot .65s steps(1) infinite; }
 .ain-thinking[data-stage="2"] .ain-thinking__cells span:nth-child(2) { animation-delay: .13s; }
 .ain-thinking[data-stage="2"] .ain-thinking__cells span:nth-child(3) { animation-delay: .26s; }
 .ain-thinking[data-stage="2"] .ain-thinking__cells span:nth-child(4) { animation-delay: .39s; }
 .ain-thinking[data-stage="2"] .ain-thinking__cells span:nth-child(5) { animation-delay: .52s; }
 @keyframes ain-cellsweephot {
-  0%, 20% { opacity: 1; background: var(--ain-mark-band-2); }
+  0%, 20% { opacity: 1; background: var(--ain-color-text); }
   21%, 100% { opacity: .3; background: var(--ain-color-text-muted); }
 }
 .ain-thinking__text { color: var(--ain-color-text-muted); font-size: 13px; }
@@ -1070,7 +1030,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--ain-color-text); font-size: 12.5px;
 }
-.ain-trail__spin { animation: ain-spin .9s linear infinite; color: var(--ain-color-success); flex: 0 0 auto; }
+.ain-trail__spin { animation: ain-spin .9s linear infinite; color: var(--ain-color-text-muted); flex: 0 0 auto; }
 .ain-trail__chevron { margin-left: auto; flex: 0 0 auto; transition: transform .15s; }
 .ain-trail__chevron[data-open] { transform: rotate(180deg); }
 @keyframes ain-spin { to { transform: rotate(360deg); } }
@@ -1118,23 +1078,24 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-provfail__retry {
   flex: 0 0 auto; align-self: center; cursor: pointer;
   padding: 4px 10px; font: inherit; font-size: 13px;
-  color: var(--ain-color-text); background: var(--ain-color-surface);
-  border: 1px solid var(--ain-color-border); border-radius: 6px;
+  color: var(--ain-color-text); background: transparent;
+  border: 1px solid var(--ain-color-border); border-radius: 0;
 }
-.ain-provfail__retry:hover:not(:disabled) { border-color: var(--ain-color-accent); color: var(--ain-color-accent); }
+.ain-provfail__retry:hover:not(:disabled) { border-color: var(--ain-color-text); }
+.ain-provfail__retry:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-provfail__retry:disabled { cursor: default; opacity: 0.55; }
 
 /* ---- Tool activity line (fallback for unregistered tool parts) ------------
-   Study 02, Plate 9: the studio's work renders as a QUIET MONO activity line —
+   The studio's work renders as a QUIET activity line —
    "✓ Generate alt text" — moss check, ink text, no card chrome. Never a third
    bubble style. Clicking discloses the raw args/result for debugging. */
 .ain-activity { margin: 2px 0 4px; }
 .ain-activity__line {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 2px 4px; border: 0; background: none; cursor: pointer;
-  border-radius: 4px;
+  border-radius: 0;
   color: var(--ain-color-text-muted); text-align: left;
-  font-family: var(--ain-font-mono); font-size: 11.5px; letter-spacing: .01em;
+  font-family: var(--ain-font-body); font-size: 12px;
 }
 .ain-activity__line:hover { background: var(--ain-color-surface-raised); color: var(--ain-color-text); }
 .ain-activity__state { flex: 0 0 auto; font-size: 11px; }
@@ -1142,7 +1103,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-activity__state--busy { color: var(--ain-color-text-muted); animation: ain-spin .9s linear infinite; }
 .ain-activity__body { padding: 4px 0 2px 22px; display: flex; flex-direction: column; gap: 8px; }
 .ain-activity__section { display: flex; flex-direction: column; gap: 3px; }
-.ain-activity__caption { font-family: var(--ain-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--ain-color-text-muted); }
+.ain-activity__caption { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-activity__pre {
   margin: 0; padding: 8px 10px; font-size: 12px; line-height: 1.5;
   background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
@@ -1153,11 +1114,11 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-weather {
   margin: 6px 2px 4px 0; padding: 12px 14px;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+  background: var(--ain-color-surface);
   display: flex; flex-direction: column; gap: 12px;
 }
 .ain-weather__head { display: flex; align-items: baseline; gap: 8px; }
-.ain-weather__title { font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ain-color-text-muted); }
+.ain-weather__title { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-weather__loc { font-weight: 600; font-size: 14px; color: var(--ain-color-text); }
 .ain-weather__now { display: flex; align-items: center; gap: 14px; }
 .ain-weather__icon { font-size: 38px; color: var(--ain-color-text-muted); flex: 0 0 auto; }
@@ -1172,7 +1133,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px;
   padding: 6px 2px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface);
 }
-.ain-weather__daylabel { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--ain-color-text-muted); }
+.ain-weather__daylabel { font-size: 12px; font-weight: 500; color: var(--ain-color-text-muted); }
 .ain-weather__dayicon { font-size: 18px; color: var(--ain-color-text-muted); }
 .ain-weather__dayrange { font-size: 12.5px; font-weight: 600; color: var(--ain-color-text); }
 .ain-weather__daymin { color: var(--ain-color-text-muted); font-weight: 400; margin-left: 4px; }
@@ -1181,26 +1142,27 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-tour {
   margin: 6px 2px 4px 0; padding: 12px 14px; max-width: 480px;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+  background: var(--ain-color-surface);
   display: flex; flex-direction: column; gap: 12px;
 }
 .ain-tour__head { display: flex; align-items: baseline; gap: 8px; }
-.ain-tour__title { font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ain-color-text-muted); }
+.ain-tour__title { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-tour__hint { margin-left: auto; font-size: 11px; color: var(--ain-color-text-muted); }
 .ain-tour__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
-/* `.ain-bubble a` paints prose links jade — the card is an anchor too, so
+/* `.ain-bubble a` underlines prose links — the card is an anchor too, so
    re-assert ink + no underline at matching specificity. */
 .ain-tour__card, .ain-bubble a.ain-tour__card {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   background: var(--ain-color-surface); color: var(--ain-color-text); text-decoration: none;
-  transition: border-color .12s ease, transform .12s ease;
+  transition: border-color .12s ease;
 }
-.ain-tour__card:hover { border-color: var(--ain-color-accent); transform: translateY(-1px); }
+.ain-tour__card:hover { border-color: var(--ain-color-text); }
+.ain-tour__card:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-tour__card:hover .ain-tour__go { opacity: 1; transform: none; }
 .ain-tour__icon { font-size: 18px; color: var(--ain-color-text-muted); flex: 0 0 auto; }
 .ain-tour__cardbody { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ain-tour__name { font-weight: 600; font-size: 13px; line-height: 1.2; }
+.ain-tour__name { font-weight: 500; font-size: 13px; line-height: 1.2; }
 .ain-tour__status { font-size: 11.5px; color: var(--ain-color-text-muted); line-height: 1.35; }
 .ain-tour__go { margin-left: auto; font-size: 13px; color: var(--ain-color-accent); flex: 0 0 auto; opacity: 0; transform: translateX(-3px); transition: opacity .12s ease, transform .12s ease; }
 .ain-tour__video {
@@ -1214,12 +1176,11 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-tour__play {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
   display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 44px; border-radius: 50%;
-  background: color-mix(in oklch, var(--ain-color-surface) 88%, transparent); color: var(--ain-color-accent);
-  font-size: 18px; box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 40%, transparent);
-  transition: transform .12s ease;
+  width: 44px; height: 44px; border-radius: 0;
+  background: var(--ain-color-accent); color: var(--ain-color-on-accent);
+  font-size: 18px; transition: background .12s ease;
 }
-.ain-tour__video:hover .ain-tour__play { transform: translate(-50%, -50%) scale(1.08); }
+.ain-tour__video:hover .ain-tour__play { background: var(--ain-color-accent-hover); }
 .ain-tour__videolabel {
   position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 10px 7px;
   font-size: 12px; text-align: left; color: var(--ain-color-text);
@@ -1235,9 +1196,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   display: flex; align-items: flex-start; gap: 9px;
 }
 .ain-brandprev__dot {
-  flex: none; width: 9px; height: 9px; margin-top: 3px; border-radius: 9999px;
+  flex: none; width: 8px; height: 8px; margin-top: 4px; border-radius: 0;
   background: var(--ain-color-accent);
-  
 }
 .ain-brandprev__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ain-brandprev__label { font-size: 13px; color: var(--ain-color-text); }
@@ -1257,22 +1217,21 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-onboard {
   margin: 6px 2px 4px 0; padding: 12px 14px; max-width: 420px;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+  background: var(--ain-color-surface);
   display: flex; flex-direction: column; gap: 12px;
 }
 .ain-onboard__head { display: flex; align-items: baseline; gap: 8px; }
-.ain-onboard__title { font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ain-color-text-muted); }
+.ain-onboard__title { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-onboard__hint { margin-left: auto; font-size: 11px; color: var(--ain-color-text-muted); }
 .ain-onboard__note { margin: 0; font-size: 13px; color: var(--ain-color-text); }
 .ain-onboard__field { display: flex; flex-direction: column; gap: 5px; }
-.ain-onboard__label { font-family: var(--ain-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--ain-color-text-muted); }
+.ain-onboard__label { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-onboard__input, .ain-onboard__select {
   width: 100%; padding: 8px 10px; font: inherit; font-size: 13px;
-  color: var(--ain-color-text); background: var(--ain-color-surface);
+  color: var(--ain-color-text); background: var(--ain-color-surface-raised);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
 }
-.ain-onboard__input:focus, .ain-onboard__select:focus { outline: none; border-color: color-mix(in oklch, var(--ain-color-accent) 40%, transparent); box-shadow: 0 0 0 3px color-mix(in oklch, var(--ain-color-accent) 10%, transparent); }
+.ain-onboard__input:focus, .ain-onboard__select:focus { border-color: var(--ain-color-text); outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-onboard__error { margin: 0; font-size: 12px; color: var(--ain-color-danger); }
 /* Onboarding actions ride the kit primary — the bespoke ink-fill button
    (which hovered to a second pigment) is retired. */
@@ -1282,8 +1241,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 
 /* ── First-run onboarding wizard ─────────────────────────────────────────────
    Full-screen, dedicated first-run experience (not the in-chat panel above).
-   Calm gesso ground, one card, the craftsman's voice (study 02, onboarding
-   kit) — the arcade sky/clouds/hard-offset shadows are retired. */
+   Paper ground, one card inside one hairline — no shadow (the card is the
+   page, not an overlay). */
 .ain-wiz {
   position: fixed; inset: 0; z-index: 10;
   display: flex; align-items: center; justify-content: center;
@@ -1298,28 +1257,22 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   display: flex; flex-direction: column; gap: 16px;
   padding: 32px 28px;
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
-  border-radius: 14px;
-  box-shadow: 0 8px 22px -6px color-mix(in oklch, var(--ain-color-shadow) 42%, transparent);
+  border-radius: 0;
   animation: ain-wiz-in .25s ease both;
 }
 @keyframes ain-wiz-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 /* Re-run only: a quiet dismiss in the card's top-right corner (Law 14). */
 .ain-wiz__close { position: absolute; top: 14px; right: 14px; z-index: 2; }
 
-/* Welcome lockup: the Atelier wordmark at display scale — big enough that
-   the "t" earns its pigment back (study 02: the two-tone gesture is for
-   ≥40px display use). */
+/* Welcome lockup: the Atelier CMS lockup at display scale. */
 .ain-wiz__hero { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin-bottom: 2px; }
-.ain-wiz__hero-mark { color: var(--ain-color-text); gap: 11px; }
-.ain-wiz__hero-mark .ain-wordmark__mark { width: 30px; height: 30px; }
-.ain-wiz__hero-mark .ain-wordmark__text { height: 20px; }
-.ain-wiz__hero-mark .ain-wordmark__t { fill: var(--ain-color-accent); }
+.ain-wiz__hero-mark { --ain-wordmark-height: 32px; color: var(--ain-color-text); }
 
-/* The title speaks in the display serif — enthusiasm is carried by the
-   serif, not punctuation (study 02, the craftsman's voice). */
+/* The title speaks in the display face — enthusiasm is carried by the type,
+   not punctuation. */
 .ain-wiz__title {
   margin: 0; font-family: var(--ain-font-display);
-  font-weight: 600; font-size: 22px; line-height: 1.25; letter-spacing: -.01em;
+  font-weight: 500; font-size: 22px; line-height: 1.25; letter-spacing: -.01em;
   color: var(--ain-color-text);
 }
 .ain-wiz__lede { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ain-color-text-muted); }
@@ -1329,19 +1282,18 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 
 /* Progress dashes — honest: done/current = accent, ahead = hair. */
 .ain-wiz__dots { display: flex; gap: 6px; }
-.ain-wiz__dot { width: 18px; height: 3px; background: var(--ain-color-border); border-radius: 4px; transition: background .2s; }
+.ain-wiz__dot { width: 18px; height: 3px; background: var(--ain-color-border); border-radius: 0; transition: background .2s; }
 .ain-wiz__dot--on { background: var(--ain-color-accent); }
 
-/* Providers are a LEDGER, not boxes (study 02, onboarding kit): one panel,
-   hairline rows. Selection = accent tint + check — the console's selection
-   grammar, no offset shadows. */
+/* Providers are a LEDGER, not boxes: one panel, hairline rows. Selection =
+   the well + a 2px ink bar + check — the console's selected-row grammar. */
 /* The provider list scrolls. There are ten-odd connectable providers now (the
    named vendor presets among them), and an unbounded list pushed Continue and the
    whole models step off the bottom of the panel — the wizard looked like it had no
    way forward. Capped so a few rows are always visible under it: the list is the
    scrolling part, the wizard's own frame stays put.
    `overflow: hidden auto` keeps the y-axis scrollable while the x-axis stays
-   clipped, so the rounded corners still cut the first and last row.
+   clipped.
    The thumb comes from the console-wide #aincient-chat-root scrollbar rules. */
 .ain-wiz__providers {
   display: flex; flex-direction: column; gap: 0;
@@ -1353,16 +1305,17 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 }
 .ain-wiz__provider { color: var(--ain-color-text); transition: background .12s; }
 .ain-wiz__provider + .ain-wiz__provider { border-top: 1px solid var(--ain-color-border); }
-.ain-wiz__provider--selected,
-.ain-wiz__provider--recommended { background: color-mix(in oklch, var(--ain-color-accent) 6%, var(--ain-color-surface)); }
+.ain-wiz__provider--recommended { background: var(--ain-color-accent-tint); }
+.ain-wiz__provider--selected { background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent); }
 /* The clickable row that expands/collapses the credential field. */
 .ain-wiz__provider-hit {
   width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit;
   display: flex; align-items: center; gap: 12px; padding: 12px 14px;
   background: transparent; border: 0;
 }
-.ain-wiz__provider-hit:hover { background: color-mix(in oklch, var(--ain-color-text) 4%, transparent); }
-.ain-wiz__provider-hit:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: -2px; }
+.ain-wiz__provider-hit:hover { background: var(--ain-color-surface-raised); }
+/* Inset: the ledger clips its overflow, so an outside outline would be cut. */
+.ain-wiz__provider-hit:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 /* The expanded credential panel under a row. */
 .ain-wiz__connect {
   display: flex; flex-direction: column; gap: 8px;
@@ -1373,7 +1326,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-wiz__provider-badge {
   flex: none; display: inline-flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; font-size: 22px;
-  background: #fff; border: 1px solid var(--ain-color-border); border-radius: 4px;
+  background: #fff; border: 1px solid var(--ain-color-border); border-radius: 0;
 }
 /* No mark for this provider: hold the column, show nothing. A white tile with
    nothing on it reads as a failed image, and our own mark would read as a claim
@@ -1382,46 +1335,42 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-wiz__provider-mark { width: 1em; height: 1em; }
 .ain-wiz__provider-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ain-wiz__provider-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ain-wiz__provider-name { font-weight: 600; font-size: 14px; }
+.ain-wiz__provider-name { font-weight: 500; font-size: 14px; }
 .ain-wiz__provider-desc {
   font-size: 12px; color: var(--ain-color-text-muted);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-/* Whisper chips (study 02): mono micro-labels as TINTS, never fills. */
+/* State chips are STATE LINES: sentence-case text, no fill, no pill, no
+   border, led by an 8px square in the state colour (::before). */
 .ain-wiz__chip {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-family: var(--ain-font-mono); font-size: 9px; font-weight: 400;
-  letter-spacing: .12em; text-transform: uppercase;
-  padding: 2px 6px; border-radius: 999px;
-  color: var(--ain-color-text-muted); background: color-mix(in oklch, var(--ain-color-text-muted) 8%, transparent);
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--ain-font-body); font-size: 12px; font-weight: 400;
+  padding: 0; color: var(--ain-color-text-muted);
 }
 .ain-wiz__chip-icon { width: 8px; height: 8px; }
-/* Connected — a moss whisper, not a celebration. */
-.ain-wiz__chip--ok {
-  color: color-mix(in oklch, var(--ain-color-success) 85%, var(--ain-color-text));
-  background: color-mix(in oklch, var(--ain-color-success) 12%, transparent);
+:is(.ain-wiz__chip--ok, .ain-wiz__chip--warn, .ain-picker__chip--warn)::before {
+  content: ""; flex: none; width: 8px; height: 8px; background: var(--ain-chip-square, var(--ain-color-text-muted));
 }
+/* The square stands in for the old glyph on a state chip. */
+:is(.ain-wiz__chip--ok, .ain-wiz__chip--warn, .ain-picker__chip--warn) :is(.ain-wiz__chip-icon, .ain-picker__chip-icon) { display: none; }
+/* Connected — a moss square, not a celebration. */
+.ain-wiz__chip--ok { --ain-chip-square: var(--ain-color-success); color: var(--ain-color-text); }
 /* "· 14 models ready" — the proof the key actually reached the provider, riding
    inside the Connected chip. Half a step quieter than the word it follows, so
    the row still reads "Connected" first and the evidence second (Law 02). */
-.ain-wiz__chip-count { opacity: .75; letter-spacing: .08em; }
+.ain-wiz__chip-count { color: var(--ain-color-text-muted); }
 /* Capability whispers (chat / image) — facts, not badges. */
 .ain-wiz__chip--cap { background: transparent; padding-inline: 0; }
-/* Curated guidance chips (shared tone vocabulary with the model picker):
-   recommended = cinnabar accent, tested = neutral whisper, not-recommended =
-   a muted caution. All tints, never fills (study 02). */
+/* Curated guidance chips (shared tone vocabulary with the model picker) are
+   LABELS, not states (brand.md §3: categories are text): recommended = ink text
+   with its sparkle, tested = grey text, no square. Only not-recommended keeps a
+   square — ochre, a caution. Never red: red is for errors. */
 .ain-wiz__chip--rec,
-.ain-picker__chip--rec {
-  color: color-mix(in oklch, var(--ain-color-accent) 88%, var(--ain-color-text));
-  background: color-mix(in oklch, var(--ain-color-accent) 12%, transparent);
-}
+.ain-picker__chip--rec { color: var(--ain-color-text); }
 .ain-wiz__chip--tested,
-.ain-picker__chip--tested { /* inherits the neutral base chip tone */ }
+.ain-picker__chip--tested { color: var(--ain-color-text-muted); }
 .ain-wiz__chip--warn,
-.ain-picker__chip--warn {
-  color: color-mix(in oklch, var(--ain-color-danger) 80%, var(--ain-color-text));
-  background: color-mix(in oklch, var(--ain-color-danger) 10%, transparent);
-}
+.ain-picker__chip--warn { --ain-chip-square: var(--ain-color-warning); color: var(--ain-color-text); }
 
 /* The provider header: the clickable hit area plus, when connected, an
    integrated trailing Disconnect cell — a split row, not a floating pill. */
@@ -1430,12 +1379,12 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 
 /* Disconnect — a quiet trailing cell, divided from the row by one hairline so
    it reads as part of the row (like a split button), never a bolted-on box.
-   No fill, no border-box: it obeys the "tints, never fills" law of study 02. */
+   No fill, no border-box. */
 .ain-wiz__provider-disconnect {
   flex: none; align-self: stretch;
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   padding: 0 16px; cursor: pointer;
-  font-family: var(--ain-font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  font-family: var(--ain-font-body); font-size: 12px;
   color: var(--ain-color-text-muted); background: transparent;
   border: 0; border-left: 1px solid var(--ain-color-border);
   transition: color .12s, background .12s;
@@ -1443,25 +1392,24 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-wiz__provider-disconnect-icon { width: 14px; height: 14px; }
 .ain-wiz__provider-disconnect-label { line-height: 1; }
 .ain-wiz__provider-disconnect:hover:not(:disabled) {
-  color: color-mix(in oklch, var(--ain-color-danger) 82%, var(--ain-color-text));
-  background: color-mix(in oklch, var(--ain-color-danger) 7%, transparent);
+  color: var(--ain-color-danger);
 }
 .ain-wiz__provider-disconnect:focus-visible {
-  outline: 2px solid var(--ain-color-accent); outline-offset: -2px;
+  outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px;
 }
 .ain-wiz__provider-disconnect:disabled { opacity: .6; cursor: default; }
 
 /* Fields */
 .ain-wiz__field { display: flex; flex-direction: column; gap: 6px; }
-.ain-wiz__label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ain-color-text-muted); }
+.ain-wiz__label { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-wiz__input, .ain-wiz__select {
   width: 100%; padding: 10px 12px; font: inherit; font-size: 14px;
   color: var(--ain-color-text); background: var(--ain-color-surface-raised);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
 }
-/* Focus is a tint ring, not a halo (study 02: nothing glows). */
+/* Focus = ink border + the 2px ink outline (nothing glows). */
 .ain-wiz__input:focus, .ain-wiz__select:focus {
-  outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: 1px;
+  border-color: var(--ain-color-text); outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px;
 }
 .ain-wiz__field-row { display: flex; gap: 8px; align-items: stretch; }
 .ain-wiz__field-row .ain-wiz__input { flex: 1; min-width: 0; }
@@ -1473,23 +1421,20 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-wiz__profiles { display: flex; flex-direction: column; gap: 8px; text-align: left; }
 .ain-wiz__segmented {
   display: flex; padding: 3px; gap: 3px;
-  background: var(--ain-color-surface-raised);
+  background: transparent;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
 }
 .ain-wiz__segment {
   flex: 1; padding: 8px 10px; font: inherit; font-size: 13px; font-weight: 500;
   color: var(--ain-color-text-muted); background: transparent;
-  border: 0; border-radius: calc(var(--ain-radius-md) - 3px); cursor: pointer;
+  border: 0; border-radius: 0; cursor: pointer;
 }
 .ain-wiz__segment:hover { color: var(--ain-color-text); }
 .ain-wiz__segment--on {
-  color: var(--ain-color-text); font-weight: 600;
-  background: var(--ain-color-surface);
-  box-shadow: inset 0 0 0 1px var(--ain-color-border);
+  color: var(--ain-color-on-accent); font-weight: 500;
+  background: var(--ain-color-accent);
 }
-.ain-wiz__segment:focus-visible {
-  outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: 1px;
-}
+.ain-wiz__segment:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-wiz__profile-desc { margin: 0; font-size: 12px; color: var(--ain-color-text-muted); min-height: 1.4em; }
 
 /* Auto mode prints no models at all (see the wizard docblock) — the read-only
@@ -1506,14 +1451,16 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   color: var(--ain-color-text-muted); background: none; border: 0; cursor: pointer;
 }
 .ain-wiz__disclosure:hover { color: var(--ain-color-text); }
+.ain-wiz__disclosure:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 
 /* Where the suggestions came from + the explicit refresh. */
 .ain-wiz__provenance { text-align: left; }
 .ain-wiz__linkbtn {
-  padding: 0; font: inherit; font-size: inherit; color: var(--ain-color-success);
+  padding: 0; font: inherit; font-size: inherit; color: var(--ain-color-text);
   background: none; border: 0; text-decoration: underline; cursor: pointer;
+  text-decoration-color: var(--ain-color-border-strong);
 }
-.ain-wiz__linkbtn:disabled { opacity: .6; cursor: default; text-decoration: none; }
+.ain-wiz__linkbtn:disabled { color: var(--ain-color-text-faint); cursor: default; text-decoration: none; }
 .ain-wiz__provenance-note { color: var(--ain-color-text); }
 
 /* "This site narrows which models may be chosen." A fact about the install, so
@@ -1530,9 +1477,10 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-wiz__roles { display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .ain-wiz__role { display: flex; flex-direction: column; gap: 6px; }
 .ain-wiz__role-head { display: flex; align-items: center; gap: 8px; }
-.ain-wiz__role-name { font-weight: 600; font-size: 14px; }
+.ain-wiz__role-name { font-weight: 500; font-size: 14px; }
 .ain-wiz__role-desc { font-size: 12px; color: var(--ain-color-text-muted); }
-.ain-wiz__role--empty { opacity: .6; }
+.ain-wiz__role--empty { color: var(--ain-color-text-faint); }
+.ain-wiz__role--empty .ain-wiz__role-desc { color: var(--ain-color-text-faint); }
 
 /* Model picker — a custom listbox (replaces the native <select>) so each option
    can carry a provider mark + a quality chip, with recommended pinned on top. */
@@ -1544,9 +1492,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   color: var(--ain-color-text); background: var(--ain-color-surface-raised);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
 }
-.ain-picker__trigger:focus-visible {
-  outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: 1px;
-}
+.ain-picker__trigger:focus-visible { border-color: var(--ain-color-text); outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-picker__value { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
 .ain-picker__value-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ain-picker__value-label--empty { color: var(--ain-color-text-muted); }
@@ -1557,39 +1503,38 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0;
   margin: 0; padding: 4px; list-style: none; max-height: 280px; overflow-y: auto;
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
-  border-radius: var(--ain-radius-md); box-shadow: var(--ain-color-shadow, 0 8px 24px rgba(0,0,0,.18));
+  border-radius: var(--ain-radius-md);
+  box-shadow: 0 26px 46px -22px color-mix(in oklch, var(--ain-color-shadow) 50%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
 }
 .ain-picker__list:focus-visible { outline: none; }
-/* Provider group heading — a mono whisper divider. */
+/* Provider group heading — a sentence-case label over a hairline. */
 .ain-picker__group {
-  font-family: var(--ain-font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--ain-color-text-muted); padding: 8px 8px 4px; margin-top: 2px;
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted); padding: 8px 8px 4px; margin-top: 2px;
   border-top: 1px solid var(--ain-color-border);
 }
 .ain-picker__group:first-child { border-top: 0; margin-top: 0; }
 /* A selectable row. */
 .ain-picker__option {
   display: flex; align-items: center; gap: 8px; cursor: pointer;
-  padding: 7px 8px; border-radius: calc(var(--ain-radius-md) - 2px); font-size: 13px;
+  padding: 7px 8px; border-radius: 0; font-size: 13px;
 }
-.ain-picker__option--active { background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent); }
-.ain-picker__option[aria-selected="true"] { font-weight: 600; }
+.ain-picker__option--active { background: var(--ain-color-surface-raised); }
+.ain-picker__option[aria-selected="true"] { font-weight: 500; }
 .ain-picker__option-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ain-picker__check { flex: none; width: 14px; height: 14px; color: var(--ain-color-accent); }
 /* The provider mark, on the always-white badge (matches the connect step). */
 .ain-picker__mark {
   flex: none; display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; font-size: 12px;
-  background: #fff; border: 1px solid var(--ain-color-border); border-radius: 3px;
+  background: #fff; border: 1px solid var(--ain-color-border); border-radius: 0;
 }
 .ain-picker__mark--empty { background: transparent; border-color: transparent; }
 .ain-picker__mark-svg { width: 1em; height: 1em; }
-/* Quality chip beside an option — same whisper vocabulary as the wizard chips. */
+/* Quality chip beside an option — same state-line vocabulary as the wizard chips. */
 .ain-picker__chip {
-  flex: none; display: inline-flex; align-items: center; gap: 3px;
-  font-family: var(--ain-font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
-  padding: 2px 6px; border-radius: 999px;
-  color: var(--ain-color-text-muted); background: color-mix(in oklch, var(--ain-color-text-muted) 8%, transparent);
+  flex: none; display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--ain-font-body); font-size: 12px; font-weight: 400;
+  padding: 0; color: var(--ain-color-text-muted);
 }
 .ain-picker__chip-icon { width: 8px; height: 8px; }
 
@@ -1599,7 +1544,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-wiz__actions .ain-topbtn--primary { margin-left: auto; }
 .ain-wiz__spin { width: 14px; height: 14px; animation: ain-spin 1s linear infinite; }
 .ain-wiz__foot { margin: 0; font-size: 12px; color: var(--ain-color-text-muted); }
-.ain-wiz__foot a { color: var(--ain-color-success); text-decoration: underline; }
+.ain-wiz__foot a { color: var(--ain-color-text); text-decoration: underline; text-decoration-color: var(--ain-color-border-strong); }
 
 @media (prefers-reduced-motion: reduce) {
   .ain-wiz__card { animation: none; }
@@ -1625,11 +1570,11 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
     position: fixed; top: var(--ain-topbar-height); bottom: 0; left: 0; z-index: 1100;
     width: min(var(--ain-sidebar-width), 85vw); flex-basis: auto;
     border-right: 1px solid var(--ain-color-border);
-    box-shadow: 6px 0 16px -6px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+    box-shadow: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
     transition: transform .2s ease;
   }
-  /* Slide past the hard shadow too, so no 3px strip lingers on the edge. */
-  .ain-sidebar--closed { transform: translateX(calc(-100% - 3px)); }
+  /* Slide past the edge so no strip of the drawer lingers. */
+  .ain-sidebar--closed { transform: translateX(calc(-100% - 3px)); box-shadow: none; }
   .ain-shell__scrim {
     display: block; position: fixed; top: var(--ain-topbar-height); inset: var(--ain-topbar-height) 0 0; z-index: 1050;
     background: color-mix(in oklch, var(--ain-color-shadow) 50%, transparent);
@@ -1667,10 +1612,10 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   position: fixed; top: var(--ain-topbar-height); bottom: 0; left: 0; z-index: 1100;
   width: min(var(--ain-sidebar-width), 85vw); flex-basis: auto;
   border-right: 1px solid var(--ain-color-border);
-  box-shadow: 6px 0 16px -6px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+  box-shadow: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
   transition: transform .2s ease;
 }
-.ain-shell--studio .ain-sidebar--closed { transform: translateX(calc(-100% - 3px)); }
+.ain-shell--studio .ain-sidebar--closed { transform: translateX(calc(-100% - 3px)); box-shadow: none; }
 .ain-shell--studio .ain-shell__scrim {
   display: block; position: fixed; inset: var(--ain-topbar-height) 0 0; z-index: 1050;
   background: color-mix(in oklch, var(--ain-color-shadow) 50%, transparent);
@@ -1709,21 +1654,17 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   padding: 0 8px 0 12px; border-bottom: 1px solid var(--ain-color-border);
   background: var(--ain-color-surface);
 }
-/* Panel label — the console's small pixel section-head ("LIVE PREVIEW",
-   "BRAND STUDIO"). Takes the slack so `actions` sits hard right; truncates
-   rather than growing the bar taller. */
+/* Panel label — a sentence-case section head ("Live preview", "Brand
+   studio"). Takes the slack so `actions` sits hard right; truncates rather
+   than growing the bar taller. */
 .ain-panelbar__title {
   margin-right: auto; min-width: 0;
-  font-family: var(--ain-font-mono); font-size: 9.5px; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--ain-color-text);
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* Chat's title is the conversation name — prose, not a label: legible body
-   type, no caps, dimmed so the New button stays the bar's focal point. */
-.ain-panelbar__title--convo {
-  font-family: var(--ain-font-body); font-size: 12px; font-weight: 500;
-  letter-spacing: 0; text-transform: none; color: var(--ain-color-text-muted);
-}
+/* Chat's title is the conversation name — prose, not a label, a touch
+   smaller so the New button stays the bar's focal point. */
+.ain-panelbar__title--convo { font-size: 12px; }
 .ain-panelbar__actions { display: flex; align-items: center; gap: 6px; flex: none; }
 
 .ain-studio__hint { padding: 14px 12px; font-size: 13px; color: var(--ain-color-text-muted); }
@@ -1737,7 +1678,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   background: var(--ain-color-surface-raised);
 }
 .ain-studio__langnote[data-mode="asymmetric"] {
-  background: color-mix(in oklch, var(--ain-color-accent) 10%, var(--ain-color-surface-raised));
+  background: var(--ain-color-accent-tint);
+  box-shadow: inset 2px 0 0 var(--ain-color-accent);
   color: var(--ain-color-text);
 }
 .ain-studio__langnotetxt { flex: 1 1 auto; min-width: 0; }
@@ -1750,46 +1692,35 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   padding: 8px 12px; border-bottom: 1px solid var(--ain-color-border);
   background: var(--ain-color-surface-raised);
 }
-/* Editorial status = a WHISPER chip (Atelier study 02, Plate 5): saturated
-   filled pills are Bootstrap's voice, and on a listing they out-shout the one
-   pigment. State speaks as a tint — ~10% fill, ~42% border, state-hued ink,
-   mono small caps at REGULAR weight (the spec chip is unbolded; tracking, not
-   weight, carries the label). Draft = neutral; Live = verdigris; Needs review =
-   ochre-ish accent tint; Archived = quiet neutral (dormant, not dangerous). */
+/* Editorial status = a STATE LINE, not a pill: ink text led by an 8px square
+   in the state colour — no fill, no border, no radius. Draft = a hollow
+   (text-muted outline) square; Live = moss; Needs review / pending = ochre;
+   Archived = a hollow faint square (dormant, not dangerous). */
 .ain-studio__statebadge {
-  flex: none; display: inline-flex; align-items: center;
-  padding: 2px 8px; border-radius: 999px;
-  font-family: var(--ain-font-mono, ui-monospace, "SF Mono", Menlo, monospace);
-  font-size: 10px; font-weight: 400; letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ain-color-text-muted);
-  border: 1px solid var(--ain-color-border);
-  background: color-mix(in oklch, var(--ain-color-text-muted) 8%, transparent);
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  padding: 0; font-family: var(--ain-font-body); font-size: 12px; font-weight: 400;
+  color: var(--ain-color-text);
 }
-.ain-studio__statebadge[data-state="published"] {
-  color: color-mix(in oklch, var(--ain-color-success) 85%, var(--ain-color-text));
-  border-color: color-mix(in oklch, var(--ain-color-success) 42%, transparent);
-  background: color-mix(in oklch, var(--ain-color-success) 10%, transparent);
+.ain-studio__statebadge::before {
+  content: ""; flex: none; width: 8px; height: 8px;
+  box-shadow: inset 0 0 0 1px var(--ain-color-text-muted);
 }
-.ain-studio__statebadge[data-state="needs_review"],
-.ain-studio__statebadge[data-pending] {
-  color: color-mix(in oklch, var(--ain-color-accent) 85%, var(--ain-color-text));
-  border-color: color-mix(in oklch, var(--ain-color-accent) 42%, transparent);
-  background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
-}
-.ain-studio__statebadge[data-state="archived"] {
-  color: var(--ain-color-text-muted);
-  border-color: var(--ain-color-border);
-  background: transparent;
-}
-.ain-studio__statebadge-sub { font-weight: 400; text-transform: none; letter-spacing: 0; opacity: .82; }
+.ain-studio__statebadge[data-state="published"]::before { background: var(--ain-color-success); box-shadow: none; }
+.ain-studio__statebadge[data-state="needs_review"]::before,
+.ain-studio__statebadge[data-pending]::before { background: var(--ain-color-warning); box-shadow: none; }
+.ain-studio__statebadge[data-state="archived"] { color: var(--ain-color-text-muted); }
+.ain-studio__statebadge[data-state="archived"]::before { box-shadow: inset 0 0 0 1px var(--ain-color-text-faint); }
+.ain-studio__statebadge-sub { font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-studio__modnote { flex: 1 1 auto; min-width: 0; font-size: 12px; color: var(--ain-color-text-muted); }
 
-/* Stale-write conflict banner (HTTP 409) — accented, action-bearing. */
+/* Stale-write conflict / editor-lock banner (HTTP 409, "Take over") — needs
+   attention but is not an error, so it takes the ochre WAITING bar (0501: red
+   only means something is wrong). */
 .ain-studio__conflict {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 10px 12px; border-bottom: 1px solid var(--ain-color-border);
-  background: color-mix(in oklch, var(--ain-color-danger) 10%, var(--ain-color-surface-raised));
+  background: var(--ain-color-surface-raised);
+  box-shadow: inset 2px 0 0 var(--ain-color-warning);
 }
 .ain-studio__conflictmsg { flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--ain-color-text); }
 .ain-studio__conflict .ain-studio__confirmbtns { flex: none; }
@@ -1800,7 +1731,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   display: flex; flex-direction: column; flex: none;
   max-height: 240px; overflow-y: auto;
   border-bottom: 1px solid var(--ain-color-border);
-  background: var(--ain-color-surface-raised);
+  background: var(--ain-color-surface);
 }
 .ain-pagepick__item {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
@@ -1809,7 +1740,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   background: none; border: none; border-bottom: 1px solid var(--ain-color-border);
 }
 .ain-pagepick__item:last-child { border-bottom: none; }
-.ain-pagepick__item:hover { background: color-mix(in oklch, var(--ain-color-accent) 14%, var(--ain-color-surface-raised)); }
+.ain-pagepick__item:hover { background: var(--ain-color-surface-raised); }
+.ain-pagepick__item:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 .ain-pagepick__item[data-current] { color: var(--ain-color-text-muted); cursor: default; }
 .ain-pagepick__item svg { width: 13px; height: 13px; color: var(--ain-color-text-muted); flex: none; }
 .ain-pagepick__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1822,9 +1754,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-dtable--empty { padding: 12px 14px; font-size: 13px; color: var(--ain-color-text-muted); }
 .ain-dtable__table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .ain-dtable__table th {
-  text-align: left; font-family: var(--ain-font-display);
-  font-size: 9px; letter-spacing: .04em; text-transform: uppercase; color: var(--ain-color-text-muted);
-  padding: 8px 12px; border-bottom: 1px solid var(--ain-color-border); font-weight: 600;
+  text-align: left; font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
+  padding: 8px 12px; border-bottom: 1px solid var(--ain-color-border);
 }
 .ain-dtable__table td {
   padding: 8px 12px; border-bottom: 1px solid var(--ain-color-border); color: var(--ain-color-text);
@@ -1835,7 +1766,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-dtable__row[data-interactive]:focus-visible td {
   background: var(--ain-color-surface-raised);
 }
-.ain-dtable__row[data-interactive]:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: -2px; }
+.ain-dtable__row[data-interactive]:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 .ain-dtable__actioncol { width: 1%; }
 .ain-dtable__actioncell { text-align: right; white-space: nowrap; }
 .ain-dtable__link { color: inherit; text-decoration: none; font-weight: 500; }
@@ -1852,11 +1783,13 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 /* Pager rides the kit (.ain-topbtn--sm); only the metric tweak stays. */
 .ain-dtable__pagebtn { font-size: 12px; }
 
-/* Inline confirm shown when a discard would clear an unpublished page. */
+/* Inline confirm shown when a discard would clear an unpublished page — a
+   destructive step: a 2px brick bar, never a red fill. */
 .ain-studio__confirm {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   padding: 9px 12px; border-bottom: 1px solid var(--ain-color-border);
-  background: color-mix(in oklch, var(--ain-color-danger) 12%, var(--ain-color-surface));
+  background: var(--ain-color-surface);
+  box-shadow: inset 2px 0 0 var(--ain-color-danger);
 }
 .ain-studio__confirmmsg { font-size: 12.5px; color: var(--ain-color-text); }
 .ain-studio__confirmbtns { display: flex; align-items: center; gap: 6px; }
@@ -1882,10 +1815,10 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-field__swatch {
   flex: none; width: 28px; height: 28px; padding: 0; cursor: pointer;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: none;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
-  transition: box-shadow .08s, transform .08s;
+  transition: border-color .08s;
 }
-.ain-field__swatch:active { transform: translateY(1px); box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent); }
+.ain-field__swatch:hover { border-color: var(--ain-color-text); }
+.ain-field__swatch:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 
 
 /* The page TYPE, stated as a read-only fact in the Page group (fixed at
@@ -1930,13 +1863,13 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 
 .ain-field__ref {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 11px; color: var(--ain-color-text-muted); font-family: ui-monospace, monospace;
+  font-size: 11px; color: var(--ain-color-text-muted); font-family: var(--ain-font-mono);
 }
 /* The colour value as authored (oklch()/rgb()/#hex, or a var() reference) shown
    beside/under its swatch; what it resolves to is on the control's hover title. */
 .ain-field__name {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 11px; color: var(--ain-color-text-muted); font-family: ui-monospace, monospace;
+  font-size: 11px; color: var(--ain-color-text-muted); font-family: var(--ain-font-mono);
 }
 
 /* Stacked colour control (paired row): swatch over its value label. The value
@@ -1955,7 +1888,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-preview { flex: 2 1 0; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
 /* Preview & editor heads use the shared `.ain-panelbar` (see above). */
-.ain-preview__open { color: var(--ain-color-success); text-decoration: none; font-size: 11px; }
+.ain-preview__open { color: var(--ain-color-text-muted); text-decoration: none; font-size: 12px; }
+.ain-preview__open:hover { color: var(--ain-color-text); }
 .ain-preview__open:hover { text-decoration: underline; }
 /* Double-buffered preview: layers stack in this box; the incoming one fades in
    on top of the current one, which is then dropped — no reload blink. */
@@ -1983,25 +1917,25 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-preview__pins { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .ain-preview__pin {
   position: absolute; right: 12px; pointer-events: auto; cursor: pointer;
-  height: 22px; padding: 0 8px; border-radius: 4px;
-  font-family: var(--ain-font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+  height: 22px; padding: 0 8px; border-radius: 0;
+  font-family: var(--ain-font-body); font-size: 12px;
   color: var(--ain-color-text); background: var(--ain-color-surface);
   border: 1px solid var(--ain-color-border); border-left-width: 3px;
-  box-shadow: 0 3px 10px -3px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
 }
 .ain-preview__pin[data-tone="fail"] { border-left-color: var(--ain-color-danger); color: var(--ain-color-danger); }
 .ain-preview__pin[data-tone="warn"] { border-left-color: var(--ain-color-warning); color: var(--ain-color-warning); }
 .ain-preview__pin[data-tone="fixed"] { border-left-color: var(--ain-color-success); color: var(--ain-color-success); }
 .ain-preview__pin[data-tone="changed"] { border-left-color: var(--ain-color-accent); }
 .ain-preview__pin:hover { background: var(--ain-color-surface-raised); }
+.ain-preview__pin:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 
-/* Indeterminate progress line under the bar: a jade sliver sweeping across a
-   faint track, shown only while the preview is updating. */
+/* Indeterminate progress line under the bar: an ink sliver sweeping across
+   the well, shown only while the preview is updating. */
 .ain-preview__progress { flex: none; height: 2px; overflow: hidden; background: transparent; }
-.ain-preview__progress.is-active { background: color-mix(in srgb, var(--ain-color-success) 16%, transparent); }
+.ain-preview__progress.is-active { background: var(--ain-color-accent-tint); }
 .ain-preview__progress.is-active::after {
   content: ""; display: block; height: 100%; width: 35%;
-  background: var(--ain-color-success); border-radius: 999px;
+  background: var(--ain-color-accent); border-radius: 0;
   animation: ain-preview-sweep 1.1s ease-in-out infinite;
 }
 @keyframes ain-preview-sweep {
@@ -2015,28 +1949,27 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 
 /* --- before/after compare ("swipe slider"): saved brand vs unsaved draft --- */
 /* The Compare toggle reuses the kit button (.ain-topbtn--sm); arming it adds
-   .ain-topbtn--on (the accent-TINT armed state — a toggle never wears the
+   .ain-topbtn--on (the well + ink-rule armed state — a toggle never wears the
    primary fill), and .ain-btn:disabled dims it when there's nothing to compare
    — so no bespoke button styling is needed.
    The divider/handle/tags below are operator FURNITURE floating over the brand
-   page, so they wear console-chrome tokens (surface + hairline + soft lift +
-   the one dominant accent), never the brand's own tokens — same reasoning as
+   page, so they wear console-chrome tokens (surface + hairline + the ink
+   accent), never the brand's own tokens — same reasoning as
    the injected preview scrollbar. */
 
 /* Side tags: quiet chips so it's never ambiguous which half is which. */
 .ain-preview__tag {
   position: absolute; top: 8px; z-index: 4; pointer-events: none;
-  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px;
   padding: 2px 6px; color: var(--ain-color-text-muted);
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
-  border-radius: var(--ain-radius-md); box-shadow: 0 1px 4px -1px color-mix(in oklch, var(--ain-color-shadow) 35%, transparent);
+  border-radius: var(--ain-radius-md);
 }
 .ain-preview__tag--saved { left: 8px; }
 .ain-preview__tag--draft { right: 8px; }
 
 /* The divider line + grab handle. `left` is set inline from the slider state.
-   The handle is the compare tool's active control, so it wears the accent; it
-   settles into the paper on grab like every other kit control. */
+   The handle is the compare tool's active control, so it wears the ink accent. */
 .ain-preview__divider {
   position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px;
   background: var(--ain-color-accent); z-index: 4; pointer-events: none;
@@ -2047,13 +1980,13 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; line-height: 1; color: var(--ain-color-on-accent);
   background: var(--ain-color-accent); border: 1px solid transparent;
-  border-radius: var(--ain-radius-md); box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  border-radius: var(--ain-radius-md);
   cursor: ew-resize; pointer-events: auto; touch-action: none;
-  transition: box-shadow .08s, transform .08s, background .12s;
+  transition: background .12s;
 }
-.ain-preview__handle:hover { background: color-mix(in oklch, var(--ain-color-accent) 82%, var(--ain-color-text)); }
-.ain-preview__handle:active { transform: translate(-50%, -50%) translateY(1px); box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent); }
-.ain-preview__handle:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; }
+.ain-preview__handle:hover,
+.ain-preview__handle:active { background: var(--ain-color-accent-hover); }
+.ain-preview__handle:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 /* Captures pointer moves across both iframes while dragging (iframes otherwise
    eat the events and the drag stalls at the first frame edge). */
 .ain-preview__overlay { position: absolute; inset: 0; z-index: 5; cursor: ew-resize; touch-action: none; }
@@ -2086,6 +2019,11 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 }
 .ain-lifecycle__state { white-space: nowrap; }
 .ain-lifecycle__split { display: inline-flex; }
+/* Publish disabled but the caret still offers other actions: the caret drops to
+   the secondary voice so an ink block never sits beside a disabled primary. */
+.ain-lifecycle__split > .ain-btn:first-child:disabled + .ain-btn:not(:disabled) {
+  background: transparent; border-color: var(--ain-color-border); color: var(--ain-color-text);
+}
 .ain-lifecycle__split > .ain-btn:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .ain-lifecycle__split > .ain-btn + .ain-btn {
   border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: 1px; padding-inline: 7px;
@@ -2102,8 +2040,9 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 }
 .ain-studio-actions__dirty {
   display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
-  font-size: 11px; font-weight: 600; line-height: 1; color: var(--ain-color-warning);
-  background: color-mix(in oklch, var(--ain-color-warning) 15%, transparent); border-radius: 999px;
+  font-size: 11px; font-weight: 500; line-height: 1; color: var(--ain-color-text);
+  background: transparent; border-radius: 0;
+  box-shadow: inset 0 0 0 1px var(--ain-color-warning);
 }
 /* Shown only when the rail is a sheet (sheet breakpoints turn these on). */
 .ain-topbar__edittoggle,        /* reveal the rail */
@@ -2129,7 +2068,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   .ain-shell--studio .ain-studio__rail {
     position: absolute; top: 0; right: 0; bottom: 0; z-index: 1090;
     flex: none; width: 360px; max-width: 86%;
-    box-shadow: -6px 0 16px -6px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+    box-shadow: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
     transform: translateX(calc(100% + 3px)); transition: transform .22s ease;
   }
   .ain-shell--studio[data-studio-edit="open"] .ain-studio__rail { transform: none; }
@@ -2163,7 +2102,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   .ain-shell--studio .ain-viewport {
     position: absolute; left: 0; right: 0; bottom: 100%; flex: none; z-index: 1086;
     height: 62vh; padding: 16px 12px 10px; background: var(--ain-color-bg);
-    border-top: 1px solid var(--ain-color-border); box-shadow: 0 -6px 16px -6px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+    border-top: 1px solid var(--ain-color-border);
+    box-shadow: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
     transform: translateY(110%); opacity: 0; pointer-events: none;
     transition: transform .24s ease, opacity .18s ease;
   }
@@ -2174,7 +2114,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
     position: absolute; left: 0; right: 0; bottom: 0; top: auto; z-index: 1090;
     flex: none; width: auto; max-width: none; height: 78vh;
     border-left: 0; border-top: 1px solid var(--ain-color-border);
-    box-shadow: 0 -6px 16px -6px color-mix(in oklch, var(--ain-color-shadow) 45%, transparent);
+    box-shadow: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
     transform: translateY(100%); transition: transform .24s ease;
   }
   .ain-shell--studio[data-studio-edit="open"] .ain-studio__rail { transform: none; }
@@ -2197,10 +2137,10 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
 .ain-browser__bar .ain-seg__btn { flex: none; padding: 5px 12px; }
 .ain-browser__new { flex: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .ain-browser__new svg { width: 14px; height: 14px; }
-/* Active filters are visible: a mono result count under the toolbar. */
+/* Active filters are visible: a result count under the toolbar. */
 .ain-browser__count {
   flex: none; margin-top: -4px;
-  font-family: var(--ain-font-mono); font-size: 10.5px; letter-spacing: .02em;
+  font-family: var(--ain-font-body); font-size: 12px;
   color: var(--ain-color-text-muted);
 }
 /* The LEDGER (study 02, Plate 10): all rows share ONE panel with hairline
@@ -2210,7 +2150,6 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   display: block;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   background: var(--ain-color-surface);
-  box-shadow: 0 3px 10px -3px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent);
 }
 .ain-browser__list > li + li { border-top: 1px solid var(--ain-color-border); }
 .ain-browser__row {
@@ -2219,20 +2158,20 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-accent); out
   border: 0; background: transparent; color: var(--ain-color-text); font: inherit;
 }
 .ain-browser__row:hover { background: var(--ain-color-surface-raised); }
-.ain-browser__row[data-current] { background: color-mix(in oklch, var(--ain-color-accent) 8%, transparent); cursor: default; }
-.ain-browser__row:focus-visible { outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: -3px; }
+.ain-browser__row[data-current] { background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent); cursor: default; }
+.ain-browser__row:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 /* Title over its mono fact line (path · section count) — what operators scan. */
 .ain-browser__cell { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.ain-browser__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: 13.5px; }
+.ain-browser__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: 13.5px; }
 .ain-browser__facts {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--ain-font-mono); font-size: 10.5px; letter-spacing: .01em;
+  font-family: var(--ain-font-mono); font-size: 10.5px;
   color: var(--ain-color-text-faint);
 }
 /* Bare tabular time — "Edited" is implied by the column. */
 .ain-browser__changed {
   flex: none; min-width: 34px; text-align: right;
-  font-family: var(--ain-font-mono); font-size: 11px; font-variant-numeric: tabular-nums;
+  font-family: var(--ain-font-body); font-size: 12px; font-variant-numeric: tabular-nums;
   color: var(--ain-color-text-faint); white-space: nowrap;
 }
 /* The editorial status badge reuses the canonical .ain-studio__statebadge so the
@@ -2256,8 +2195,8 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-studio__count {
   margin-left: 6px; padding: 0 5px; font-family: var(--ain-font-body);
   font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: 0;
-  color: var(--ain-color-text-muted); background: var(--ain-color-bg);
-  border: 1px solid var(--ain-color-border); border-radius: 999px;
+  color: var(--ain-color-text-muted); background: transparent;
+  border: 1px solid var(--ain-color-border); border-radius: 0;
 }
 .ain-studio__allbtn {
   margin: 0; padding: 2px 4px; border: 0; background: none; cursor: pointer;
@@ -2300,10 +2239,11 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   background: var(--ain-color-surface-raised); color: var(--ain-color-text-faint);
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent); transition: box-shadow .08s, transform .08s;
+  transition: border-color .08s;
 }
-.ain-media__thumb:active { transform: translateY(1px); box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent); }
-.ain-media__thumb:disabled { cursor: default; opacity: .6; box-shadow: none; }
+.ain-media__thumb:not(:disabled):hover { border-color: var(--ain-color-text); }
+.ain-media__thumb:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
+.ain-media__thumb:disabled { cursor: default; opacity: .6; }
 .ain-media__thumb img { width: 100%; height: 100%; object-fit: cover; }
 .ain-media__thumbicon { width: 18px; height: 18px; }
 .ain-media__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
@@ -2313,32 +2253,33 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 }
 .ain-media__btns { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 
-/* Unified reference field: the derived description, status pill + manual-entry
+/* Unified reference field: the derived description, status line + manual-entry
    token input shared by every reference type (media / node / block). */
 .ain-ref__desc {
   font-size: 11px; color: var(--ain-color-text-faint);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ain-ref__status {
-  margin-left: 6px; padding: 1px 5px; border-radius: 999px;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
-  background: color-mix(in oklch, var(--ain-color-text) 6%, transparent); color: var(--ain-color-danger);
+  margin-left: 6px; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--ain-color-text);
 }
+/* A broken reference is an error: the brick square says so. */
+.ain-ref__status::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--ain-color-danger); }
 .ain-ref__token {
   margin-top: 6px; width: 100%;
   font-family: var(--ain-font-mono); font-size: 11px;
   color: var(--ain-color-text-muted);
 }
-/* A set token collapses to a copyable mono chip (Law 13) — borderless neutral
-   tint, 4px radius, same recipe as the a11y whisper chip. Copy + Edit stay
+/* A set token collapses to a copyable mono chip (Law 13) — borderless, the
+   well, square. Copy + Edit stay
    hover-quiet (Plate 10), so the row reads as the token first. */
 .ain-ref__tokenrow { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .ain-ref__chip {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  padding: 2px 8px; border-radius: 4px;
-  font-family: var(--ain-font-mono); font-size: 11px; letter-spacing: .02em;
+  padding: 2px 8px; border-radius: 0;
+  font-family: var(--ain-font-mono); font-size: 11px;
   color: var(--ain-color-text-muted);
-  background: color-mix(in oklch, var(--ain-color-text) 6%, transparent);
+  background: var(--ain-color-surface-raised);
 }
 .ain-ref__tokenrow .ain-ref__copy,
 .ain-ref__tokenrow .ain-ref__edittoken { flex: none; opacity: 0; transition: opacity .12s; }
@@ -2351,7 +2292,7 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-mediapick {
   margin-top: 8px; padding: 8px;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised); box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--ain-color-shadow) 25%, transparent);
+  background: var(--ain-color-surface);
 }
 .ain-mediapick__bar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .ain-mediapick__bar .ain-field__input { flex: 1; }
@@ -2370,12 +2311,13 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
   background: var(--ain-color-bg); transition: border-color .12s;
 }
 .ain-mediapick__cell:hover { border-color: var(--ain-color-border-strong); }
+.ain-mediapick__cell:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-mediapick__cell[data-current] { outline: 2px solid var(--ain-color-accent); outline-offset: 1px; }
 .ain-mediapick__cell img { width: 100%; height: 100%; object-fit: cover; }
 .ain-mediapick__check {
   position: absolute; top: 2px; right: 2px;
   display: flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; border-radius: 999px;
+  width: 16px; height: 16px; border-radius: 0;
   background: var(--ain-color-accent); color: var(--ain-color-on-accent);
 }
 .ain-mediapick__check svg { width: 11px; height: 11px; }
@@ -2389,9 +2331,7 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-embed__none { color: var(--ain-color-text-faint); }
 .ain-embed__vm { width: auto; min-width: 84px; padding-top: 4px; padding-bottom: 4px; }
 .ain-embed__bundle {
-  margin-left: 6px; padding: 1px 5px; border-radius: 999px;
-  font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
-  background: color-mix(in oklch, var(--ain-color-text) 6%, transparent); color: var(--ain-color-text-faint);
+  margin-left: 6px; font-size: 11px; color: var(--ain-color-text-muted);
 }
 .ain-spin { animation: ain-spin 0.7s linear infinite; }
 
@@ -2409,7 +2349,7 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 }
 .ain-endstate[data-variant="denied"] .ain-endstate__icon,
 .ain-endstate[data-variant="gone"] .ain-endstate__icon { color: var(--ain-color-text-muted); }
-.ain-endstate__title { margin: 2px 0 0; font-size: 16px; font-weight: 650; color: var(--ain-color-text); }
+.ain-endstate__title { margin: 2px 0 0; font-family: var(--ain-font-display); font-size: 16px; font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
 .ain-endstate__body {
   margin: 0; max-width: 42ch; font-size: 13px; line-height: 1.5; color: var(--ain-color-text-muted);
 }
@@ -2424,11 +2364,12 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 /* Overlay mounting: the centred card on the confirm scrim. */
 .ain-endstate--overlay {
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
-  border-radius: var(--ain-radius-md); box-shadow: 0 8px 22px -6px color-mix(in oklch, var(--ain-color-shadow) 42%, transparent);
+  border-radius: var(--ain-radius-md);
+  box-shadow: 0 26px 46px -22px color-mix(in oklch, var(--ain-color-shadow) 50%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
   max-width: 440px; width: calc(100% - 32px); padding: 28px 24px;
 }
 /* One-time "star us" ask under the publish celebration — a quiet strip below the
-   actions, hairline-divided, single cinnabar accent on the star. Never a nag
+   actions, hairline-divided, the ink accent on the star. Never a nag
    (shown once, then dismissed for good; see StarNudge). */
 .ain-starnudge {
   margin-top: 16px; padding-top: 16px; width: 100%;
@@ -2439,31 +2380,30 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
   margin: 0; max-width: 40ch; font-size: 12.5px; line-height: 1.45; color: var(--ain-color-text-muted);
 }
 .ain-starnudge__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
-/* Star CTA is a SECONDARY control (raised paper) — the celebration's one filled
-   cinnabar control is "View page" (Law 01, one fill per view); the star ask
-   carries the pigment only on its icon. */
+/* Star CTA is a SECONDARY control (hairline) — the celebration's one filled
+   control is "View page" (Law 01, one fill per view). */
 .ain-starnudge__cta svg { width: 14px; height: 14px; color: var(--ain-color-accent); }
 .ain-starnudge__dismiss {
   background: none; border: none; cursor: pointer; padding: 6px 10px; font: inherit;
   font-size: 12px; color: var(--ain-color-text-faint); border-radius: var(--ain-radius-md);
 }
 .ain-starnudge__dismiss:hover { color: var(--ain-color-text-muted); }
-.ain-starnudge__dismiss:focus-visible { outline: 2px solid var(--ain-color-accent); outline-offset: 2px; }
+.ain-starnudge__dismiss:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 
 /* ── Presence facet ─────────────────────────────────────────────────────────
    The Content studio's "how this page appears elsewhere" facet: a Body ｜ Presence
    switch in the panel bar, the SEO/metadata editor rail, and the centre canvas's
-   social-unfurl + search-snippet previews. Same flat/neobrutalist idiom as the
-   rest of the console (hard offset shadow, 2px radius, one violet accent). */
+   social-unfurl + search-snippet previews. Same paper/ink idiom as the rest
+   of the console: hairlines, square, no shadows. */
 
 /* presence canvas */
 .ain-presence { flex: 1; min-height: 0; overflow: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 20px; }
 .ain-presence__block { width: 100%; max-width: 560px; margin: 0 auto; }
-.ain-presence__label { margin: 0 0 8px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ain-color-text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ain-presence__tag { font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 10.5px; color: var(--ain-color-text-faint); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); padding: 0 5px; }
+.ain-presence__label { margin: 0 0 8px; font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ain-presence__tag { font-weight: 400; font-size: 11px; color: var(--ain-color-text-faint); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); padding: 0 5px; }
 
 /* social share unfurl card */
-.ain-social { border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); overflow: hidden; box-shadow: 0 5px 14px -4px color-mix(in oklch, var(--ain-color-shadow) 40%, transparent); background: var(--ain-color-surface); }
+.ain-social { border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); overflow: hidden; background: var(--ain-color-surface); }
 .ain-social__img { aspect-ratio: 1.91 / 1; background: var(--ain-color-surface-raised); display: flex; align-items: flex-end; padding: 10px; }
 .ain-social__img img { width: 100%; height: 100%; object-fit: cover; }
 .ain-social__imgnote { font-size: 11px; font-weight: 600; color: var(--ain-color-text-muted); }
@@ -2473,24 +2413,24 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-social__desc { margin: 0; font-size: 12.5px; color: var(--ain-color-text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* search-result snippet */
-.ain-serp { border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); box-shadow: 0 5px 14px -4px color-mix(in oklch, var(--ain-color-shadow) 40%, transparent); background: var(--ain-color-surface); padding: 13px 15px; }
+.ain-serp { border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface); padding: 13px 15px; }
 .ain-serp__site { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.ain-serp__fav { width: 18px; height: 18px; border-radius: 50%; background: var(--ain-color-surface-raised); border: 1px solid var(--ain-color-border); flex: none; }
+.ain-serp__fav { width: 18px; height: 18px; border-radius: 0; background: var(--ain-color-surface-raised); border: 1px solid var(--ain-color-border); flex: none; }
 .ain-serp__id { font-size: 12px; line-height: 1.25; min-width: 0; }
 .ain-serp__id b { display: block; font-weight: 600; color: var(--ain-color-text); }
 .ain-serp__url { color: var(--ain-color-text-muted); font-size: 11px; word-break: break-all; }
-.ain-serp__title { margin: 3px 0; font-size: 18px; font-weight: 500; line-height: 1.3; color: var(--ain-color-success); }
+.ain-serp__title { margin: 3px 0; font-size: 18px; font-weight: 500; line-height: 1.3; color: var(--ain-color-text); }
 .ain-serp__desc { margin: 0; font-size: 12.5px; color: var(--ain-color-text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* in-site teaser card (mirrors the aincient_pages:article-teaser SDC) */
-.ain-teasercard { border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); overflow: hidden; box-shadow: 0 5px 14px -4px color-mix(in oklch, var(--ain-color-shadow) 40%, transparent); background: var(--ain-color-surface); }
+.ain-teasercard { border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); overflow: hidden; background: var(--ain-color-surface); }
 .ain-teasercard__img { aspect-ratio: 16 / 9; background: var(--ain-color-surface-raised); display: flex; align-items: flex-end; padding: 10px; }
 .ain-teasercard__img img { width: 100%; height: 100%; object-fit: cover; }
 .ain-teasercard__imgnote { font-size: 11px; font-weight: 600; color: var(--ain-color-text-muted); }
 .ain-teasercard__body { padding: 14px 16px; border-top: 1px solid var(--ain-color-border); }
 .ain-teasercard__title { margin: 0 0 5px; font-size: 17px; font-weight: 700; line-height: 1.25; color: var(--ain-color-text); }
 .ain-teasercard__desc { margin: 0; font-size: 12.5px; color: var(--ain-color-text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.ain-teasercard__more { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 600; color: var(--ain-color-success); }
+.ain-teasercard__more { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 500; color: var(--ain-color-text); text-decoration: underline; text-decoration-color: var(--ain-color-border-strong); }
 
 @media (max-width: 640px) { .ain-presence { padding: 14px 12px; } }
 
@@ -2507,18 +2447,17 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
   color: var(--ain-color-warning);
   cursor: default;
   vertical-align: middle;
-  border-radius: 4px;
+  border-radius: 0;
 }
 .ain-handson__icon { font-size: 14px; flex: none; }
 .ain-handson__text {
   min-width: 0;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--ain-color-text-muted);
 }
 .ain-handson:focus-visible {
-  outline: 2px solid var(--ain-color-accent);
+  outline: 2px solid var(--ain-color-focus-ring);
   outline-offset: 2px;
   color: var(--ain-color-text);
 }

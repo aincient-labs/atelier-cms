@@ -9,17 +9,17 @@
  * .ain-audit__count. Tokens come from studio-backend.css :root (mirrored from
  * the console) — this file never invents a colour.
  *
- * The laws that bind here (docs/brand.md §10): one cinnabar per screen — the
- * primary action + the active state, nothing else; state is a whisper (tints,
- * never fills); light falls, nothing glows (soft diffuse shadow, tint focus
- * ring); one radius family — 4 chips / 7 controls / 10 cards / 14 panels;
- * buttons advance (lift off the paper), inputs recede (pressed into it).
+ * The laws that bind here — the Monograph app tier (DECISIONS 0500/0501):
+ * paper and ink; ink is the only highlight (the primary fill, the active
+ * rule, the focus outline); red appears only for errors and destructive steps
+ * and is never a fill; 1px hairlines instead of boxes and shadows (a shadow
+ * only on what sits above the page); square corners; IBM Plex Sans, mono only
+ * for machine text; state is an 8px square beside ink text, never a tint.
  */
 
 /* ============================================================ local tasks === */
-/* Primary tabs = the console's flat segmented row: borderless links, the
-   active one takes the 2px cinnabar underline (the screen's active-state
-   accent). Markup classes come from the theme's menu-local-tasks override. */
+/* Primary tabs = the console's flat text row: borderless links, the active
+   one takes the 2px ink underline. Markup classes come from the theme's menu-local-tasks override. */
 
 .sb-content .tabs {
   list-style: none;
@@ -38,8 +38,10 @@
   color: var(--ain-color-text-muted) !important;
   border-bottom: 2px solid transparent;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
+  text-decoration: none;
 }
+.sb-content .tabs a:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .sb-content .tabs a:hover { color: var(--ain-color-text) !important; text-decoration: none; }
 .sb-content .tabs a.is-active,
 .sb-content .tabs li.is-active a {
@@ -65,10 +67,9 @@
 .sb-content .action-links li { margin: 0; }
 
 /* ================================================================ buttons === */
-/* The .ain-topbtn anatomy: raised paper + hairline + soft diffuse shadow is
-   the secondary default; primary is the ONE cinnabar fill per view; hover
-   stays achromatic (the pigment belongs to primary + active, not to every
-   button the pointer crosses). Press settles 1px into the paper.
+/* The .ain-topbtn anatomy: a clear ground + one hairline is the secondary
+   default (hover darkens the hairline to ink); primary is the ONE ink fill per
+   view. No shadows, no press motion.
 
    The bare `button` selector carries a `:where(:not(…))` guard: the element
    selector is the one that reaches into a contrib island's OWN markup (see
@@ -91,49 +92,47 @@
   text-decoration: none;
   font: inherit;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.2;
   color: var(--ain-color-text) !important;
-  background: var(--ain-color-surface);
+  background: transparent;
   border: 1px solid var(--ain-color-border);
   border-radius: var(--ain-radius-md);
   padding: 0.5rem 0.875rem;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
-  transition: border-color 0.12s, background 0.12s, box-shadow 0.08s, transform 0.08s;
+  transition: border-color 0.12s, background 0.12s;
 }
 .sb-content .button:not(:disabled):hover,
 .sb-content button:where(:not(.revision-graph-wrapper *)):not(:disabled):hover,
 .sb-content input[type="submit"]:not(:disabled):hover,
 .sb-content input[type="button"]:not(:disabled):hover {
-  background: var(--ain-color-surface-raised);
+  border-color: var(--ain-color-text);
   text-decoration: none;
 }
-.sb-content .button:not(:disabled):active,
-.sb-content button:where(:not(.revision-graph-wrapper *)):not(:disabled):active,
-.sb-content input[type="submit"]:not(:disabled):active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 3px -1px color-mix(in oklch, var(--ain-color-shadow) 30%, transparent);
-}
-/* Focus = the accent TINT ring — never a glow, never the browser blue. */
+/* Focus = a 2px ink outline — never a glow, never the browser blue. */
 .sb-content .button:focus-visible,
 .sb-content button:where(:not(.revision-graph-wrapper *)):focus-visible,
 .sb-content input[type="submit"]:focus-visible,
 .sb-content .action-links a:focus-visible {
-  outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent);
-  outline-offset: 1px;
+  outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px;
 }
-/* Disabled = dimmed in place: same shape, shadow removed (no dry-firing). */
+/* Disabled = the well + faint ink, same shape (no dry-firing). Doubled
+   classes so it outranks every voice below. */
 .sb-content .button:disabled,
+.sb-content .button.is-disabled,
 .sb-content button:where(:not(.revision-graph-wrapper *)):disabled,
-.sb-content input[type="submit"]:disabled {
+.sb-content input[type="submit"]:disabled,
+.sb-content input[type="submit"].button--primary:disabled,
+.sb-content input[type="submit"].button--danger:disabled {
   cursor: default;
-  opacity: 0.45;
+  background: var(--ain-color-surface-raised);
+  border-color: var(--ain-color-border);
+  color: var(--ain-color-text-faint) !important;
   box-shadow: none;
 }
 
-/* Primary — the one filled cinnabar control per view. `.button-action` is
+/* Primary — the one filled ink control per view. `.button-action` is
    Drupal core's class for local "Add …" actions (e.g. People's "Add user"),
-   which also carries `.button`; it must be styled here as a cinnabar primary,
+   which also carries `.button`; it must be styled here as an ink primary,
    or the generic `.button:hover` (below, specificity 0,4,0) wins over the
    container's `.action-links a:hover` (0,3,1) and repaints the fill to pale
    surface while the text stays near-white — an unreadable hover. */
@@ -149,63 +148,61 @@
 .sb-content input[type="submit"].button--primary:not(:disabled):hover,
 .sb-content .button-action:not(:disabled):hover,
 .sb-content .action-links a:hover {
-  background: color-mix(in oklch, var(--ain-color-accent) 90%, var(--ain-color-text));
-  border-color: color-mix(in oklch, var(--ain-color-accent) 90%, var(--ain-color-text));
+  background: var(--ain-color-accent-hover);
+  border-color: var(--ain-color-accent-hover);
   text-decoration: none;
 }
 
 /* A primary-styled LINK sitting INSIDE a form (contrib settings forms do this —
    a "fetch the data now" link shipped with `button button--primary` in its
-   render array) is a secondary ACTION, not the page's one promise — the cinnabar fill belongs to
-   the real submit ("Save configuration"). Demote it to the raised-paper voice
+   render array) is a secondary ACTION, not the page's one promise — the ink fill belongs to
+   the real submit ("Save configuration"). Demote it to the secondary voice
    so a screen never carries two loud fills (Law 07 "navigation is links"; Law
    08 "one primary per view"). Scoped to `form` so genuine action links stay
-   the page's one cinnabar. */
+   the page's one ink fill. */
 .sb-content form a.button--primary {
-  background: var(--ain-color-surface);
+  background: transparent;
   border-color: var(--ain-color-border);
   color: var(--ain-color-text) !important;
 }
 .sb-content form a.button--primary:not(:disabled):hover {
-  background: var(--ain-color-surface-raised);
-  border-color: var(--ain-color-border);
+  background: transparent;
+  border-color: var(--ain-color-text);
 }
 
-/* Danger — the brick-FILLED voice is the irreversible SUBMIT only: the actual
-   destructive press (delete/cancel confirm buttons). It must never sit beside
-   the cinnabar primary as a second loud warm fill (Law 01 "one pigment, one
-   place"; Law 08 "one primary per view"). */
+/* Danger — the irreversible SUBMIT (delete/cancel confirm buttons): brick
+   text and a brick hairline on a clear ground, NEVER a fill — the fill means
+   one thing, the primary. Hover thickens the rule to 2px (inset, no shift);
+   the explicit hover rule is needed because the generic .button:hover (higher
+   specificity) would otherwise repaint the border to ink. */
 .sb-content input[type="submit"].button--danger,
 .sb-content button.button--danger,
 .sb-content .button.delete {
-  background: var(--ain-color-danger);
+  background: transparent;
   border-color: var(--ain-color-danger);
-  color: var(--ain-color-on-accent) !important;
+  color: var(--ain-color-danger) !important;
 }
-/* Deepen the brick on hover — without this, the generic .button:hover (higher
-   specificity) repaints danger to the pale surface tint, leaving near-white
-   text on a near-white ground. */
 .sb-content input[type="submit"].button--danger:not(:disabled):hover,
 .sb-content button.button--danger:not(:disabled):hover,
 .sb-content .button.delete:not(:disabled):hover {
-  background: color-mix(in oklch, var(--ain-color-danger) 90%, var(--ain-color-text));
-  border-color: color-mix(in oklch, var(--ain-color-danger) 90%, var(--ain-color-text));
+  background: transparent;
+  border-color: var(--ain-color-danger);
+  box-shadow: inset 0 0 0 1px var(--ain-color-danger);
 }
 
 /* A destructive NAVIGATION link (an <a> that routes to a confirm page, e.g.
    "Cancel account" on the account form) takes the QUIET destructive voice —
-   brick ink on paper, no fill (Law 07 "navigation is links"; Law 08 "every
-   other control takes secondary, quiet, or destructive voice"). The fill is
-   earned only on the confirm step, not by the link that leads there. */
+   brick ink, a hairline, no fill (Law 07 "navigation is links") — the same
+   voice as the confirm step, one rule quieter. */
 .sb-content a.button--danger {
   background: transparent;
-  border-color: color-mix(in oklch, var(--ain-color-danger) 40%, var(--ain-color-border));
+  border-color: var(--ain-color-border);
   color: var(--ain-color-danger) !important;
   box-shadow: none;
 }
 .sb-content a.button--danger:not(:disabled):hover {
-  background: color-mix(in oklch, var(--ain-color-danger) 8%, var(--ain-color-surface));
-  border-color: color-mix(in oklch, var(--ain-color-danger) 55%, var(--ain-color-border));
+  background: transparent;
+  border-color: var(--ain-color-danger);
 }
 
 .sb-content .button--small { font-size: 0.8125rem; padding: 0.3125rem 0.625rem; }
@@ -214,20 +211,19 @@
 
 .sb-content .form-item { margin-block: 0 1.25rem; }
 
-/* Field labels are the kit's whisper eyebrow: mono, uppercase, dim — and
-   block-level, so the label sits above its control instead of squishing
-   against it. */
+/* Field labels: sentence case, body type, muted — and block-level, so the
+   label sits above its control instead of squishing against it. A fieldset
+   legend is a group heading, one weight up. */
 .sb-content .form-item > label,
 .sb-content .fieldset-legend {
   display: block;
-  font-family: var(--ain-font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-family: var(--ain-font-body);
+  font-size: 13px;
+  font-weight: 400;
   color: var(--ain-color-text-muted);
   margin: 0 0 6px;
 }
+.sb-content .fieldset-legend { font-weight: 500; }
 /* Option labels (radios/checkboxes) are body text, not eyebrows. */
 .sb-content label.option {
   display: inline;
@@ -254,8 +250,8 @@
   max-width: 46rem;
 }
 
-/* Inputs recede — raised paper with the hairline + inset shade doing the
-   work (the console's .ain-field__input recipe); focus = tint ring. */
+/* Inputs recede — the well + one hairline (the console's .ain-field__input
+   recipe); focus = ink border + the 2px ink outline. */
 .sb-content input[type="text"],
 .sb-content input[type="email"],
 .sb-content input[type="password"],
@@ -269,12 +265,11 @@
 .sb-content textarea {
   font: inherit;
   color: var(--ain-color-text);
-  background: var(--ain-color-surface);
+  background: var(--ain-color-surface-raised);
   border: 1px solid var(--ain-color-border);
   border-radius: var(--ain-radius-md);
   padding: 0.5rem 0.625rem;
   max-width: 100%;
-  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
   transition: border-color 0.12s, background 0.12s;
 }
 .sb-content textarea { line-height: 1.5; }
@@ -283,18 +278,17 @@
 .sb-content input[type="password"]:hover,
 .sb-content input[type="search"]:hover,
 .sb-content select:hover,
-.sb-content textarea:hover { background: var(--ain-color-surface-raised); }
+.sb-content textarea:hover { border-color: var(--ain-color-border-strong); }
 .sb-content input:focus,
 .sb-content select:focus,
 .sb-content textarea:focus {
-  outline: none;
-  border-color: color-mix(in oklch, var(--ain-color-accent) 40%, transparent);
-  background: var(--ain-color-surface);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
+  border-color: var(--ain-color-text);
+  outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px;
 }
+/* Error = a 2px brick rule (inset, so the box does not move). */
 .sb-content input.error,
 .sb-content select.error,
-.sb-content textarea.error { border-color: var(--ain-color-danger); }
+.sb-content textarea.error { border-color: var(--ain-color-danger); box-shadow: inset 0 0 0 1px var(--ain-color-danger); }
 
 /* Selection controls: native geometry, the accent carries the checked state
    (the console's .ain-field__checkbox approach — no bespoke drawing). */
@@ -333,7 +327,7 @@
 .sb-content fieldset {
   min-width: 0;
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--ain-color-surface);
   padding: 1rem 1.25rem 1.125rem;
   margin: 0 0 1.25rem;
@@ -346,7 +340,7 @@
 /* Details (Language / Locale settings) — the same card, with a summary door. */
 .sb-content details {
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--ain-color-surface);
   margin: 0 0 1.25rem;
 }
@@ -357,8 +351,9 @@
   align-items: center;
   gap: 0.625rem;
   padding: 0.75rem 1.25rem;
-  font-weight: 600;
+  font-weight: 500;
 }
+.sb-content details summary:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 .sb-content details summary::-webkit-details-marker { display: none; }
 .sb-content details summary::before {
   content: "";
@@ -395,18 +390,17 @@
 .sb-content input[type="file"]::file-selector-button {
   font: inherit;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   color: var(--ain-color-text);
-  background: var(--ain-color-surface);
+  background: transparent;
   border: 1px solid var(--ain-color-border);
   border-radius: var(--ain-radius-md);
   padding: 0.4375rem 0.75rem;
   margin-right: 0.625rem;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
-  transition: background 0.12s;
+  transition: border-color 0.12s;
 }
-.sb-content input[type="file"]::file-selector-button:hover { background: var(--ain-color-surface-raised); }
+.sb-content input[type="file"]::file-selector-button:hover { border-color: var(--ain-color-text); }
 .sb-content .form-managed-file { display: flex; align-items: center; flex-wrap: wrap; gap: 0.625rem; }
 
 /* =========================================================== image widget === */
@@ -428,9 +422,8 @@
   align-items: start;
   background: var(--ain-color-surface);
   border: 1px solid var(--ain-color-border);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 1.125rem 1.25rem 1.25rem;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
 }
 /* Matted preview — the picture framed on recessed paper, spanning the file
    facts + alt column beside it. */
@@ -442,8 +435,7 @@
   padding: 10px;
   background: var(--ain-color-surface-raised);
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  border-radius: 0;
 }
 .sb-content .image-widget > span.file {
   grid-column: 2;
@@ -452,18 +444,18 @@
   display: block;
   margin: 0;
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 .sb-content .image-widget > span.file a { color: var(--ain-color-text) !important; }
-/* The byte-count is a mono fact, not prose. */
+/* The byte-count is a quiet fact, in tabular figures. */
 .sb-content .image-widget > span:not(.file) {
   grid-column: 2;
   grid-row: 2;
   align-self: start;
   margin-top: 0.125rem;
-  font-family: var(--ain-font-mono);
+  font-family: var(--ain-font-body);
   font-size: 0.75rem;
-  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
   color: var(--ain-color-text-faint);
 }
 /* Alt text lives beside the preview — metadata belongs with the file facts;
@@ -514,8 +506,8 @@
    keep the LEFT RAIL; the image_widget_crop aspect-ratio picker (16x9 / 1x1 / …
    — short) becomes a TOP SEGMENTED BAR (see the crop block below), which is why
    the rail rules are the shared default and the crop block overrides them. The
-   selected tab takes the product's one selection grammar — a flat cinnabar tint
-   wash + ink label (as .sb-nav__link.is-active), never a fill-box + bar. */
+   selected tab takes the product's selected-row grammar — the well + a 2px ink
+   bar + ink label (as .sb-nav__link.is-active). */
 
 .sb-content .form-type-vertical-tabs { margin-block: 0 1.25rem; }
 .sb-content .vertical-tabs {
@@ -525,17 +517,16 @@
      with a form label — reset it; the card owns its edges here. */
   margin: 0;
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--ain-color-surface);
   overflow: hidden;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
 }
 .sb-content .vertical-tabs__menu {
   flex: 0 0 12rem;
   list-style: none;
   margin: 0;
   padding: 0.625rem 0.5rem;
-  background: var(--ain-color-surface-raised);
+  background: var(--ain-color-surface);
   border-right: 1px solid var(--ain-color-border);
 }
 .sb-content .vertical-tabs__menu-item { margin: 0 0 2px; }
@@ -549,21 +540,19 @@
   transition: background 0.12s, color 0.12s, box-shadow 0.12s;
 }
 .sb-content .vertical-tabs__menu-item a:hover {
-  background: color-mix(in oklch, var(--ain-color-text) 4%, transparent);
   color: var(--ain-color-text) !important;
 }
-/* Selected = a flat cinnabar TINT wash + ink label — the one selection grammar
-   the product uses everywhere (.sb-nav__link.is-active, the console thread list,
-   the crop pills). NOT a raised surface fill-box with an inset bar; that
-   rounded-bracket treatment is the retired pre-Atelier idiom (docs/brand.md
-   §10). Hover is a neutral grey tint, so the accent hue alone reads as "chosen". */
+.sb-content .vertical-tabs__menu-item a:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
+/* Selected = the well + a 2px ink bar + ink label — the selected-row grammar
+   the product uses everywhere (.sb-nav__link.is-active, the console thread
+   list). Hover is a colour shift only, so the bar alone reads as "chosen". */
 .sb-content .vertical-tabs__menu-item.is-selected a {
-  background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
+  background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent);
   color: var(--ain-color-text) !important;
 }
 .sb-content .vertical-tabs__menu-item-title {
   display: block;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.875rem;
   color: inherit;
 }
@@ -596,9 +585,9 @@
    .sb-content details card + chevron for free. Inside, the aspect-ratio picker
    is a vertical-tabs set — but its labels are tiny (16x9, 1x1, …), so a full
    left rail leaves a tall dead column beside the tall crop canvas. Flip it to a
-   TOP SEGMENTED BAR of pills over the canvas (an "Aspect ratio" mono eyebrow
-   labels the row); a jade dot on a pill marks a ratio that already has a saved
-   crop. The canvas then sits centered on a faintly recessed stage. */
+   TOP SEGMENTED BAR over the canvas (an "Aspect ratio" label heads the row;
+   the selected ratio is filled ink); a moss square on a segment marks a ratio
+   that already has a saved crop. The canvas then sits centered on the well. */
 
 .sb-content .image-data__crop-wrapper { margin-top: 0.5rem; }
 .sb-content .image-data__crop-wrapper .vertical-tabs { flex-direction: column; }
@@ -616,12 +605,7 @@
   content: "Aspect ratio";
   flex: 0 0 100%;
   padding: 0 0 0.125rem;
-  font-family: var(--ain-font-mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ain-color-text-faint);
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
 }
 .sb-content .image-data__crop-wrapper .vertical-tabs__menu-item { margin: 0; }
 .sb-content .image-data__crop-wrapper .vertical-tabs__menu-item a {
@@ -630,34 +614,36 @@
   gap: 7px;
   padding: 0.3125rem 0.75rem;
   border: 1px solid var(--ain-color-border);
-  border-radius: 999px;
-  background: var(--ain-color-surface);
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
-.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item a:hover { background: var(--ain-color-surface-raised); }
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item a:hover { border-color: var(--ain-color-text); }
 .sb-content .image-data__crop-wrapper .vertical-tabs__menu-item.is-selected a {
-  background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
-  border-color: color-mix(in oklch, var(--ain-color-accent) 35%, var(--ain-color-border));
+  background: var(--ain-color-accent);
+  border-color: var(--ain-color-accent);
+  color: var(--ain-color-on-accent) !important;
   box-shadow: none;
 }
+.sb-content .image-data__crop-wrapper .vertical-tabs__menu-item.is-selected .vertical-tabs__menu-item-title { color: var(--ain-color-on-accent); }
 .sb-content .image-data__crop-wrapper .vertical-tabs__menu-item-title { display: inline; font-size: 0.8125rem; }
-/* The pane's summary ("Cropping applied.") collapses to a jade status dot ahead
+/* The pane's summary ("Cropping applied.") collapses to a moss 8px square ahead
    of the label; ratios with no saved crop show nothing. */
 .sb-content .image-data__crop-wrapper .vertical-tabs__menu-item-summary {
   order: -1;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   margin: 0;
   padding: 0;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--ain-color-success);
   font-size: 0;
   color: transparent;
 }
 .sb-content .image-data__crop-wrapper .vertical-tabs__menu-item-summary:empty { display: none; }
-/* The crop stage — canvas centered on faintly recessed paper. */
+/* The crop stage — canvas centered on the well. */
 .sb-content .image-data__crop-wrapper .vertical-tabs__pane {
-  background: color-mix(in oklch, var(--ain-color-text) 3%, var(--ain-color-surface));
+  background: var(--ain-color-surface-raised);
 }
 /* With the aspect picker moved to a TOP bar, the canvas pane spans the whole
    card — cropper.js then sizes the canvas to that full width, so it balloons
@@ -709,7 +695,7 @@
 /* Publishing + actions — one footer zone fenced off by a single hairline, so
    the status toggle and the save/delete row read as a deliberate commit area,
    not a stray checkbox above two buttons hanging off the page floor. Save keeps
-   the one cinnabar primary; Delete stays the quiet brick link. */
+   the one ink primary; Delete stays the quiet brick link. */
 .sb-content .media-form > #edit-status-wrapper {
   margin-top: 1.75rem;
   padding-top: 1.375rem;
@@ -722,14 +708,13 @@
 .sb-content .password-strength { margin-top: 0.5rem; max-width: 20rem; }
 .sb-content .password-strength__meter {
   height: 6px;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--ain-color-surface-raised);
-  box-shadow: inset 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
   overflow: hidden;
 }
 .sb-content .password-strength__indicator {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--ain-color-text-faint);
   transition: width 0.2s ease, background 0.2s ease;
 }
@@ -743,13 +728,13 @@
   color: var(--ain-color-text-muted);
   margin-top: 0.25rem;
 }
-.sb-content .password-confirm-message .ok { color: var(--ain-color-success); font-weight: 600; }
-.sb-content .password-confirm-message .error { color: var(--ain-color-danger); font-weight: 600; }
+.sb-content .password-confirm-message .ok { color: var(--ain-color-success); font-weight: 500; }
+.sb-content .password-confirm-message .error { color: var(--ain-color-danger); font-weight: 500; }
 .sb-content .password-suggestions {
   font-size: 0.8125rem;
   color: var(--ain-color-text-muted);
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--ain-color-surface);
   padding: 0.75rem 1rem;
   margin: 0.5rem 0 0;
@@ -761,37 +746,27 @@
 .sb-content .container-inline > * { display: inline-block; vertical-align: middle; }
 
 /* ================================================================= tables === */
-/* Incl. Views listings (/admin/users). Paper card, mono eyebrow thead,
-   hairline rows — a list of people should read calm. */
+/* Incl. Views listings (/admin/users). Paper card, sentence-case thead,
+   hairline rows, square — a list of people should read calm. */
 
 .sb-content table {
   width: 100%;
-  /* `separate` (not `collapse`) so the table's own `border-radius` rounds
-     natively — a collapsed-border table needs `overflow: hidden` to fake round
-     corners, and that clip would shear off the open operations flyout on the
-     last rows (an absolute overlay that reaches past the table's bottom edge).
-     `border-spacing: 0` keeps the cells flush, so it still reads as one grid. */
+  /* `separate` (not `collapse`) and no `overflow: hidden` — a clip would shear
+     off the open operations flyout on the last rows (an absolute overlay that
+     reaches past the table's bottom edge). `border-spacing: 0` keeps the cells
+     flush, so it still reads as one grid. */
   border-collapse: separate;
   border-spacing: 0;
   background: var(--ain-color-surface);
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
+  border-radius: 0;
   margin-block: 0 1.5rem;
 }
-/* Round the four table corners on the corner cells (the table itself no longer
-   clips), so the border-radius survives without trapping the flyout. */
-.sb-content thead th:first-child { border-top-left-radius: 10px; }
-.sb-content thead th:last-child { border-top-right-radius: 10px; }
-.sb-content tbody tr:last-child td:first-child,
-.sb-content tbody tr:last-child th:first-child { border-bottom-left-radius: 10px; }
-.sb-content tbody tr:last-child td:last-child { border-bottom-right-radius: 10px; }
 .sb-content thead th {
   text-align: left;
-  font-family: var(--ain-font-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-family: var(--ain-font-body);
+  font-size: 13px;
+  font-weight: 500;
   color: var(--ain-color-text-muted);
   background: var(--ain-color-surface-raised);
   padding: 0.625rem 0.875rem;
@@ -800,7 +775,7 @@
 .sb-content thead th a { color: var(--ain-color-text-muted) !important; }
 .sb-content thead th a:hover { color: var(--ain-color-text) !important; text-decoration: none; }
 /* Sort indicator — core ships a 16px, baseline-aligned box, which floats the
-   arrow well above the mono whisper label and crowds the text. Scale it to the
+   arrow well above the label and crowds the text. Scale it to the
    label, sit it on the text middle, and give it a breath of air. */
 .sb-content .tablesort {
   width: 0.9em;
@@ -822,7 +797,7 @@
 /* The sticky-header clone (core/drupal.tableheader). */
 .sb-backend table.sticky-header {
   background: var(--ain-color-surface-raised);
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  box-shadow: 0 1px 0 var(--ain-color-border);
 }
 /* Lists inside cells (e.g. a user's roles) — inline labels, never bullets.
    The dropbutton ul keeps its own anatomy. */
@@ -842,7 +817,7 @@
   font-weight: 500;
   line-height: 1;
   padding: 0.3125rem 0.5rem;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--ain-color-surface-raised);
   color: var(--ain-color-text);
 }
@@ -867,7 +842,7 @@
   margin: 0 0.25rem 0 -0.35rem;
   overflow: visible;
   vertical-align: middle;
-  border-radius: 6px;
+  border-radius: 0;
   cursor: move;
 }
 .sb-content a.tabledrag-handle .handle {
@@ -898,29 +873,26 @@
   margin-block: 0 0.625rem;
 }
 
-/* ========================================================== whisper chips === */
-/* State is a whisper: mono tint chips (the console's .ain-audit__count
-   recipe) — never a saturated fill. Used by the Views status field override
-   and anything else that must name a state. */
+/* ============================================================ state lines === */
+/* State is a STATE LINE: ink text led by an 8px square in the state colour —
+   no fill, no pill, no border (the console's .ain-checks-audit__count recipe).
+   Neutral = a hollow square. Used by the Views status field override and
+   anything else that must name a state. */
 
 .sb-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-family: var(--ain-font-mono);
-  font-size: 11px;
-  font-weight: 500;
+  gap: 6px;
+  font-family: var(--ain-font-body);
+  font-size: 13px;
+  font-weight: 400;
   line-height: 1;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 4px 7px;
-  border-radius: 4px;
-  color: var(--ain-color-text-muted);
-  background: color-mix(in oklch, var(--ain-color-text) 6%, transparent);
+  color: var(--ain-color-text);
 }
-.sb-chip--jade { color: var(--ain-color-success); background: color-mix(in oklch, var(--ain-color-success) 10%, transparent); }
-.sb-chip--ochre { color: var(--ain-color-warning); background: color-mix(in oklch, var(--ain-color-warning) 12%, transparent); }
-.sb-chip--brick { color: var(--ain-color-danger); background: color-mix(in oklch, var(--ain-color-danger) 10%, transparent); }
+.sb-chip::before { content: ""; flex: none; width: 8px; height: 8px; box-shadow: inset 0 0 0 1px var(--ain-color-text-muted); }
+.sb-chip--jade::before { background: var(--ain-color-success); box-shadow: none; }
+.sb-chip--ochre::before { background: var(--ain-color-warning); box-shadow: none; }
+.sb-chip--brick::before { background: var(--ain-color-danger); box-shadow: none; }
 
 /* ============================================================= dropbutton === */
 /* Row operations. Core's drupal.dropbutton CSS is dropped in .info.yml — it
@@ -951,9 +923,8 @@
   display: inline-block;
   position: relative;
   border: 1px solid var(--ain-color-border);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--ain-color-surface);
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
 }
 /* Open: lift the pill into an overlay so the flyout floats over the rows below
    rather than shoving the whole table down. */
@@ -962,7 +933,7 @@
   position: absolute;
   top: 0;
   left: 0;
-  box-shadow: 0 6px 16px color-mix(in oklch, var(--ain-color-shadow) 22%, transparent);
+  box-shadow: 0 26px 46px -22px color-mix(in oklch, var(--ain-color-shadow) 50%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
 }
 
 .sb-content ul.dropbutton {
@@ -970,7 +941,7 @@
   margin: 0;
   padding: 0 1.75rem 0 0; /* room on the right for the absolute toggle */
   min-width: max-content;
-  overflow: hidden;       /* keep action fills inside the rounded pill */
+  overflow: hidden;       /* keep action fills inside the box */
   border-radius: inherit;
 }
 /* A single-action dropbutton has no toggle, so it needs no arrow gutter. */
@@ -989,6 +960,7 @@
   color: var(--ain-color-text) !important;
 }
 .sb-content .dropbutton li a:hover { background: var(--ain-color-surface-raised); text-decoration: none; }
+.sb-content .dropbutton li a:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 .sb-content .dropbutton .secondary-action a { border-top: 1px solid var(--ain-color-border); }
 
 /* Secondary actions stay hidden until the menu is open (core JS flips `.open`). */
@@ -1011,7 +983,7 @@
   padding: 0;
   border: 0;
   border-left: 1px solid var(--ain-color-border);
-  border-radius: 0 5px 5px 0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
   cursor: pointer;
@@ -1042,7 +1014,7 @@
 .sb-content .views-exposed-form {
   background: var(--ain-color-surface);
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
+  border-radius: 0;
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
 }
@@ -1057,31 +1029,23 @@
 .sb-content .views-exposed-form .form-actions { margin: 0; }
 
 /* =============================================================== messages === */
-/* Whisper cards — the tint names the mood, the ink stays ink. Classes come
-   from the theme's status-messages override. */
+/* Hairline cards — a 2px bar in the state colour names the mood (no tint
+   fill); the ink stays ink. Classes come from the theme's status-messages
+   override. */
 
 .sb-backend .messages {
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--ain-color-surface);
   padding: 0.875rem 1.125rem;
   margin: 0 0 1rem;
   font-size: 0.9375rem;
 }
-.sb-backend .messages--status {
-  border-color: color-mix(in oklch, var(--ain-color-success) 35%, var(--ain-color-border));
-  background: color-mix(in oklch, var(--ain-color-success) 8%, var(--ain-color-surface));
-}
-.sb-backend .messages--warning {
-  border-color: color-mix(in oklch, var(--ain-color-warning) 40%, var(--ain-color-border));
-  background: color-mix(in oklch, var(--ain-color-warning) 10%, var(--ain-color-surface));
-}
-.sb-backend .messages--error {
-  border-color: color-mix(in oklch, var(--ain-color-danger) 35%, var(--ain-color-border));
-  background: color-mix(in oklch, var(--ain-color-danger) 8%, var(--ain-color-surface));
-}
+.sb-backend .messages--status { box-shadow: inset 2px 0 0 var(--ain-color-success); }
+.sb-backend .messages--warning { box-shadow: inset 2px 0 0 var(--ain-color-warning); }
+.sb-backend .messages--error { box-shadow: inset 2px 0 0 var(--ain-color-danger); }
 .sb-backend .messages ul { margin: 0; padding-left: 1.1rem; }
-.sb-backend .messages a { font-weight: 600; }
+.sb-backend .messages a { font-weight: 500; text-decoration: underline; }
 
 /* ================================================================== pager === */
 
@@ -1123,30 +1087,27 @@
   text-align: center;
   text-decoration: none;
 }
-.sb-content .pager__item > a:hover,
-.sb-content .pager__item > a:focus-visible {
-  border-color: var(--ain-color-border-strong);
-  background: var(--ain-color-surface-raised);
+.sb-content .pager__item > a:hover {
+  border-color: var(--ain-color-text);
   color: var(--ain-color-text);
 }
+.sb-content .pager__item > a:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 
-/* The current page is a statement of where you are, not a call to click — it
-   reads as a filled, unlinked-looking chip. No pigment: Law 01 caps cinnabar
-   at two elements per screen and the usage report has already spent them. */
+/* The current page is the selected segment: filled ink, paper text. */
 .sb-content .pager__item.is-active > a {
-  border-color: var(--ain-color-border-strong);
-  background: var(--ain-color-surface-raised);
-  color: var(--ain-color-text);
-  font-weight: 600;
+  border-color: var(--ain-color-accent);
+  background: var(--ain-color-accent);
+  color: var(--ain-color-on-accent) !important;
+  font-weight: 500;
 }
 
 /* Present, aligned, and plainly unavailable. Kept dim rather than removed so
    the row of controls has the same width on page 1 as in the middle. */
 .sb-content .pager__item--disabled > span {
-  border-color: color-mix(in oklch, var(--ain-color-border) 55%, transparent);
+  border-color: var(--ain-color-border);
+  background: var(--ain-color-surface-raised);
   color: var(--ain-color-text-faint);
   cursor: default;
-  opacity: 0.7;
 }
 
 /* The gap marker is not a control: no box, just the space it stands for. */
@@ -1157,14 +1118,14 @@
 }
 
 /* ================================================================ dialogs === */
-/* Modal panels take the 14px radius; the overlay is a shadow tint, never a
-   blur or a glow. */
+/* Modal panels are square and carry the one large overlay shadow; the
+   overlay is a shadow tint, never a blur or a glow. */
 
 .sb-backend .ui-dialog {
   border: 1px solid var(--ain-color-border);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--ain-color-surface);
-  box-shadow: 0 18px 50px -20px var(--ain-color-shadow);
+  box-shadow: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
   padding: 0;
   overflow: hidden;
 }
@@ -1172,7 +1133,8 @@
   background: var(--ain-color-surface-raised);
   border-bottom: 1px solid var(--ain-color-border);
   font-family: var(--ain-font-display);
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   padding: 0.75rem 1.25rem;
 }
 .sb-backend .ui-dialog .ui-dialog-content { padding: 1rem 1.25rem; }
@@ -1217,33 +1179,29 @@
      until small text clears AA. Muting is a colour decision, never opacity. */
   --rg-faint: color-mix(in oklch, var(--ain-color-text-faint) 78%, var(--ain-color-text));
   --rg-on-ink: var(--ain-color-surface);
-  --rg-accent: var(--ain-color-success);
-  /* Chips are whispers (Law 02): ochre ink deepened toward the bistre so the
-     label clears AA on its own tint, a tint ground, a hairline edge. */
+  --rg-accent: var(--ain-color-accent);
+  /* The island's chips can't take our 8px-square state line (its markup), so
+     they stay minimal: ochre ink deepened toward the ink so the label clears
+     AA, the well (no tint) as ground, a hairline edge in the state colour. */
   --rg-warn-ink: color-mix(in oklch, var(--ain-color-warning) 55%, var(--ain-color-text));
-  --rg-warn-bg: color-mix(in oklch, var(--ain-color-warning) 12%, var(--ain-color-surface));
+  --rg-warn-bg: var(--ain-color-surface-raised);
   --rg-warn-edge: color-mix(in oklch, var(--ain-color-warning) 35%, var(--ain-color-border));
   --rg-danger: var(--ain-color-danger);
-  --rg-danger-bg: color-mix(in oklch, var(--ain-color-danger) 8%, var(--ain-color-surface));
+  --rg-danger-bg: var(--ain-color-surface-raised);
   --rg-danger-edge: color-mix(in oklch, var(--ain-color-danger) 30%, var(--ain-color-border));
   --rg-font: var(--ain-font-body);
   --rg-mono: var(--ain-font-mono);
 }
 
-/* The card takes the kit's panel anatomy — 10px radius (cards) and the soft
-   diffuse lift — so it sits on the gesso ground like every other panel. The
-   module already draws the hairline and the ground from the tokens above; only
-   the radius and the lift are ours. `overflow: hidden` keeps the rail's own
-   sideways scroll inside the rounded corner. */
+/* The card takes the kit's panel anatomy — square, one hairline, no shadow —
+   so it sits on the paper like every other panel. The module already draws the
+   hairline and the ground from the tokens above; only the corner is ours.
+   `overflow: hidden` keeps the rail's own sideways scroll inside the card. */
 .sb-content .revision-graph-wrapper {
-  border-radius: 10px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  border-radius: 0;
   overflow: hidden;
 }
 
-/* Focus is the kit's accent TINT ring, not the island's hard accent outline —
-   the ring is a whole-backend convention, so it wins over the island's. */
-.sb-content .revision-graph-wrapper :focus-visible {
-  outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent);
-  outline-offset: 1px;
-}
+/* Focus is the kit's 2px ink outline — a whole-backend convention, so it wins
+   over the island's. */
+.sb-content .revision-graph-wrapper :focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }

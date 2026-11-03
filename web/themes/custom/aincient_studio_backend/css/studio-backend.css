@@ -1,9 +1,10 @@
 /**
  * Studio Backend — the AIncient admin theme (base: core Stark).
  *
- * Goal: the backend reads as one product with the chat console — the Atelier
- * "studio craft" language (gesso-paper ground, bistre ink, one cinnabar
- * pigment, soft hairlines + diffuse shadow, soft corners) — NOT raw Drupal,
+ * Goal: the backend reads as one product with the chat console — the Monograph
+ * app tier (DECISIONS 0500/0501: paper and ink, 1px hairlines instead of
+ * shadows, square corners, IBM Plex Sans, ink as the only highlight, red only
+ * for errors) — NOT raw Drupal,
  * without the weight of Gin. Stark ships almost no CSS, so this file styles
  * from a near-blank slate rather than fighting a base theme.
  *
@@ -15,7 +16,7 @@
  * forms, tables, messages, …) lives in css/admin-kit.css.
  */
 
-/* The tokens — gesso paper by default, studio night under the OS dark scheme —
+/* The tokens — paper by default, the dark mode under the OS dark scheme —
    are css/tokens.generated.css (listed before this file in the `global`
    library), generated from aincient_core/tokens/*.json. Edit the JSON. */
 
@@ -40,20 +41,23 @@ body.sb-backend {
    "contrib islands"). `:where()` contributes NO specificity, so the guard
    excludes the island without shifting this rule's weight against anything
    else on the page. */
-.sb-backend a:where(:not(.revision-graph-wrapper *)) { color: var(--ain-color-success); text-decoration: none; }
-/* Interactive affordance is a quiet colour shift, never an underline — the
-   console (chat-ui) never underlines on hover, so the backend matches it. */
-.sb-backend a:where(:not(.revision-graph-wrapper *)):hover { color: color-mix(in oklch, var(--ain-color-success) 78%, var(--ain-color-text)); }
+.sb-backend a:where(:not(.revision-graph-wrapper *)) { color: var(--ain-color-text); text-decoration: none; text-underline-offset: 2px; }
+/* Ink is the only highlight, so a link is ink at rest (no pigment) and takes
+   an underline on hover — core's tabs, buttons and dropbuttons override this
+   at higher specificity, as before. */
+.sb-backend a:where(:not(.revision-graph-wrapper *)):hover { text-decoration: underline; }
+.sb-backend a:where(:not(.revision-graph-wrapper *)):focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 
 .sb-backend h1, .sb-backend h2, .sb-backend h3,
 .sb-backend h4, .sb-backend h5 {
   font-family: var(--ain-font-display);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ain-color-text);
   line-height: 1.2;
+  letter-spacing: -0.01em;
   margin: 0 0 0.5em;
 }
-.sb-backend h1 { font-size: 1.9rem; letter-spacing: -0.01em; }
+.sb-backend h1 { font-size: 1.9rem; letter-spacing: -0.02em; }
 .sb-backend h2 { font-size: 1.4rem; }
 .sb-backend h3 { font-size: 1.15rem; }
 
@@ -108,20 +112,20 @@ body.sb-backend {
   border-bottom: 1px solid var(--ain-color-border);
   margin-bottom: 0.5rem;
 }
-.sb-brand:hover { text-decoration: none; }
+.sb-brand, .sb-brand:hover { text-decoration: none !important; }
 .sb-brand__mark { display: inline-flex; width: 30px; height: 30px; }
 .sb-brand__mark svg { width: 100%; height: 100%; display: block; }
 .sb-brand__label {
   font-family: var(--ain-font-display);
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
 }
 
 /* --- console switch-back: leave the backend, return to the chat console.
    A quiet text link, not a raised pill — navigation is links (Law 07), and the
    pigment is spent on the primary + active state, never on a back arrow
-   (Law 01). The bordered-pill + cinnabar-icon treatment is retired. --- */
+   (Law 01). --- */
 .sb-console {
   display: flex;
   align-items: center;
@@ -130,13 +134,12 @@ body.sb-backend {
   margin-bottom: 0.5rem;
   border-radius: var(--ain-radius-md);
   color: var(--ain-color-text-muted) !important;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.2;
+  text-decoration: none !important;
 }
 .sb-console:hover {
-  background: var(--ain-color-surface-raised);
   color: var(--ain-color-text) !important;
-  text-decoration: none;
 }
 .sb-console__icon { display: inline-flex; flex: 0 0 auto; color: currentColor; }
 .sb-console__icon svg { width: 16px; height: 16px; display: block; }
@@ -152,20 +155,19 @@ body.sb-backend {
   color: var(--ain-color-text-muted) !important;
   font-weight: 500;
   line-height: 1.2;
+  text-decoration: none !important;
 }
 .sb-nav__link:hover {
   background: var(--ain-color-surface-raised);
   color: var(--ain-color-text) !important;
   text-decoration: none;
 }
-/* Active = the accent TINT, the same selection grammar as the console thread
-   list (chat-ui: .ain-tli[data-active]) — a flat cinnabar wash + bold label,
-   never a surface fill-box with an inset bar (that rounded-bracket treatment
-   is the retired pre-Atelier idiom). */
+/* Active = the well + a 2px ink bar, the same selected-row grammar as the
+   console thread list (chat-ui: .ain-tli[data-active]). */
 .sb-nav__link.is-active {
-  background: color-mix(in oklch, var(--ain-color-accent) 10%, transparent);
+  background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent);
   color: var(--ain-color-text) !important;
-  font-weight: 600;
+  font-weight: 500;
 }
 .sb-nav__link.is-active .sb-nav__icon { color: var(--ain-color-accent); }
 .sb-nav__icon { display: inline-flex; flex: 0 0 auto; }
@@ -181,8 +183,9 @@ body.sb-backend {
   gap: 0.125rem;
 }
 .sb-account__name {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ain-color-text) !important;
+  text-decoration: none !important;
   padding: 0.25rem 0.5rem;
   border-radius: var(--ain-radius-md);
   overflow: hidden;
@@ -191,6 +194,7 @@ body.sb-backend {
 }
 .sb-account__name:hover { background: var(--ain-color-surface-raised); text-decoration: none; }
 .sb-account__logout {
+  text-decoration: none !important;
   font-size: 0.8125rem;
   color: var(--ain-color-text-faint) !important;
   padding: 0.125rem 0.5rem;
@@ -209,8 +213,8 @@ body.sb-backend {
 .sb-content { padding-block: 1.5rem 4rem; }
 
 /* ============================== /admin landing (aincient-studio-landing) === */
-/* Link-cards, not buttons (Law 07). Ink on paper throughout; the console
-   card's icon is the screen's single cinnabar appearance. */
+/* Link-cards, not buttons (Law 07). Ink on paper throughout, one hairline
+   each, square, no shadow. */
 
 .sb-landing__intro {
   font-family: var(--ain-font-display);
@@ -231,51 +235,41 @@ body.sb-backend {
   padding: 1.125rem 1.25rem 1.25rem;
   background: var(--ain-color-surface);
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  border-radius: 0;
   color: var(--ain-color-text) !important;
-  transition: border-color 0.12s, box-shadow 0.12s, transform 0.08s;
+  text-decoration: none !important;
+  transition: border-color 0.12s;
 }
-.sb-landing__card:hover {
-  text-decoration: none;
-  /* A hair of pigment tint, not a jump to --ain-color-border-strong — whose dark stone
-     hairline read too sharp against the paper card. The deepened lift below
-     carries the hover affordance (user feedback 2026-07-13). */
-  border-color: color-mix(in oklch, var(--ain-color-accent) 22%, var(--ain-color-border));
-  box-shadow: 0 4px 14px -8px var(--ain-color-shadow);
-}
-.sb-landing__card:focus-visible {
-  outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent);
-  outline-offset: 1px;
-}
+/* Hover = the hairline darkens to ink. */
+.sb-landing__card:hover { border-color: var(--ain-color-text); }
+.sb-landing__card:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .sb-landing__icon { display: inline-flex; color: var(--ain-color-text-muted); margin-bottom: 0.25rem; }
 .sb-landing__icon svg { width: 22px; height: 22px; display: block; }
 .sb-landing__icon--console { color: var(--ain-color-accent); }
-.sb-landing__label { font-weight: 600; font-size: 1rem; }
+.sb-landing__label { font-weight: 500; font-size: 1rem; }
 .sb-landing__desc { font-size: 0.8425rem; line-height: 1.45; color: var(--ain-color-text-muted); }
 
 /* ====================================== profile hero (/user/N — People) ==== */
 /* Built in aincient_core_preprocess_user() and template
    aincient-profile-hero.html.twig. Plain paper with a hairline — at this size
    the mark alone carries the brand (Law 03); the spectrum stripe is retired
-   with the pre-Atelier treatment. State is a whisper chip (Law 02). */
+   with the pre-Atelier treatment. State is a state line (an 8px square). */
 
 .ain-profile-hero {
   margin-block-end: 1.5rem;
   background: var(--ain-color-surface);
   border: 1px solid var(--ain-color-border);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px color-mix(in oklch, var(--ain-color-shadow) 15%, transparent);
+  border-radius: 0;
   overflow: hidden;
 }
 .ain-profile-hero__body { display: flex; align-items: center; gap: 1.25rem; padding: 1.5rem; }
 .ain-profile-hero__avatar {
   flex: 0 0 auto;
   width: 4.5rem; height: 4.5rem;
-  border-radius: 50%;
+  border-radius: 0;
   display: grid; place-items: center;
   font-family: var(--ain-font-display);
-  font-size: 1.75rem; font-weight: 600; line-height: 1; letter-spacing: 0.02em;
+  font-size: 1.75rem; font-weight: 500; line-height: 1;
   color: var(--ain-color-text-muted);
   border: 1px solid var(--ain-color-border);
   background: var(--ain-color-surface-raised);
@@ -283,31 +277,25 @@ body.sb-backend {
 .ain-profile-hero__avatar--photo { object-fit: cover; }
 .ain-profile-hero__meta { min-width: 0; flex: 1 1 auto; }
 .ain-profile-hero__nameline { display: flex; align-items: center; flex-wrap: wrap; gap: 0.625rem; }
-.ain-profile-hero__name { font-family: var(--ain-font-display); font-size: 1.5rem; font-weight: 700; line-height: 1.2; color: var(--ain-color-text); }
-/* State is a whisper — mono tint chip, never a fill. */
+.ain-profile-hero__name { font-family: var(--ain-font-display); font-size: 1.5rem; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; color: var(--ain-color-text); }
+/* State is a state line — ink text led by an 8px square in the state colour. */
 .ain-profile-hero__status {
-  font-family: var(--ain-font-mono);
-  font-size: 11px; font-weight: 600; line-height: 1;
-  padding: 4px 7px; border-radius: 4px;
-  text-transform: uppercase; letter-spacing: 0.05em;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--ain-font-body);
+  font-size: 13px; font-weight: 400; line-height: 1;
+  color: var(--ain-color-text);
 }
-.ain-profile-hero__status--active {
-  color: var(--ain-color-success);
-  background: color-mix(in oklch, var(--ain-color-success) 10%, transparent);
-}
-.ain-profile-hero__status--blocked {
-  color: var(--ain-color-danger);
-  background: color-mix(in oklch, var(--ain-color-danger) 12%, transparent);
-}
+.ain-profile-hero__status::before { content: ""; flex: none; width: 8px; height: 8px; box-shadow: inset 0 0 0 1px var(--ain-color-text-muted); }
+.ain-profile-hero__status--active::before { background: var(--ain-color-success); box-shadow: none; }
+.ain-profile-hero__status--blocked::before { background: var(--ain-color-danger); box-shadow: none; }
 .ain-profile-hero__handle { margin-block-start: 0.25rem; font-size: 0.875rem; color: var(--ain-color-text-muted); }
 .ain-profile-hero__roles { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-block-start: 0.75rem; }
 /* A role is a category, not a state — brand-neutral surface fill. */
-.ain-profile-hero__role { font-size: 0.75rem; font-weight: 600; line-height: 1; padding: 0.3125rem 0.5rem; border-radius: 4px; background: var(--ain-color-surface-raised); color: var(--ain-color-text); }
+.ain-profile-hero__role { font-size: 0.75rem; font-weight: 500; line-height: 1; padding: 0.3125rem 0.5rem; border-radius: 0; background: var(--ain-color-surface-raised); color: var(--ain-color-text); }
 .ain-profile-hero__facts { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; margin: 1rem 0 0; }
 .ain-profile-hero__fact { margin: 0; }
-.ain-profile-hero__fact dt { font-family: var(--ain-font-mono); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ain-color-text-muted); }
+.ain-profile-hero__fact dt { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-profile-hero__fact dd { margin: 0.1875rem 0 0; font-size: 0.9375rem; color: var(--ain-color-text); }
-.ain-profile-hero__fact a { color: var(--ain-color-success); }
 
 /* ============================================================= responsive === */
 @media (max-width: 800px) {

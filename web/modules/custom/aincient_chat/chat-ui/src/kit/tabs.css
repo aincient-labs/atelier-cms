@@ -5,4 +5,4 @@
  */
 .ain-tabs { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .ain-tabs__list { align-self: flex-start; }
-.ain-tabs__panel:focus-visible { outline: 3px solid color-mix(in oklch, var(--ain-color-accent) 30%, transparent); outline-offset: 2px; border-radius: var(--ain-radius-md); }
+.ain-tabs__panel:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }

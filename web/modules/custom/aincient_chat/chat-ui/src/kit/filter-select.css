@@ -11,12 +11,12 @@
   display: flex; align-items: center; gap: 8px; width: 100%;
   font: inherit; font-size: 12px; color: var(--ain-color-text); text-align: left; cursor: pointer;
   padding: 6px 8px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  /* Same input body as .ain-field__input — raised paper, one chevron (spec .f-select). */
-  background: var(--ain-color-surface); transition: border-color .12s, background .12s;
+  /* Same input body as .ain-field__input — the well, one hairline, one chevron. */
+  background: var(--ain-color-surface-raised); transition: border-color .12s, background .12s;
 }
-.ain-selfield__trigger:hover { background: var(--ain-color-surface-raised); }
-.ain-selfield__trigger:focus-visible,
-.ain-selfield__trigger[data-open] { outline: none; border-color: var(--ain-color-accent); }
+.ain-selfield__trigger:hover { border-color: var(--ain-color-border-strong); }
+.ain-selfield__trigger[data-open] { border-color: var(--ain-color-text); }
+.ain-selfield__trigger:focus-visible { border-color: var(--ain-color-text); outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-selfield__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ain-selfield__caret { flex: none; font-size: 11px; color: var(--ain-color-text-muted); }
 /* Its own scroll, so a 400-zone list never grows the dialog it sits in; at
@@ -31,7 +31,7 @@
 }
 .ain-selfield__filter .ain-field__input { width: 100%; }
 .ain-selfield__group {
-  padding: 7px 10px 2px; font-family: var(--ain-font-mono); font-size: 9.5px;
-  letter-spacing: .08em; text-transform: uppercase; color: var(--ain-color-text-faint);
+  padding: 7px 10px 2px; font-family: var(--ain-font-body); font-size: 13px;
+  font-weight: 500; color: var(--ain-color-text-muted);
 }
 .ain-selfield__empty { margin: 0; padding: 8px 10px; font-size: 12px; color: var(--ain-color-text-muted); }

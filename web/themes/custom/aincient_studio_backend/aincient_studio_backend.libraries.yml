@@ -9,7 +9,7 @@ global:
       css/studio-backend.css: {}
       css/admin-kit.css: {}
   dependencies:
-    # Self-hosted brand fonts (Fraunces display serif + grotesk), shared with
+    # Self-hosted brand font (IBM Plex Sans, 0500), shared with
     # the console — the backend serif is the real thing, not the Palatino
     # fallback, and leaks no operator IP to Google.
     - aincient_chat/fonts

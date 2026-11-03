@@ -5,8 +5,8 @@
 .ain-studio__grouptitle {
   display: flex; align-items: center; gap: 6px; width: 100%;
   margin: 0 0 6px; padding: 2px 0; border: 0; background: none; text-align: left;
-  font-family: var(--ain-font-mono); font-size: 9.5px; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--ain-color-warning);
+  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500;
+  color: var(--ain-color-text-muted);
 }
 .ain-studio__grouptitle:hover { color: var(--ain-color-text); }
 /* The faint note under the title: what the group governs. */

@@ -1,5 +1,5 @@
 fonts:
-  # Self-hosted brand fonts (Fraunces display serif + Schibsted Grotesk) —
+  # Self-hosted brand font (IBM Plex Sans, 0500) —
   # served from our origin, never Google, so operator surfaces leak no IP.
   # Shared by the console and the Studio Backend admin theme.
   # Regenerate via aincient_core/scripts/fetch-brand-fonts.php.

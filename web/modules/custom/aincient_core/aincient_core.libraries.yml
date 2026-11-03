@@ -6,7 +6,7 @@
 flowdrop_brand:
   css:
     theme:
-      # Self-hosted Schibsted Grotesk — served from our origin, never Google,
+      # Self-hosted IBM Plex Sans — served from our origin, never Google,
       # so the editor chrome leaks no operator IP (docs/brand.md §2.4 /
       # DECISIONS 0058). Regenerate via scripts/fetch-brand-fonts.php.
       fonts/brand-fonts.css: {}
