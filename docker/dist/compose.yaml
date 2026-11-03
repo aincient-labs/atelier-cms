@@ -13,7 +13,7 @@ name: atelier
 services:
   db:
     # postgres:16 + pgvector preinstalled (multi-arch). See plans/pgvector.md.
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg16-trixie
     environment:
       POSTGRES_DB: aincient
       POSTGRES_USER: aincient

@@ -21,6 +21,8 @@
 #                         key_value fallback in database_state()
 #   MOCK_SQL_FAIL_PATTERN  a sql:query whose text contains this substring fails
 #                         (e.g. cache_file_parsing → the bin's table is absent)
+#   MOCK_STALE_COLLATION  databases whose collation version changed (space-separated
+#                         names; unset = none) — what refresh_collation_versions reads
 #   MOCK_PM_INSTALL_FAIL  the one module machine name whose pm:install fails
 #                         (a bad pack; everything else enables fine)
 #
@@ -61,6 +63,10 @@ case "$*" in
       exit 0
     fi
     exit 1 ;;
+  *pg_database_collation_actual_version*)
+    # The collation-version read: the databases whose recorded version differs.
+    printf '%s\n' "${MOCK_STALE_COLLATION:-}"
+    exit 0 ;;
   "sql:query"*)
     # An individual statement can be made to fail (a table that does not exist on
     # this site) without pretending the whole database is unreachable.

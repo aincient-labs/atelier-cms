@@ -133,9 +133,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         tar gzip \
         build-essential libheif-dev libavif-dev libheif-plugin-aomenc wget \
     && cd /tmp \
-    && wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.2-27.tar.gz -O ImageMagick.tar.gz \
+    && wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.2-35.tar.gz -O ImageMagick.tar.gz \
     && tar xzf ImageMagick.tar.gz \
-    && cd ImageMagick-7.1.2-27 \
+    && cd ImageMagick-7.1.2-35 \
     && ./configure --disable-static --with-heic=yes --with-avif=yes --with-gslib=no \
     && make -j"$(nproc)" \
     && make install \

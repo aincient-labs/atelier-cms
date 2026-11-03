@@ -92,3 +92,4 @@ config/sync/flowdrop_node_type.flowdrop_node_type.message_from_text.yml
 
 # RTK's vitest JSON reporter output (chat-ui test runs)
 .vitest/
+__pycache__/

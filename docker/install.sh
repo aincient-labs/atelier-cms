@@ -73,7 +73,7 @@ cat > "$INSTALL_DIR/compose.yaml" <<'YAML'
 name: atelier
 services:
   db:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg16-trixie
     environment:
       POSTGRES_DB: aincient
       POSTGRES_USER: aincient
@@ -100,7 +100,7 @@ services:
       - private:/opt/drupal/private
     restart: unless-stopped
   edge:
-    image: nginx:1.30-alpine
+    image: nginx:1.30-alpine-slim
     depends_on:
       - app
     ports:

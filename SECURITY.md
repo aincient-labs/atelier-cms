@@ -48,7 +48,9 @@ versioning, and every install **self-converges to the current release on upgrade
 
 Because of this model, **security fixes ship in the next image release**, and only the
 **latest published release** is supported. If you're running an older image, upgrading is
-the way to receive a security fix — there are no backported patches for prior tags.
+the way to receive a security fix — there are no backported patches for prior tags. Each
+advisory also says whether the release before the latest was affected, so you know how
+urgent your upgrade is.
 
 | Component | Supported |
 | --- | --- |
@@ -75,6 +77,23 @@ key ships in this repo as [`cosign.pub`](cosign.pub):
 ```bash
 cosign verify --key cosign.pub ghcr.io/aincient-labs/atelier-cms:latest
 ```
+
+## What's inside: SBOMs and VEX
+
+Each release lists everything it ships in a **CycloneDX SBOM** (software bill of materials),
+attached to its [GitHub Release](https://github.com/aincient-labs/atelier-cms/releases) as
+`*.cdx.json` files: one per image the appliance runs (the Atelier image and the `db`, `edge`
+and updater images) plus `appliance.cdx.json`, which ties them together. The Atelier image's
+SBOM also names what no scanner can see: the ImageMagick we compile from source and the npm
+packages bundled into the console. Releases after 0.21.0 carry them, and their images also
+carry SBOM and build provenance attestations on GHCR.
+
+When a scanner reports an advisory that cannot affect Atelier (the vulnerable code is never
+reached), we say so in [`vex.openvex.json`](vex.openvex.json), an
+[OpenVEX](https://openvex.dev) file that scanners such as grype read with `--vex`.
+
+We scan the latest two releases against new advisories every week. How to read the files:
+[aincient-labs.com/docs/sbom](https://aincient-labs.com/docs/sbom).
 
 ## Scope
 

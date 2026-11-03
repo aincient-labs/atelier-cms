@@ -20,10 +20,10 @@ name: atelier
 
 services:
   db:
-    # pgvector/pgvector:pg16 = official postgres:16 + the pgvector extension
+    # pgvector/pgvector:pg16-trixie = official postgres:16 (Debian trixie) + the pgvector extension
     # preinstalled (multi-arch: arm64 + amd64). converge activates it via
     # CREATE EXTENSION. See plans/pgvector.md (Phase 0).
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg16-trixie
     environment:
       POSTGRES_DB: aincient
       POSTGRES_USER: aincient
@@ -78,7 +78,7 @@ services:
     # requests from the frozen snapshot without touching PHP and proxies the rest
     # to `app`; while `app` restarts on upgrade, frozen visitors never notice and
     # everyone else gets a "starting" page instead of a connection error.
-    image: nginx:1.30-alpine
+    image: nginx:1.30-alpine-slim
     depends_on:
       - app
     ports:

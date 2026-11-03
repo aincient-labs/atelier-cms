@@ -282,6 +282,13 @@ jobs:
           # cache-hits from smoke.sh and the published bytes remain the
           # smoke-validated bytes. ATELIER_EXTENSIONS was itself read out of that
           # same smoke image, so the list describes the bytes being published.
+          #
+          # --attest: BuildKit's SBOM (SPDX, from its syft scanner) and build
+          # provenance (max: the full build definition; secrets are recorded by
+          # id, never by value) ride along as attestation manifests in the index
+          # (umbrella DECISIONS 0503 D-01). They sit beside the image as
+          # unknown/unknown entries: pulls, the manager's label reads (`.Image`
+          # lists real platforms only) and the cosign signature are unaffected.
           docker buildx build \
             --secret "id=composer_github_token,env=GITHUB_TOKEN" \
             --cache-from "type=gha,scope=appliance-${{ matrix.arch }}" \
@@ -289,6 +296,8 @@ jobs:
             --build-arg "ATELIER_REVISION=${GITHUB_SHA}" \
             --build-arg "ATELIER_UPGRADE_FLOOR=${ATELIER_UPGRADE_FLOOR}" \
             --build-arg "ATELIER_EXTENSIONS=${ATELIER_EXTENSIONS}" \
+            --attest type=sbom \
+            --attest type=provenance,mode=max \
             -f docker/Dockerfile \
             --output "type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true,rewrite-timestamp=true" \
             --metadata-file /tmp/meta.json \
@@ -387,3 +396,41 @@ jobs:
           set -euo pipefail
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY "${IMAGE}@${DIGEST}"
           echo "Signed ${IMAGE}@${DIGEST} (cosign key)" >> "$GITHUB_STEP_SUMMARY"
+
+  # The release's CycloneDX SBOMs (umbrella DECISIONS 0503, D-02): one per image
+  # the appliance runs (ours + db, edge, updater base) plus appliance.cdx.json
+  # tying them together, generated from THIS tree by docker/sbom-appliance
+  # against the digests just published. Tags only. Stored as the run's `sbom`
+  # artifact; `bin/release-appliance publish` attaches them when it creates the
+  # GitHub Release (releases here are immutable, so assets must be in place
+  # before the release is published — a workflow can't add them afterwards).
+  # syft runs as a container pinned by digest inside the script. Non-blocking:
+  # the image is already live by now, and publish generates the SBOMs locally
+  # (bin/sbom-appliance) when this artifact is missing.
+  sbom:
+    name: CycloneDX SBOMs
+    needs: merge
+    if: startsWith(github.ref, 'refs/tags/v')
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate
+        run: |
+          set -euo pipefail
+          bash docker/sbom-appliance "${GITHUB_REF_NAME#v}" --src . --out "$RUNNER_TEMP/sbom"
+          for f in appliance atelier-cms db edge updater; do
+            jq -e '.bomFormat == "CycloneDX"' "$RUNNER_TEMP/sbom/$f.cdx.json" >/dev/null
+          done
+          { echo '### SBOMs'; echo '```'; cat "$RUNNER_TEMP/sbom/counts.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: ${{ runner.temp }}/sbom/*.cdx.json
+          if-no-files-found: error
+          retention-days: 90

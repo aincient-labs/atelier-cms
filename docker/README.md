@@ -201,6 +201,17 @@ so `atelier app update` reads these labels from the registry (no pull), walks th
 backwards until it finds a version this install satisfies, and offers to apply the
 hops in order — `0.1.1 → 0.3.0 → 0.4.0`. See the manager's README.
 
+### A new db image under old data: indexes rebuilt on a collation change
+
+Postgres sorts text with the db image's glibc and records each database's collation version.
+When the `db` image moves to a different C library (pg16 bookworm → pg16-trixie, glibc 2.36 →
+2.41, scan #86), indexes built under the old one can disagree with the new sort order.
+`refresh_collation_versions` runs on **every** start, fast restarts included (the db image can
+change while the app image doesn't): on a mismatch it runs `REINDEX DATABASE`, then
+`ALTER DATABASE … REFRESH COLLATION VERSION` for each affected database. A failed reindex
+warns and leaves the version stale, so the next start retries. The Manager moves an existing
+install's `db` image only after an update, once the running app's converge has this step.
+
 ### Config on update — site-owned config is never clobbered
 
 On upgrade converge runs `drush config:import`, so a release ships config changes

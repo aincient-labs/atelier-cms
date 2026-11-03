@@ -686,6 +686,39 @@ fp_of() { { cat "$AINCIENT_FINGERPRINT_FILE"; printf 'import-config=%s\n' "${AIN
   [ "$(result)" = "missing-code" ]
 }
 
+@test "a changed db collation library is reindexed, even on a restart (cms #86)" {
+  fp_setup
+  export MOCK_INSTALLED=1
+  export MOCK_STATE_aincient_appliance_converged="$(fp_of)"   # same app build: db image moved alone
+  export MOCK_STALE_COLLATION="aincient postgres template1"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"rebuilding indexes"* ]]
+  # REINDEX first, then each stale database's version, and before Drupal work.
+  [ "$(line_of 'REINDEX DATABASE')" -lt "$(line_of 'ALTER DATABASE aincient REFRESH')" ]
+  grep -q "ALTER DATABASE postgres REFRESH COLLATION VERSION" "$DRUSH_LOG"
+  grep -q "ALTER DATABASE template1 REFRESH COLLATION VERSION" "$DRUSH_LOG"
+  [ "$(result)" = "ok" ]
+}
+
+@test "matching collation versions: no reindex" {
+  export MOCK_INSTALLED=1
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  ! grep -q "REINDEX" "$DRUSH_LOG"
+  ! grep -q "REFRESH COLLATION" "$DRUSH_LOG"
+}
+
+@test "a failed reindex leaves the versions stale (next start retries) and still boots" {
+  export MOCK_INSTALLED=1
+  export MOCK_STALE_COLLATION="aincient"
+  export MOCK_SQL_FAIL_PATTERN="REINDEX"
+  run bash "$CONVERGE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"NOT refreshed"* ]]
+  ! grep -q "REFRESH COLLATION" "$DRUSH_LOG"
+}
+
 @test "a different build (or a restored older database) upgrades in full" {
   fp_setup
   export MOCK_INSTALLED=1

@@ -1,0 +1,27 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/aincient-labs/atelier-cms/blob/main/vex.openvex.json",
+  "author": "AIncient Labs",
+  "role": "Document Creator",
+  "timestamp": "2026-11-03T00:00:00Z",
+  "version": 1,
+  "tooling": "Hand-written; read by the weekly dependency scan (grype --vex) and published with each Atelier CMS appliance version. Products are package URLs, the form grype matches when it scans an SBOM; the scope is the appliance (ghcr.io/aincient-labs/atelier-cms and the images its compose.yaml runs).",
+  "statements": [
+    {
+      "vulnerability": { "name": "CVE-2014-9826" },
+      "products": [ { "@id": "pkg:generic/imagemagick" } ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "impact_statement": "Fixed in ImageMagick 6.9.0 (2014). The appliance compiles ImageMagick 7.1.2 from source; the match comes from a CPE without a version range.",
+      "timestamp": "2026-11-03T00:00:00Z"
+    },
+    {
+      "vulnerability": { "name": "CVE-2017-5506" },
+      "products": [ { "@id": "pkg:generic/imagemagick" } ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "impact_statement": "Fixed in ImageMagick 7.0.4-4 (2017). The appliance compiles ImageMagick 7.1.2 from source; the match comes from a CPE without a version range.",
+      "timestamp": "2026-11-03T00:00:00Z"
+    }
+  ]
+}

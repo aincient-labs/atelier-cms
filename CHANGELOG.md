@@ -7,6 +7,31 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.22.0] — 2026-11-03
+
+**Security release: fewer known vulnerabilities in what your site runs.**
+- ImageMagick, which resizes and converts your images, is updated to 7.1.2-35. This fixes 13
+  vulnerabilities rated High (among them CVE-2026-86420, CVE-2026-93589 and CVE-2026-106565).
+- The console's form validation library (zod) is updated to 4.6.7, which fixes a High-rated flaw
+  (CVE-2023-54404).
+- The database server moves to the current Debian release of the same PostgreSQL 16 with
+  pgvector, which drops 36 known Critical and High vulnerabilities of the old image. Your data
+  stays: on the first start after the move, your site rebuilds its database indexes for the new
+  system libraries (text sorts slightly differently under them), which takes a moment longer than
+  a normal start.
+- The web server in front of your site moves to nginx's slim image, without the unused tools that
+  carried most of its advisories, and the updater is built on a maintained Docker release.
+- Three unused add-on modules are no longer shipped in the image.
+
+**Know what you run.** Each release now lists everything it ships in a CycloneDX software bill of
+materials (SBOM), attached to its GitHub Release, and the image carries SBOM and build provenance
+attestations. Scanner findings that cannot affect Atelier are listed in `vex.openvex.json`. How to
+read and scan them: [aincient-labs.com/docs/sbom](https://aincient-labs.com/docs/sbom).
+
+To update, re-run the installer as described in the quickstart's **Upgrade** section: it brings the
+new database and web server images too. With the Atelier Manager, `atelier app update` updates your
+site, and a Manager release after this one also moves the database and web server images.
+
 ## [0.21.0] — 2026-11-03
 
 **A new look for the console.**

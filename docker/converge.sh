@@ -154,7 +154,7 @@ wait_for_db() {
 
 # Activate the pgvector extension so `vector`-typed columns are usable the moment
 # any module needs them. Idempotent (CREATE EXTENSION IF NOT EXISTS); runs on
-# every boot before install/upgrade. The db image (pgvector/pgvector:pg16) ships
+# every boot before install/upgrade. The db image (pgvector/pgvector:pg16-trixie) ships
 # the extension files; the `aincient` DB user owns its database, so it may create
 # the extension. Postgres only — settings.appliance.php still accepts a
 # mysql/mariadb DATABASE_URL, and there this is a no-op. Not fatal: nothing uses
@@ -170,6 +170,43 @@ ensure_pgvector() {
   else
     log "WARN: could not create the pgvector extension (continuing)"
   fi
+}
+
+# Rebuild indexes when the db image's C library changed under the data. Text is
+# sorted by glibc's collation, so a new glibc (bookworm 2.36 → trixie 2.41 when
+# the db image moved to pg16-trixie, cms #86) can order strings differently from
+# the indexes built before it — lookups miss rows, unique indexes stop catching
+# duplicates. Postgres records each database's collation version and warns on a
+# mismatch; this answers the warning: REINDEX, then record the new version.
+#
+# Version-agnostic and on EVERY start (a fast restart too): the db image can
+# change without the app image changing, and any future base move is covered
+# without anyone predicting it. A matching database costs one query. template0
+# has no recorded version and is left alone. Not fatal: a failed REINDEX (e.g. a
+# unique index whose values now collide) leaves the site as it ran before and the
+# version unrefreshed, so the next start tries again and the warning stays loud.
+refresh_collation_versions() {
+  case "${DATABASE_URL:-pgsql://}" in
+    pgsql:*) ;;
+    *) return 0 ;;
+  esac
+  local stale d
+  if ! stale="$($DRUSH sql:query "SELECT string_agg(quote_ident(datname), ' ') FROM pg_database WHERE datcollversion IS NOT NULL AND datcollversion <> pg_database_collation_actual_version(oid);" 2>/dev/null)"; then
+    log "WARN: could not read the database collation versions (continuing)"
+    return 0
+  fi
+  stale="$(printf '%s' "$stale" | tr -d '\r' | xargs)"
+  [ -n "$stale" ] || return 0
+  log "the database's collation library changed (${stale}) → rebuilding indexes"
+  if ! $DRUSH sql:query 'REINDEX DATABASE;' >/dev/null 2>&1; then
+    log "WARN: REINDEX DATABASE failed; collation versions NOT refreshed, the next start retries"
+    return 0
+  fi
+  for d in $stale; do
+    $DRUSH sql:query "ALTER DATABASE ${d} REFRESH COLLATION VERSION;" >/dev/null 2>&1 \
+      || log "WARN: could not refresh the collation version of ${d}"
+  done
+  log "indexes rebuilt; collation versions refreshed"
 }
 
 # --- Installed modules whose code this image no longer carries ---------------
@@ -776,6 +813,7 @@ main() {
   fingerprint="$(converge_fingerprint)"
   wait_for_db
   ensure_pgvector
+  refresh_collation_versions
 
   local db_state
   db_state="$(database_state)"

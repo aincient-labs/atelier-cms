@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# sbom-appliance — CycloneDX SBOMs for one published Atelier CMS appliance release (umbrella decision
+# 0503). Run by the release workflow for each tag (from the public tree, with --src), by the
+# weekly scan (.github/workflows/scan.yml) and by hand through the umbrella's bin/sbom-appliance.
+# Lives in docker/ because docker/ ships to the public repo, where the release workflow runs.
+#
+#   docker/sbom-appliance 0.21.0 [--out DIR] [--src DIR]
+#
+# --src DIR reads compose.yaml, the Dockerfiles and the console's package-lock.json from a local
+# checkout of that version instead of the GitHub API (the release workflow's own checkout).
+#
+# Writes into DIR (default: ./sbom-<version>):
+#   atelier-cms.cdx.json   our image, plus what scanners can't see in it: the ImageMagick we compile
+#                          from source (version from that tag's docker/Dockerfile) and the runtime
+#                          npm packages bundled into the console JS (from chat-ui/package-lock.json)
+#   db.cdx.json            pgvector/pgvector (the compose `db` service)
+#   edge.cdx.json          nginx (the compose `edge` service)
+#   updater.cdx.json       docker:NN-cli, the base the updater sidecar is built from on install
+#   appliance.cdx.json     the release as a whole: one container component per image, pinned by
+#                          digest, each pointing at its own SBOM file (CycloneDX BOM-Link)
+#   counts.txt             component counts per image and type
+#
+# Images are resolved to the digest current at run time: for a backfill that is the tag's digest
+# today, which for the third-party images may be a later patch than users pulled on release day.
+# Test fixtures are excluded: Drupal core ships fake installed.json files (drupal/core 9.8.0)
+# that read as real packages. Scans linux/amd64. Needs docker (with buildx), gh, jq, python3. Tools run as containers pinned by
+# digest — a scanner runs with access to the machine (Trivy compromise, March 2026).
+set -euo pipefail
+
+SYFT_IMAGE="anchore/syft:v1.56.0@sha256:697ae864af1299cfa43c54b161cea3dd65c6d54de82e3dba66ea3dccb3acc313"
+REPO="aincient-labs/atelier-cms"
+PLATFORM="linux/amd64"
+
+ver="${1:-}"; [[ -n "$ver" && "$ver" != -* ]] || { echo "usage: sbom-appliance <version> [--out DIR]" >&2; exit 2; }
+shift; out="./sbom-$ver"; src=""
+while [[ $# -gt 0 ]]; do case "$1" in --out) out="$2"; shift 2;; --src) src="$(cd "$2" && pwd)"; shift 2;; *) echo "unknown arg $1" >&2; exit 2;; esac; done
+tag="v$ver"
+mkdir -p "$out"; out="$(cd "$out" && pwd)"
+
+# GitHub's contents API now and then answers 5xx; retry those, fail fast on anything else (a 404).
+gh_raw() { # repo path [ref]
+  local o e i
+  for i in 1 2 3 4; do
+    if o="$(gh api -H 'Accept: application/vnd.github.raw' "repos/$1/contents/$2${3:+?ref=$3}" 2>/tmp/gh_raw.$$)"; then
+      printf '%s\n' "$o"; rm -f /tmp/gh_raw.$$; return 0
+    fi
+    e="$(cat /tmp/gh_raw.$$)"; rm -f /tmp/gh_raw.$$
+    grep -q 'HTTP 5' <<<"$e" || { echo "$e" >&2; return 1; }
+    echo "gh_raw $1/$2: $e, retrying" >&2; sleep $((i * 10))
+  done
+  return 1
+}
+raw() { if [[ -n "$src" ]]; then cat "$src/$1"; else gh_raw "$REPO" "$1" "$tag"; fi; }
+compose="$(raw docker/compose.yaml)"
+dockerfile="$(raw docker/Dockerfile)"
+updater_df="$(raw docker/updater/Dockerfile)"
+raw web/modules/custom/aincient_chat/chat-ui/package-lock.json > "$out/.chat-ui-lock.json"
+
+db_img="$(awk '/^  db:/{f=1} f&&/image:/{print $2; exit}' <<<"$compose")"
+edge_img="$(awk '/^  edge:/{f=1} f&&/image:/{print $2; exit}' <<<"$compose")"
+upd_img="$(awk '/^FROM /{print $2; exit}' <<<"$updater_df")"
+app_img="ghcr.io/$REPO:$tag"
+im_ver="$(grep -oE 'ImageMagick/archive/refs/tags/[^ ]+\.tar\.gz' <<<"$dockerfile" | head -1 | sed -E 's#.*/tags/(.+)\.tar\.gz#\1#')"
+for v in db_img edge_img upd_img im_ver; do [[ -n "${!v}" ]] || { echo "could not read $v from $tag" >&2; exit 1; }; done
+
+digest() { docker buildx imagetools inspect "$1" --format '{{.Manifest.Digest}}'; }
+scan() { # name image
+  local d; d="$(digest "$2")"
+  echo "  $1: $2@$d" >&2
+  docker run --rm -e SYFT_FILE_METADATA_SELECTION=none "$SYFT_IMAGE" "registry:$2@$d" --exclude '**/tests/fixtures/**' --platform "$PLATFORM" -o cyclonedx-json -q > "$out/$1.cdx.json"
+  printf '%s\t%s\t%s\n' "$1" "$2" "$d" >> "$out/.images.tsv"
+}
+
+: > "$out/.images.tsv"
+echo "sbom-appliance $ver → $out" >&2
+scan atelier-cms "$app_img"
+scan db "$db_img"
+scan edge "$edge_img"
+scan updater "$upd_img"
+
+python3 - "$out" "$ver" "$im_ver" <<'PY'
+import json, sys, uuid, datetime, collections
+out, ver, im = sys.argv[1:4]
+imgs = [l.rstrip('\n').split('\t') for l in open(f"{out}/.images.tsv")]
+now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+# 1. ImageMagick into our image's SBOM, unless syft already found it.
+p = f"{out}/atelier-cms.cdx.json"; b = json.load(open(p))
+comps = b.setdefault('components', [])
+if not any('imagemagick' in (c.get('name') or '').lower() and c.get('version','').startswith(im.split('-')[0]) for c in comps):
+    comps.append({
+        "bom-ref": f"pkg:generic/imagemagick@{im}", "type": "library", "name": "imagemagick", "version": im,
+        "purl": f"pkg:generic/imagemagick@{im}",
+        "cpe": f"cpe:2.3:a:imagemagick:imagemagick:{im}:*:*:*:*:*:*:*",
+        "externalReferences": [{"type": "distribution", "url": f"https://github.com/ImageMagick/ImageMagick/archive/refs/tags/{im}.tar.gz"}],
+        "properties": [{"name": "aincient:origin", "value": "compiled from source in docker/Dockerfile; declared by docker/sbom-appliance"}]})
+
+# 1b. The console's runtime npm packages: vite bundles them into js/dist, so no scanner sees them.
+#     Declared from that tag's chat-ui package-lock.json (runtime entries only, dev excluded).
+have = {c.get('purl') for c in comps}
+lock = json.load(open(f"{out}/.chat-ui-lock.json"))
+for key, meta in sorted(lock.get('packages', {}).items()):
+    if not key or meta.get('dev') or 'node_modules/' not in key or not meta.get('version'):
+        continue
+    name = key.rsplit('node_modules/', 1)[1]
+    purl = f"pkg:npm/{name.replace('@', '%40')}@{meta['version']}"
+    if purl in have:
+        continue
+    have.add(purl)
+    comps.append({"bom-ref": purl, "type": "library", "name": name, "version": meta['version'], "purl": purl,
+                  "properties": [{"name": "aincient:origin", "value": "bundled into web/modules/custom/aincient_chat/js/dist from chat-ui/package-lock.json; declared by docker/sbom-appliance"}]})
+json.dump(b, open(p, 'w'), indent=2)
+
+# 2. The release-level SBOM: one container per image, each linking to its own SBOM.
+top = {"bomFormat": "CycloneDX", "specVersion": "1.6", "serialNumber": f"urn:uuid:{uuid.uuid4()}", "version": 1,
+       "metadata": {"timestamp": now,
+                    "tools": {"components": [{"type": "application", "name": "sbom-appliance"}, {"type": "application", "name": "syft", "version": "1.56.0"}]},
+                    "component": {"bom-ref": f"atelier-cms-appliance@{ver}", "type": "application", "name": "Atelier CMS appliance", "version": ver,
+                                  "supplier": {"name": "AIncient Labs"}}},
+       "components": [], "dependencies": [{"ref": f"atelier-cms-appliance@{ver}", "dependsOn": []}]}
+lines = []
+for name, ref, dig in imgs:
+    sub = json.load(open(f"{out}/{name}.cdx.json"))
+    repo, _, tag = ref.rpartition(':')
+    bref = f"pkg:oci/{repo.split('/')[-1]}@{dig.replace(':', '%3A')}?repository_url={repo}&tag={tag}"
+    top["components"].append({"bom-ref": bref, "type": "container", "name": repo, "version": tag,
+        "purl": bref, "hashes": [{"alg": "SHA-256", "content": dig.split(':', 1)[1]}],
+        "properties": [{"name": "aincient:service", "value": name}],
+        "externalReferences": [{"type": "bom", "url": f"urn:cdx:{sub['serialNumber'].split(':')[-1]}/{sub.get('version', 1)}", "comment": f"{name}.cdx.json"}]})
+    top["dependencies"][0]["dependsOn"].append(bref)
+    by = collections.Counter(c.get('type', '?') for c in sub.get('components', []))
+    lines.append(f"{name}\t{ref}@{dig[:19]}…\t{sum(by.values())} components\t" + ", ".join(f"{k} {v}" for k, v in sorted(by.items())))
+json.dump(top, open(f"{out}/appliance.cdx.json", 'w'), indent=2)
+open(f"{out}/counts.txt", 'w').write('\n'.join(lines) + '\n')
+print('\n'.join(lines))
+PY
+rm -f "$out/.images.tsv" "$out/.chat-ui-lock.json"
