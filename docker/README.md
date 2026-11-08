@@ -389,7 +389,7 @@ rollback); the appliance install gate is closed (see `.dev` DECISIONS 2026-06-16
 
 - **`trusted_host_patterns`** is env-driven: set `AINCIENT_TRUSTED_HOSTS` to a
   comma-separated list of regexes; unset falls back to accept-any **and logs a warning**.
-- **No default admin password.** Converge mints a random one on first install, logs it,
+- **No default admin password.** Converge mints a random one on first install, never logs it,
   and writes it to `private/INITIAL_ADMIN_PASSWORD`; the installer surfaces it. Pin your
   own with `ADMIN_PASS`.
 - **Image rollback.** A failed upgrade now restores the DB snapshot **and** re-pins the

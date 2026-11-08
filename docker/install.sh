@@ -157,6 +157,15 @@ map $http_x_forwarded_proto $edge_proto {
     default $http_x_forwarded_proto;
     "" $scheme;
 }
+# HSTS only for a request that arrived over TLS (an outer terminator, or a
+# direct https listener). Keyed on $edge_proto, the scheme already forwarded to
+# Drupal, so the two never disagree. An empty value is not sent; a browser
+# ignores HSTS received over plain http, so a client spoofing the header gains
+# nothing.
+map $edge_proto $hsts {
+    default "";
+    https "max-age=31536000";
+}
 
 proxy_http_version 1.1;
 proxy_set_header Host $http_host;
@@ -177,6 +186,16 @@ server {
     server_name _;
     absolute_redirect off;
 
+    # Baseline security headers, on every response (`always`: error pages too).
+    # nginx drops server-level add_header in any location that has one of its
+    # own, so `location /` and `@updating` repeat this block verbatim; keep the
+    # three copies in step. @miss has none of its own and inherits it.
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+    add_header Strict-Transport-Security $hsts always;
+
     gzip on;
     gzip_vary on;
     gzip_types text/css text/plain text/xml application/xml application/javascript application/json image/svg+xml;
@@ -185,6 +204,11 @@ server {
         root $frz_root;
         add_header X-Atelier-Served frozen;
         add_header Cache-Control "public, max-age=300, stale-while-revalidate=86400";
+        add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+        add_header Strict-Transport-Security $hsts always;
         try_files $uri/index.html $uri @miss;
     }
 
@@ -200,6 +224,10 @@ server {
         # Live or bypassed: Drupal. A variable target is resolved per request.
         set $app http://app:80;
         proxy_pass $app;
+        # Drupal sends the same two (core FinishResponseSubscriber); the edge's
+        # copies are the only ones, so drop the upstream's.
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header X-Frame-Options;
         # `=`: answer with @updating's own 503, not the upstream's 502.
         error_page 502 503 504 = @updating;
     }
@@ -209,6 +237,11 @@ server {
         default_type text/html;
         add_header Retry-After 5 always;
         add_header Cache-Control "no-store" always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+        add_header Strict-Transport-Security $hsts always;
         return 503 "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><meta http-equiv='refresh' content='5'><title>Atelier is starting</title><style>:root{color-scheme:light dark;--paper:#FFFFFF;--ink:#0D0D0D;--grey:#636363}@media (prefers-color-scheme:dark){:root{--paper:#121110;--ink:#F2F0EC;--grey:#A39E96}}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:0 16px;background:var(--paper);color:var(--ink);font:400 16px/1.55 'IBM Plex Sans','Helvetica Neue',Arial,sans-serif}main{width:100%;max-width:30rem;border-top:1px solid var(--ink);padding-top:1.5rem}svg{display:block;width:40px;height:40px;margin-bottom:1.25rem}h1{margin:0 0 .75rem;font-size:1.75rem;font-weight:500;line-height:1.1;letter-spacing:-0.02em}p{margin:0;color:var(--grey)}</style></head><body><main><svg viewBox='-9 -9 128.72 128.72' aria-hidden='true'><path d='M65.328 5.665 L5.562 105.298 L45.635 105.358 L105.299 5.562 Z' fill='#C2452A'/><path d='M56.151 30.981 L52.559 30.981 L34.183 77.371 L28.978 79.098 L28.978 80.143 L43.042 80.143 L43.042 79.098 L36.711 77.474 L42.648 62.220 L59.988 62.220 L64.826 73.258 L70.629 63.552 Z M43.539 59.929 L50.803 41.264 L58.984 59.929 Z' fill='#FFFFFF' fill-rule='evenodd'/><path d='M-0.44 19.56 V-0.44 H19.56 M111.30 91.30 V111.30 H91.30' fill='none' stroke='currentColor' stroke-width='4' stroke-linecap='square'/></svg><h1>Atelier is starting</h1><p>The site is updating or has just been started. This page reloads by itself every few seconds.</p></main></body></html>";
     }
 }
@@ -227,18 +260,57 @@ channel_of() {
 # Write .env only on first install — never clobber an existing key/salt.
 ENV_FILE="$INSTALL_DIR/.env"
 if [ ! -f "$ENV_FILE" ]; then
+  # A random DB password, but ONLY when no database exists yet: Postgres applies
+  # POSTGRES_PASSWORD on the volume's first init and never again, so a new
+  # password over an existing volume locks the app out of its own data. The
+  # volume is <project>_db-data; compose prefers COMPOSE_PROJECT_NAME over the
+  # file's `name: atelier`, so check both. If Docker can't answer, write nothing
+  # (compose falls back to its default) rather than guess.
+  # An exported DB_PASSWORD is spliced into DATABASE_URL and read unquoted from
+  # .env by compose: allow only URL-unreserved characters, as the Manager does.
+  case "${DB_PASSWORD:-}" in
+    *[!A-Za-z0-9._~-]*)
+      die "DB_PASSWORD may only contain letters, digits and . _ ~ - (try: openssl rand -hex 24)." ;;
+  esac
+  db_project="$(printf '%s' "${COMPOSE_PROJECT_NAME:-atelier}" | tr '[:upper:]' '[:lower:]')"
+  db_password=""
+  if docker volume inspect atelier_db-data >/dev/null 2>&1 \
+    || docker volume inspect "${db_project}_db-data" >/dev/null 2>&1; then
+    # Write nothing: guessing or resetting the password could lock the app out.
+    warn "Found an existing Atelier database but no .env, so no database password was written."
+    warn "If an earlier install generated one, put that DB_PASSWORD back into ${ENV_FILE} from your backup, or reset it: https://aincient-labs.com/docs/hardening#if-you-lose-env"
+    warn "Databases from older versions keep working as they are."
+  elif docker volume ls -q >/dev/null 2>&1; then
+    # A DB_PASSWORD exported for this run wins (compose would use it for the
+    # first init anyway); recording it keeps .env and the database in step.
+    db_password="${DB_PASSWORD:-$(openssl rand -hex 24)}"
+  else
+    say "Couldn't check for an existing database: keeping the default database password"
+  fi
   # ADMIN_PASS left blank on purpose: converge mints a random admin password on
-  # first boot and records it (app log + private/INITIAL_ADMIN_PASSWORD). Set a
+  # first boot and records it (private/INITIAL_ADMIN_PASSWORD only; never logged). Set a
   # value here only if you want to pin your own.
-  cat > "$ENV_FILE" <<ENV
+  # umask 077 in a subshell: the file holds secrets from its first byte, so it
+  # is never even briefly readable by others.
+  (
+    umask 077
+    cat > "$ENV_FILE" <<ENV
 HASH_SALT=$(openssl rand -hex 32)
 AINCIENT_IMAGE=${AINCIENT_IMAGE}
 AINCIENT_CHANNEL=$(channel_of "$AINCIENT_IMAGE")
 HTTP_PORT=${HTTP_PORT}
 ADMIN_PASS=
 ENV
+    if [ -n "$db_password" ]; then
+      printf 'DB_PASSWORD=%s\n' "$db_password" >> "$ENV_FILE"
+    fi
+  ) || die "Couldn't write ${ENV_FILE}."
   chmod 600 "$ENV_FILE"
-  say "Wrote ${dim}${ENV_FILE}${rst} (HASH_SALT generated)"
+  if [ -n "$db_password" ]; then
+    say "Wrote ${dim}${ENV_FILE}${rst} (HASH_SALT and DB_PASSWORD generated)"
+  else
+    say "Wrote ${dim}${ENV_FILE}${rst} (HASH_SALT generated)"
+  fi
 else
   # Keep the secrets already on disk (HASH_SALT), but reconcile
   # the tunables this invocation may have changed — otherwise a re-run that points

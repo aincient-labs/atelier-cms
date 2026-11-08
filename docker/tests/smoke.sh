@@ -14,6 +14,7 @@ COMPOSE=(docker compose -p atelier_smoke -f "$DOCKER_DIR/compose.yaml")
 NET=atelier_smoke_default
 export AINCIENT_IMAGE=aincient/cms:smoke
 export HASH_SALT="smoke-$(openssl rand -hex 16)"
+export DB_PASSWORD="smoke-$(openssl rand -hex 16)"   # prove a non-default DB password works end to end
 export HTTP_PORT=8099
 
 pass=0; fail=0
@@ -123,6 +124,33 @@ echo "== assert: console reachability =="
 [ "$(http http://app/)" = "200" ]           && ok "front page 200"            || bad "front page not 200"
 [ "$(http http://app/user/login)" = "200" ] && ok "/user/login 200"           || bad "/user/login not 200"
 [ "$(http http://app/atelier)" = "403" ]    && ok "/atelier 403 for anon"    || bad "/atelier not 403 for anon"
+
+echo "== assert: the edge sends the baseline security headers =="
+# docker/edge.conf: every response carries them, once. Drupal's own nosniff and
+# X-Frame-Options are hidden at the edge so the proxied paths don't double up.
+# HSTS only when the request came in over TLS ($edge_proto = https).
+"${COMPOSE[@]}" up -d edge >/dev/null
+for _ in $(seq 1 30); do [ "$(http http://edge/)" = "200" ] && break; sleep 2; done
+hdrs() { docker run --rm --network "$NET" curlimages/curl:latest -s -o /dev/null -D - "$@" 2>/dev/null | tr -d '\r'; }
+for path in / /atelier; do
+  h="$(hdrs "http://edge$path")" || h=""
+  for want in "X-Content-Type-Options: nosniff" \
+              "Referrer-Policy: strict-origin-when-cross-origin" \
+              "X-Frame-Options: SAMEORIGIN" \
+              "Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()"; do
+    name="${want%%:*}"
+    n="$(printf '%s\n' "$h" | grep -ci "^$name:" || true)"
+    if [ "$n" = "1" ] && printf '%s\n' "$h" | grep -qiF "$want"; then
+      ok "edge $path: $want (once)"
+    else
+      bad "edge $path: expected '$want' exactly once, got $n:"; printf '%s\n' "$h" | grep -i "^$name:" | sed 's/^/      /'
+    fi
+  done
+  if printf '%s\n' "$h" | grep -qi '^Strict-Transport-Security:'; then bad "edge $path: HSTS sent over plain http"; else ok "edge $path: no HSTS over plain http"; fi
+  hs="$(hdrs -H 'X-Forwarded-Proto: https' "http://edge$path")" || hs=""
+  if [ "$(printf '%s\n' "$hs" | grep -ci '^Strict-Transport-Security: max-age=31536000$' || true)" = "1" ]; then
+    ok "edge $path: HSTS once behind https"; else bad "edge $path: HSTS missing behind X-Forwarded-Proto: https"; fi
+done
 
 echo "== assert: every studio manifest in the image is discovered =="
 # Regression guard for 0.16.0, which passed install, upgrade and owner-data checks
@@ -256,7 +284,13 @@ done
 snaps_after="$("${COMPOSE[@]}" exec -T app sh -c 'ls /opt/drupal/private/snapshots/pre-converge-*.sql.gz 2>/dev/null | wc -l' | tr -d '[:space:]')" || true
 if [ "$result" = "ok" ]; then ok "fast restart converged ok"; else bad "fast restart did not converge (converge.result='${result:-<none>}')"; fi
 if [ "$snaps_after" = "$snaps_before" ]; then ok "fast restart took no snapshot"; else bad "fast restart snapshotted ($snaps_before → $snaps_after)"; fi
-if "${COMPOSE[@]}" logs app 2>&1 | grep -q 'restart of the build that converged this site'; then ok "fast restart logged the restart path"; else bad "no restart-path log line"; fi
+# converge writes the result file a moment before it logs the line: poll briefly.
+restart_logged=0
+for _ in $(seq 1 10); do
+  if "${COMPOSE[@]}" logs app 2>&1 | grep -q 'restart of the build that converged this site'; then restart_logged=1; break; fi
+  sleep 1
+done
+if [ "$restart_logged" = "1" ]; then ok "fast restart logged the restart path"; else bad "no restart-path log line"; fi
 
 echo "== assert: rollback round-trip reverts a change =="
 drush config:set system.site name "SMOKE-GOOD" -y >/dev/null

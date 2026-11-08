@@ -30,68 +30,73 @@ It runs on your computer, and the site, the files and the keys stay with you.
 
 ## Quick start
 
-**On macOS or Linux, the smoothest path is the [`atelier` CLI](https://github.com/aincient-labs/manager)** —
-one Homebrew install gives you a managed appliance you can update, back up, and restore with a
-single command:
+**The desktop app** is the simplest way in. Download Atelier Manager for macOS, Windows or Linux
+from the [latest release](https://github.com/aincient-labs/manager/releases/latest), open it, and
+it installs Atelier and starts it for you. It needs [Docker Desktop](https://docs.docker.com/get-docker/)
+(free) and your own AI key.
+
+**From a terminal**, the [`atelier` CLI](https://github.com/aincient-labs/manager) does the same
+on macOS and Linux:
 
 ```bash
 brew install aincient-labs/tap/atelier
 atelier app install     # pulls the image and starts your site
-atelier app open        # opens the operator console in your browser
+atelier app open        # opens the console in your browser, signed in
 ```
 
-`atelier app install` is idempotent and keeps everything under `~/.atelier`. First boot configures
-the site by itself; when it settles you land in the operator console at **`/atelier`** (or open
+`atelier app install` is safe to run twice and keeps everything under `~/.atelier`. First boot
+sets up the site by itself, then you land in the console at **`/atelier`** (or open
 **http://localhost:41221/** directly).
 
-No account to create, no key to paste in a config file, nothing held back for a paid tier —
-you're now running the real product. Later, `atelier app update` upgrades in place with automatic
-rollback, and `atelier data backup` / `restore` snapshot your whole site.
+Everything in this repository is the full product. There is no account to create and no paid tier.
+Later, `atelier app update` upgrades in place and rolls back if the upgrade fails, and
+`atelier data backup` / `restore` take and restore snapshots of the whole site.
 
-> **No Homebrew, or a headless Docker host?** The one-line installer does the same first-run in
-> a single command — see [Running Atelier](#running-atelier) for that and the manual path.
+> **No Homebrew, or a headless Docker host?** The one-line installer does the same first run.
+> See [Running Atelier](#running-atelier) for that and the manual path.
 
 ## See it work in 30 seconds
 
-> ▶ **Watch the full demo** — one sentence builds a coffee-roaster site, then
+> **Watch the full demo.** One sentence builds a coffee-roaster site, then
 > `atelier site export` ships it to Cloudflare Pages:
 > **[Watch on YouTube](https://youtu.be/AJqLBHqNTcM)** ·
 > [on the site](https://aincient-labs.com/#made) ·
 > [direct MP4](https://aincient-labs.com/assets/video/demo.mp4).
 
-1. **Log in.** Atelier drops you straight into the operator console at **`/atelier`**.
-2. **Connect an AI provider** in the first-run wizard — an Anthropic or OpenAI key, or a
-   local [Ollama](https://ollama.com) server. Keys live in the site's state storage, never in
-   code or config.
-3. **Just say what you want:**
+1. **Sign in.** Atelier opens the console at **`/atelier`**.
+2. **Connect an AI provider** in the first-run wizard: Anthropic, OpenAI, Google Gemini, Mistral,
+   any OpenAI-compatible endpoint, or a local [Ollama](https://ollama.com) server. Atelier checks
+   each key with the provider before saving it, and keeps it in the site's own storage, outside
+   code and config.
+3. **Say what you want:**
 
-   > *"Write a short article about the Rosetta Stone and save it as a draft."*
+   > *"Write a short article about our new Saturday opening hours and save it as a draft."*
 
-   Watch the assistant pick the right tool, create the content, and report back — in one turn.
+   The assistant picks the right tool, creates the content and tells you what it did, in one turn.
 
-From there it's a conversation:
+From there you carry on in the same chat:
 
-> *"Find the article about pyramids and unpublish it."*
-> *"Rename that to … and publish it."*
+> *"Find the article about opening hours and unpublish it."*
+> *"Rename it to Summer hours and publish it."*
 > *"Delete it."*
 
-Full content management, by chat. Everything happens under **your** account and permissions —
-the assistant can't do anything you couldn't do yourself.
+The assistant works under **your** account and permissions, so it can only do what you could do
+yourself. Changes that matter wait for your approval.
 
 ## Publish your site anywhere
 
-Atelier isn't a walled garden. Any site you build can be exported as a **plain static snapshot** and
-hosted wherever you like — no lock-in, no running server required:
+Any site you build can be exported as a **plain static snapshot** and hosted wherever you like,
+with no server of your own to run:
 
 ```bash
 atelier site export --base-url https://your-domain.com
 ```
 
-`atelier site export` renders your pages to ordinary HTML, CSS, and assets with a built-in link
-check, and drops the result in `./aincient-export` ready to deploy. The
+`atelier site export` renders your pages to ordinary HTML, CSS and assets, checks every link, and
+writes the result to `./aincient-export`. The
 **[atelier-deploy-template](https://github.com/aincient-labs/atelier-deploy-template)**
-repo is pre-wired to publish that export to **Netlify, Cloudflare Pages, Vercel, or GitHub Pages** —
-grab a host in one click, then drop your export in:
+repository is set up to publish that export to **Netlify, Cloudflare Pages, Vercel or GitHub Pages**.
+Pick a host with one click, then add your export:
 
 <p>
   <a href="https://app.netlify.com/start/deploy?repository=https://github.com/aincient-labs/atelier-deploy-template"><img src="https://www.netlify.com/img/deploy/button.svg" alt="Deploy to Netlify" height="32" /></a>
@@ -101,49 +106,50 @@ grab a host in one click, then drop your export in:
   <a href="https://vercel.com/new/clone?repository-url=https://github.com/aincient-labs/atelier-deploy-template"><img src="https://vercel.com/button" alt="Deploy with Vercel" height="32" /></a>
 </p>
 
-Full walkthrough (including drag-and-drop and GitHub Pages):
+The full walkthrough, including drag-and-drop and GitHub Pages, is in
 **[Host your exported site](https://aincient-labs.com/docs/deploy)**.
 
 ## Why we build this
 
-**Working with a serious website should be as simple as saying what you want.** You shouldn't
-need to know what a content type or a view is to run one — especially if you've never touched
-Drupal. Our aim, as far as a free and open-source project can carry it, is to make Drupal plus
-everything happening in AI genuinely approachable.
+**Running a serious website should be as simple as saying what you want.** You should not need to
+know what a content type or a view is, especially if you have never used Drupal. Our aim, as far as
+a free and open-source project can carry it, is to make Drupal and today's AI models approachable
+for the people who run a business.
 
-- 🎯 **A product, not a kit of parts.** Atelier ships as a versioned container appliance that
-  installs itself, updates itself, and rolls itself back if an upgrade fails.
-- 🔓 **Everything here is the real thing.** Open source, self-hosted, no account, nothing
-  reserved for a paid tier. In a world where everything cool hides behind a login, we'd like
-  this to feel different.
-- 🏛️ **Drupal underneath, curated on top.** Built on [Drupal](https://www.drupal.org) and
-  deliberately restricted to the Atelier experience by default. If you know Drupal, the full
-  platform is yours to unlock. If you don't, you'll never need to.
+- **It ships as one product.** Atelier is a versioned container that installs itself, updates
+  itself, and rolls back if an upgrade fails.
+- **The free version is the whole version.** It is open source and self-hosted, and nothing is
+  held back for a paid tier.
+- **Drupal underneath, curated on top.** Atelier is built on [Drupal](https://www.drupal.org) and
+  shows only the Atelier experience by default. If you know Drupal, the full platform is there
+  when you want it. If you don't, you never need to touch it.
 
-> Need an enterprise arrangement — support, guarantees, commercial licensing? We're happy to
-> talk. That funds the free product; it never shrinks it.
+> Need support, guarantees or commercial licensing for an organisation? We are happy to talk.
+> That work funds the free product and never takes anything out of it.
 
 ## Running Atelier
 
-Atelier is distributed as a **versioned public container image** — the image *is* the product
-and the unit of versioning, the way Discourse, GitLab Omnibus, and Ghost are delivered. It's
-published to GHCR at
+Atelier is distributed as a **versioned public container image**. The image is the product and the
+unit of versioning, the way Discourse, GitLab Omnibus and Ghost are delivered. It is published to
+GHCR at
 [`ghcr.io/aincient-labs/atelier-cms`](https://github.com/aincient-labs/atelier-cms/pkgs/container/atelier-cms)
-and is **public — no login or token required.** All three paths below run that same image; the
-only prerequisite is [Docker](https://docs.docker.com/get-docker/).
+and can be pulled without a login or token. All paths below run that same image, and the only
+prerequisite is [Docker](https://docs.docker.com/get-docker/).
 
-Every published image is **signed with [cosign](https://docs.sigstore.dev/)**. The install paths
-don't require verification, but if you want it, the public key ships in this repo as
-[`cosign.pub`](cosign.pub):
+Every published image is **signed with [cosign](https://docs.sigstore.dev/)**. Verification is
+optional; the public key is in this repository as [`cosign.pub`](cosign.pub):
 
 ```bash
 cosign verify --key cosign.pub ghcr.io/aincient-labs/atelier-cms:latest
 ```
 
-### Option A — the `atelier` CLI *(recommended · macOS & Linux)*
+### Option A: Atelier Manager *(recommended)*
 
-A small [Rust CLI](https://github.com/aincient-labs/manager) that manages the appliance's whole
-lifecycle over Docker — install once, then operate with grouped, memorable commands:
+The desktop app and the `atelier` CLI come from the same
+[Manager repository](https://github.com/aincient-labs/manager) and run the same lifecycle over
+Docker. The desktop app is on the
+[releases page](https://github.com/aincient-labs/manager/releases/latest) for macOS, Windows and
+Linux. The CLI installs with Homebrew on macOS and Linux:
 
 ```bash
 brew install aincient-labs/tap/atelier
@@ -152,111 +158,102 @@ atelier app install
 
 | Command | What it does |
 | --- | --- |
-| `atelier app install` | Lay down `~/.atelier`, pull the image, start the stack. Idempotent. |
-| `atelier app update` | Pull + converge in place, with automatic rollback on failure. |
-| `atelier app status` / `doctor` | Health and Docker-readiness checks. |
+| `atelier app install` | Set up `~/.atelier`, pull the image, start the stack. Safe to re-run. |
+| `atelier app update` | Pull a newer image and converge in place, rolling back on failure. |
+| `atelier app status` / `atelier doctor` | Health and Docker-readiness checks. |
 | `atelier app start` / `stop` / `open` / `password` | Everyday stack management. |
-| `atelier site export` | Export your site to static HTML — deploy it anywhere. |
-| `atelier data backup` / `restore` | Portable `.tar.gz` snapshots (database + uploaded files). |
-| `atelier ai model list` / `set` | Inspect or bind the AI model per role. |
+| `atelier site export` | Export your site to static HTML to host anywhere. |
+| `atelier data backup` / `restore` | Portable `.tar.gz` snapshots (database and uploaded files). |
+| `atelier ai model list` / `set` | See or change the AI model bound to each role. |
 
 Run `atelier --help` for the full list.
 
-### Option B — one-line installer *(any Docker host)*
+### Option B: one-line installer *(any Docker host)*
 
-Lays down a Docker Compose stack and starts it, no CLI to install first:
+Sets up a Docker Compose stack and starts it, with no CLI to install first:
 
 ```bash
 curl -fsSL https://aincient-labs.com/atelier/install.sh | bash
 ```
 
-### Option C — manual Docker Compose
+### Option C: Docker Compose by hand
 
 Everything you need is in [`docker/dist/`](docker/dist/):
 
 ```bash
 cd docker/dist
-cp .env.example .env    # set HASH_SALT — openssl rand -hex 32
+cp .env.example .env    # set HASH_SALT: openssl rand -hex 32
 docker compose up -d
 ```
 
-Whichever you pick, first boot installs and configures the site on its own. Open
-**http://localhost:41221/** and log in.
+Whichever path you pick, first boot installs and configures the site on its own. Open
+**http://localhost:41221/** and sign in.
 
 ### Upgrading
 
-- **CLI:** `atelier update`
+- **Desktop app or CLI:** **Check for updates** in the app, or `atelier app update`
 - **Installer / Compose:** re-run the installer, or `docker compose pull && docker compose up -d`
 
-On every start the appliance **converges**: it snapshots the database, applies any pending
-updates and configuration, health-checks itself, and rolls back automatically if anything
-fails. Your content, files, and connected provider keys live in volumes and survive every
-upgrade.
+On every start the appliance **converges**: it snapshots the database, applies pending updates and
+configuration, checks its own health, and rolls back if anything fails. Your content, files and
+provider keys live in volumes and survive every upgrade.
 
-See [`docker/dist/README.md`](docker/dist/README.md) for the full walkthrough (admin login,
-ports, reset) and [`docker/README.md`](docker/README.md) for how convergence works. You can
-also build the image yourself from [`docker/Dockerfile`](docker/Dockerfile).
+See [`docker/dist/README.md`](docker/dist/README.md) for the full walkthrough (admin login, ports,
+reset) and [`docker/README.md`](docker/README.md) for how convergence works. You can also build the
+image yourself from [`docker/Dockerfile`](docker/Dockerfile).
 
 ## Requirements
 
-- **[Docker](https://docs.docker.com/get-docker/)** with the Compose plugin — the one hard
-  prerequisite for every path.
-- An **API key** for an AI provider (Anthropic, OpenAI, …) or a local **Ollama** server,
-  connected through the in-app onboarding wizard.
-- *Optional but recommended:* the **`atelier` CLI** (Homebrew, macOS & Linux) for managed
-  install, updates, and backups.
+- **[Docker](https://docs.docker.com/get-docker/)** with the Compose plugin (Docker Desktop on a
+  laptop). Every path needs it.
+- An **API key** for an AI provider, or a local **Ollama** server, connected in the first-run
+  wizard. You pay your provider directly for what you use.
+- *Optional:* Atelier Manager (desktop app or CLI) for install, updates and backups.
 
-The appliance bundles **PostgreSQL 16** (with pgvector) — the only supported database.
+The appliance bundles **PostgreSQL 16** with pgvector, the only supported database.
 
 ## What's inside
 
-Atelier is a deliberately curated Drupal build — an opinionated selection of core and
-contributed modules with locked-down defaults, not a stock Drupal site. The product code
-lives under `web/modules/custom/`:
+Atelier is a curated Drupal build: a chosen set of core and contributed modules with locked-down
+defaults, rather than a stock Drupal site. The product code lives under `web/modules/custom/`:
 
 | Module | Role |
 | --- | --- |
-| `aincient_core` | Foundation: shared permissions, the model-role layer, base services. |
-| `aincient_chat` | The streaming chat layer: SSE endpoint, agent loop, thread/turn persistence, the typed event protocol. |
-| `aincient_assistant_ui` | The operator console (React + [assistant-ui](https://www.assistant-ui.com/)) and its studios. |
+| `aincient_core` | Foundation: shared permissions, the model-role layer, inference adapters, base services. |
+| `aincient_chat` | The streaming chat layer: SSE endpoint, agent loop, thread and turn storage, the typed event protocol. |
+| `aincient_assistant_ui` | The console (React + [assistant-ui](https://www.assistant-ui.com/)) and its studios. |
 | `aincient_pages` | Typed page schemas rendered through single-directory components. |
-| `aincient_flows` | [FlowDrop](https://www.drupal.org/project/flowdrop) integration — site capabilities exposed as agent tool nodes. |
+| `aincient_flows` | [FlowDrop](https://www.drupal.org/project/flowdrop) integration: site capabilities exposed as agent tool nodes. |
 
-…plus supporting modules (first-run onboarding, brand system, checks/auditing, demo content)
-and the front-end themes under `web/themes/custom/`. *(`aincient` is the product's internal
-namespace — AIncient Labs is the company behind Atelier.)*
+Supporting modules cover first-run onboarding, static export, mail, demo content and access
+rules, and the front-end themes live under `web/themes/custom/`. *(`aincient` is the internal
+namespace; AIncient Labs is the company behind Atelier.)*
 
-## Supported use — and going off the map
+## Supported use, and going further
 
-Atelier restricts a lot by default. **That's the product, not a limitation:** an opinionated
-selection of modules, locked-down defaults, one supported database (PostgreSQL), one supported
-way to run it (the appliance). Install it, let it update itself, and operate the site through
-the console.
+Atelier restricts a lot by default, on purpose: a chosen set of modules, locked-down defaults, one
+supported database (PostgreSQL) and one supported way to run it (the appliance). Install it, let it
+update itself, and run the site from the console.
 
-Know Drupal and want more? "Jailbreaking" Atelier to reach the full platform underneath is
-fairly easy — and encouraged. The complete source is right here under the GPL, and everything
-Drupal can do is a module or a settings change away. Two caveats: Drupal can do so much that
-we can't support what you build past the restrictions, and the appliance re-asserts each
-release's configuration on upgrade, so local forks of shipped config will be overwritten by
+If you know Drupal and want more, reaching the full platform underneath is straightforward and
+welcome. The complete source is here under the GPL, and anything Drupal can do is a module or a
+setting away. Two caveats. We can't support what you build past the defaults, and each upgrade
+re-applies the release's configuration, so local changes to shipped config are overwritten by
 design.
 
 ## Contributing
 
-**Atelier gets better through the people who run it** — and every install and every report
-brings us closer to our north star of a million running sites. You don't need to write code to
-help:
+**Atelier gets better through the people who run it.** You don't need to write code to help:
 
-- 🐛 **Try it and break it.** Bug reports in the [issue queue](https://github.com/aincient-labs/atelier-cms/issues)
-  are real participation.
-- 💡 **Tell us what's missing.** Feature requests and shared experiences shape what ships next.
-- 🙋 **Ask for help.** Questions are welcome — if something confused you, it'll confuse the next
-  person too.
+- **Try it and report what breaks** in the [issue queue](https://github.com/aincient-labs/atelier-cms/issues).
+- **Tell us what's missing.** Feature requests and accounts of how you use it shape what ships next.
+- **Ask questions.** If something confused you, it will confuse the next person too.
 
 ## About this repository
 
-This is the public source home of Atelier. Each release lands as a single snapshot commit
-produced by our deployment pipeline, with a plain-language changelog as its message — so the
-history here tracks *shipped states* rather than day-to-day development.
+This is the public source home of Atelier. Each release lands as a single snapshot commit made by
+our release pipeline, with a plain-language changelog as its message, so the history here follows
+*shipped versions* rather than day-to-day development.
 
 ## License
 
@@ -265,7 +262,7 @@ history here tracks *shipped states* rather than day-to-day development.
   distributed under the same license.
 - The operator console's React app,
   [`web/modules/custom/aincient_chat/chat-ui/`](web/modules/custom/aincient_chat/chat-ui/), is
-  licensed separately under the permissive **MIT license** — it's browser-side code, not a
+  licensed separately under the permissive **MIT license**, because it's browser-side code, not a
   Drupal derivative; see [its LICENSE](web/modules/custom/aincient_chat/chat-ui/LICENSE).
 - Custom Atelier modules and themes are © AIncient Labs.
 

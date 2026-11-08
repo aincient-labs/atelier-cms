@@ -31,7 +31,7 @@ cp .env.example .env
 
 Open `.env` and set the one required value:
 
-- `HASH_SALT` — run `openssl rand -hex 32` and paste the result.
+- `HASH_SALT` — run `openssl rand -hex 32` and paste the result (at least 32 characters; the site refuses to start without it).
 
 Everything else has sensible defaults. Connect an AI provider from the console's
 first-run onboarding wizard after install — there's no key to set here.
@@ -64,7 +64,8 @@ docker compose exec app /opt/drupal/vendor/bin/drush --root=/opt/drupal/web user
 docker compose exec app /opt/drupal/vendor/bin/drush --root=/opt/drupal/web uli --uri=http://localhost:41221
 ```
 
-(It's also echoed in the first-boot log: `docker compose logs app | grep "admin password"`.)
+(It's never written to the log; read it from the file with
+`docker compose exec app cat /opt/drupal/private/INITIAL_ADMIN_PASSWORD`.)
 
 ## 4. Upgrade to a newer build
 

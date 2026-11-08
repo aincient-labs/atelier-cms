@@ -6,7 +6,7 @@
 # Build from the repo root:  docker build -f docker/Dockerfile -t aincient/cms:dev .
 
 # --- Stage 1: resolve PHP dependencies (core + contrib + vendor) ------------
-FROM composer:2 AS vendor
+FROM composer:2@sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb6722ac87d0 AS vendor
 WORKDIR /app
 # Copy only the manifests first so this layer caches until deps change.
 COPY composer.json composer.lock patches.lock.json ./
@@ -51,6 +51,15 @@ RUN --mount=type=secret,id=composer_github_token \
 # silently stops matching.
 RUN test "$(grep -c '!=/favicon\.ico' web/.htaccess)" = 1 \
     && sed -i '/!=\/favicon\.ico/d' web/.htaccess
+
+# Drop Drupal core's test trees (~45 MB) before they reach a runtime layer. They
+# are never loaded in production: the --no-dev autoloader maps nothing under them,
+# and extension discovery skips tests/ dirs unless extension_discovery_scan_tests
+# is set (the appliance never sets it). Shipping them made scanners flag the
+# package_manager fake_site fixture's installed.json (drupal/core 9.8.0) as High/
+# Critical vulnerabilities in the image (DECISIONS 0505). Contrib tests stay.
+RUN rm -rf web/core/tests web/core/modules/*/tests web/core/profiles/*/tests web/core/themes/*/tests \
+    && test ! -e web/core/modules/package_manager/tests
 
 # --- Partition the resolved tree into cache tiers ---------------------------
 # The four big trees composer just materialised change at very different rates,
@@ -101,7 +110,7 @@ RUN mkdir -p /split /app/web/modules/contrib /app/web/modules/engine \
 RUN find /app /split -exec touch -h -t 202401010000 {} +
 
 # --- Stage 2: runtime -------------------------------------------------------
-FROM php:8.4-apache AS runtime
+FROM php:8.4-apache@sha256:884f64b47174de2c0e813270fe7b24a18605729fcebe201302d98c38805530d0 AS runtime
 
 # Refuse to build on a PHP below the PHP2Shell fix (CVE-2026-109618/109619, fixed in
 # 8.4.27): a stale cached base layer must fail the build, not ship. Raise the floor
@@ -128,10 +137,29 @@ RUN php -r 'exit(version_compare(PHP_VERSION, "8.4.27", "<") ? 1 : 0);' \
 # packaged ImageMagick can encode AVIF (the Forge demo proves it: apt-get install
 # imagemagick libheif-plugin-aomenc), so swapping to it would make this layer both
 # smaller and deterministic — evaluate before adding anything else to this RUN.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpng-dev libjpeg-dev libfreetype6-dev libwebp-dev libzip-dev libpq-dev postgresql-client unzip \
-        tar gzip \
-        build-essential libheif-dev libavif-dev libheif-plugin-aomenc wget \
+#
+# No compiler survives this RUN (DECISIONS 0505). The Debian php base image leaves its
+# $PHPIZE_DEPS (gcc, g++, make, autoconf, dpkg-dev, libc6-dev, …) installed and marked
+# MANUAL so docker-php-ext-install works out of the box — that, not build-essential,
+# is what kept gcc-14 in the runtime image. So this RUN uses the official image's own
+# cleanup pattern: snapshot the manual set, build everything (ImageMagick AND the PHP
+# extensions), then mark everything auto, re-mark the snapshot minus $PHPIZE_DEPS, keep
+# every package that owns a shared library something under /usr/local links against
+# (ldd), and autoremove the rest — -dev headers and toolchain included. ldd cannot
+# see dlopen()ed code, so libheif's codec plugins (aomenc = the AVIF ENCODER, dav1d +
+# libde265 = AVIF/HEIC decoders) are pinned manual by name; ImageMagick is built with
+# its coders in-library (no modules dir), so it has no dlopen()ed coders of its own.
+# Consequence: a derived image can no longer run docker-php-ext-install without first
+# installing $PHPIZE_DEPS itself. The checks after the purge fail the build if a
+# compiler or -dev package survives (hash -r: the shell still remembers the `make` it
+# ran above) or if any extension, gd codec or ImageMagick format went with them.
+RUN set -eux \
+    && savedAptMark="$(apt-mark showmanual)" \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        postgresql-client unzip tar gzip \
+        libheif-plugin-aomenc libheif-plugin-dav1d libheif-plugin-libde265 \
+        libpng-dev libjpeg-dev libfreetype6-dev libwebp-dev libzip-dev libpq-dev \
+        build-essential libheif-dev libavif-dev wget \
     && cd /tmp \
     && wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.2-35.tar.gz -O ImageMagick.tar.gz \
     && tar xzf ImageMagick.tar.gz \
@@ -142,13 +170,35 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /usr/local/share/doc/ImageMagick-7 /usr/local/include/ImageMagick-7 \
     && ldconfig /usr/local/lib \
     && cd /tmp && rm -rf ImageMagick* \
-    && apt-get purge -y --auto-remove build-essential wget \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j"$(nproc)" gd opcache pdo_pgsql zip \
     && a2enmod rewrite headers \
+    && apt-mark auto '.*' > /dev/null \
+    && apt-mark manual $savedAptMark > /dev/null \
+    && apt-mark auto $PHPIZE_DEPS libc6-dev \
+    && apt-mark manual postgresql-client unzip tar gzip \
+        libheif-plugin-aomenc libheif-plugin-dav1d libheif-plugin-libde265 \
+    && find /usr/local -type f \( -executable -o -name '*.so*' \) -exec ldd '{}' ';' 2>/dev/null \
+        | awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); printf "*%s\n", so }' \
+        | sort -u | xargs -r dpkg-query --search | awk 'sub(":$", "", $1) { print $1 }' \
+        | sort -u | xargs -r apt-mark manual > /dev/null \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/* \
-    && magick -list format | grep -qE '^[[:space:]]*AVIF[[:space:]]+rw' \
-    && magick -size 8x8 xc:red /tmp/avif-probe.avif && rm /tmp/avif-probe.avif
+    && hash -r && ! command -v gcc && ! command -v cc && ! command -v make \
+    && pkgs="$(dpkg-query -W -f='${Package}\n')" \
+    && ! printf '%s\n' "$pkgs" | grep -E -e '-dev(:|$)' \
+    && php -m > /tmp/php-m \
+    && for ext in gd 'Zend OPcache' pdo_pgsql zip; do grep -qx "$ext" /tmp/php-m || exit 1; done \
+    && rm /tmp/php-m \
+    && php -r '$g = gd_info(); exit($g["WebP Support"] && $g["JPEG Support"] && $g["FreeType Support"] && $g["PNG Support"] ? 0 : 1);' \
+    && for bin in psql pg_dump unzip tar gzip; do command -v "$bin" || exit 1; done \
+    && magick -list format > /tmp/magick-formats \
+    && grep -qE '^[[:space:]]*AVIF[[:space:]]+rw' /tmp/magick-formats \
+    && for fmt in HEIC WEBP PNG JPEG; do grep -qE "^[[:space:]]*${fmt}\*?[[:space:]]+r" /tmp/magick-formats || exit 1; done \
+    && rm /tmp/magick-formats \
+    && magick -size 8x8 xc:red /tmp/avif-probe.avif && magick /tmp/avif-probe.avif /tmp/avif-probe.png \
+    && magick -size 8x8 xc:red /tmp/probe.webp && magick -size 8x8 xc:red /tmp/probe.jpg \
+    && rm /tmp/avif-probe.avif /tmp/avif-probe.png /tmp/probe.webp /tmp/probe.jpg
 
 ENV DRUPAL_ROOT=/opt/drupal/web
 WORKDIR /opt/drupal

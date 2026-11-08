@@ -35,7 +35,28 @@ if ($url = getenv('DATABASE_URL')) {
   }
 }
 
-$settings['hash_salt'] = getenv('HASH_SALT') ?: 'aincient-insecure-dev-salt';
+// Fail closed on a missing or weak salt: there is no fallback value, because a
+// shared default would make every such install's one-time login links, form
+// tokens and session hashes predictable. The installer and the Manager always
+// write one (`openssl rand -hex 32`), and compose refuses to start without it.
+$hash_salt = (string) getenv('HASH_SALT');
+if (strlen($hash_salt) < 32) {
+  $message = 'Atelier: HASH_SALT must be set to at least 32 characters in .env (generate one with: openssl rand -hex 32).';
+  if (PHP_SAPI === 'cli') {
+    fwrite(STDERR, $message . PHP_EOL);
+  }
+  else {
+    error_log($message);
+    if (!headers_sent()) {
+      http_response_code(500);
+      header('Content-Type: text/plain; charset=utf-8');
+    }
+    echo "Site configuration error: HASH_SALT is missing or too short. See the server log.\n";
+  }
+  exit(1);
+}
+$settings['hash_salt'] = $hash_salt;
+unset($hash_salt);
 $settings['config_sync_directory'] = '../config/sync';
 $settings['file_private_path'] = '/opt/drupal/private';
 $settings['update_free_access'] = FALSE;

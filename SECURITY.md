@@ -20,6 +20,8 @@ Instead, report privately through **GitHub's private vulnerability reporting**:
 This opens a private channel visible only to you and the maintainers, where we can discuss,
 fix, and coordinate disclosure. It's the fastest way to reach us about a security issue.
 
+If you can't use GitHub, email **[security@aincient-labs.com](mailto:security@aincient-labs.com)**.
+
 A good report includes:
 
 - The affected component and version (image tag, or `atelier --version` for the CLI).
@@ -57,6 +59,12 @@ urgent your upgrade is.
 | `ghcr.io/aincient-labs/atelier-cms` — latest release / `:latest` | ✅ |
 | Older image tags | ⚠️ upgrade to receive fixes |
 | The `atelier` CLI ([manager](https://github.com/aincient-labs/manager)) — latest release | ✅ |
+
+## Security releases
+
+Security fixes ship as patch releases as soon as they are ready, without waiting for feature work. The changelog and the GitHub release mark them.
+
+Security fixes are provided for the latest release; upgrading to it is how you receive them.
 
 ## Security announcements
 

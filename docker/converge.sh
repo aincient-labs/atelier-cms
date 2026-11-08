@@ -357,8 +357,8 @@ fresh_install() {
     printf '%s\n' "$ADMIN_PASS" > "${PRIVATE_DIR}/INITIAL_ADMIN_PASSWORD"
     chmod 600 "${PRIVATE_DIR}/INITIAL_ADMIN_PASSWORD" 2>/dev/null || true
     log "================================================================"
-    log "  Generated admin password for '${ADMIN_USER}': ${ADMIN_PASS}"
-    log "  Also saved to ${PRIVATE_DIR}/INITIAL_ADMIN_PASSWORD — change it after first login."
+    log "  A random admin password was generated for '${ADMIN_USER}' (not logged)."
+    log "  Saved to ${PRIVATE_DIR}/INITIAL_ADMIN_PASSWORD — change it after first login."
     log "================================================================"
   fi
   # On a cold first boot the module/extension registry is stale right after

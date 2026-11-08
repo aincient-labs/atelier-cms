@@ -7,6 +7,35 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.23.0] — 2026-11-08
+
+**Safer defaults for every new site.**
+- New installs get their own random database password instead of a shared default. Existing sites
+  keep the password their database was created with; nothing is rotated yet. If you reinstall over
+  an existing database, the installer tells you how to keep it reachable.
+- The web server in front of your site now sends standard security headers on every response
+  (no MIME sniffing, a strict referrer policy, no framing by other sites, no camera, microphone,
+  location or payment access), and HSTS when the request arrived over https.
+- The first admin password is no longer written to the container log. It is only in
+  `private/INITIAL_ADMIN_PASSWORD`, which the installer and the Atelier Manager read for you.
+- The site refuses to start without a `HASH_SALT` of at least 32 characters instead of falling back
+  to a shared development value. Installs made by the installer or the Manager already have one.
+  **If you set up by hand and typed a shorter salt**, replace it before updating
+  (`openssl rand -hex 32`). A new salt signs everyone out once and changes image URLs; re-freeze a
+  frozen site afterwards.
+- The image no longer ships a compiler, build headers or Drupal's own test files: it is 126 MB
+  smaller and carries far fewer scanner findings. Its PHP and Composer base images are pinned by
+  digest.
+
+**How to stay safe.** A new [hardening guide](https://aincient-labs.com/docs/hardening) covers TLS,
+trusted hosts, keeping a site on your own computer, secrets and backups. Security fixes ship as patch
+releases for the latest release; report issues privately as described in `SECURITY.md`, or email
+security@aincient-labs.com.
+
+To update, re-run the installer as described in the quickstart's **Upgrade** section: it also brings
+the new web server rule with the security headers. With the Atelier Manager, `atelier app update`
+updates your site, and Manager 0.15.0 brings the new web server rule to existing sites.
+
 ## [0.22.0] — 2026-11-03
 
 **Security release: fewer known vulnerabilities in what your site runs.**

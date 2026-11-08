@@ -528,6 +528,10 @@ core_extension() {
   grep -q -- "--account-pass=" "$DRUSH_LOG"
   ! grep -qE -- "--account-pass=admin( |$)" "$DRUSH_LOG"
   [ -s "$AINCIENT_PRIVATE_DIR/INITIAL_ADMIN_PASSWORD" ]
+  # The minted password must never reach the converge log (CRA hardening M2).
+  pw="$(cat "$AINCIENT_PRIVATE_DIR/INITIAL_ADMIN_PASSWORD")"
+  [ -n "$pw" ]
+  [[ "$output" != *"$pw"* ]]
 }
 
 # --- Pack enablement (plans/byo-components.md §6.6, Phase 4) ------------------

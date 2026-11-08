@@ -51,7 +51,7 @@ services:
       # accept-any + a logged warning. See docker/settings.appliance.php.
       AINCIENT_TRUSTED_HOSTS: ${AINCIENT_TRUSTED_HOSTS:-}
       # Leave ADMIN_PASS unset to have converge generate a random password on
-      # first install (printed to the app log + written to private/INITIAL_ADMIN_PASSWORD).
+      # first install (written to private/INITIAL_ADMIN_PASSWORD, never logged).
       AINCIENT_ADMIN_PASS: ${ADMIN_PASS:-}
       # `edge` is the only way in, so its X-Forwarded-* headers are trusted
       # (REMOTE_ADDR = the immediate peer): Drupal sees real client IPs and the

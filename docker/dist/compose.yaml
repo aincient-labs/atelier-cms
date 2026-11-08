@@ -39,8 +39,8 @@ services:
       # Unset = accept any Host header + a logged warning. Fine for a local
       # evaluation; scope it before exposing the box (see .env.example).
       AINCIENT_TRUSTED_HOSTS: ${AINCIENT_TRUSTED_HOSTS:-}
-      # Blank = converge mints a random admin password on first boot (printed to
-      # the app log + written to private/INITIAL_ADMIN_PASSWORD).
+      # Blank = converge mints a random admin password on first boot (written to
+      # private/INITIAL_ADMIN_PASSWORD, never logged).
       AINCIENT_ADMIN_PASS: ${ADMIN_PASS:-}
     ports:
       - "${HTTP_PORT:-41221}:80"   # 41221 = "AINCI" in leet

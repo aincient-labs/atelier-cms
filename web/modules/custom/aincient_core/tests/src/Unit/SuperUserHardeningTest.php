@@ -113,4 +113,21 @@ final class SuperUserHardeningTest extends UnitTestCase {
     );
   }
 
+  /**
+   * The appliance fails closed on a missing or short hash salt (no dev fallback).
+   */
+  public function testApplianceRefusesWeakHashSalt(): void {
+    $appliance = (string) file_get_contents($this->repoRoot() . '/docker/settings.appliance.php');
+    $this->assertStringNotContainsString(
+      'aincient-insecure-dev-salt',
+      $appliance,
+      'The appliance settings must not fall back to a shared development salt.',
+    );
+    $this->assertMatchesRegularExpression(
+      '/strlen\(\$hash_salt\)\s*<\s*32/',
+      $appliance,
+      'The appliance settings must refuse a HASH_SALT shorter than 32 characters.',
+    );
+  }
+
 }
