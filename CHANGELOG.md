@@ -7,6 +7,16 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.23.1] — 2026-11-08
+
+**Security release: Symfony updates.**
+- The Symfony components Drupal runs on are updated to 7.4.23 and 8.1.11. This fixes newly published
+  Symfony advisories in request handling (http-foundation, http-kernel, routing), the HTTP client,
+  the serializer, the validator, filesystem and YAML parsing.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.23.0] — 2026-11-08
 
 **Safer defaults for every new site.**
