@@ -61,7 +61,9 @@ edge_img="$(awk '/^  edge:/{f=1} f&&/image:/{print $2; exit}' <<<"$compose")"
 upd_img="$(awk '/^FROM /{print $2; exit}' <<<"$updater_df")"
 app_img="ghcr.io/$REPO:$tag"
 im_ver="$(grep -oE 'ImageMagick/archive/refs/tags/[^ ]+\.tar\.gz' <<<"$dockerfile" | head -1 | sed -E 's#.*/tags/(.+)\.tar\.gz#\1#')"
-for v in db_img edge_img upd_img im_ver; do [[ -n "${!v}" ]] || { echo "could not read $v from $tag" >&2; exit 1; }; done
+# im_ver may be empty: images from the Debian-packages runtime on carry ImageMagick
+# as a deb, which syft and grype see directly; only older tags compiled it.
+for v in db_img edge_img upd_img; do [[ -n "${!v}" ]] || { echo "could not read $v from $tag" >&2; exit 1; }; done
 
 digest() { docker buildx imagetools inspect "$1" --format '{{.Manifest.Digest}}'; }
 scan() { # name image
@@ -87,7 +89,7 @@ now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'
 # 1. ImageMagick into our image's SBOM, unless syft already found it.
 p = f"{out}/atelier-cms.cdx.json"; b = json.load(open(p))
 comps = b.setdefault('components', [])
-if not any('imagemagick' in (c.get('name') or '').lower() and c.get('version','').startswith(im.split('-')[0]) for c in comps):
+if im and not any('imagemagick' in (c.get('name') or '').lower() and c.get('version','').startswith(im.split('-')[0]) for c in comps):
     comps.append({
         "bom-ref": f"pkg:generic/imagemagick@{im}", "type": "library", "name": "imagemagick", "version": im,
         "purl": f"pkg:generic/imagemagick@{im}",

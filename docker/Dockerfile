@@ -110,95 +110,94 @@ RUN mkdir -p /split /app/web/modules/contrib /app/web/modules/engine \
 RUN find /app /split -exec touch -h -t 202401010000 {} +
 
 # --- Stage 2: runtime -------------------------------------------------------
-FROM php:8.4-apache@sha256:884f64b47174de2c0e813270fe7b24a18605729fcebe201302d98c38805530d0 AS runtime
+FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS runtime
 
-# Refuse to build on a PHP below the PHP2Shell fix (CVE-2026-109618/109619, fixed in
-# 8.4.27): a stale cached base layer must fail the build, not ship. Raise the floor
-# with the next PHP security release.
-RUN php -r 'exit(version_compare(PHP_VERSION, "8.4.27", "<") ? 1 : 0);' \
-    || { echo "PHP $(php -r 'echo PHP_VERSION;') is below the 8.4.27 security floor" >&2; exit 1; }
-
-# PHP extensions Drupal needs plus ImageMagick compiled with explicit AVIF support.
-# We build ImageMagick from source to guarantee the libheif-plugin-aomenc encoder is
-# linked (config/sync pins the imagemagick toolkit and every image style runs
-# image_convert_avif, so an ImageMagick that can't ENCODE avif breaks every derivative).
+# The runtime is Debian's own packages — PHP 8.4, Apache, ImageMagick — on the
+# official slim base, with nothing compiled. Before this the image came from
+# php:8.4-apache plus a from-source ImageMagick: that base installs a compiler
+# toolchain ($PHPIZE_DEPS, ~335 MB) in one of ITS layers, and purging it in ours
+# hid it from scanners but could never shrink the download — a later layer
+# cannot take bytes out of an earlier one. Debian packages also put PHP and
+# ImageMagick under Debian's security tracker, so the release scan sees them as
+# what they are, and the layer is reproducible (apt, not autotools).
 #
-# --disable-static and the doc/header removal below matter more than they look: this is
-# the single largest layer we own, and every appliance re-downloads it whenever it
-# changes. Measured on the published v0.9.0 layer, 51% of its bytes were .a archives
-# nothing opens at runtime, plus 12.4 MB of ImageMagick HTML docs. Dropping them took
-# the layer from 159 MB to 93 MB uncompressed with AVIF rw+ intact (verified: magick
-# -list format, plus a real encode).
+# What the official php image gave us that Debian does not, re-created below:
+# Apache logging to the container's stdout/stderr, the apache2-foreground
+# launcher (clears a stale pid file so a restarted container comes up), and
+# Apache's SIGWINCH graceful stop.
 #
-# NOTE: the source build is also the one non-reproducible step in this image — autotools
-# bakes configure-time state into the binaries, so a cache MISS republishes this layer
-# under a new digest even when nothing changed. That is survivable only while the GHA
-# build cache actually works (it silently did not until cms d783ee3). Debian trixie's
-# packaged ImageMagick can encode AVIF (the Forge demo proves it: apt-get install
-# imagemagick libheif-plugin-aomenc), so swapping to it would make this layer both
-# smaller and deterministic — evaluate before adding anything else to this RUN.
+# PHP version floor: Debian backports security fixes into its own package
+# version, so PHP_VERSION can stay at a number while carrying later fixes. The
+# floor still guards the case it exists for — a stale cached layer older than
+# the PHP2Shell fix (CVE-2026-109618/109619, fixed in 8.4.27).
 #
-# No compiler survives this RUN (DECISIONS 0505). The Debian php base image leaves its
-# $PHPIZE_DEPS (gcc, g++, make, autoconf, dpkg-dev, libc6-dev, …) installed and marked
-# MANUAL so docker-php-ext-install works out of the box — that, not build-essential,
-# is what kept gcc-14 in the runtime image. So this RUN uses the official image's own
-# cleanup pattern: snapshot the manual set, build everything (ImageMagick AND the PHP
-# extensions), then mark everything auto, re-mark the snapshot minus $PHPIZE_DEPS, keep
-# every package that owns a shared library something under /usr/local links against
-# (ldd), and autoremove the rest — -dev headers and toolchain included. ldd cannot
-# see dlopen()ed code, so libheif's codec plugins (aomenc = the AVIF ENCODER, dav1d +
-# libde265 = AVIF/HEIC decoders) are pinned manual by name; ImageMagick is built with
-# its coders in-library (no modules dir), so it has no dlopen()ed coders of its own.
-# Consequence: a derived image can no longer run docker-php-ext-install without first
-# installing $PHPIZE_DEPS itself. The checks after the purge fail the build if a
-# compiler or -dev package survives (hash -r: the shell still remembers the `make` it
-# ran above) or if any extension, gd codec or ImageMagick format went with them.
+# Extension parity with the php:8.4-apache image is checked by name below; Debian
+# packages a few extensions that image did not load (calendar, exif, ffi, …) —
+# they are disabled so the attack surface does not grow with the swap.
+#
+# Debian's ImageMagick reads far more formats than our old source build (TIFF,
+# JPEG 2000, RAW, DjVu, …), and every reader is parsing surface for an uploaded
+# file. policy.xml narrows it to an allowlist: the formats imagemagick.settings
+# enables (PNG, JPEG, GIF, WebP, AVIF), HEIC/HEIF (the libheif coder AVIF rides
+# on) and xc: (the probes below). No external delegates. The build fails if a
+# TIFF write still works. `apt-get upgrade`: the slim base can lag Debian's
+# security archive (zlib, 2026-11) — the release scan would block it otherwise.
+ARG DEBIAN_FRONTEND=noninteractive
+STOPSIGNAL SIGWINCH
+EXPOSE 80
 RUN set -eux \
-    && savedAptMark="$(apt-mark showmanual)" \
-    && apt-get update && apt-get install -y --no-install-recommends \
+    && apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates curl \
+        apache2 libapache2-mod-php8.4 \
+        php8.4-cli php8.4-common php8.4-curl php8.4-gd php8.4-mbstring php8.4-opcache \
+        php8.4-pgsql php8.4-readline php8.4-sqlite3 php8.4-xml php8.4-zip \
+        imagemagick libheif-plugin-aomenc libheif-plugin-dav1d libheif-plugin-libde265 \
         postgresql-client unzip tar gzip \
-        libheif-plugin-aomenc libheif-plugin-dav1d libheif-plugin-libde265 \
-        libpng-dev libjpeg-dev libfreetype6-dev libwebp-dev libzip-dev libpq-dev \
-        build-essential libheif-dev libavif-dev wget \
-    && cd /tmp \
-    && wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.2-35.tar.gz -O ImageMagick.tar.gz \
-    && tar xzf ImageMagick.tar.gz \
-    && cd ImageMagick-7.1.2-35 \
-    && ./configure --disable-static --with-heic=yes --with-avif=yes --with-gslib=no \
-    && make -j"$(nproc)" \
-    && make install \
-    && rm -rf /usr/local/share/doc/ImageMagick-7 /usr/local/include/ImageMagick-7 \
-    && ldconfig /usr/local/lib \
-    && cd /tmp && rm -rf ImageMagick* \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install -j"$(nproc)" gd opcache pdo_pgsql zip \
-    && a2enmod rewrite headers \
-    && apt-mark auto '.*' > /dev/null \
-    && apt-mark manual $savedAptMark > /dev/null \
-    && apt-mark auto $PHPIZE_DEPS libc6-dev \
-    && apt-mark manual postgresql-client unzip tar gzip \
-        libheif-plugin-aomenc libheif-plugin-dav1d libheif-plugin-libde265 \
-    && find /usr/local -type f \( -executable -o -name '*.so*' \) -exec ldd '{}' ';' 2>/dev/null \
-        | awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); printf "*%s\n", so }' \
-        | sort -u | xargs -r dpkg-query --search | awk 'sub(":$", "", $1) { print $1 }' \
-        | sort -u | xargs -r apt-mark manual > /dev/null \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
     && rm -rf /var/lib/apt/lists/* \
+    && php -r 'exit(version_compare(PHP_VERSION, "8.4.27", "<") ? 1 : 0);' \
+    && for m in calendar exif ffi ftp gettext pgsql shmop sockets sysvmsg sysvsem sysvshm xsl; do \
+         if [ -e "/etc/php/8.4/mods-available/$m.ini" ]; then phpdismod -s ALL "$m"; fi; \
+       done \
+    && sed -i 's#</policymap>#  <policy domain="delegate" rights="none" pattern="*"/>\n  <policy domain="coder" rights="none" pattern="*"/>\n  <policy domain="coder" rights="read|write" pattern="{AVIF,GIF,HEIC,HEIF,JPEG,JPG,PNG,PNG8,PNG24,PNG32,PNG48,PNG64,PNG00,WEBP,XC}"/>\n</policymap>#' /etc/ImageMagick-7/policy.xml \
+    && grep -q 'pattern="{AVIF,GIF,' /etc/ImageMagick-7/policy.xml \
+    && a2dismod -q mpm_event || true \
+    && a2enmod -q mpm_prefork php8.4 rewrite headers \
+    && ln -sfT /dev/stderr /var/log/apache2/error.log \
+    && ln -sfT /dev/stdout /var/log/apache2/access.log \
+    && ln -sfT /dev/stdout /var/log/apache2/other_vhosts_access.log \
+    && printf '%s\n' \
+      '#!/bin/sh' \
+      'set -e' \
+      ': "${APACHE_CONFDIR:=/etc/apache2}"' \
+      '. "$APACHE_CONFDIR/envvars"' \
+      'rm -f "$APACHE_PID_FILE"' \
+      'mkdir -p "$APACHE_RUN_DIR" "$APACHE_LOCK_DIR" "$APACHE_LOG_DIR"' \
+      'exec apache2 -DFOREGROUND "$@"' \
+      > /usr/local/bin/apache2-foreground \
+    && chmod +x /usr/local/bin/apache2-foreground \
+    && apache2ctl -t \
     && hash -r && ! command -v gcc && ! command -v cc && ! command -v make \
     && pkgs="$(dpkg-query -W -f='${Package}\n')" \
     && ! printf '%s\n' "$pkgs" | grep -E -e '-dev(:|$)' \
     && php -m > /tmp/php-m \
-    && for ext in gd 'Zend OPcache' pdo_pgsql zip; do grep -qx "$ext" /tmp/php-m || exit 1; done \
+    && for ext in ctype curl date dom fileinfo filter gd hash iconv json libxml mbstring openssl pcre PDO \
+         pdo_pgsql pdo_sqlite Phar posix random readline Reflection session SimpleXML sodium SPL sqlite3 \
+         standard tokenizer xml xmlreader xmlwriter 'Zend OPcache' zip zlib; do \
+         grep -qx "$ext" /tmp/php-m || { echo "missing PHP extension: $ext" >&2; exit 1; }; done \
     && rm /tmp/php-m \
     && php -r '$g = gd_info(); exit($g["WebP Support"] && $g["JPEG Support"] && $g["FreeType Support"] && $g["PNG Support"] ? 0 : 1);' \
-    && for bin in psql pg_dump unzip tar gzip; do command -v "$bin" || exit 1; done \
+    && for bin in psql pg_dump unzip tar gzip convert magick; do command -v "$bin" || exit 1; done \
+    # Debian's list carries a module column (`AVIF  HEIC  rw+`); accept it, as smoke.sh does.
     && magick -list format > /tmp/magick-formats \
-    && grep -qE '^[[:space:]]*AVIF[[:space:]]+rw' /tmp/magick-formats \
-    && for fmt in HEIC WEBP PNG JPEG; do grep -qE "^[[:space:]]*${fmt}\*?[[:space:]]+r" /tmp/magick-formats || exit 1; done \
+    && grep -qE '^[[:space:]]*AVIF\*?[[:space:]]+([A-Z0-9]+[[:space:]]+)?rw' /tmp/magick-formats \
+    && for fmt in HEIC WEBP PNG JPEG; do grep -qE "^[[:space:]]*${fmt}\*?[[:space:]]+([A-Z0-9]+[[:space:]]+)?r" /tmp/magick-formats || exit 1; done \
     && rm /tmp/magick-formats \
     && magick -size 8x8 xc:red /tmp/avif-probe.avif && magick /tmp/avif-probe.avif /tmp/avif-probe.png \
     && magick -size 8x8 xc:red /tmp/probe.webp && magick -size 8x8 xc:red /tmp/probe.jpg \
-    && rm /tmp/avif-probe.avif /tmp/avif-probe.png /tmp/probe.webp /tmp/probe.jpg
+    && convert -size 8x8 xc:red /tmp/probe-v6.avif \
+    && ! magick -size 8x8 xc:red /tmp/probe.tiff 2>/dev/null \
+    && rm /tmp/avif-probe.avif /tmp/avif-probe.png /tmp/probe.webp /tmp/probe.jpg /tmp/probe-v6.avif
 
 ENV DRUPAL_ROOT=/opt/drupal/web
 WORKDIR /opt/drupal
@@ -277,12 +276,13 @@ RUN a2enmod expires \
       > /etc/apache2/conf-available/aincient-cache.conf \
     && a2enconf aincient-cache
 
-# Start from PHP's shipped production ini (display_errors Off, hardened defaults)
-# rather than the compiled-in dev-leaning defaults, then layer our overrides on top.
-RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+# Debian's apache2 and cli php.ini are already production-based (display_errors
+# Off). Our overrides are mods-available snippets enabled for BOTH SAPIs, so
+# drush (cli) and Apache read the same limits — as the single php.ini did.
 
 # Drush (recipe apply, updatedb) needs more than PHP's default 128M.
-RUN printf 'memory_limit = 512M\n' > /usr/local/etc/php/conf.d/aincient-memory.ini
+RUN printf 'memory_limit = 512M\n' > /etc/php/8.4/mods-available/aincient-memory.ini \
+    && phpenmod -s ALL aincient-memory
 
 # Long-request budget for the operator console. A console turn runs the FlowDrop
 # agent loop inline within the request; the loop's own wall-clock budget is 540s
@@ -290,7 +290,8 @@ RUN printf 'memory_limit = 512M\n' > /usr/local/etc/php/conf.d/aincient-memory.i
 # default max_execution_time is only 30s, which would kill the request long before
 # the flow budget — so pin 600s here to leave ~60s headroom above the loop. Mirrors
 # .ddev/php/timeouts.ini for the local dev stack.
-RUN printf 'max_execution_time = 600\n' > /usr/local/etc/php/conf.d/aincient-timeouts.ini
+RUN printf 'max_execution_time = 600\n' > /etc/php/8.4/mods-available/aincient-timeouts.ini \
+    && phpenmod -s ALL aincient-timeouts
 
 # OPcache, tuned for an immutable appliance image. Code is frozen at build time,
 # so validate_timestamps=0 skips the per-request stat() entirely — the whole
@@ -304,7 +305,8 @@ RUN printf '%s\n' \
       'opcache.memory_consumption=256' \
       'opcache.interned_strings_buffer=32' \
       'opcache.max_accelerated_files=100000' \
-      > /usr/local/etc/php/conf.d/aincient-opcache.ini
+      > /etc/php/8.4/mods-available/aincient-opcache.ini \
+    && phpenmod -s ALL aincient-opcache
 
 # Converge + health scripts. Below the static ini layers (a converge.sh edit
 # shouldn't re-digest them) but above the dependency tiers, since these three
@@ -329,33 +331,33 @@ RUN mkdir -p /opt/drupal/packs.d /opt/drupal/packs /opt/drupal/web/modules/packs
 # --- The composer-resolved dependency tiers, least- to most-volatile ---------
 # Partitioned in the vendor stage; see the rationale there. Each is an
 # independent layer, so a flowdrop bump now re-ships 22 MB instead of 216 MB.
-COPY --from=vendor /split/core    /opt/drupal/web/core
-COPY --from=vendor /split/contrib /opt/drupal/web/modules/contrib
-COPY --from=vendor /split/vendor  /opt/drupal/vendor
-COPY --from=vendor /split/engine  /opt/drupal/web/modules/engine
+COPY --chmod=a+rX --from=vendor /split/core    /opt/drupal/web/core
+COPY --chmod=a+rX --from=vendor /split/contrib /opt/drupal/web/modules/contrib
+COPY --chmod=a+rX --from=vendor /split/vendor  /opt/drupal/vendor
+COPY --chmod=a+rX --from=vendor /split/engine  /opt/drupal/web/modules/engine
 # The scaffolded docroot remainder + the manifests. LAST of the tiers: it carries
 # composer.json/composer.lock, which change on every dependency bump, so placing
 # it above the four big trees would invalidate all of them every time.
-COPY --from=vendor /app           /opt/drupal
+COPY --chmod=a+rX --from=vendor /app           /opt/drupal
 
 # Environment-driven settings.php (DB creds + salt come from the container).
 # MUST stay after the remainder COPY above: core-composer-scaffold can place its
 # own sites/default/settings.php, which would otherwise overwrite ours.
-COPY docker/settings.appliance.php /opt/drupal/web/sites/default/settings.php
+COPY --chmod=a+rX docker/settings.appliance.php /opt/drupal/web/sites/default/settings.php
 
 # --- The product's own source, least- to most-volatile ----------------------
 # These are what make this image "Atelier" and not vanilla Drupal. Ordered by
 # measured churn across the 49 build-to-build transitions: recipes 6%, custom
 # themes 14%, config 34%, custom modules 59%.
-COPY recipes /opt/drupal/recipes
-COPY web/themes/custom /opt/drupal/web/themes/custom
-COPY config /opt/drupal/config
-COPY web/modules/custom /opt/drupal/web/modules/custom
+COPY --chmod=a+rX recipes /opt/drupal/recipes
+COPY --chmod=a+rX web/themes/custom /opt/drupal/web/themes/custom
+COPY --chmod=a+rX config /opt/drupal/config
+COPY --chmod=a+rX web/modules/custom /opt/drupal/web/modules/custom
 # The studio tier (DECISIONS 0430) is its own layer, not folded into custom's:
 # studios will churn at their own rate, like engine/ above, and a studio-only
 # change should not re-ship the whole core tier. Tiny today (a README), so the
 # layer costs nothing until studios land.
-COPY web/modules/studio /opt/drupal/web/modules/studio
+COPY --chmod=a+rX web/modules/studio /opt/drupal/web/modules/studio
 
 # The application code must be READABLE BY www-data, whatever the build host's
 # file modes were. `COPY` preserves the context's permissions, so a checkout with
@@ -371,14 +373,20 @@ COPY web/modules/studio /opt/drupal/web/modules/studio
 # a full session to diagnose on 2026-08-07, because CI checks out fresh at 644
 # and never reproduces it; only a developer's working copy does.
 #
-# a+rX, not a blanket chmod: `X` sets the execute bit on directories and on files
+# So every COPY into /opt/drupal above carries --chmod=a+rX. Not a `RUN chmod -R`
+# after them: that rewrote every file into a second 137 MB layer, below all the
+# volatile COPYs, so each release re-shipped the whole app twice.
+#
+# a+rX, not a blanket mode: `X` sets the execute bit on directories and on files
 # that already have one, so traversal works without making every YAML executable.
-RUN chmod -R a+rX /opt/drupal
+# The `find` below fails the build if a new COPY forgets the flag.
 
 # Writable state dirs; the webserver owns files, root runs converge/install.
 # After every COPY above — the remainder tier creates web/sites.
 RUN mkdir -p /opt/drupal/private/snapshots /opt/drupal/web/sites/default/files \
-    && chown -R www-data:www-data /opt/drupal/web/sites/default/files /opt/drupal/private
+    && chown -R www-data:www-data /opt/drupal/web/sites/default/files /opt/drupal/private \
+    && unreadable="$(find /opt/drupal \( ! -perm -o+r -o \( -type d ! -perm -o+x \) \) -print | head -5)" \
+    && { [ -z "$unreadable" ] || { echo "not readable by www-data (COPY without --chmod=a+rX?):" >&2; echo "$unreadable" >&2; exit 1; }; }
 
 # The build fingerprint: one content hash of everything converge brings a
 # database TO — the code tree, config/sync, recipes, converge's own scripts and
@@ -413,8 +421,8 @@ RUN { find /opt/drupal \( -path /opt/drupal/web/sites/default/files -o -path /op
 # MUST stay at the end of the file. These are zero-byte metadata layers, but a
 # build-arg changes on every deploy — placed earlier, it would invalidate every
 # COPY/RUN below it and re-digest the big core+contrib+vendor (~75 MB) and
-# ImageMagick (~54 MB) layers, defeating the SOURCE_DATE_EPOCH reproducibility
-# work in the release workflow and making every appliance re-pull ~130 MB it
+# Debian-packages (~188 MB) layers, defeating the SOURCE_DATE_EPOCH reproducibility
+# work in the release workflow and making every appliance re-pull ~260 MB it
 # already has.
 #
 # Both default to "dev": a local `docker build` (and docker/tests/smoke.sh)

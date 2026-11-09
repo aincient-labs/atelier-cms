@@ -224,9 +224,9 @@ jobs:
       # Reproducible layer digests. Without this, every built layer records its
       # files' build-time mtimes, so a build-cache MISS (GHA's 10 GB LRU evicts
       # the vendor/apt layers, or a cancel-in-progress aborts the cache export)
-      # republishes the big core+contrib+vendor (~75 MB) and ImageMagick (~54 MB)
+      # republishes the big core+contrib+vendor (~75 MB) and Debian-packages (~188 MB)
       # layers under NEW digests even though their contents are byte-identical —
-      # and every appliance re-pulls ~130 MB it already has. rewrite-timestamp
+      # and every appliance re-pulls ~260 MB it already has. rewrite-timestamp
       # caps all file mtimes in the exported layers at SOURCE_DATE_EPOCH, so
       # identical content always yields an identical digest regardless of when or
       # whether it was cached. SOURCE_DATE_EPOCH is a FIXED constant on purpose:

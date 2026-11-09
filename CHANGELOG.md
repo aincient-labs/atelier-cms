@@ -7,6 +7,19 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.24.0] — 2026-11-09
+
+**A leaner image: half the download.**
+- The Atelier image shrinks from 842 MB to 426 MB. It is now built from Debian's own PHP 8.4,
+  Apache and ImageMagick packages, with nothing compiled inside it, so these components get
+  Debian's maintained fixes and show up by name in vulnerability scanners and the release SBOM.
+- Image processing only reads and writes the formats the site uses (JPEG, PNG, GIF, WebP and
+  AVIF); every other image decoder is switched off.
+- Every update downloads less: the site's code no longer ships twice in the image.
+
+Your site, content and settings are untouched. To update, run `atelier app update`, or re-run the
+installer as described in the quickstart's **Upgrade** section.
+
 ## [0.23.1] — 2026-11-08
 
 **Security release: Symfony updates.**

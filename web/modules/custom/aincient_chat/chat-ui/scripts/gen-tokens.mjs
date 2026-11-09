@@ -32,10 +32,11 @@
  * were aliased for one release and are RETIRED as of 0.17.0: no file emits
  * them; `RETIRED` below only lets the studio CSS rule name the replacement.
  *
- * Style Dictionary does the parsing and the alias resolution; the CSS is
- * composed here so each surface keeps the selector shape it has today.
- * `outputReferences` keeps `var(--ain-ref-…)` in the output rather than
- * flattening to a literal — the whole point.
+ * Parsing, naming and alias output are done here too (no token library: the
+ * one we used pulled in ~100 packages for ~40 lines of work, and its glob
+ * dependency carried advisories we couldn't patch — umbrella DECISIONS 0506).
+ * An alias `{ref.color.ink.16}` is written as `var(--ain-ref-color-ink-16)`
+ * rather than flattened to a literal — the whole point.
  *
  * LOUD BY DESIGN: a token name outside the grammar, a dangling alias, a
  * retired name whose replacement does not exist (or that is live again), or a system colour that is
@@ -45,8 +46,6 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import StyleDictionary from "style-dictionary";
-import { formattedVariables } from "style-dictionary/utils";
 
 const here = import.meta.dirname;
 const CHAT_UI = join(here, "..");
@@ -146,20 +145,48 @@ function sourceOrder(files) {
   return order;
 }
 
+/** `{a.b.c}` → the dotted path inside it. */
+const ALIAS = /\{([^}]+)\}/g;
+const cssName = (path) => `ain-${path.join("-")}`;
+
+/**
+ * One mode's tokens, in source order: every node with a `$value`, its `$type`
+ * inherited from the nearest group that sets one, a later file overriding an
+ * earlier one at the same path. Each token keeps the fields `check()` and
+ * `block()` read: name, path, filePath, $type, $description, original.$value.
+ */
 async function tokensFor(mode) {
   const files = ["ref.json", "base.json", MODE_FILE(mode)].map((f) => join(TOKENS_DIR, f));
-  const sd = new StyleDictionary({
-    source: files,
-    log: { verbosity: "silent" },
-    platforms: {
-      css: { prefix: "ain", transforms: ["name/kebab"] },
-    },
-  });
-  const dictionary = await sd.getPlatformTokens("css");
+  const byPath = new Map();
+  const walk = (node, path, type, filePath) => {
+    for (const [k, v] of Object.entries(node)) {
+      if (k.startsWith("$") || typeof v !== "object" || v === null) continue;
+      const here = [...path, k];
+      const $type = v.$type ?? type;
+      if ("$value" in v) {
+        byPath.set(here.join("."), {
+          name: cssName(here),
+          path: here,
+          filePath,
+          $type,
+          $description: v.$description,
+          original: { $value: v.$value },
+        });
+      } else walk(v, here, $type, filePath);
+    }
+  };
+  for (const f of files) {
+    const root = JSON.parse(readFileSync(f, "utf8"));
+    walk(root, [], root.$type, f);
+  }
+  for (const t of byPath.values()) {
+    for (const [, ref] of String(t.original.$value).matchAll(ALIAS)) {
+      if (!byPath.has(ref)) fail(`"--${t.name}" aliases {${ref}}, which no token defines (${t.filePath})`);
+    }
+  }
   const order = sourceOrder(files);
   const at = (t) => order.get(t.path.join(".")) ?? Infinity;
-  dictionary.allTokens = [...dictionary.allTokens].sort((a, b) => at(a) - at(b));
-  return dictionary;
+  return { allTokens: [...byPath.values()].sort((a, b) => at(a) - at(b)) };
 }
 
 function fail(msg) {
@@ -187,13 +214,14 @@ function check({ allTokens: all }) {
 }
 
 function block(dictionary, only, { selector, media }) {
-  const vars = formattedVariables({
-    format: "css",
-    dictionary: { ...dictionary, allTokens: dictionary.allTokens.filter(only) },
-    outputReferences: true,
-    usesDtcg: true,
-    formatting: { indentation: "  ", commentPosition: "above" },
-  });
+  const vars = dictionary.allTokens
+    .filter(only)
+    .map((t) => {
+      const value = String(t.original.$value).replace(ALIAS, (_, ref) => `var(--${cssName(ref.split("."))})`);
+      const line = `  --${t.name}: ${value};`;
+      return t.$description ? `  /** ${t.$description} */\n${line}` : line;
+    })
+    .join("\n");
   const body = `${selector} {\n${vars}\n}`;
   return media ? `@media ${media} {\n${body.replace(/^(?=.)/gm, "  ")}\n}` : body;
 }

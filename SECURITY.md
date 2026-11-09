@@ -92,8 +92,9 @@ Each release lists everything it ships in a **CycloneDX SBOM** (software bill of
 attached to its [GitHub Release](https://github.com/aincient-labs/atelier-cms/releases) as
 `*.cdx.json` files: one per image the appliance runs (the Atelier image and the `db`, `edge`
 and updater images) plus `appliance.cdx.json`, which ties them together. The Atelier image's
-SBOM also names what no scanner can see: the ImageMagick we compile from source and the npm
-packages bundled into the console. Releases after 0.21.0 carry them, and their images also
+SBOM also names what no scanner can see: the npm packages bundled into the console. PHP, Apache
+and ImageMagick are Debian packages, so scanners see them directly (releases up to 0.23.1 compiled
+ImageMagick from source and declared it in the SBOM by hand). Releases after 0.21.0 carry them, and their images also
 carry SBOM and build provenance attestations on GHCR.
 
 When a scanner reports an advisory that cannot affect Atelier (the vulnerable code is never
