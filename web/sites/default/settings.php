@@ -913,6 +913,16 @@ $settings['config_exclude_modules'] = [
   'webprofiler',
   'kint',
   'stage_file_proxy',
+  // Site-builder UIs the appliance ships uninstalled (the console is the UI;
+  // umbrella DECISIONS 0509). Enable them locally when needed — they stay out
+  // of config/sync. Grant no role a permission from them: config that depends
+  // on an excluded module is left out of the export too.
+  'field_ui',
+  'views_ui',
+  'contextual',
+  'menu_ui',
+  'rift_ui',
+  'csv_serialization',
 ];
 
 // Harden uid 1: the distribution ships with the super-user permission bypass

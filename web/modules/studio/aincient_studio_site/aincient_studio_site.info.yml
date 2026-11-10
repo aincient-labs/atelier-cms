@@ -5,6 +5,9 @@ description: 'The site-wide studios: Navigation & Pages (`globals` — menus, fr
 package: Atelier studios
 core_version_requirement: ^11
 dependencies:
+  # Its shipped agent workflow carries Playground chat settings (FlowDrop 2.7,
+  # DECISIONS 0508); their schema lives in flowdrop_playground.
+  - flowdrop:flowdrop_playground
   # The studio frame: manifest discovery, the on/off switch, the derived
   # permissions and the route gate.
   - aincient_chat

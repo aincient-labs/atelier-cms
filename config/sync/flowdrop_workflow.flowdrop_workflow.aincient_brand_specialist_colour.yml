@@ -10,6 +10,20 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
     - flowdrop_node_type.flowdrop_node_type.json_to_data
     - flowdrop_node_type.flowdrop_node_type.prompt_template
+  module:
+    - flowdrop_playground
+third_party_settings:
+  flowdrop_playground:
+    chat:
+      message: ask
+      history: null
+      session_id: null
+      message_id: null
+      replies:
+        -
+          node_id: chat_output.1
+          port: message
+      sub_workflow_replies: false
 id: aincient_brand_specialist_colour
 label: 'Brand specialist: Colour & contrast'
 description: 'Single-pass colour & contrast specialist. Takes a colour instruction plus the authoritative current look (injected deterministically, not model-authored), decides a complete contrast-safe palette, and returns a brand-preview slice (tokens_json) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
@@ -22,7 +36,6 @@ nodes:
     data:
       label: 'Chat Input'
       config:
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -241,7 +254,6 @@ nodes:
           CURRENT LOOK — unsaved preview edits layered on top (this is what is on screen NOW; it wins over the saved baseline):
           {{ live_preview_state }}
           {% endif %}
-        nodeType: default
         maxRetries: 0
         ports:
           outputs:
@@ -328,7 +340,6 @@ nodes:
       config:
         format: text
         showTimestamp: false
-        nodeType: default
         maxRetries: 0
         ports:
           outputs:
@@ -435,7 +446,6 @@ nodes:
       label: 'JSON to Data'
       config:
         parse_mode: tolerant
-        nodeType: default
         maxRetries: 0
         requiresConfirmation: ''
       metadata:
@@ -560,9 +570,9 @@ edges:
     class: flowdrop--edge--data
 metadata:
   createdAt: '2026-08-13T16:45:02.578Z'
-  updatedAt: '2026-10-06T22:02:54.353Z'
+  updatedAt: '2026-11-09T21:03:43.154Z'
 created: 1782300000
-changed: 1791324174
+changed: 1794258223
 uid: 1
 input_ports:
   -

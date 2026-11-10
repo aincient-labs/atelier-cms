@@ -250,6 +250,9 @@ final class ColorContrast {
       if (count($parts) < 3) {
         return NULL;
       }
+      // CSS Color 4: a `none` (missing) channel computes as 0 — Tailwind
+      // ≥ 4.3.5 writes its greys as `oklch(97% 0 none)`.
+      $parts = array_map(static fn(string $p): string => strcasecmp($p, 'none') === 0 ? '0' : $p, $parts);
       $l = rtrim($parts[0], '%');
       $c = $parts[1];
       $h = rtrim($parts[2], 'deg');

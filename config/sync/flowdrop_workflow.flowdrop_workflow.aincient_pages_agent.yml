@@ -10,6 +10,20 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
     - flowdrop_node_type.flowdrop_node_type.prompt_template
+  module:
+    - flowdrop_playground
+third_party_settings:
+  flowdrop_playground:
+    chat:
+      message: message
+      history: null
+      session_id: null
+      message_id: null
+      replies:
+        -
+          node_id: chat_output.1
+          port: message
+      sub_workflow_replies: false
 id: aincient_pages_agent
 label: 'Page Studio'
 description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
@@ -22,7 +36,6 @@ nodes:
     data:
       label: 'Chat Input'
       config:
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -78,7 +91,6 @@ nodes:
       config:
         format: text
         showTimestamp: false
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -293,7 +305,6 @@ nodes:
           with a single short framing sentence — do not restate the page. Keep replies brief. If a tool result also contains `warnings`, the section will not render as intended (e.g. an empty content array or a prop under the wrong name) — CORRECT it with another preview_page call BEFORE replying to the user.
 
           {{ context_policy }}
-        nodeType: default
         maxRetries: 0
         ports:
           outputs:
@@ -493,9 +504,9 @@ edges:
     class: flowdrop--edge--data
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-10-06T21:59:31.254Z'
+  updatedAt: '2026-11-09T21:04:22.489Z'
 created: 1781612612
-changed: 1791323971
+changed: 1794258262
 uid: 1
 input_ports:
   -

@@ -46,6 +46,14 @@ final class OklchMathTest extends UnitTestCase {
     $this->assertNull(OklchMath::toOklch('12px'));
   }
 
+  public function testNoneChannelIsZero(): void {
+    // Tailwind >= 4.3.5 writes achromatic swatches as `oklch(L 0 none)`.
+    [$l, $c, $h] = OklchMath::toOklch('oklch(98.5% 0 none)');
+    $this->assertEqualsWithDelta(0.985, $l, 0.0001);
+    $this->assertSame(0.0, $c);
+    $this->assertNull($h);
+  }
+
   public function testHueDeltaWraps(): void {
     $this->assertEqualsWithDelta(20.0, OklchMath::hueDelta(350.0, 10.0), 1e-9);
     $this->assertEqualsWithDelta(180.0, OklchMath::hueDelta(0.0, 180.0), 1e-9);

@@ -6,6 +6,20 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_onboarding_panel
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
+  module:
+    - flowdrop_playground
+third_party_settings:
+  flowdrop_playground:
+    chat:
+      message: message
+      history: null
+      session_id: null
+      message_id: null
+      replies:
+        -
+          node_id: chat_output.1
+          port: message
+      sub_workflow_replies: false
 id: aincient_onboarding
 label: 'Setup Wizard'
 description: ''
@@ -18,7 +32,6 @@ nodes:
     data:
       label: 'Chat Input'
       config:
-        nodeType: default
         ports:
           inputs:
             -
@@ -80,7 +93,6 @@ nodes:
       config:
         format: text
         showTimestamp: false
-        nodeType: default
         ports:
           inputs:
             -
@@ -153,12 +165,22 @@ edges:
     class: flowdrop--edge--trigger
 metadata:
   createdAt: '2026-06-14T20:30:52.307Z'
-  updatedAt: '2026-06-22T01:21:44.784Z'
+  updatedAt: '2026-11-09T21:04:12.355Z'
 created: 1781469033
-changed: 1785014086
+changed: 1794258252
 uid: 0
-input_ports: null
+input_ports:
+  -
+    name: message
+    node_id: chat_input.1
+    port: message
 output_ports: null
-parameter_schema: null
+parameter_schema:
+  type: object
+  properties:
+    message:
+      type: string
+      x-data-type: string
+      default: ''
 output_schema: null
-schema_version: 0.0.0
+schema_version: 1.0.0

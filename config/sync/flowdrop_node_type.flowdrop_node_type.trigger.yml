@@ -14,17 +14,32 @@ icon: 'mdi:flash-outline'
 plugin_version: 2.2.0
 enabled: true
 parameters:
+  event:
+    configurable: false
+    connectable: true
+    exposed_by_default: true
+    required: true
+    when_missing: skip
   variant:
     configurable: false
     connectable: false
     required: false
     default: start
 outputs:
+  actor:
+    exposed: true
+    exposed_by_default: false
+  changed_fields:
+    exposed: true
+    exposed_by_default: false
   cron:
     exposed: true
     exposed_by_default: false
   data:
     exposed: true
+  entity:
+    exposed: true
+    exposed_by_default: false
   form:
     exposed: true
     exposed_by_default: false
@@ -35,6 +50,15 @@ outputs:
     exposed: true
     exposed_by_default: false
   form_values:
+    exposed: true
+    exposed_by_default: false
+  is_new:
+    exposed: true
+    exposed_by_default: false
+  original:
+    exposed: true
+    exposed_by_default: false
+  ref:
     exposed: true
     exposed_by_default: false
   user:

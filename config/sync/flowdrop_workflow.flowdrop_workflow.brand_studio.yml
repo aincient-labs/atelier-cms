@@ -18,6 +18,20 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_shape
     - flowdrop_node_type.flowdrop_node_type.flowdrop_workflow_executor_flowdrop_workflow_aincient_brand_specialist_typography
     - flowdrop_node_type.flowdrop_node_type.prompt_template
+  module:
+    - flowdrop_playground
+third_party_settings:
+  flowdrop_playground:
+    chat:
+      message: message
+      history: null
+      session_id: null
+      message_id: null
+      replies:
+        -
+          node_id: chat_output.1
+          port: message
+      sub_workflow_replies: false
 id: brand_studio
 label: 'Brand Studio'
 description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
@@ -30,7 +44,6 @@ nodes:
     data:
       label: 'Chat Input'
       config:
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -87,7 +100,6 @@ nodes:
       config:
         format: text
         showTimestamp: false
-        nodeType: default
         ports:
           inputs:
             -
@@ -311,7 +323,6 @@ nodes:
           {% endif %}
 
           {{ context_policy }}
-        nodeType: default
         maxRetries: 0
         requiresConfirmation: ''
         ports:
@@ -922,9 +933,9 @@ edges:
     class: flowdrop--edge--trigger
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-10-06T21:55:07.331Z'
+  updatedAt: '2026-11-09T21:04:27.173Z'
 created: 1786663337
-changed: 1791323707
+changed: 1794258267
 uid: 1
 input_ports:
   -

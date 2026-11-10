@@ -48,6 +48,8 @@ final class NestedTurnDispatchTest extends WorkflowExecutionTestBase {
     'language',
     'content_translation',
     'flowdrop_memory',
+    // Shipped workflows carry flowdrop_playground third-party settings (FlowDrop 2.7).
+    'flowdrop_playground',
     'aincient_core',
     'aincient_pages',
     'aincient_onboarding',

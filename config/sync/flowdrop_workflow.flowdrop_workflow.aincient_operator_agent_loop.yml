@@ -9,6 +9,20 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
     - flowdrop_node_type.flowdrop_node_type.prompt_template
+  module:
+    - flowdrop_playground
+third_party_settings:
+  flowdrop_playground:
+    chat:
+      message: message
+      history: null
+      session_id: null
+      message_id: null
+      replies:
+        -
+          node_id: chat_output.1
+          port: message
+      sub_workflow_replies: false
 id: aincient_operator_agent_loop
 label: 'Atelier Assistant'
 description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
@@ -21,7 +35,6 @@ nodes:
     data:
       label: 'Chat Input'
       config:
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -78,7 +91,6 @@ nodes:
       config:
         format: text
         showTimestamp: false
-        nodeType: default
         maxRetries: 0
         ports:
           outputs:
@@ -171,7 +183,6 @@ nodes:
           - If a tool call is declined or fails, don't retry it — ask what they'd like instead.
 
           {{ context_policy }}
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -210,7 +221,6 @@ nodes:
       label: 'Prompt Template'
       config:
         template: 'something went wrong!'
-        nodeType: default
         maxRetries: 0
         dynamicInputs: {  }
         ports:
@@ -444,9 +454,9 @@ edges:
     class: flowdrop--edge--data
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-10-06T21:57:06.012Z'
+  updatedAt: '2026-11-09T21:04:17.776Z'
 created: 1780495095
-changed: 1791323826
+changed: 1794258258
 uid: 0
 input_ports:
   -

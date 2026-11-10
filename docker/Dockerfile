@@ -57,9 +57,25 @@ RUN test "$(grep -c '!=/favicon\.ico' web/.htaccess)" = 1 \
 # and extension discovery skips tests/ dirs unless extension_discovery_scan_tests
 # is set (the appliance never sets it). Shipping them made scanners flag the
 # package_manager fake_site fixture's installed.json (drupal/core 9.8.0) as High/
-# Critical vulnerabilities in the image (DECISIONS 0505). Contrib tests stay.
-RUN rm -rf web/core/tests web/core/modules/*/tests web/core/profiles/*/tests web/core/themes/*/tests \
-    && test ! -e web/core/modules/package_manager/tests
+# Critical vulnerabilities in the image (DECISIONS 0505).
+#
+# Contrib, engine (FlowDrop) and vendor test trees go too (DECISIONS 0510): test
+# code and fixtures get far less review than the code they test, so they are
+# attack and scanner surface the appliance never runs. Contrib/engine: every
+# tests/ dir at any depth (submodules and their test modules included; discovery
+# skips them for the same reason as core's). Vendor: only a package's root-level
+# tests/ or test/ — nothing in the --no-dev autoloader maps there (checked
+# against installed.json), whereas a capitalised Test/ (symfony/*/Test) is a
+# PSR-4 namespace inside the package and stays. Docs dirs stay: markdown, not
+# code, and drush reads its own docs/ for `drush topic`. Our own modules' tests
+# never enter the build context (.dockerignore).
+#
+# Core uses the same any-depth sweep: its test trees also sit in profiles/tests,
+# recipes/*/tests and nested submodules, which a fixed glob list misses.
+RUN find web/core web/modules/contrib web/modules/engine -depth -type d -name tests -exec rm -rf {} + \
+    && find vendor -mindepth 3 -maxdepth 3 -type d \( -name tests -o -name test \) -exec rm -rf {} + \
+    && test ! -e web/core/modules/package_manager/tests \
+    && test -z "$(find web/core web/modules/contrib web/modules/engine -type d -name tests -print -quit)"
 
 # --- Partition the resolved tree into cache tiers ---------------------------
 # The four big trees composer just materialised change at very different rates,

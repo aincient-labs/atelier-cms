@@ -10,6 +10,20 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.flowdrop_ai_provider_simple_chat
     - flowdrop_node_type.flowdrop_node_type.json_to_data
     - flowdrop_node_type.flowdrop_node_type.prompt_template
+  module:
+    - flowdrop_playground
+third_party_settings:
+  flowdrop_playground:
+    chat:
+      message: ask
+      history: null
+      session_id: null
+      message_id: null
+      replies:
+        -
+          node_id: chat_output.1
+          port: message
+      sub_workflow_replies: false
 id: aincient_brand_specialist_typography
 label: 'Brand specialist: Typography'
 description: 'Single-pass typography specialist. Takes a typography instruction (+ optional current state), decides the typeface PAIRING and type-scale presets, and returns a brand-preview slice (presets_json/tokens_json/fonts) for the orchestrator to apply via preview_brand. Applies nothing itself; no inner loop.'
@@ -22,7 +36,6 @@ nodes:
     data:
       label: 'Chat Input'
       config:
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -123,7 +136,6 @@ nodes:
           CURRENT LOOK — unsaved preview edits layered on top (this is what is on screen NOW; it wins over the saved baseline):
           {{ live_preview_state }}
           {% endif %}
-        nodeType: default
         maxRetries: 0
         ports:
           outputs:
@@ -208,7 +220,6 @@ nodes:
       config:
         format: text
         showTimestamp: false
-        nodeType: default
         maxRetries: 0
         ports:
           outputs:
@@ -267,7 +278,6 @@ nodes:
       label: 'JSON to Data'
       config:
         parse_mode: tolerant
-        nodeType: default
         maxRetries: 0
         requiresConfirmation: ''
       metadata:
@@ -422,9 +432,9 @@ edges:
     class: flowdrop--edge--data
 metadata:
   createdAt: '2026-08-13T16:58:27.912Z'
-  updatedAt: '2026-10-06T22:01:23.978Z'
+  updatedAt: '2026-11-09T21:03:53.656Z'
 created: 1782300000
-changed: 1791324084
+changed: 1794258233
 uid: 1
 input_ports:
   -

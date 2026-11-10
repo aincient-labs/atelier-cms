@@ -281,7 +281,9 @@ final class BrandEvalRunner {
         continue;
       }
       $ctx = json_decode((string) ($pipeline->get('execution_context')->value ?? ''), TRUE) ?: [];
-      if ((int) ($ctx['playground']['session_id'] ?? 0) === $sessionId) {
+      // FlowDrop 2.7 stamps the turn's session under `session`; ≤ 2.6 used
+      // `playground` (kept so older runs still resolve for forensics).
+      if ((int) ($ctx['session']['session_id'] ?? $ctx['playground']['session_id'] ?? 0) === $sessionId) {
         return $pipeline;
       }
     }

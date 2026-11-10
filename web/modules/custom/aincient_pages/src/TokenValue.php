@@ -120,8 +120,10 @@ final class TokenValue {
       return TRUE;
     }
     // Functional notation: only the recognised colour functions, and only
-    // digits, dots, %, spaces, commas and slashes inside the single paren pair.
-    return (bool) preg_match('/^(rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|hwb)\([0-9.,%\/\s-]+\)$/i', $v);
+    // digits, dots, %, spaces, commas, slashes and the CSS Color 4 `none`
+    // keyword (a missing channel, e.g. Tailwind's `oklch(97% 0 none)`) inside
+    // the single paren pair.
+    return (bool) preg_match('/^(rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|hwb)\((?:[0-9.,%\/\s-]|none)+\)$/i', $v);
   }
 
   private static function isLength(string $v): bool {

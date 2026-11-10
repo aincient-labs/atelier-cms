@@ -7,6 +7,30 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.25.0] — 2026-11-10
+
+**Workflow engine 2.7, Drupal 11.4.12, and a smaller, tighter image.**
+- The workflow engine moves to FlowDrop 2.7.3 and Drupal core to 11.4.12. Your workflows are
+  upgraded in place, and chat workflows you build in the editor keep answering in the console
+  without any extra setup.
+- **Site-builder admin screens are no longer installed:** Field UI, Menu UI, Contextual links and
+  RIFT UI, plus the unused CSV export. Atelier builds pages through the console, and these screens
+  could change the site's structure underneath it. The update removes them from existing sites.
+  Your content types, fields, menus and roles stay as they are. If you need one back, enable it
+  with `drush en field_ui` (or `menu_ui`, …); it stays on across later updates. A module you added
+  that depends on one of them keeps it.
+- The image no longer ships any test code or test fixtures from Drupal core, modules or
+  libraries. Nothing in production ran them, and they were extra surface for scanners and
+  attackers.
+- Updated modules: Metatag, Schema.org Metatag, Pathauto, Token, Key, ImageMagick, Image Style
+  Quality and Focal Point. 403 and 404 pages no longer name your home page as their canonical
+  address.
+- Tailwind 4.3.5 for page styles. Grey palette colours from the new Tailwind keep passing the
+  contrast checks.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.24.0] — 2026-11-09
 
 **A leaner image: half the download.**

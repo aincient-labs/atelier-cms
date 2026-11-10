@@ -26,14 +26,11 @@ module:
   config_ignore: 0
   config_split: 0
   content_moderation: 0
-  contextual: 0
   crop: 0
-  csv_serialization: 0
   datetime: 0
   dynamic_page_cache: 0
   editor: 0
   field: 0
-  field_ui: 0
   file: 0
   file_mdm: 0
   filter: 0
@@ -66,7 +63,6 @@ module:
   media: 0
   media_library: 0
   menu_link_content: 0
-  menu_ui: 0
   metatag: 0
   metatag_open_graph: 0
   node: 0
@@ -80,7 +76,6 @@ module:
   revision_graph: 0
   rift: 0
   rift_container_query: 0
-  rift_ui: 0
   schema_metatag: 0
   search: 0
   serialization: 0

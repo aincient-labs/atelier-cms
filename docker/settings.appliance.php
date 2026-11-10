@@ -68,7 +68,11 @@ $settings['update_free_access'] = FALSE;
 // uninstall the demo just because it's absent from config/sync/core.extension.
 // Without this, the first upgrade strips the demo homepage (and tripped the
 // converge health gate). Listing not-installed modules is a harmless no-op.
-$settings['config_exclude_modules'] = ['aincient_demo'];
+// The site-builder admin screens the appliance no longer ships (DECISIONS 0509)
+// are excluded too, so an owner who re-enables one keeps it across updates.
+// aincient_core_update_11014 uninstalls them once on upgrade, because an
+// import never uninstalls an excluded module that is still enabled.
+$settings['config_exclude_modules'] = ['aincient_demo', 'field_ui', 'views_ui', 'contextual', 'menu_ui', 'rift_ui', 'csv_serialization'];
 
 // The appliance sits behind whatever proxy the operator fronts it with.
 // Production deployments MUST scope the trusted hosts: set AINCIENT_TRUSTED_HOSTS

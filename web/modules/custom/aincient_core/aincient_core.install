@@ -679,3 +679,43 @@ function aincient_core_update_11013(): void {
       ->execute();
   }
 }
+
+/**
+ * Uninstalls the site-builder admin screens the appliance no longer ships.
+ *
+ * Field UI, Menu UI, Contextual links, RIFT UI and CSV serialization left
+ * config/sync in 0.25.0 (umbrella DECISIONS 0509). They are also listed in the
+ * appliance's `config_exclude_modules`, so an owner who re-enables one keeps it
+ * across updates. That exclusion is why this hook exists: config import never
+ * uninstalls an excluded module that is still enabled, so without it no
+ * existing site would lose them. updatedb runs before config:import in
+ * converge, so this runs once per site and the import then has nothing to do.
+ *
+ * One module at a time, never taking dependents with it: a module the owner
+ * added that needs one of these keeps it, and the update output names it.
+ */
+function aincient_core_update_11014(): string {
+  $installer = \Drupal::service('module_installer');
+  $handler = \Drupal::moduleHandler();
+  $removed = $kept = [];
+  foreach (['rift_ui', 'field_ui', 'menu_ui', 'contextual', 'csv_serialization'] as $module) {
+    if (!$handler->moduleExists($module)) {
+      continue;
+    }
+    // uninstall(…, FALSE) does NOT check dependents — it removes the module
+    // and leaves them broken — so the check is ours. Re-read the list each
+    // time: an earlier uninstall in this loop changes who still needs what.
+    $required_by = \Drupal::service('extension.list.module')->reset()->get($module)->required_by;
+    if (array_filter(array_keys($required_by), [$handler, 'moduleExists'])) {
+      $kept[] = $module;
+      continue;
+    }
+    $installer->uninstall([$module], FALSE);
+    $removed[] = $module;
+  }
+  $message = $removed ? 'Uninstalled: ' . implode(', ', $removed) . '.' : 'Nothing to uninstall.';
+  if ($kept) {
+    $message .= ' Kept, another installed module needs them: ' . implode(', ', $kept) . '.';
+  }
+  return $message;
+}

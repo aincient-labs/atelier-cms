@@ -8,6 +8,20 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
     - flowdrop_node_type.flowdrop_node_type.prompt_template
+  module:
+    - flowdrop_playground
+third_party_settings:
+  flowdrop_playground:
+    chat:
+      message: message
+      history: null
+      session_id: null
+      message_id: null
+      replies:
+        -
+          node_id: chat_output.1
+          port: message
+      sub_workflow_replies: false
 id: aincient_components_agent
 label: Components
 description: "Components studio agent: a stategraph agent loop (reason ⇄ dispatch propose_component_constraint ⇄ loop_back) that reviews the site's components and stages governance changes in the Components studio draft — never publishes. Context from the components_state node."
@@ -20,7 +34,6 @@ nodes:
     data:
       label: 'Chat Input'
       config:
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -77,7 +90,6 @@ nodes:
       config:
         format: text
         showTimestamp: false
-        nodeType: default
         maxRetries: 0
         ports:
           inputs:
@@ -196,7 +208,6 @@ nodes:
           with a single short framing sentence — don't restate the changes. Keep replies brief.
 
           {{ context_policy }}
-        nodeType: default
         maxRetries: 0
         requiresConfirmation: ''
         ports:
@@ -413,9 +424,9 @@ edges:
     class: flowdrop--edge--data
 metadata:
   createdAt: '2026-06-03T14:05:56.071Z'
-  updatedAt: '2026-10-06T21:56:34.222Z'
+  updatedAt: '2026-11-09T21:04:03.707Z'
 created: 1791163012
-changed: 1791323795
+changed: 1794258243
 uid: 1
 input_ports:
   -

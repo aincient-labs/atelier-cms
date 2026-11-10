@@ -42,6 +42,8 @@ final class PolicyRevisionTest extends KernelTestBase {
     'flowdrop',
     'flowdrop_node_category',
     'flowdrop_node_type',
+    // The shipped audit agent carries Playground chat settings (FlowDrop 2.7).
+    'flowdrop_playground',
     'flowdrop_node_processor',
     'flowdrop_workflow',
     'flowdrop_orchestration',

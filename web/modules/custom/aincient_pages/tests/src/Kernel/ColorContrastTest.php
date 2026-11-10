@@ -67,6 +67,19 @@ final class ColorContrastTest extends KernelTestBase {
     $this->assertTrue($bg['passes'], 'White on slate-900 should pass AA.');
   }
 
+  public function testResolvesAchromaticPaletteSwatchesWithNoneHue(): void {
+    // The neutral ramp is `oklch(L 0 none)` from Tailwind 4.3.5 on; it must
+    // still resolve, not drop out of the contrast check as unparseable.
+    $report = $this->contrast()->pairReport([
+      'background' => 'var(--color-neutral-50)',
+      'foreground' => 'var(--color-neutral-950)',
+    ]);
+    $bg = $this->pair($report, 'background');
+    $this->assertNotNull($bg['ratio'], 'neutral swatches did not resolve to a colour.');
+    $this->assertTrue($bg['passes']);
+    $this->assertSame('#FAFAFA', $this->contrast()->hexApproximation('oklch(98.5% 0 none)'));
+  }
+
   public function testParsesOklchValues(): void {
     // A dark oklch surface with light oklch text resolves and passes.
     $report = $this->contrast()->pairReport([

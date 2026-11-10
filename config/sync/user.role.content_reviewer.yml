@@ -10,7 +10,6 @@ dependencies:
     - aincient_chat
     - aincient_core
     - content_moderation
-    - contextual
     - file
     - node
     - path
@@ -23,7 +22,6 @@ is_admin: false
 permissions:
   - 'access administration pages'
   - 'access content overview'
-  - 'access contextual links'
   - 'access files overview'
   - 'administer url aliases'
   - 'create aincient_page content'

@@ -27,3 +27,9 @@ web/modules/custom/*/chat-ui
 web/modules/studio/*/ui
 # macOS finder cruft — 50+ of these otherwise ride into the image.
 **/.DS_Store
+# Our own test trees (PHPUnit, fixtures, test modules) never run in the appliance;
+# CI runs them from the checkout, not the image (DECISIONS 0510). The Dockerfile
+# strips contrib/engine/vendor tests the same way.
+web/modules/custom/**/tests
+web/modules/studio/**/tests
+web/themes/custom/**/tests

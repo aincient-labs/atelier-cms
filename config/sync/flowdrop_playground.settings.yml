@@ -1,3 +1,5 @@
 _core:
   default_config_hash: 4vIq9e6aUTighuH_7HpgDI-Qigd2qGKyLcPwzPg7PQQ
 auto_run: true
+persist_job_logs: true
+notice_level: full

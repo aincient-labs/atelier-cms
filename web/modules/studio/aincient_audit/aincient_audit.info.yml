@@ -7,6 +7,7 @@ core_version_requirement: ^11
 dependencies:
   - drupal:node
   - metatag:metatag
+  - flowdrop:flowdrop_playground
   # What this studio audits — pages (the store, moderation, the meta tags) and
   # the inference layer the agent reasons through.
   - aincient_pages

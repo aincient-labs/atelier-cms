@@ -60,7 +60,7 @@ db_img="$(awk '/^  db:/{f=1} f&&/image:/{print $2; exit}' <<<"$compose")"
 edge_img="$(awk '/^  edge:/{f=1} f&&/image:/{print $2; exit}' <<<"$compose")"
 upd_img="$(awk '/^FROM /{print $2; exit}' <<<"$updater_df")"
 app_img="ghcr.io/$REPO:$tag"
-im_ver="$(grep -oE 'ImageMagick/archive/refs/tags/[^ ]+\.tar\.gz' <<<"$dockerfile" | head -1 | sed -E 's#.*/tags/(.+)\.tar\.gz#\1#')"
+im_ver="$( { grep -oE 'ImageMagick/archive/refs/tags/[^ ]+\.tar\.gz' <<<"$dockerfile" || true; } | head -1 | sed -E 's#.*/tags/(.+)\.tar\.gz#\1#')"
 # im_ver may be empty: images from the Debian-packages runtime on carry ImageMagick
 # as a deb, which syft and grype see directly; only older tags compiled it.
 for v in db_img edge_img upd_img; do [[ -n "${!v}" ]] || { echo "could not read $v from $tag" >&2; exit 1; }; done

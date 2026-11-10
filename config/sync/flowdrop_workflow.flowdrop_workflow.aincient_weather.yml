@@ -10,6 +10,20 @@ dependencies:
     - flowdrop_node_type.flowdrop_node_type.http_request
     - flowdrop_node_type.flowdrop_node_type.if_else
     - flowdrop_node_type.flowdrop_node_type.note
+  module:
+    - flowdrop_playground
+third_party_settings:
+  flowdrop_playground:
+    chat:
+      message: location
+      history: null
+      session_id: null
+      message_id: null
+      replies:
+        -
+          node_id: chat_output.1
+          port: message
+      sub_workflow_replies: false
 id: aincient_weather
 label: 'Weather (demo tool)'
 description: "A weather lookup. Take the user's chat message as a location. GET the Open-Meteo geocoding API to resolve it to latitude/longitude/name. Then GET the Open-Meteo forecast API for that lat/lon. Reshape the response into a JSON envelope and return it as the chat output."
@@ -22,7 +36,6 @@ nodes:
     data:
       label: 'Chat Input'
       config:
-        nodeType: default
         ports:
           inputs:
             -
@@ -363,7 +376,6 @@ nodes:
       config:
         format: text
         showTimestamp: false
-        nodeType: default
         ports:
           inputs:
             -
@@ -1029,15 +1041,17 @@ edges:
     class: flowdrop--edge--trigger
 metadata:
   createdAt: '2026-06-13T13:23:57.552Z'
-  updatedAt: '2026-06-14T01:14:45.594Z'
+  updatedAt: '2026-11-09T20:59:16.843Z'
 created: 1781356133
-changed: 1785014086
+changed: 1794258124
 uid: 0
 input_ports:
   -
     name: location
     node_id: chat_input.1
     port: message
+    description: 'The place to look up the weather for — a city, optionally with region or country, e.g. "Hamburg, Germany" or "Tokyo". Extract the location from the user''s request and pass ONLY the place name, with no surrounding words.'
+    required: true
 output_ports:
   -
     name: message
@@ -1051,11 +1065,12 @@ parameter_schema:
     location:
       type: string
       description: 'The place to look up the weather for — a city, optionally with region or country, e.g. "Hamburg, Germany" or "Tokyo". Extract the location from the user''s request and pass ONLY the place name, with no surrounding words.'
+      x-data-type: string
       default: ''
-      required: true
 output_schema:
   type: object
   properties:
     message:
       type: string
-schema_version: 1.0.0
+      x-data-type: string
+schema_version: 1.0.2

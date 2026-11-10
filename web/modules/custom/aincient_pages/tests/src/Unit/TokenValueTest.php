@@ -30,6 +30,9 @@ final class TokenValueTest extends UnitTestCase {
       // Valid values per type.
       'hex' => ['color', '#1f7a4d', TRUE],
       'oklch' => ['color', 'oklch(0.63 0.25 350)', TRUE],
+      // CSS Color 4 missing channel, as Tailwind >= 4.3.5 writes its greys.
+      'oklch-none-hue' => ['color', 'oklch(97% 0 none)', TRUE],
+      'oklch-other-word' => ['color', 'oklch(97% 0 red)', FALSE],
       'rgb-slash' => ['color', 'rgb(0 0 0 / 0.5)', TRUE],
       'named' => ['color', 'transparent', TRUE],
       'var-ref' => ['color', 'var(--primary)', TRUE],

@@ -1,6 +1,9 @@
 _core:
   default_config_hash: L6nvvoUF0D4sw87rYlCQac7kWABNjxQ-Ta-q2j0M9Zs
 visual_types:
+  caption:
+    label: Caption
+    description: 'Short high-contrast text that names or marks nearby nodes'
   default:
     label: Default
     description: 'Standard node appearance with full configuration panel'

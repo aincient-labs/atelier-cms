@@ -145,7 +145,7 @@
                 {
                     "step": "50",
                     "css_var": "color-zinc-50",
-                    "value": "oklch(98.5% 0 0)"
+                    "value": "oklch(98.5% 0 none)"
                 },
                 {
                     "step": "100",
@@ -206,57 +206,57 @@
                 {
                     "step": "50",
                     "css_var": "color-neutral-50",
-                    "value": "oklch(98.5% 0 0)"
+                    "value": "oklch(98.5% 0 none)"
                 },
                 {
                     "step": "100",
                     "css_var": "color-neutral-100",
-                    "value": "oklch(97% 0 0)"
+                    "value": "oklch(97% 0 none)"
                 },
                 {
                     "step": "200",
                     "css_var": "color-neutral-200",
-                    "value": "oklch(92.2% 0 0)"
+                    "value": "oklch(92.2% 0 none)"
                 },
                 {
                     "step": "300",
                     "css_var": "color-neutral-300",
-                    "value": "oklch(87% 0 0)"
+                    "value": "oklch(87% 0 none)"
                 },
                 {
                     "step": "400",
                     "css_var": "color-neutral-400",
-                    "value": "oklch(70.8% 0 0)"
+                    "value": "oklch(70.8% 0 none)"
                 },
                 {
                     "step": "500",
                     "css_var": "color-neutral-500",
-                    "value": "oklch(55.6% 0 0)"
+                    "value": "oklch(55.6% 0 none)"
                 },
                 {
                     "step": "600",
                     "css_var": "color-neutral-600",
-                    "value": "oklch(43.9% 0 0)"
+                    "value": "oklch(43.9% 0 none)"
                 },
                 {
                     "step": "700",
                     "css_var": "color-neutral-700",
-                    "value": "oklch(37.1% 0 0)"
+                    "value": "oklch(37.1% 0 none)"
                 },
                 {
                     "step": "800",
                     "css_var": "color-neutral-800",
-                    "value": "oklch(26.9% 0 0)"
+                    "value": "oklch(26.9% 0 none)"
                 },
                 {
                     "step": "900",
                     "css_var": "color-neutral-900",
-                    "value": "oklch(20.5% 0 0)"
+                    "value": "oklch(20.5% 0 none)"
                 },
                 {
                     "step": "950",
                     "css_var": "color-neutral-950",
-                    "value": "oklch(14.5% 0 0)"
+                    "value": "oklch(14.5% 0 none)"
                 }
             ]
         },
@@ -389,7 +389,7 @@
                 {
                     "step": "50",
                     "css_var": "color-mauve-50",
-                    "value": "oklch(98.5% 0 0)"
+                    "value": "oklch(98.5% 0 none)"
                 },
                 {
                     "step": "100",
