@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Twig;
 
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_flows\Kernel;
 
 use Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\CapabilityTool;
-use Drupal\aincient_core\Capability\CapabilityGateInterface;
-use Drupal\aincient_core\Capability\CapabilityGates;
+use Aincient\Capability\CapabilityGateInterface;
+use Aincient\Capability\CapabilityGates;
 use Drupal\aincient_core\Capability\CapabilityManager;
 use Drupal\flowdrop\DTO\ParameterBag;
 use Drupal\KernelTests\KernelTestBase;
@@ -158,7 +158,7 @@ final class CapabilityToolTest extends KernelTestBase {
 
   /**
    * @covers ::process
-   * @covers ::normalizeArg
+   * @covers \Aincient\Capability\ArgNormalizer::normalizeArg
    *
    * The model habitually HTML-escapes text destined for a page; the node strips
    * those entities once, at this single boundary, so capabilities receive clean

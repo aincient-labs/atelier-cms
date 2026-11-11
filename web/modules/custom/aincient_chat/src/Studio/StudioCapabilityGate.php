@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_chat\Studio;
 
-use Drupal\aincient_core\Capability\CapabilityGateInterface;
+use Aincient\Capability\CapabilityGateInterface;
 use Psr\Log\LoggerInterface;
 
 /**

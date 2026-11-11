@@ -356,6 +356,16 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
       $sessionId = $this->pipelines->sessionId($rootId) ?? 0;
     }
 
+    // Ownership (0511): only the person whose console thread raised the
+    // interrupt may answer it. The interrupt id alone proves nothing, and the
+    // body's thread_id is the caller's claim, so both are checked against the
+    // session the interrupt actually belongs to. The refusal reads like an
+    // expired choice so it does not confirm that someone else's exists.
+    if (!$this->ownsSession($sessionId, $threadId)) {
+      yield ChatEvent::error('That choice has expired or was already answered.');
+      return;
+    }
+
     yield ChatEvent::status('Recording your choice…', ['flow' => 'flowdrop']);
 
     // Resolving dispatches an event that resumes the pipeline synchronously
@@ -513,6 +523,26 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
   }
 
   /**
+   * Whether a session is the current user's console session for a thread.
+   *
+   * @param int $sessionId
+   *   The session an interrupt belongs to (0 when none could be found).
+   * @param string $threadId
+   *   The console thread the caller says it answers for.
+   */
+  private function ownsSession(int $sessionId, string $threadId): bool {
+    if ($sessionId === 0 || $threadId === '') {
+      return FALSE;
+    }
+    $session = \Drupal::entityTypeManager()->getStorage('flowdrop_session')->load($sessionId);
+    if ($session === NULL) {
+      return FALSE;
+    }
+    return (int) $session->getOwnerId() === (int) \Drupal::currentUser()->id()
+      && $session->getName() === 'console:' . $threadId;
+  }
+
+  /**
    * The reusable FlowDrop session for a console thread, or a new one.
    *
    * Keyed 1:1 to the console thread (session name "console:<threadId>") so a
@@ -523,9 +553,13 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
   private function sessionForThread(object $sessions, object $interrupts, object $workflow, string $threadId): object {
     $name = 'console:' . $threadId;
     $storage = \Drupal::entityTypeManager()->getStorage('flowdrop_session');
+    // Only the caller's own session is reused (0511): ChatController refuses a
+    // thread id that belongs to someone else, and this keeps the dispatcher
+    // from replaying another person's conversation even if a caller didn't.
     $ids = $storage->getQuery()
       ->accessCheck(FALSE)
       ->condition('name', $name)
+      ->condition('uid', (int) \Drupal::currentUser()->id())
       ->sort('id', 'DESC')
       ->range(0, 1)
       ->execute();

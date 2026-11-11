@@ -103,9 +103,13 @@ trait AgentEngineFixtureTrait {
 
   /**
    * Runs one console turn against a parent workflow.
+   *
+   * With a thread id the session is named like a real console session
+   * (`console:<thread>`), which the dispatcher's resume ownership check needs.
    */
-  private function turn(WorkflowDefinitionInterface $workflow, string $message): TurnResult {
-    $session = $this->container->get('flowdrop_session.service')->createSession($workflow);
+  private function turn(WorkflowDefinitionInterface $workflow, string $message, ?string $threadId = NULL): TurnResult {
+    $sessions = $this->container->get('flowdrop_session.service');
+    $session = $threadId !== NULL ? $sessions->createSession($workflow, 'console:' . $threadId) : $sessions->createSession($workflow);
     return $this->container->get('flowdrop_session.turn_service')->executeTurn(
       (string) $session->id(),
       $message,

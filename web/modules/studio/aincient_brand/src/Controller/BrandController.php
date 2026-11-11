@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Drupal\aincient_brand\Controller;
 
 use Drupal\aincient_pages\BrandRepository;
-use Drupal\aincient_pages\ColorContrast;
-use Drupal\aincient_pages\DesignTokens;
-use Drupal\aincient_pages\FontPairings;
-use Drupal\aincient_pages\PresetCatalog;
+use Aincient\PageModel\ColorContrast;
+use Aincient\PageModel\DesignTokens;
+use Aincient\PageModel\FontPairings;
+use Aincient\PageModel\PresetCatalog;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_chat\Chat;
 
+use Aincient\Inference\RecapNote;
+
 /**
  * One line telling the model what a turn's cards showed the user. 0464.
  *
@@ -14,6 +16,11 @@ namespace Drupal\aincient_chat\Chat;
  * resolves; ContextPolicy tells the agent to re-call the tool before acting on
  * it, because a card is a snapshot.
  *
+ * It is stored there but never REPLAYED there: the inference seam moves it onto
+ * the next user turn and strips it from the model's output
+ * ({@see \Aincient\Inference\RecapNote}), because as the model's
+ * own words it was echoed and imitated (B2: "Done" with no generate call).
+ *
  * Names and ids only, never the payload: enough to resolve a reference, small
  * enough to sit in every later request.
  */
@@ -22,7 +29,7 @@ final class WidgetRecap {
   /**
    * Every recap starts with this. ContextPolicy names it for the model.
    */
-  public const PREFIX = '[shown to the user: ';
+  public const PREFIX = RecapNote::PREFIX;
 
   /**
    * Items listed per card before "+N more".

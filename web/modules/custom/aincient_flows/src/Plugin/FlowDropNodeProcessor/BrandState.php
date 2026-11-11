@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
 use Drupal\aincient_pages\BrandRepository;
-use Drupal\aincient_pages\ColorContrast;
+use Aincient\PageModel\ColorContrast;
 use Drupal\aincient_pages\SiteIdentity;
-use Drupal\aincient_pages\TokenGrounding;
+use Aincient\PageModel\TokenGrounding;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
 use Drupal\flowdrop\DTO\ParameterBagInterface;
@@ -46,7 +46,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *    move, and a relative request ("rounder", "heavier") had to be guessed at.
  *
  * Every value in all three briefs is rendered through
- * {@see \Drupal\aincient_pages\TokenGrounding}: roughly half the registry's
+ * {@see \Aincient\PageModel\TokenGrounding}: roughly half the registry's
  * tokens hold a `var()` reference, and a reference is not a value a model can
  * step from (DECISIONS 0408).
  *

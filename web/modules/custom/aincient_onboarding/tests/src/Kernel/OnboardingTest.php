@@ -6,7 +6,7 @@ namespace Drupal\Tests\aincient_onboarding\Kernel;
 
 use Drupal\aincient_onboarding\ProviderConnector;
 use Drupal\aincient_core\Capability\CapabilityManager;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_inference_test\ScriptedAdapter;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;

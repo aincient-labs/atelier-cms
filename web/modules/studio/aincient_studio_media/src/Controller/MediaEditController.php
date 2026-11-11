@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_studio_media\Controller;
 
 use Drupal\aincient_pages\MediaRepository;
+use Drupal\aincient_pages\MediaUsage;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\media\MediaInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -26,10 +27,11 @@ final class MediaEditController implements ContainerInjectionInterface {
 
   public function __construct(
     private readonly MediaRepository $media,
+    private readonly MediaUsage $usage,
   ) {}
 
   public static function create(ContainerInterface $container): self {
-    return new self($container->get('aincient_pages.media'));
+    return new self($container->get('aincient_pages.media'), $container->get('aincient_pages.media_usage'));
   }
 
   /**
@@ -160,6 +162,56 @@ final class MediaEditController implements ContainerInjectionInterface {
       return new JsonResponse(['error' => $e->getMessage()], 422);
     }
     return new JsonResponse(['deleted' => TRUE]);
+  }
+
+  /**
+   * POST /atelier/media/{media}/discard — the human rejects a generated image.
+   *
+   * Unpublishes it (DECISIONS 0512): it stays in the Library, marked, and can be
+   * restored, but the Pages agent stops offering it. Refused with 409 while the
+   * image is still placed on a page, block, the identity or the chrome, since
+   * an unpublished image stops rendering for visitors.
+   */
+  public function discard(MediaInterface $media): JsonResponse {
+    if ($media->bundle() !== 'image') {
+      return new JsonResponse(['error' => 'Not an editable image.'], 404);
+    }
+    if (!$media->access('update')) {
+      return new JsonResponse(['error' => 'You don’t have access to edit this media item.'], 403);
+    }
+    $placements = $this->usage->placements((string) $media->id());
+    if ($placements !== []) {
+      return new JsonResponse([
+        'error' => 'This image is still used, so it can’t be discarded. Remove it from these first: ' . implode(', ', $placements) . '.',
+        'placements' => $placements,
+      ], 409);
+    }
+    try {
+      $row = $this->media->setPublished((string) $media->id(), FALSE);
+    }
+    catch (\Throwable $e) {
+      return new JsonResponse(['error' => $e->getMessage()], 422);
+    }
+    return new JsonResponse(['item' => $row]);
+  }
+
+  /**
+   * POST /atelier/media/{media}/restore — undo a discard (publish it again).
+   */
+  public function restore(MediaInterface $media): JsonResponse {
+    if ($media->bundle() !== 'image') {
+      return new JsonResponse(['error' => 'Not an editable image.'], 404);
+    }
+    if (!$media->access('update')) {
+      return new JsonResponse(['error' => 'You don’t have access to edit this media item.'], 403);
+    }
+    try {
+      $row = $this->media->setPublished((string) $media->id(), TRUE);
+    }
+    catch (\Throwable $e) {
+      return new JsonResponse(['error' => $e->getMessage()], 422);
+    }
+    return new JsonResponse(['item' => $row]);
   }
 
 }

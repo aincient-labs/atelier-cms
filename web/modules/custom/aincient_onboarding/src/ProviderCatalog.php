@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_onboarding;
 
-use Drupal\aincient_core\Inference\ProviderInventory;
+use Aincient\Inference\ProviderInventory;
 use Drupal\aincient_core\ModelRecommendations;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
@@ -48,7 +48,7 @@ final class ProviderCatalog {
    *
    * The rule this enforces is "never offer a row that cannot succeed". It held
    * exactly one id — `openai_compatible`, which needs an API key AND a base URL
-   * ({@see \Drupal\aincient_core\Inference\ProviderAdapterInterface::AUTH_KEY_ENDPOINT})
+   * ({@see \Aincient\Inference\ProviderAdapterInterface::AUTH_KEY_ENDPOINT})
    * against a connect step that rendered one field. The step renders both fields
    * now, so the id came out and the whole `api_key_endpoint` shape — DeepSeek,
    * Groq, OpenRouter, a LiteLLM proxy, vLLM, LM Studio — is offered like any

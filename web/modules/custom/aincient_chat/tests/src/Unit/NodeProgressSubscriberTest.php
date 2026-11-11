@@ -11,9 +11,9 @@ use Drupal\aincient_chat\Chat\StreamRelay;
 use Drupal\aincient_chat\Event\ChatEvent;
 use Drupal\aincient_chat\Event\ChatEventType;
 use Drupal\aincient_chat\EventSubscriber\NodeProgressSubscriber;
-use Drupal\aincient_core\Exception\AiProviderFailure;
-use Drupal\aincient_core\Inference\ProviderCall;
-use Drupal\aincient_core\Inference\ProviderFailureLog;
+use Aincient\Inference\Exception\AiProviderFailure;
+use Aincient\Inference\ProviderCall;
+use Aincient\Inference\ProviderFailureLog;
 use Drupal\flowdrop_job\FlowDropJobInterface;
 use Drupal\flowdrop_runtime\Event\JobCompletedEvent;
 

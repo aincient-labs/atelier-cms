@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_chat\Chat;
 
-use Drupal\aincient_core\Inference\AiGateway;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\AiGateway;
+use Aincient\Inference\ModelRoles;
 use Psr\Log\LoggerInterface;
 
 /**

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_flows\Unit;
 
 use Drupal\aincient_core\Inference\AincientReasonerInterface;
-use Drupal\aincient_core\Inference\AincientReasonResult;
+use Aincient\Inference\AincientReasonResult;
 use Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\AincientReason;
 use Drupal\flowdrop\DTO\Reason\ModelChoices;
 use Drupal\flowdrop\DTO\Reason\ReasonRequest;

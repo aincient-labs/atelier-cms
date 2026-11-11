@@ -53,6 +53,9 @@ final class LockController implements ContainerInjectionInterface {
       return new JsonResponse(['error' => 'Expected a node_id.'], 400);
     }
     $studio = isset($data['studio']) && $data['studio'] !== '' ? (string) $data['studio'] : 'content';
+    if (($bad = $this->badKey($langcode, $studio)) !== NULL) {
+      return $bad;
+    }
     if (($denied = $this->denyIfNoUpdate($nid, $langcode)) !== NULL) {
       return $denied;
     }
@@ -104,6 +107,20 @@ final class LockController implements ContainerInjectionInterface {
   private function body(Request $request): array {
     $data = json_decode((string) $request->getContent(), TRUE);
     return is_array($data) ? $data : [];
+  }
+
+  /**
+   * 400 for a langcode/studio the lock row can't hold (varchar 12 / 32): they
+   * used to reach the INSERT and surface as a 500 (contract suite, lean m1-3).
+   */
+  private function badKey(string $langcode, string $studio): ?JsonResponse {
+    if ($langcode !== '' && !preg_match('/^[A-Za-z0-9-]{1,12}$/', $langcode)) {
+      return new JsonResponse(['error' => 'Expected a langcode.'], 400);
+    }
+    if (!preg_match('/^[a-z0-9_]{1,32}$/', $studio)) {
+      return new JsonResponse(['error' => 'Expected a studio id.'], 400);
+    }
+    return NULL;
   }
 
   /**

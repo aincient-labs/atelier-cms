@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_studio_media\Plugin\AiCapability;
 
-use Drupal\aincient_core\CapabilitySet;
-use Drupal\aincient_core\Inference\AiGateway;
-use Drupal\aincient_core\Inference\ImageRef;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Capability\CapabilitySet;
+use Aincient\Inference\AiGateway;
+use Aincient\Inference\ImageRef;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_pages\MediaRepository;
 use Drupal\aincient_core\Attribute\Capability;
 use Drupal\aincient_core\Capability\CapabilityBase;

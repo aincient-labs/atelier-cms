@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
-use Drupal\aincient_pages\Catalog\CatalogCompiler;
-use Drupal\aincient_pages\ComponentCatalog;
+use Aincient\PageModel\Catalog\CatalogCompiler;
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\aincient_pages\Entity\PageKindInterface;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -20,7 +20,7 @@ use Symfony\Component\Yaml\Yaml;
  * legacy ComponentCatalog statics (zero behaviour change).
  *
  * @group aincient
- * @coversDefaultClass \Drupal\aincient_pages\Catalog\CatalogCompiler
+ * @coversDefaultClass \Aincient\PageModel\Catalog\CatalogCompiler
  */
 #[RunTestsInSeparateProcesses]
 final class CatalogCompilerTest extends UnitTestCase {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, ImageIcon, makeSafeAssistantToolUI } from "@console/kit";
-import { consoleNav, loadMediaIntoStudio, setEditSource, stageAltProposal, stageNameProposal } from "@console/sdk";
+import { consoleNav, loadMediaIntoStudio, setEditSource, setMediaDiscarded, stageAltProposal, stageNameProposal } from "@console/sdk";
 
 /**
  * Media AI result card — the Media studio's one AI widget, in three modes.
@@ -17,8 +17,10 @@ import { consoleNav, loadMediaIntoStudio, setEditSource, stageAltProposal, stage
  *   - generate/edit: on arrival, auto-opens the new item into the editor rail (so
  *     its name/alt are populated and Save-ready); for an edit it also records the
  *     source token, which lights up the rail's "Replace original" action. The image
- *     is already saved (generation is expensive — never discarded); the human
- *     refines, Replaces the original, or Deletes it from the rail.
+ *     is already saved (generation is expensive — the AI never discards it); the
+ *     human refines it, Replaces the original, or Discards it here. Discard
+ *     unpublishes (DECISIONS 0512): reversible with Undo, and the Pages agent stops
+ *     offering a discarded image.
  *   - alt_text: on arrival, stages the suggestion into the OPEN item's alt field
  *     (dirty, unsaved) for the human to review and Save. Nothing is persisted.
  *
@@ -57,7 +59,23 @@ function MediaResultCard({ payload, toolCallId }: { payload: MediaResultPayload;
   const src = payload.preview || payload.thumb;
   const id = payload.id;
   const [opening, setOpening] = useState(false);
+  const [discarded, setDiscarded] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const toggleDiscard = async (next: boolean) => {
+    if (!id) return;
+    setDiscarding(true);
+    setError(null);
+    try {
+      await setMediaDiscarded(id, next);
+      setDiscarded(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn’t update the image.");
+    } finally {
+      setDiscarding(false);
+    }
+  };
 
   // Route the result into the human's editing surface ONCE, on LIVE arrival only.
   // A HISTORICAL card (stamped by the adapter when a stored transcript is replayed
@@ -109,7 +127,7 @@ function MediaResultCard({ payload, toolCallId }: { payload: MediaResultPayload;
       <div className="ain-media-result__head">
         <ImageIcon className="ain-media-result__icon" />
         <span className="ain-media-result__title">{title}</span>
-        <span className="ain-media-result__badge">{isSuggestion ? "Added to editor" : "In your Library"}</span>
+        <span className="ain-media-result__badge">{isSuggestion ? "Added to editor" : discarded ? "Discarded" : "In your Library"}</span>
       </div>
 
       <div className="ain-media-result__stage">
@@ -169,6 +187,11 @@ function MediaResultCard({ payload, toolCallId }: { payload: MediaResultPayload;
         >
           {opening ? "Opening…" : isSuggestion ? "View in Media studio" : "Open in Media studio"}
         </Button>
+        {!isSuggestion && (
+          <Button type="button" variant="secondary" disabled={discarding} onClick={() => void toggleDiscard(!discarded)}>
+            {discarding ? (discarded ? "Restoring…" : "Discarding…") : discarded ? "Undo discard" : "Discard"}
+          </Button>
+        )}
       </div>
       {error && <p className="ain-media-result__error" role="alert">{error}</p>}
     </div>

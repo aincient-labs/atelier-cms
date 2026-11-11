@@ -11,7 +11,7 @@ use Symfony\Component\Validator\Constraint as SymfonyConstraint;
 /**
  * Rejects a page URL alias whose leading segment is a reserved namespace.
  *
- * @see \Drupal\aincient_pages\ReservedAliases
+ * @see \Aincient\PageModel\ReservedAliases
  */
 #[Constraint(
   id: 'AincientReservedAlias',

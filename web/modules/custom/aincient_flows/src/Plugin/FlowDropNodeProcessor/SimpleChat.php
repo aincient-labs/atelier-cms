@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
-use Drupal\aincient_core\Inference\ChatCompleter;
-use Drupal\aincient_core\Inference\ModelTargetResolver;
+use Aincient\Inference\ChatCompleter;
+use Aincient\Inference\ModelTargetResolver;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
 use Drupal\flowdrop\DTO\ParameterBagInterface;
@@ -33,13 +33,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * `provider`, `tokens_used`, `temperature`, `max_tokens`) are reproduced exactly.
  *
  * WHAT DELIBERATELY CHANGED, all of it honesty:
- *   - The result is read through {@see \Drupal\aincient_core\Inference\ResultUnpacker},
+ *   - The result is read through {@see \Aincient\Inference\ResultUnpacker},
  *     the one class that knows `symfony/ai`'s result union — not four
  *     `method_exists` branches over a response shape the predecessor hoped for.
  *   - `tokens_used` is the provider's OWN number, extracted from result metadata,
  *     where the predecessor guessed from whichever accessor happened to exist. It
  *     is 0 only when the provider reported nothing.
- *   - A provider fault arrives as {@see \Drupal\aincient_core\Exception\AiProviderFailure}
+ *   - A provider fault arrives as {@see \Aincient\Inference\Exception\AiProviderFailure}
  *     naming the provider and model, not a bare `\Exception` — an unnamed node
  *     failure is a turn nobody can debug (DECISIONS 0278/0279).
  *
@@ -156,7 +156,7 @@ class SimpleChat extends AbstractFlowDropNodeProcessor {
           'type' => 'string',
           // A free-text field, not an enumerated picker, and that is the point:
           // enumerating models means a live round trip per provider
-          // ({@see \Drupal\aincient_core\Inference\ProviderInventory::models()}),
+          // ({@see \Aincient\Inference\ProviderInventory::models()}),
           // which has no business running every time an editor form is built. The
           // sanctioned way to choose a model is the role layer below — all three
           // shipped specialists leave this empty.

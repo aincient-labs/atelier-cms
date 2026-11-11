@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Plugin\Validation\Constraint;
 
-use Drupal\aincient_pages\ReservedAliases;
+use Aincient\PageModel\ReservedAliases;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 

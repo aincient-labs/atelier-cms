@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Usage;
 
-use Drupal\aincient_core\Inference\ResultUnpacker;
+use Aincient\Inference\ResultUnpacker;
+use Aincient\Inference\UsageSinkInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\AI\Platform\TokenUsage\TokenUsageInterface;
@@ -22,8 +23,8 @@ use Symfony\AI\Platform\TokenUsage\TokenUsageInterface;
  * small plausible one. Silent under-reporting that surfaces as a bill.
  *
  * ONE recorder, three seams. {@see \Drupal\aincient_core\Inference\SymfonyAiReasoner}
- * (the agent loop), {@see \Drupal\aincient_core\Inference\AiGateway} (one-shot
- * product calls) and {@see \Drupal\aincient_core\Inference\ChatCompleter} (the plain
+ * (the agent loop), {@see \Aincient\Inference\AiGateway} (one-shot
+ * product calls) and {@see \Aincient\Inference\ChatCompleter} (the plain
  * chat node) all call this after they have a result. Duplicating the composition
  * per seam is how the three of them would drift into recording three subtly
  * different rows, and a dashboard that mixes those is worse than an empty one.
@@ -49,45 +50,7 @@ use Symfony\AI\Platform\TokenUsage\TokenUsageInterface;
  * and a recorder that could quietly decide to record nothing is precisely the
  * silence the class was written to end.
  */
-final class UsageRecorder {
-
-  /**
-   * The operation value a chat turn records — vision turns included.
-   *
-   * Kept as the literal `chat` the drupal/ai era used, even though the new table
-   * starts empty and nothing forces the continuity: an export taken before the
-   * cutover and one taken after still line up on this axis, which is the only
-   * way the two can be compared at all. A vision call is a chat call with an
-   * image part on this backend, so it is not a third value.
-   */
-  public const OPERATION_CHAT = 'chat';
-
-  /**
-   * Generating an image from a prompt.
-   */
-  public const OPERATION_TEXT_TO_IMAGE = 'text_to_image';
-
-  /**
-   * Editing an image the caller supplied.
-   */
-  public const OPERATION_IMAGE_TO_IMAGE = 'image_to_image';
-
-  /**
-   * The call-site tag for a turn of the agent loop.
-   *
-   * The reasoner serves every FlowDrop `reason` node — the operator and its
-   * sub-agents — so this identifies "an agent turn", which is exactly the
-   * distinction the dashboard was missing against thread naming. The gateway's
-   * tags are NOT defined here: they are passed in by their callers
-   * (`aincient_chat_thread_namer`, `aincient_media_studio`) and this class
-   * preserves them verbatim so rows keep lining up if those call sites move.
-   */
-  public const TAG_AGENT_TURN = 'aincient_agent_turn';
-
-  /**
-   * The call-site tag for the plain chat node the brand specialists run on.
-   */
-  public const TAG_SIMPLE_CHAT = 'aincient_flows_simple_chat';
+final class UsageRecorder implements UsageSinkInterface {
 
   public function __construct(
     private readonly ResultUnpacker $unpacker,

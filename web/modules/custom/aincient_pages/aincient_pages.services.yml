@@ -69,7 +69,7 @@ services:
   # need no third-party request and no consent banner for fonts.
   aincient_pages.brand_font_vendor:
     class: Drupal\aincient_pages\BrandFontVendor
-    arguments: ['@http_client', '@file_system', '@file_url_generator', '@logger.channel.aincient_pages']
+    arguments: ['@http_client', '@file_system', '@file_url_generator', '@logger.channel.aincient_pages', '@extension.list.module']
   # Foundations: the design-token layer (abstract visual language).
   aincient_pages.brand:
     class: Drupal\aincient_pages\BrandRepository
@@ -100,6 +100,10 @@ services:
   aincient_pages.media:
     class: Drupal\aincient_pages\MediaRepository
     arguments: ['@entity_type.manager', '@aincient_pages.embed_resolver', '@file_system', '@token', '@file_url_generator', '@aincient_core.image_upload_validator']
+  # Where an image token is still placed; guards Discard (DECISIONS 0512).
+  aincient_pages.media_usage:
+    class: Drupal\aincient_pages\MediaUsage
+    arguments: ['@entity_type.manager', '@config.factory']
   # Collection listings (DECISIONS 0329): the inventory owns a query spec →
   # content hash + finds every placed index-mode collection; the resolver turns
   # a spec into pre-resolved article-teaser records, one code path for the live
@@ -198,7 +202,8 @@ services:
     tags:
       - { name: twig.extension }
   aincient_pages.design_tokens:
-    class: Drupal\aincient_pages\DesignTokens
+    class: Aincient\PageModel\DesignTokens
+    factory: ['Drupal\aincient_pages\DesignTokensFactory', 'create']
     arguments: ['@extension.list.module']
   # Resolution: follows a token's var() chain (registry tiers → Tier-0 Tailwind)
   # to the concrete value behind it. The counterpart to TokenValue, which is the
@@ -206,26 +211,26 @@ services:
   # walkers used to do this independently and the weakest sat on the agent's
   # prompt path (DECISIONS 0408).
   aincient_pages.token_resolver:
-    class: Drupal\aincient_pages\TokenResolver
+    class: Aincient\PageModel\TokenResolver
     arguments: ['@aincient_pages.design_tokens']
   aincient_pages.color_contrast:
-    class: Drupal\aincient_pages\ColorContrast
+    class: Aincient\PageModel\ColorContrast
     arguments: ['@aincient_pages.design_tokens', '@aincient_pages.token_resolver']
   # Grounding: renders a token value as a MODEL should read it (reference
   # followed, hex for a colour, px for a rem). Every agent-facing echo of brand
   # state goes through this one renderer so they cannot drift apart.
   aincient_pages.token_grounding:
-    class: Drupal\aincient_pages\TokenGrounding
+    class: Aincient\PageModel\TokenGrounding
     arguments: ['@aincient_pages.design_tokens', '@aincient_pages.token_resolver', '@aincient_pages.color_contrast', '@aincient_pages.brand']
   # GDPR consent model for the public site (categories + whether the banner is
   # needed, given the brand's font-delivery mode).
   aincient_pages.consent:
     class: Drupal\aincient_pages\ConsentSettings
-    arguments: ['@aincient_pages.brand']
+    arguments: ['@aincient_pages.brand', '@config.factory']
   aincient_pages.font_pairings:
-    class: Drupal\aincient_pages\FontPairings
+    class: Aincient\PageModel\FontPairings
   aincient_pages.preset_catalog:
-    class: Drupal\aincient_pages\PresetCatalog
+    class: Aincient\PageModel\PresetCatalog
     arguments: ['@aincient_pages.font_pairings']
   # Shared brand-preview applier: turns a preview_brand-shaped slice
   # (presets/tokens/fonts/reset) into the validated, contrast-checked

@@ -32,7 +32,7 @@ use Drupal\Core\Plugin\ContextAwarePluginInterface;
  * So do not add them back, and do not add a "describe yourself to a provider"
  * method in any other shape. If a capability ever needs a provider-specific
  * projection, that belongs in the layer that talks to the provider (the
- * FlowDrop processor, or {@see \Drupal\aincient_core\Inference\ToolSchema}),
+ * FlowDrop processor, or {@see \Aincient\Inference\ToolSchema}),
  * where exactly one file has to change when the provider does.
  *
  * A capability that can be RUN implements

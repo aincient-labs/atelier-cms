@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
-use Drupal\aincient_pages\Catalog\CatalogCompiler;
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\CatalogCompiler;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\PageSchemaSummariser;
 use Drupal\Component\Plugin\Discovery\DiscoveryInterface;
 use Drupal\Core\Language\Language;

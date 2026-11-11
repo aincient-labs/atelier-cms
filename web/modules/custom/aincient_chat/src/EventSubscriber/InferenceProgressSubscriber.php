@@ -6,7 +6,7 @@ namespace Drupal\aincient_chat\EventSubscriber;
 
 use Drupal\aincient_chat\Chat\StreamRelay;
 use Drupal\aincient_chat\Event\ChatEvent;
-use Drupal\aincient_core\Event\InferenceStartedEvent;
+use Aincient\Inference\Event\InferenceStartedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**

@@ -102,6 +102,14 @@ function aincient_theme_preprocess_html(array &$variables): void {
   //  - none      → nothing (the system-font stack carries the page).
   $brand = \Drupal::service('aincient_pages.brand');
   $webFont = $brand->webFont();
+  // Curated-pairing families ship with the module (DECISIONS 0513): plain links
+  // from our own origin, no consent gate.
+  foreach ($webFont['bundled'] ?? [] as $i => $bundledHref) {
+    $variables['#attached']['html_head'][] = [
+      ['#tag' => 'link', '#attributes' => ['rel' => 'stylesheet', 'href' => $bundledHref]],
+      'aincient_fonts_bundled_' . $i,
+    ];
+  }
   if ($webFont['mode'] === 'selfhost') {
     $variables['#attached']['html_head'][] = [
       ['#tag' => 'link', '#attributes' => ['rel' => 'stylesheet', 'href' => $webFont['href']]],

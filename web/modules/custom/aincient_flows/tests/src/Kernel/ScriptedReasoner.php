@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_flows\Kernel;
 
-use Drupal\aincient_core\Inference\AincientReasonResult;
+use Aincient\Inference\AincientReasonResult;
 use Drupal\aincient_core\Inference\AincientReasonerInterface;
 use Drupal\flowdrop\DTO\Reason\ReasonRequest;
 use Drupal\flowdrop\DTO\Reason\ReasonResult;
@@ -22,7 +22,7 @@ final class ScriptedReasoner implements AincientReasonerInterface {
   /**
    * Remaining results, consumed front to back.
    *
-   * @var array<int, \Drupal\aincient_core\Inference\AincientReasonResult>
+   * @var array<int, \Aincient\Inference\AincientReasonResult>
    */
   public static array $script = [];
 

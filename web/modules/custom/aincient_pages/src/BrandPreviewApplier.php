@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Aincient\PageModel\ColorContrast;
+use Aincient\PageModel\DesignTokens;
+use Aincient\PageModel\PresetCatalog;
+
 /**
  * Builds a validated brand-preview widget envelope from raw preview args.
  *

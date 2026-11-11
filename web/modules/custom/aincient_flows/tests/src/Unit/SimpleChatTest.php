@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_flows\Unit;
 
-use Drupal\aincient_core\Exception\AiProviderFailure;
-use Drupal\aincient_core\Inference\Adapter\AnthropicAdapter;
-use Drupal\aincient_core\Inference\Adapter\GeminiAdapter;
-use Drupal\aincient_core\Inference\ChatCompleter;
-use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
-use Drupal\aincient_core\Inference\MessageMapper;
-use Drupal\aincient_core\Inference\ModelTargetResolver;
-use Drupal\aincient_core\Inference\PlatformRegistryInterface;
-use Drupal\aincient_core\Inference\ProviderAdapterInterface;
-use Drupal\aincient_core\Inference\ProviderCall;
-use Drupal\aincient_core\Inference\ResultUnpacker;
+use Aincient\Inference\Exception\AiProviderFailure;
+use Aincient\Inference\Adapter\AnthropicAdapter;
+use Aincient\Inference\Adapter\GeminiAdapter;
+use Aincient\Inference\ChatCompleter;
+use Aincient\Inference\Exception\ProviderConfigurationException;
+use Aincient\Inference\ChatMessageMapper;
+use Aincient\Inference\ModelTargetResolver;
+use Aincient\Inference\PlatformRegistryInterface;
+use Aincient\Inference\ProviderAdapterInterface;
+use Aincient\Inference\ProviderCall;
+use Aincient\Inference\ResultUnpacker;
 use Drupal\aincient_core\ModelRoleResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\SimpleChat;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\flowdrop\DTO\ParameterBag;
@@ -353,7 +353,7 @@ final class SimpleChatTest extends UnitTestCase {
    *   The result the platform should yield.
    * @param array<string, array<string, string>>|null $roles
    *   The stored role bindings, or NULL for the default `task` binding.
-   * @param \Drupal\aincient_core\Inference\ProviderAdapterInterface|null $adapter
+   * @param \Aincient\Inference\ProviderAdapterInterface|null $adapter
    *   The adapter whose option dialect to use.
    *
    * @return array<string, mixed>
@@ -381,8 +381,8 @@ final class SimpleChatTest extends UnitTestCase {
       new ChatCompleter(
         $registry,
         $targets,
-        new MessageMapper(),
-        new ResultUnpacker(new MessageMapper()),
+        new ChatMessageMapper(),
+        new ResultUnpacker(new ChatMessageMapper()),
         $this->unmeteredRecorder(),
         new NullLogger(),
         // Sleepless — the retry policy is pinned in ProviderCallTest.

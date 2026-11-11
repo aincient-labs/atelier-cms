@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_flows\Unit;
 
 use Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\ValidateSlice;
-use Drupal\aincient_pages\DesignTokens;
-use Drupal\Core\Extension\ModuleExtensionList;
+use Aincient\PageModel\DesignTokens;
 use Drupal\flowdrop\DTO\ParameterBag;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\Group;
@@ -38,15 +37,13 @@ final class ValidateSliceTest extends UnitTestCase {
    */
   private function node(): ValidateSlice {
     // …/aincient_flows/tests/src/Unit → …/aincient_flows → …/custom.
-    $custom = dirname(__DIR__, 4);
-    $moduleList = $this->createMock(ModuleExtensionList::class);
-    $moduleList->method('getPath')->willReturn($custom . '/aincient_pages');
+    $pages = dirname(__DIR__, 4) . '/aincient_pages';
 
     return new ValidateSlice(
       [],
       'aincient_flows:brand_validate_slice',
       [],
-      new DesignTokens($moduleList),
+      new DesignTokens($pages . '/design-tokens.yml', $pages . '/build/tw-palette.json'),
     );
   }
 

@@ -234,7 +234,6 @@ nodes:
               exposed: false
             -
               id: variables
-              exposed: false
             -
               id: trigger
               exposed: false
@@ -474,6 +473,25 @@ edges:
         sourcePortDataType: string
     sourceHandle: aincient_agent_engine.1-output-message
     targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: prompt_template.3-prompt_template.3-output-variables-aincient_flows_aincient_capability_preview_page.1-aincient_flows_aincient_capability_preview_page.1-input-page_state
+    source: prompt_template.3
+    target: aincient_flows_aincient_capability_preview_page.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: prompt_template.3-output-variables
+    targetHandle: aincient_flows_aincient_capability_preview_page.1-input-page_state
     style: 'stroke: var(--fd-edge-data);'
     markerEnd:
       type: arrowclosed

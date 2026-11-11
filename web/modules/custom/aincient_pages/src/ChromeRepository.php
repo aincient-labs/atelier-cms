@@ -163,7 +163,7 @@ final class ChromeRepository {
    * Coerce one setting to a valid value, or NULL if the key is unknown or the
    * value is invalid (so the caller falls back to the default / drops it).
    */
-  private function coerce(string $section, string $key, mixed $value): mixed {
+  private function coerce(string $section, int|string $key, mixed $value): mixed {
     $def = self::REGISTRY[$section][$key] ?? NULL;
     if ($def === NULL || $value === NULL) {
       return NULL;

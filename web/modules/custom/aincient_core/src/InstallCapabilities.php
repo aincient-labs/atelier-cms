@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core;
 
-use Drupal\aincient_core\Inference\AiGateway;
+use Aincient\Capability\CapabilitySet;
+use Aincient\Inference\AiGateway;
+use Aincient\Inference\ModelRoles;
 use Drupal\Core\Url;
 
 /**

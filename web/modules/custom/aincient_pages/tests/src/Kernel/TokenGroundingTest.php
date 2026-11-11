@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Kernel;
 
-use Drupal\aincient_pages\TokenGrounding;
-use Drupal\aincient_pages\TokenResolver;
+use Aincient\PageModel\TokenGrounding;
+use Aincient\PageModel\TokenResolver;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 

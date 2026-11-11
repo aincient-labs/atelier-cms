@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages\Controller;
 
 use Drupal\aincient_pages\BrandRepository;
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\Catalog\ExampleRenderer;
 use Drupal\aincient_pages\Catalog\KindCheck;
 use Drupal\aincient_pages\Catalog\PackValidator;
-use Drupal\aincient_pages\SchemaLinter;
-use Drupal\aincient_core\Inference\AiGateway;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\PageModel\SchemaLinter;
+use Aincient\Inference\AiGateway;
+use Aincient\Inference\ModelRoles;
 use Drupal\Component\Serialization\Yaml;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Extension\ModuleExtensionList;

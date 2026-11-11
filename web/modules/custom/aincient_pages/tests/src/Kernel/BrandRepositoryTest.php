@@ -144,7 +144,8 @@ final class BrandRepositoryTest extends KernelTestBase {
   }
 
   public function testWebFontDescriptorPerDeliveryMode(): void {
-    $this->brand()->update([], ['Playfair Display']);
+    // A custom (non-curated) family; curated ones are bundled (0513).
+    $this->brand()->update([], ['Roboto Slab']);
 
     // Google delivery: descriptor points at the Google URL, to be consent-gated.
     $google = $this->brand()->webFont();
@@ -161,6 +162,61 @@ final class BrandRepositoryTest extends KernelTestBase {
     $this->assertNotSame('google', $selfhost['mode']);
     if ($selfhost['mode'] === 'selfhost') {
       $this->assertStringNotContainsString('googleapis', $selfhost['href']);
+    }
+  }
+
+  /**
+   * The Editorial pairing loads from our own origin in BOTH delivery modes (0513).
+   *
+   * B5: Playfair Display + Lora showed Georgia on the public site and in the
+   * export, because Google delivery is consent-gated and exports carry no Google
+   * fonts. Curated pairings now ship as files in aincient_pages/fonts/pairings.
+   */
+  public function testCuratedPairingIsBundledInBothDeliveryModes(): void {
+    $this->brand()->update([], ['Playfair Display', 'Lora'], BrandRepository::DELIVERY_GOOGLE);
+    $google = $this->brand()->webFont();
+    $this->assertSame('none', $google['mode'], 'Nothing left for Google to deliver.');
+    $this->assertCount(2, $google['bundled']);
+    $this->assertStringEndsWith('/fonts/pairings/playfair-display.css', $google['bundled'][0]);
+    $this->assertStringEndsWith('/fonts/pairings/lora.css', $google['bundled'][1]);
+    foreach ($google['bundled'] as $href) {
+      $this->assertStringNotContainsString('googleapis', $href);
+    }
+
+    $this->brand()->update([], NULL, BrandRepository::DELIVERY_SELFHOST);
+    $this->assertSame($google, $this->brand()->webFont(), 'Self-host delivery bundles the same files.');
+  }
+
+  /**
+   * A mixed brand bundles the curated family and gates only the custom one.
+   */
+  public function testMixedBrandGatesOnlyTheCustomFamily(): void {
+    $this->brand()->update([], ['Lora', 'Roboto Slab'], BrandRepository::DELIVERY_GOOGLE);
+    $font = $this->brand()->webFont();
+    $this->assertSame('google', $font['mode']);
+    $this->assertStringContainsString('family=Roboto+Slab', $font['href']);
+    $this->assertStringNotContainsString('Lora', $font['href']);
+    $this->assertCount(1, $font['bundled']);
+    $this->assertStringEndsWith('/fonts/pairings/lora.css', $font['bundled'][0]);
+  }
+
+  /**
+   * The default pair is already always-on, so it needs no link at all.
+   */
+  public function testDefaultPairNeedsNoLink(): void {
+    $this->brand()->update([], ['Fraunces', 'Schibsted Grotesk'], BrandRepository::DELIVERY_GOOGLE);
+    $this->assertSame(['mode' => 'none', 'bundled' => []], $this->brand()->webFont());
+  }
+
+  /**
+   * Every family a curated pairing uses has a bundled stylesheet on disk.
+   */
+  public function testEveryCuratedFamilyShipsAStylesheet(): void {
+    $dir = $this->container->get('extension.list.module')->getPath('aincient_pages') . '/fonts/pairings';
+    foreach (\Aincient\PageModel\FontPairings::bundledFamilies() as $family) {
+      $css = $dir . '/' . \Aincient\PageModel\FontPairings::slug($family) . '.css';
+      $this->assertFileExists($css, $family);
+      $this->assertStringContainsString("font-family: '$family'", (string) file_get_contents($css));
     }
   }
 

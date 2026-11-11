@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_core\Kernel;
 
 use Drupal\aincient_core\Usage\UsageRecorder;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_core\Usage\UsageQuery;
 use Drupal\Core\Database\Statement\FetchAs;
 use Drupal\KernelTests\KernelTestBase;

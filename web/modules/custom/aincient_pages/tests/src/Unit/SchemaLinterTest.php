@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
-use Drupal\aincient_pages\Catalog\CatalogCompiler;
-use Drupal\aincient_pages\Catalog\EffectiveCatalog;
-use Drupal\aincient_pages\SchemaLinter;
+use Aincient\PageModel\Catalog\CatalogCompiler;
+use Aincient\PageModel\Catalog\EffectiveCatalog;
+use Aincient\PageModel\SchemaLinter;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Yaml\Yaml;
@@ -19,7 +19,7 @@ use Symfony\Component\Yaml\Yaml;
  * compiles — and hand it to lint().
  *
  * @group aincient
- * @coversDefaultClass \Drupal\aincient_pages\SchemaLinter
+ * @coversDefaultClass \Aincient\PageModel\SchemaLinter
  */
 #[RunTestsInSeparateProcesses]
 final class SchemaLinterTest extends UnitTestCase {

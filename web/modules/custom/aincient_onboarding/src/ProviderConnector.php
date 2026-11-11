@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_onboarding;
 
-use Drupal\aincient_core\Inference\ProviderAdapterInterface;
-use Drupal\aincient_core\Inference\ProviderInventory;
+use Aincient\Inference\ProviderAdapterInterface;
+use Aincient\Inference\ProviderInventory;
 use Drupal\aincient_core\ModelRoleResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\State\StateInterface;
 
@@ -332,7 +332,7 @@ final class ProviderConnector {
         }
       }
       // ONE MEMBER DRAWS FOR THE GROUP. Both Google ids are image-capable now
-      // ({@see \Drupal\aincient_core\Inference\Adapter\GeminiAdapter}), and they
+      // ({@see \Aincient\Inference\Adapter\GeminiAdapter}), and they
       // enumerate the SAME models from the SAME key — so taking both would list
       // every picture model twice under a row the wizard presents as one provider,
       // the two copies distinguishable only by a prefix the operator never sees.
@@ -686,7 +686,7 @@ final class ProviderConnector {
    *
    * The secret lives in Drupal State (the persistent volume in the appliance),
    * never in config — so a later `drush cex` captures nothing at all.
-   * {@see \Drupal\aincient_core\Inference\PlatformRegistry} resolves it by
+   * {@see \Aincient\Inference\PlatformRegistry} resolves it by
    * convention from the provider id, so there is no per-vendor config object
    * pointing at it. There used to be two: the `ai_provider_<id>.settings:
    * api_key` pointer the `drupal/ai` provider plugins read, which went with
@@ -971,7 +971,7 @@ final class ProviderConnector {
    * The Drupal State key a host provider's base URL is stored under.
    *
    * The same convention as the secret, and the same one
-   * {@see \Drupal\aincient_core\Inference\PlatformRegistry::endpointFor()} reads —
+   * {@see \Aincient\Inference\PlatformRegistry::endpointFor()} reads —
    * one place, one spelling, no vendor config object in between.
    */
   private function endpointKeyFor(string $providerId): string {

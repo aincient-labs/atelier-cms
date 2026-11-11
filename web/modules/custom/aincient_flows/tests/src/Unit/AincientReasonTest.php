@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_flows\Unit;
 
-use Drupal\aincient_core\Exception\AiProviderFailure;
+use Aincient\Inference\Exception\AiProviderFailure;
 use Drupal\aincient_core\Inference\AincientReasonerInterface;
-use Drupal\aincient_core\Inference\AincientReasonResult;
-use Drupal\aincient_core\Inference\ProviderCall;
+use Aincient\Inference\AincientReasonResult;
+use Aincient\Inference\ProviderCall;
 use Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\AincientReason;
 use Drupal\flowdrop\DTO\ParameterBag;
 use Drupal\flowdrop\DTO\Reason\ModelChoices;
@@ -38,7 +38,7 @@ final class AincientReasonTest extends UnitTestCase {
   /**
    * A fake reasoner that records requests and returns a canned rich result.
    *
-   * @param \Drupal\aincient_core\Inference\AincientReasonResult $result
+   * @param \Aincient\Inference\AincientReasonResult $result
    *   The canned result to return from every reasonRich() call.
    * @param array<string, mixed> $captured
    *   The by-ref bucket the fake writes each call's request/count into.
@@ -47,7 +47,7 @@ final class AincientReasonTest extends UnitTestCase {
     return new class($result, $captured) implements AincientReasonerInterface {
 
       /**
-       * @param \Drupal\aincient_core\Inference\AincientReasonResult $result
+       * @param \Aincient\Inference\AincientReasonResult $result
        *   The canned result to return from every reasonRich() call.
        * @param array<string, mixed> $captured
        *   The by-ref bucket to write each call's request/count into.

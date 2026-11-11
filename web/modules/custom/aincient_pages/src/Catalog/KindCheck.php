@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Catalog;
 
-use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\EffectiveCatalog;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
  * The §6.3 dry run (plans/byo-components.md): would this catalog break live

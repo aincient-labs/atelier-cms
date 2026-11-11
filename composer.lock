@@ -4,8 +4,143 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c5b5f76062d5ea9ff943b6bd8125ab80",
+    "content-hash": "3a400499740cbe981fae16170dfd3f9f",
     "packages": [
+        {
+            "name": "aincient/capability",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "web/modules/custom/aincient_core/packages/capability",
+                "reference": "8c20b9ae1595a1c190c147498f59dda3b042121f"
+            },
+            "require": {
+                "php": ">=8.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Aincient\\Capability\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Aincient\\Capability\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "AIncient Labs",
+                    "homepage": "https://aincient-labs.com"
+                }
+            ],
+            "description": "Atelier capability core: the install's verb set, capability gates and model tool-argument normalisation. No Drupal dependency.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "aincient/inference",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "web/modules/custom/aincient_core/packages/inference",
+                "reference": "43a821bc92ba4a557f2db8ec126a5376ad804656"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.9",
+                "php": ">=8.4",
+                "psr/http-message": "^2.0",
+                "psr/log": "^3.0",
+                "symfony/ai-anthropic-platform": "^0.12",
+                "symfony/ai-gemini-platform": "^0.12",
+                "symfony/ai-generic-platform": "^0.12",
+                "symfony/ai-mistral-platform": "^0.12",
+                "symfony/ai-ollama-platform": "^0.12",
+                "symfony/ai-open-ai-platform": "^0.12",
+                "symfony/ai-platform": "^0.12",
+                "symfony/event-dispatcher-contracts": "^3.8",
+                "symfony/http-client-contracts": "^3.8"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.5",
+                "symfony/http-client": "^7.3 || ^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Aincient\\Inference\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Aincient\\Inference\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "AIncient Labs",
+                    "homepage": "https://aincient-labs.com"
+                }
+            ],
+            "description": "Atelier inference on symfony/ai: the provider adapters and registry, the one-shot gateway, the plain chat completer, the result unpacker, tool schema and tool-call recovery, retries with named provider failures, and the model-role set. No Drupal dependency.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "aincient/page-model",
+            "version": "0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "web/modules/custom/aincient_pages/packages/page-model",
+                "reference": "6e4cc5b7ca0fe77d2c48a2de14ad965c4da982a5"
+            },
+            "require": {
+                "league/commonmark": "^2.10",
+                "php": ">=8.4",
+                "symfony/yaml": "^7.4 || ^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Aincient\\PageModel\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Aincient\\PageModel\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "AIncient Labs",
+                    "homepage": "https://aincient-labs.com"
+                }
+            ],
+            "description": "Atelier page model: the page-schema codec and linter, the component catalog compiler and admission gate, and the design-token registry, resolver, contrast checks and grounding. No Drupal dependency.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
         {
             "name": "asm89/stack-cors",
             "version": "v2.4.0",

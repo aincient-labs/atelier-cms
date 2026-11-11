@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Kernel;
 
-use Drupal\aincient_core\Exception\AiProviderFailure;
-use Drupal\aincient_core\Inference\ProviderCall;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\Exception\AiProviderFailure;
+use Aincient\Inference\ProviderCall;
+use Aincient\Inference\ModelRoles;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\aincient_core\Traits\ScriptedInferenceTrait;
 use Drupal\Tests\user\Traits\UserCreationTrait;

@@ -6,7 +6,7 @@ namespace Drupal\Tests\aincient_chat\Kernel;
 
 use Drupal\aincient_chat\Chat\WorkflowCatalog;
 use Drupal\aincient_chat\Controller\ConsoleController;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;

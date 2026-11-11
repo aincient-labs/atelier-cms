@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Aincient\PageModel\BrandTokenSourceInterface;
+use Aincient\PageModel\ColorContrast;
+use Aincient\PageModel\DesignTokens;
+use Aincient\PageModel\TokenResolver;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
@@ -15,7 +19,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
  * page with NO rebuild). Brand IDENTITY (name/tagline/voice/logo/footer note)
  * lives separately in {@see SiteIdentity}; this layer is tokens + web fonts only.
  */
-final class BrandRepository {
+final class BrandRepository implements BrandTokenSourceInterface {
 
   public const CONFIG = 'aincient_pages.brand';
 
@@ -313,9 +317,9 @@ final class BrandRepository {
    * self-hosted via the aincient_pages/emoji-font library so the one font the user
    * can't opt out of never reaches Google (see EMOJI_FONT / DECISIONS 0058).
    */
-  public function fontLinkHref(): string {
+  public function fontLinkHref(?array $families = NULL): string {
     $parts = [];
-    foreach ($this->fontFamilies() as $name) {
+    foreach ($families ?? $this->fontFamilies() as $name) {
       $parts[] = 'family=' . str_replace(' ', '+', trim($name)) . ':wght@400;500;600;700;800';
     }
     return $parts ? 'https://fonts.googleapis.com/css2?' . implode('&', $parts) . '&display=swap' : '';
@@ -338,25 +342,34 @@ final class BrandRepository {
    * One descriptor, consumed identically by the themed render path
    * (aincient_theme) and the raw-HTML page shell (PageSpikeController), so the
    * delivery/consent decision lives in exactly one place:
-   *   - ['mode' => 'none']                 — emit nothing (system stack)
-   *   - ['mode' => 'selfhost', 'href' => …]— plain <link> to our vendored CSS
-   *   - ['mode' => 'google',   'href' => …]— CONSENT-GATED <link> to Google
+   *   - `bundled` (always present): stylesheets for curated-pairing families
+   *     shipped in this module (DECISIONS 0513) — plain <link>s from our own
+   *     origin, no consent, exported like any local asset;
+   *   - then, for the families NOT bundled, by the operator's delivery mode:
+   *     ['mode' => 'none'] (nothing left, or nothing to load),
+   *     ['mode' => 'selfhost', 'href' => …] (plain <link> to the vendored CSS),
+   *     ['mode' => 'google', 'href' => …] (CONSENT-GATED <link> to Google).
    *
    * Self-host falls back to 'none' (system fonts) when the woff2 haven't been
    * vendored yet — it NEVER falls back to hot-linking Google.
    *
-   * @return array{mode: string, href?: string}
+   * @return array{mode: string, href?: string, bundled: list<string>}
    */
   public function webFont(): array {
-    if (!$this->fontFamilies()) {
-      return ['mode' => 'none'];
+    $families = $this->fontFamilies();
+    if (!$families) {
+      return ['mode' => 'none', 'bundled' => []];
+    }
+    ['hrefs' => $bundled, 'rest' => $rest] = $this->fontVendor->bundled($families);
+    if (!$rest) {
+      return ['mode' => 'none', 'bundled' => $bundled];
     }
     if ($this->fontDelivery() === self::DELIVERY_SELFHOST) {
-      $href = $this->fontVendor->vendoredHref($this->fontFamilies());
-      return $href !== NULL ? ['mode' => 'selfhost', 'href' => $href] : ['mode' => 'none'];
+      $href = $this->fontVendor->vendoredHref($rest);
+      return $href !== NULL ? ['mode' => 'selfhost', 'href' => $href, 'bundled' => $bundled] : ['mode' => 'none', 'bundled' => $bundled];
     }
-    $href = $this->fontLinkHref();
-    return $href !== '' ? ['mode' => 'google', 'href' => $href] : ['mode' => 'none'];
+    $href = $this->fontLinkHref($rest);
+    return $href !== '' ? ['mode' => 'google', 'href' => $href, 'bundled' => $bundled] : ['mode' => 'none', 'bundled' => $bundled];
   }
 
   /**

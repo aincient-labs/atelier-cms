@@ -157,6 +157,10 @@ final class ChatController extends ControllerBase {
     // accepts no new turns — the console hides the composer, but a crafted
     // request still can't append. New threads (no/blank id) are never locked.
     $locked = $threadId !== '' && $this->threadStore->isLocked($threadId, $uid);
+    // Ownership (0511): a thread id that names someone else's conversation is
+    // refused. Reusing it would append this turn to their session and replay
+    // their history to the model. The wording matches an unknown thread.
+    $foreign = $threadId !== '' && $this->threadStore->belongsToSomeoneElse($threadId, $uid);
 
     // Resource homing (studio-navigation.md §3.4): a page/audit turn on a saved
     // node carries its identity so the thread homes to that resource. Stamped
@@ -178,7 +182,7 @@ final class ChatController extends ControllerBase {
     $relay = $this->streamRelay;
     $threadStore = $this->threadStore;
     $namer = $this->threadNamer;
-    $response = new StreamedResponse(static function () use ($processor, $relay, $threadStore, $namer, $message, $threadId, $flow, $workflow, $clientContext, $locked, $workingNode, $uid): void {
+    $response = new StreamedResponse(static function () use ($processor, $relay, $threadStore, $namer, $message, $threadId, $flow, $workflow, $clientContext, $locked, $foreign, $workingNode, $uid): void {
       // Disable PHP output buffering so each frame flushes immediately.
       while (ob_get_level() > 0) {
         ob_end_flush();
@@ -186,6 +190,13 @@ final class ChatController extends ControllerBase {
 
       if ($message === '') {
         echo ChatEvent::error('Empty message.')->toSseFrame();
+        echo ChatEvent::done(['thread_id' => $threadId])->toSseFrame();
+        flush();
+        return;
+      }
+
+      if ($foreign) {
+        echo ChatEvent::error('This conversation isn\'t available. Start a new thread to keep going.')->toSseFrame();
         echo ChatEvent::done(['thread_id' => $threadId])->toSseFrame();
         flush();
         return;

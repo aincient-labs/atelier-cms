@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
-use Drupal\aincient_pages\Catalog\AdmissionGate;
+use Aincient\PageModel\Catalog\AdmissionGate;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Yaml\Yaml;
@@ -16,7 +16,7 @@ use Symfony\Component\Yaml\Yaml;
  * exact code), so every rule here is a promise to a pack author.
  *
  * @group aincient
- * @coversDefaultClass \Drupal\aincient_pages\Catalog\AdmissionGate
+ * @coversDefaultClass \Aincient\PageModel\Catalog\AdmissionGate
  */
 #[RunTestsInSeparateProcesses]
 final class AdmissionGateTest extends UnitTestCase {

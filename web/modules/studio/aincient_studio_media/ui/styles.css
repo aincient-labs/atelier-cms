@@ -111,5 +111,5 @@
   font-size: 11px; padding: 1px 5px; border: 1px solid var(--ain-color-border);
   background: var(--ain-color-surface-raised); color: var(--ain-color-text-muted);
 }
-.ain-media-result__actions { padding: 10px 12px; border-top: 1px solid var(--ain-color-border); }
+.ain-media-result__actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--ain-color-border); }
 .ain-media-result__error { margin: 0; padding: 0 12px 10px; font-size: 12px; color: var(--ain-color-danger); }

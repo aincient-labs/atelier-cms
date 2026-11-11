@@ -7,6 +7,7 @@ import { ErrorBoundary } from "./kit/error-boundary";
 import { parseUrl } from "./console-url";
 import { roomStudio } from "./rooms-core";
 import { loadStudio, preloadStudios } from "./studio-loader";
+import { installCsrfFetch } from "./csrf";
 import "./styles.css";
 
 /**
@@ -97,6 +98,8 @@ function mount(): void {
  * failed fetch still mounts: the rail then shows its retry, and the chat works.
  */
 function boot(): void {
+  // Before anything fetches: every same-origin write carries X-CSRF-Token (0511).
+  installCsrfFetch();
   // The kit gallery (/atelier/dev/kit) is its own chunk and its own surface:
   // no chat runtime, no studios, no onboarding check.
   if (settings().view === "kit") {

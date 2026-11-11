@@ -6,7 +6,7 @@ namespace Drupal\Tests\aincient_chat\Unit;
 
 use Drupal\Tests\UnitTestCase;
 use Drupal\aincient_chat\Chat\ProviderFailureSurface;
-use Drupal\aincient_core\Inference\ProviderCall;
+use Aincient\Inference\ProviderCall;
 
 /**
  * Tests the kind → surface decision for a provider failure.

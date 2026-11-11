@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_studio_media\Kernel;
 
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\file\Entity\File;

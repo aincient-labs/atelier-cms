@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core;
 
+use Aincient\Capability\CapabilitySet;
 use Drupal\Component\Plugin\PluginManagerInterface;
 
 /**

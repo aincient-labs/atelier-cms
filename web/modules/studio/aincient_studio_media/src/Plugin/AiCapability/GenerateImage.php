@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_studio_media\Plugin\AiCapability;
 
-use Drupal\aincient_core\CapabilitySet;
-use Drupal\aincient_core\ModelRoles;
-use Drupal\aincient_core\Inference\AiGateway;
-use Drupal\aincient_core\Inference\ImageRef;
+use Aincient\Capability\CapabilitySet;
+use Aincient\Inference\ModelRoles;
+use Aincient\Inference\AiGateway;
+use Aincient\Inference\ImageRef;
 use Drupal\aincient_pages\MediaRepository;
 use Drupal\aincient_core\Attribute\Capability;
 use Drupal\aincient_core\Capability\CapabilityBase;
@@ -36,7 +36,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * `media_result` widget envelope so the chat renders it inline (id + token +
  * preview) for the human to open in the studio.
  *
- * Provider routing is DETERMINISTIC: it resolves the {@see \Drupal\aincient_core\ModelRoles::IMAGE}
+ * Provider routing is DETERMINISTIC: it resolves the {@see \Aincient\Inference\ModelRoles::IMAGE}
  * role through {@see ModelRoleResolver::imageBinding()} — the explicit binding, never
  * the ambiguous `text_to_image` op-default (more than one installed provider
  * advertises it). That binding is also the product gate: the Media chat rail (and

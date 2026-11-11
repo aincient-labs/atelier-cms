@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_studio_components\Controller;
 
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\Catalog\KindCheck;
-use Drupal\aincient_pages\ComponentCatalog;
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\aincient_pages\Entity\PageKindInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;

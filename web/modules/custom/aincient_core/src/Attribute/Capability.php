@@ -62,7 +62,7 @@ final class Capability extends Plugin {
    *   reads them directly, so the signature the model sees cannot drift from
    *   the signature the code reads.
    * @param array $verbs
-   *   Which install VERBS this capability spends — {@see \Drupal\aincient_core\CapabilitySet}
+   *   Which install VERBS this capability spends — {@see \Aincient\Capability\CapabilitySet}
    *   ids (`describe`, `draw`). DISPLAY ONLY, and only for the few capabilities
    *   that need more than words: a room shows the Describe/Draw chip when one of
    *   its wired tools declares that verb here, so General stops advertising

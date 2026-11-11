@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core;
 
+use Aincient\Inference\ModelRoles;
+
 /**
  * Reads the curated provider/model quality labels.
  *

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;

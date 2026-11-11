@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\CollectionInventory;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use PHPUnit\Framework\TestCase;

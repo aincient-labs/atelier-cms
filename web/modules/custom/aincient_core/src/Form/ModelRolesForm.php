@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Form;
 
-use Drupal\aincient_core\Inference\ProviderInventory;
+use Aincient\Inference\ProviderInventory;
 use Drupal\aincient_core\Usage\UnpricedNotice;
 use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRoleResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\TypedConfigManagerInterface;
@@ -560,7 +560,7 @@ final class ModelRolesForm extends ConfigFormBase {
    * A warning naming every orphaned binding, and what to do instead.
    *
    * The visible-degradation path. A stored binding to a provider we cannot serve
-   * fails at call time as {@see \Drupal\aincient_core\Inference\AiGateway::STATUS_UNUSABLE},
+   * fails at call time as {@see \Aincient\Inference\AiGateway::STATUS_UNUSABLE},
    * which is honest but only reaches the operator when they next use the feature.
    * This says it on the page where it can be fixed, names the provider (so the
    * sentence is actionable rather than mysterious), and points at the one

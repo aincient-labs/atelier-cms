@@ -85,8 +85,8 @@ abstract class CapabilityBase extends PluginBase implements ExecutableCapability
    * production today.
    *
    * It covers exactly the four data types our capabilities declare. A fifth type
-   * needs a case added here AND a matching case in CapabilityTool::toJsonType(),
-   * or the model will be shown a type this method cannot accept.
+   * needs a case added here AND a matching case in
+   * \Aincient\Capability\ArgNormalizer::toJsonType(), or the model will be shown a type this method cannot accept.
    *
    * Coercion is deliberately CONSERVATIVE: a value it cannot confidently convert
    * is passed through untouched rather than mangled, exactly as the converter

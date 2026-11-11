@@ -16,6 +16,10 @@ parameters:
     configurable: true
     connectable: true
     required: false
+  page_state:
+    configurable: false
+    connectable: true
+    required: false
 outputs:
   ok:
     exposed: true

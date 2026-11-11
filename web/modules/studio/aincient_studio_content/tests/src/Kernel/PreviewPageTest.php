@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_studio_content\Kernel;
 
 use Drupal\aincient_core\Capability\CapabilityManager;
+use Drupal\aincient_studio_content\Plugin\AiCapability\PreviewPage;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -187,7 +188,12 @@ final class PreviewPageTest extends KernelTestBase {
     $this->assertCount(1, $envelope['payload']['ops']);
     $this->assertSame('update_section', $envelope['payload']['ops'][0]['op']);
     $this->assertCount(3, $envelope['payload']['rejected']);
-    $this->assertStringContainsString('Skipped', $envelope['summary']);
+    $this->assertStringContainsString('REFUSED', $envelope['summary']);
+    // No live draft wired: only the structural check ran, so nothing is
+    // claimed as applied.
+    $this->assertSame('unverified', $envelope['status']);
+    $this->assertSame(3, $envelope['refused_count']);
+    $this->assertArrayNotHasKey('sections_now', $envelope);
   }
 
   public function testRejectsTeaserFieldsNestedOnSetMeta(): void {
@@ -210,7 +216,12 @@ final class PreviewPageTest extends KernelTestBase {
     $this->assertStringContainsString('set_meta', $reason);
     $this->assertStringContainsString('teaser', $reason);
     $this->assertStringContainsString('set_teaser', $reason);
-    $this->assertStringContainsString('Skipped', $envelope['summary']);
+    $this->assertStringContainsString('REFUSED', $envelope['summary']);
+    // No live draft wired: only the structural check ran, so nothing is
+    // claimed as applied.
+    $this->assertSame('unverified', $envelope['status']);
+    $this->assertSame(1, $envelope['refused_count']);
+    $this->assertArrayNotHasKey('sections_now', $envelope);
   }
 
   public function testRejectsFieldlessMetadataOps(): void {
@@ -237,6 +248,146 @@ final class PreviewPageTest extends KernelTestBase {
     $envelope = json_decode($out, TRUE);
     $this->assertCount(2, $envelope['payload']['ops']);
     $this->assertSame([], $envelope['payload']['rejected']);
+  }
+
+  /**
+   * Runs the tool with the live draft wired in, as the workflow injects it.
+   */
+  private function runWired(array $ops, array $schema, ?int $nodeId = NULL): array {
+    /** @var \Drupal\aincient_core\Capability\ExecutableCapabilityInterface $tool */
+    $tool = $this->manager()->createInstance('aincient_studio_content:preview_page');
+    $tool->setContextValue('ops', $ops);
+    $tool->setContextValue('page_state', array_filter([
+      'live_page_state' => (string) json_encode($schema),
+      'working_node_id' => $nodeId,
+      'context_policy' => 'irrelevant',
+    ]));
+    $tool->execute();
+    $envelope = json_decode($tool->getReadableOutput(), TRUE);
+    $this->assertIsArray($envelope, $tool->getReadableOutput());
+    return $envelope;
+  }
+
+  /**
+   * A three-section draft with stable ids.
+   */
+  private static function draft(): array {
+    return [
+      'type' => 'landing',
+      'title' => 'Lumen',
+      'sections' => [
+        ['id' => 'aaaa1111', 'component' => 'hero', 'props' => ['heading' => 'Welcome']],
+        ['id' => 'bbbb2222', 'component' => 'cta', 'props' => ['heading' => 'Join']],
+        ['id' => 'cccc3333', 'component' => 'faq', 'props' => ['heading' => 'Questions']],
+      ],
+    ];
+  }
+
+  /**
+   * Every op lands: `applied`, nothing refused, and the order as stored.
+   */
+  public function testWiredAllAppliedReportsTheResultingOrder(): void {
+    PreviewPage::resetChain();
+    $envelope = $this->runWired([
+      ['op' => 'reorder', 'order' => ['aaaa1111', 'cccc3333', 'bbbb2222']],
+    ], self::draft());
+
+    $this->assertSame('applied', $envelope['status']);
+    $this->assertSame(1, $envelope['applied']);
+    $this->assertSame(0, $envelope['refused_count']);
+    $this->assertSame([], $envelope['refused']);
+    $this->assertSame(['aaaa1111', 'cccc3333', 'bbbb2222'], array_column($envelope['sections_now'], 'id'));
+    $this->assertSame('Questions', $envelope['sections_now'][1]['label']);
+    $this->assertArrayNotHasKey('note', $envelope);
+    $this->assertStringContainsString('hero [aaaa1111], faq [cccc3333], cta [bbbb2222]', $envelope['summary']);
+    // The widget payload the console reads is unchanged.
+    $this->assertCount(1, $envelope['payload']['ops']);
+    $this->assertSame([], $envelope['payload']['rejected']);
+  }
+
+  /**
+   * One op lands, one is refused by the store: `partially_applied`, the
+   * refusal named, and the order reflecting only what landed.
+   */
+  public function testWiredPartialNamesTheRefusalAndTheTrueOrder(): void {
+    PreviewPage::resetChain();
+    $envelope = $this->runWired([
+      ['op' => 'remove_section', 'id' => 'bbbb2222'],
+      // Not a permutation of the (now two) sections — refused.
+      ['op' => 'reorder', 'order' => ['cccc3333', 'aaaa1111', 'bbbb2222']],
+    ], self::draft());
+
+    $this->assertSame('partially_applied', $envelope['status']);
+    $this->assertSame(1, $envelope['applied']);
+    $this->assertSame(1, $envelope['refused_count']);
+    $this->assertSame('reorder', $envelope['refused'][0]['op']);
+    $this->assertNotSame('', $envelope['refused'][0]['reason']);
+    $this->assertSame(['aaaa1111', 'cccc3333'], array_column($envelope['sections_now'], 'id'));
+    $this->assertStringStartsWith('PARTIALLY applied', $envelope['summary']);
+    $this->assertArrayHasKey('note', $envelope);
+  }
+
+  /**
+   * Nothing lands: `refused`, the page unchanged, and the summary leads with
+   * it (bug B3 — the agent reported a move the studio had refused).
+   */
+  public function testWiredAllRefusedSaysThePageDidNotChange(): void {
+    PreviewPage::resetChain();
+    $envelope = $this->runWired([
+      ['op' => 'reorder', 'order' => ['cccc3333', 'aaaa1111']],
+      ['op' => 'remove_section', 'id' => 'zzzz9999'],
+      ['op' => 'update_section', 'index' => 7, 'props' => ['heading' => 'x']],
+    ], self::draft());
+
+    $this->assertSame('refused', $envelope['status']);
+    $this->assertSame(0, $envelope['applied']);
+    $this->assertSame(3, $envelope['refused_count']);
+    $this->assertSame(['reorder', 'remove_section', 'update_section'], array_column($envelope['refused'], 'op'));
+    $this->assertSame(['aaaa1111', 'bbbb2222', 'cccc3333'], array_column($envelope['sections_now'], 'id'));
+    $this->assertStringStartsWith('REFUSED', $envelope['summary']);
+    $this->assertStringContainsString('did NOT change', $envelope['summary']);
+  }
+
+  /**
+   * A structural rejection and a store refusal land in the same list.
+   */
+  public function testWiredMergesStructuralAndStoreRefusals(): void {
+    PreviewPage::resetChain();
+    $envelope = $this->runWired([
+      ['op' => 'frobnicate'],
+      ['op' => 'remove_section', 'id' => 'zzzz9999'],
+    ], self::draft());
+
+    $this->assertSame('refused', $envelope['status']);
+    $this->assertSame(2, $envelope['refused_count']);
+    $this->assertSame(['invalid', 'remove_section'], array_column($envelope['refused'], 'op'));
+    // The console's string list of structural rejections is untouched.
+    $this->assertCount(1, $envelope['payload']['rejected']);
+  }
+
+  /**
+   * A second call in the same turn builds on the first (the injected state is
+   * the turn's starting draft; the client applies the calls in order).
+   */
+  public function testWiredSecondCallInATurnChainsOnTheFirst(): void {
+    PreviewPage::resetChain();
+    $this->runWired([['op' => 'remove_section', 'id' => 'bbbb2222']], self::draft());
+    $envelope = $this->runWired([
+      ['op' => 'reorder', 'order' => ['cccc3333', 'aaaa1111']],
+    ], self::draft());
+
+    $this->assertSame('applied', $envelope['status']);
+    $this->assertSame(['cccc3333', 'aaaa1111'], array_column($envelope['sections_now'], 'id'));
+  }
+
+  /**
+   * A saved page's type flip is refused, exactly as the studio's apply does.
+   */
+  public function testWiredSavedPageRefusesATypeFlip(): void {
+    PreviewPage::resetChain();
+    $envelope = $this->runWired([['op' => 'set_meta', 'type' => 'blog']], self::draft(), 5);
+    $this->assertSame('refused', $envelope['status']);
+    $this->assertSame('set_meta', $envelope['refused'][0]['op']);
   }
 
   public function testAllBadOpsErrorOutWithoutEnvelope(): void {

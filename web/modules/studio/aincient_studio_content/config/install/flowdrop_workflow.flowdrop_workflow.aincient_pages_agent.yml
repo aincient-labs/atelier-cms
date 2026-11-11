@@ -301,7 +301,11 @@ nodes:
           {{ site_nav }}
           {% endif %}
           Call ONE tool at a time. When a tool result contains a `__widget__` field, reply
-          with a single short framing sentence — do not restate the page. Keep replies brief. If a tool result also contains `warnings`, the section will not render as intended (e.g. an empty content array or a prop under the wrong name) — CORRECT it with another preview_page call BEFORE replying to the user.
+          with a single short framing sentence — do not restate the page. Keep replies brief.
+          Report only what tool results confirm. preview_page's result carries a `status`:
+          if it is `refused` or `partially_applied`, an operation was REFUSED and changed
+          nothing — say so, say why (its `refused` reason), and say what the page looks like
+          now (the `sections_now` order). Never describe a refused change as done. If a tool result also contains `warnings`, the section will not render as intended (e.g. an empty content array or a prop under the wrong name) — CORRECT it with another preview_page call BEFORE replying to the user.
 
           {{ context_policy }}
         maxRetries: 0
@@ -314,7 +318,6 @@ nodes:
               exposed: false
             -
               id: variables
-              exposed: false
             -
               id: trigger
               exposed: false
@@ -494,6 +497,25 @@ edges:
         sourcePortDataType: string
     sourceHandle: aincient_agent_engine.1-output-message
     targetHandle: chat_output.1-input-message
+    style: 'stroke: var(--fd-edge-data);'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-data)
+    class: flowdrop--edge--data
+  -
+    id: prompt_template.3-prompt_template.3-output-variables-aincient_flows_aincient_capability_preview_page.1-aincient_flows_aincient_capability_preview_page.1-input-page_state
+    source: prompt_template.3
+    target: aincient_flows_aincient_capability_preview_page.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: tools
+      metadata:
+        edgeType: data
+        sourcePortDataType: json
+    sourceHandle: prompt_template.3-output-variables
+    targetHandle: aincient_flows_aincient_capability_preview_page.1-input-page_state
     style: 'stroke: var(--fd-edge-data);'
     markerEnd:
       type: arrowclosed

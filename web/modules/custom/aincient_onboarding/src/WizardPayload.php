@@ -7,7 +7,7 @@ namespace Drupal\aincient_onboarding;
 use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRecommendations;
 use Drupal\aincient_core\ModelRoleResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Session\AccountInterface;

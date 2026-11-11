@@ -14,7 +14,10 @@ use Psr\Log\LoggerInterface;
  * in the agent engine's "Append user turn" and "Conversation append" nodes.
  * After a turn that rendered widgets, the recap line ({@see WidgetRecap}) is
  * added to that turn's assistant entry, the last one in the buffer. It reaches
- * the model's later turns and stays out of the visible thread.
+ * the model's later turns — lifted onto the next user turn as a note, never
+ * replayed as the assistant's words
+ * ({@see \Aincient\Inference\RecapNote}) — and stays out of the
+ * visible thread.
  *
  * Holds the same lock FlowDrop's conversation_buffer node takes for its
  * read-modify-write, so an append racing this one cannot drop either write.

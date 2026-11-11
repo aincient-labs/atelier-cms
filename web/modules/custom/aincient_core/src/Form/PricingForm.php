@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Form;
 
 use Drupal\aincient_core\ModelRoleResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_core\Usage\ModelPricing;
 use Drupal\aincient_core\Usage\RateFreshness;
 use Drupal\aincient_core\Usage\UsageQuery;

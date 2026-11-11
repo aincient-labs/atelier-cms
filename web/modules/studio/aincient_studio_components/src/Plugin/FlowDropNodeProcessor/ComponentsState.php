@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_studio_components\Plugin\FlowDropNodeProcessor;
 
 use Drupal\aincient_pages\BrandRepository;
-use Drupal\aincient_pages\ColorContrast;
+use Aincient\PageModel\ColorContrast;
 use Drupal\aincient_pages\SiteIdentity;
 use Drupal\aincient_studio_components\Controller\ConstraintController;
 use Drupal\aincient_studio_components\Controller\KindController;

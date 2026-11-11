@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Inference;
 
+use Aincient\Inference\AincientReasonResult;
 use Drupal\flowdrop\DTO\Reason\ReasonRequest;
 use Drupal\flowdrop\Service\Reasoning\ChatReasonerInterface;
 
@@ -30,10 +31,10 @@ interface AincientReasonerInterface extends ChatReasonerInterface {
    * @param \Drupal\flowdrop\DTO\Reason\ReasonRequest $request
    *   The conversation, tools and sampling controls to reason over.
    *
-   * @return \Drupal\aincient_core\Inference\AincientReasonResult
+   * @return \Aincient\Inference\AincientReasonResult
    *   Text and tool calls, plus the raw wire body and detected codec.
    *
-   * @throws \Drupal\aincient_core\Exception\AiProviderFailure
+   * @throws \Aincient\Inference\Exception\AiProviderFailure
    *   When the provider could not serve the call, retries included.
    */
   public function reasonRich(ReasonRequest $request): AincientReasonResult;

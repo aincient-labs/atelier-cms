@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_demo\Unit;
 
-use Drupal\aincient_pages\Catalog\CatalogCompiler;
-use Drupal\aincient_pages\Catalog\EffectiveCatalog;
+use Aincient\PageModel\Catalog\CatalogCompiler;
+use Aincient\PageModel\Catalog\EffectiveCatalog;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Yaml\Yaml;

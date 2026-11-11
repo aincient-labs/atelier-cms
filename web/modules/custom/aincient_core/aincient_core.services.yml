@@ -8,7 +8,7 @@ services:
   # vendor type — which is why moving it onto symfony/ai below changed this file
   # and its own internals, and no call site.
   aincient_core.inference.gateway:
-    class: Drupal\aincient_core\Inference\AiGateway
+    class: Aincient\Inference\AiGateway
     arguments:
       - '@aincient_core.inference.registry'
       - '@aincient_core.model_role_resolver'
@@ -23,7 +23,7 @@ services:
   # transient 429 aborted a run and arrived wearing the provider's own wire text
   # (atelier-cms#8, tracking #4/#5/#6).
   aincient_core.inference.provider_call:
-    class: Drupal\aincient_core\Inference\ProviderCall
+    class: Aincient\Inference\ProviderCall
     arguments:
       - '@logger.channel.aincient_core'
       # Sleep between attempts. Spelled out because the failure log below is
@@ -37,7 +37,7 @@ services:
   # here instead, and the chat relay matches on the sentence it recorded
   # (atelier-cms#8).
   aincient_core.inference.provider_failure_log:
-    class: Drupal\aincient_core\Inference\ProviderFailureLog
+    class: Aincient\Inference\ProviderFailureLog
 
   # The containment boundary for the provider INVENTORY — which providers this
   # site can serve, what each can do, and which models it offers. The twin of the
@@ -45,7 +45,7 @@ services:
   # commands ask it instead of a vendor plugin manager. Now reads the adapter set
   # below, which is what makes "installed" and "servable" the same word.
   aincient_core.inference.provider_inventory:
-    class: Drupal\aincient_core\Inference\ProviderInventory
+    class: Aincient\Inference\ProviderInventory
     arguments:
       - '@aincient_core.inference.registry'
 
@@ -65,7 +65,7 @@ services:
   # `aincient_core.capability_gate`; zero gates = everything allowed. Not the
   # 0368 taint gate.
   aincient_core.capability_gates:
-    class: Drupal\aincient_core\Capability\CapabilityGates
+    class: Aincient\Capability\CapabilityGates
     tags:
       - { name: service_collector, tag: aincient_core.capability_gate, call: addGate }
 
@@ -74,7 +74,7 @@ services:
   # cannot drift between them — a node resolving differently depending on which
   # processor read it would be a silently wrong model.
   aincient_core.inference.model_targets:
-    class: Drupal\aincient_core\Inference\ModelTargetResolver
+    class: Aincient\Inference\ModelTargetResolver
     arguments:
       - '@aincient_core.model_role_resolver'
 
@@ -82,11 +82,11 @@ services:
   # Keeps symfony/ai types out of the FlowDrop integration layer, the same
   # containment the gateway above buys for one-shot product calls.
   aincient_core.inference.chat_completer:
-    class: Drupal\aincient_core\Inference\ChatCompleter
+    class: Aincient\Inference\ChatCompleter
     arguments:
       - '@aincient_core.inference.registry'
       - '@aincient_core.inference.model_targets'
-      - '@aincient_core.inference.message_mapper'
+      - '@aincient_core.inference.chat_message_mapper'
       - '@aincient_core.inference.result_unpacker'
       - '@aincient_core.usage_recorder'
       - '@logger.channel.aincient_core'
@@ -142,25 +142,32 @@ services:
   Drupal\aincient_core\Usage\ModelPricing: '@aincient_core.model_pricing'
 
   aincient_core.inference.tool_schema:
-    class: Drupal\aincient_core\Inference\ToolSchema
+    class: Aincient\Inference\ToolSchema
+  # The FlowDrop-free half of the conversation translation (the plain chat bag
+  # and both directions of the stored tool-call shape): what the gateway side
+  # reads. The FlowDrop half below delegates its tool calls to it.
+  aincient_core.inference.chat_message_mapper:
+    class: Aincient\Inference\ChatMessageMapper
   aincient_core.inference.message_mapper:
     class: Drupal\aincient_core\Inference\MessageMapper
+    arguments:
+      - '@aincient_core.inference.chat_message_mapper'
   # Trust-the-wire tool-call recovery. Dependency-free (like the two above): it
   # only reads a raw body the reasoner already holds, so a lying BYOK gateway's
   # dropped tool call is re-read from the shape it really is. See the class.
   aincient_core.inference.tool_call_codec:
-    class: Drupal\aincient_core\Inference\ToolCallCodec
+    class: Aincient\Inference\ToolCallCodec
   # The one reader of symfony/ai's result union, shared by the reasoner (text +
   # tool calls) and the gateway (text, and an image's bytes). One class because
   # two half-readers of that union is how a successful turn reached the screen as
   # silence — see ResultUnpacker's docblock.
   aincient_core.inference.result_unpacker:
-    class: Drupal\aincient_core\Inference\ResultUnpacker
+    class: Aincient\Inference\ResultUnpacker
     arguments:
-      - '@aincient_core.inference.message_mapper'
+      - '@aincient_core.inference.chat_message_mapper'
 
   aincient_core.inference.adapter.anthropic:
-    class: Drupal\aincient_core\Inference\Adapter\AnthropicAdapter
+    class: Aincient\Inference\Adapter\AnthropicAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -171,7 +178,7 @@ services:
   # `openai_compatible` below, which reaches the same vendor through the generic
   # chat-completions shape and needs a base URL to do it.
   aincient_core.inference.adapter.openai:
-    class: Drupal\aincient_core\Inference\Adapter\OpenAiAdapter
+    class: Aincient\Inference\Adapter\OpenAiAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -179,7 +186,7 @@ services:
     tags:
       - { name: aincient_core.inference_adapter }
   aincient_core.inference.adapter.mistral:
-    class: Drupal\aincient_core\Inference\Adapter\MistralAdapter
+    class: Aincient\Inference\Adapter\MistralAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -190,7 +197,7 @@ services:
   # `api_key_endpoint` provider and the only one that can reach a service we have
   # never heard of.
   aincient_core.inference.adapter.openai_compatible:
-    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    class: Aincient\Inference\Adapter\OpenAiCompatibleAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -218,7 +225,7 @@ services:
   # The id is permanent — it is the State key prefix a key is stored under and the
   # value a role binding records — so it is the brand, not the vendor's legal name.
   aincient_core.inference.adapter.deepseek:
-    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    class: Aincient\Inference\Adapter\OpenAiCompatibleAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -230,7 +237,7 @@ services:
     tags:
       - { name: aincient_core.inference_adapter }
   aincient_core.inference.adapter.kimi:
-    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    class: Aincient\Inference\Adapter\OpenAiCompatibleAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -245,7 +252,7 @@ services:
   # key wants `/api/coding/paas/v4` instead, which is a different base and would
   # therefore be a different preset — the generic row covers it meanwhile.
   aincient_core.inference.adapter.glm:
-    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    class: Aincient\Inference\Adapter\OpenAiCompatibleAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -257,7 +264,7 @@ services:
     tags:
       - { name: aincient_core.inference_adapter }
   aincient_core.inference.adapter.qwen:
-    class: Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter
+    class: Aincient\Inference\Adapter\OpenAiCompatibleAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -272,7 +279,7 @@ services:
   # (AUTH_HOST). Same three arguments as every other adapter — the credential
   # shape is the adapter's own answer, not something the container knows.
   aincient_core.inference.adapter.ollama:
-    class: Drupal\aincient_core\Inference\Adapter\OllamaAdapter
+    class: Aincient\Inference\Adapter\OllamaAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -284,7 +291,7 @@ services:
   # model. Both are historical drupal/ai plugin ids that stored role bindings
   # name, so they are registered separately rather than merged.
   aincient_core.inference.adapter.gemini:
-    class: Drupal\aincient_core\Inference\Adapter\GeminiAdapter
+    class: Aincient\Inference\Adapter\GeminiAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -292,7 +299,7 @@ services:
     tags:
       - { name: aincient_core.inference_adapter }
   aincient_core.inference.adapter.nanobanana:
-    class: Drupal\aincient_core\Inference\Adapter\NanoBananaAdapter
+    class: Aincient\Inference\Adapter\NanoBananaAdapter
     arguments:
       - '@aincient_core.inference.http_client'
       - '@http_client'
@@ -301,9 +308,17 @@ services:
       - { name: aincient_core.inference_adapter }
 
   aincient_core.inference.registry:
-    class: Drupal\aincient_core\Inference\PlatformRegistry
+    class: Aincient\Inference\PlatformRegistry
     arguments:
       - !tagged_iterator aincient_core.inference_adapter
+      - '@aincient_core.inference.credential_store'
+
+  # Where the wizard's stored credentials live: the `aincient.<provider>_api_key`
+  # / `_endpoint` State keys. The registry reads them through
+  # CredentialStoreInterface (the environment still wins, inside the registry).
+  aincient_core.inference.credential_store:
+    class: Drupal\aincient_core\Inference\StateCredentialStore
+    arguments:
       - '@state'
 
   # The reasoning backend itself. The LIVE binding is not this definition:
@@ -338,6 +353,21 @@ services:
 
   aincient_core.admin_landing_route_subscriber:
     class: Drupal\aincient_core\Routing\AdminLandingRouteSubscriber
+    tags:
+      - { name: event_subscriber }
+  # Every Atelier write route requires X-CSRF-Token from a cookie session (0511).
+  aincient_core.csrf_header_route_subscriber:
+    class: Drupal\aincient_core\Routing\CsrfHeaderRouteSubscriber
+    tags:
+      - { name: event_subscriber }
+  # Path entity ids on Atelier routes match the contract's int4 pattern (KI-1).
+  aincient_core.entity_id_route_subscriber:
+    class: Drupal\aincient_core\Routing\EntityIdRouteSubscriber
+    tags:
+      - { name: event_subscriber }
+  # Body node_id/base_vid outside int4 → 400, not a 500 (KI-1).
+  aincient_core.body_entity_id_subscriber:
+    class: Drupal\aincient_core\EventSubscriber\BodyEntityIdSubscriber
     tags:
       - { name: event_subscriber }
   # Reads `aincient_ai_usage` for Atelier's dashboard, log page and exports.

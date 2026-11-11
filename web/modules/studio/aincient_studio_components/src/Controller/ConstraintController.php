@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_studio_components\Controller;
 
-use Drupal\aincient_pages\Catalog\AdmissionGate;
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\AdmissionGate;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\Catalog\ExampleRenderer;
-use Drupal\aincient_pages\ComponentCatalog;
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\aincient_pages\UsageIndex;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;

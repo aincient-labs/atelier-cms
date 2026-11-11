@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
  * A sibling of {@see PageController}: a global block is authored in the SAME
  * studio (sections-only, no blog regime / translation governance), so this
  * exposes the directory + load + save a block needs. A page references a block
- * with a `block` slot ({@see \Drupal\aincient_pages\ComponentCatalog}); the
+ * with a `block` slot ({@see \Aincient\PageModel\ComponentCatalog}); the
  * renderer expands the block's sections inline. Gated like the other console
  * endpoints (`administer aincient pages`). All shaping goes through
  * {@see BlockStore} so the picker and the renderer see the same fragments.

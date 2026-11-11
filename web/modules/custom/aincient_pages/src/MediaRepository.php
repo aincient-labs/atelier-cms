@@ -332,6 +332,25 @@ final class MediaRepository {
   }
 
   /**
+   * Publish or unpublish an image-media item; returns its detail row.
+   *
+   * Unpublishing is how a person discards a generated image they rejected
+   * (DECISIONS 0512): reversible, unlike delete, and the Pages agent's
+   * `find_reference` skips unpublished images.
+   *
+   * @return array<string, mixed>
+   *   The item's {@see self::detail()} row.
+   */
+  public function setPublished(string|int $id, bool $published): array {
+    $media = $this->loadImage($id);
+    if ($media->isPublished() !== $published) {
+      $published ? $media->setPublished() : $media->setUnpublished();
+      $media->save();
+    }
+    return $this->detail($id) ?? throw new \RuntimeException('That media item has no image file.');
+  }
+
+  /**
    * Delete an image-media item — the human's "discard" for an unwanted asset.
    *
    * The AI never deletes its own (expensive) output; this is the human's explicit

@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Unit\Inference;
 
-use Drupal\aincient_core\Exception\AiProviderFailure;
-use Drupal\aincient_core\Inference\AiGateway;
-use Drupal\aincient_core\Inference\ImageGenerationAdapterInterface;
-use Drupal\aincient_core\Inference\ImageRef;
-use Drupal\aincient_core\Inference\MessageMapper;
-use Drupal\aincient_core\Inference\PlatformRegistryInterface;
-use Drupal\aincient_core\Inference\ProviderAdapterInterface;
-use Drupal\aincient_core\Inference\ProviderCall;
-use Drupal\aincient_core\Inference\ResultUnpacker;
+use Aincient\Inference\Exception\AiProviderFailure;
+use Aincient\Inference\AiGateway;
+use Aincient\Inference\ImageGenerationAdapterInterface;
+use Aincient\Inference\ImageRef;
+use Aincient\Inference\ChatMessageMapper;
+use Aincient\Inference\PlatformRegistryInterface;
+use Aincient\Inference\ProviderAdapterInterface;
+use Aincient\Inference\ProviderCall;
+use Aincient\Inference\ResultUnpacker;
 use Drupal\aincient_core\ModelRoleResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Tests\aincient_core\Traits\UnmeteredInferenceTrait;
 use Drupal\Tests\UnitTestCase;
@@ -455,7 +455,7 @@ final class AiGatewayTest extends UnitTestCase {
     return new AiGateway(
       $registry,
       $this->roleResolver($roles),
-      new ResultUnpacker(new MessageMapper()),
+      new ResultUnpacker(new ChatMessageMapper()),
       $this->unmeteredRecorder(),
       new NullLogger(),
       // Sleepless: the retry policy itself is pinned in ProviderCallTest, and a

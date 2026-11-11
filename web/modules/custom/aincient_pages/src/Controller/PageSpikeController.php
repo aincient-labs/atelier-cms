@@ -8,8 +8,8 @@ use Drupal\aincient_pages\BlockStore;
 use Drupal\aincient_pages\BrandRepository;
 use Drupal\aincient_pages\CollectionInventory;
 use Drupal\aincient_pages\CollectionResolver;
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
-use Drupal\aincient_pages\ComponentCatalog;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\aincient_pages\ConsentSettings;
 use Drupal\aincient_pages\EntityEmbedResolver;
 use Drupal\aincient_pages\MarkdownRenderer;
@@ -955,16 +955,21 @@ final class PageSpikeController implements ContainerInjectionInterface {
     //  - none      → nothing (system-font stack carries the page).
     $webFont = $this->brand->webFont();
     $fontLink = '';
+    // Curated-pairing families ship with the module (DECISIONS 0513): plain
+    // links from our own origin, no consent gate, exported like local assets.
+    foreach ($webFont['bundled'] ?? [] as $bundledHref) {
+      $fontLink .= "\n  <link rel=\"stylesheet\" href=\"" . htmlspecialchars($bundledHref, ENT_QUOTES) . "\">";
+    }
     if ($webFont['mode'] === 'selfhost') {
       $href = htmlspecialchars($webFont['href'], ENT_QUOTES);
-      $fontLink = "\n  <link rel=\"stylesheet\" href=\"$href\">";
+      $fontLink .= "\n  <link rel=\"stylesheet\" href=\"$href\">";
     }
     elseif ($webFont['mode'] === 'google') {
       // No href — a link with no href can't fetch (a media-gated link is still
       // downloaded by Blink, leaking the IP). consent.js promotes data-href to
       // href once consent is given.
       $href = htmlspecialchars($webFont['href'], ENT_QUOTES);
-      $fontLink = "\n  <link rel=\"stylesheet\" data-href=\"$href\" data-consent=\"fonts\">";
+      $fontLink .= "\n  <link rel=\"stylesheet\" data-href=\"$href\" data-consent=\"fonts\">";
     }
     // The always-on, self-hosted emoji font (DECISIONS 0058). This shell emits
     // raw HTML (no render array), so the library can't be #attached — link its

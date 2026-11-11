@@ -7,8 +7,8 @@ namespace Drupal\aincient_chat\EventSubscriber;
 use Drupal\aincient_chat\Chat\ProviderFailureSurface;
 use Drupal\aincient_chat\Chat\StreamRelay;
 use Drupal\aincient_chat\Event\ChatEvent;
-use Drupal\aincient_core\Inference\ProviderCall;
-use Drupal\aincient_core\Inference\ProviderFailureLog;
+use Aincient\Inference\ProviderCall;
+use Aincient\Inference\ProviderFailureLog;
 use Drupal\aincient_core\InstallCapabilities;
 use Drupal\flowdrop_runtime\Event\JobCompletedEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -134,7 +134,7 @@ final class NodeProgressSubscriber implements EventSubscriberInterface {
    *
    * Our reason node ends a provider failure as a COMPLETED node whose
    * `error_detail` output port carries the struct
-   * ({@see \Drupal\aincient_core\Exception\AiProviderFailure::toDetail()}); every
+   * ({@see \Aincient\Inference\Exception\AiProviderFailure::toDetail()}); every
    * other node leaves it NULL (or absent). Reading it here is what lets the card
    * be driven by the machine-readable `kind` with no exception and no string
    * match — the deterministic path.

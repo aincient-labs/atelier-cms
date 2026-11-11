@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_pages\Kernel;
 
 use Drupal\aincient_pages\Catalog\AtelierComponentCatalog;
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_core\Unit;
 
 use Drupal\aincient_core\ModelPresetResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -550,7 +550,9 @@ final class ModelPresetResolverTest extends UnitTestCase {
     $chat = [
       'litellm:openai/gpt-5.4' => 'GPT-5.4',
       'litellm:openai/gpt-5.4-mini' => 'GPT-5.4 mini',
-      'litellm:gemini/gemini-3.5-flash' => 'Gemini 3.5 Flash',
+      // Was gemini-3.5-flash, which Google no longer lists (2026-11-11); the
+      // proxy is assumed to follow the vendor's current id.
+      'litellm:gemini/gemini-3.6-flash' => 'Gemini 3.6 Flash',
       'litellm:anthropic/claude-haiku-4-5' => 'Claude Haiku 4.5',
     ];
 
@@ -568,7 +570,7 @@ final class ModelPresetResolverTest extends UnitTestCase {
     // `reasoning` is the role the money goes on, and the three profiles must
     // actually differ there: the cheapest model, the mid one, the strongest.
     $this->assertSame('litellm:anthropic/claude-haiku-4-5', $resolver->apply('value', $chat, [])[ModelRoles::REASONING]);
-    $this->assertSame('litellm:gemini/gemini-3.5-flash', $resolver->apply('balanced', $chat, [])[ModelRoles::REASONING]);
+    $this->assertSame('litellm:gemini/gemini-3.6-flash', $resolver->apply('balanced', $chat, [])[ModelRoles::REASONING]);
     $this->assertSame('litellm:openai/gpt-5.4', $resolver->apply('quality', $chat, [])[ModelRoles::REASONING]);
 
     // And `fast` stays cheap in every profile — including "best quality".

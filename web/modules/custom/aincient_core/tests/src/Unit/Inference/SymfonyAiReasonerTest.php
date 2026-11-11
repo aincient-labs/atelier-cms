@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Unit\Inference;
 
-use Drupal\aincient_core\Inference\AincientReasonResult;
-use Drupal\aincient_core\Inference\Adapter\AnthropicAdapter;
-use Drupal\aincient_core\Inference\Adapter\GeminiAdapter;
+use Aincient\Inference\AincientReasonResult;
+use Aincient\Inference\Adapter\AnthropicAdapter;
+use Aincient\Inference\Adapter\GeminiAdapter;
+use Aincient\Inference\ChatMessageMapper;
 use Drupal\aincient_core\Inference\MessageMapper;
-use Drupal\aincient_core\Inference\ModelTargetResolver;
-use Drupal\aincient_core\Inference\PlatformRegistryInterface;
-use Drupal\aincient_core\Inference\ProviderAdapterInterface;
-use Drupal\aincient_core\Inference\ProviderCall;
-use Drupal\aincient_core\Inference\ResultUnpacker;
+use Aincient\Inference\ModelTargetResolver;
+use Aincient\Inference\PlatformRegistryInterface;
+use Aincient\Inference\ProviderAdapterInterface;
+use Aincient\Inference\ProviderCall;
+use Aincient\Inference\ResultUnpacker;
 use Drupal\aincient_core\Inference\SymfonyAiReasoner;
-use Drupal\aincient_core\Inference\ToolCallCodec;
-use Drupal\aincient_core\Inference\ToolSchema;
+use Aincient\Inference\ToolCallCodec;
+use Aincient\Inference\ToolSchema;
 use Drupal\aincient_core\ModelRoleResolver;
 use Drupal\flowdrop\DTO\Reason\ReasonMessage;
 use Drupal\flowdrop\DTO\Reason\ReasonRequest;
@@ -410,6 +411,21 @@ final class SymfonyAiReasonerTest extends TestCase {
   }
 
   /**
+   * A card recap the model echoes never leaves the reasoner. B2, 0464.
+   *
+   * The recap is the console's note; written by the model it leaked into the
+   * visible reply and, stored in the buffer, taught the next turn to say
+   * "Done" without calling the tool.
+   */
+  public function testEchoedCardRecapIsStrippedFromTheReply(): void {
+    $result = $this->reason($this->request(temperature: 0.0), new TextResult(
+      "Done — here it is.\n\n[shown to the user: media_result card: Generated a red fox]"
+    ));
+
+    self::assertSame('Done — here it is.', $result->getText());
+  }
+
+  /**
    * A MultiPartResult nested inside a MultiPartResult is unpacked too.
    *
    * No bridge emits this today, which is exactly why the test is cheap insurance:
@@ -433,7 +449,7 @@ final class SymfonyAiReasonerTest extends TestCase {
   /**
    * The tool-call id from a MultiPartResult survives all the way to the replay.
    *
-   * Why the id and not just the name: {@see MessageMapper::mapToolCalls()} SKIPS
+   * Why the id and not just the name: {@see ChatMessageMapper::toToolCalls()} SKIPS
    * any stored call whose `tool_call_id` is empty, so an id lost on the way out
    * of MultiPartResult can never be paired back on the next turn — the assistant
    * tool-use turn vanishes from the replayed history and the provider sees a
@@ -611,7 +627,7 @@ final class SymfonyAiReasonerTest extends TestCase {
    *   The request to run.
    * @param \Symfony\AI\Platform\Result\ResultInterface|null $result
    *   The result the platform should yield, or NULL for the default TextResult.
-   * @param \Drupal\aincient_core\Inference\ProviderAdapterInterface|null $adapter
+   * @param \Aincient\Inference\ProviderAdapterInterface|null $adapter
    *   The adapter under test, or NULL for the real Anthropic one.
    *
    * @return \Drupal\flowdrop\DTO\Reason\ReasonResult
@@ -631,7 +647,7 @@ final class SymfonyAiReasonerTest extends TestCase {
    * @param array<string, mixed> $rawData
    *   The raw wire body the DeferredResult carries — where recovery reads from.
    *
-   * @return \Drupal\aincient_core\Inference\AincientReasonResult
+   * @return \Aincient\Inference\AincientReasonResult
    *   The full account, including the detected codec.
    */
   private function reasonRich(ReasonRequest $request, ?ResultInterface $result = NULL, array $rawData = []): AincientReasonResult {
@@ -644,7 +660,7 @@ final class SymfonyAiReasonerTest extends TestCase {
    *
    * @param \Symfony\AI\Platform\Result\ResultInterface|null $result
    *   The result the platform should yield, or NULL for the default TextResult.
-   * @param \Drupal\aincient_core\Inference\ProviderAdapterInterface|null $adapter
+   * @param \Aincient\Inference\ProviderAdapterInterface|null $adapter
    *   The adapter under test, or NULL for the real Anthropic one.
    *
    * @return \Drupal\aincient_core\Inference\SymfonyAiReasoner
@@ -673,7 +689,7 @@ final class SymfonyAiReasonerTest extends TestCase {
       ),
       new MessageMapper(),
       new ToolSchema(),
-      new ResultUnpacker(new MessageMapper()),
+      new ResultUnpacker(new ChatMessageMapper()),
       $this->unmeteredRecorder(),
       new NullLogger(),
       // Sleepless — see AiGatewayTest for why.

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Kernel;
 
-use Drupal\aincient_pages\DesignTokens;
-use Drupal\aincient_pages\PresetCatalog;
+use Aincient\PageModel\DesignTokens;
+use Aincient\PageModel\PresetCatalog;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 

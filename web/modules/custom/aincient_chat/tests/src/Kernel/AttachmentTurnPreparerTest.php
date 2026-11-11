@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_chat\Kernel;
 
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\Core\File\FileExists;
 use Drupal\file\Entity\File;
 use Drupal\KernelTests\KernelTestBase;

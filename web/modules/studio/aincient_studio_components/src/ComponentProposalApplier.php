@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_studio_components;
 
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
-use Drupal\aincient_pages\ComponentCatalog;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\ComponentCatalog;
 
 /**
  * Builds a validated `components_proposal` widget envelope (DECISIONS 0455, P2).

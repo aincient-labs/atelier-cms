@@ -17,11 +17,27 @@
     },
     "repositories": [
         {
+            "type": "path",
+            "url": "web/modules/custom/*/packages/*",
+            "options": {
+                "symlink": true,
+                "reference": "config",
+                "versions": {
+                    "aincient/capability": "0.1.0",
+                    "aincient/inference": "0.1.0",
+                    "aincient/page-model": "0.1.0"
+                }
+            }
+        },
+        {
             "type": "composer",
             "url": "https://packages.drupal.org/8"
         }
     ],
     "require": {
+        "aincient/capability": "^0.1",
+        "aincient/inference": "^0.1",
+        "aincient/page-model": "^0.1",
         "composer/installers": "^2.3",
         "cweagans/composer-patches": "^2.0.0",
         "drupal/admin_theme": "^1.1",
@@ -52,14 +68,14 @@
         "drupal/tome": "^1.16",
         "drush/drush": "^13.8.0",
         "league/commonmark": "^2.10.1",
-        "symfony/ai-anthropic-platform": "^0.12",
-        "symfony/ai-deep-seek-platform": "^0.12",
-        "symfony/ai-gemini-platform": "^0.12",
-        "symfony/ai-generic-platform": "^0.12",
-        "symfony/ai-mistral-platform": "^0.12",
-        "symfony/ai-ollama-platform": "^0.12",
-        "symfony/ai-open-ai-platform": "^0.12",
-        "symfony/ai-platform": "^0.12"
+        "symfony/ai-deep-seek-platform": "^0.12"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Aincient\\Capability\\Tests\\": "web/modules/custom/aincient_core/packages/capability/tests/",
+            "Aincient\\Inference\\Tests\\": "web/modules/custom/aincient_core/packages/inference/tests/",
+            "Aincient\\PageModel\\Tests\\": "web/modules/custom/aincient_pages/packages/page-model/tests/"
+        }
     },
     "conflict": {
         "drupal/drupal": "*"

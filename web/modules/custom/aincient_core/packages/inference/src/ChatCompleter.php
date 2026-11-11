@@ -1,0 +1,158 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Aincient\Inference;
+
+use Aincient\Inference\Exception\AiProviderFailure;
+use Aincient\Inference\Event\InferenceStartedEvent;
+use Aincient\Inference\Exception\ProviderConfigurationException;
+use Psr\Log\LoggerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+
+/**
+ * One chat turn on `symfony/ai`, for a node that reasons without tools.
+ *
+ * The third and last caller of the invoke-and-name-the-failure sequence, next to
+ * {@see \Drupal\aincient_core\Inference\SymfonyAiReasoner} (the agent loop) and {@see AiGateway} (one-shot product
+ * calls). It exists rather than being folded into either because its shape is
+ * genuinely a third one: a system prompt plus a `{role, content}` history plus one
+ * message, answering with the provider, the model and the token count — which the
+ * gateway's string-returning methods cannot express and the reasoner's tool-aware
+ * DTOs overstate.
+ *
+ * It lives in aincient_core, not in the FlowDrop integration layer, for the reason
+ * AiGateway's docblock states: `Symfony\AI` types stay on this side of the
+ * boundary, so its caller
+ * ({@see \Drupal\aincient_flows\Plugin\FlowDropNodeProcessor\SimpleChat}) names no
+ * vendor type at all and the next backend move is again a change to this
+ * directory alone.
+ */
+final class ChatCompleter {
+
+  public function __construct(
+    private readonly PlatformRegistryInterface $registry,
+    private readonly ModelTargetResolver $targets,
+    private readonly ChatMessageMapper $messages,
+    private readonly ResultUnpacker $unpacker,
+    private readonly UsageSinkInterface $usage,
+    private readonly LoggerInterface $logger,
+    private readonly ProviderCall $providerCall,
+    // Optional, exactly as in {@see \Drupal\aincient_core\Inference\SymfonyAiReasoner}: it lets the console say
+    // a call is in flight, and its absence costs only that.
+    private readonly ?EventDispatcherInterface $dispatcher = NULL,
+  ) {}
+
+  /**
+   * Runs one chat turn.
+   *
+   * @param string $message
+   *   The user message. Must not be empty — an empty prompt is a wiring mistake
+   *   upstream, and sending it would spend a call to be told so by the provider.
+   * @param array<int|string, mixed> $history
+   *   Prior turns as `{role, content}` arrays; only `user`/`assistant` are
+   *   replayed ({@see ChatMessageMapper::toSimpleChatBag()} for why that matters).
+   * @param string $systemPrompt
+   *   The system prompt, or '' to omit it.
+   * @param string $operationType
+   *   The node's operation type, e.g. `aincient_role:task`.
+   * @param string $model
+   *   A `provider:model`, a bare model id, or '' to use the role binding.
+   * @param float $temperature
+   *   The sampling temperature. 0.0 is NOT forwarded — see below.
+   * @param int $maxTokens
+   *   The token cap.
+   *
+   * @throws \Aincient\Inference\Exception\AiProviderFailure
+   *   When the provider could not serve the call.
+   * @throws \Aincient\Inference\Exception\ProviderConfigurationException
+   *   When no model resolves, or the resolved provider is not configured.
+   * @throws \InvalidArgumentException
+   *   When the message is empty.
+   */
+  public function complete(
+    string $message,
+    array $history = [],
+    string $systemPrompt = '',
+    string $operationType = 'chat',
+    string $model = '',
+    float $temperature = 0.0,
+    int $maxTokens = 1000,
+  ): ChatCompletion {
+    if (trim($message) === '') {
+      throw new \InvalidArgumentException('A chat turn needs a message.');
+    }
+
+    [$providerId, $modelId] = $this->targets->resolve($operationType, $model);
+    $bag = $this->messages->toSimpleChatBag($systemPrompt, $history, $message);
+
+    $options = ['max_tokens' => $maxTokens];
+    // Temperature 0.0 is omitted, for the reason SymfonyAiReasoner spells out at
+    // length: newer Anthropic models REJECT the parameter outright, and 0.0 is
+    // what a node stores when nobody chose a temperature (all three brand
+    // specialists store exactly that). Forwarding it would fail every turn on
+    // those models rather than degrade an answer. A non-zero value someone typed
+    // IS forwarded, and a model that refuses it says so through a named failure.
+    if ($temperature !== 0.0) {
+      $options['temperature'] = $temperature;
+    }
+
+    try {
+      // The provider's own spelling, never ours: Gemini rejects `max_tokens`
+      // (it wants `maxOutputTokens`) with a 400 on the whole request.
+      $options = $this->registry->adapter($providerId)->translateOptions($options);
+      $platform = $this->registry->platform($providerId);
+    }
+    catch (ProviderConfigurationException $e) {
+      // Local misconfiguration, not an upstream fault — let it through as-is so
+      // the caller can say "connect a provider" instead of blaming the model.
+      throw $e;
+    }
+
+    // Announce the wait before it starts — a brand specialist's call is as
+    // silent as the agent's ({@see InferenceStartedEvent}). Announced once, not
+    // per attempt: a retry is the same wait continuing, not a new one.
+    if ($this->dispatcher !== NULL) {
+      try {
+        $this->dispatcher->dispatch(
+          new InferenceStartedEvent($providerId, $modelId, $operationType),
+          InferenceStartedEvent::EVENT_NAME,
+        );
+      }
+      catch (\Throwable $e) {
+        $this->logger->warning('Could not announce the start of a chat call: @m', ['@m' => $e->getMessage()]);
+      }
+    }
+
+    // Retries and classification live in ProviderCall, shared with the gateway
+    // and the reasoner. Named failures, not bare ones: the predecessor threw a
+    // vague \Exception, which reached the console as a node failure nobody could
+    // act on (DECISIONS 0278/0279), and then as the provider's own wire text,
+    // which nobody could act on either (atelier-cms#8).
+    $result = $this->providerCall->run(
+      // Resolved inside the closure: DeferredResult is lazy, so an upstream
+      // fault surfaces on conversion, not on invoke().
+      fn (): object => $platform->invoke($modelId, $bag, $options)->getResult(),
+      $providerId,
+      $modelId,
+      'step',
+    );
+
+    // The node reports its own token count to the job trail (below), but the trail
+    // is live-only and per-run. The metering row is the durable half, and it is
+    // written here for the same reason the reasoner writes its own: this is where
+    // the resolved provider and model are known.
+    $this->usage->record($providerId, $modelId, $result, UsageSinkInterface::TAG_SIMPLE_CHAT);
+
+    return new ChatCompletion(
+      // The full result union, through the one class that knows it: a bridge can
+      // wrap a plain answer in a MultiPartResult, and reading one arm of that
+      // union is how a successful turn became an empty message on screen.
+      $this->unpacker->text($result),
+      $providerId,
+      $modelId,
+      $this->unpacker->totalTokens($result),
+    );
+  }
+
+}

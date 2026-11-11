@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Catalog;
 
+use Aincient\PageModel\Catalog\CatalogCompiler;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\EffectiveCatalog;
 use Drupal\aincient_pages\Entity\PageKindInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;

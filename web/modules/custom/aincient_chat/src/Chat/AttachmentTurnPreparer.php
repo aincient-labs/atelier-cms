@@ -6,8 +6,8 @@ namespace Drupal\aincient_chat\Chat;
 
 use Drupal\aincient_core\Context\FenceNormalizer;
 use Drupal\aincient_core\Entity\ContextLedgerEntry;
-use Drupal\aincient_core\Inference\AiGateway;
-use Drupal\aincient_core\Inference\ImageRef;
+use Aincient\Inference\AiGateway;
+use Aincient\Inference\ImageRef;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\file\FileInterface;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_inference_test;
 
-use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
-use Drupal\aincient_core\Inference\ImageGenerationAdapterInterface;
+use Aincient\Inference\Exception\ProviderConfigurationException;
+use Aincient\Inference\ImageGenerationAdapterInterface;
 use Drupal\Core\State\StateInterface;
 use Symfony\AI\Platform\PlatformInterface;
 

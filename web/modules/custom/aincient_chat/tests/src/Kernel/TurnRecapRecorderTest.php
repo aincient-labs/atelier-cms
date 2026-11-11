@@ -6,6 +6,8 @@ namespace Drupal\Tests\aincient_chat\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\aincient_chat\Chat\TurnRecapRecorder;
+use Drupal\aincient_core\Inference\MessageMapper;
+use Drupal\flowdrop\DTO\Reason\ReasonMessage;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Yaml\Yaml;
 
@@ -83,6 +85,37 @@ final class TurnRecapRecorderTest extends KernelTestBase {
     $this->assertCount(2, $messages);
     $this->assertSame('List my pages', $messages[0]['content']);
     $this->assertSame("Here are your pages.\n\n" . self::LINE, $messages[1]['content']);
+  }
+
+  /**
+   * Replayed, the stored recap is a note on the next user turn — never the
+   * assistant's words. B2: as assistant text the model echoed the line and
+   * answered a new image request with "Done" instead of calling the tool.
+   */
+  public function testReplayKeepsTheRecapOutOfAssistantContent(): void {
+    $this->seed([
+      ['role' => 'user', 'content' => 'List my pages'],
+      ['role' => 'assistant', 'content' => 'Here are your pages.'],
+    ]);
+    $this->recorder()->record(5, self::TABLE);
+    // The next turn's "Append user turn".
+    $buffer = $this->conversation();
+    $buffer[] = ['role' => 'user', 'content' => 'Open the first one'];
+
+    $bag = (new MessageMapper())->toMessageBag('', array_map(
+      static fn (array $raw): ReasonMessage => ReasonMessage::fromArray($raw),
+      $buffer,
+    ));
+
+    $roles = [];
+    foreach ($bag->getMessages() as $message) {
+      $roles[] = $message->getRole()->value;
+      if ($message->getRole()->value === 'assistant') {
+        $this->assertStringNotContainsString('[shown to the user:', (string) $message->asText());
+      }
+    }
+    $this->assertSame(['user', 'assistant', 'user'], $roles);
+    $this->assertSame(self::LINE . "\n\nOpen the first one", $bag->getMessages()[2]->asText());
   }
 
   /**

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\Component\Plugin\Discovery\DiscoveryInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Psr\Log\LoggerInterface;

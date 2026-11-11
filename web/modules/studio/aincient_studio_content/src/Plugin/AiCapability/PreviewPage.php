@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_studio_content\Plugin\AiCapability;
 
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
-use Drupal\aincient_pages\Catalog\EffectiveCatalog;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\EffectiveCatalog;
 use Drupal\aincient_pages\PageStore;
-use Drupal\aincient_pages\SchemaLinter;
+use Aincient\PageModel\SchemaLinter;
 use Drupal\aincient_core\Attribute\Capability;
 use Drupal\aincient_core\Capability\CapabilityBase;
 use Drupal\aincient_core\Capability\ExecutableCapabilityInterface;
@@ -37,9 +37,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * The current draft (with each section's index) is shown to the agent in the
  * system prompt as the LIVE PAGE STATE, so it can target ops precisely. Here we
- * only STRUCTURALLY validate the ops (known op, known component) for fast agent
- * feedback; the authoritative clamp (index bounds, enum coercion) is PageStore's
- * when the ops are applied. The grammar (sections + props) is in the prompt.
+ * STRUCTURALLY validate the ops (known op, known component) for fast agent
+ * feedback and — when the workflow wires the draft into `page_state` — dry-run
+ * them through PageStore::applyOps, the same authority the studio's apply runs,
+ * so the result carries a `status` (applied / partially_applied / refused /
+ * unverified), the refused ops with reasons, and `sections_now` (the order the
+ * page actually has). The client still applies the ops to its own draft; the
+ * dry-run only makes the model's tool result tell the truth (bug B3).
  *
  * @see \Drupal\aincient_pages\PageStore::applyOps()
  * @see \Drupal\aincient_studio_content\Controller\PageController
@@ -65,6 +69,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
           'description' => 'One section op — an object whose "op" key selects the action (set_meta, set_teaser, set_content, add_section, update_section, remove_section, reorder) and whose other keys carry that op\'s fields, e.g. {"op":"add_section","component":"hero","props":{"heading":"Hi"}}.',
         ],
       ],
+    ),
+    // GRAPH-supplied, never model-supplied: the workflow wires its system-prompt
+    // `variables` bag (which carries `live_page_state` + `working_node_id`) into
+    // this port, so FlowDrop injects it from run state and withholds it from the
+    // model's tool schema (a connected input). With it, the tool dry-runs the ops
+    // against the SAME draft the studio holds and reports what actually landed —
+    // refused ops by name and the resulting section order — instead of a blanket
+    // "previewing N edits" the model then reports as done (bug B3).
+    'page_state' => new ContextDefinition(
+      data_type: 'map',
+      label: new TranslatableMarkup('Live page state'),
+      description: new TranslatableMarkup('Wired from the workflow, not authored by the model.'),
+      required: FALSE,
     ),
   ],
 )]
@@ -92,12 +109,30 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
   protected ComponentCatalogInterface $catalog;
 
   /**
+   * The page store — its applyOps() is the dry-run authority.
+   */
+  protected PageStore $store;
+
+  /**
+   * Per-request dry-run results, keyed by the turn's injected page state.
+   *
+   * The injected state is the draft as the turn STARTED, but a second
+   * preview_page call in the same turn lands on top of the first (the client
+   * serialises the applies). So each dry-run remembers its result under the
+   * turn's starting state, and the next call in the same request builds on it.
+   *
+   * @var array<string, array>
+   */
+  private static array $chained = [];
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static {
     $instance = parent::create($container, $configuration, $plugin_id, $plugin_definition);
     $instance->currentUser = $container->get('current_user');
     $instance->catalog = $container->get('aincient_pages.catalog');
+    $instance->store = $container->get('aincient_pages.store');
     return $instance;
   }
 
@@ -167,25 +202,166 @@ final class PreviewPage extends CapabilityBase implements ExecutableCapabilityIn
       }
     }
 
-    $count = count($valid);
-    $summary = 'Previewing ' . $count . ' page ' . ($count === 1 ? 'edit' : 'edits')
-      . ' — watch the live preview, then Publish to save the page.';
-    if ($rejected !== []) {
-      $summary .= ' (Skipped: ' . implode(' ', $rejected) . ')';
-    }
-    if ($warnings !== []) {
-      $summary .= ' ⚠ Fix and re-send: ' . implode(' ', $warnings);
-    }
+    // Dry-run the usable ops against the live draft (when the workflow wires
+    // it) through the SAME PageStore::applyOps the studio's apply endpoint runs,
+    // so the result says what actually landed. Without the wire the outcome is
+    // honestly "unverified" rather than a claimed success.
+    $outcome = $this->dryRun($valid);
+    $refused = array_merge(
+      array_map(static fn(string $reason): array => ['op' => 'invalid', 'reason' => $reason], $rejected),
+      $outcome['refused'] ?? [],
+    );
+    $sent = count($valid) + count($rejected);
+    $appliedCount = $outcome === NULL ? count($valid) : count($valid) - count($outcome['refused']);
+    $status = self::status($outcome === NULL, $appliedCount, count($refused));
 
-    $this->result = (string) json_encode([
+    $this->result = (string) json_encode(array_filter([
       '__widget__' => 'page_preview',
       'payload' => [
         'ops' => $valid,
         'rejected' => $rejected,
         'warnings' => $warnings,
       ],
-      'summary' => $summary,
-    ]);
+      'summary' => self::summary($status, $sent, $appliedCount, $refused, $warnings, $outcome['sections'] ?? NULL),
+      // The model-facing verdict: what landed, what was refused and why, and —
+      // when the draft was visible — the page as it now stands.
+      'status' => $status,
+      'applied' => $appliedCount,
+      'refused_count' => count($refused),
+      'refused' => $refused,
+      'sections_now' => $outcome['sections'] ?? NULL,
+      'note' => in_array($status, ['refused', 'partially_applied'], TRUE)
+        ? 'Tell the user which change was refused and why, and what the page looks like now (sections_now). Do not report a refused change as done.'
+        : NULL,
+    ], static fn($v): bool => $v !== NULL));
+  }
+
+  /**
+   * The overall verdict for one call.
+   *
+   * @return string
+   *   `applied` (every op landed), `partially_applied` (some refused),
+   *   `refused` (nothing landed), or `unverified` (no live draft was wired, so
+   *   only the structural check ran — nothing is confirmed).
+   */
+  public static function status(bool $unverified, int $applied, int $refused): string {
+    if ($applied === 0 && $refused > 0) {
+      return 'refused';
+    }
+    if ($unverified) {
+      return 'unverified';
+    }
+    return $refused > 0 ? 'partially_applied' : 'applied';
+  }
+
+  /**
+   * The one-line summary — the card's caption and the model's plain reading.
+   *
+   * A refusal LEADS the sentence and names the page as it now stands, because
+   * a summary that opened with "Previewing N edits" is what the agent echoed
+   * back as done while the studio had refused the move (bug B3).
+   *
+   * @param array<int, array{op: string, reason: string}> $refused
+   * @param string[] $warnings
+   * @param array<int, array{id: string, component: string, label?: string}>|null $sections
+   */
+  public static function summary(string $status, int $sent, int $applied, array $refused, array $warnings, ?array $sections): string {
+    $reasons = implode(' ', array_map(static fn(array $r): string => rtrim($r['op'] . ': ' . $r['reason'], '.') . '.', $refused));
+    $summary = match ($status) {
+      'refused' => ($sent === 1 ? 'REFUSED — the page edit was not applied' : sprintf('REFUSED — none of the %d page edits were applied', $sent)) . ', so the page did NOT change: ' . $reasons,
+      'partially_applied' => sprintf('PARTIALLY applied — %d of %d page edits applied; %d REFUSED (those changed nothing): %s', $applied, $sent, count($refused), $reasons),
+      'unverified' => sprintf('Sent %d page %s to the live preview (not verified against the draft)%s', $applied, $applied === 1 ? 'edit' : 'edits', $refused !== [] ? '; ' . count($refused) . ' REFUSED: ' . $reasons : '.'),
+      default => sprintf('Applied %d page %s to the live preview — Publish to save the page.', $applied, $applied === 1 ? 'edit' : 'edits'),
+    };
+    if ($sections !== NULL) {
+      $summary .= ' Sections now, in order: ' . ($sections === []
+        ? '(none)'
+        : implode(', ', array_map(static fn(array $s): string => $s['component'] . ' [' . $s['id'] . ']', $sections))) . '.';
+    }
+    if ($warnings !== []) {
+      $summary .= ' ⚠ Fix and re-send: ' . implode(' ', $warnings);
+    }
+    return $summary;
+  }
+
+  /**
+   * Dry-run the ops against the wired live draft.
+   *
+   * @param array $ops
+   *   The structurally valid ops.
+   *
+   * @return array{refused: array<int, array{op: string, reason: string}>, sections: array}|null
+   *   What PageStore refused and the resulting section order, or NULL when no
+   *   page state was wired (nothing to verify against).
+   */
+  private function dryRun(array $ops): ?array {
+    // Only a value the graph actually supplied counts: an unset optional map
+    // context can read back as an empty map, which would masquerade as "a
+    // fresh, empty draft" and dry-run against the wrong page.
+    if (!isset($this->context['page_state'])) {
+      return NULL;
+    }
+    $state = $this->getContextValue('page_state');
+    if (is_string($state)) {
+      $state = json_decode($state, TRUE);
+    }
+    if (!is_array($state)) {
+      return NULL;
+    }
+    // The bag carries the draft as a JSON string under `live_page_state`; a
+    // fresh page sends none, which is the studio's empty draft too.
+    $schema = $state['live_page_state'] ?? [];
+    if (is_string($schema)) {
+      $schema = json_decode($schema, TRUE);
+    }
+    $schema = is_array($schema) ? $schema : [];
+    // A saved page's type is locked at birth (DECISIONS 0378) — the same signal
+    // the studio's apply endpoint reads (its node id).
+    $locked = !empty($state['working_node_id']);
+
+    $key = md5((string) json_encode([$schema, $locked]));
+    $base = self::$chained[$key] ?? $schema;
+    $result = $this->store->applyOps($base, $ops, $locked);
+    self::$chained[$key] = $result['schema'];
+
+    return [
+      'refused' => array_values($result['rejected']),
+      'sections' => self::sectionList($result['schema']['sections'] ?? []),
+    ];
+  }
+
+  /**
+   * A compact, ordered view of the sections: id, component, and a label.
+   *
+   * @return array<int, array{id: string, component: string, label?: string}>
+   */
+  public static function sectionList(mixed $sections): array {
+    $list = [];
+    foreach (is_array($sections) ? $sections : [] as $section) {
+      if (!is_array($section)) {
+        continue;
+      }
+      $row = [
+        'id' => (string) ($section['id'] ?? ''),
+        'component' => (string) ($section['component'] ?? ''),
+      ];
+      $props = is_array($section['props'] ?? NULL) ? $section['props'] : [];
+      foreach (['heading', 'title', 'eyebrow'] as $key) {
+        if (is_string($props[$key] ?? NULL) && trim($props[$key]) !== '') {
+          $row['label'] = mb_strimwidth(trim($props[$key]), 0, 60, '…');
+          break;
+        }
+      }
+      $list[] = $row;
+    }
+    return $list;
+  }
+
+  /**
+   * Reset the per-request dry-run chain (tests).
+   */
+  public static function resetChain(): void {
+    self::$chained = [];
   }
 
   /**

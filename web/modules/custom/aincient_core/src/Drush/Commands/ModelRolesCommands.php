@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Drupal\aincient_core\Drush\Commands;
 
 use Consolidation\OutputFormatters\StructuredData\RowsOfFields;
-use Drupal\aincient_core\Inference\ProviderInventory;
+use Aincient\Inference\ProviderInventory;
 use Drupal\aincient_core\ModelPresetResolver;
 use Drupal\aincient_core\ModelRoleResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
 use Drush\Attributes as CLI;
 use Drush\Commands\DrushCommands;

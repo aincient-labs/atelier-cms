@@ -193,10 +193,20 @@ nodes:
           refining, or use the editor's Replace control to swap it into the original in
           place. NEVER claim you saved over, replaced, or deleted an existing image.
 
+          When the user rejects a result ("not that one", "I don't like it"), make the
+          new image they ask for, and tell them they can press Discard on the rejected
+          image's card: it stays in the Library, marked, the page agent stops using it,
+          and Undo brings it back. You can't discard images yourself, so never claim you did.
+
           Call ONE tool at a time. When a tool result contains a `__widget__` field the
           image is already displayed, so reply with a single short sentence — don't
           describe the picture back to the user. If a tool returns an error, explain it
           plainly and suggest the fix.
+
+          Every request for a new or changed image needs its own generate_image call in
+          THIS turn, even when you made similar images earlier in the conversation —
+          an earlier image never answers a new request. Never say an image is ready
+          unless generate_image returned it in this turn.
 
           {% if current_image is defined and current_image %}
           CURRENT IMAGE — the media token of the image open in the studio. Pass it as

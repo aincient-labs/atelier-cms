@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages\Form;
 
 use Drupal\aincient_pages\BrandRepository;
-use Drupal\aincient_pages\DesignTokens;
+use Aincient\PageModel\DesignTokens;
 use Drupal\aincient_pages\SiteIdentity;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;

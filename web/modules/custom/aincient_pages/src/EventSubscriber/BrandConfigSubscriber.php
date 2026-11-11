@@ -52,9 +52,12 @@ final class BrandConfigSubscriber implements EventSubscriberInterface {
     // the save path (an admin action), never on render.
     $new = $config->get();
     if (($new['font_delivery'] ?? BrandRepository::DELIVERY_GOOGLE) === BrandRepository::DELIVERY_SELFHOST) {
-      $families = $new['font_families'] ?? [];
-      if ($families) {
-        $this->fontVendor->ensure($families);
+      // Bundled curated-pairing families need no vendoring (0513); only the
+      // rest are fetched, keyed exactly as BrandRepository::webFont() asks.
+      $families = is_array($new['font_families'] ?? NULL) ? $new['font_families'] : [];
+      $rest = $families ? $this->fontVendor->bundled($families)['rest'] : [];
+      if ($rest) {
+        $this->fontVendor->ensure($rest);
       }
     }
     // The history table may not exist yet (e.g. before update hooks run, or in

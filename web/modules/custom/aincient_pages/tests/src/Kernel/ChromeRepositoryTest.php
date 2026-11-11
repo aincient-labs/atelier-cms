@@ -100,6 +100,14 @@ final class ChromeRepositoryTest extends KernelTestBase {
     $this->assertSame('left', $this->repo()->header()['logo_position']);
   }
 
+  public function testListShapedSectionIsIgnored(): void {
+    // A JSON list arrives with integer keys; it used to TypeError coerce()
+    // (string $key) and 500 /chrome/save (contract suite, lean m1-3).
+    $this->assertSame([], $this->repo()->update(['header' => ['center', TRUE], 'footer' => [FALSE]]));
+    $this->assertSame('end', $this->repo()->header()['nav_alignment']);
+    $this->assertSame('left', $this->repo()->applyDraft(['header' => ['center']])['header']['logo_position']);
+  }
+
   public function testNoChangeDoesNotReport(): void {
     // Re-applying the existing value yields no "applied" entry.
     $this->assertSame([], $this->repo()->update(['header' => ['nav_alignment' => 'end']]));

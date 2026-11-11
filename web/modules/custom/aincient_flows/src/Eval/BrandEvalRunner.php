@@ -6,8 +6,8 @@ namespace Drupal\aincient_flows\Eval;
 
 use Drupal\aincient_pages\BrandPreviewApplier;
 use Drupal\aincient_pages\BrandRepository;
-use Drupal\aincient_pages\ColorContrast;
-use Drupal\aincient_pages\TokenResolver;
+use Aincient\PageModel\ColorContrast;
+use Aincient\PageModel\TokenResolver;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;

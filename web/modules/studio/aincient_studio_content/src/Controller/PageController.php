@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_studio_content\Controller;
 
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
-use Drupal\aincient_pages\Catalog\EffectiveCatalog;
-use Drupal\aincient_pages\ComponentCatalog;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\EffectiveCatalog;
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\aincient_pages\Controller\PageSpikeController;
 use Drupal\aincient_pages\EditLock;
 use Drupal\aincient_pages\Exception\RevisionConflictException;
@@ -138,6 +138,9 @@ final class PageController implements ContainerInjectionInterface {
     if (!is_array($data['schema'] ?? NULL)) {
       return new JsonResponse(['error' => 'Expected { "schema": { … } }.'], 400);
     }
+    if (self::blankTitle($data['schema'])) {
+      return new JsonResponse(['error' => 'A page needs a title.'], 400);
+    }
     [$nodeId, $langcode, $baseVid] = $this->writeArgs($data);
 
     // A schema write requires update access on the EXACT head revision being
@@ -177,6 +180,9 @@ final class PageController implements ContainerInjectionInterface {
     [$nodeId, $langcode, $baseVid] = $this->writeArgs($data);
     if ($nodeId === NULL) {
       return new JsonResponse(['error' => 'Publish needs a node_id (save a draft first).'], 400);
+    }
+    if (is_array($data['schema'] ?? NULL) && self::blankTitle($data['schema'])) {
+      return new JsonResponse(['error' => 'A page needs a title.'], 400);
     }
     if (($denied = $this->denyIfNoUpdate($nodeId, $langcode)) !== NULL) {
       return $denied;
@@ -287,6 +293,16 @@ final class PageController implements ContainerInjectionInterface {
     return $result === NULL
       ? new JsonResponse(['error' => "That change isn’t available — the page may have moved on, or you don’t hold this transition."], 403)
       : new JsonResponse($result);
+  }
+
+  /**
+   * A present-but-blank title. An absent title defaults ('AIncient page'); a
+   * blank one reached the node save and failed the NOT NULL title column as a
+   * 500 (contract suite, lean m1-3).
+   */
+  private static function blankTitle(array $schema): bool {
+    $title = $schema['title'] ?? NULL;
+    return $title !== NULL && is_scalar($title) && trim((string) $title) === '';
   }
 
   /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Inference;
 
+use Aincient\Inference\ChatMessageMapper;
+use Aincient\Inference\RecapNote;
 use Drupal\flowdrop\DTO\Reason\ReasonMessage;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
@@ -21,6 +23,10 @@ use Symfony\AI\Platform\Result\ToolCall;
  *
  * The system prompt is owned by node config, never by the replayed history —
  * matching the behaviour of the reasoner this replaces.
+ *
+ * Only the `ReasonMessage` half lives here (it needs FlowDrop); the plain chat
+ * bag and both directions of the stored tool-call shape are in
+ * {@see ChatMessageMapper}, which the inference package carries.
  */
 final class MessageMapper {
 
@@ -29,12 +35,9 @@ final class MessageMapper {
    */
   private const REPLAYED_ROLES = ['user', 'assistant', 'tool'];
 
-  /**
-   * The only roles a plain chat node's `history` input may contribute.
-   *
-   * @see self::toSimpleChatBag()
-   */
-  private const SIMPLE_CHAT_ROLES = ['user', 'assistant'];
+  public function __construct(
+    private readonly ChatMessageMapper $chat = new ChatMessageMapper(),
+  ) {}
 
   /**
    * Builds the message bag for one inference.
@@ -58,6 +61,10 @@ final class MessageMapper {
     }
 
     $replayed = 0;
+    // Card recaps (0464) lifted off assistant turns, waiting for the next user
+    // turn to carry them. {@see RecapNote} for why they never replay as the
+    // model's own words.
+    $notes = [];
     foreach ($messages as $message) {
       if (!$message instanceof ReasonMessage) {
         continue;
@@ -65,6 +72,17 @@ final class MessageMapper {
       $role = $message->getRole();
       if (!in_array($role, self::REPLAYED_ROLES, TRUE)) {
         continue;
+      }
+      if ($role === 'assistant') {
+        [$clean, $lifted] = RecapNote::split($message->getContent());
+        if ($lifted !== []) {
+          array_push($notes, ...$lifted);
+          $message = new ReasonMessage('assistant', $clean, $message->getToolCalls(), $message->getToolCallId());
+        }
+      }
+      elseif ($role === 'user' && $notes !== []) {
+        $message = new ReasonMessage('user', RecapNote::prepend($notes, $message->getContent()), $message->getToolCalls(), $message->getToolCallId());
+        $notes = [];
       }
       foreach ($this->mapOne($message, $role) as $symfonyMessage) {
         $mapped[] = $symfonyMessage;
@@ -75,60 +93,6 @@ final class MessageMapper {
     if ($replayed === 0) {
       throw new \RuntimeException('Reason request has no messages to reason over.');
     }
-
-    return new MessageBag(...$mapped);
-  }
-
-  /**
-   * Builds the bag for a single-turn chat node: system + history + one message.
-   *
-   * The shape a plain chat node stores is NOT the reasoner's healed buffer — it is
-   * a bare list of `{role, content}` arrays wired into a node input, so it gets
-   * its own entry point rather than being forced through
-   * {@see self::toMessageBag()}.
-   *
-   * ONLY `user` and `assistant` survive the allow-list, and that is a security
-   * control, not tidiness: `history` is a CONNECTABLE node input, so whatever
-   * upstream node (or model) produced it could otherwise smuggle in a `system`
-   * turn and rewrite the specialist's instructions from inside its own
-   * conversation. The node's own `systemPrompt` is the only source of system
-   * instruction. A `tool` turn is dropped for a different reason — it would be
-   * unpaired here, which providers reject outright.
-   *
-   * @param string $systemPrompt
-   *   The node's system prompt, or '' to omit it.
-   * @param array<int|string, mixed> $history
-   *   Prior turns as `{role, content}` arrays. Anything else is skipped.
-   * @param string $message
-   *   The user message this turn is about.
-   *
-   * @return \Symfony\AI\Platform\Message\MessageBag
-   *   The bag to invoke with.
-   */
-  public function toSimpleChatBag(string $systemPrompt, array $history, string $message): MessageBag {
-    $mapped = [];
-    if (trim($systemPrompt) !== '') {
-      $mapped[] = Message::forSystem($systemPrompt);
-    }
-
-    foreach ($history as $turn) {
-      if (!is_array($turn) || !isset($turn['role'], $turn['content'])) {
-        continue;
-      }
-      $content = (string) $turn['content'];
-      if ($content === '') {
-        continue;
-      }
-      $role = (string) $turn['role'];
-      if (!in_array($role, self::SIMPLE_CHAT_ROLES, TRUE)) {
-        continue;
-      }
-      $mapped[] = $role === 'user'
-        ? Message::ofUser($content)
-        : Message::ofAssistant($content);
-    }
-
-    $mapped[] = Message::ofUser($message);
 
     return new MessageBag(...$mapped);
   }
@@ -167,65 +131,11 @@ final class MessageMapper {
 
     // Assistant. A turn that requested tools replays as the tool calls it made;
     // otherwise as its text.
-    $toolCalls = $this->mapToolCalls($message->getToolCalls());
+    $toolCalls = $this->chat->toToolCalls($message->getToolCalls());
     if ($toolCalls !== []) {
       return [Message::ofAssistant(...$toolCalls)];
     }
     return $content === '' ? [] : [Message::ofAssistant($content)];
-  }
-
-  /**
-   * Rebuilds ToolCall objects from FlowDrop's stored `{name, args, tool_call_id}`.
-   *
-   * @param array<int, array<string, mixed>> $stored
-   *   The stored calls.
-   *
-   * @return list<\Symfony\AI\Platform\Result\ToolCall>
-   *   The reconstructed calls, skipping any without an id.
-   */
-  private function mapToolCalls(array $stored): array {
-    $calls = [];
-    foreach ($stored as $call) {
-      if (!is_array($call)) {
-        continue;
-      }
-      $id = trim((string) ($call['tool_call_id'] ?? ''));
-      if ($id === '') {
-        continue;
-      }
-      $args = is_array($call['args'] ?? NULL) ? $call['args'] : [];
-      $calls[] = new ToolCall($id, (string) ($call['name'] ?? ''), $args);
-    }
-    return $calls;
-  }
-
-  /**
-   * Converts `symfony/ai` tool calls back into FlowDrop's stored shape.
-   *
-   * The inverse of {@see self::mapToolCalls()}, and the shape the rest of the
-   * graph consumes (ToolInvoke, the conversation buffer): `{name, args,
-   * tool_call_id}`. Kept here so both directions of the translation live
-   * together and cannot drift.
-   *
-   * @param array<int, \Symfony\AI\Platform\Result\ToolCall> $calls
-   *   The calls the model requested.
-   *
-   * @return array<int, array<string, mixed>>
-   *   FlowDrop's tool-call shape.
-   */
-  public function fromToolCalls(array $calls): array {
-    $out = [];
-    foreach ($calls as $call) {
-      if (!$call instanceof ToolCall) {
-        continue;
-      }
-      $out[] = [
-        'name' => $call->getName(),
-        'args' => $call->getArguments(),
-        'tool_call_id' => $call->getId(),
-      ];
-    }
-    return $out;
   }
 
 }

@@ -7,6 +7,33 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.26.0] — 2026-11-11
+
+**Safer console writes, a Discard button for images, and brand fonts that load from your site.**
+- **Security:** every console action that changes something now needs a per-session token the
+  console sends for you, so another site on the same domain can't trigger one through your browser.
+  A chat thread, and any approval it asks for, now answers only to the person who owns it. Update
+  if more than one person signs in to your site.
+- Generated and edited images get a **Discard** button on their chat card. A discarded image stays
+  in the Library, marked, with **Undo**, and the page assistant stops offering it. An image still in
+  use on a page, block, logo or header/footer can't be discarded until it's removed there.
+- The fonts of every font pairing in the Brand studio now ship with Atelier and load from your own
+  site, so visitors see them without a cookie banner and exported sites include them. Only fonts
+  you add yourself still come from Google. The cookie choice is now kept per site, so visitors of a
+  site that still uses Google fonts see the banner once more.
+- The image assistant makes every image you ask for in a thread, instead of sometimes answering
+  "Done" without one.
+- The page assistant reports only the changes the studio really made, and names any it refused.
+- New sites no longer start with a logo and favicon nobody chose. Existing sites lose that default
+  logo only when it points at a missing or non-image item.
+- An address or request with an oversized id answers "not found" or "bad request" instead of a
+  server error.
+- Suggested models point at ids the vendors list today: `gemini-3.6-flash` and
+  `ministral-8b-2512`. Models you already chose stay as they are.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.25.0] — 2026-11-10
 
 **Workflow engine 2.7, Drupal 11.4.12, and a smaller, tighter image.**

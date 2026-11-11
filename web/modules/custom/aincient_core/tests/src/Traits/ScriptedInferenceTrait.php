@@ -40,7 +40,7 @@ trait ScriptedInferenceTrait {
    * Binds a model role to the scripted provider.
    *
    * @param string $role
-   *   The role to bind ({@see \Drupal\aincient_core\ModelRoles}).
+   *   The role to bind ({@see \Aincient\Inference\ModelRoles}).
    * @param string $modelId
    *   The model id. Anything containing `image` is answered with an image
    *   ({@see \Drupal\aincient_inference_test\ScriptedPlatform}).

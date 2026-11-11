@@ -48,14 +48,29 @@ final class ConsentSettingsTest extends KernelTestBase {
 
   public function testBannerActiveUnderGoogleDelivery(): void {
     // The banner is honest: it appears only once a live third-party request
-    // exists. The bundled defaults make none, so the operator must actually add
-    // a Google-delivered web font → the fonts category goes live → banner shown.
-    $this->brand()->update([], ['Inter'], BrandRepository::DELIVERY_GOOGLE);
+    // exists. The bundled defaults and curated pairings (0513) make none, so the
+    // operator must add a custom Google-delivered font → fonts goes live → banner.
+    $this->brand()->update([], ['Roboto'], BrandRepository::DELIVERY_GOOGLE);
     $this->assertTrue($this->consent()->isActive());
 
     $fonts = $this->categoryById('fonts');
     $this->assertTrue($fonts['active']);
     $this->assertFalse($fonts['required']);
+  }
+
+  public function testBannerSilentForACuratedPairing(): void {
+    // The Editorial pairing ships with the module (0513): no Google request even
+    // under Google delivery, so no banner.
+    $this->brand()->update([], ['Playfair Display', 'Lora'], BrandRepository::DELIVERY_GOOGLE);
+    $this->assertFalse($this->consent()->isActive());
+  }
+
+  public function testConsentCookieIsPerSite(): void {
+    $this->config('system.site')->set('uuid', 'site-a')->save();
+    $a = $this->consent()->cookieName();
+    $this->config('system.site')->set('uuid', 'site-b')->save();
+    $this->assertNotSame($a, $this->consent()->cookieName());
+    $this->assertStringNotContainsString('site-b', $this->consent()->cookieName(), 'The uuid itself is not exposed.');
   }
 
   public function testBannerSilentUnderSelfHost(): void {
@@ -77,8 +92,10 @@ final class ConsentSettingsTest extends KernelTestBase {
   }
 
   public function testConfigJsonCarriesCookieAndCategories(): void {
+    $this->config('system.site')->set('uuid', 'site-under-test')->save();
     $config = json_decode($this->consent()->configJson(), TRUE);
-    $this->assertSame(ConsentSettings::COOKIE, $config['cookie']);
+    $this->assertSame($this->container->get('aincient_pages.consent')->cookieName(), $config['cookie']);
+    $this->assertStringStartsWith(ConsentSettings::COOKIE . '_', $config['cookie'], 'Scoped per site (0513).');
     $ids = array_column($config['categories'], 'id');
     $this->assertSame(['necessary', 'fonts', 'analytics', 'embeds'], $ids);
   }

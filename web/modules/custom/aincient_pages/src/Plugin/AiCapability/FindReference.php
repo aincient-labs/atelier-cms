@@ -110,6 +110,13 @@ final class FindReference extends CapabilityBase implements ExecutableCapability
       : [];
 
     $rows = $this->catalog->search($types, $query !== '' ? $query : NULL, 25);
+    // A discarded image is unpublished (DECISIONS 0512): the person rejected it,
+    // so the agent never offers it again. Unpublished pages and blocks stay
+    // (a draft is a legitimate link target).
+    $rows = array_values(array_filter(
+      $rows,
+      static fn(array $row): bool => !(($row['type'] ?? '') === 'media' && ($row['status'] ?? NULL) === 'unpublished'),
+    ));
 
     if ($rows === []) {
       $scope = $typesRaw !== '' ? sprintf(' of type %s', $typesRaw) : '';

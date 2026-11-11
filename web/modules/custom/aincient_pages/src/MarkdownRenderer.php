@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Aincient\PageModel\AnchorSlug;
 use Drupal\Component\Utility\Xss;
 use League\CommonMark\ConverterInterface;
 use League\CommonMark\Environment\Environment;

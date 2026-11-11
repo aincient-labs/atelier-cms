@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Kernel;
 
-use Drupal\aincient_pages\ColorContrast;
+use Aincient\PageModel\ColorContrast;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 

@@ -707,6 +707,25 @@ final class SessionThreadStore {
   }
 
   /**
+   * Whether a thread id is already taken by another user's session (0511).
+   *
+   * ChatController refuses such a turn: reusing the id would append to, and
+   * replay, someone else's conversation.
+   */
+  public function belongsToSomeoneElse(string $threadId, int $uid): bool {
+    if ($threadId === '' || !$this->sessionsAvailable()) {
+      return FALSE;
+    }
+    $ids = $this->entityTypeManager->getStorage('flowdrop_session')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('name', self::NAME_PREFIX . $threadId)
+      ->condition('uid', $uid, '<>')
+      ->range(0, 1)
+      ->execute();
+    return $ids !== [];
+  }
+
+  /**
    * The first message of a session in a given role, or ''.
    */
   private function firstRoleText(int $sessionId, string $role): string {

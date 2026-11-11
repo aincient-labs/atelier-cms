@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Catalog;
 
+use Aincient\PageModel\Catalog\AdmissionGate;
+use Aincient\PageModel\Catalog\StylesheetLint;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Theme\ComponentPluginManager;

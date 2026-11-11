@@ -37,7 +37,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
  * @covers \Drupal\aincient_chat\Access\StudioEnabledAccessCheck
  * @covers \Drupal\aincient_chat\Routing\StudioRouteSubscriber
  * @covers \Drupal\aincient_chat\Studio\StudioCapabilityGate
- * @covers \Drupal\aincient_core\Capability\CapabilityGates
+ * @covers \Aincient\Capability\CapabilityGates
  * @covers \Drupal\aincient_chat\Chat\WorkflowCatalog
  * @covers \Drupal\aincient_chat\Controller\ConsoleController
  */

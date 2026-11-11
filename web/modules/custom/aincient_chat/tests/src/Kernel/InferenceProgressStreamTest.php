@@ -7,7 +7,7 @@ namespace Drupal\Tests\aincient_chat\Kernel;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\aincient_chat\Event\ChatEvent;
 use Drupal\aincient_chat\Event\ChatEventType;
-use Drupal\aincient_core\Event\InferenceStartedEvent;
+use Aincient\Inference\Event\InferenceStartedEvent;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 
 /**

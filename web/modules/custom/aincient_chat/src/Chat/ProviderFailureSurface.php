@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_chat\Chat;
 
 use Drupal\aincient_core\InstallCapabilities;
-use Drupal\aincient_core\Inference\ProviderCall;
+use Aincient\Inference\ProviderCall;
 
 /**
  * Which action a provider failure offers the reader, chosen by its kind.

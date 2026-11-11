@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Drupal\Core\Config\ConfigFactoryInterface;
+
 /**
  * The GDPR consent model for a site's PUBLIC pages.
  *
@@ -24,13 +26,28 @@ namespace Drupal\aincient_pages;
 final class ConsentSettings {
 
   /**
-   * The first-party cookie the visitor's choice is stored in (client-side).
+   * The prefix of the first-party cookie the visitor's choice is stored in.
    */
   public const COOKIE = 'aincient_consent';
 
   public function __construct(
     private readonly BrandRepository $brand,
+    private readonly ConfigFactoryInterface $configFactory,
   ) {}
+
+  /**
+   * This site's consent cookie name: the prefix plus a short site id (0513).
+   *
+   * Cookies are scoped to the host, not the port, so every local appliance on
+   * `localhost:<port>` used to share one `aincient_consent` cookie: one "Only
+   * necessary" click on any of them silently applied to all. The site's uuid
+   * keeps each site's choice its own. Hashed, so the cookie name doesn't expose
+   * the uuid itself.
+   */
+  public function cookieName(): string {
+    $uuid = (string) $this->configFactory->get('system.site')->get('uuid');
+    return $uuid === '' ? self::COOKIE : self::COOKIE . '_' . substr(hash('sha256', $uuid), 0, 10);
+  }
 
   /**
    * The consent categories, in display order.
@@ -95,7 +112,7 @@ final class ConsentSettings {
    */
   public function configJson(): string {
     return (string) json_encode([
-      'cookie' => self::COOKIE,
+      'cookie' => $this->cookieName(),
       'categories' => $this->categories(),
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
   }

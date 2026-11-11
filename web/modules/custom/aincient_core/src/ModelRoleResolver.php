@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core;
 
+use Aincient\Inference\ModelRoles;
+use Aincient\Inference\RoleBindingResolverInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 
@@ -24,7 +26,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
  * Bindings start empty on a fresh install (fully neutral): nothing routes until a
  * provider is connected, at which point onboarding suggests + pins models.
  */
-final class ModelRoleResolver {
+final class ModelRoleResolver implements RoleBindingResolverInterface {
 
   /**
    * The config object holding the bindings — public for the same reason

@@ -4,9 +4,17 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_core\Inference;
 
-use Drupal\aincient_core\Event\InferenceStartedEvent;
-use Drupal\aincient_core\Exception\AiProviderFailure;
-use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
+use Aincient\Inference\RecapNote;
+use Aincient\Inference\AincientReasonResult;
+use Aincient\Inference\Event\InferenceStartedEvent;
+use Aincient\Inference\Exception\AiProviderFailure;
+use Aincient\Inference\Exception\ProviderConfigurationException;
+use Aincient\Inference\ModelTargetResolver;
+use Aincient\Inference\PlatformRegistryInterface;
+use Aincient\Inference\ProviderCall;
+use Aincient\Inference\ResultUnpacker;
+use Aincient\Inference\ToolCallCodec;
+use Aincient\Inference\ToolSchema;
 use Drupal\aincient_core\Usage\UsageRecorder;
 use Drupal\flowdrop\DTO\Reason\ModelChoices;
 use Drupal\flowdrop\DTO\Reason\ReasonRequest;
@@ -215,6 +223,19 @@ final class SymfonyAiReasoner implements AincientReasonerInterface {
     // carries the full account of that outage; it lives there rather than here
     // because an image turn hits the identical trap.
     [$text, $toolCalls] = $this->unpacker->textAndToolCalls($result);
+
+    // A card recap is the console's note, never the model's to write (0464,
+    // {@see RecapNote}). Should the model echo one anyway, drop it here — the
+    // one seam every agent's text passes — so it reaches neither the visible
+    // reply nor the conversation buffer it would be imitated from next turn.
+    [$text, $echoed] = RecapNote::split($text);
+    if ($echoed !== []) {
+      $this->logger->notice('Dropped @n card-recap line(s) the @provider/@model reply echoed.', [
+        '@n' => count($echoed),
+        '@provider' => $providerId,
+        '@model' => $modelId,
+      ]);
+    }
 
     // The un-parsed wire body, carried through on `raw_result` for any surface
     // that wants to inspect the actual response. Capturing it must never fail a

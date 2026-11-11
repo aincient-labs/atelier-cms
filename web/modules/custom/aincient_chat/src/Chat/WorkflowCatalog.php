@@ -208,7 +208,7 @@ final class WorkflowCatalog {
    * nothing: a room that exists takes words.
    *
    * @return list<string>
-   *   Verb ids in {@see \Drupal\aincient_core\CapabilitySet} display order.
+   *   Verb ids in {@see \Aincient\Capability\CapabilitySet} display order.
    */
   public function verbs(string $id): array {
     $workflow = $this->workflows()[$id] ?? NULL;

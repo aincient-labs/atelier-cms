@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
-use Drupal\aincient_core\Exception\AiProviderFailure;
+use Aincient\Inference\Exception\AiProviderFailure;
 use Drupal\aincient_core\Inference\AincientReasonerInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;

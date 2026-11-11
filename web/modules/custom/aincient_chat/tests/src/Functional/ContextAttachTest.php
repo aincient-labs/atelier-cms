@@ -68,12 +68,23 @@ class ContextAttachTest extends BrowserTestBase {
   }
 
   /**
+   * The session's X-CSRF-Token as a BrowserKit server parameter (0511).
+   *
+   * @return array<string, string>
+   *   The header, ready for the client's `$server` argument.
+   */
+  private function csrfServer(): array {
+    $token = $this->drupalGet('session/token');
+    return ['HTTP_X_CSRF_TOKEN' => $token];
+  }
+
+  /**
    * POSTs one multipart `file` field to the attach URL.
    *
    * @return array
    *   A [status, body] pair: the HTTP status and the decoded JSON body.
    */
-  private function postFile(string $path, string $name, string $mime): array {
+  private function postFile(string $path, string $name, string $mime, bool $withToken = TRUE): array {
     $this->client()->request('POST', $this->attachUrl(), [], [
       'file' => [
         'tmp_name' => $path,
@@ -82,7 +93,7 @@ class ContextAttachTest extends BrowserTestBase {
         'error' => 0,
         'size' => filesize($path),
       ],
-    ]);
+    ], $withToken ? $this->csrfServer() : []);
     $response = $this->client()->getInternalResponse();
     return [$response->getStatusCode(), json_decode($response->getContent(), TRUE) ?: []];
   }
@@ -239,8 +250,24 @@ class ContextAttachTest extends BrowserTestBase {
     $operator = $this->drupalCreateUser(['use aincient operator console']);
     $this->drupalLogin($operator);
 
-    $this->client()->request('POST', $this->attachUrl());
+    $this->client()->request('POST', $this->attachUrl(), [], [], $this->csrfServer());
     $this->assertSame(400, $this->client()->getInternalResponse()->getStatusCode());
+  }
+
+  /**
+   * A cookie-session upload without X-CSRF-Token is refused before it runs (0511).
+   *
+   * This is the cross-site POST a hostile page could make: the browser attaches
+   * the session cookie, but the page cannot read the token.
+   */
+  public function testUploadWithoutCsrfTokenIs403(): void {
+    $operator = $this->drupalCreateUser(['use aincient operator console']);
+    $this->drupalLogin($operator);
+
+    [$status] = $this->postFile($this->makePng(), 'hero.png', 'image/png', FALSE);
+    // Drupal's 403 page doesn't name the failed check; the same request WITH the
+    // token is a 201 in testImageUploadIs201 and friends.
+    $this->assertSame(403, $status);
   }
 
   /**

@@ -83,3 +83,33 @@ aincient_studio_media.media_delete:
     parameters:
       media:
         type: 'entity:media'
+
+# Discard a generated image: unpublish it, reversible (DECISIONS 0512).
+aincient_studio_media.media_discard:
+  path: '/atelier/media/{media}/discard'
+  defaults:
+    _controller: '\Drupal\aincient_studio_media\Controller\MediaEditController::discard'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio media'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'
+
+# Undo a discard: publish the image again.
+aincient_studio_media.media_restore:
+  path: '/atelier/media/{media}/restore'
+  defaults:
+    _controller: '\Drupal\aincient_studio_media\Controller\MediaEditController::restore'
+  methods: [POST]
+  requirements:
+    _permission: 'use aincient studio media'
+  options:
+    _disable_route_normalizer: 'TRUE'
+    _auth: ['cookie', 'basic_auth']
+    parameters:
+      media:
+        type: 'entity:media'

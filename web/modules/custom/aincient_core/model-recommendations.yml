@@ -27,7 +27,7 @@
 # Bumped only on a BREAKING shape change. A client that doesn't understand the
 # value ignores the whole document and keeps its bundled copy.
 schema: 1
-updated: '2026-08-04'
+updated: '2026-11-11'
 
 # ---------------------------------------------------------------------------
 # Quality labels — which providers and models we back.
@@ -158,10 +158,10 @@ models:
 # alias that silently re-points to whatever ships next. Where a vendor publishes a
 # dated snapshot as the canonical id (`claude-haiku-4-5-20251001`), we use it.
 #
-# VERIFIED 2026-07-25 against:
+# VERIFIED 2026-07-25 against (gemini + mistral re-verified 2026-11-11):
 #   anthropic + nanobanana — the live API catalogues, via a real key
 #   openai   — https://developers.openai.com/api/docs/models/all
-#   gemini   — https://ai.google.dev/gemini-api/docs/models
+#   gemini   — https://aistudio.google.com/docs/models (was ai.google.dev, now redirects)
 #   mistral  — https://docs.mistral.ai/getting-started/models/models_overview/
 # Re-verify on every curation pass; an id that no longer exists is skipped rather
 # than bound, but it silently costs the operator the pick we intended for them.
@@ -186,7 +186,7 @@ profiles:
       fast:
         - openai:gpt-5.4-nano
         - anthropic:claude-haiku-4-5-20251001
-        - mistral:ministral-3-8b-2512
+        - mistral:ministral-8b-2512
         - gemini:gemini-3.5-flash-lite
       vision:
         - openai:gpt-5.6-luna
@@ -203,21 +203,21 @@ profiles:
         - anthropic:claude-sonnet-5
         - openai:gpt-5.6-terra
         - mistral:mistral-medium-2604
-        - gemini:gemini-3.5-flash
+        - gemini:gemini-3.6-flash
       task:
         - anthropic:claude-haiku-4-5-20251001
         - openai:gpt-5.6-luna
         - mistral:mistral-small-2603
-        - gemini:gemini-3.5-flash
+        - gemini:gemini-3.6-flash
       fast:
         - anthropic:claude-haiku-4-5-20251001
         - openai:gpt-5.4-nano
-        - mistral:ministral-3-8b-2512
+        - mistral:ministral-8b-2512
         - gemini:gemini-3.5-flash-lite
       vision:
         - anthropic:claude-sonnet-5
         - openai:gpt-5.6-terra
-        - gemini:gemini-3.5-flash
+        - gemini:gemini-3.6-flash
       image:
         - nanobanana:gemini-2.5-flash-image
 
@@ -240,13 +240,13 @@ profiles:
       fast:
         - anthropic:claude-haiku-4-5-20251001
         - openai:gpt-5.4-nano
-        - mistral:ministral-3-8b-2512
+        - mistral:ministral-8b-2512
       # Vision is Sonnet, not Opus: describing an image is not a reasoning task,
       # and Opus would cost several times as much for no better alt text.
       vision:
         - anthropic:claude-sonnet-5
         - openai:gpt-5.6-sol
-        - gemini:gemini-3.5-flash
+        - gemini:gemini-3.6-flash
       # Nano Banana Pro — studio-quality output, and the one place in this profile
       # where paying more genuinely buys a different result. The contrib provider
       # still lists it under its `-preview` id, which the substring match resolves;

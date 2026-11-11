@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_onboarding\Controller;
 
 use Drupal\aincient_core\ModelPresetResolver;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_core\RecommendationSource;
 use Drupal\aincient_onboarding\ProfileApplier;
 use Drupal\aincient_onboarding\ProviderCatalog;

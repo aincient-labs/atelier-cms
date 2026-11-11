@@ -48,6 +48,8 @@ final class MediaEditControllerTest extends KernelTestBase {
       'aincient_studio_media.media_replace' => '/atelier/media/{media}/file',
       'aincient_studio_media.media_replace_from' => '/atelier/media/{media}/replace-from',
       'aincient_studio_media.media_delete' => '/atelier/media/{media}/delete',
+      'aincient_studio_media.media_discard' => '/atelier/media/{media}/discard',
+      'aincient_studio_media.media_restore' => '/atelier/media/{media}/restore',
     ];
     foreach ($expected as $name => $path) {
       $route = $provider->getRouteByName($name);

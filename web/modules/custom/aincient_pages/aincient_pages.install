@@ -650,3 +650,40 @@ function aincient_pages_update_10018(): void {
   }
 }
 
+/**
+ * Clear the `media:7` logo/favicon every install shipped but nobody chose.
+ *
+ * config/sync carried `logo`/`favicon: 'media:7'` (a dev-site value exported by
+ * mistake), and the appliance installs from config/sync — so every site was born
+ * pointing at a media id that did not exist yet (the demo seed mints three), and
+ * whatever later became media 7 silently turned into the logo and favicon.
+ *
+ * A key is cleared ONLY when it still holds exactly `media:7` AND media 7 is
+ * either missing or not an `image` media: the Globals picker offers image media
+ * only (MediaRepository), so a block or any other bundle at id 7 cannot have
+ * been chosen. An existing image media 7 is left alone — nothing records when
+ * or whether the owner picked it (the studio re-sends logo/favicon on every
+ * save), and it already shows as their logo, so removing it could undo a real
+ * choice. Every other identity value is untouched.
+ */
+function aincient_pages_update_10019(): \Drupal\Core\StringTranslation\TranslatableMarkup {
+  $token = 'media:7';
+  $config = \Drupal::configFactory()->getEditable('aincient_pages.identity');
+  $keys = array_values(array_filter(['logo', 'favicon'], static fn (string $key): bool => $config->get($key) === $token));
+  if ($keys === []) {
+    return t('Logo and favicon left unchanged.');
+  }
+
+  $media = \Drupal::entityTypeManager()->hasDefinition('media')
+    ? \Drupal::entityTypeManager()->getStorage('media')->load(7)
+    : NULL;
+  if ($media !== NULL && $media->bundle() === 'image') {
+    return t('Logo and favicon left unchanged: @keys still point at image media 7, which may be your own choice. Clear it in the Identity studio if it is not.', ['@keys' => implode(' and ', $keys)]);
+  }
+
+  foreach ($keys as $key) {
+    $config->set($key, '');
+  }
+  $config->save();
+  return t('Cleared the shipped @keys (media:7), which no one had chosen.', ['@keys' => implode(' and ', $keys)]);
+}

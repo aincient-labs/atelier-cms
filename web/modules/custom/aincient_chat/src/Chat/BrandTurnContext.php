@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_chat\Chat;
 
 use Drupal\aincient_pages\BrandPreviewApplier;
-use Drupal\aincient_pages\TokenGrounding;
+use Aincient\PageModel\TokenGrounding;
 
 /**
  * Turns the brand studio's `brand_context` payload into the brand agent's

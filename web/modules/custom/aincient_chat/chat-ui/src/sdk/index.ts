@@ -199,6 +199,7 @@ export {
   replaceOriginalWithCurrent,
   saveMediaMetadata,
   setEditSource,
+  setMediaDiscarded,
   stageAltProposal,
   stageNameProposal,
   subscribeMedia,

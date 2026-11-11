@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Unit;
 
-use Drupal\aincient_core\CapabilitySet;
+use Aincient\Capability\CapabilitySet;
 use Drupal\aincient_core\CapabilityVerbs;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Tests\UnitTestCase;

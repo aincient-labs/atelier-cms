@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
-use Drupal\aincient_pages\Catalog\ComponentCatalogInterface;
-use Drupal\aincient_pages\Catalog\EffectiveCatalog;
+use Aincient\PageModel\AnchorSlug;
+use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\EffectiveCatalog;
+use Aincient\PageModel\ComponentCatalog;
+use Aincient\PageModel\PageSchemaCodec;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Unit;
 
-use Drupal\aincient_pages\Catalog\CatalogCompiler;
-use Drupal\aincient_pages\Catalog\EffectiveCatalog;
-use Drupal\aincient_pages\ComponentCatalog;
+use Aincient\PageModel\Catalog\CatalogCompiler;
+use Aincient\PageModel\Catalog\EffectiveCatalog;
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Yaml\Yaml;
@@ -21,7 +21,7 @@ use Symfony\Component\Yaml\Yaml;
  * CatalogCompiler the site uses — a config-contract test, not a fixture one.
  *
  * @group aincient
- * @coversDefaultClass \Drupal\aincient_pages\ComponentCatalog
+ * @coversDefaultClass \Aincient\PageModel\ComponentCatalog
  */
 #[RunTestsInSeparateProcesses]
 final class ComponentCatalogTest extends UnitTestCase {

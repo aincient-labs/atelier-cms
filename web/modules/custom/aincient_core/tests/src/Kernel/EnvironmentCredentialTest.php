@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Kernel;
 
-use Drupal\aincient_core\Inference\PlatformRegistryInterface;
+use Aincient\Inference\PlatformRegistryInterface;
 use Drupal\aincient_inference_test\ScriptedAdapter;
 use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -24,7 +24,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
  * because those are what decide whether the product can serve a turn.
  *
  * @group aincient
- * @coversDefaultClass \Drupal\aincient_core\Inference\PlatformRegistry
+ * @coversDefaultClass \Aincient\Inference\PlatformRegistry
  */
 #[RunTestsInSeparateProcesses]
 final class EnvironmentCredentialTest extends KernelTestBase {
@@ -151,7 +151,7 @@ final class EnvironmentCredentialTest extends KernelTestBase {
   public function testInventoryRowsReportManagedState(): void {
     putenv(self::ENV_KEY . '=sk-from-environment');
 
-    /** @var \Drupal\aincient_core\Inference\ProviderInventory $inventory */
+    /** @var \Aincient\Inference\ProviderInventory $inventory */
     $inventory = $this->container->get('aincient_core.inference.provider_inventory');
     $row = $inventory->providers()[ScriptedAdapter::PROVIDER_ID] ?? NULL;
 

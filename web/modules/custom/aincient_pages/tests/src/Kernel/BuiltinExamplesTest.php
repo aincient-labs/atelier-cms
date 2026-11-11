@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_pages\Kernel;
 
-use Drupal\aincient_pages\Catalog\AdmissionGate;
+use Aincient\PageModel\Catalog\AdmissionGate;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\KernelTests\KernelTestBase;

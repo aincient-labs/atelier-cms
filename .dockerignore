@@ -31,5 +31,9 @@ web/modules/studio/*/ui
 # CI runs them from the checkout, not the image (DECISIONS 0510). The Dockerfile
 # strips contrib/engine/vendor tests the same way.
 web/modules/custom/**/tests
+# A shared package's own vendor/ (from a standalone `composer install` in
+# packages/<x>, docs/packages.md) is dev-only; the image resolves through the
+# root vendor/.
+web/modules/custom/*/packages/*/vendor
 web/modules/studio/**/tests
 web/themes/custom/**/tests

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_gateway_test;
 
-use Drupal\aincient_core\Inference\Exception\ProviderConfigurationException;
-use Drupal\aincient_core\Inference\ProviderAdapterInterface;
+use Aincient\Inference\Exception\ProviderConfigurationException;
+use Aincient\Inference\ProviderAdapterInterface;
 use Symfony\AI\Platform\PlatformInterface;
 
 /**

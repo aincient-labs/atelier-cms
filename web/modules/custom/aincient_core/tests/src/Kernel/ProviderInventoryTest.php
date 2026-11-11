@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Kernel;
 
-use Drupal\aincient_core\Inference\Adapter\OpenAiCompatibleAdapter;
-use Drupal\aincient_core\Inference\ProviderAdapterInterface;
-use Drupal\aincient_core\Inference\ProviderInventory;
-use Drupal\aincient_core\ModelRoles;
+use Aincient\Inference\Adapter\OpenAiCompatibleAdapter;
+use Aincient\Inference\ProviderAdapterInterface;
+use Aincient\Inference\ProviderInventory;
+use Aincient\Inference\ModelRoles;
 use Drupal\aincient_inference_test\ScriptedAdapter;
 use Drupal\KernelTests\KernelTestBase;
 
@@ -28,7 +28,7 @@ use Drupal\KernelTests\KernelTestBase;
  * answer wrongly, and therefore cannot answer usefully.
  *
  * @group aincient
- * @coversDefaultClass \Drupal\aincient_core\Inference\ProviderInventory
+ * @coversDefaultClass \Aincient\Inference\ProviderInventory
  */
 final class ProviderInventoryTest extends KernelTestBase {
 

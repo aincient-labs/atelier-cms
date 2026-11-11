@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Unit\Inference;
 
+use Aincient\Inference\ChatMessageMapper;
 use Drupal\aincient_core\Inference\MessageMapper;
 use Drupal\flowdrop\DTO\Reason\ReasonMessage;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -13,7 +14,6 @@ use Symfony\AI\Platform\Message\Role;
 use Symfony\AI\Platform\Message\SystemMessage;
 use Symfony\AI\Platform\Message\ToolCallMessage;
 use Symfony\AI\Platform\Message\UserMessage;
-use Symfony\AI\Platform\Result\ToolCall;
 
 /**
  * Covers the FlowDrop ↔ symfony/ai conversation translation.
@@ -124,25 +124,56 @@ final class MessageMapperTest extends TestCase {
   }
 
   /**
+   * A card recap replays on the next user turn, never as assistant words. B2.
+   *
+   * Stored on the assistant entry (0464), it was replayed as the model's own
+   * speech — so the model echoed it and imitated a turn where an image
+   * "appeared" without a tool call.
+   */
+  public function testCardRecapMovesOffTheAssistantTurn(): void {
+    $recap = '[shown to the user: media_result card: Generated a red fox]';
+    $bag = $this->mapper()->toMessageBag('', [
+      new ReasonMessage('user', 'make a fox'),
+      new ReasonMessage('assistant', "Here is your fox.\n\n" . $recap),
+      new ReasonMessage('user', 'now a hare'),
+    ]);
+
+    $messages = $bag->getMessages();
+    self::assertCount(3, $messages);
+    self::assertInstanceOf(AssistantMessage::class, $messages[1]);
+    self::assertSame('Here is your fox.', $messages[1]->asText());
+    self::assertInstanceOf(UserMessage::class, $messages[2]);
+    $user = $messages[2]->asText();
+    self::assertSame($recap . "\n\nnow a hare", $user);
+    foreach ($messages as $message) {
+      if ($message instanceof AssistantMessage) {
+        self::assertStringNotContainsString('[shown to the user:', (string) $message->asText());
+      }
+    }
+  }
+
+  /**
+   * A recap-only assistant turn drops; its note still reaches the next user turn.
+   */
+  public function testRecapOnlyAssistantTurnDrops(): void {
+    $bag = $this->mapper()->toMessageBag('', [
+      new ReasonMessage('user', 'list pages'),
+      new ReasonMessage('assistant', '[shown to the user: a table of 1 row — 1. Home (id 1)]'),
+      new ReasonMessage('user', 'open it'),
+    ]);
+
+    $messages = $bag->getMessages();
+    self::assertCount(2, $messages);
+    self::assertSame("[shown to the user: a table of 1 row — 1. Home (id 1)]\n\nopen it", $messages[1]->asText());
+  }
+
+  /**
    * An unreplayable buffer throws rather than sending an empty request.
    */
   public function testEmptyBufferThrows(): void {
     $this->expectException(\RuntimeException::class);
     $this->expectExceptionMessage('no messages to reason over');
     $this->mapper()->toMessageBag('You are helpful.', []);
-  }
-
-  /**
-   * Tool calls convert back into FlowDrop's stored `{name, args, tool_call_id}`.
-   */
-  public function testFromToolCallsProducesFlowDropShape(): void {
-    $out = $this->mapper()->fromToolCalls([
-      new ToolCall('call_9', 'create_page', ['title' => 'About']),
-    ]);
-
-    self::assertSame([
-      ['name' => 'create_page', 'args' => ['title' => 'About'], 'tool_call_id' => 'call_9'],
-    ], $out);
   }
 
   /**
@@ -158,7 +189,7 @@ final class MessageMapperTest extends TestCase {
     /** @var \Symfony\AI\Platform\Message\AssistantMessage $assistant */
     $assistant = $bag->getMessages()[1];
 
-    self::assertSame($stored, $this->mapper()->fromToolCalls($assistant->getToolCalls()));
+    self::assertSame($stored, (new ChatMessageMapper())->fromToolCalls($assistant->getToolCalls()));
   }
 
 }

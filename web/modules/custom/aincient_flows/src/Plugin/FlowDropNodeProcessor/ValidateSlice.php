@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_flows\Plugin\FlowDropNodeProcessor;
 
 use Drupal\aincient_pages\BrandPreviewApplier;
-use Drupal\aincient_pages\DesignTokens;
+use Aincient\PageModel\DesignTokens;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\flowdrop\Attribute\FlowDropNodeProcessor;
 use Drupal\flowdrop\DTO\ParameterBagInterface;
@@ -23,7 +23,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * It takes a DECODED slice ({tokens_json, presets_json, fonts}), deterministically
  * re-validates every token against the design-token registry
- * ({@see \Drupal\aincient_pages\DesignTokens::validate}), STRIPS the invalid
+ * ({@see \Aincient\PageModel\DesignTokens::validate}), STRIPS the invalid
  * ones, and re-emits the cleaned slice with a `rejected` block of
  * {token, value, reason} entries.
  *

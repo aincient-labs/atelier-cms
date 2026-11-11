@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages;
 
+use Aincient\PageModel\FontPairings;
+use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\File\FileExists;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\File\FileUrlGeneratorInterface;
@@ -46,7 +48,43 @@ final class BrandFontVendor {
     private readonly FileSystemInterface $fileSystem,
     private readonly FileUrlGeneratorInterface $fileUrlGenerator,
     private readonly LoggerInterface $logger,
+    private readonly ModuleExtensionList $modules,
   ) {}
+
+  /**
+   * Splits brand families into bundled stylesheets and the rest (DECISIONS 0513).
+   *
+   * A family a curated pairing uses ships in aincient_pages/fonts/pairings/ and
+   * loads from this site's own origin, so it needs no consent and no outbound
+   * request. The always-on default pair (Fraunces + Schibsted Grotesk) needs no
+   * link at all: the brand-fonts library already carries it. Everything else
+   * goes back to the caller's delivery mode (Google, consent-gated, or self-host).
+   *
+   * @param list<string> $families
+   *   The brand's configured families.
+   *
+   * @return array{hrefs: list<string>, rest: list<string>}
+   *   Stylesheet URLs for the bundled families, and the families left over.
+   */
+  public function bundled(array $families): array {
+    $bundled = FontPairings::bundledFamilies();
+    $dir = $this->modules->getPath('aincient_pages') . '/fonts/pairings';
+    $hrefs = [];
+    $rest = [];
+    foreach ($families as $family) {
+      $family = trim($family);
+      if (in_array($family, FontPairings::DEFAULT_FAMILIES, TRUE)) {
+        continue;
+      }
+      $css = $dir . '/' . FontPairings::slug($family) . '.css';
+      if (in_array($family, $bundled, TRUE) && is_file($css)) {
+        $hrefs[] = $this->fileUrlGenerator->generateString($css);
+        continue;
+      }
+      $rest[] = $family;
+    }
+    return ['hrefs' => array_values(array_unique($hrefs)), 'rest' => $rest];
+  }
 
   /**
    * The public URL of the already-vendored stylesheet for $families, or NULL if

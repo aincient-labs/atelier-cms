@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_core\Unit\Usage;
 
-use Drupal\aincient_core\Inference\MessageMapper;
+use Aincient\Inference\ChatMessageMapper;
 use Drupal\aincient_core\Usage\ModelPricing;
 use Drupal\Core\Extension\ModuleExtensionList;
-use Drupal\aincient_core\Inference\ResultUnpacker;
+use Aincient\Inference\ResultUnpacker;
 use Drupal\aincient_core\Usage\UsageRecorder;
 use Drupal\aincient_core\Usage\UsageLog;
 use Drupal\Component\Datetime\TimeInterface;
@@ -229,7 +229,7 @@ final class UsageRecorderTest extends UnitTestCase {
     );
 
     $recorder = new UsageRecorder(
-      new ResultUnpacker(new MessageMapper()),
+      new ResultUnpacker(new ChatMessageMapper()),
       $this->pricing(),
       $this->currentUser(),
       $logger,
@@ -368,7 +368,7 @@ final class UsageRecorderTest extends UnitTestCase {
    */
   private function recorder(): UsageRecorder {
     return new UsageRecorder(
-      new ResultUnpacker(new MessageMapper()),
+      new ResultUnpacker(new ChatMessageMapper()),
       $this->pricing(),
       $this->currentUser(),
       $this->capturingLogger(),

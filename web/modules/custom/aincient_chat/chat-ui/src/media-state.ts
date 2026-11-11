@@ -237,6 +237,33 @@ export async function deleteMedia(): Promise<void> {
 }
 
 /**
+ * Discard a generated image the human rejected, or undo that (DECISIONS 0512).
+ *
+ * Discard unpublishes the item: it stays in the Library, marked, and the Pages
+ * agent stops offering it. The server refuses (409) while the image is still
+ * placed on a page, block, the identity or the chrome; that message is thrown
+ * as-is so the card can show it. Works by id, since the result card's item need
+ * not be the one open in the studio; if it is, the open copy updates too.
+ */
+export async function setMediaDiscarded(id: string, discarded: boolean): Promise<MediaDetail> {
+  const verb = discarded ? "discard" : "restore";
+  const res = await fetch(apiUrl(`/media/${encodeURIComponent(id)}/${verb}`), {
+    method: "POST",
+    credentials: "same-origin",
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error ?? `${discarded ? "Discard" : "Restore"} failed (HTTP ${res.status}).`);
+  }
+  const item = data?.item as MediaDetail;
+  if (current && current.id === id) {
+    current = item;
+    emit();
+  }
+  return item;
+}
+
+/**
  * Replace the ORIGINAL (the image the open item was edited from) with the open
  * item's bytes — the "commit this edit onto the original" action. The original
  * keeps its `media:<id>` token, so every page/block/chrome embedding it now serves

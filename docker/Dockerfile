@@ -23,6 +23,16 @@ COPY composer.json composer.lock patches.lock.json ./
 # instead of pinned by the sha256 we committed. Copying it makes the appliance
 # build reproduce exactly the patch set CI verified.
 COPY patches ./patches
+# Our shared Composer packages (docs/packages.md) are `path` repositories under
+# web/modules/custom/*/packages/*, so `composer install` must see each one's
+# composer.json or it fails ("source path not found"). Only the composer.json —
+# copying the source would invalidate this layer on every code change. Composer
+# links vendor/aincient/<x> RELATIVELY (../../web/modules/custom/…), which
+# survives the /split move and the COPY --from=vendor below, and resolves once
+# `COPY web/modules/custom` lands the real source in stage 2. One line per package.
+COPY web/modules/custom/aincient_core/packages/capability/composer.json web/modules/custom/aincient_core/packages/capability/
+COPY web/modules/custom/aincient_core/packages/inference/composer.json web/modules/custom/aincient_core/packages/inference/
+COPY web/modules/custom/aincient_pages/packages/page-model/composer.json web/modules/custom/aincient_pages/packages/page-model/
 # Materialise web/core, web/modules/contrib, vendor/, and the scaffolded docroot.
 # --no-dev: the appliance image never ships phpunit/phpcs/etc.
 # --ignore-platform-reqs: this stage only fetches packages; the runtime image

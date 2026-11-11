@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 use Drupal\aincient_pages\ConsoleDeepLink;
-use Drupal\aincient_pages\ReservedAliases;
+use Aincient\PageModel\ReservedAliases;
 use Drupal\aincient_pages\SiteIdentity;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;

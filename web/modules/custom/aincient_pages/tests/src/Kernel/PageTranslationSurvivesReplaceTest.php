@@ -18,7 +18,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
  * CONVERTING a section must not wipe that slot's translations.
  *
  * The per-language content overlay is keyed by the section's stable slot id
- * ({@see \Drupal\aincient_pages\PageSchemaCodec}). So "turn this features
+ * ({@see \Aincient\PageModel\PageSchemaCodec}). So "turn this features
  * band into a grid" done as remove_section + add_section mints a FRESH id, the
  * German overlay row for the old id is orphaned, and the German page silently
  * falls back to the English copy. The op grammar now carries the conversion

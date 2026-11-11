@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_flows\Kernel;
 
 use Drupal\aincient_chat\Chat\FlowDropDispatcher;
-use Drupal\aincient_core\Inference\AincientReasonResult;
+use Aincient\Inference\AincientReasonResult;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\flowdrop_session\DTO\TurnResult;
 use Drupal\Tests\flowdrop\Kernel\WorkflowExecutionTestBase;
@@ -158,7 +158,7 @@ final class NestedTurnDispatchTest extends WorkflowExecutionTestBase {
    */
   public function testNestedResumeStreamsAndPersistsTheRootReply(): void {
     $parent = $this->parent('nested_resume', ['approval_tools' => 'capability_studio_tour']);
-    $result = $this->turn($parent, 'Tour please');
+    $result = $this->turn($parent, 'Tour please', 'thread-1');
     $rootId = (string) $result->pipelineId;
     $this->assertSame(TurnResult::STATUS_AWAITING_INPUT, $result->status, $this->jobTrail($this->loadPipeline($rootId)));
 
@@ -196,7 +196,7 @@ final class NestedTurnDispatchTest extends WorkflowExecutionTestBase {
    */
   public function testNestedDeclineStillReplies(): void {
     $parent = $this->parent('nested_decline', ['approval_tools' => 'capability_studio_tour']);
-    $result = $this->turn($parent, 'Tour please');
+    $result = $this->turn($parent, 'Tour please', 'thread-2');
     $rootId = (string) $result->pipelineId;
     $this->assertSame(TurnResult::STATUS_AWAITING_INPUT, $result->status, $this->jobTrail($this->loadPipeline($rootId)));
 

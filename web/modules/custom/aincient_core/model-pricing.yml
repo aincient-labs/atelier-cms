@@ -166,6 +166,16 @@ models:
     checked: '2026-10-21'
     note: 'Paid tier, standard (non-batch). No cache_write rate: Google bills cache STORAGE per hour ($1.00/Mtok/hour), not a per-token write premium, so it has no place in a per-call figure.'
   -
+    provider: gemini
+    model: gemini-3.6-flash
+    input_per_mtok: 0.75
+    output_per_mtok: 3.75
+    cache_read_per_mtok: 0.075
+    expires: '2026-12-31'
+    source: 'https://aistudio.google.com/docs/pricing'
+    checked: '2026-11-11'
+    note: 'Paid tier, standard. Introductory price: Google publishes $1.50 input / $7.50 output / $0.15 cache read from 2027-01-01, hence expires. Output includes thinking tokens. No cache_write rate, as for gemini-3.5-flash-lite (storage is billed per hour). Replaces gemini-3.5-flash in the profiles, which Google no longer lists.'
+  -
     provider: mistral
     model: mistral-medium-2604
     input_per_mtok: 1.5
@@ -195,8 +205,8 @@ models:
     input_per_mtok: 0.15
     output_per_mtok: 0.15
     source: 'https://docs.mistral.ai/models/ministral-3-8b-25-12'
-    checked: '2026-10-21'
-    note: 'Ministral 3 8B. The model card gives the id as ministral-8b-2512 — the curated profiles name ministral-3-8b-2512, which the card does not list. No cache rate, as for mistral-medium-2604.'
+    checked: '2026-11-11'
+    note: 'Ministral 3 8B; the card lists one $0.15/Mtok figure without saying input or output, read as both. Its API id is ministral-8b-2512 (the URL slug ministral-3-8b-25-12 is not an id). No cache rate, as for mistral-medium-2604.'
   -
     provider: ollama
     model: '*'

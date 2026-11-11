@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\aincient_flows\Kernel;
 
-use Drupal\aincient_core\Inference\AincientReasonResult;
+use Aincient\Inference\AincientReasonResult;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\flowdrop_session\DTO\TurnResult;
 use Drupal\Tests\flowdrop\Kernel\WorkflowExecutionTestBase;
