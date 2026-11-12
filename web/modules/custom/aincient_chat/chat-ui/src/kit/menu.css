@@ -20,11 +20,11 @@
 .ain-menu__item {
   display: flex; align-items: center; gap: 9px; cursor: pointer;
   background: transparent; border: 0; color: var(--ain-color-text);
-  font: inherit; font-size: 13.5px; text-align: left; text-decoration: none;
+  font: inherit; font-size: var(--ain-font-size-md); text-align: left; text-decoration: none;
   padding: 7px 10px; border-radius: var(--ain-radius-md);
 }
 .ain-menu__item:hover { background: var(--ain-color-surface-raised); }
-.ain-menu__item svg { font-size: 14px; color: var(--ain-color-text-muted); }
+.ain-menu__item svg { font-size: var(--ain-size-icon-md); color: var(--ain-color-text-muted); }
 .ain-menu__item--danger svg { color: inherit; }
 .ain-menu__item--danger { color: var(--ain-color-danger); }
 /* Menu items can be disabled (Move up on the first row). */
@@ -39,11 +39,11 @@
    one gets an INK check (Plate 13) — the pigment never marks a menu state. */
 .ain-menu__item--radio { white-space: nowrap; gap: 8px; }
 .ain-menu__check { flex: none; display: inline-grid; place-items: center; width: 14px; color: var(--ain-color-text); }
-.ain-menu__check svg { font-size: 12px; }
+.ain-menu__check svg { font-size: var(--ain-size-icon-sm); }
 /* Group heading + hairline (MenuLabel / MenuSeparator) — the lifecycle bar's
    "Move forward / Send back / Take offline" groups (DECISIONS 0454). */
 .ain-menu__label {
-  padding: 8px 10px 4px; font-family: var(--ain-font-body); font-size: 13px; font-weight: 500;
+  padding: 8px 10px 4px; font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500;
   color: var(--ain-color-text-muted);
 }
 .ain-menu__sep { height: 1px; margin: 4px 2px; background: var(--ain-color-border); }

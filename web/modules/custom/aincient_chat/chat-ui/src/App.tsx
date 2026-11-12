@@ -123,9 +123,10 @@ import {
   PaperclipIcon,
   SpinnerIcon,
   DocumentIcon,
+  ExternalIcon,
 } from "./kit/icons";
 import { MarkdownImage } from "./markdown-image";
-import { StudioUIContext, useStudioUI } from "./kit/studio-ui";
+import { StudioUIContext, useConvoInert, useRailInert, useStudioUI } from "./kit/studio-ui";
 import { NewPageForm } from "./new-page-form";
 import { subscribeNewPageRequest } from "./new-page-request";
 import { isPageDirty } from "./page-dirty";
@@ -859,8 +860,9 @@ function useIsNarrow(): boolean {
   );
 }
 
-function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
+function ChatThread({ onToggleSidebar, docked = false }: { onToggleSidebar: () => void; docked?: boolean }) {
   const checkExternal = useInteractionSync();
+  const convoInert = useConvoInert(docked);
   const runtime = useConsoleChat();
   const guardedSwitch = useGuardedSwitch();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -961,7 +963,7 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           </>
         }
       />
-      <ThreadPrimitive.Viewport className="ain-viewport" ref={viewportRef}>
+      <ThreadPrimitive.Viewport className="ain-viewport" ref={viewportRef} inert={convoInert}>
         <LoadEarlier viewportRef={viewportRef} />
         <ThreadPrimitive.Empty>
           <div className="ain-welcome">
@@ -1022,7 +1024,7 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
             className="ain-endstate--composer"
             actions={[
               ...(sealedViewUrl
-                ? [{ label: "View page ↗", href: sealedViewUrl, onClick: () => {} }]
+                ? [{ label: "View page", href: sealedViewUrl, onClick: () => {} }]
                 : []),
               {
                 label: "Start a new thread",
@@ -1052,7 +1054,7 @@ function ChatThread({ onToggleSidebar }: { onToggleSidebar: () => void }) {
             className="ain-endstate--composer"
             actions={[
               ...(pendingViewUrl
-                ? [{ label: "View page ↗", href: pendingViewUrl, onClick: () => {} }]
+                ? [{ label: "View page", href: pendingViewUrl, onClick: () => {} }]
                 : []),
               { label: "Start a new thread", primary: true, onClick: commitWrapup },
               { label: "Keep editing", onClick: () => requestWrapup(null) },
@@ -1201,10 +1203,13 @@ function ChatColumn({
   section,
   hasAgents,
   onToggleSidebar,
+  docked = false,
 }: {
   section: StudioKey;
   hasAgents: boolean;
   onToggleSidebar: () => void;
+  /** An editor studio is open: on phones the chat docks and the conversation is a sheet. */
+  docked?: boolean;
 }) {
   useRoomTick();
   const rows = useThreadRows();
@@ -1219,7 +1224,7 @@ function ChatColumn({
   if (!hasAgents && !hasThreads && !activeRemote) return null;
   return (
     <div className="ain-workspace__chat" data-testid="chat-column">
-      <ChatThread onToggleSidebar={onToggleSidebar} />
+      <ChatThread onToggleSidebar={onToggleSidebar} docked={docked} />
     </div>
   );
 }
@@ -1402,6 +1407,9 @@ function Sidebar({
     <aside
       className={`ain-sidebar${open ? "" : " ain-sidebar--closed"}`}
       data-testid="section-sidebar"
+      // Closed = collapsed to zero width or parked off-screen in every layout:
+      // keep its links out of the tab order (audit N1).
+      inert={!open}
       // Picking a thread should dismiss the overlay on mobile; rows render via a
       // provider (no per-row callback), so the close signal is read off the
       // bubbling click instead of threaded through.
@@ -1566,7 +1574,7 @@ function SectionMenu({
         trigger={
           <>
             {activeDef?.Icon && <activeDef.Icon className="ain-crumb__icon" aria-hidden />}
-            <span className="ain-crumb__value">{activeDef?.name ?? "Section"}</span>
+            <span className="ain-crumb__value">{activeDef?.shortName ?? activeDef?.name ?? "Section"}</span>
           </>
         }
         options={flat.map(({ key, def }) => ({
@@ -1929,8 +1937,9 @@ function StudioPane({ studioKey, onClose }: { studioKey: StudioKey; onClose: () 
  * so the workspace does not jump when the real rail lands.
  */
 function StudioLoading() {
+  const railInert = useRailInert();
   return (
-    <aside className="ain-studio__rail ain-studio-loading">
+    <aside className="ain-studio__rail ain-studio-loading" inert={railInert}>
       <div className="ain-panelbar">
         <span className="ain-skeleton ain-skeleton--btn" />
       </div>
@@ -1944,8 +1953,9 @@ function StudioLoading() {
  * replaced the files). The chat column still works; this offers the retry.
  */
 function StudioLoadFailed({ name, retry }: { name: string; retry: () => void }) {
+  const railInert = useRailInert();
   return (
-    <aside className="ain-studio__rail ain-studio-loading ain-studio-loading--failed" role="alert">
+    <aside className="ain-studio__rail ain-studio-loading ain-studio-loading--failed" role="alert" inert={railInert}>
       <div className="ain-panelbar">
         <span className="ain-panelbar__title">{name}</span>
       </div>
@@ -2021,7 +2031,8 @@ function PreviewLinkBlockedModal() {
               setHref(null);
             }}
           >
-            Open in new tab ↗
+            Open in new tab
+            <ExternalIcon />
           </Button>
         </>
       }
@@ -2325,6 +2336,7 @@ export function App() {
               section={activeStudio}
               hasAgents={hasAgents}
               onToggleSidebar={() => setSidebarOpen((v) => !v)}
+              docked={!!paneStudio}
             />
             {paneStudio && <StudioPane studioKey={paneStudio} onClose={leaveStudio} />}
             {/* Scrim behind a summoned sheet (editor rail / conversation) on

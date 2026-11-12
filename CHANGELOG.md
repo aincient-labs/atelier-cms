@@ -7,6 +7,25 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.27.0] — 2026-11-12
+
+**A calmer, more accessible console that works better on phones.**
+- The studios and the chat are less cluttered. Sections are separated by thin rules instead of
+  boxes inside boxes, the assistant's replies have no bubble, and setup and chat cards follow the
+  same quiet look.
+- Every control is big enough to hit, and text and icons use one size scale across the console.
+- Icons are drawn as images rather than text characters. Links that open a new tab say so to
+  screen readers.
+- Keyboard focus no longer lands in panels you can't see. Secondary text meets WCAG AA contrast.
+- On a phone, Discard folds into the Publish button's menu and Save draft carries the workflow
+  menu, so the top bar has room for the studio name. "Navigation & Pages" shows as "Navigation".
+- Filters, modes and tabs use one kind of switch across the console.
+- Fixed in the page layout: the scroll button hides when you can't scroll, a closed side panel
+  casts no shadow, and the Library's top bar wraps instead of overflowing.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.26.0] — 2026-11-11
 
 **Safer console writes, a Discard button for images, and brand fonts that load from your site.**

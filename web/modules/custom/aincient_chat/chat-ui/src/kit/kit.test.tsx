@@ -228,6 +228,19 @@ describe("Tabs and SegmentedControl", () => {
     expect(screen.getByRole("tabpanel", { name: "Body" }).textContent).toBe("sections");
   });
 
+  it("tabs take a feature's own list and panel classes", () => {
+    inRoot(
+      <Tabs
+        label="Sections"
+        listClassName="x-list"
+        panelClassName="x-panel"
+        items={[{ value: "a", label: "A", content: <p>a</p> }]}
+      />,
+    );
+    expect(screen.getByRole("tablist", { name: "Sections" }).classList.contains("x-list")).toBe(true);
+    expect(screen.getByRole("tabpanel", { name: "A" }).classList.contains("x-panel")).toBe(true);
+  });
+
   it("a segmented control is a labelled group of pressed buttons", () => {
     const onChange = vi.fn();
     inRoot(
@@ -314,6 +327,33 @@ describe("Notice, EmptyState and StudioGroup", () => {
     const [bare, noted] = Array.from(container.querySelectorAll("h3"));
     expect(bare.className).toBe("ain-studio__grouptitle");
     expect(noted.className).toBe("ain-studio__grouptitle ain-studio__grouptitle--static");
+  });
+
+  it("a collapsible studio group is a chevron heading that shows and hides its body", () => {
+    const onOpenChange = vi.fn();
+    const { container } = render(
+      <StudioGroup title="Colours" note="The palette." collapsible defaultOpen={false} onOpenChange={onOpenChange}>
+        <input aria-label="Ink" />
+      </StudioGroup>,
+    );
+    const toggle = screen.getByRole("button", { name: "Colours" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByLabelText("Ink")).toBeNull();
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByLabelText("Ink")).toBeTruthy();
+    expect(container.querySelector(".ain-studio__groupbody .ain-studio__groupnote")?.textContent).toBe("The palette.");
+    expect(document.getElementById(toggle.getAttribute("aria-controls")!)).toBe(container.querySelector(".ain-studio__groupbody"));
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+
+  it("a controlled collapsible group follows its open prop", () => {
+    const { rerender } = render(<StudioGroup title="Shape" collapsible open={false}><p>body</p></StudioGroup>);
+    expect(screen.queryByText("body")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Shape" }));
+    expect(screen.queryByText("body")).toBeNull();
+    rerender(<StudioGroup title="Shape" collapsible open><p>body</p></StudioGroup>);
+    expect(screen.getByText("body")).toBeTruthy();
   });
 
   it("a loading state is the busy list itself: skeleton rows, thumb and trailing on request", () => {

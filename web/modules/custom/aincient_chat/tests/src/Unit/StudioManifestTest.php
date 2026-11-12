@@ -62,13 +62,15 @@ final class StudioManifestTest extends UnitTestCase {
     yield 'bad capability slug' => [['id' => 'forms', 'label' => 'Forms', 'capabilities' => ['create_form', 'aincient_core:list_pages']], '"capabilities"[1] must be a machine name'];
     yield 'class not a StudioInterface' => [['id' => 'forms', 'label' => 'Forms', 'class' => \stdClass::class], 'does not implement'];
     yield 'class missing' => [['id' => 'forms', 'label' => 'Forms', 'class' => 'Drupal\\nowhere\\Nope'], 'does not exist'];
-    yield 'ui a bare path (the pre-Phase-C shape)' => [['id' => 'forms', 'label' => 'Forms', 'ui' => 'ui/index.tsx'], '"ui" must be a map of entry / script / style / name / icon, got "ui/index.tsx"'];
+    yield 'ui a bare path (the pre-Phase-C shape)' => [['id' => 'forms', 'label' => 'Forms', 'ui' => 'ui/index.tsx'], '"ui" must be a map of entry / script / style / name / short_name / icon, got "ui/index.tsx"'];
     yield 'ui a list' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['ui/index.tsx']], '"ui" must be a map'];
     yield 'ui unknown key' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['entyr' => 'ui/index.tsx']], 'unknown key "ui.entyr"'];
     yield 'ui name only (chat-only, named)' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['name' => 'Forms', 'icon' => 'sliders']], NULL];
     yield 'ui entry escaping with ..' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['entry' => 'ui/../../secret.tsx']], '"ui.entry" must be a path relative to the module'];
     yield 'ui entry absolute' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['entry' => '/etc/passwd']], '"ui.entry" must be a path relative to the module'];
     yield 'ui name empty' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['name' => ' ']], '"ui.name" must be a non-empty string'];
+    yield 'ui short name' => [['id' => 'forms', 'label' => 'Forms and surveys', 'ui' => ['name' => 'Forms and surveys', 'short_name' => 'Forms']], NULL];
+    yield 'ui short name empty' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['short_name' => '']], '"ui.short_name" must be a non-empty string'];
     yield 'ui script (a pack studio)' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['script' => 'studio/dist/studio.js', 'style' => 'studio/studio.css']], NULL];
     yield 'ui script an .mjs' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['script' => 'studio/studio.mjs']], NULL];
     yield 'ui script not built JS' => [['id' => 'forms', 'label' => 'Forms', 'ui' => ['script' => 'studio/index.tsx']], '"ui.script" must name a built .js / .mjs file'];

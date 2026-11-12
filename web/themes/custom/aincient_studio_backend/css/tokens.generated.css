@@ -38,12 +38,38 @@
   --ain-font-display: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   /** Machine text only — ids, tokens, addresses, paths in a well chip (Law 13). Never eyebrows or panel heads (0500). */
   --ain-font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /** Meta, counts, badges. */
+  --ain-font-size-xs: 11px;
+  /** Captions, secondary text, small controls. */
+  --ain-font-size-sm: 12px;
+  /** Body text and every control label — the default. */
+  --ain-font-size-md: 13px;
+  /** Pane and dialog headings. */
+  --ain-font-size-lg: 15px;
+  /** Display: page titles, welcome screens. */
+  --ain-font-size-xl: 21px;
+  /** Display: the largest heading (onboarding hero). */
+  --ain-font-size-xxl: 34px;
   --ain-radius-sm: 0px;
   --ain-radius-md: 0px;
   --ain-radius-lg: 0px;
   --ain-radius-xl: 0px;
   /** The reading column — chat and forms never grow wider. */
   --ain-size-column-max: 760px;
+  --ain-size-control-sm: 24px;
+  --ain-size-control-md: 30px;
+  --ain-size-control-lg: 36px;
+  --ain-size-icon-sm: 12px;
+  --ain-size-icon-md: 15px;
+  --ain-size-icon-lg: 18px;
+  /** Between two groups in a pane (0516 R2). Inside a group, fields keep their own gaps. */
+  --ain-space-group: 24px;
+  /** The inset of every pane's left and right edge: panel heads, pane bodies and the phone top bar line up on it (audit F6). */
+  --ain-space-gutter: 12px;
+  /** Ink rule that opens a group or block (R2). */
+  --ain-rule-block: 1px solid var(--ain-color-text);
+  /** Hairline between ledger rows and panes (R3). */
+  --ain-rule-row: 1px solid var(--ain-color-border);
   --ain-sidebar-width: 264px;
   /** The top bar's height — the WIP-list drawer and its scrim start below it. Tracks .ain-topbar's 30px control + 10px×2 padding + 1px border. */
   --ain-topbar-height: 51px;

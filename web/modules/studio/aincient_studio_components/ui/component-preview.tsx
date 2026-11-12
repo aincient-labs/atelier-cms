@@ -212,7 +212,6 @@ function BrowserWindow({
   return (
     <div className="ain-components-preview__window" ref={win} style={{ maxInlineSize: width + 2 }}>
       <div className="ain-components-preview__chrome">
-        <span className="ain-components-preview__dots" aria-hidden="true"><i /><i /><i /></span>
         <span className="ain-components-preview__caption-bar" title={caption}>{caption}</span>
         <span className="ain-components-preview__zoom">
           {width} px{scale < 1 ? ` · ${Math.round(scale * 100)}%` : ""}

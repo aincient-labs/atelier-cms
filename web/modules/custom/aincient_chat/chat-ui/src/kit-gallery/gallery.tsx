@@ -21,6 +21,8 @@ import {
   MenuRadioItem,
   MoonIcon,
   MoreHorizontalIcon,
+  DraftActions,
+  NewTabMark,
   Notice,
   PanelBar,
   PenIcon,
@@ -268,6 +270,22 @@ export function KitGallery() {
           />
         </Specimen>
 
+        <Specimen name="DraftActions" note="A studio's draft verbs in the top bar. At phone width Discard folds into the menu on Publish's arrow.">
+          <Row label="unsaved">
+            <DraftActions dirty={3} publishing={false} onDiscard={() => {}} onPublish={() => {}} />
+          </Row>
+          <Row label="saved">
+            <DraftActions dirty={0} publishing={false} onDiscard={() => {}} onPublish={() => {}} />
+          </Row>
+        </Specimen>
+
+        <Specimen name="NewTabMark" note="Ends a link that opens a new tab: an icon for the eye, words for a screen reader.">
+          <a className="ain-preview__open" href="/" target="_blank" rel="noreferrer">
+            Open
+            <NewTabMark />
+          </a>
+        </Specimen>
+
         <Specimen name="Popover" note="Radix: focus moves in, Escape or an outside click closes, focus returns to the trigger.">
           <Row label="anchored">
             <Popover title="Link target" trigger={<Button>Open popover</Button>}>
@@ -424,7 +442,7 @@ export function KitGallery() {
           </div>
         </Specimen>
 
-        <Specimen name="StudioGroup" note="One titled group in an editor rail: title, what it governs, then the fields.">
+        <Specimen name="StudioGroup" note="One group in an editor rail: an ink rule and its heading, never a box (R2). Optionally collapsible.">
           <div className="ain-kitgallery__col">
             <StudioGroup title="Teaser card" note="How this page appears when it is referenced elsewhere as a card.">
               <Field label="Title">
@@ -432,6 +450,14 @@ export function KitGallery() {
               </Field>
             </StudioGroup>
             <StudioGroup title="Sections" actions={<Button size="sm">Expand all</Button>} />
+            <StudioGroup title="Colours" note="The palette every component draws from." collapsible>
+              <Field label="Accent">
+                <TextInput placeholder="#16161a" />
+              </Field>
+            </StudioGroup>
+            <StudioGroup title="Shape" collapsible defaultOpen={false}>
+              <p>Hidden until opened.</p>
+            </StudioGroup>
           </div>
         </Specimen>
       </main>

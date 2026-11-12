@@ -13,6 +13,35 @@
     "mono": {
       "$value": "ui-monospace, \"SF Mono\", \"JetBrains Mono\", Menlo, monospace",
       "$description": "Machine text only — ids, tokens, addresses, paths in a well chip (Law 13). Never eyebrows or panel heads (0500)."
+    },
+    "$description": "Faces, and the type scale (0517).",
+    "size": {
+      "$type": "dimension",
+      "$description": "Type scale (0517): 11 / 12 / 13 / 15 for text, 21 / 34 for display. No other font sizes in console CSS.",
+      "xs": {
+        "$value": "11px",
+        "$description": "Meta, counts, badges."
+      },
+      "sm": {
+        "$value": "12px",
+        "$description": "Captions, secondary text, small controls."
+      },
+      "md": {
+        "$value": "13px",
+        "$description": "Body text and every control label — the default."
+      },
+      "lg": {
+        "$value": "15px",
+        "$description": "Pane and dialog headings."
+      },
+      "xl": {
+        "$value": "21px",
+        "$description": "Display: page titles, welcome screens."
+      },
+      "xxl": {
+        "$value": "34px",
+        "$description": "Display: the largest heading (onboarding hero)."
+      }
     }
   },
   "radius": {
@@ -36,6 +65,53 @@
     "column-max": {
       "$value": "760px",
       "$description": "The reading column — chat and forms never grow wider."
+    },
+    "control": {
+      "$description": "Control heights (0517). Primitives set an explicit height and pad inline only, so mixed rows line up. sm = 24, the WCAG 2.5.8 target floor.",
+      "sm": {
+        "$value": "24px"
+      },
+      "md": {
+        "$value": "30px"
+      },
+      "lg": {
+        "$value": "36px"
+      }
+    },
+    "icon": {
+      "$description": "Icon sizes (0517).",
+      "sm": {
+        "$value": "12px"
+      },
+      "md": {
+        "$value": "15px"
+      },
+      "lg": {
+        "$value": "18px"
+      }
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "group": {
+      "$value": "24px",
+      "$description": "Between two groups in a pane (0516 R2). Inside a group, fields keep their own gaps."
+    },
+    "gutter": {
+      "$value": "12px",
+      "$description": "The inset of every pane's left and right edge: panel heads, pane bodies and the phone top bar line up on it (audit F6)."
+    }
+  },
+  "rule": {
+    "$type": "border",
+    "$description": "Structure is drawn with rules, not boxes (0516, Law 6).",
+    "block": {
+      "$value": "1px solid {color.text}",
+      "$description": "Ink rule that opens a group or block (R2)."
+    },
+    "row": {
+      "$value": "1px solid {color.border}",
+      "$description": "Hairline between ledger rows and panes (R3)."
     }
   },
   "sidebar": {

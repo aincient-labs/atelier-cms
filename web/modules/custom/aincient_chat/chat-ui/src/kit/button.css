@@ -27,9 +27,11 @@
 .ain-btn:disabled { cursor: default; opacity: .45; box-shadow: none; }
 .ain-topbtn {
   display: inline-flex; align-items: center; gap: 6px;
-  cursor: pointer; text-decoration: none; font: inherit; font-size: 13.5px; line-height: 16px;
+  /* Size scale (0517): an explicit height, inline padding only, so mixed rows line up. */
+  height: var(--ain-size-control-md); min-height: var(--ain-size-control-md); box-sizing: border-box; white-space: nowrap;
+  cursor: pointer; text-decoration: none; font: inherit; font-size: var(--ain-font-size-md); line-height: 16px;
   color: var(--ain-color-text); background: transparent; border: 1px solid var(--ain-color-border);
-  border-radius: var(--ain-radius-md); padding: 6px 12px;
+  border-radius: var(--ain-radius-md); padding: 0 12px;
   transition: border-color .12s, background .12s, color .12s;
 }
 /* Hover darkens the hairline to ink — no ground, no lift. */
@@ -67,12 +69,12 @@
 }
 /* Compact button for in-field actions (e.g. a reference field's Edit / Change),
    where full .ain-topbtn metrics overpower the 11px label + 48px thumb row. */
-.ain-topbtn--sm { font-size: 11.5px; line-height: 14px; padding: 3px 8px; gap: 4px; }
+.ain-topbtn--sm { height: var(--ain-size-control-sm); min-height: var(--ain-size-control-sm); font-size: var(--ain-font-size-sm); line-height: 14px; padding: 0 8px; gap: 4px; }
 /* generic icon button */
 .ain-iconbtn {
-  display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 7px;
+  display: inline-grid; place-items: center; min-width: var(--ain-size-control-md); height: var(--ain-size-control-md); padding: 0 7px; box-sizing: border-box;
   cursor: pointer; color: var(--ain-color-text-muted); background: transparent;
-  border: 1px solid transparent; border-radius: var(--ain-radius-md); font: inherit; font-size: 15px;
+  border: 1px solid transparent; border-radius: var(--ain-radius-md); font: inherit; font-size: var(--ain-size-icon-md);
   transition: color .12s, background .12s, border-color .12s;
 }
 .ain-iconbtn:not(:disabled):hover { color: var(--ain-color-text); border-color: var(--ain-color-border); }

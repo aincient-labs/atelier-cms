@@ -9,11 +9,15 @@
  */
 .ain-chip {
   display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
-  padding: 3px 7px 3px 5px; font: inherit; font-size: 11px; color: var(--ain-color-text-muted);
+  height: var(--ain-size-control-sm); box-sizing: border-box;
+  padding: 0 7px 0 5px; font: inherit; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted);
   background: transparent; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   transition: border-color .1s, color .1s;
 }
 .ain-chip:hover { border-color: var(--ain-color-text); color: var(--ain-color-text); }
 .ain-chip:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
+/* Hover must not out-rank the on state: :hover (0,2,0) beat .ain-chip--on (0,1,0)
+   and painted ink text on the ink fill. On + hover steps the fill like a primary. */
 .ain-chip--on { border-color: var(--ain-color-accent); background: var(--ain-color-accent); color: var(--ain-color-on-accent); }
+.ain-chip--on:hover { border-color: var(--ain-color-accent-hover); background: var(--ain-color-accent-hover); color: var(--ain-color-on-accent); }
 .ain-chip__label { line-height: 1; }

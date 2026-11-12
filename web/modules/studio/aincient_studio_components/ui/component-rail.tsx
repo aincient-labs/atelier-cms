@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircleIcon,
-  Button,
   Checkbox,
   ComponentIcon,
   IconButton,
@@ -9,10 +8,12 @@ import {
   Notice,
   PanelBar,
   StudioActionsPortal,
+  DraftActions,
   StudioGroup,
   StudioStatus,
   useStudioUI,
   XIcon,
+  useRailInert,
 } from "@console/kit";
 import {
   apiUrl,
@@ -217,6 +218,8 @@ function ComponentRow({ entry, draft, selected, onDraft, usageCache, onUsage }: 
 }
 
 export function ComponentRail({ onClose }: { onClose: () => void }) {
+  // Off-screen sheet (≤1099px, closed) → out of the tab order (audit N1).
+  const railInert = useRailInert();
   const { closeSheets } = useStudioUI();
   const runtime = useConsoleChat();
   const componentsState = useComponentsState();
@@ -365,31 +368,17 @@ export function ComponentRail({ onClose }: { onClose: () => void }) {
   const recipe = !site && isRecipe(scopeInfo);
 
   return (
-    <div className="ain-studio__rail" data-testid="studio-rail" data-studio="components">
+    <div className="ain-studio__rail" data-testid="studio-rail" inert={railInert} data-studio="components">
       <StudioActionsPortal>
-        {dirty > 0 && (
-          <span
-            className="ain-studio-actions__dirty"
-            title={`${dirty} unsaved change${dirty === 1 ? "" : "s"}`}
-          >
-            {dirty}
-          </span>
-        )}
-        <Button
-          onClick={discard}
-          disabled={dirty === 0 || publishing}
-          title={site ? "Discard draft — revert to the saved constraint" : "Discard draft — revert this page type to its saved settings"}
-        >
-          Discard
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => void publish()}
-          disabled={dirty === 0 || publishing || impact !== null}
-          title="Publish the component governance to the live site"
-        >
-          {publishing ? "Publishing…" : "Publish"}
-        </Button>
+        <DraftActions
+          dirty={dirty}
+          publishing={publishing}
+          canPublish={impact === null}
+          onDiscard={discard}
+          onPublish={() => void publish()}
+          discardTitle={site ? "Discard draft — revert to the saved constraint" : "Discard draft — revert this page type to its saved settings"}
+          publishTitle="Publish the component governance to the live site"
+        />
         <IconButton
           className="ain-topbar__leave"
           onClick={onClose}

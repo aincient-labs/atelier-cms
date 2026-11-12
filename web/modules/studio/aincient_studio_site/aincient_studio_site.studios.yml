@@ -28,6 +28,8 @@ globals:
   weight: 20
   ui:
     entry: ui/index.tsx
+    # The phone top bar has room for about ten characters (audit N3).
+    short_name: 'Navigation'
     icon: layout
   flows: [aincient_chrome_agent]
   capabilities: [preview_chrome]

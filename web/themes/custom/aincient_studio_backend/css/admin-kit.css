@@ -456,7 +456,7 @@
   font-family: var(--ain-font-body);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
-  color: var(--ain-color-text-faint);
+  color: var(--ain-color-text-muted);
 }
 /* Alt text lives beside the preview — metadata belongs with the file facts;
    its own label + description stack under the input, filling the column. */
@@ -561,7 +561,7 @@
   display: block;
   margin-top: 0.125rem;
   font-size: 0.8125rem;
-  color: var(--ain-color-text-faint);
+  color: var(--ain-color-text-muted);
 }
 .sb-content .vertical-tabs__menu-item-summary:empty { display: none; }
 .sb-content .vertical-tabs__panes { flex: 1 1 20rem; min-width: 0; }
@@ -1114,7 +1114,7 @@
 .sb-content .pager__item--ellipsis {
   align-items: center;
   padding: 0.375rem 0.25rem;
-  color: var(--ain-color-text-faint);
+  color: var(--ain-color-text-muted);
 }
 
 /* ================================================================ dialogs === */

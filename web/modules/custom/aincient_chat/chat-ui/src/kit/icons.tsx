@@ -500,3 +500,22 @@ export const ArrowRightIcon = (p: IconProps) => (
   <Svg {...p}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></Svg>
 );
 
+
+/* Arrows and marks that replace text glyphs (audit N4: icons are SVG, never ↗ ← → ⇆ ◎). */
+export const ArrowLeftIcon = (p: IconProps) => (
+  <Svg {...p}><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></Svg>
+);
+
+/** A link that leaves the console (opens in a new tab): arrow out of a box. */
+export const ExternalIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M14 4h6v6" /><line x1="10" y1="14" x2="20" y2="4" /><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></Svg>
+);
+
+export const ArrowLeftRightIcon = (p: IconProps) => (
+  <Svg {...p}><polyline points="17 3 21 7 17 11" /><line x1="21" y1="7" x2="7" y2="7" /><polyline points="7 13 3 17 7 21" /><line x1="3" y1="17" x2="17" y2="17" /></Svg>
+);
+
+/** The centre of a direction pad. */
+export const CircleDotIcon = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2" fill="currentColor" /></Svg>
+);

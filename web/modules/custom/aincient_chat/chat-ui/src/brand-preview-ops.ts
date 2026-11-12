@@ -113,7 +113,7 @@ const descriptors: DescriptorFor<BrandCommand>[] = [
     toCommand: (input) => ({ verb: "set_tokens", args: { tokens: input.tokens as Record<string, string> } }),
     summarize: (c) =>
       Object.entries(c.args.tokens)
-        .map(([k, v]) => `${k} → ${v === "" ? "(saved)" : v}`)
+        .map(([k, v]) => `${k} = ${v === "" ? "(saved)" : v}`)
         .join(", "),
   }),
   defineCommand<Of<"step_token">>({
@@ -141,7 +141,7 @@ const descriptors: DescriptorFor<BrandCommand>[] = [
     },
     readOnly: false,
     toCommand: (input) => ({ verb: "set_fonts", args: { fonts: input.fonts as string[] } }),
-    summarize: (c) => `fonts → ${c.args.fonts.join(", ") || "(none)"}`,
+    summarize: (c) => `fonts: ${c.args.fonts.join(", ") || "(none)"}`,
   }),
   defineCommand<Of<"reset">>({
     verb: "reset",

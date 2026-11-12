@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { PanelBar, ReferenceField, StudioActionsPortal, XIcon, useStudioUI, Button, IconButton, Notice, StudioStatus, LoadingState } from "@console/kit";
+import { PanelBar, ReferenceField, Tabs, StudioActionsPortal, DraftActions, XIcon, useStudioUI, IconButton, Notice, StudioStatus, LoadingState, useRailInert } from "@console/kit";
 import {
   HandsOnMarker,
   apiUrl,
@@ -54,12 +54,6 @@ const NAV_LAYOUT_KEYS: Record<"header" | "footer", string[]> = {
 const ROUTING_KEYS = ["front", "page_404", "page_403"] as const;
 
 type Tab = "header" | "footer" | "pages";
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: "header", label: "Header" },
-  { id: "footer", label: "Footer" },
-  { id: "pages", label: "Pages" },
-];
 
 /** The number of changed fields vs the saved baseline (drives the dirty badge).
  *  Scoped to THIS surface: arrangement knobs, menus, and the routing slots. */
@@ -124,6 +118,8 @@ function LayoutControl({
 }
 
 export function GlobalsStudio({ onClose }: { onClose: () => void }) {
+  // Off-screen sheet (≤1099px, closed) → out of the tab order (audit N1).
+  const railInert = useRailInert();
   const { closeSheets } = useStudioUI();
   const runtime = useConsoleChat();
   const [manifest, setManifest] = useState<ChromeManifest | null>(null);
@@ -283,31 +279,16 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
     (manifest?.registry[section] ?? []).filter((d) => NAV_LAYOUT_KEYS[section].includes(d.key));
 
   return (
-    <div className="ain-studio__rail" data-testid="studio-rail" data-studio="globals">
+    <div className="ain-studio__rail" data-testid="studio-rail" inert={railInert} data-studio="globals">
       <StudioActionsPortal>
-        {dirty > 0 && (
-          <span
-            className="ain-studio-actions__dirty"
-            title={`${dirty} unsaved change${dirty === 1 ? "" : "s"}`}
-          >
-            {dirty}
-          </span>
-        )}
-        <Button
-          onClick={discard}
-          disabled={dirty === 0 || publishing}
-          title="Discard draft — revert the preview to the saved chrome"
-        >
-          Discard
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => void publish()}
-          disabled={dirty === 0 || publishing}
-          title="Publish the draft to the live site"
-        >
-          {publishing ? "Publishing…" : "Publish"}
-        </Button>
+        <DraftActions
+          dirty={dirty}
+          publishing={publishing}
+          onDiscard={discard}
+          onPublish={() => void publish()}
+          discardTitle="Discard draft — revert the preview to the saved chrome"
+          publishTitle="Publish the draft to the live site"
+        />
         <IconButton
           label="Close navigation & pages studio"
           className="ain-topbar__leave"
@@ -340,118 +321,120 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
 
       {manifest && draft && (
         <>
-          <div className="ain-globals__tabs" role="tablist" aria-label="Navigation & Pages sections">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={tab === t.id}
-                className="ain-btn ain-globals__tab"
-                data-active={tab === t.id || undefined}
-                onClick={() => setTab(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="ain-studio__groups">
-            {tab === "header" && (
-              <div className="ain-globals__panel">
-                {layoutDefs("header").map((def) => (
-                  <LayoutControl
-                    key={def.key}
-                    def={def}
-                    value={draft.chrome.header[def.key]}
-                    onChange={(v) => setLayout("header", def.key, v)}
-                  />
-                ))}
-                <div className="ain-studio__subgroup" id={fieldAnchorId("menus.main")}>
-                  <h4 className="ain-studio__subtitle">
-                    <HandsOnMarker reachKey="menus.main" />
-                    Navigation
-                  </h4>
-                  <p className="ain-studio__groupnote">
-                    The header menu (Drupal&apos;s <code>main</code> menu).
-                  </p>
-                  <MenuEditor
-                    links={draft.menus.main}
-                    onChange={(links) => setMenu("main", links)}
-                    addLabel="Add header link"
-                    rootLabel="Header menu"
-                  />
-                </div>
-              </div>
-            )}
-
-            {tab === "footer" && (
-              <div className="ain-globals__panel">
-                {layoutDefs("footer").map((def) => (
-                  <LayoutControl
-                    key={def.key}
-                    def={def}
-                    value={draft.chrome.footer[def.key]}
-                    onChange={(v) => setLayout("footer", def.key, v)}
-                  />
-                ))}
-                <div className="ain-studio__subgroup" id={fieldAnchorId("menus.footer")}>
-                  <h4 className="ain-studio__subtitle">
-                    <HandsOnMarker reachKey="menus.footer" />
-                    Navigation
-                  </h4>
-                  <p className="ain-studio__groupnote">
-                    The footer menu (Drupal&apos;s <code>footer</code> menu).
-                  </p>
-                  <MenuEditor
-                    links={draft.menus.footer}
-                    onChange={(links) => setMenu("footer", links)}
-                    addLabel="Add footer link"
-                    rootLabel="Footer menu"
-                  />
-                </div>
-              </div>
-            )}
-
-            {tab === "pages" && (
-              <div className="ain-globals__panel">
-                <p className="ain-studio__groupnote">
-                  Which page answers each special URL. Anything left empty falls back
-                  to the shipped default — set only what you want to own.
-                </p>
-                <div id={fieldAnchorId("site.front")}>
-                  <ReferenceField
-                    label="Front page"
-                    meaning="The page shown at your site’s root URL. Empty = the default front page."
-                    value={draft.identity.site.front}
-                    onChange={(v) => setRouting("front", typeof v === "string" ? v : "")}
-                    types={["node"]}
-                    adornment={<HandsOnMarker reachKey="site.front" />}
-                  />
-                </div>
-                <div id={fieldAnchorId("site.page_404")}>
-                  <ReferenceField
-                    label="Not-found page (404)"
-                    meaning="Shown when a visitor hits a URL that doesn’t exist."
-                    value={draft.identity.site.page_404}
-                    onChange={(v) => setRouting("page_404", typeof v === "string" ? v : "")}
-                    types={["node"]}
-                    adornment={<HandsOnMarker reachKey="site.page_404" />}
-                  />
-                </div>
-                <div id={fieldAnchorId("site.page_403")}>
-                  <ReferenceField
-                    label="Access-denied page (403)"
-                    meaning="Shown when a visitor isn’t allowed to see a page."
-                    value={draft.identity.site.page_403}
-                    onChange={(v) => setRouting("page_403", typeof v === "string" ? v : "")}
-                    types={["node"]}
-                    adornment={<HandsOnMarker reachKey="site.page_403" />}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <Tabs
+            className="ain-globals__tabs"
+            listClassName="ain-globals__tablist"
+            panelClassName="ain-studio__groups"
+            label="Navigation & Pages sections"
+            value={tab}
+            onValueChange={setTab}
+            items={[
+              {
+                value: "header",
+                label: "Header",
+                content: (
+                  <div className="ain-globals__panel">
+                    {layoutDefs("header").map((def) => (
+                      <LayoutControl
+                        key={def.key}
+                        def={def}
+                        value={draft.chrome.header[def.key]}
+                        onChange={(v) => setLayout("header", def.key, v)}
+                      />
+                    ))}
+                    <div className="ain-studio__subgroup" id={fieldAnchorId("menus.main")}>
+                      <h4 className="ain-studio__subtitle">
+                        <HandsOnMarker reachKey="menus.main" />
+                        Navigation
+                      </h4>
+                      <p className="ain-studio__groupnote">
+                        The header menu (Drupal&apos;s <code>main</code> menu).
+                      </p>
+                      <MenuEditor
+                        links={draft.menus.main}
+                        onChange={(links) => setMenu("main", links)}
+                        addLabel="Add header link"
+                        rootLabel="Header menu"
+                      />
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                value: "footer",
+                label: "Footer",
+                content: (
+                  <div className="ain-globals__panel">
+                    {layoutDefs("footer").map((def) => (
+                      <LayoutControl
+                        key={def.key}
+                        def={def}
+                        value={draft.chrome.footer[def.key]}
+                        onChange={(v) => setLayout("footer", def.key, v)}
+                      />
+                    ))}
+                    <div className="ain-studio__subgroup" id={fieldAnchorId("menus.footer")}>
+                      <h4 className="ain-studio__subtitle">
+                        <HandsOnMarker reachKey="menus.footer" />
+                        Navigation
+                      </h4>
+                      <p className="ain-studio__groupnote">
+                        The footer menu (Drupal&apos;s <code>footer</code> menu).
+                      </p>
+                      <MenuEditor
+                        links={draft.menus.footer}
+                        onChange={(links) => setMenu("footer", links)}
+                        addLabel="Add footer link"
+                        rootLabel="Footer menu"
+                      />
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                value: "pages",
+                label: "Pages",
+                content: (
+                  <div className="ain-globals__panel">
+                    <p className="ain-studio__groupnote">
+                      Which page answers each special URL. Anything left empty falls back
+                      to the shipped default — set only what you want to own.
+                    </p>
+                    <div id={fieldAnchorId("site.front")}>
+                      <ReferenceField
+                        label="Front page"
+                        meaning="The page shown at your site’s root URL. Empty = the default front page."
+                        value={draft.identity.site.front}
+                        onChange={(v) => setRouting("front", typeof v === "string" ? v : "")}
+                        types={["node"]}
+                        adornment={<HandsOnMarker reachKey="site.front" />}
+                      />
+                    </div>
+                    <div id={fieldAnchorId("site.page_404")}>
+                      <ReferenceField
+                        label="Not-found page (404)"
+                        meaning="Shown when a visitor hits a URL that doesn’t exist."
+                        value={draft.identity.site.page_404}
+                        onChange={(v) => setRouting("page_404", typeof v === "string" ? v : "")}
+                        types={["node"]}
+                        adornment={<HandsOnMarker reachKey="site.page_404" />}
+                      />
+                    </div>
+                    <div id={fieldAnchorId("site.page_403")}>
+                      <ReferenceField
+                        label="Access-denied page (403)"
+                        meaning="Shown when a visitor isn’t allowed to see a page."
+                        value={draft.identity.site.page_403}
+                        onChange={(v) => setRouting("page_403", typeof v === "string" ? v : "")}
+                        types={["node"]}
+                        adornment={<HandsOnMarker reachKey="site.page_403" />}
+                      />
+                    </div>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </>
       )}
     </div>

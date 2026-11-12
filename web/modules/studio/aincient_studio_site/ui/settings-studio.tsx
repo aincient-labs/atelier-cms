@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { PanelBar, ShieldCheckIcon, StudioActionsPortal, XIcon, useStudioUI, Button, IconButton, Notice, StudioStatus, LoadingState } from "@console/kit";
+import { PanelBar, ShieldCheckIcon, StudioActionsPortal, DraftActions, XIcon, useStudioUI, IconButton, Notice, StudioStatus, LoadingState, useRailInert } from "@console/kit";
 import {
   HandsOnMarker,
   apiUrl,
@@ -62,6 +62,8 @@ function countDirty(base: ChromeDraft, draft: ChromeDraft): number {
 }
 
 export function SettingsStudio({ onClose }: { onClose: () => void }) {
+  // Off-screen sheet (≤1099px, closed) → out of the tab order (audit N1).
+  const railInert = useRailInert();
   const { closeSheets } = useStudioUI();
   const runtime = useConsoleChat();
   const mailId = useId();
@@ -199,31 +201,16 @@ export function SettingsStudio({ onClose }: { onClose: () => void }) {
   }, [discard]);
 
   return (
-    <div className="ain-studio__rail" data-testid="studio-rail" data-studio="settings">
+    <div className="ain-studio__rail" data-testid="studio-rail" inert={railInert} data-studio="settings">
       <StudioActionsPortal>
-        {dirty > 0 && (
-          <span
-            className="ain-studio-actions__dirty"
-            title={`${dirty} unsaved change${dirty === 1 ? "" : "s"}`}
-          >
-            {dirty}
-          </span>
-        )}
-        <Button
-          onClick={discard}
-          disabled={dirty === 0 || publishing}
-          title="Discard draft — revert to the saved settings"
-        >
-          Discard
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => void publish()}
-          disabled={dirty === 0 || publishing}
-          title="Publish the settings to the live site"
-        >
-          {publishing ? "Publishing…" : "Publish"}
-        </Button>
+        <DraftActions
+          dirty={dirty}
+          publishing={publishing}
+          onDiscard={discard}
+          onPublish={() => void publish()}
+          discardTitle="Discard draft — revert to the saved settings"
+          publishTitle="Publish the settings to the live site"
+        />
         <IconButton
           label="Close settings studio"
           className="ain-topbar__leave"

@@ -1,3 +1,4 @@
+import { NewTabMark } from "./new-tab";
 import { useState } from "react";
 import { sendTurn, useConsoleThread } from "../aui";
 import { makeSafeAssistantToolUI } from "./error-boundary";
@@ -228,7 +229,8 @@ function DataTableCard({ payload }: { payload: DataTablePayload }) {
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      View ↗
+                      View
+                      <NewTabMark />
                     </a>
                   )}
                 </td>

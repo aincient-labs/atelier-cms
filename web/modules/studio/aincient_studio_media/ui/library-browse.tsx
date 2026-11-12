@@ -12,6 +12,7 @@ import {
   EmptyState,
   Notice,
   LoadingState,
+  SegmentedControl,
 } from "@console/kit";
 import { apiUrl, consoleNav, openBlock } from "@console/sdk";
 
@@ -138,20 +139,12 @@ export function LibraryBrowse() {
           spellCheck={false}
           aria-label="Search the library"
         />
-        <div className="ain-seg" role="tablist" aria-label="Filter by type">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              role="tab"
-              aria-selected={filter === f.key}
-              className="ain-btn ain-seg__btn"
-              onClick={() => setFilter(f.key)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          label="Filter by type"
+          value={filter}
+          onChange={setFilter}
+          options={FILTERS.map((f) => ({ value: f.key, label: f.label }))}
+        />
         <Button
           type="button"
           variant="primary"
@@ -165,6 +158,7 @@ export function LibraryBrowse() {
         </Button>
         <Button
           type="button"
+          className="ain-browser__new"
           onClick={() => openBlock("new")}
           title="Create a new global block"
         >

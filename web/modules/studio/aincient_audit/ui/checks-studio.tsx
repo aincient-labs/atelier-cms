@@ -13,6 +13,8 @@ import {
   ChevronDownIcon,
   Notice,
   StudioStatus,
+  useRailInert,
+  NewTabMark,
 } from "@console/kit";
 import { useThreadState } from "@console/aui";
 import {
@@ -152,6 +154,8 @@ const draftIsDirty = (): boolean => {
 };
 
 export function ChecksStudio({ onClose }: { onClose: () => void }) {
+  // Off-screen sheet (≤1099px, closed) → out of the tab order (audit N1).
+  const railInert = useRailInert();
   const runtime = useConsoleChat();
   const thread = useConsoleThread();
   const [nodeId, setNodeId] = useState<string | null>(null);
@@ -478,7 +482,7 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="ain-studio__rail" data-testid="studio-rail" data-studio="checks">
+    <div className="ain-studio__rail" data-testid="studio-rail" inert={railInert} data-studio="checks">
       {/* The page's lifecycle pins to the top bar — the SAME bar Content shows
           (DECISIONS 0454). Re-run is Checks' own verb, so it lives in the rail
           head beside the results it refreshes. */}
@@ -739,7 +743,8 @@ function AuditReportView({
       <div className="ain-checks-audit__summary">
         {report.url && (
           <a className="ain-checks-audit__url" href={report.url} target="_blank" rel="noreferrer">
-            {report.url} ↗
+            {report.url}
+            <NewTabMark />
           </a>
         )}
         {report.audited && (

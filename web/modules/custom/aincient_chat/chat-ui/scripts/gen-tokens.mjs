@@ -109,7 +109,7 @@ export const RETIRED = {
 
 /* ------------------------------------------------------------ the grammar */
 
-const CATEGORIES = "color|font|size|space|radius|shadow|motion|z";
+const CATEGORIES = "color|font|size|space|radius|rule|shadow|motion|z";
 /** `--ain-ref-<category>-<name>-<step>` */
 const REF = new RegExp(`^--ain-ref-(${CATEGORIES})-[a-z]+(-[a-z]+)*-[0-9]+$`);
 /** `--ain-<category>-<role>[-<variant>][-<state>]` */

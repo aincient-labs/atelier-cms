@@ -27,6 +27,10 @@ import {
   Wordmark,
   XIcon,
   ZaiIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
 } from "./kit/icons";
 import { ModelPicker, type ModelPickerOption } from "./model-picker";
 import { apiUrl, consoleBase } from "./console-config";
@@ -900,7 +904,8 @@ export function OnboardingWizard() {
                 onClick={() => setStep("models")}
                 disabled={!hasChat}
               >
-                Continue →
+                Continue
+                <ArrowRightIcon />
               </Button>
             </div>
           </>
@@ -1013,7 +1018,8 @@ export function OnboardingWizard() {
                 aria-expanded={advanced}
                 onClick={() => setAdvanced((v) => !v)}
               >
-                {advanced ? "Hide per-role choices" : "Choose per role"} {advanced ? "↑" : "→"}
+                {advanced ? "Hide per-role choices" : "Choose per role"}
+                {advanced ? <ChevronUpIcon /> : <ChevronRightIcon />}
               </button>
             )}
 
@@ -1037,7 +1043,8 @@ export function OnboardingWizard() {
 
             <div className="ain-wiz__actions">
               <Button variant="quiet" onClick={() => setStep("connect")}>
-                ← Back
+                <ArrowLeftIcon />
+                Back
               </Button>
               {closable && (
                 <Button variant="quiet" onClick={skip}>

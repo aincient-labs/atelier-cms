@@ -59,6 +59,8 @@ export type StudioUiModule = {
 export type StudioDef = {
   /** Display name in the breadcrumb (the backend owns its own admin label). */
   name: string;
+  /** The crumb's name on a phone-width top bar, when `name` is too long to fit (`ui.short_name`). */
+  shortName?: string;
   /** Inline-SVG glyph for the studio crumb. */
   Icon: IconType;
   /** Fetches the studio's chunk; absent for a chat-only studio. */

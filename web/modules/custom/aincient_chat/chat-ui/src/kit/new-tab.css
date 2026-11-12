@@ -1,0 +1,7 @@
+/* --- NewTabMark (kit/new-tab.tsx) --- */
+.ain-newtab { flex: none; width: 1em; height: 1em; vertical-align: -0.125em; margin-inline-start: 0.25em; }
+/* Words only a screen reader gets. */
+.ain-sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); border: 0; white-space: nowrap;
+}

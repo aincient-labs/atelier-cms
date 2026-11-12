@@ -11,19 +11,19 @@
 /* ── Rail ─────────────────────────────────────────────────────────────────── */
 .ain-components__tools { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 4px; }
 .ain-components__filters { align-self: stretch; }
-.ain-components__empty { margin: 6px 0; font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-components__empty { margin: 6px 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
 
 .ain-components__group { margin: 8px 0 2px; }
-.ain-components__grouptitle { margin: 0 0 2px; font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted); }
+.ain-components__grouptitle { margin: 0 0 2px; font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted); }
 .ain-components__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
 
-.ain-components__item { border-radius: var(--ain-radius-md); border: 1px solid var(--ain-color-surface); }
-.ain-components__item[data-selected] { border-color: var(--ain-color-accent-tint); background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent); }
+.ain-components__item { border-radius: 0; }
+.ain-components__item[data-selected] { background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent); }
 .ain-components__row { display: flex; align-items: center; gap: 8px; min-inline-size: 0; padding: 0 0 0 6px; }
 .ain-components__select {
   flex: 1 1 auto; min-inline-size: 0; display: flex; align-items: center; gap: 8px;
   padding: 6px 6px 6px 0; border: 0; background: none; cursor: pointer; text-align: left;
-  font: inherit; font-size: 13px; color: var(--ain-color-text);
+  font: inherit; font-size: var(--ain-font-size-md); color: var(--ain-color-text);
 }
 .ain-components__select:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 .ain-components__item[data-off] .ain-components__name { color: var(--ain-color-text-muted); text-decoration: line-through; }
@@ -31,32 +31,31 @@
 .ain-components__name { flex: 0 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ain-components__tag {
   flex: none; max-inline-size: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  padding: 1px 5px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  font-family: var(--ain-font-mono); font-size: 10px; line-height: 1.4; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-mono); font-size: var(--ain-font-size-xs); line-height: 1.4; color: var(--ain-color-text-muted);
 }
-.ain-components__count { margin-left: auto; flex: none; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ain-color-text-muted); }
+.ain-components__count { margin-left: auto; flex: none; font-size: var(--ain-font-size-xs); font-variant-numeric: tabular-nums; color: var(--ain-color-text-muted); }
 
 .ain-components__panel { display: flex; flex-direction: column; gap: 8px; padding: 2px 10px 10px 30px; }
-.ain-components__use { margin: 0; font-size: 12px; line-height: 1.45; color: var(--ain-color-text); }
-.ain-components__hint { margin: 0; font-size: 11px; line-height: 1.45; color: var(--ain-color-text-muted); }
-.ain-components__subtitle { margin: 0 0 3px; font-size: 11px; font-weight: 500; color: var(--ain-color-text-muted); }
+.ain-components__use { margin: 0; font-size: var(--ain-font-size-sm); line-height: 1.45; color: var(--ain-color-text); }
+.ain-components__hint { margin: 0; font-size: var(--ain-font-size-xs); line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-components__subtitle { margin: 0 0 3px; font-size: var(--ain-font-size-xs); font-weight: 500; color: var(--ain-color-text-muted); }
 .ain-components__ticks { display: flex; flex-direction: column; }
 .ain-components__tickrow { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .ain-components__tick { min-inline-size: 0; margin: 0; }
 
 .ain-components__usedon { display: flex; flex-direction: column; }
 .ain-components__usedlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
-.ain-components__useditem { display: flex; align-items: center; gap: 6px; min-inline-size: 0; font-size: 12px; }
+.ain-components__useditem { display: flex; align-items: center; gap: 6px; min-inline-size: 0; font-size: var(--ain-font-size-sm); }
 .ain-components__usedtitle { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ain-color-text); }
-.ain-components__usedmore { font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-components__usedmore { font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
 
 .ain-components__warnings { margin: 0 12px 4px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
-.ain-components__warning { display: flex; align-items: baseline; gap: 5px; font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); }
+.ain-components__warning { display: flex; align-items: baseline; gap: 5px; font-size: var(--ain-font-size-xs); line-height: 1.4; color: var(--ain-color-text-muted); }
 .ain-components__warning svg { flex: 0 0 auto; translate: 0 2px; }
 
 /* ── Scopes (P1b) ─────────────────────────────────────────────────────────── */
 .ain-components__scope { padding: 8px 12px 0; }
-.ain-components__notice { margin: 4px 0; font-size: 13px; line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-components__notice { margin: 4px 0; font-size: var(--ain-font-size-md); line-height: 1.45; color: var(--ain-color-text-muted); }
 .ain-components__regime { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px; }
 .ain-components__limit { max-inline-size: 96px; }
 .ain-components__doclink { min-inline-size: 0; display: inline-flex; color: var(--ain-color-text); text-decoration: underline; text-decoration-color: var(--ain-color-border); text-underline-offset: 2px; }
@@ -64,7 +63,7 @@
 .ain-components__doclink:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-components__sitelink {
   flex: none; padding: 0 6px 0 0; border: 0; background: none; cursor: pointer;
-  font: inherit; font-size: 11px; color: var(--ain-color-text-muted); text-decoration: underline; text-underline-offset: 2px;
+  font: inherit; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); text-decoration: underline; text-underline-offset: 2px;
 }
 .ain-components__sitelink:hover { color: var(--ain-color-text); }
 .ain-components__sitelink:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
@@ -72,26 +71,24 @@
 /* Packs (P3, P4b): the override badge + switch, the "Can't be used" rows. */
 .ain-components__override {
   flex: none; max-inline-size: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  padding: 1px 5px; border: 1px solid var(--ain-color-accent); border-radius: var(--ain-radius-md);
-  font-size: 10px; line-height: 1.4; color: var(--ain-color-accent);
+  font-size: var(--ain-font-size-xs); font-weight: 500; line-height: 1.4; color: var(--ain-color-accent);
 }
-.ain-components__override[data-off] { border-color: var(--ain-color-border); color: var(--ain-color-text-muted); }
+.ain-components__override[data-off] { color: var(--ain-color-text-muted); }
 .ain-components__override-switch { display: flex; flex-direction: column; gap: 2px; }
 .ain-components__blocked { display: flex; flex-direction: column; gap: 2px; padding: 6px 6px 6px 30px; cursor: default; }
-.ain-components__blockedhead { display: flex; align-items: center; gap: 8px; min-inline-size: 0; font-size: 13px; color: var(--ain-color-text-muted); }
+.ain-components__blockedhead { display: flex; align-items: center; gap: 8px; min-inline-size: 0; font-size: var(--ain-font-size-md); color: var(--ain-color-text-muted); }
 
 /* The impact list Publish shows first (D6). */
 .ain-components__impact {
-  margin: 4px 12px 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised);
+  margin: 4px 12px 8px; padding: 4px 0 4px 12px; display: flex; flex-direction: column; gap: 8px;
   box-shadow: inset 2px 0 0 var(--ain-color-warning);
 }
-.ain-components__impacttitle { margin: 0; display: flex; align-items: baseline; gap: 6px; font-size: 13px; font-weight: 500; line-height: 1.35; color: var(--ain-color-text); }
+.ain-components__impacttitle { margin: 0; display: flex; align-items: baseline; gap: 6px; font-size: var(--ain-font-size-md); font-weight: 500; line-height: 1.35; color: var(--ain-color-text); }
 .ain-components__impacttitle svg { flex: none; translate: 0 2px; color: var(--ain-color-warning); }
 .ain-components__impactlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; max-block-size: 240px; overflow-y: auto; }
 .ain-components__impactitem { display: flex; flex-direction: column; gap: 2px; }
 .ain-components__impactrows { margin: 0; padding: 0 0 0 12px; list-style: none; display: flex; flex-direction: column; gap: 1px; }
-.ain-components__impactrow { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); }
+.ain-components__impactrow { font-size: var(--ain-font-size-xs); line-height: 1.4; color: var(--ain-color-text-muted); }
 .ain-components__impactactions { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* ── Canvas ───────────────────────────────────────────────────────────────── */
@@ -99,11 +96,12 @@
   flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
   padding: 6px 12px; border-bottom: 1px solid var(--ain-color-border); background: var(--ain-color-surface);
 }
-.ain-components-preview__caption { font-size: 12px; font-weight: 500; color: var(--ain-color-text); }
+.ain-components-preview__caption { font-size: var(--ain-font-size-sm); font-weight: 500; color: var(--ain-color-text); }
 .ain-components-preview__select { inline-size: auto; max-inline-size: 220px; }
 .ain-components-preview__width { margin-left: auto; font-variant-numeric: tabular-nums; }
-.ain-components-preview__note { font-size: 11px; color: var(--ain-color-text-muted); }
-/* The canvas: one browser window (or two for Compare) on the paper. Each
+.ain-components-preview__note { font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
+/* The canvas: one plate (or two for Compare) on the well (R7, 0516): a hairline
+   frame, captioned by a plain row, with no browser-window chrome. Each
    window holds the page at its TRUE width, scaled down to fit (BrowserWindow),
    so nothing overflows sideways; a narrow width (375) sits at real size. */
 .ain-components-preview__canvas {
@@ -117,16 +115,14 @@
 }
 .ain-components-preview__chrome {
   flex: none; display: flex; align-items: center; gap: 10px; min-inline-size: 0;
-  padding: 7px 10px; border-bottom: 1px solid var(--ain-color-border); background: var(--ain-color-surface-raised);
+  padding: 7px 10px; border-bottom: var(--ain-rule-row);
 }
-.ain-components-preview__dots { flex: none; display: flex; gap: 5px; }
-.ain-components-preview__dots i { inline-size: 8px; block-size: 8px; border-radius: 0; background: var(--ain-color-border-strong); }
 .ain-components-preview__caption-bar {
   flex: 1 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--ain-font-mono); font-size: 10.5px; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-mono); font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted);
 }
 .ain-components-preview__zoom {
-  flex: none; font-family: var(--ain-font-mono); font-size: 10.5px; font-variant-numeric: tabular-nums;
+  flex: none; font-family: var(--ain-font-mono); font-size: var(--ain-font-size-xs); font-variant-numeric: tabular-nums;
   color: var(--ain-color-text-muted);
 }
 .ain-components-preview__viewport { position: relative; flex: none; overflow: hidden; background: var(--ain-color-surface); }

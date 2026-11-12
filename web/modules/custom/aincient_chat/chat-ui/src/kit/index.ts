@@ -58,6 +58,8 @@ export * from "./filter-select";
 export * from "./tabs";
 export * from "./error-boundary";
 export * from "./studio-ui";
+export * from "./draft-actions";
+export * from "./new-tab";
 export * from "./panel-bar";
 export * from "./field-revert";
 export * from "./reference-field";

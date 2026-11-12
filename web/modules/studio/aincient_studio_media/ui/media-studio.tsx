@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ChangeEvent } from "react";
-import { Button, CheckIcon, PanelBar, RotateCcwIcon, SpinnerIcon, TrashIcon, UploadIcon, Notice, LoadingState } from "@console/kit";
+import { ArrowLeftIcon, Button, CheckIcon, PanelBar, RotateCcwIcon, SpinnerIcon, TrashIcon, UploadIcon, Notice, LoadingState, useRailInert } from "@console/kit";
 import {
   agentsForStudio,
   capabilityAvailable,
@@ -36,6 +36,8 @@ import {
  * keeps the same `media:<id>` token, so every page embedding it updates in place.
  */
 export function MediaStudio({ onClose: _onClose }: { onClose: () => void }) {
+  // Off-screen sheet (≤1099px, closed) → out of the tab order (audit N1).
+  const railInert = useRailInert();
   const detail = useSyncExternalStore(subscribeMedia, getMediaDetail);
   // Also track a monotonic store version so an out-of-band store change that leaves
   // `detail`'s reference intact — e.g. an AI alt suggestion staged for the open item
@@ -180,6 +182,7 @@ export function MediaStudio({ onClose: _onClose }: { onClose: () => void }) {
       className="ain-studio__rail ain-media-studio"
       aria-label="Edit media"
       data-testid="studio-rail"
+      inert={railInert}
       data-studio="media"
     >
       <PanelBar
@@ -193,7 +196,8 @@ export function MediaStudio({ onClose: _onClose }: { onClose: () => void }) {
                 onClick={() => consoleNav.enterRoom({ kind: "shelf" })}
                 title="Back to the Library"
               >
-                ← Library
+                <ArrowLeftIcon />
+                Library
               </Button>
             )}
             <Button

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { SegmentedControl } from "./kit/segmented";
 import { Button } from "./kit/button";
 import { EmptyState } from "./kit/empty-state";
 import { LoadingState } from "./kit/loading-state";
@@ -158,23 +159,15 @@ export function ContentBrowser({
           spellCheck={false}
           aria-label="Search pages"
         />
-        <div className="ain-seg" role="tablist" aria-label="Filter by state">
-          {STATE_FACETS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              role="tab"
-              aria-selected={facet === f.key}
-              className="ain-btn ain-seg__btn"
-              onClick={() => {
-                setFacet(f.key);
-                setOffset(0);
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          label="Filter by state"
+          value={facet}
+          onChange={(key) => {
+            setFacet(key);
+            setOffset(0);
+          }}
+          options={STATE_FACETS.map((f) => ({ value: f.key, label: f.label }))}
+        />
         {onNew && (
           <Button variant="primary" className="ain-browser__new" onClick={onNew}>
             <PlusIcon /> New page

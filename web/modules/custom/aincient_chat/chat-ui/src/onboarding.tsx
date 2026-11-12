@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { sendTurn, useConsoleThread } from "./aui";
 import { Button } from "./kit/button";
+import { ArrowRightIcon } from "./kit/icons";
 import { makeSafeAssistantToolUI } from "./kit/error-boundary";
 import { apiUrl } from "./console-config";
 
@@ -95,7 +96,8 @@ function Onboarding(payload: OnboardingPayload) {
           Your console is live. Next, give your site a look and feel.
         </p>
         <Button variant="primary" onClick={toBranding}>
-          Set up my brand →
+          Set up my brand
+          <ArrowRightIcon />
         </Button>
       </div>
     );

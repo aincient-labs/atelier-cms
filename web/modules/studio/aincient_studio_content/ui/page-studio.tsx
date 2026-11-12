@@ -25,6 +25,9 @@ import {
   StudioStatus,
   LoadingState,
   ComponentIcon,
+  useRailInert,
+  NewTabMark,
+  SegmentedControl,
 } from "@console/kit";
 import {
   offerWrapup,
@@ -265,6 +268,8 @@ function summarize(section: PageSection, props: PropDef[]): string {
  * to the last saved baseline.
  */
 export function PageStudio({ onClose }: { onClose: () => void }) {
+  // Off-screen sheet (≤1099px, closed) → out of the tab order (audit N1).
+  const railInert = useRailInert();
   const { closeSheets } = useStudioUI();
   // The runtime is read only to resolve the active thread's backend id when a
   // a Publish/Approve offers to wrap the conversation up (see commitPublish()).
@@ -983,7 +988,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
   const available = palette;
 
   return (
-    <div className="ain-studio__rail" ref={railRef} data-testid="studio-rail" data-studio="content">
+    <div className="ain-studio__rail" ref={railRef} data-testid="studio-rail" inert={railInert} data-studio="content">
       {/* Discard / Publish / leave pin to the top bar (reachable when the rail
           collapses to a sheet). The language switcher and "Open…" stay in the
           rail head — their popovers anchor to the rail. */}
@@ -1022,26 +1027,15 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
             {/* Body ｜ Presence facet — pages only, hidden on the listing. Swaps
                 this rail + the centre preview via the shared page-facet store. */}
             {kind === "page" && !atListing && (
-              <div className="ain-content-facet" role="group" aria-label="Editor facet">
-                <button
-                  type="button"
-                  className="ain-btn ain-content-facet__btn"
-                  aria-pressed={facet === "body"}
-                  onClick={() => setFacet("body")}
-                  title="Edit the page itself"
-                >
-                  Body
-                </button>
-                <button
-                  type="button"
-                  className="ain-btn ain-content-facet__btn"
-                  aria-pressed={facet === "presence"}
-                  onClick={() => setFacet("presence")}
-                  title="Edit how the page appears when referenced — SEO, social, search"
-                >
-                  Presence
-                </button>
-              </div>
+              <SegmentedControl
+                label="Editor facet"
+                value={facet}
+                onChange={setFacet}
+                options={[
+                  { value: "body", label: "Body", title: "Edit the page itself" },
+                  { value: "presence", label: "Presence", title: "Edit how the page appears when referenced — SEO, social, search" },
+                ]}
+              />
             )}
             {multilingual && nodeId && (
               <Button
@@ -1231,7 +1225,8 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                 <>
                   {" · "}
                   <a className="ain-preview__open" href={notice.url} target="_blank" rel="noreferrer">
-                    View ↗
+                    View
+                    <NewTabMark />
                   </a>
                 </>
               )}

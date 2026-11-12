@@ -1,0 +1,19 @@
+/* --- DraftActions (kit/draft-actions.tsx) and any split button ---
+   A split button: the action and its caret share one edge. */
+.ain-split { display: inline-flex; }
+/* Publish disabled but the caret still offers other actions: the caret drops to
+   the secondary voice so an ink block never sits beside a disabled primary. */
+.ain-split > .ain-btn:first-child:disabled + .ain-btn:not(:disabled) {
+  background: transparent; border-color: var(--ain-color-border); color: var(--ain-color-text);
+}
+.ain-split > .ain-btn:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.ain-split > .ain-btn + .ain-btn {
+  border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: 1px; padding-inline: 7px;
+}
+/* The unsaved-change count beside the draft verbs. */
+.ain-studio-actions__dirty {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
+  font-size: var(--ain-font-size-xs); font-weight: 500; line-height: 1; color: var(--ain-color-text);
+  background: transparent; border-radius: 0;
+  box-shadow: inset 0 0 0 1px var(--ain-color-warning);
+}

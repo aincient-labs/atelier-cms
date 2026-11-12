@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { Button } from "./kit/button";
 import { Dialog } from "./kit/dialog";
-import { ChevronDownIcon } from "./kit/icons";
+import { ArrowRightIcon, ChevronDownIcon } from "./kit/icons";
 import { Menu, MenuItem, MenuLabel, MenuSeparator } from "./kit/menu";
+import { usePhoneTopBar } from "./kit/draft-actions";
 import { carriesEdits, planLifecycle } from "./page-lifecycle";
 import type { Moderation, Transition } from "./page-state";
 
@@ -60,6 +61,9 @@ export function PageLifecycleBar({
 }: PageLifecycleBarProps) {
   const plan = useMemo(() => planLifecycle(moderation, { isNew, dirty }), [moderation, isNew, dirty]);
   const [confirming, setConfirming] = useState<Transition | null>(null);
+  // On a phone-width bar Discard folds into the primary's menu (audit N3).
+  const phone = usePhoneTopBar();
+  const offerDiscard = Boolean(onDiscard) && dirty && canWrite;
 
   // "Live" is the owner's word for published (study 02, Plate 5; 0451).
   const pending = moderation.hasPendingDraft;
@@ -75,18 +79,32 @@ export function PageLifecycleBar({
   // A single group needs no heading — "Move forward" over one item is noise.
   const labelled = groups.length > 1;
 
-  const menuItems = groups.map((g, i) => (
+  const discardItem = phone && offerDiscard ? (
+    <div key="discard" role="group" aria-label="Discard">
+      {groups.length > 0 && <MenuSeparator />}
+      <MenuItem danger disabled={busy} onSelect={() => onDiscard?.()}>
+        Discard changes
+      </MenuItem>
+    </div>
+  ) : null;
+  const hasMenu = groups.length > 0 || discardItem !== null;
+
+  const groupItems = groups.map((g, i) => (
     <div key={g.key} role="group" aria-label={g.label}>
       {i > 0 && <MenuSeparator />}
       {labelled && <MenuLabel>{g.label}</MenuLabel>}
       {g.items.map((t) => (
         <MenuItem key={t.id} danger={g.danger} disabled={busy} onSelect={() => (g.danger ? setConfirming(t) : run(t))}>
           <span>{t.label}</span>
-          <span className="ain-lifecycle__to">→ {t.to_label}</span>
+          <span className="ain-lifecycle__to">
+            <ArrowRightIcon />
+            {t.to_label}
+          </span>
         </MenuItem>
       ))}
     </div>
   ));
+  const menuItems = discardItem ? [...groupItems, discardItem] : groupItems;
 
   const primary = plan.primary;
   const primaryButton = primary ? (
@@ -104,13 +122,20 @@ export function PageLifecycleBar({
         variant="primary"
         onClick={() => run(primary.transition)}
         disabled={busy}
-        title={`${primary.transition.label} → ${primary.transition.to_label}`}
+        title={`${primary.transition.label}: moves to ${primary.transition.to_label}`}
       >
         {/* The shipped Approve lands live: say so, as the bar always has. */}
         {primary.transition.id === "approve" ? "Approve & publish" : primary.transition.label}
       </Button>
     )
   ) : null;
+
+  const saveButton = (
+    <Button onClick={onSaveDraft} disabled={!dirty || busy || !hasContent} title="Save your changes as a draft — not live yet">
+      {busy ? "Working…" : "Save draft"}
+    </Button>
+  );
+  const saveSplit = phone && canWrite && !primaryButton && hasMenu;
 
   return (
     <span className="ain-lifecycle" data-testid="page-lifecycle">
@@ -123,18 +148,30 @@ export function PageLifecycleBar({
         {stateText}
         {qualifier && <span className="ain-studio__statebadge-sub"> · {qualifier}</span>}
       </span>
-      {onDiscard && dirty && canWrite && (
+      {!phone && offerDiscard && (
         <Button variant="quiet" onClick={onDiscard} disabled={busy} title="Discard draft — revert to the last saved version">
           Discard
         </Button>
       )}
-      {canWrite && (
-        <Button onClick={onSaveDraft} disabled={!dirty || busy || !hasContent} title="Save your changes as a draft — not live yet">
-          {busy ? "Working…" : "Save draft"}
-        </Button>
-      )}
-      {primaryButton && groups.length > 0 ? (
-        <span className="ain-lifecycle__split">
+      {canWrite && !saveSplit && saveButton}
+      {saveSplit ? (
+        // Phone, no primary: Save draft carries the workflow menu on its caret,
+        // which leaves the studio switcher room for its name (audit N3).
+        <span className="ain-split">
+          {saveButton}
+          <Menu
+            label="Workflow actions"
+            trigger={
+              <Button aria-label="Workflow actions" title="Workflow actions" disabled={busy}>
+                <ChevronDownIcon />
+              </Button>
+            }
+          >
+            {menuItems}
+          </Menu>
+        </span>
+      ) : primaryButton && hasMenu ? (
+        <span className="ain-split">
           {primaryButton}
           <Menu
             label="More workflow actions"
@@ -149,7 +186,7 @@ export function PageLifecycleBar({
         </span>
       ) : primaryButton ? (
         primaryButton
-      ) : groups.length > 0 ? (
+      ) : hasMenu ? (
         <Menu
           label="Workflow actions"
           trigger={

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { makeSafeAssistantToolUI, CheckIcon, LockIcon, LockOpenIcon, Button } from "@console/kit";
+import { makeSafeAssistantToolUI, CheckIcon, LockIcon, LockOpenIcon, Button, ArrowRightIcon } from "@console/kit";
 import { apiUrl } from "@console/sdk";
 import { emitBrandStatus } from "./brand-status-state";
 
@@ -90,7 +90,7 @@ function BrandStatusProposal(payload: BrandStatusPayload) {
         {current && (current.stage !== stage || current.locked !== locked) ? (
           <>
             <span className="ain-design-system-statusprop__from">{statusLine(current.stage, current.locked)}</span>
-            <span className="ain-design-system-statusprop__arrow" aria-hidden="true">→</span>
+            <ArrowRightIcon className="ain-design-system-statusprop__arrow" />
             <span className="ain-design-system-statusprop__to">{statusLine(stage, locked)}</span>
           </>
         ) : (

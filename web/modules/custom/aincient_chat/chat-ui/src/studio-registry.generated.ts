@@ -4,8 +4,8 @@
 //
 // One row per declared studio, keyed by studio id and merged over the console's
 // own General in `studio-registry.tsx` (DECISIONS 0430): the manifest's
-// `ui.name` (default: its label) and `ui.icon` (a kit icon; default: the chat
-// glyph) land here, in the console chunk, because the nav shows them before a
+// `ui.name` (default: its label), `ui.short_name` (the phone crumb's name) and
+// `ui.icon` (a kit icon; default: the chat glyph) land here, in the console chunk, because the nav shows them before a
 // studio opens. A studio with a `ui.entry` also gets `load` — a dynamic
 // `import()` the build turns into that module's own chunk (`vite.chunks.ts`),
 // fetched the first time the studio is opened or at idle for its chat cards
@@ -22,7 +22,7 @@ export const GENERATED_STUDIOS: Record<string, StudioDef> = {
   components: { name: "Components", Icon: BlocksIcon, load: () => import("@studio/aincient_studio_components/ui/index.tsx") },
   content: { name: "Pages", Icon: DocumentIcon, load: () => import("@studio/aincient_studio_content/ui/index.tsx") },
   design_system: { name: "Identity", Icon: PaletteIcon, load: () => import("@studio/aincient_brand/ui/index.tsx") },
-  globals: { name: "Navigation & Pages", Icon: LayoutIcon, load: () => import("@studio/aincient_studio_site/ui/index.tsx") },
+  globals: { name: "Navigation & Pages", shortName: "Navigation", Icon: LayoutIcon, load: () => import("@studio/aincient_studio_site/ui/index.tsx") },
   library: { name: "Library", Icon: ChatBubbleIcon },
   media: { name: "Library", Icon: LibraryIcon, load: () => import("@studio/aincient_studio_media/ui/index.tsx") },
   settings: { name: "Settings", Icon: WrenchIcon, load: () => import("@studio/aincient_studio_site/ui/settings.tsx") },

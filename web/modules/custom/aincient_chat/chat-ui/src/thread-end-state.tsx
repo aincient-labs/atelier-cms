@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ComponentProps, ComponentType, ReactNode, SVGProps } from "react";
 import { SparkleIcon, ShieldCheckIcon, CircleQuestionIcon, StarIcon } from "./kit/icons";
 import { Button } from "./kit/button";
+import { NewTabMark } from "./kit/new-tab";
 
 /** Public source repo the star nudge links to. */
 const GITHUB_REPO_URL = "https://github.com/aincient-labs/atelier-cms";
@@ -45,7 +46,8 @@ function StarNudge() {
           onClick={seal}
         >
           <StarIcon aria-hidden />
-          Star on GitHub ↗
+          Star on GitHub
+          <NewTabMark />
         </a>
         <button type="button" className="ain-starnudge__dismiss" onClick={seal}>
           Not now
@@ -72,8 +74,8 @@ function StarNudge() {
 
 export type EndStateVariant = "published" | "denied" | "gone";
 
-/** One next-action button. `href` renders an anchor (opens a new tab) instead of
- *  a button — for the "View page ↗" link — while still firing `onClick`. */
+/** One next-action button. `href` renders an anchor (opens a new tab, marked with
+ *  the kit's new-tab icon) instead of a button, while still firing `onClick`. */
 export type EndStateAction = {
   label: string;
   onClick: () => void;
@@ -147,6 +149,7 @@ export function ThreadEndState({
               onClick={a.onClick}
             >
               {a.label}
+              <NewTabMark />
             </a>
           ) : (
             <Button key={a.label} variant={a.primary ? "primary" : "secondary"} onClick={a.onClick}>

@@ -30,6 +30,7 @@ import { ComposingState } from "./kit/composing-state";
 import { EmptyState } from "./kit/empty-state";
 import { Notice } from "./kit/notice";
 import { PanelBar } from "./kit/panel-bar";
+import { NewTabMark } from "./kit/new-tab";
 import { SegmentedControl } from "./kit/segmented";
 import { ContentBrowser } from "./content-browser";
 import { PresencePreview } from "./presence-preview";
@@ -339,6 +340,7 @@ export function PagePreview({ lenses, lens, onLensChange, pins, onPin, focus }: 
     <div className="ain-preview" data-testid="studio-preview" data-studio="content">
       <PanelBar
         title={updating ? "Updating preview…" : "Live preview · unsaved draft"}
+        className={lenses?.length ? "ain-panelbar--lensed" : undefined}
         actions={
           lenses?.length || openUrl ? (
             <>
@@ -364,7 +366,8 @@ export function PagePreview({ lenses, lens, onLensChange, pins, onPin, focus }: 
               )}
               {openUrl && (
                 <a className="ain-preview__open" href={openUrl} target="_blank" rel="noreferrer">
-                  Open ↗
+                  Open
+                  <NewTabMark />
                 </a>
               )}
             </>

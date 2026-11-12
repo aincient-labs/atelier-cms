@@ -6,17 +6,21 @@ import {
   ChevronDownIcon,
   LockIcon,
   LockOpenIcon,
-  SparkleIcon,
   StudioActionsPortal,
+  DraftActions,
   useStudioUI,
   PanelBar,
   FieldRevert,
   ReferenceField,
-  Button,
   IconButton,
   Notice,
   StudioStatus,
   LoadingState,
+  useRailInert,
+  StudioGroup,
+  ArrowUpIcon,
+  CircleDotIcon,
+  SegmentedControl,
 } from "@console/kit";
 import {
   rememberThreadSeal,
@@ -189,11 +193,11 @@ type CardId = "color" | "typography" | "shape" | "components";
 
 const CARD_ORDER: CardId[] = ["color", "typography", "shape", "components"];
 
-const CARD_META: Record<CardId, { label: string; sublabel: string; icon: string; open: boolean }> = {
-  color: { label: "Color", sublabel: "Brand, accent & page surfaces", icon: "◑", open: true },
-  typography: { label: "Typography", sublabel: "Pick a pairing, then tune", icon: "Aa", open: true },
-  shape: { label: "Shape & depth", sublabel: "Corners, shadows, density", icon: "▢", open: false },
-  components: { label: "Components", sublabel: "Override per element", icon: "⊞", open: false },
+const CARD_META: Record<CardId, { label: string; sublabel: string; open: boolean }> = {
+  color: { label: "Color", sublabel: "Brand, accent & page surfaces", open: true },
+  typography: { label: "Typography", sublabel: "Pick a pairing, then tune", open: true },
+  shape: { label: "Shape & depth", sublabel: "Corners, shadows, density", open: false },
+  components: { label: "Components", sublabel: "Override per element", open: false },
 };
 
 /** Which intent card a token belongs to. */
@@ -384,6 +388,8 @@ function countIdentityDirty(base: ChromeDraft, draft: ChromeDraft): number {
 }
 
 export function IdentityStudio({ onClose }: { onClose: () => void }) {
+  // Off-screen sheet (≤1099px, closed) → out of the tab order (audit N1).
+  const railInert = useRailInert();
   const { closeSheets } = useStudioUI();
   // Read only to resolve the active thread's backend id when a Publish seals the
   // conversation (auto-archives it; see the publish handler).
@@ -724,7 +730,7 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
         rejected = labelList(result?.rejected, tokens);
         const lowContrast = Array.isArray(result?.contrast_warnings) ? result.contrast_warnings.length : 0;
         contrastNote = lowContrast
-          ? ` · ⚠ ${lowContrast} low-contrast pair${lowContrast === 1 ? "" : "s"}`
+          ? ` · ${lowContrast} low-contrast pair${lowContrast === 1 ? "" : "s"}`
           : "";
       }
 
@@ -991,28 +997,20 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
   const totalDirty = dirty + identityDirty;
 
   return (
-    <div className="ain-studio__rail" data-testid="studio-rail" data-studio="design_system">
+    <div className="ain-studio__rail" data-testid="studio-rail" inert={railInert} data-studio="design_system">
       {/* Primary actions live in the top bar (so they survive the rail
           collapsing to a sheet on narrow screens). The rail head keeps the
           title and a sheet-dismiss ✕ that's only shown when the rail is a
           sheet — CSS gates it; on desktop the rail is always in view. */}
       <StudioActionsPortal>
-        {totalDirty > 0 && <span className="ain-studio-actions__dirty" title={`${totalDirty} unsaved change${totalDirty === 1 ? "" : "s"}`}>{totalDirty}</span>}
-        <Button
-          onClick={discard}
-          disabled={totalDirty === 0 || publishing}
-          title="Discard draft — revert the preview to the saved brand and start a fresh chat"
-        >
-          Discard
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => void publish()}
-          disabled={totalDirty === 0 || publishing}
-          title="Publish the draft to the live site"
-        >
-          {publishing ? "Publishing…" : "Publish"}
-        </Button>
+        <DraftActions
+          dirty={totalDirty}
+          publishing={publishing}
+          onDiscard={discard}
+          onPublish={() => void publish()}
+          discardTitle="Discard draft — revert the preview to the saved brand and start a fresh chat"
+          publishTitle="Publish the draft to the live site"
+        />
         <IconButton className="ain-topbar__leave" onClick={onClose} label="Close identity studio" title="Leave identity studio">
           <XIcon />
         </IconButton>
@@ -1198,38 +1196,34 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
           return CARD_ORDER.map((id) => {
             const meta = CARD_META[id];
             const isCollapsed = collapsed.has(id);
-            const bodyId = `ain-studio-card-${id}`;
             // How many of this card's tokens differ from the saved brand — shown
             // as a badge on the head so a collapsed card still advertises pending
             // edits (the per-field markers live inside, revealed on expand).
             const cardDirty = cardTokens[id].filter((t) => dirtyVars.has(t.css_var)).length;
             return (
-              <section className="ain-design-system-card" key={id}>
-                <button
-                  type="button"
-                  className="ain-btn ain-design-system-card__head"
-                  onClick={() => toggleCard(id)}
-                  aria-expanded={!isCollapsed}
-                  aria-controls={bodyId}
-                >
-                  <ChevronDownIcon className="ain-design-system-card__chev" />
-                  <span className="ain-design-system-card__ico" aria-hidden="true">{meta.icon}</span>
-                  <span className="ain-design-system-card__ct">
-                    <span className="ain-design-system-card__h">{meta.label}</span>
-                    <span className="ain-design-system-card__sub">{meta.sublabel}</span>
-                  </span>
-                  {cardDirty > 0 && (
-                    <span className="ain-design-system-card__dirty" title={`${cardDirty} unsaved change${cardDirty === 1 ? "" : "s"} in this section`}>
-                      {cardDirty}
+              // R2 (0516): a group is an ink rule and its heading, never a card.
+              <StudioGroup
+                key={id}
+                className="ain-design-system-group"
+                collapsible
+                open={!isCollapsed}
+                onOpenChange={() => toggleCard(id)}
+                title={
+                  <>
+                    <span className="ain-design-system-card__ct">
+                      <span className="ain-design-system-card__h">{meta.label}</span>
+                      <span className="ain-design-system-card__sub">{meta.sublabel}</span>
                     </span>
-                  )}
-                </button>
-                {!isCollapsed && (
-                  <div className="ain-design-system-card__body" id={bodyId}>
-                    {cardBody(id)}
-                  </div>
-                )}
-              </section>
+                    {cardDirty > 0 && (
+                      <span className="ain-design-system-card__dirty" title={`${cardDirty} unsaved change${cardDirty === 1 ? "" : "s"} in this section`}>
+                        {cardDirty}
+                      </span>
+                    )}
+                  </>
+                }
+              >
+                <div className="ain-design-system-card__body">{cardBody(id)}</div>
+              </StudioGroup>
             );
           });
         })()}
@@ -1353,30 +1347,26 @@ function IdentityCard({
     window.addEventListener(REVEAL_FIELD_EVENT, reveal);
     return () => window.removeEventListener(REVEAL_FIELD_EVENT, reveal);
   }, []);
-  const bodyId = "ain-studio-card-identity";
   const knob = (section: "header" | "footer", key: string): RegistrySetting | undefined =>
     manifest.registry[section]?.find((d) => d.key === key);
   const logoPosition = knob("header", "logo_position");
   const headerLogoSize = knob("header", "logo_size");
   const footerLogoSize = knob("footer", "logo_size");
   return (
-    <section className="ain-design-system-card">
-      <button
-        type="button"
-        className="ain-btn ain-design-system-card__head"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls={bodyId}
-      >
-        <ChevronDownIcon className="ain-design-system-card__chev" />
-        <span className="ain-design-system-card__ico" aria-hidden="true"><SparkleIcon /></span>
+    <StudioGroup
+      className="ain-design-system-group"
+      collapsible
+      open={open}
+      onOpenChange={setOpen}
+      title={
         <span className="ain-design-system-card__ct">
           <span className="ain-design-system-card__h">Identity</span>
           <span className="ain-design-system-card__sub">Name, voice, logo &amp; favicon</span>
         </span>
-      </button>
+      }
+    >
       {open && (
-        <div className="ain-design-system-card__body" id={bodyId}>
+        <div className="ain-design-system-card__body">
           <IdentityTextField
             label="Site name"
             value={draft.identity.guidelines.name}
@@ -1474,7 +1464,7 @@ function IdentityCard({
           />
         </div>
       )}
-    </section>
+    </StudioGroup>
   );
 }
 
@@ -1517,21 +1507,12 @@ function StatusControl({
         )}
         <span className="ain-design-system-status__hint">{status.locked ? "The brand is settled — the agent makes minimal, single-axis changes only." : meta.blurb}</span>
       </div>
-      <div className="ain-seg" role="radiogroup" aria-label="Brand stage">
-        {STAGE_ORDER.map((s) => (
-          <button
-            key={s}
-            type="button"
-            className="ain-btn ain-seg__btn"
-            aria-pressed={stage === s}
-            disabled={saving}
-            title={STAGE_META[s].blurb}
-            onClick={() => onChange({ stage: s })}
-          >
-            {STAGE_META[s].label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        label="Brand stage"
+        value={stage}
+        onChange={(s) => onChange({ stage: s })}
+        options={STAGE_ORDER.map((s) => ({ value: s, label: STAGE_META[s].label, title: STAGE_META[s].blurb, disabled: saving }))}
+      />
       <label className="ain-field ain-field--radio ain-design-system-status__lock">
         <input
           className="ain-field__radio"
@@ -1573,20 +1554,15 @@ function PresetChips({
   return (
     <div className="ain-design-system-preset">
       <span className="ain-design-system-preset__lbl">{group.label}</span>
-      <div className="ain-seg" role="group" aria-label={group.label}>
-        {group.options.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            className="ain-btn ain-seg__btn"
-            aria-pressed={active === o.id}
-            title={o.blurb}
-            onClick={() => onPick(o)}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        label={group.label}
+        value={active ?? ""}
+        onChange={(id) => {
+          const o = group.options.find((x) => x.id === id);
+          if (o) onPick(o);
+        }}
+        options={group.options.map((o) => ({ value: o.id, label: o.label, title: o.blurb }))}
+      />
     </div>
   );
 }
@@ -1595,10 +1571,10 @@ function PresetChips({
  *  sits where its shadow falls — the eight compass directions around a centre
  *  "glow" — so the control reads as a picture of the effect, not a word list.
  *  Cells are placed by id (not option order), so a missing option just blanks. */
-const DIRECTION_PAD: { id: string; glyph: string }[] = [
-  { id: "top_left", glyph: "↖" }, { id: "top", glyph: "↑" }, { id: "top_right", glyph: "↗" },
-  { id: "left", glyph: "←" }, { id: "center", glyph: "◎" }, { id: "right", glyph: "→" },
-  { id: "bottom_left", glyph: "↙" }, { id: "bottom", glyph: "↓" }, { id: "bottom_right", glyph: "↘" },
+const DIRECTION_PAD: { id: string; turn: number | null }[] = [
+  { id: "top_left", turn: -45 }, { id: "top", turn: 0 }, { id: "top_right", turn: 45 },
+  { id: "left", turn: -90 }, { id: "center", turn: null }, { id: "right", turn: 90 },
+  { id: "bottom_left", turn: -135 }, { id: "bottom", turn: 180 }, { id: "bottom_right", turn: 135 },
 ];
 
 /** Shadow direction as a true radiogroup laid out around a square: one
@@ -1631,7 +1607,9 @@ function DirectionPad({
                 checked={active === o.id}
                 onChange={() => onPick(o)}
               />
-              <span className="ain-design-system-dirpad__btn" aria-hidden="true">{cell.glyph}</span>
+              <span className="ain-design-system-dirpad__btn" aria-hidden="true">
+                {cell.turn === null ? <CircleDotIcon /> : <ArrowUpIcon style={{ transform: `rotate(${cell.turn}deg)` }} />}
+              </span>
               <span className="ain-sr-only">{o.label}</span>
             </label>
           );
@@ -1972,7 +1950,7 @@ function ColorControl({ token, value, tokens, palette, referable, resolve, popAl
       {/* Human words first (Plate 12): a reference reads as its token's LABEL,
           a literal as its hex — the raw authored value stays in the tooltip
           and the picker's Custom field ("Advanced"). */}
-      <span className="ain-field__name" title={isRef ? `${authored} → ${current}` : authored}>
+      <span className="ain-field__name" title={isRef ? `${authored}, which is ${current}` : authored}>
         {targetVar
           ? candidates.find((c) => c.css_var === targetVar)?.label ?? authored
           : toHexDisplay(current) ?? authored}
@@ -1998,7 +1976,7 @@ function ColorControl({ token, value, tokens, palette, referable, resolve, popAl
               <span className="ain-design-system-pop__currentsw" style={{ background: current }} aria-hidden="true" />
               <span className="ain-design-system-pop__currenttext">
                 <code className="ain-design-system-pop__currentname">{authored}</code>
-                {isRef && <code className="ain-design-system-pop__currentval">→ {current}</code>}
+                {isRef && <code className="ain-design-system-pop__currentval"><span className="ain-sr-only">which is </span>= {current}</code>}
               </span>
             </div>
             {candidates.length > 0 && (

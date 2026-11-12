@@ -2,8 +2,8 @@
    Moved unchanged from styles.css, where the svg rule sat apart from the rest. */
 .ain-studio__status {
   display: flex; align-items: center; gap: 5px;
-  padding: 7px 12px; font-size: 12px; color: var(--ain-color-text-muted);
+  padding: 7px var(--ain-space-gutter); font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted);
   border-bottom: 1px solid var(--ain-color-border);
 }
 .ain-studio__status[data-dirty] { color: var(--ain-color-warning); }
-.ain-studio__status svg { font-size: 13px; color: var(--ain-color-warning); }
+.ain-studio__status svg { font-size: var(--ain-size-icon-md); color: var(--ain-color-warning); }

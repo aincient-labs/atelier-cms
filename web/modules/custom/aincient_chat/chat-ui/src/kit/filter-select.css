@@ -9,7 +9,7 @@
  */
 .ain-selfield__trigger {
   display: flex; align-items: center; gap: 8px; width: 100%;
-  font: inherit; font-size: 12px; color: var(--ain-color-text); text-align: left; cursor: pointer;
+  font: inherit; font-size: var(--ain-font-size-sm); color: var(--ain-color-text); text-align: left; cursor: pointer;
   padding: 6px 8px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   /* Same input body as .ain-field__input — the well, one hairline, one chevron. */
   background: var(--ain-color-surface-raised); transition: border-color .12s, background .12s;
@@ -18,7 +18,7 @@
 .ain-selfield__trigger[data-open] { border-color: var(--ain-color-text); }
 .ain-selfield__trigger:focus-visible { border-color: var(--ain-color-text); outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-selfield__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ain-selfield__caret { flex: none; font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-selfield__caret { flex: none; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
 /* Its own scroll, so a 400-zone list never grows the dialog it sits in; at
    least as wide as the trigger. */
 .ain-selfield__menu {
@@ -31,7 +31,7 @@
 }
 .ain-selfield__filter .ain-field__input { width: 100%; }
 .ain-selfield__group {
-  padding: 7px 10px 2px; font-family: var(--ain-font-body); font-size: 13px;
+  padding: 7px 10px 2px; font-family: var(--ain-font-body); font-size: var(--ain-font-size-md);
   font-weight: 500; color: var(--ain-color-text-muted);
 }
-.ain-selfield__empty { margin: 0; padding: 8px 10px; font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-selfield__empty { margin: 0; padding: 8px 10px; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }

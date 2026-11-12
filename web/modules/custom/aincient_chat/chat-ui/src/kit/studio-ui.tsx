@@ -52,6 +52,46 @@ export function useStudioUI(): StudioUI {
   return useContext(StudioUIContext);
 }
 
+/** Track a CSS media query (false where `matchMedia` is unavailable). */
+export function useMediaQuery(query: string): boolean {
+  const get = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(query).matches;
+  const [matches, setMatches] = useState(get);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mql = window.matchMedia(query);
+    const sync = () => setMatches(mql.matches);
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, [query]);
+  return matches;
+}
+
+/** The width at and below which the editor rail is a summoned sheet (styles.css). */
+export const RAIL_SHEET_QUERY = "(max-width: 1099px)";
+
+/**
+ * True while the editor rail is a sheet parked off-screen: it must be `inert`
+ * so keyboard focus cannot land on controls nobody can see (audit N1). On
+ * desktop the rail is a column and always reachable.
+ */
+export function useRailInert(): boolean {
+  const { editOpen } = useStudioUI();
+  return useMediaQuery(RAIL_SHEET_QUERY) && !editOpen;
+}
+
+/** The width at and below which a studio docks the chat and lifts the conversation as a sheet. */
+export const CONVO_SHEET_QUERY = "(max-width: 767px)";
+
+/**
+ * True while the phone conversation sheet is dropped (transparent, translated
+ * below the dock) in an editor studio: inert for the same reason as the rail.
+ */
+export function useConvoInert(docked: boolean): boolean {
+  const { convoOpen } = useStudioUI();
+  return useMediaQuery(CONVO_SHEET_QUERY) && docked && !convoOpen;
+}
+
 /**
  * Render a studio's primary actions (Discard / Publish / leave) into the top-bar
  * slot, so they stay reachable when the editor rail is collapsed to a sheet.

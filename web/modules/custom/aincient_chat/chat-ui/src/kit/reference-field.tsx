@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckIcon, DocumentIcon, ImageIcon, PlusIcon, SpinnerIcon, UploadIcon, XIcon } from "./icons";
+import { NewTabMark } from "./new-tab";
 import { apiUrl } from "../console-config";
 import { LoadingState } from "./loading-state";
 
@@ -207,7 +208,8 @@ export function ReferenceField({
             )}
             {editUrl ? (
               <a className="ain-btn ain-topbtn ain-topbtn--sm" href={editUrl} target="_blank" rel="noreferrer" title="Edit this resource">
-                Edit ↗
+                Edit
+                <NewTabMark />
               </a>
             ) : (
               onEdit &&
@@ -219,7 +221,8 @@ export function ReferenceField({
                   disabled={disabled}
                   title="Edit this block's content (opens it in a new tab)"
                 >
-                  Edit ↗
+                  Edit
+                  <NewTabMark />
                 </button>
               )
             )}
@@ -229,7 +232,7 @@ export function ReferenceField({
             {!(compact && current !== "") && (
               <button
                 type="button"
-                className="ain-btn ain-topbtn ain-topbtn--sm"
+                className="ain-btn ain-topbtn"
                 onClick={() => !disabled && setOpen((o) => !o)}
                 disabled={disabled}
               >

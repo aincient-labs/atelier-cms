@@ -8,31 +8,21 @@
    (`studio-css.test.ts`). Shared looks — the field chrome, `.ain-studio__*`,
    `.ain-preview__*`, the buttons — are the console's and are only USED here. */
 
-/* === Navigation & Pages · tab bar + panel ================================== */
-/* Text tabs above the editing panel, active = a 2px ink underline. */
-.ain-globals__tabs {
-  display: flex; gap: 2px; flex: none;
-  padding: 6px 12px 0; border-bottom: 1px solid var(--ain-color-border);
-}
-.ain-globals__tab {
-  appearance: none; font: inherit; font-size: 12px; font-weight: 500;
-  color: var(--ain-color-text-muted); background: none; border: none; cursor: pointer;
-  padding: 7px 9px; border-bottom: 2px solid transparent; margin-bottom: -1px;
-}
-.ain-globals__tab:hover { color: var(--ain-color-text); }
-.ain-globals__tab:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
-.ain-globals__tab[data-active] { color: var(--ain-color-text); border-bottom-color: var(--ain-color-accent); }
+/* === Navigation & Pages · sections (kit Tabs) + panel ======================== */
+/* The kit Tabs fills the rail below the status line; each panel is the rail's
+   scrolling group stack (.ain-studio__groups). */
+.ain-globals__tabs { flex: 1; min-height: 0; gap: 0; }
+.ain-globals__tablist { margin: 8px var(--ain-space-gutter) 2px; }
 .ain-globals__panel { display: flex; flex-direction: column; }
 
 /* === Settings · consent status (under the font-delivery radios) ============ */
 .ain-globals__consent-status {
   display: flex; align-items: flex-start; gap: 6px;
-  margin: 6px 0 0; padding: 8px 10px;
-  font-size: 11.5px; line-height: 1.4; color: var(--ain-color-text-muted);
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
+  margin: 6px 0 0; padding: 0;
+  font-size: var(--ain-font-size-sm); line-height: 1.4; color: var(--ain-color-text-muted);
 }
-.ain-globals__consent-status svg { flex: none; width: 14px; height: 14px; margin-top: 1px; }
-.ain-globals__consent-status[data-active] { color: var(--ain-color-success); border-style: solid; border-color: var(--ain-color-border); }
+.ain-globals__consent-status svg { flex: none; width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); margin-top: 1px; }
+.ain-globals__consent-status[data-active] { color: var(--ain-color-success); }
 
 /* === Settings · Snapshots (Freeze & Live, DECISIONS 0416) ==================
    The last section of the Settings rail, held apart from the chrome fields by
@@ -46,19 +36,18 @@
 .ain-settings-snapshots__head { display: flex; flex-direction: column; gap: 4px; }
 .ain-settings-snapshots__title {
   display: flex; align-items: center; gap: 6px; margin: 0;
-  font-family: var(--ain-font-display); font-weight: 500; font-size: 15px; line-height: 1.3; letter-spacing: -0.01em;
+  font-family: var(--ain-font-display); font-weight: 500; font-size: var(--ain-font-size-lg); line-height: 1.3; letter-spacing: -0.01em;
   color: var(--ain-color-text);
 }
-.ain-settings-snapshots__title svg { font-size: 14px; color: var(--ain-color-accent); }
-.ain-settings-snapshots__explainer { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-settings-snapshots__title svg { font-size: var(--ain-size-icon-md); color: var(--ain-color-accent); }
+.ain-settings-snapshots__explainer { margin: 0; font-size: var(--ain-font-size-sm); line-height: 1.45; color: var(--ain-color-text-muted); }
 
 /* Who visitors see right now — the section's persistent verdict line. The
    well + a 2px moss bar when a snapshot is served (a deliberate state), plain
    when live. */
 .ain-settings-snapshots__serving {
-  margin: 0; padding: 7px 10px; font-size: 12px; line-height: 1.4;
-  color: var(--ain-color-text); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised);
+  margin: 0; padding: 4px 0 4px 10px; font-size: var(--ain-font-size-sm); line-height: 1.4;
+  color: var(--ain-color-text);
   box-shadow: inset 2px 0 0 var(--ain-color-success);
 }
 .ain-settings-snapshots__serving[data-live] { background: none; box-shadow: none; color: var(--ain-color-text-muted); }
@@ -67,7 +56,7 @@
 .ain-settings-snapshots__freeze { display: flex; flex-direction: column; gap: 3px; }
 .ain-settings-snapshots__inputrow { align-items: stretch; }
 .ain-settings-snapshots__freezebtn { flex: none; white-space: nowrap; }
-.ain-settings-snapshots__progress { margin: 4px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--ain-color-warning); }
+.ain-settings-snapshots__progress { margin: 4px 0 0; font-size: var(--ain-font-size-sm); line-height: 1.4; color: var(--ain-color-warning); }
 
 /* The kit LoadingState sits inside the padded section: drop its rail padding. */
 .ain-settings-snapshots__loading { padding: 0; }
@@ -75,51 +64,49 @@
 /* A freeze that came back ok:false — the export's problems, scroll-capped at
    ~6 lines, with the "serve it anyway" override kept secondary (never filled). */
 .ain-settings-snapshots__problems {
-  display: flex; flex-direction: column; gap: 6px; padding: 8px 10px;
-  border: 1px solid var(--ain-color-border);
-  border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised);
+  display: flex; flex-direction: column; gap: 6px; padding: 4px 0 4px 10px;
   box-shadow: inset 2px 0 0 var(--ain-color-danger);
 }
-.ain-settings-snapshots__problems-title { margin: 0; font-size: 12px; line-height: 1.4; color: var(--ain-color-danger); }
+.ain-settings-snapshots__problems-title { margin: 0; font-size: var(--ain-font-size-sm); line-height: 1.4; color: var(--ain-color-danger); }
 .ain-settings-snapshots__problemlist {
   margin: 0; padding: 6px 8px 6px 22px; max-height: 6.4em; overflow-y: auto;
-  font-family: var(--ain-font-mono); font-size: 10.5px; line-height: 1.5; color: var(--ain-color-text);
-  background: var(--ain-color-surface); border: 1px solid var(--ain-color-border); border-radius: 0;
+  font-family: var(--ain-font-mono); font-size: var(--ain-font-size-xs); line-height: 1.5; color: var(--ain-color-text);
+  background: var(--ain-color-surface-raised);
 }
 .ain-settings-snapshots__problemlist li { overflow-wrap: anywhere; }
 .ain-settings-snapshots__problemactions { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* Rows: ring · body (name + chips / meta / counts) · actions. */
-.ain-settings-snapshots__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+/* A ledger (R3, 0516): hairline rows on the rail's paper. */
+.ain-settings-snapshots__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: var(--ain-rule-row); }
 .ain-settings-snapshots__row {
-  display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-bg);
-  transition: border-color .12s;
+  display: flex; align-items: flex-start; gap: 8px; padding: 8px 0 8px 10px;
+  border-bottom: var(--ain-rule-row);
 }
-.ain-settings-snapshots__row[data-serving] { border-color: var(--ain-color-accent); }
-.ain-settings-snapshots__row[data-busy] { border-style: dashed; }
-.ain-settings-snapshots__marker { flex: none; display: inline-flex; margin-top: 2px; font-size: 15px; color: var(--ain-color-text-faint); }
+.ain-settings-snapshots__row[data-serving] { box-shadow: inset 2px 0 0 var(--ain-color-text); }
+.ain-settings-snapshots__row[data-busy] { border-bottom-style: dashed; }
+.ain-settings-snapshots__marker { flex: none; display: inline-flex; margin-top: 2px; font-size: var(--ain-size-icon-md); color: var(--ain-color-text-muted); }
 .ain-settings-snapshots__marker[data-on] { color: var(--ain-color-accent); }
 .ain-settings-snapshots__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .ain-settings-snapshots__name {
   display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-  font-size: 12.5px; font-weight: 500; line-height: 1.3; color: var(--ain-color-text); overflow-wrap: anywhere;
+  font-size: var(--ain-font-size-sm); font-weight: 500; line-height: 1.3; color: var(--ain-color-text); overflow-wrap: anywhere;
 }
-.ain-settings-snapshots__meta, .ain-settings-snapshots__counts { margin: 0; font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); }
+.ain-settings-snapshots__meta, .ain-settings-snapshots__counts { margin: 0; font-size: var(--ain-font-size-xs); line-height: 1.4; color: var(--ain-color-text-muted); }
 .ain-settings-snapshots__counts { font-variant-numeric: tabular-nums; }
-.ain-settings-snapshots__dot { margin: 0 5px; color: var(--ain-color-text-faint); }
+.ain-settings-snapshots__dot { margin: 0 5px; color: var(--ain-color-text-muted); }
 /* State lines (same grammar as the contrast verdict): ink text led by an 8px
    square, hue = the verdict; no fill, no border. */
 .ain-settings-snapshots__chip {
   display: inline-flex; align-items: center; gap: 5px; padding: 0;
-  font-family: var(--ain-font-body); font-size: 11px; font-weight: 400;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-xs); font-weight: 400;
   line-height: 1.45; white-space: nowrap; color: var(--ain-color-text);
 }
 .ain-settings-snapshots__chip::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--ain-settings-snapshots-state, var(--ain-color-text-muted)); }
 .ain-settings-snapshots__chip--serving { --ain-settings-snapshots-state: var(--ain-color-accent); }
 .ain-settings-snapshots__chip--kept { --ain-settings-snapshots-state: var(--ain-color-success); }
 .ain-settings-snapshots__actions { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; max-width: 46%; }
-.ain-settings-snapshots__action svg { font-size: 12px; }
+.ain-settings-snapshots__action svg { font-size: var(--ain-size-icon-sm); }
 .ain-settings-snapshots__delete { color: var(--ain-color-text-muted); }
 .ain-settings-snapshots__delete:not(:disabled):hover { color: var(--ain-color-danger); }
 /* An <a> styled as a button still needs the shared focus ring (it isn't a <button>). */
@@ -132,26 +119,25 @@
 
 /* === Navigation & Pages · inline menu editor (Header / Footer tabs) ======== */
 .ain-globals-menu { display: flex; flex-direction: column; gap: 6px; }
-.ain-globals-menu__empty { margin: 2px 0; font-size: 12px; color: var(--ain-color-text-faint); }
-.ain-globals-menu__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ain-globals-menu__empty { margin: 2px 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
+/* A ledger (R3, 0516): hairline rows; nesting indents, never boxes. */
+.ain-globals-menu__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: var(--ain-rule-row); }
 .ain-globals-menu__row {
-  display: flex; align-items: flex-start; gap: 6px;
-  padding: 7px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface);
+  display: flex; align-items: flex-start; gap: 6px; padding: 7px 0; border-bottom: var(--ain-rule-row);
 }
-.ain-globals-menu__row[data-disabled] { color: var(--ain-color-text-faint); border-style: dashed; }
+.ain-globals-menu__row[data-disabled] { color: var(--ain-color-text-faint); border-bottom-style: dashed; }
 /* Up | nest-under-previous over down | move-out-of-submenu (the keyboard path). */
 .ain-globals-menu__reorder { display: grid; grid-template-columns: repeat(2, 22px); gap: 2px; flex: none; }
-.ain-globals-menu__move { width: 22px; height: 18px; font-size: 12px; }
+.ain-globals-menu__move { width: 22px; height: 18px; font-size: var(--ain-font-size-sm); }
 /* Drag (the page studio's section-grip idiom): the grip drags, the row takes a
    reorder drop (accent line in the gap), the submenu button a nest drop, an
    ancestor crumb a move-up drop. */
 .ain-globals-menu__row { position: relative; }
 .ain-globals-menu__grip {
   flex: none; display: grid; place-items: center; width: 14px; align-self: stretch;
-  color: var(--ain-color-text-faint); cursor: grab;
+  color: var(--ain-color-text-muted); cursor: grab;
 }
-.ain-globals-menu__grip svg { width: 13px; height: 13px; }
+.ain-globals-menu__grip svg { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); }
 .ain-globals-menu__row:hover .ain-globals-menu__grip { color: var(--ain-color-text-muted); }
 .ain-globals-menu__grip:active { cursor: grabbing; }
 .ain-globals-menu__row[data-drop="before"]::before,
@@ -161,7 +147,7 @@
 }
 .ain-globals-menu__row[data-drop="before"]::before { top: -5px; }
 .ain-globals-menu__row[data-drop="after"]::after { bottom: -5px; }
-.ain-globals-menu__row[data-drop="nest"] { border-color: var(--ain-color-accent); }
+.ain-globals-menu__row[data-drop="nest"] { box-shadow: inset 2px 0 0 var(--ain-color-accent); }
 .ain-globals-menu__drill[data-drop="nest"] { color: var(--ain-color-accent); box-shadow: inset 0 0 0 1px var(--ain-color-accent); }
 .ain-globals-menu__crumb[data-drop] { color: var(--ain-color-accent); text-decoration: underline; }
 .ain-globals-menu__fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
@@ -171,7 +157,7 @@
 }
 .ain-globals-menu__shown {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 11px; color: var(--ain-color-text-muted); cursor: pointer; white-space: nowrap;
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); cursor: pointer; white-space: nowrap;
 }
 .ain-globals-menu__shown input { accent-color: var(--ain-color-accent); cursor: pointer; margin: 0; }
 .ain-globals-menu__rowbtns { display: inline-flex; align-items: center; gap: 2px; }
@@ -183,7 +169,7 @@
 }
 .ain-globals-menu__drill:hover { color: var(--ain-color-text); }
 .ain-globals-menu__count {
-  font-size: 10px; line-height: 1; font-variant-numeric: tabular-nums;
+  font-size: var(--ain-font-size-xs); line-height: 1; font-variant-numeric: tabular-nums;
   min-width: 13px; padding: 1px 3px; border-radius: 0; text-align: center;
   background: var(--ain-color-surface-raised); color: var(--ain-color-text-muted);
 }
@@ -193,19 +179,19 @@
 .ain-globals-menu__back:hover { color: var(--ain-color-text); }
 .ain-globals-menu__trail {
   display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px;
-  font-size: 11px; min-width: 0;
+  font-size: var(--ain-font-size-xs); min-width: 0;
 }
-.ain-globals-menu__crumbsep { color: var(--ain-color-text-faint); }
+.ain-globals-menu__crumbsep { color: var(--ain-color-text-muted); }
 .ain-globals-menu__crumb {
   border: none; background: none; padding: 0; cursor: pointer;
-  font-size: 11px; color: var(--ain-color-text-muted); max-width: 11rem;
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); max-width: 11rem;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 button.ain-globals-menu__crumb:hover { color: var(--ain-color-text); text-decoration: underline; }
 .ain-globals-menu__crumb[data-current] { color: var(--ain-color-text); font-weight: 500; cursor: default; }
 .ain-globals-menu__add {
   align-self: flex-start; display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px; padding: 6px 10px; margin-top: 2px;
+  font-size: var(--ain-font-size-sm); padding: 6px 10px; margin-top: 2px;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   background: none; color: var(--ain-color-text-muted); cursor: pointer;
 }
@@ -223,20 +209,20 @@ button.ain-globals-menu__crumb:hover { color: var(--ain-color-text); text-decora
 .ain-settings-examples__head { display: flex; flex-direction: column; gap: 4px; }
 .ain-settings-examples__title {
   display: flex; align-items: center; gap: 6px; margin: 0;
-  font-family: var(--ain-font-display); font-weight: 500; font-size: 15px; line-height: 1.3; letter-spacing: -0.01em;
+  font-family: var(--ain-font-display); font-weight: 500; font-size: var(--ain-font-size-lg); line-height: 1.3; letter-spacing: -0.01em;
   color: var(--ain-color-text);
 }
-.ain-settings-examples__title svg { font-size: 14px; color: var(--ain-color-accent); }
-.ain-settings-examples__explainer { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--ain-color-text-muted); }
-.ain-settings-examples__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ain-settings-examples__title svg { font-size: var(--ain-size-icon-md); color: var(--ain-color-accent); }
+.ain-settings-examples__explainer { margin: 0; font-size: var(--ain-font-size-sm); line-height: 1.45; color: var(--ain-color-text-muted); }
+/* A ledger (R3, 0516): hairline rows on the rail's paper. */
+.ain-settings-examples__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: var(--ain-rule-row); }
 .ain-settings-examples__row {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-bg);
+  display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: var(--ain-rule-row);
 }
-.ain-settings-examples__row[data-busy] { border-style: dashed; }
+.ain-settings-examples__row[data-busy] { border-bottom-style: dashed; }
 .ain-settings-examples__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ain-settings-examples__name { font-size: 12.5px; font-weight: 500; line-height: 1.3; color: var(--ain-color-text); }
-.ain-settings-examples__count { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); font-variant-numeric: tabular-nums; }
+.ain-settings-examples__name { font-size: var(--ain-font-size-sm); font-weight: 500; line-height: 1.3; color: var(--ain-color-text); }
+.ain-settings-examples__count { font-size: var(--ain-font-size-xs); line-height: 1.4; color: var(--ain-color-text-muted); font-variant-numeric: tabular-nums; }
 .ain-settings-examples__clearbtn { flex: none; white-space: nowrap; }
 .ain-settings-examples__actions { display: flex; justify-content: flex-end; }
 
@@ -250,34 +236,31 @@ button.ain-globals-menu__crumb:hover { color: var(--ain-color-text); text-decora
 .ain-settings-managers__head { display: flex; flex-direction: column; gap: 4px; }
 .ain-settings-managers__title {
   display: flex; align-items: center; gap: 6px; margin: 0;
-  font-family: var(--ain-font-display); font-weight: 500; font-size: 15px; line-height: 1.3; letter-spacing: -0.01em;
+  font-family: var(--ain-font-display); font-weight: 500; font-size: var(--ain-font-size-lg); line-height: 1.3; letter-spacing: -0.01em;
   color: var(--ain-color-text);
 }
-.ain-settings-managers__title svg { font-size: 14px; color: var(--ain-color-accent); }
+.ain-settings-managers__title svg { font-size: var(--ain-size-icon-md); color: var(--ain-color-accent); }
 .ain-settings-managers__explainer,
 .ain-settings-managers__howto,
 .ain-settings-managers__empty,
-.ain-settings-managers__footnote { margin: 0; font-size: 11.5px; line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-settings-managers__footnote { margin: 0; font-size: var(--ain-font-size-sm); line-height: 1.45; color: var(--ain-color-text-muted); }
 .ain-settings-managers__howto { padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 .ain-settings-managers__howto code {
-  font-family: var(--ain-font-mono); font-size: 11px; overflow-wrap: anywhere;
+  font-family: var(--ain-font-mono); font-size: var(--ain-font-size-xs); overflow-wrap: anywhere;
   color: var(--ain-color-text);
 }
-.ain-settings-managers__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+/* A ledger (R3, 0516): hairline rows on the rail's paper. */
+.ain-settings-managers__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: var(--ain-rule-row); }
 .ain-settings-managers__row {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-bg);
+  display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: var(--ain-rule-row);
 }
-.ain-settings-managers__row[data-busy] { border-style: dashed; }
+.ain-settings-managers__row[data-busy] { border-bottom-style: dashed; }
 .ain-settings-managers__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .ain-settings-managers__name {
   display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere;
-  font-size: 12.5px; font-weight: 500; line-height: 1.3; color: var(--ain-color-text);
+  font-size: var(--ain-font-size-sm); font-weight: 500; line-height: 1.3; color: var(--ain-color-text);
 }
-.ain-settings-managers__badge {
-  flex: none; padding: 0 6px; border-radius: 0;
-  border: 1px solid var(--ain-color-border-strong); color: var(--ain-color-text);
-  font-size: 11px; font-weight: 400;
-}
-.ain-settings-managers__meta { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); font-variant-numeric: tabular-nums; }
+/* A word, not a chip (R6). */
+.ain-settings-managers__badge { flex: none; color: var(--ain-color-text); font-size: var(--ain-font-size-xs); font-weight: 500; }
+.ain-settings-managers__meta { font-size: var(--ain-font-size-xs); line-height: 1.4; color: var(--ain-color-text-muted); font-variant-numeric: tabular-nums; }
 .ain-settings-managers__revokebtn { flex: none; white-space: nowrap; }

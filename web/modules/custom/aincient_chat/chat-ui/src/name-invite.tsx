@@ -80,7 +80,6 @@ export function NameInvite() {
           disabled={saving}
         />
         <Button
-          size="sm"
           onClick={save}
           disabled={saving || name.trim() === ""}
           title="Save your name"

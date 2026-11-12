@@ -72,7 +72,7 @@ final class StudioManifest {
    * code has loaded (Phase C of plans/studio-modules.md). Absent `entry` and
    * `script` = a chat-only studio.
    */
-  public const UI_KEYS = ['entry', 'script', 'style', 'name', 'icon'];
+  public const UI_KEYS = ['entry', 'script', 'style', 'name', 'short_name', 'icon'];
 
   /**
    * A machine name: a studio id, a flowdrop_workflow id or a capability slug.
@@ -230,8 +230,10 @@ final class StudioManifest {
         $errors[] = '"ui.script" is for pack studios; a studio module under web/modules/studio/ ships a "ui.entry" the console build compiles';
       }
     }
-    if (array_key_exists('name', $ui) && (!is_string($ui['name']) || trim($ui['name']) === '')) {
-      $errors[] = sprintf('"ui.name" must be a non-empty string, got %s', self::describe($ui['name']));
+    foreach (['name', 'short_name'] as $key) {
+      if (array_key_exists($key, $ui) && (!is_string($ui[$key]) || trim($ui[$key]) === '')) {
+        $errors[] = sprintf('"ui.%s" must be a non-empty string, got %s', $key, self::describe($ui[$key]));
+      }
     }
     if (array_key_exists('icon', $ui) && (!is_string($ui['icon']) || preg_match(self::ICON_NAME, $ui['icon']) !== 1)) {
       $errors[] = sprintf('"ui.icon" must be a kit icon name matching %s (e.g. shield-check), got %s', self::ICON_NAME, self::describe($ui['icon']));

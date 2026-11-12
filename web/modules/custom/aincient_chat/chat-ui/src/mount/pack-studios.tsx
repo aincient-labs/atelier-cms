@@ -6,7 +6,7 @@ import { IconButton } from "../kit/button";
 import * as kitIcons from "../kit/icons";
 import { Notice } from "../kit/notice";
 import { PanelBar } from "../kit/panel-bar";
-import { StudioActionsPortal, useStudioUI } from "../kit/studio-ui";
+import { StudioActionsPortal, useRailInert, useStudioUI } from "../kit/studio-ui";
 import type { IconType, StudioDef, StudioUiModule } from "../studio-module";
 import { enabledStudioKeys } from "../studios";
 import {
@@ -212,6 +212,7 @@ function PackStudioRail({
   const ref = useRef<HTMLDivElement>(null);
   const thread = useConsoleThread();
   const { closeSheets } = useStudioUI();
+  const railInert = useRailInert();
   const [failure, setFailure] = useState<string | null>(problem);
   // The context is built once per mount, so read the latest props through refs.
   const live = useRef({ thread, onClose });
@@ -259,7 +260,7 @@ function PackStudioRail({
   }, [id, name, module]);
 
   return (
-    <div className="ain-studio__rail ain-pack-studio" data-testid="studio-rail" data-studio={id}>
+    <div className="ain-studio__rail ain-pack-studio" data-testid="studio-rail" data-studio={id} inert={railInert}>
       <StudioActionsPortal>
         <IconButton
           className="ain-topbar__leave"

@@ -20,6 +20,8 @@ export function Tabs<V extends string>({
   onValueChange,
   defaultValue,
   className,
+  listClassName,
+  panelClassName,
 }: {
   label: string;
   items: readonly TabItem<V>[];
@@ -27,6 +29,9 @@ export function Tabs<V extends string>({
   onValueChange?: (value: V) => void;
   defaultValue?: V;
   className?: string;
+  /** Extra classes on the tab list and on each panel, for a feature's own layout. */
+  listClassName?: string;
+  panelClassName?: string;
 }) {
   return (
     <T.Root
@@ -35,7 +40,7 @@ export function Tabs<V extends string>({
       defaultValue={defaultValue ?? (value === undefined ? items[0]?.value : undefined)}
       onValueChange={onValueChange as ((v: string) => void) | undefined}
     >
-      <T.List className="ain-seg ain-tabs__list" aria-label={label}>
+      <T.List className={cx("ain-seg ain-tabs__list", listClassName)} aria-label={label}>
         {items.map((t) => (
           <T.Trigger key={t.value} value={t.value} disabled={t.disabled} className="ain-btn ain-seg__btn">
             {t.label}
@@ -43,7 +48,7 @@ export function Tabs<V extends string>({
         ))}
       </T.List>
       {items.map((t) => (
-        <T.Content key={t.value} value={t.value} className="ain-tabs__panel">
+        <T.Content key={t.value} value={t.value} className={cx("ain-tabs__panel", panelClassName)}>
           {t.content}
         </T.Content>
       ))}

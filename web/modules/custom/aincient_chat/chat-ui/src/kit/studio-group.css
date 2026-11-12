@@ -1,16 +1,32 @@
-/* --- StudioGroup (kit/studio-group.tsx): one titled group in an editor rail ---
-   Moved unchanged from styles.css (the collapsible-chevron rules it carried had
-   no user left and were dropped). */
-.ain-studio__group { margin-top: 12px; }
+/* --- StudioGroup (kit/studio-group.tsx): one group in an editor rail ---
+   R2 (0516): a group is an ink rule and its heading, never a box. The rule opens
+   the group; the fields sit on the same paper below it. */
+.ain-studio__group { margin-top: var(--ain-space-group); padding-top: 10px; border-top: var(--ain-rule-block); }
+/* The first group in a stack opens right under what's above it. */
+.ain-studio__group:first-child { margin-top: 8px; }
 .ain-studio__grouptitle {
   display: flex; align-items: center; gap: 6px; width: 100%;
   margin: 0 0 6px; padding: 2px 0; border: 0; background: none; text-align: left;
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500;
-  color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500;
+  color: var(--ain-color-text);
 }
-.ain-studio__grouptitle:hover { color: var(--ain-color-text); }
-/* The faint note under the title: what the group governs. */
-.ain-studio__groupnote { margin: -2px 0 8px; font-size: 11px; line-height: 1.4; color: var(--ain-color-text-faint); }
+/* The note under the title: what the group governs. */
+.ain-studio__groupnote { margin: -2px 0 8px; font-size: var(--ain-font-size-xs); line-height: 1.4; color: var(--ain-color-text-muted); }
 /* Title row with actions at the right end (Sections: count + "Expand all"). */
 .ain-studio__grouphead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .ain-studio__grouptitle--static { width: auto; margin-bottom: 0; }
+/* Collapsible: the heading is a chevron + title row. No fill, no icon tile. */
+.ain-studio__group--collapsible .ain-studio__grouptitle { flex: 1; min-width: 0; }
+.ain-studio__grouptoggle {
+  display: flex; align-items: center; gap: 6px; width: 100%; min-height: var(--ain-size-control-sm);
+  margin: 0; padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  font: inherit; color: inherit;
+}
+.ain-studio__grouptoggle:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
+.ain-studio__groupchevron {
+  flex: none; width: var(--ain-size-icon-sm); height: var(--ain-size-icon-sm); color: var(--ain-color-text-muted);
+  transform: rotate(-90deg); transition: transform .12s;
+}
+.ain-studio__group--collapsible[data-open] .ain-studio__groupchevron { transform: none; }
+.ain-studio__groupbody { padding-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .ain-studio__groupchevron { transition: none; } }

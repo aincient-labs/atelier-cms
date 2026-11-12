@@ -61,7 +61,7 @@
   background: var(--ain-color-bg);
   color: var(--ain-color-text);
   font-family: var(--ain-font-body);
-  font-size: 15px;
+  font-size: var(--ain-font-size-lg);
   line-height: 1.6;
 }
 .ain-shell ::selection { background: color-mix(in oklch, var(--ain-color-success) 45%, transparent); }
@@ -75,7 +75,7 @@
    these ::-webkit-scrollbar rules in Chrome, so they're Firefox-only below. */
 #aincient-chat-root ::-webkit-scrollbar { width: 8px; height: 8px; }
 #aincient-chat-root ::-webkit-scrollbar-track { background: transparent; }
-#aincient-chat-root ::-webkit-scrollbar-thumb { background: var(--ain-color-text-faint); border-radius: 0; }
+#aincient-chat-root ::-webkit-scrollbar-thumb { background: var(--ain-color-text-muted); border-radius: 0; }
 #aincient-chat-root ::-webkit-scrollbar-thumb:hover { background: var(--ain-color-text-muted); }
 @supports not selector(::-webkit-scrollbar) {
   /* Firefox can't shape the thumb; at least keep it thin and theme-colored. */
@@ -114,12 +114,12 @@
   cursor: pointer; color: var(--ain-color-text);
   background: transparent; border: 1px solid transparent;
   border-radius: var(--ain-radius-md); padding: 8px 10px;
-  font: inherit; font-size: 13.5px; line-height: 16px;
+  font: inherit; font-size: var(--ain-font-size-md); line-height: 16px;
   transition: color .12s, background .12s, border-color .12s;
 }
 .ain-wipaction:hover { background: var(--ain-color-surface-raised); }
 .ain-wipaction:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
-.ain-wipaction svg { flex: none; font-size: 15px; color: var(--ain-color-text-muted); }
+.ain-wipaction svg { flex: none; font-size: var(--ain-size-icon-md); color: var(--ain-color-text-muted); }
 /* Browse, when it's the room we're in, reads as selected (the well + an ink bar). */
 .ain-wipaction[data-active] {
   background: var(--ain-color-accent-tint); box-shadow: inset 2px 0 0 var(--ain-color-accent); font-weight: 500;
@@ -134,17 +134,17 @@
 .ain-roomthreads { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .ain-roomthreads__head {
   flex: none; margin: 10px 12px 2px; padding: 0 2px;
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ain-threadlist { display: flex; flex-direction: column; min-height: 0; flex: 1; padding: 12px; gap: 10px; }
 .ain-newchat {
-  /* Same control metrics as .ain-topbtn (16px line + 6px pad + 1px border = 30px),
-     just stretched full-width — both "new chat" affordances read as one control. */
+  /* Same control metrics as .ain-topbtn (md height, 0517), just stretched
+     full-width — both "new chat" affordances read as one control. */
   display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; cursor: pointer;
   background: transparent; color: var(--ain-color-text);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  padding: 6px 12px; font: inherit; font-size: 13.5px; line-height: 16px;
+  height: var(--ain-size-control-md); padding: 0 12px; font: inherit; font-size: var(--ain-font-size-md); line-height: 16px;
   transition: border-color .12s;
 }
 .ain-newchat:hover { border-color: var(--ain-color-text); }
@@ -160,19 +160,15 @@
    own `order` (set inline by ThreadGroups). */
 .ain-tlgroup {
   flex: none; margin: 12px 0 3px; padding: 0 10px;
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted);
 }
-.ain-threadlist__empty {
-  margin: 4px 2px; padding: 12px 10px;
-  font-size: 12.5px; line-height: 1.45; color: var(--ain-color-text-muted);
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-}
+.ain-threadlist__empty { margin: 4px 2px; font-size: var(--ain-font-size-sm); line-height: 1.45; color: var(--ain-color-text-muted); border: 0; border-radius: 0; padding: 8px 10px; }
 /* Transcript error-boundary fallback (only shown when a render error persists
    past the auto-reset budget — a transient race recovers without surfacing it). */
 .ain-transcript-error {
   display: flex; flex-direction: column; align-items: center; gap: 12px;
   margin: 24px auto; padding: 20px 16px; max-width: 360px; text-align: center;
-  font-size: 13px; line-height: 1.5; color: var(--ain-color-text-muted);
+  font-size: var(--ain-font-size-md); line-height: 1.5; color: var(--ain-color-text-muted);
 }
 .ain-tli {
   display: flex; align-items: center; border-radius: var(--ain-radius-md); padding: 2px 4px 2px 0;
@@ -194,7 +190,7 @@
 .ain-tli__title { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ain-tli__meta {
   display: flex; align-items: baseline; gap: 4px; min-width: 0; margin-top: 1px;
-  font-size: 11px; color: var(--ain-color-text-muted); white-space: nowrap;
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); white-space: nowrap;
 }
 .ain-tli__flow { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ain-tli__time { flex: none; }
@@ -202,7 +198,7 @@
    voice). A draft row leads with a quiet accent dot + "New page". */
 .ain-tli__badge {
   flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-  font-family: var(--ain-font-body); font-size: 11px; line-height: 1.5;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-xs); line-height: 1.5;
   color: var(--ain-color-text-muted);
 }
 /* The page's editorial marker (Phase 4): the Content browser's whisper chip
@@ -210,7 +206,7 @@
    tightened to sit on the 11px meta line without growing the row. Doubled
    class: the chip's own rule comes later in this file. */
 .ain-studio__statebadge.ain-tli__state {
-  align-self: center; padding: 0; line-height: 15px; font-size: 11px;
+  align-self: center; padding: 0; line-height: 15px; font-size: var(--ain-font-size-xs);
 }
 .ain-tli__dot {
   flex: none; width: 6px; height: 6px; border-radius: 0;
@@ -260,7 +256,7 @@
   position: relative; display: inline-flex; align-items: center;
   cursor: pointer; color: var(--ain-color-text-muted);
   background: transparent; border: 0; border-radius: 0;
-  padding: 6px 4px; font: inherit; font-size: 13px; line-height: 16px;
+  padding: 6px 4px; font: inherit; font-size: var(--ain-font-size-md); line-height: 16px;
   transition: color .12s;
 }
 .ain-section:hover { color: var(--ain-color-text); }
@@ -285,7 +281,7 @@
    active pixel-card idiom only when one of its studios is the current one. */
 .ain-crumb--group .ain-crumb__trigger {
   background: transparent; border-color: transparent; box-shadow: none;
-  color: var(--ain-color-text-muted); padding: 5px 10px; font-size: 13px;
+  color: var(--ain-color-text-muted); padding: 5px 10px; font-size: var(--ain-font-size-md);
 }
 /* The group trigger is a nav LINK like its siblings (Plate 13): same type,
    a bare ▾, active = the same ink underline — never a raised card. */
@@ -304,7 +300,7 @@
 }
 /* The wordmark as the home affordance — a bare button wrapper, no chrome. */
 .ain-brand__home {
-  display: inline-flex; align-items: center; padding: 0; margin: 0;
+  display: inline-flex; align-items: center; padding: 0; margin: 0; min-height: var(--ain-size-control-sm);
   background: none; border: none; cursor: pointer; border-radius: var(--ain-radius-md);
 }
 .ain-brand__home:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
@@ -329,7 +325,7 @@
 .ain-brand { flex: none; display: inline-flex; align-items: center; }
 .ain-tag {
   /* A group label: sentence case, muted — not a badge. */
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 400; color: var(--ain-color-text-muted);
   padding: 2px 0;
 }
 
@@ -338,16 +334,17 @@
    listbox in the .ain-menu anatomy (native select popups ignore the theme),
    collapsing to static text when there's nothing to choose. */
 .ain-breadcrumb { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
-.ain-breadcrumb__sep { flex: none; color: var(--ain-color-text-muted); font-size: 13px; user-select: none; }
+.ain-breadcrumb__sep { flex: none; color: var(--ain-color-text-muted); font-size: var(--ain-font-size-md); user-select: none; }
 .ain-crumb { position: relative; display: inline-flex; align-items: center; min-width: 0; }
 .ain-crumb__trigger,
 .ain-crumb.ain-crumb--static {
   /* Same control metrics as .ain-topbtn so the crumbs and the New button sit at
      one height in the bar. */
   display: inline-flex; align-items: center; gap: 7px; min-width: 0;
-  font: inherit; font-size: 13.5px; line-height: 16px; color: var(--ain-color-text);
+  height: var(--ain-size-control-md);
+  font: inherit; font-size: var(--ain-font-size-md); line-height: 16px; color: var(--ain-color-text);
   background: transparent; border: 1px solid var(--ain-color-border);
-  border-radius: var(--ain-radius-md); padding: 6px 10px; max-width: 200px;
+  border-radius: var(--ain-radius-md); padding: 0 10px; max-width: 200px;
 }
 .ain-crumb__trigger { cursor: pointer; transition: border-color .12s, background .12s; }
 .ain-crumb__trigger:hover,
@@ -355,13 +352,13 @@
 .ain-crumb__trigger:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-crumb.ain-crumb--static { box-shadow: none; background: transparent; border-color: transparent; cursor: default; }
 .ain-crumb__value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ain-crumb__icon { flex: none; font-size: 15px; color: var(--ain-color-text-muted); }
+.ain-crumb__icon { flex: none; font-size: var(--ain-size-icon-md); color: var(--ain-color-text-muted); }
 .ain-crumb__trigger[data-open] .ain-crumb__icon,
 .ain-crumb--studio .ain-crumb__icon { color: var(--ain-color-accent); }
-.ain-crumb__caret { flex: none; font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-crumb__caret { flex: none; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
 /* The crumb's kit Menu (Radix positions it): at least as wide as its trigger. */
 .ain-crumb__menu { min-width: var(--radix-dropdown-menu-trigger-width); max-width: 280px; }
-.ain-crumb__menu .ain-crumb__icon { font-size: 14px; }
+.ain-crumb__menu .ain-crumb__icon { font-size: var(--ain-size-icon-md); }
 
 /* conversation controls grouped by the brand (left side of the top bar) */
 .ain-topbar__controls { display: inline-flex; align-items: center; gap: 10px; margin-left: 10px; min-width: 0; }
@@ -383,7 +380,7 @@
 }
 .ain-usermenu__avatar {
   flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px;
-  font-family: var(--ain-font-display); font-size: 11px; font-weight: 500; line-height: 1;
+  font-family: var(--ain-font-display); font-size: var(--ain-font-size-xs); font-weight: 500; line-height: 1;
   color: var(--ain-color-text);
   background: var(--ain-color-accent-tint);
   border: 1px solid var(--ain-color-border);
@@ -407,7 +404,7 @@
 .ain-usermenu__cardhead { display: flex; align-items: center; gap: 10px; }
 .ain-usermenu__cardavatar {
   flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px;
-  font-family: var(--ain-font-display); font-size: 13px; font-weight: 500; line-height: 1;
+  font-family: var(--ain-font-display); font-size: var(--ain-font-size-md); font-weight: 500; line-height: 1;
   color: var(--ain-color-text);
   background: var(--ain-color-accent-tint);
   border: 1px solid var(--ain-color-border);
@@ -416,30 +413,30 @@
 .ain-usermenu__cardavatar--img { object-fit: cover; }
 .ain-usermenu__ident { min-width: 0; }
 .ain-usermenu__name {
-  display: block; color: var(--ain-color-text); font-weight: 600; font-size: 13.5px;
+  display: block; color: var(--ain-color-text); font-weight: 600; font-size: var(--ain-font-size-md);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ain-usermenu__email {
-  font-size: 12px; color: var(--ain-color-text-muted); margin-top: 1px;
+  font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); margin-top: 1px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* Roles are plain muted words ("Owner"), with the joined date beside them
    ("since Jul 2") — no status pill, no tenure math. */
 .ain-usermenu__roles { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 9px; }
 .ain-usermenu__role {
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 400; color: var(--ain-color-text-muted);
 }
-.ain-usermenu__since { font-size: 11px; color: var(--ain-color-text-faint); }
+.ain-usermenu__since { font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
 
 .ain-confirm__code {
-  font-family: var(--ain-font-mono); font-size: 12px;
+  font-family: var(--ain-font-mono); font-size: var(--ain-font-size-sm);
   padding: 1px 5px; border-radius: 0; word-break: break-all;
   background: var(--ain-color-surface-raised); color: var(--ain-color-text-muted);
 }
 
 /* --- the "+" birth form (new page modal, studio-navigation.md §3.2) --- */
 .ain-newpage { width: 380px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 14px; }
-.ain-newpage__title { margin: 0; font-family: var(--ain-font-display); font-size: 15px; font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
+.ain-newpage__title { margin: 0; font-family: var(--ain-font-display); font-size: var(--ain-font-size-lg); font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
 /* The type field: a <select> once more than one type is ratified (landing +
    blog today), falling back to a read-only contract tile when only one exists.
    Either way it names the composition contract the page is born under — and
@@ -450,24 +447,24 @@
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   background: var(--ain-color-surface-raised);
 }
-.ain-newpage__typename { font-size: 13.5px; font-weight: 600; color: var(--ain-color-text); }
-.ain-newpage__typehint { font-size: 12px; color: var(--ain-color-text-muted); line-height: 1.4; }
+.ain-newpage__typename { font-size: var(--ain-font-size-md); font-weight: 600; color: var(--ain-color-text); }
+.ain-newpage__typehint { font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); line-height: 1.4; }
 /* Under the <select> (not inside the tile, whose flex gap already spaces it). */
 .ain-field > .ain-newpage__typehint { margin-top: 4px; }
-.ain-newpage__note { margin: 4px 0 0; font-size: 11.5px; color: var(--ain-color-text-muted); }
-.ain-newpage__error { margin: 0; font-size: 12.5px; color: var(--ain-color-danger); }
+.ain-newpage__note { margin: 4px 0 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
+.ain-newpage__error { margin: 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-danger); }
 
 /* --- in-console "My Account" pane (DECISIONS 0157, Tier 2; anatomy = study 02, Plate 15) --- */
 .ain-account { width: 420px; max-width: calc(100vw - 32px); display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 48px); overflow-y: auto; }
 /* Display title at ~17px, weight 500 (an h2 left alone renders 700). */
-.ain-account__title { margin: 0; font-family: var(--ain-font-display); font-size: 17px; font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
+.ain-account__title { margin: 0; font-family: var(--ain-font-display); font-size: var(--ain-font-size-lg); font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
 /* Modal forms breathe at the kit's full form scale (spec .f-input: ~14px ink,
    8×11 padding) — the studio rail's 12px density reads cramped on a centered
    pane. Scoped to .ain-confirm so the account pane and the "+" birth form stay
    one scale. */
 .ain-confirm .ain-field { gap: 5px; }
 .ain-confirm .ain-field__input,
-.ain-confirm .ain-selfield__trigger { font-size: 13.5px; padding: 8px 11px; }
+.ain-confirm .ain-selfield__trigger { font-size: var(--ain-font-size-md); padding: 8px 11px; }
 .ain-account__avatarrow { display: flex; align-items: center; gap: 12px; padding-bottom: 4px; }
 /* Square, like every other identity avatar (top bar, flyout) — the pane is
    the same person, not a different shape. */
@@ -475,32 +472,28 @@
   flex: 0 0 auto; width: 52px; height: 52px; border-radius: 0;
   border: 1px solid var(--ain-color-border); background: var(--ain-color-accent-tint);
   color: var(--ain-color-text); display: grid; place-items: center;
-  font-family: var(--ain-font-display); font-size: 20px; font-weight: 500;
+  font-family: var(--ain-font-display); font-size: var(--ain-font-size-xl); font-weight: 500;
 }
 .ain-account__avatar--img { object-fit: cover; padding: 0; background: var(--ain-color-surface-raised); color: transparent; }
 .ain-account__avatarctl { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .ain-account__avatarbtns { display: flex; gap: 6px; }
-.ain-account__hint { margin: 0; font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-account__hint { margin: 0; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
 /* Not a boxed fieldset — a hairline-led section label (the console's section
    idiom, cf. .ain-studio__subtitle) so it doesn't read as a heavy grouped box
    around what is usually a single field. */
 .ain-account__pw { display: flex; flex-direction: column; margin-top: 2px; }
 .ain-account__pwlegend {
   display: flex; align-items: center; gap: 8px; margin: 0 0 10px;
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted);
 }
 .ain-account__pwlegend::after { content: ""; flex: 1; height: 1px; background: var(--ain-color-border); }
 /* "Confirm it's you" — the VISIBLE re-auth group (study 02, Plate 15): a
    quietly recessed block that appears when a protected field is touched, so
    the server's current-password demand is asked up front, never a surprise
    rejection at save. */
-.ain-account__reauth {
-  margin-top: 2px; padding: 10px 12px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised);
-}
-.ain-account__error { margin: 0; font-size: 12.5px; color: var(--ain-color-danger); }
-.ain-account__saved { margin-right: auto; align-self: center; font-size: 12.5px; color: var(--ain-color-text-muted); }
+.ain-account__reauth { margin-top: 2px; padding: 10px 12px; border: 0; border-left: 2px solid var(--ain-color-warning); border-radius: 0; background: none; }
+.ain-account__error { margin: 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-danger); }
+.ain-account__saved { margin-right: auto; align-self: center; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
 /* Law 09 — loading skeleton: real row geometry, value bars as dim placeholders
    that pulse. The container fades in 150ms after mount (pure CSS, no timer) so a
    sub-150ms load shows nothing rather than a flash. */
@@ -519,8 +512,8 @@
    StudioLoadFailed; studio-loader.ts): the rail's own geometry, placeholder
    bars inside, so the workspace keeps its columns and the real rail lands in
    place. The failed state is the same box with a sentence and a retry. */
-.ain-studio-loading__body { display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; }
-.ain-studio-loading__text { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ain-color-text-muted); }
+.ain-studio-loading__body { display: flex; flex-direction: column; gap: 10px; padding: 14px var(--ain-space-gutter); }
+.ain-studio-loading__text { margin: 0; font-size: var(--ain-font-size-md); line-height: 1.45; color: var(--ain-color-text-muted); }
 .ain-studio-loading--failed .ain-studio-loading__body { align-items: flex-start; }
 
 
@@ -549,7 +542,7 @@
 .ain-suggestions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 8px; }
 .ain-suggestion {
   border: 1px solid var(--ain-color-border); background: transparent; color: var(--ain-color-text);
-  padding: 9px 14px; border-radius: var(--ain-radius-md); font-size: 13.5px; cursor: pointer;
+  padding: 9px 14px; border-radius: var(--ain-radius-md); font-size: var(--ain-font-size-md); cursor: pointer;
   transition: border-color .12s;
 }
 /* Hover = the hairline darkens to ink, the secondary-button grammar. */
@@ -567,8 +560,8 @@
    (no pill — nothing in this theme is a pill), hairline + surface-2 fill, so
    it reads as a small system log line in the same pixel language. */
 .ain-msg--action { justify-content: center; padding: 2px 0; }
-.ain-action { display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised); font-size: 12.5px; color: var(--ain-color-text-muted); }
-.ain-action__icon { flex: none; font-size: 13px; color: var(--ain-color-success); }
+.ain-action { display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised); font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
+.ain-action__icon { flex: none; font-size: var(--ain-size-icon-md); color: var(--ain-color-success); }
 .ain-action[data-declined] .ain-action__icon { color: var(--ain-color-danger); }
 .ain-action strong { color: var(--ain-color-text); font-weight: 600; }
 .ain-action__time { white-space: nowrap; }
@@ -584,7 +577,7 @@
    attribution. The boxed speaker tiles (terminal / person) are retired. */
 .ain-msg__name {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; color: var(--ain-color-text-muted); padding: 0 2px;
+  font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); padding: 0 2px;
 }
 .ain-msg__mark { flex: none; width: 16px; height: 16px; color: var(--ain-color-text); }
 /* Timestamps live in the thread header; per-message they surface on hover. */
@@ -592,7 +585,7 @@
 .ain-msg:hover .ain-msg__time,
 .ain-msg:focus-within .ain-msg__time { opacity: 1; }
 .ain-msg__hovertime {
-  font-family: var(--ain-font-body); font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ain-color-text-faint);
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-xs); font-variant-numeric: tabular-nums; color: var(--ain-color-text-muted);
   padding: 0 2px; opacity: 0; transition: opacity .15s;
 }
 .ain-msg--user:hover .ain-msg__hovertime { opacity: 1; }
@@ -608,9 +601,7 @@
   background: var(--ain-color-accent);
   color: var(--ain-color-on-accent);
 }
-.ain-msg--assistant .ain-bubble {
-  background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
-}
+.ain-msg--assistant .ain-bubble { background: none; border: 0; padding-inline: 0; }
 
 /* message action bar (copy only) */
 .ain-actions { display: flex; align-items: center; gap: 2px; min-height: 30px; }
@@ -642,7 +633,10 @@
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border); color: var(--ain-color-text);
   cursor: pointer;
 }
-.ain-scrollbtn[data-state="hidden"] { display: none; }
+/* assistant-ui never hides the button: at the bottom it only sets `disabled`
+   (ThreadPrimitive.ScrollToBottom returns no handler). Hide it then — but keep
+   its box, so the composer doesn't jump 34px when it comes and goes. */
+.ain-scrollbtn:disabled { visibility: hidden; }
 
 /* composer */
 .ain-composer-dock { padding: 12px 20px 18px; max-width: var(--ain-size-column-max); margin: 0 auto; width: 100%; }
@@ -669,7 +663,7 @@
    otherwise make it the odd one out. */
 .ain-composer__convotoggle {
   min-width: 36px; width: 36px; height: 36px; padding: 0;
-  font-size: 18px; background: var(--ain-color-surface-raised);
+  font-size: var(--ain-size-icon-lg); background: var(--ain-color-surface-raised);
   border: 0; border-radius: 0; color: var(--ain-color-text-muted);
 }
 .ain-composer__convotoggle:not(:disabled):hover {
@@ -681,7 +675,7 @@
    quietly the moment the input has content */
 .ain-composer__send {
   flex: 0 0 auto; width: 36px; height: 36px; border: 0;
-  cursor: pointer; color: var(--ain-color-text-muted); font-size: 18px; line-height: 1;
+  cursor: pointer; color: var(--ain-color-text-muted); font-size: var(--ain-size-icon-lg); line-height: 1;
   background: var(--ain-color-surface-raised);
   border-radius: 0;
   transition: background .15s, color .15s;
@@ -701,7 +695,7 @@
 .ain-composer__mic {
   flex: 0 0 auto; width: 36px; height: 36px; border: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--ain-color-text-muted); font-size: 18px; line-height: 1;
+  cursor: pointer; color: var(--ain-color-text-muted); font-size: var(--ain-size-icon-lg); line-height: 1;
   background: var(--ain-color-surface-raised);
   border-radius: 0;
   transition: background .15s, color .15s;
@@ -717,18 +711,18 @@
 .ain-composer__attach {
   flex: 0 0 auto; width: 36px; height: 36px; border: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--ain-color-text-muted); font-size: 18px; line-height: 1;
+  cursor: pointer; color: var(--ain-color-text-muted); font-size: var(--ain-size-icon-lg); line-height: 1;
   background: var(--ain-color-surface-raised);
   border-radius: 0;
   transition: background .15s, color .15s;
 }
 .ain-composer__attach:not(:disabled):hover { color: var(--ain-color-text); }
-.ain-composer__attach--busy { cursor: default; color: var(--ain-color-text-faint); }
+.ain-composer__attach--busy { cursor: default; color: var(--ain-color-text-muted); }
 .ain-spin { animation: ain-spin .9s linear infinite; }
 /* Upload failure — full-width line above the input, in the alert register. */
 .ain-composer__attach-error {
   width: 100%; order: -1; margin: 0 2px 4px;
-  font-size: 11.5px; line-height: 1.3; color: var(--ain-color-danger);
+  font-size: var(--ain-font-size-sm); line-height: 1.3; color: var(--ain-color-danger);
 }
 /* Pending-attachment tray — a full-width block above the composer input. */
 .ain-composer__attachments { width: 100%; margin: 0 2px 4px; }
@@ -748,23 +742,23 @@
 }
 .ain-attach-chip__name {
   min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 12px; color: var(--ain-color-text);
+  font-size: var(--ain-font-size-sm); color: var(--ain-color-text);
 }
 .ain-attach-chip__remove {
   flex: 0 0 auto; display: inline-grid; place-items: center;
   width: 20px; height: 20px; padding: 0; border: 0; border-radius: 0;
-  cursor: pointer; color: var(--ain-color-text-muted); background: transparent; font-size: 13px;
+  cursor: pointer; color: var(--ain-color-text-muted); background: transparent; font-size: var(--ain-font-size-md);
   transition: color .12s, background .12s;
 }
 .ain-attach-chip__remove:hover { color: var(--ain-color-text); background: var(--ain-color-surface); }
 .ain-attach-chip__icon {
   flex: 0 0 auto; display: inline-grid; place-items: center;
-  width: 28px; height: 28px; border-radius: 0;
+  width: var(--ain-size-control-md); height: var(--ain-size-control-md); border-radius: 0;
   background: var(--ain-color-surface); color: var(--ain-color-text-muted);
 }
-.ain-attach-chip__icon svg { width: 16px; height: 16px; }
-.ain-attach-chip__size { flex: 0 0 auto; font-size: 11px; color: var(--ain-color-text-faint); }
-.ain-attach-consent { margin: 0 2px; font-size: 11px; line-height: 1.3; color: var(--ain-color-text-muted); }
+.ain-attach-chip__icon svg { width: var(--ain-size-icon-lg); height: var(--ain-size-icon-lg); }
+.ain-attach-chip__size { flex: 0 0 auto; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
+.ain-attach-consent { margin: 0 2px; font-size: var(--ain-font-size-xs); line-height: 1.3; color: var(--ain-color-text-muted); }
 /* Remote (third-party) image in assistant/agent markdown: never auto-loaded (exfil
    cut, DECISIONS 0347) — rendered as an inert click-to-open citation instead. */
 .ain-remote-image {
@@ -788,31 +782,27 @@
                        a "not yet" — and the only one that links anywhere. */
 .ain-caps {
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px;
-  margin: 0 2px 6px; font-size: 11.5px; line-height: 1.3;
+  margin: 0 2px 6px; font-size: var(--ain-font-size-sm); line-height: 1.3;
 }
 .ain-cap {
   display: inline-flex; align-items: center; gap: 5px;
   color: var(--ain-color-text-muted); text-decoration: none;
 }
-.ain-cap__glyph { font-size: 13px; flex: 0 0 auto; }
+.ain-cap__glyph { font-size: var(--ain-size-icon-md); flex: 0 0 auto; }
 .ain-cap--on { color: var(--ain-color-text-muted); }
 /* Needs setup: the glyph and label step back to faint ink, and the reason
    carries the link. */
-.ain-cap--setup { color: var(--ain-color-text-faint); }
+.ain-cap--setup { color: var(--ain-color-text-muted); }
 /* Not this room's job: struck out in faint ink — it is not an invitation. */
-.ain-cap--unused { color: var(--ain-color-text-faint); }
+.ain-cap--unused { color: var(--ain-color-text-muted); }
 .ain-cap--unused .ain-cap__label { text-decoration: line-through; text-decoration-thickness: 1px; }
 .ain-cap__hint { color: var(--ain-color-text-muted); }
 a.ain-cap--setup:hover { color: var(--ain-color-text-muted); }
 a.ain-cap--setup:hover .ain-cap__hint { color: var(--ain-color-text); text-decoration: underline; }
 a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
-.ain-disclaimer { text-align: center; color: var(--ain-color-text-muted); font-size: 11.5px; margin: 8px 0 0; }
+.ain-disclaimer { text-align: center; color: var(--ain-color-text-muted); font-size: var(--ain-font-size-sm); margin: 8px 0 0; }
 /* Composer frozen because the open page's editor lock is held elsewhere. */
-.ain-composer-locked {
-  text-align: center; color: var(--ain-color-text-muted); font-size: 13px; line-height: 1.4;
-  padding: 14px 16px; border: 1px solid var(--ain-color-border); border-radius: 0;
-  background: var(--ain-color-surface);
-}
+.ain-composer-locked { text-align: center; color: var(--ain-color-text-muted); font-size: var(--ain-font-size-md); line-height: 1.4; padding: 14px 16px; border: 0; border-top: var(--ain-rule-row); border-radius: 0; background: none; }
 
 /* "That's yours. What should we call you?" — the one time the studio asks for a
    name, sitting above the composer right after the first live build.
@@ -821,28 +811,23 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    No accent anywhere — the primary pigment on this screen belongs to Send
    (Law 01) — and no shadow, so it reads as part of the dock rather than
    something that flew in over it (Law 04). */
-.ain-nameinvite {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 8px 16px; margin-bottom: 8px;
-  padding: 10px 12px 10px 14px;
-  border: 1px solid var(--ain-color-border); border-radius: 0;
-  background: var(--ain-color-surface);
-}
-.ain-nameinvite__say { font-size: 13px; line-height: 1.4; }
+.ain-nameinvite { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 8px; border: 0; border-block: var(--ain-rule-row); border-radius: 0; background: none; padding: 10px 0; }
+.ain-nameinvite__say { font-size: var(--ain-font-size-md); line-height: 1.4; }
 .ain-nameinvite__lead { color: var(--ain-color-text); font-weight: 500; }
 .ain-nameinvite__ask { color: var(--ain-color-text-muted); }
 .ain-nameinvite__row { display: flex; align-items: center; gap: 6px; }
 /* Inputs recede — the well + one hairline, like every kit input. */
 .ain-nameinvite__input {
-  width: 11rem; min-width: 0; font: inherit; font-size: 13px;
+  /* One md row with Save and dismiss (F1, 0517). */
+  width: 11rem; min-width: 0; height: var(--ain-size-control-md); font: inherit; font-size: var(--ain-font-size-md);
   color: var(--ain-color-text); background: var(--ain-color-surface-raised);
-  border: 1px solid var(--ain-color-border); border-radius: 0; padding: 5px 9px;
+  border: 1px solid var(--ain-color-border); border-radius: 0; padding: 0 9px;
 }
 .ain-nameinvite__input:focus-visible {
   border-color: var(--ain-color-text);
   outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px;
 }
-.ain-nameinvite__icon { width: 13px; height: 13px; }
+.ain-nameinvite__icon { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); }
 /* Declining is a peer of answering, not a grey afterthought — same quiet voice
    the console gives every other "no thanks". */
 .ain-nameinvite__dismiss {
@@ -870,24 +855,20 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    furniture: chrome tokens, flat --ain-radius-md, tabular numerals. */
 .ain-usage {
   display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 10px;
-  color: var(--ain-color-text-muted); font-size: 11.5px; line-height: 1.4;
+  color: var(--ain-color-text-muted); font-size: var(--ain-font-size-sm); line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
 .ain-usage__metric { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
-.ain-usage__arrow { flex: none; width: 11px; height: 11px; color: var(--ain-color-text-faint); }
-.ain-usage__metric--cached { color: var(--ain-color-text-faint); }
+.ain-usage__arrow { flex: none; width: 11px; height: 11px; color: var(--ain-color-text-muted); }
+.ain-usage__metric--cached { color: var(--ain-color-text-muted); }
 .ain-usage__cost { color: var(--ain-color-text); font-weight: 600; }
 .ain-usage__label {
-  font-size: 11.5px; color: var(--ain-color-text-muted);
+  font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted);
 }
 /* per-turn footer: a quiet line under the message, set off from the prose */
 .ain-msg .ain-usage { margin-top: 6px; }
 /* session chip: pinned above the composer input, right-aligned */
-.ain-usage--session {
-  width: fit-content; margin: 0 0 8px auto;
-  padding: 3px 9px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised);
-}
+.ain-usage--session { width: fit-content; margin: 0 0 8px auto; border: 0; border-radius: 0; background: none; padding: 3px 0; }
 
 /* scrollbars */
 .ain-viewport::-webkit-scrollbar, .ain-threadlist__scroll::-webkit-scrollbar { width: 10px; }
@@ -912,29 +893,29 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 
 /* ---- Load-earlier sentinel (windowed history) ------------------------------ */
 .ain-loadearlier { width: 100%; max-width: var(--ain-size-column-max); margin: 0 auto 8px; display: flex; justify-content: center; }
-.ain-loadearlier .ain-topbtn { font-size: 12.5px; color: var(--ain-color-text-muted); }
+.ain-loadearlier .ain-topbtn { font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
 
 /* ---- Human-in-the-loop request card (FlowDrop pause) ----------------------
    A labelled card: header strip (kind + outcome badge), prompt, choices.
    Answering appends a real user bubble; the card itself just settles.
    A pending card carries the strong (ink) rule; settling (answered/dismissed)
    steps it back to a hairline. No shadow — the card is on the page. */
-.ain-hitl { margin: 6px 2px 4px 0; padding: 12px 14px; border: 1px solid var(--ain-color-border-strong); border-radius: var(--ain-radius-md); background: var(--ain-color-surface); display: flex; flex-direction: column; gap: 10px; transition: border-color .12s; }
+.ain-hitl { margin: 6px 2px 4px 0; display: flex; flex-direction: column; gap: 10px; transition: border-color .12s; border: 0; border-top: var(--ain-rule-block); border-radius: 0; background: none; padding: 10px 0 0; }
 .ain-hitl[data-state="answered"],
 .ain-hitl[data-state="dismissed"] { border-color: var(--ain-color-border); }
 .ain-hitl[data-state="dismissed"] .ain-hitl__prompt { color: var(--ain-color-text-muted); }
 .ain-hitl__head { display: flex; align-items: center; gap: 7px; min-height: 20px; }
-.ain-hitl__headicon { color: var(--ain-color-text-muted); font-size: 15px; flex: none; }
+.ain-hitl__headicon { color: var(--ain-color-text-muted); font-size: var(--ain-size-icon-md); flex: none; }
 .ain-hitl[data-state="answered"] .ain-hitl__headicon,
 .ain-hitl[data-state="dismissed"] .ain-hitl__headicon { color: var(--ain-color-text-muted); }
 /* the card's label, same anatomy as .ain-tlgroup */
-.ain-hitl__title { font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted); }
+.ain-hitl__title { font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted); }
 /* The settled answer is a STATE LINE, not a chip: ink text led by an 8px
    square in the state's colour (no fill, no pill, no border). The square
    replaces the old check/cross glyph. */
 .ain-hitl__badge {
   margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
-  padding: 0; font-family: var(--ain-font-body); font-size: 12.5px; font-weight: 400;
+  padding: 0; font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm); font-weight: 400;
   --ain-hitl-badge-color: var(--ain-color-success);
   color: var(--ain-color-text);
 }
@@ -945,7 +926,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-hitl__badge--muted::before { background: transparent; box-shadow: inset 0 0 0 1px var(--ain-color-text-muted); }
 /* The prompt is rendered markdown: regular weight so **emphasis** can speak,
    bubble-style paragraph rhythm. */
-.ain-hitl__prompt { font-size: 14px; line-height: 1.55; color: var(--ain-color-text); }
+.ain-hitl__prompt { font-size: var(--ain-font-size-md); line-height: 1.55; color: var(--ain-color-text); }
 .ain-hitl__prompt :where(p, ul, ol) { margin: 0 0 .6em; }
 .ain-hitl__prompt :where(p, ul, ol):last-child { margin-bottom: 0; }
 .ain-hitl__prompt ul, .ain-hitl__prompt ol { padding-left: 1.3em; }
@@ -958,8 +939,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-hitl__option.is-selected { border-color: var(--ain-color-accent); background: var(--ain-color-accent-tint); }
 .ain-hitl__option:has(input:focus-visible) { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-hitl__option input { accent-color: var(--ain-color-accent); margin: 0; }
-.ain-hitl__label { color: var(--ain-color-text); font-size: 14px; }
-.ain-hitl__desc { color: var(--ain-color-text-muted); font-size: 12.5px; margin-left: auto; }
+.ain-hitl__label { color: var(--ain-color-text); font-size: var(--ain-font-size-md); }
+.ain-hitl__desc { color: var(--ain-color-text-muted); font-size: var(--ain-font-size-sm); margin-left: auto; }
 .ain-hitl__actions { display: flex; gap: 8px; }
 /* HITL actions ride the shared kit (.ain-topbtn--primary / .ain-topbtn) —
    the bespoke .ain-hitl__submit voice is retired. */
@@ -1002,22 +983,22 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   0%, 20% { opacity: 1; background: var(--ain-color-text); }
   21%, 100% { opacity: .3; background: var(--ain-color-text-muted); }
 }
-.ain-thinking__text { color: var(--ain-color-text-muted); font-size: 13px; }
+.ain-thinking__text { color: var(--ain-color-text-muted); font-size: var(--ain-font-size-md); }
 /* The wait clock: quieter than the status it follows — it is reassurance, not
    news. Tabular figures so a ticking second never shifts the row. */
 .ain-thinking__wait {
-  color: var(--ain-color-text-faint); font-size: 12px;
+  color: var(--ain-color-text-muted); font-size: var(--ain-font-size-sm);
   font-variant-numeric: tabular-nums;
 }
 
 /* ---- Work trail (live turn progress, tool-output style) -------------------
    Owner words by default (see step-vocabulary.ts); machine ids and the wiring
    rows appear only on [data-technical], the operator debug flag. ----------- */
-.ain-trail { margin: 2px 0 4px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised); overflow: hidden; }
+.ain-trail { margin: 2px 0 4px; overflow: hidden; border: 0; border-top: var(--ain-rule-row); border-radius: 0; background: none; }
 .ain-trail__header {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 8px 12px; border: 0; background: none; cursor: pointer;
-  color: var(--ain-color-text-muted); font-size: 13px; text-align: left;
+  color: var(--ain-color-text-muted); font-size: var(--ain-font-size-md); text-align: left;
 }
 .ain-trail__header:hover { color: var(--ain-color-text); }
 .ain-trail__title { white-space: nowrap; }
@@ -1028,7 +1009,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 }
 .ain-trail__latest {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--ain-color-text); font-size: 12.5px;
+  color: var(--ain-color-text); font-size: var(--ain-font-size-sm);
 }
 .ain-trail__spin { animation: ain-spin .9s linear infinite; color: var(--ain-color-text-muted); flex: 0 0 auto; }
 .ain-trail__chevron { margin-left: auto; flex: 0 0 auto; transition: transform .15s; }
@@ -1040,17 +1021,17 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   border-top: 1px solid var(--ain-color-border);
   display: flex; flex-direction: column; gap: 5px;
 }
-.ain-trail__step { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; padding-top: 5px; }
-.ain-trail__glyph { flex: 0 0 auto; align-self: center; font-size: 12px; }
+.ain-trail__step { display: flex; align-items: baseline; gap: 8px; font-size: var(--ain-font-size-sm); padding-top: 5px; }
+.ain-trail__glyph { flex: 0 0 auto; align-self: center; font-size: var(--ain-size-icon-sm); }
 .ain-trail__glyph--done { color: var(--ain-color-success); }
 .ain-trail__glyph--failed { color: var(--ain-color-danger); }
 .ain-trail__glyph--waiting { color: var(--ain-color-text-muted); animation: ain-spin .9s linear infinite; }
 .ain-trail__label { color: var(--ain-color-text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ain-trail__type { color: var(--ain-color-text-muted); font-size: 11.5px; font-family: var(--ain-font-mono); }
-.ain-trail__time { margin-left: auto; color: var(--ain-color-text-muted); font-size: 11.5px; flex: 0 0 auto; }
-.ain-trail__error { flex-basis: 100%; color: var(--ain-color-danger); font-size: 12px; }
+.ain-trail__type { color: var(--ain-color-text-muted); font-size: var(--ain-font-size-sm); font-family: var(--ain-font-mono); }
+.ain-trail__time { margin-left: auto; color: var(--ain-color-text-muted); font-size: var(--ain-font-size-sm); flex: 0 0 auto; }
+.ain-trail__error { flex-basis: 100%; color: var(--ain-color-danger); font-size: var(--ain-font-size-sm); }
 /* tool-call steps (recorded as pipeline jobs) — wrench + accent label */
-.ain-trail__toolglyph { flex: 0 0 auto; align-self: center; font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-trail__toolglyph { flex: 0 0 auto; align-self: center; font-size: var(--ain-size-icon-sm); color: var(--ain-color-text-muted); }
 .ain-trail__step[data-tool] .ain-trail__label { color: var(--ain-color-text); }
 /* Wiring rows reach the trail only in technical mode — kept a shade back so
    the real work still reads first in a debugging session. */
@@ -1063,21 +1044,16 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    most cases nothing is broken in the flow at all. Neutral surface, one dim rule,
    the sentence at body weight; the action reads as a text link, never a button
    (it is navigation to the models form — never a re-send). */
-.ain-provfail {
-  display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px;
-  margin: 4px 0 6px; padding: 10px 12px;
-  border: 1px solid var(--ain-color-border); border-left: 3px solid var(--ain-color-accent);
-  border-radius: var(--ain-radius-md); background: var(--ain-color-surface-raised);
-}
+.ain-provfail { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; margin: 4px 0 6px; padding: 10px 12px; border: 0; border-left: 2px solid var(--ain-color-accent); border-radius: 0; background: none; }
 .ain-provfail__glyph { flex: 0 0 auto; align-self: center; color: var(--ain-color-accent); }
-.ain-provfail__text { flex: 1 1 200px; min-width: 0; color: var(--ain-color-text); font-size: 13px; line-height: 1.45; }
-.ain-provfail__action { flex: 0 0 auto; color: var(--ain-color-accent); font-size: 13px; text-decoration: underline; }
+.ain-provfail__text { flex: 1 1 200px; min-width: 0; color: var(--ain-color-text); font-size: var(--ain-font-size-md); line-height: 1.45; }
+.ain-provfail__action { flex: 0 0 auto; color: var(--ain-color-accent); font-size: var(--ain-font-size-md); text-decoration: underline; }
 .ain-provfail__action:hover { text-decoration: none; }
-.ain-provfail__note { display: block; margin-top: 4px; color: var(--ain-color-text-muted); font-size: 12px; line-height: 1.4; }
+.ain-provfail__note { display: block; margin-top: 4px; color: var(--ain-color-text-muted); font-size: var(--ain-font-size-sm); line-height: 1.4; }
 /* Retry: an offered action, not a primary one — the reader may equally just wait. */
 .ain-provfail__retry {
   flex: 0 0 auto; align-self: center; cursor: pointer;
-  padding: 4px 10px; font: inherit; font-size: 13px;
+  padding: 4px 10px; font: inherit; font-size: var(--ain-font-size-md);
   color: var(--ain-color-text); background: transparent;
   border: 1px solid var(--ain-color-border); border-radius: 0;
 }
@@ -1095,76 +1071,58 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   padding: 2px 4px; border: 0; background: none; cursor: pointer;
   border-radius: 0;
   color: var(--ain-color-text-muted); text-align: left;
-  font-family: var(--ain-font-body); font-size: 12px;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm);
 }
 .ain-activity__line:hover { background: var(--ain-color-surface-raised); color: var(--ain-color-text); }
-.ain-activity__state { flex: 0 0 auto; font-size: 11px; }
+.ain-activity__state { flex: 0 0 auto; font-size: var(--ain-font-size-xs); }
 .ain-activity__state--done { color: var(--ain-color-success); }
 .ain-activity__state--busy { color: var(--ain-color-text-muted); animation: ain-spin .9s linear infinite; }
 .ain-activity__body { padding: 4px 0 2px 22px; display: flex; flex-direction: column; gap: 8px; }
 .ain-activity__section { display: flex; flex-direction: column; gap: 3px; }
-.ain-activity__caption { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
+.ain-activity__caption { font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-activity__pre {
-  margin: 0; padding: 8px 10px; font-size: 12px; line-height: 1.5;
+  margin: 0; padding: 8px 10px; font-size: var(--ain-font-size-sm); line-height: 1.5;
   background: var(--ain-color-bg); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;
 }
 
 /* ---- Weather card (the `weather_card` generative-UI tool) ----------------- */
-.ain-weather {
-  margin: 6px 2px 4px 0; padding: 12px 14px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface);
-  display: flex; flex-direction: column; gap: 12px;
-}
+.ain-weather { margin: 6px 2px 4px 0; display: flex; flex-direction: column; gap: 12px; border: 0; border-top: var(--ain-rule-block); border-radius: 0; background: none; padding: 10px 0 0; }
 .ain-weather__head { display: flex; align-items: baseline; gap: 8px; }
-.ain-weather__title { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
-.ain-weather__loc { font-weight: 600; font-size: 14px; color: var(--ain-color-text); }
+.ain-weather__title { font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 400; color: var(--ain-color-text-muted); }
+.ain-weather__loc { font-weight: 600; font-size: var(--ain-font-size-md); color: var(--ain-color-text); }
 .ain-weather__now { display: flex; align-items: center; gap: 14px; }
 .ain-weather__icon { font-size: 38px; color: var(--ain-color-text-muted); flex: 0 0 auto; }
 .ain-weather__nowtext { display: flex; flex-direction: column; gap: 1px; }
 .ain-weather__temp { font-size: 30px; font-weight: 700; color: var(--ain-color-text); line-height: 1.05; }
-.ain-weather__cond { font-size: 13px; color: var(--ain-color-text-muted); }
-.ain-weather__meta { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: 12.5px; color: var(--ain-color-text-muted); }
+.ain-weather__cond { font-size: var(--ain-font-size-md); color: var(--ain-color-text-muted); }
+.ain-weather__meta { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
 .ain-weather__wind { display: inline-flex; align-items: center; gap: 5px; }
-.ain-weather__wind svg { font-size: 13px; }
+.ain-weather__wind svg { font-size: var(--ain-size-icon-md); }
 .ain-weather__forecast { display: flex; gap: 6px; border-top: 1px solid var(--ain-color-border); padding-top: 10px; }
-.ain-weather__day {
-  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px;
-  padding: 6px 2px; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); background: var(--ain-color-surface);
-}
-.ain-weather__daylabel { font-size: 12px; font-weight: 500; color: var(--ain-color-text-muted); }
-.ain-weather__dayicon { font-size: 18px; color: var(--ain-color-text-muted); }
-.ain-weather__dayrange { font-size: 12.5px; font-weight: 600; color: var(--ain-color-text); }
+.ain-weather__day { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 2px; border: 0; border-radius: 0; background: none; }
+.ain-weather__daylabel { font-size: var(--ain-font-size-sm); font-weight: 500; color: var(--ain-color-text-muted); }
+.ain-weather__dayicon { font-size: var(--ain-size-icon-lg); color: var(--ain-color-text-muted); }
+.ain-weather__dayrange { font-size: var(--ain-font-size-sm); font-weight: 600; color: var(--ain-color-text); }
 .ain-weather__daymin { color: var(--ain-color-text-muted); font-weight: 400; margin-left: 4px; }
 
 /* ---- Studio tour (the `studio_tour` onboarding generative-UI tool) ------- */
-.ain-tour {
-  margin: 6px 2px 4px 0; padding: 12px 14px; max-width: 480px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface);
-  display: flex; flex-direction: column; gap: 12px;
-}
+.ain-tour { margin: 6px 2px 4px 0; max-width: 480px; display: flex; flex-direction: column; gap: 12px; border: 0; border-top: var(--ain-rule-block); border-radius: 0; background: none; padding: 10px 0 0; }
 .ain-tour__head { display: flex; align-items: baseline; gap: 8px; }
-.ain-tour__title { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
-.ain-tour__hint { margin-left: auto; font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-tour__title { font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 400; color: var(--ain-color-text-muted); }
+.ain-tour__hint { margin-left: auto; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
 .ain-tour__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
 /* `.ain-bubble a` underlines prose links — the card is an anchor too, so
    re-assert ink + no underline at matching specificity. */
-.ain-tour__card, .ain-bubble a.ain-tour__card {
-  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface); color: var(--ain-color-text); text-decoration: none;
-  transition: border-color .12s ease;
-}
+.ain-tour__card, .ain-bubble a.ain-tour__card { display: flex; align-items: center; gap: 10px; color: var(--ain-color-text); text-decoration: none; transition: border-color .12s ease; border: 0; border-bottom: var(--ain-rule-row); border-radius: 0; background: none; padding: 10px 0; }
 .ain-tour__card:hover { border-color: var(--ain-color-text); }
 .ain-tour__card:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-tour__card:hover .ain-tour__go { opacity: 1; transform: none; }
-.ain-tour__icon { font-size: 18px; color: var(--ain-color-text-muted); flex: 0 0 auto; }
+.ain-tour__icon { font-size: var(--ain-size-icon-lg); color: var(--ain-color-text-muted); flex: 0 0 auto; }
 .ain-tour__cardbody { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ain-tour__name { font-weight: 500; font-size: 13px; line-height: 1.2; }
-.ain-tour__status { font-size: 11.5px; color: var(--ain-color-text-muted); line-height: 1.35; }
-.ain-tour__go { margin-left: auto; font-size: 13px; color: var(--ain-color-accent); flex: 0 0 auto; opacity: 0; transform: translateX(-3px); transition: opacity .12s ease, transform .12s ease; }
+.ain-tour__name { font-weight: 500; font-size: var(--ain-font-size-md); line-height: 1.2; }
+.ain-tour__status { font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); line-height: 1.35; }
+.ain-tour__go { margin-left: auto; font-size: var(--ain-font-size-md); color: var(--ain-color-accent); flex: 0 0 auto; opacity: 0; transform: translateX(-3px); transition: opacity .12s ease, transform .12s ease; }
 .ain-tour__video {
   position: relative; display: block; width: 100%; padding: 0; border: 1px solid var(--ain-color-border);
   border-radius: var(--ain-radius-md); overflow: hidden; background: var(--ain-color-surface); cursor: pointer;
@@ -1178,33 +1136,28 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: 0;
   background: var(--ain-color-accent); color: var(--ain-color-on-accent);
-  font-size: 18px; transition: background .12s ease;
+  font-size: var(--ain-size-icon-lg); transition: background .12s ease;
 }
 .ain-tour__video:hover .ain-tour__play { background: var(--ain-color-accent-hover); }
 .ain-tour__videolabel {
   position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 10px 7px;
-  font-size: 12px; text-align: left; color: var(--ain-color-text);
+  font-size: var(--ain-font-size-sm); text-align: left; color: var(--ain-color-text);
   background: color-mix(in oklch, var(--ain-color-surface) 92%, transparent);
   border-top: 1px solid var(--ain-color-border);
 }
 
 /* Live preview applied-card (the `brand_preview` tool). Compact, not a full picker. */
-.ain-brandprev {
-  margin: 6px 2px 4px 0; padding: 10px 12px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised);
-  display: flex; align-items: flex-start; gap: 9px;
-}
+.ain-brandprev { margin: 6px 2px 4px 0; display: flex; align-items: flex-start; gap: 9px; border: 0; border-top: var(--ain-rule-block); border-radius: 0; background: none; padding: 10px 0 0; }
 .ain-brandprev__dot {
   flex: none; width: 8px; height: 8px; margin-top: 4px; border-radius: 0;
   background: var(--ain-color-accent);
 }
 .ain-brandprev__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ain-brandprev__label { font-size: 13px; color: var(--ain-color-text); }
-.ain-brandprev__hint { font-size: 11px; color: var(--ain-color-text-muted); }
-.ain-brandprev__rejected { font-size: 11px; color: var(--ain-color-warning); }
+.ain-brandprev__label { font-size: var(--ain-font-size-md); color: var(--ain-color-text); }
+.ain-brandprev__hint { font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
+.ain-brandprev__rejected { font-size: var(--ain-font-size-xs); color: var(--ain-color-warning); }
 /* The page card's changed fields — each a link to its row in Checks (0453). */
-.ain-brandprev__fields { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 2px 0; padding: 0; list-style: none; font-size: 12px; }
+.ain-brandprev__fields { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 2px 0; padding: 0; list-style: none; font-size: var(--ain-font-size-sm); }
 .ain-brandprev__fields a { color: var(--ain-color-text); text-decoration: underline; text-decoration-color: var(--ain-color-border-strong); text-underline-offset: 2px; }
 .ain-brandprev__fields a:hover { text-decoration-color: currentColor; }
 /* A replayed (historical) card applies nothing and its in-memory draft is gone —
@@ -1214,29 +1167,24 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-brandprev.is-historical .ain-brandprev__dot { background: var(--ain-color-text-muted); }
 
 /* First-run "connect AI" panel — shares the brand-picker card idiom. */
-.ain-onboard {
-  margin: 6px 2px 4px 0; padding: 12px 14px; max-width: 420px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface);
-  display: flex; flex-direction: column; gap: 12px;
-}
+.ain-onboard { margin: 6px 2px 4px 0; max-width: 420px; display: flex; flex-direction: column; gap: 12px; border: 0; border-top: var(--ain-rule-block); border-radius: 0; background: none; padding: 10px 0 0; }
 .ain-onboard__head { display: flex; align-items: baseline; gap: 8px; }
-.ain-onboard__title { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
-.ain-onboard__hint { margin-left: auto; font-size: 11px; color: var(--ain-color-text-muted); }
-.ain-onboard__note { margin: 0; font-size: 13px; color: var(--ain-color-text); }
+.ain-onboard__title { font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 400; color: var(--ain-color-text-muted); }
+.ain-onboard__hint { margin-left: auto; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
+.ain-onboard__note { margin: 0; font-size: var(--ain-font-size-md); color: var(--ain-color-text); }
 .ain-onboard__field { display: flex; flex-direction: column; gap: 5px; }
-.ain-onboard__label { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
+.ain-onboard__label { font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-onboard__input, .ain-onboard__select {
-  width: 100%; padding: 8px 10px; font: inherit; font-size: 13px;
+  width: 100%; padding: 8px 10px; font: inherit; font-size: var(--ain-font-size-md);
   color: var(--ain-color-text); background: var(--ain-color-surface-raised);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
 }
 .ain-onboard__input:focus, .ain-onboard__select:focus { border-color: var(--ain-color-text); outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
-.ain-onboard__error { margin: 0; font-size: 12px; color: var(--ain-color-danger); }
+.ain-onboard__error { margin: 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-danger); }
 /* Onboarding actions ride the kit primary — the bespoke ink-fill button
    (which hovered to a second pigment) is retired. */
 .ain-onboard .ain-topbtn { align-self: flex-start; }
-.ain-onboard__foot { margin: 0; font-size: 11px; color: var(--ain-color-text-muted); }
+.ain-onboard__foot { margin: 0; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); }
 .ain-onboard__foot a { color: var(--ain-color-text); text-decoration: underline; }
 
 /* ── First-run onboarding wizard ─────────────────────────────────────────────
@@ -1272,13 +1220,13 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    not punctuation. */
 .ain-wiz__title {
   margin: 0; font-family: var(--ain-font-display);
-  font-weight: 500; font-size: 22px; line-height: 1.25; letter-spacing: -.01em;
+  font-weight: 500; font-size: var(--ain-font-size-xl); line-height: 1.25; letter-spacing: -.01em;
   color: var(--ain-color-text);
 }
-.ain-wiz__lede { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ain-color-text-muted); }
+.ain-wiz__lede { margin: 0; font-size: var(--ain-font-size-md); line-height: 1.5; color: var(--ain-color-text-muted); }
 .ain-wiz__lede--row { display: flex; align-items: flex-start; gap: 8px; }
 .ain-wiz__shield { flex: none; width: 16px; height: 16px; margin-top: 1px; color: var(--ain-color-success); }
-.ain-wiz__note { margin: 0; font-size: 13px; color: var(--ain-color-text-muted); }
+.ain-wiz__note { margin: 0; font-size: var(--ain-font-size-md); color: var(--ain-color-text-muted); }
 
 /* Progress dashes — honest: done/current = accent, ahead = hair. */
 .ain-wiz__dots { display: flex; gap: 6px; }
@@ -1295,14 +1243,8 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    `overflow: hidden auto` keeps the y-axis scrollable while the x-axis stays
    clipped.
    The thumb comes from the console-wide #aincient-chat-root scrollbar rules. */
-.ain-wiz__providers {
-  display: flex; flex-direction: column; gap: 0;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface); overflow: hidden auto;
-  max-height: min(420px, 46vh);
-  /* Anchored so an expanded row's own growth doesn't shove the rows above it. */
-  overflow-anchor: auto;
-}
+.ain-wiz__providers { display: flex; flex-direction: column; gap: 0; overflow: hidden auto; max-height: min(420px, 46vh); /* Anchored so an expanded row's own growth doesn't shove the rows above it. */
+  overflow-anchor: auto; border: 0; border-block: var(--ain-rule-row); border-radius: 0; background: none; }
 .ain-wiz__provider { color: var(--ain-color-text); transition: background .12s; }
 .ain-wiz__provider + .ain-wiz__provider { border-top: 1px solid var(--ain-color-border); }
 .ain-wiz__provider--recommended { background: var(--ain-color-accent-tint); }
@@ -1325,7 +1267,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    on either theme — the visual hook users scan for. */
 .ain-wiz__provider-badge {
   flex: none; display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; font-size: 22px;
+  width: 38px; height: 38px; font-size: var(--ain-size-icon-lg);
   background: #fff; border: 1px solid var(--ain-color-border); border-radius: 0;
 }
 /* No mark for this provider: hold the column, show nothing. A white tile with
@@ -1335,16 +1277,16 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-wiz__provider-mark { width: 1em; height: 1em; }
 .ain-wiz__provider-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ain-wiz__provider-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ain-wiz__provider-name { font-weight: 500; font-size: 14px; }
+.ain-wiz__provider-name { font-weight: 500; font-size: var(--ain-font-size-md); }
 .ain-wiz__provider-desc {
-  font-size: 12px; color: var(--ain-color-text-muted);
+  font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 /* State chips are STATE LINES: sentence-case text, no fill, no pill, no
    border, led by an 8px square in the state colour (::before). */
 .ain-wiz__chip {
   display: inline-flex; align-items: center; gap: 5px;
-  font-family: var(--ain-font-body); font-size: 12px; font-weight: 400;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm); font-weight: 400;
   padding: 0; color: var(--ain-color-text-muted);
 }
 .ain-wiz__chip-icon { width: 8px; height: 8px; }
@@ -1384,12 +1326,12 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   flex: none; align-self: stretch;
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   padding: 0 16px; cursor: pointer;
-  font-family: var(--ain-font-body); font-size: 12px;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm);
   color: var(--ain-color-text-muted); background: transparent;
   border: 0; border-left: 1px solid var(--ain-color-border);
   transition: color .12s, background .12s;
 }
-.ain-wiz__provider-disconnect-icon { width: 14px; height: 14px; }
+.ain-wiz__provider-disconnect-icon { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); }
 .ain-wiz__provider-disconnect-label { line-height: 1; }
 .ain-wiz__provider-disconnect:hover:not(:disabled) {
   color: var(--ain-color-danger);
@@ -1401,9 +1343,9 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 
 /* Fields */
 .ain-wiz__field { display: flex; flex-direction: column; gap: 6px; }
-.ain-wiz__label { font-family: var(--ain-font-body); font-size: 13px; font-weight: 400; color: var(--ain-color-text-muted); }
+.ain-wiz__label { font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 400; color: var(--ain-color-text-muted); }
 .ain-wiz__input, .ain-wiz__select {
-  width: 100%; padding: 10px 12px; font: inherit; font-size: 14px;
+  width: 100%; padding: 10px 12px; font: inherit; font-size: var(--ain-font-size-md);
   color: var(--ain-color-text); background: var(--ain-color-surface-raised);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
 }
@@ -1413,7 +1355,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 }
 .ain-wiz__field-row { display: flex; gap: 8px; align-items: stretch; }
 .ain-wiz__field-row .ain-wiz__input { flex: 1; min-width: 0; }
-.ain-wiz__error { margin: 0; font-size: 13px; color: var(--ain-color-danger); }
+.ain-wiz__error { margin: 0; font-size: var(--ain-font-size-md); color: var(--ain-color-danger); }
 
 /* "How should Atelier pick?" — the one question the models step leads with.
    A segmented control, not a slider: the in-between positions of a slider would
@@ -1425,29 +1367,29 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
 }
 .ain-wiz__segment {
-  flex: 1; padding: 8px 10px; font: inherit; font-size: 13px; font-weight: 500;
+  flex: 1; padding: 8px 10px; font: inherit; font-size: var(--ain-font-size-md); font-weight: 500;
   color: var(--ain-color-text-muted); background: transparent;
   border: 0; border-radius: 0; cursor: pointer;
 }
-.ain-wiz__segment:hover { color: var(--ain-color-text); }
+.ain-wiz__segment:not(.ain-wiz__segment--on):hover { color: var(--ain-color-text); }
 .ain-wiz__segment--on {
   color: var(--ain-color-on-accent); font-weight: 500;
   background: var(--ain-color-accent);
 }
 .ain-wiz__segment:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
-.ain-wiz__profile-desc { margin: 0; font-size: 12px; color: var(--ain-color-text-muted); min-height: 1.4em; }
+.ain-wiz__profile-desc { margin: 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); min-height: 1.4em; }
 
 /* Auto mode prints no models at all (see the wizard docblock) — the read-only
    role→model receipt that used to live here re-posed the very question the
    operator had just delegated. The only thing that still speaks up is a role
    nothing can fill, which is a capability fact rather than a model choice. */
 .ain-wiz__gaps { display: flex; flex-direction: column; gap: 6px; text-align: left; }
-.ain-wiz__gap { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ain-color-text-muted); }
+.ain-wiz__gap { margin: 0; font-size: var(--ain-font-size-sm); line-height: 1.5; color: var(--ain-color-text-muted); }
 .ain-wiz__gap-role { color: var(--ain-color-text); font-weight: 500; }
 
 /* "Choose per role →" — the disclosure to the (unchanged) per-role pickers. */
 .ain-wiz__disclosure {
-  align-self: flex-start; padding: 0; font: inherit; font-size: 13px;
+  align-self: flex-start; padding: 0; font: inherit; font-size: var(--ain-font-size-md);
   color: var(--ain-color-text-muted); background: none; border: 0; cursor: pointer;
 }
 .ain-wiz__disclosure:hover { color: var(--ain-color-text); }
@@ -1470,24 +1412,24 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-wiz__sitepref { text-align: left; }
 .ain-wiz__sitepref code {
   font-family: var(--ain-font-mono);
-  font-size: 11px; color: var(--ain-color-text);
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text);
 }
 
 /* Per-role model pickers (the "choose your models" step) */
 .ain-wiz__roles { display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .ain-wiz__role { display: flex; flex-direction: column; gap: 6px; }
 .ain-wiz__role-head { display: flex; align-items: center; gap: 8px; }
-.ain-wiz__role-name { font-weight: 500; font-size: 14px; }
-.ain-wiz__role-desc { font-size: 12px; color: var(--ain-color-text-muted); }
-.ain-wiz__role--empty { color: var(--ain-color-text-faint); }
-.ain-wiz__role--empty .ain-wiz__role-desc { color: var(--ain-color-text-faint); }
+.ain-wiz__role-name { font-weight: 500; font-size: var(--ain-font-size-md); }
+.ain-wiz__role-desc { font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
+.ain-wiz__role--empty { color: var(--ain-color-text-muted); }
+.ain-wiz__role--empty .ain-wiz__role-desc { color: var(--ain-color-text-muted); }
 
 /* Model picker — a custom listbox (replaces the native <select>) so each option
    can carry a provider mark + a quality chip, with recommended pinned on top. */
 .ain-picker { position: relative; }
 /* The trigger reads like the wizard's inputs. */
 .ain-picker__trigger {
-  width: 100%; cursor: pointer; font: inherit; font-size: 14px; text-align: left;
+  width: 100%; cursor: pointer; font: inherit; font-size: var(--ain-font-size-md); text-align: left;
   display: flex; align-items: center; gap: 8px; padding: 10px 12px;
   color: var(--ain-color-text); background: var(--ain-color-surface-raised);
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
@@ -1509,14 +1451,14 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-picker__list:focus-visible { outline: none; }
 /* Provider group heading — a sentence-case label over a hairline. */
 .ain-picker__group {
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted); padding: 8px 8px 4px; margin-top: 2px;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted); padding: 8px 8px 4px; margin-top: 2px;
   border-top: 1px solid var(--ain-color-border);
 }
 .ain-picker__group:first-child { border-top: 0; margin-top: 0; }
 /* A selectable row. */
 .ain-picker__option {
   display: flex; align-items: center; gap: 8px; cursor: pointer;
-  padding: 7px 8px; border-radius: 0; font-size: 13px;
+  padding: 7px 8px; border-radius: 0; font-size: var(--ain-font-size-md);
 }
 .ain-picker__option--active { background: var(--ain-color-surface-raised); }
 .ain-picker__option[aria-selected="true"] { font-weight: 500; }
@@ -1525,7 +1467,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 /* The provider mark, on the always-white badge (matches the connect step). */
 .ain-picker__mark {
   flex: none; display: inline-flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; font-size: 12px;
+  width: 20px; height: 20px; font-size: var(--ain-font-size-sm);
   background: #fff; border: 1px solid var(--ain-color-border); border-radius: 0;
 }
 .ain-picker__mark--empty { background: transparent; border-color: transparent; }
@@ -1533,7 +1475,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 /* Quality chip beside an option — same state-line vocabulary as the wizard chips. */
 .ain-picker__chip {
   flex: none; display: inline-flex; align-items: center; gap: 5px;
-  font-family: var(--ain-font-body); font-size: 12px; font-weight: 400;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm); font-weight: 400;
   padding: 0; color: var(--ain-color-text-muted);
 }
 .ain-picker__chip-icon { width: 8px; height: 8px; }
@@ -1543,7 +1485,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-wiz__actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .ain-wiz__actions .ain-topbtn--primary { margin-left: auto; }
 .ain-wiz__spin { width: 14px; height: 14px; animation: ain-spin 1s linear infinite; }
-.ain-wiz__foot { margin: 0; font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-wiz__foot { margin: 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
 .ain-wiz__foot a { color: var(--ain-color-text); text-decoration: underline; text-decoration-color: var(--ain-color-border-strong); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1582,11 +1524,13 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 
   /* Top bar: keep the essentials; the button label and dev tag go — the
      wordmark, "+" and the flow name carry the meaning. */
-  .ain-topbar { padding: 10px 12px; }
+  .ain-topbar { padding: 10px var(--ain-space-gutter); }
+  /* The switcher starts on the gutter: no margin of its own (F6). */
+  .ain-sections__crumb { margin-left: 0; }
   .ain-topbar__left, .ain-topbar__right, .ain-topbar__controls { gap: 8px; }
   .ain-topbar__controls { margin-left: 2px; }
   .ain-topbtn__label { display: none; }
-  .ain-topbtn { padding: 6px 9px; }
+  .ain-topbar .ain-topbtn { padding: 0 9px; }
   .ain-crumb__trigger, .ain-crumb.ain-crumb--static { max-width: 120px; }
   .ain-breadcrumb { gap: 4px; }
   .ain-tag { display: none; }
@@ -1651,7 +1595,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-panelbar {
   display: flex; align-items: center; gap: 6px; flex: none;
   min-height: var(--ain-panel-bar-height); box-sizing: border-box;
-  padding: 0 8px 0 12px; border-bottom: 1px solid var(--ain-color-border);
+  padding: 0 8px 0 var(--ain-space-gutter); border-bottom: 1px solid var(--ain-color-border);
   background: var(--ain-color-surface);
 }
 /* Panel label — a sentence-case section head ("Live preview", "Brand
@@ -1659,21 +1603,21 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    than growing the bar taller. */
 .ain-panelbar__title {
   margin-right: auto; min-width: 0;
-  font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* Chat's title is the conversation name — prose, not a label, a touch
    smaller so the New button stays the bar's focal point. */
-.ain-panelbar__title--convo { font-size: 12px; }
+.ain-panelbar__title--convo { font-size: var(--ain-font-size-sm); }
 .ain-panelbar__actions { display: flex; align-items: center; gap: 6px; flex: none; }
 
-.ain-studio__hint { padding: 14px 12px; font-size: 13px; color: var(--ain-color-text-muted); }
+.ain-studio__hint { padding: 14px var(--ain-space-gutter); font-size: var(--ain-font-size-md); color: var(--ain-color-text-muted); }
 
 /* Translation layout-mode banner — shown when editing a non-source language.
    Symmetric = inherited (informational); asymmetric = independent (accented). */
 .ain-studio__langnote {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 9px 12px; font-size: 12px; color: var(--ain-color-text-muted);
+  padding: 9px 12px; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted);
   border-bottom: 1px solid var(--ain-color-border);
   background: var(--ain-color-surface-raised);
 }
@@ -1698,7 +1642,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    Archived = a hollow faint square (dormant, not dangerous). */
 .ain-studio__statebadge {
   flex: none; display: inline-flex; align-items: center; gap: 6px;
-  padding: 0; font-family: var(--ain-font-body); font-size: 12px; font-weight: 400;
+  padding: 0; font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm); font-weight: 400;
   color: var(--ain-color-text);
 }
 .ain-studio__statebadge::before {
@@ -1709,9 +1653,9 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-studio__statebadge[data-state="needs_review"]::before,
 .ain-studio__statebadge[data-pending]::before { background: var(--ain-color-warning); box-shadow: none; }
 .ain-studio__statebadge[data-state="archived"] { color: var(--ain-color-text-muted); }
-.ain-studio__statebadge[data-state="archived"]::before { box-shadow: inset 0 0 0 1px var(--ain-color-text-faint); }
+.ain-studio__statebadge[data-state="archived"]::before { box-shadow: inset 0 0 0 1px var(--ain-color-text-muted); }
 .ain-studio__statebadge-sub { font-weight: 400; color: var(--ain-color-text-muted); }
-.ain-studio__modnote { flex: 1 1 auto; min-width: 0; font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-studio__modnote { flex: 1 1 auto; min-width: 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
 
 /* Stale-write conflict / editor-lock banner (HTTP 409, "Take over") — needs
    attention but is not an error, so it takes the ochre WAITING bar (0501: red
@@ -1722,7 +1666,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   background: var(--ain-color-surface-raised);
   box-shadow: inset 2px 0 0 var(--ain-color-warning);
 }
-.ain-studio__conflictmsg { flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--ain-color-text); }
+.ain-studio__conflictmsg { flex: 1 1 auto; min-width: 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-text); }
 .ain-studio__conflict .ain-studio__confirmbtns { flex: none; }
 
 /* Dropdown list under a studio header — the language switcher (page studio) and
@@ -1736,25 +1680,22 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-pagepick__item {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   width: 100%; text-align: left; cursor: pointer; text-decoration: none;
-  padding: 8px 12px; font-size: 13px; color: var(--ain-color-text);
+  padding: 8px 12px; font-size: var(--ain-font-size-md); color: var(--ain-color-text);
   background: none; border: none; border-bottom: 1px solid var(--ain-color-border);
 }
 .ain-pagepick__item:last-child { border-bottom: none; }
 .ain-pagepick__item:hover { background: var(--ain-color-surface-raised); }
 .ain-pagepick__item:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 .ain-pagepick__item[data-current] { color: var(--ain-color-text-muted); cursor: default; }
-.ain-pagepick__item svg { width: 13px; height: 13px; color: var(--ain-color-text-muted); flex: none; }
+.ain-pagepick__item svg { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); color: var(--ain-color-text-muted); flex: none; }
 .ain-pagepick__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Generic data_table widget (rendered inline in a chat turn). */
-.ain-dtable {
-  margin: 6px 0; border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  overflow: hidden; background: var(--ain-color-surface);
-}
-.ain-dtable--empty { padding: 12px 14px; font-size: 13px; color: var(--ain-color-text-muted); }
-.ain-dtable__table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ain-dtable { margin: 6px 0; overflow: hidden; border: 0; border-block: var(--ain-rule-row); border-radius: 0; background: none; }
+.ain-dtable--empty { padding: 12px 14px; font-size: var(--ain-font-size-md); color: var(--ain-color-text-muted); }
+.ain-dtable__table { width: 100%; border-collapse: collapse; font-size: var(--ain-font-size-md); }
 .ain-dtable__table th {
-  text-align: left; font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted);
+  text-align: left; font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted);
   padding: 8px 12px; border-bottom: 1px solid var(--ain-color-border);
 }
 .ain-dtable__table td {
@@ -1772,16 +1713,16 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-dtable__link { color: inherit; text-decoration: none; font-weight: 500; }
 .ain-dtable__link:hover, .ain-dtable__link:focus-visible { text-decoration: underline; }
 .ain-dtable__summary {
-  margin: 0; padding: 8px 12px; font-size: 12px; color: var(--ain-color-text-muted);
+  margin: 0; padding: 8px 12px; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted);
   border-bottom: 1px solid var(--ain-color-border);
 }
 .ain-dtable__pager {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 6px 10px; border-top: 1px solid var(--ain-color-border);
 }
-.ain-dtable__pagestat { font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-dtable__pagestat { font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
 /* Pager rides the kit (.ain-topbtn--sm); only the metric tweak stays. */
-.ain-dtable__pagebtn { font-size: 12px; }
+.ain-dtable__pagebtn { font-size: var(--ain-font-size-sm); }
 
 /* Inline confirm shown when a discard would clear an unpublished page — a
    destructive step: a 2px brick bar, never a red fill. */
@@ -1791,13 +1732,13 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   background: var(--ain-color-surface);
   box-shadow: inset 2px 0 0 var(--ain-color-danger);
 }
-.ain-studio__confirmmsg { font-size: 12.5px; color: var(--ain-color-text); }
+.ain-studio__confirmmsg { font-size: var(--ain-font-size-sm); color: var(--ain-color-text); }
 .ain-studio__confirmbtns { display: flex; align-items: center; gap: 6px; }
 
 /* The section editor is a <fieldset> so read-only mode can disable every control
    at once — reset the element's default chrome (border/margin/min-inline-size)
    so it behaves like the plain scroll container it replaced. */
-.ain-studio__groups { flex: 1; overflow-y: auto; padding: 6px 12px 16px; border: 0; margin: 0; min-inline-size: 0; }
+.ain-studio__groups { flex: 1; min-height: 0; overflow-y: auto; padding: 6px var(--ain-space-gutter) 16px; border: 0; margin: 0; min-inline-size: 0; }
 .ain-studio__groups:disabled { opacity: 0.65; }
 
 /* ─── INTENT CARDS ──────────────────────────────────────────────────────────
@@ -1806,11 +1747,6 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
    with high-level preset chips; the raw knobs tuck under an Advanced fold. */
 .ain-studio__groups { display: flex; flex-direction: column; gap: 10px; }
 
-/* Screen-reader-only label (visible text lives in the glyph + title tooltip). */
-.ain-sr-only {
-  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
-  overflow: hidden; clip: rect(0 0 0 0); border: 0; white-space: nowrap;
-}
 
 .ain-field__swatch {
   flex: none; width: 28px; height: 28px; padding: 0; cursor: pointer;
@@ -1822,15 +1758,11 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 
 
 /* The page TYPE, stated as a read-only fact in the Page group (fixed at
-   creation — DECISIONS 0378). Reads as a value, not a disabled control: there
-   is no editing affordance to suppress, because there is no edit. */
-.ain-studio__typeline {
-  margin: 0; display: flex; flex-direction: column; gap: 2px; padding: 7px 9px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised);
-}
-.ain-studio__typename { font-size: 13px; font-weight: 600; color: var(--ain-color-text); }
-.ain-studio__typehint { font-size: 11px; line-height: 1.4; color: var(--ain-color-text-muted); }
+   creation — DECISIONS 0378). Only editable values look editable (R4, 0516):
+   this is text, with no box, because there is no edit. */
+.ain-studio__typeline { margin: 0; display: flex; flex-direction: column; gap: 2px; padding: 0; }
+.ain-studio__typename { font-size: var(--ain-font-size-md); font-weight: 600; color: var(--ain-color-text); }
+.ain-studio__typehint { font-size: var(--ain-font-size-xs); line-height: 1.4; color: var(--ain-color-text-muted); }
 
 /* Component knobs are divided per component (Button, Card, …) — a hairline-led
    sub-heading sets each group off without competing with the tier title. */
@@ -1838,7 +1770,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-studio__subgroup:first-of-type { margin-top: 2px; }
 .ain-studio__subtitle {
   display: flex; align-items: center; gap: 8px;
-  margin: 0 0 8px; font-size: 11.5px; font-weight: 600; color: var(--ain-color-text-muted);
+  margin: 0 0 8px; font-size: var(--ain-font-size-sm); font-weight: 600; color: var(--ain-color-text-muted);
 }
 .ain-studio__subtitle::after {
   content: ""; flex: 1; height: 1px; background: var(--ain-color-border);
@@ -1863,13 +1795,13 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 
 .ain-field__ref {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 11px; color: var(--ain-color-text-muted); font-family: var(--ain-font-mono);
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); font-family: var(--ain-font-mono);
 }
 /* The colour value as authored (oklch()/rgb()/#hex, or a var() reference) shown
    beside/under its swatch; what it resolves to is on the control's hover title. */
 .ain-field__name {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 11px; color: var(--ain-color-text-muted); font-family: var(--ain-font-mono);
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); font-family: var(--ain-font-mono);
 }
 
 /* Stacked colour control (paired row): swatch over its value label. The value
@@ -1886,9 +1818,13 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 
 /* --- live preview (centre canvas — gets the lion's share so the page reads true) --- */
 .ain-preview { flex: 2 1 0; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+/* A preview head with a lens switch (Checks) drops its title on a narrow pane
+   before the switch gets squeezed (audit N3): the selected lens names the view. */
+.ain-preview { container: preview / inline-size; }
+@container preview (max-width: 480px) { .ain-panelbar--lensed .ain-panelbar__title { display: none; } }
 
 /* Preview & editor heads use the shared `.ain-panelbar` (see above). */
-.ain-preview__open { color: var(--ain-color-text-muted); text-decoration: none; font-size: 12px; }
+.ain-preview__open { color: var(--ain-color-text-muted); text-decoration: none; font-size: var(--ain-font-size-sm); }
 .ain-preview__open:hover { color: var(--ain-color-text); }
 .ain-preview__open:hover { text-decoration: underline; }
 /* Double-buffered preview: layers stack in this box; the incoming one fades in
@@ -1918,7 +1854,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-preview__pin {
   position: absolute; right: 12px; pointer-events: auto; cursor: pointer;
   height: 22px; padding: 0 8px; border-radius: 0;
-  font-family: var(--ain-font-body); font-size: 12px;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm);
   color: var(--ain-color-text); background: var(--ain-color-surface);
   border: 1px solid var(--ain-color-border); border-left-width: 3px;
 }
@@ -1960,7 +1896,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 /* Side tags: quiet chips so it's never ambiguous which half is which. */
 .ain-preview__tag {
   position: absolute; top: 8px; z-index: 4; pointer-events: none;
-  font-size: 12px;
+  font-size: var(--ain-font-size-sm);
   padding: 2px 6px; color: var(--ain-color-text-muted);
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
   border-radius: var(--ain-radius-md);
@@ -1978,7 +1914,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
   width: 26px; height: 26px; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; line-height: 1; color: var(--ain-color-on-accent);
+  font-size: var(--ain-font-size-md); line-height: 1; color: var(--ain-color-on-accent);
   background: var(--ain-color-accent); border: 1px solid transparent;
   border-radius: var(--ain-radius-md);
   cursor: ew-resize; pointer-events: auto; touch-action: none;
@@ -2018,31 +1954,15 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   padding-right: 12px; border-right: 1px solid var(--ain-color-border);
 }
 .ain-lifecycle__state { white-space: nowrap; }
-.ain-lifecycle__split { display: inline-flex; }
-/* Publish disabled but the caret still offers other actions: the caret drops to
-   the secondary voice so an ink block never sits beside a disabled primary. */
-.ain-lifecycle__split > .ain-btn:first-child:disabled + .ain-btn:not(:disabled) {
-  background: transparent; border-color: var(--ain-color-border); color: var(--ain-color-text);
-}
-.ain-lifecycle__split > .ain-btn:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.ain-lifecycle__split > .ain-btn + .ain-btn {
-  border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: 1px; padding-inline: 7px;
-}
-.ain-lifecycle__to { margin-left: auto; padding-left: 16px; font-size: 12px; color: var(--ain-color-text-muted); white-space: nowrap; }
-/* Narrow top bars shed the chip's qualifier, then (phone) the chip and Discard:
-   the rail's state note still says it, and Publish stays reachable. */
+.ain-lifecycle__to { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding-left: 16px; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); white-space: nowrap; }
+/* Narrow top bars shed the chip's qualifier, then (phone) the chip; Discard moves
+   into the primary's menu there (page-lifecycle-bar.tsx). */
 @media (max-width: 1099px) {
   .ain-lifecycle .ain-studio__statebadge-sub { display: none; }
 }
 @media (max-width: 767px) {
   .ain-lifecycle { padding-right: 0; border-right: 0; }
-  .ain-lifecycle__state, .ain-lifecycle .ain-topbtn--quiet { display: none; }
-}
-.ain-studio-actions__dirty {
-  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px;
-  font-size: 11px; font-weight: 500; line-height: 1; color: var(--ain-color-text);
-  background: transparent; border-radius: 0;
-  box-shadow: inset 0 0 0 1px var(--ain-color-warning);
+  .ain-lifecycle__state { display: none; }
 }
 /* Shown only when the rail is a sheet (sheet breakpoints turn these on). */
 .ain-topbar__edittoggle,        /* reveal the rail */
@@ -2068,10 +1988,15 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
   .ain-shell--studio .ain-studio__rail {
     position: absolute; top: 0; right: 0; bottom: 0; z-index: 1090;
     flex: none; width: 360px; max-width: 86%;
-    box-shadow: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
     transform: translateX(calc(100% + 3px)); transition: transform .22s ease;
   }
-  .ain-shell--studio[data-studio-edit="open"] .ain-studio__rail { transform: none; }
+  /* The shadow only while open: its 60px blur reaches ~30px past the rail, so a
+     closed rail parked off-screen would still grey the preview's right edge
+     (the sidebar drawer drops its shadow when closed for the same reason). */
+  .ain-shell--studio[data-studio-edit="open"] .ain-studio__rail {
+    transform: none;
+    box-shadow: 0 34px 60px -30px color-mix(in oklch, var(--ain-color-shadow) 55%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
+  }
 }
 
 /* ------- phone: preview canvas; chat docked; conversation + rail are sheets ------- */
@@ -2081,6 +2006,7 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
      the crumb), the agent crumb, and the leave ✕ (leave via the studio
      switcher). Keeps Publish/Discard reachable without overflowing. */
   .ain-shell--studio .ain-brand,
+  .ain-shell--studio .ain-brand__home,
   .ain-shell--studio .ain-crumb--agent,
   .ain-shell--studio .ain-breadcrumb__sep,
   .ain-shell--studio .ain-topbar__leave { display: none; }
@@ -2127,29 +2053,32 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 /* --- content browser: pick a page from the canvas (Content preview / Checks) --- */
 .ain-browser {
   flex: 1; min-height: 0; display: flex; flex-direction: column;
-  padding: 16px; gap: 12px; overflow: hidden;
+  padding: 16px var(--ain-space-gutter); gap: 12px; overflow: hidden;
 }
 /* The toolbar is the filter home (Plate 10, tier 1): recessed search · one
    segmented state facet · the view's single primary action. */
-.ain-browser__bar { display: flex; gap: 8px; align-items: center; flex: none; }
-.ain-browser__search { flex: 1; min-width: 0; }
+/* Wraps rather than squeezing: the search is the only flexible item, so on a
+   narrow pane it used to shrink to ~18px. A wide pane keeps one line; a narrow
+   one gives the search the first line to itself and the facet + actions the next. */
+.ain-browser { container-type: inline-size; }
+.ain-browser__bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: none; }
+.ain-browser__search { flex: 1 1 10rem; min-width: 0; }
+@container (max-width: 560px) { .ain-browser__search { flex-basis: 100%; } }
 .ain-browser__bar .ain-seg { flex: none; }
-.ain-browser__bar .ain-seg__btn { flex: none; padding: 5px 12px; }
+.ain-browser__bar .ain-seg__btn { flex: none; padding: 0 12px; }
 .ain-browser__new { flex: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.ain-browser__new svg { width: 14px; height: 14px; }
+.ain-browser__new svg { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); }
 /* Active filters are visible: a result count under the toolbar. */
 .ain-browser__count {
   flex: none; margin-top: -4px;
-  font-family: var(--ain-font-body); font-size: 12px;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm);
   color: var(--ain-color-text-muted);
 }
-/* The LEDGER (study 02, Plate 10): all rows share ONE panel with hairline
-   separators — never per-row bordered boxes ("boxes in space"). */
+/* The LEDGER (study 02, Plate 10; R3, 0516): hairline rows on the pane's own
+   paper. The pane is the frame, so the list draws none. */
 .ain-browser__list {
   flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0;
-  display: block;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface);
+  display: block; border-block: var(--ain-rule-row);
 }
 .ain-browser__list > li + li { border-top: 1px solid var(--ain-color-border); }
 .ain-browser__row {
@@ -2162,26 +2091,26 @@ a.ain-cap--setup:focus-visible { outline: 2px solid var(--ain-color-focus-ring);
 .ain-browser__row:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: -2px; }
 /* Title over its mono fact line (path · section count) — what operators scan. */
 .ain-browser__cell { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.ain-browser__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: 13.5px; }
+.ain-browser__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; font-size: var(--ain-font-size-md); }
 .ain-browser__facts {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-family: var(--ain-font-mono); font-size: 10.5px;
-  color: var(--ain-color-text-faint);
+  font-family: var(--ain-font-mono); font-size: var(--ain-font-size-xs);
+  color: var(--ain-color-text-muted);
 }
 /* Bare tabular time — "Edited" is implied by the column. */
 .ain-browser__changed {
   flex: none; min-width: 34px; text-align: right;
-  font-family: var(--ain-font-body); font-size: 12px; font-variant-numeric: tabular-nums;
-  color: var(--ain-color-text-faint); white-space: nowrap;
+  font-family: var(--ain-font-body); font-size: var(--ain-font-size-sm); font-variant-numeric: tabular-nums;
+  color: var(--ain-color-text-muted); white-space: nowrap;
 }
 /* The editorial status badge reuses the canonical .ain-studio__statebadge so the
    directory and the open-doc modbar can never drift. */
 .ain-browser__row .ain-studio__statebadge { flex: none; white-space: nowrap; }
 .ain-browser__pager { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ain-browser__page { display: inline-flex; align-items: center; gap: 4px; }
-.ain-browser__page svg { width: 14px; height: 14px; }
+.ain-browser__page svg { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); }
 .ain-browser__page:disabled { opacity: .4; cursor: default; }
-.ain-browser__range { font-size: 12px; color: var(--ain-color-text-muted); }
+.ain-browser__range { font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); }
 
 /* Markdown body editor: monospace for legible source (headings, lists, fences). */
 textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height: 1.55; }
@@ -2194,13 +2123,13 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 
 .ain-studio__count {
   margin-left: 6px; padding: 0 5px; font-family: var(--ain-font-body);
-  font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: 0;
+  font-size: var(--ain-font-size-xs); font-variant-numeric: tabular-nums; letter-spacing: 0;
   color: var(--ain-color-text-muted); background: transparent;
-  border: 1px solid var(--ain-color-border); border-radius: 0;
 }
 .ain-studio__allbtn {
-  margin: 0; padding: 2px 4px; border: 0; background: none; cursor: pointer;
-  font: inherit; font-size: 11px; color: var(--ain-color-text-muted);
+  display: inline-flex; align-items: center; height: var(--ain-size-control-sm);
+  margin: 0; padding: 0 4px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted);
 }
 .ain-studio__allbtn:hover { color: var(--ain-color-text); }
 
@@ -2209,20 +2138,19 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-row { display: flex; align-items: flex-start; gap: 4px; }
 .ain-row__fields { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .ain-row__del { flex: none; }
-.ain-row__del svg { width: 13px; height: 13px; }
+.ain-row__del svg { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); }
 
 /* --- accordion panels editor: a nested, two-level control (panel → blocks).
-   Each panel is a bordered card; its blocks indent under a left accent rule. --- */
-.ain-panels { display: flex; flex-direction: column; gap: 8px; }
+   Each panel is a ledger row (R3, 0516): a hairline above, no box. --- */
+.ain-panels { display: flex; flex-direction: column; border-bottom: var(--ain-rule-row); }
 .ain-panel {
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised); padding: 8px; display: flex; flex-direction: column; gap: 8px;
+  border-top: var(--ain-rule-row); padding: 8px 0; display: flex; flex-direction: column; gap: 8px;
 }
 .ain-panel__head { display: flex; align-items: center; gap: 6px; }
 .ain-panel__label { flex: 1; min-width: 0; }
 .ain-panel__open {
   flex: none; display: flex; align-items: center; gap: 4px;
-  font-size: 11px; color: var(--ain-color-text-muted); white-space: nowrap; cursor: pointer;
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); white-space: nowrap; cursor: pointer;
 }
 .ain-panel__open .ain-field__checkbox { margin: 0; accent-color: var(--ain-color-accent); cursor: pointer; }
 .ain-panel__blocks {
@@ -2238,17 +2166,17 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
   flex: none; width: 48px; height: 48px; padding: 0; overflow: hidden; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface-raised); color: var(--ain-color-text-faint);
+  background: var(--ain-color-surface-raised); color: var(--ain-color-text-muted);
   transition: border-color .08s;
 }
 .ain-media__thumb:not(:disabled):hover { border-color: var(--ain-color-text); }
 .ain-media__thumb:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
 .ain-media__thumb:disabled { cursor: default; opacity: .6; }
 .ain-media__thumb img { width: 100%; height: 100%; object-fit: cover; }
-.ain-media__thumbicon { width: 18px; height: 18px; }
+.ain-media__thumbicon { width: var(--ain-size-icon-lg); height: var(--ain-size-icon-lg); }
 .ain-media__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 .ain-media__name {
-  font-size: 11px; color: var(--ain-color-text-muted);
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ain-media__btns { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
@@ -2256,18 +2184,18 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 /* Unified reference field: the derived description, status line + manual-entry
    token input shared by every reference type (media / node / block). */
 .ain-ref__desc {
-  font-size: 11px; color: var(--ain-color-text-faint);
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ain-ref__status {
   margin-left: 6px; display: inline-flex; align-items: center; gap: 5px;
-  font-size: 11px; color: var(--ain-color-text);
+  font-size: var(--ain-font-size-xs); color: var(--ain-color-text);
 }
 /* A broken reference is an error: the brick square says so. */
 .ain-ref__status::before { content: ""; flex: none; width: 8px; height: 8px; background: var(--ain-color-danger); }
 .ain-ref__token {
   margin-top: 6px; width: 100%;
-  font-family: var(--ain-font-mono); font-size: 11px;
+  font-family: var(--ain-font-mono); font-size: var(--ain-font-size-xs);
   color: var(--ain-color-text-muted);
 }
 /* A set token collapses to a copyable mono chip (Law 13) — borderless, the
@@ -2277,7 +2205,7 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-ref__chip {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 2px 8px; border-radius: 0;
-  font-family: var(--ain-font-mono); font-size: 11px;
+  font-family: var(--ain-font-mono); font-size: var(--ain-font-size-xs);
   color: var(--ain-color-text-muted);
   background: var(--ain-color-surface-raised);
 }
@@ -2288,17 +2216,14 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-ref__tokenrow:focus-within .ain-ref__copy,
 .ain-ref__tokenrow:focus-within .ain-ref__edittoken { opacity: 1; }
 
-/* The picker panel: a search/upload bar over a thumbnail grid. */
-.ain-mediapick {
-  margin-top: 8px; padding: 8px;
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface);
-}
+/* The picker panel: a search/upload bar over a thumbnail grid. It opens in
+   the rail's flow, so it is ruled above and below, not boxed (R1, 0516). */
+.ain-mediapick { margin-top: 8px; padding: 8px 0; border-block: var(--ain-rule-row); }
 .ain-mediapick__bar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .ain-mediapick__bar .ain-field__input { flex: 1; }
-.ain-mediapick__bar .ain-topbtn svg { width: 13px; height: 13px; }
-.ain-mediapick__error { margin: 0 0 8px; font-size: 11px; color: var(--ain-color-danger); }
-.ain-mediapick__empty { margin: 4px 0; font-size: 11px; color: var(--ain-color-text-faint); text-align: center; }
+.ain-mediapick__bar .ain-topbtn svg { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); }
+.ain-mediapick__error { margin: 0 0 8px; font-size: var(--ain-font-size-xs); color: var(--ain-color-danger); }
+.ain-mediapick__empty { margin: 4px 0; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); text-align: center; }
 /* The kit LoadingState inside the picker: the picker already pads its body. */
 .ain-mediapick__loading { padding: 4px 0; }
 .ain-mediapick__grid {
@@ -2320,18 +2245,18 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
   width: 16px; height: 16px; border-radius: 0;
   background: var(--ain-color-accent); color: var(--ain-color-on-accent);
 }
-.ain-mediapick__check svg { width: 11px; height: 11px; }
+.ain-mediapick__check svg { width: var(--ain-size-icon-sm); height: var(--ain-size-icon-sm); }
 
 /* Embed + global-block reference controls (Phase 4b/5). */
 .ain-embed__control { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ain-embed__current {
-  flex: 1; min-width: 0; font-size: 12px; color: var(--ain-color-text);
+  flex: 1; min-width: 0; font-size: var(--ain-font-size-sm); color: var(--ain-color-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.ain-embed__none { color: var(--ain-color-text-faint); }
+.ain-embed__none { color: var(--ain-color-text-muted); }
 .ain-embed__vm { width: auto; min-width: 84px; padding-top: 4px; padding-bottom: 4px; }
 .ain-embed__bundle {
-  margin-left: 6px; font-size: 11px; color: var(--ain-color-text-muted);
+  margin-left: 6px; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted);
 }
 .ain-spin { animation: ain-spin 0.7s linear infinite; }
 
@@ -2349,18 +2274,15 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 }
 .ain-endstate[data-variant="denied"] .ain-endstate__icon,
 .ain-endstate[data-variant="gone"] .ain-endstate__icon { color: var(--ain-color-text-muted); }
-.ain-endstate__title { margin: 2px 0 0; font-family: var(--ain-font-display); font-size: 16px; font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
+.ain-endstate__title { margin: 2px 0 0; font-family: var(--ain-font-display); font-size: var(--ain-font-size-lg); font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
 .ain-endstate__body {
-  margin: 0; max-width: 42ch; font-size: 13px; line-height: 1.5; color: var(--ain-color-text-muted);
+  margin: 0; max-width: 42ch; font-size: var(--ain-font-size-md); line-height: 1.5; color: var(--ain-color-text-muted);
 }
 .ain-endstate__actions {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px;
 }
 /* In-composer mounting: a calm panel where the input used to be. */
-.ain-endstate--composer {
-  border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
-  background: var(--ain-color-surface); padding: 20px;
-}
+.ain-endstate--composer { border: 0; border-top: var(--ain-rule-row); border-radius: 0; background: none; padding: 20px 0; }
 /* Overlay mounting: the centred card on the confirm scrim. */
 .ain-endstate--overlay {
   background: var(--ain-color-surface); border: 1px solid var(--ain-color-border);
@@ -2377,15 +2299,15 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .ain-starnudge__text {
-  margin: 0; max-width: 40ch; font-size: 12.5px; line-height: 1.45; color: var(--ain-color-text-muted);
+  margin: 0; max-width: 40ch; font-size: var(--ain-font-size-sm); line-height: 1.45; color: var(--ain-color-text-muted);
 }
 .ain-starnudge__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
 /* Star CTA is a SECONDARY control (hairline) — the celebration's one filled
    control is "View page" (Law 01, one fill per view). */
-.ain-starnudge__cta svg { width: 14px; height: 14px; color: var(--ain-color-accent); }
+.ain-starnudge__cta svg:not(.ain-newtab) { width: var(--ain-size-icon-md); height: var(--ain-size-icon-md); color: var(--ain-color-accent); }
 .ain-starnudge__dismiss {
   background: none; border: none; cursor: pointer; padding: 6px 10px; font: inherit;
-  font-size: 12px; color: var(--ain-color-text-faint); border-radius: var(--ain-radius-md);
+  font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); border-radius: var(--ain-radius-md);
 }
 .ain-starnudge__dismiss:hover { color: var(--ain-color-text-muted); }
 .ain-starnudge__dismiss:focus-visible { outline: 2px solid var(--ain-color-focus-ring); outline-offset: 2px; }
@@ -2397,10 +2319,10 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
    of the console: hairlines, square, no shadows. */
 
 /* presence canvas */
-.ain-presence { flex: 1; min-height: 0; overflow: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 20px; }
+.ain-presence { flex: 1; min-height: 0; overflow: auto; padding: 18px var(--ain-space-gutter); display: flex; flex-direction: column; gap: 20px; }
 .ain-presence__block { width: 100%; max-width: 560px; margin: 0 auto; }
-.ain-presence__label { margin: 0 0 8px; font-family: var(--ain-font-body); font-size: 13px; font-weight: 500; color: var(--ain-color-text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.ain-presence__tag { font-weight: 400; font-size: 11px; color: var(--ain-color-text-faint); border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); padding: 0 5px; }
+.ain-presence__label { margin: 0 0 8px; font-family: var(--ain-font-body); font-size: var(--ain-font-size-md); font-weight: 500; color: var(--ain-color-text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ain-presence__tag { font-weight: 400; font-size: var(--ain-font-size-xs); color: var(--ain-color-text-muted); padding: 0 0 0 6px; }
 
 /* social share unfurl card */
 .ain-social { border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); overflow: hidden; background: var(--ain-color-surface); }
@@ -2430,9 +2352,9 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-teasercard__body { padding: 14px 16px; border-top: 1px solid var(--ain-color-border); }
 .ain-teasercard__title { margin: 0 0 5px; font-size: 17px; font-weight: 700; line-height: 1.25; color: var(--ain-color-text); }
 .ain-teasercard__desc { margin: 0; font-size: 12.5px; color: var(--ain-color-text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ain-teasercard__arrow { width: 1em; height: 1em; vertical-align: -0.125em; }
 .ain-teasercard__more { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 500; color: var(--ain-color-text); text-decoration: underline; text-decoration-color: var(--ain-color-border-strong); }
 
-@media (max-width: 640px) { .ain-presence { padding: 14px 12px; } }
 
 /* ---- Hands-on marker -------------------------------------------------------
    Flags a studio field the chat agent CANNOT reach, so a human-only field never
@@ -2449,10 +2371,10 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
   vertical-align: middle;
   border-radius: 0;
 }
-.ain-handson__icon { font-size: 14px; flex: none; }
+.ain-handson__icon { font-size: var(--ain-size-icon-md); flex: none; }
 .ain-handson__text {
   min-width: 0;
-  font-size: 11px;
+  font-size: var(--ain-font-size-xs);
   font-weight: 500;
   color: var(--ain-color-text-muted);
 }

@@ -18,13 +18,13 @@
   border-radius: var(--ain-radius-md);
   box-shadow: 0 26px 46px -22px color-mix(in oklch, var(--ain-color-shadow) 50%, transparent), 0 0 0 1px color-mix(in oklch, var(--ain-color-shadow) 8%, transparent);
 }
-.ain-confirm__text { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--ain-color-text); }
+.ain-confirm__text { margin: 0 0 14px; font-size: var(--ain-font-size-md); line-height: 1.5; color: var(--ain-color-text); }
 .ain-confirm__actions { display: flex; justify-content: flex-end; gap: 9px; }
 /* The Radix Dialog's card: a title + body + actions column, scroll inside. */
 .ain-dialog { display: flex; flex-direction: column; gap: 12px; width: 420px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow-y: auto; }
 .ain-dialog:focus-visible { outline: none; }
-.ain-dialog__title { margin: 0; font-family: var(--ain-font-display); font-size: 15px; font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
-.ain-dialog__description { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ain-color-text-muted); }
+.ain-dialog__title { margin: 0; font-family: var(--ain-font-display); font-size: var(--ain-font-size-lg); font-weight: 500; letter-spacing: -0.01em; color: var(--ain-color-text); }
+.ain-dialog__description { margin: 0; font-size: var(--ain-font-size-md); line-height: 1.5; color: var(--ain-color-text-muted); }
 .ain-dialog .ain-confirm__actions { margin-top: 2px; }
 /* A title row with a close ✕ (Dialog closeButton) — the form dialogs. */
 .ain-dialog__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

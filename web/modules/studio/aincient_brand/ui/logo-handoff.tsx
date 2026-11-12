@@ -68,7 +68,7 @@ export function LogoHandoff(payload: LogoHandoffPayload) {
       </div>
       <div className="ain-design-system-logohandoff__actions">
         <Button variant="primary" onClick={open}>
-          Open Identity &rarr; {label} <ArrowRightIcon />
+          Open {label} in Identity <ArrowRightIcon />
         </Button>
       </div>
     </div>

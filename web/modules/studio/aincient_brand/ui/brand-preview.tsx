@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PanelBar, Button } from "@console/kit";
+import { PanelBar, Button, NewTabMark, ArrowLeftRightIcon } from "@console/kit";
 import {
   subscribeBrandOverrides,
   subscribeBrandPreviewReload,
@@ -290,7 +290,8 @@ export function BrandPreview() {
               Compare
             </Button>
             <a className="ain-preview__open" href="/demo/brand" target="_blank" rel="noreferrer">
-              Open ↗
+              Open
+              <NewTabMark />
             </a>
           </>
         }
@@ -336,7 +337,7 @@ export function BrandPreview() {
                 aria-valuemax={100}
                 aria-valuenow={Math.round(pos)}
               >
-                <span aria-hidden="true">⇆</span>
+                <ArrowLeftRightIcon />
               </button>
             </div>
             {/* While dragging, an overlay above both frames captures pointer

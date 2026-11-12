@@ -10,6 +10,8 @@ import {
   type PageTeaser,
 } from "./page-state";
 import { PanelBar } from "./kit/panel-bar";
+import { ArrowRightIcon } from "./kit/icons";
+import { NewTabMark } from "./kit/new-tab";
 import { apiUrl } from "./console-config";
 
 /**
@@ -187,7 +189,8 @@ export function PresencePreview() {
         actions={
           p.url ? (
             <a className="ain-preview__open" href={p.url} target="_blank" rel="noreferrer">
-              Open ↗
+              Open
+              <NewTabMark />
             </a>
           ) : undefined
         }
@@ -209,7 +212,7 @@ export function PresencePreview() {
             <div className="ain-teasercard__body">
               <p className="ain-teasercard__title">{p.teaserTitle}</p>
               <p className="ain-teasercard__desc">{p.teaserDescription || DASH}</p>
-              <span className="ain-teasercard__more">Read more &rarr;</span>
+              <span className="ain-teasercard__more">Read more <ArrowRightIcon className="ain-teasercard__arrow" /></span>
             </div>
           </div>
         </section>

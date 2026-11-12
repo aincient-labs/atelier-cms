@@ -13,12 +13,16 @@
    highlight, so the fill no longer competes with a pigment). */
 .ain-seg {
   display: flex; gap: 2px; padding: 2px;
+  height: var(--ain-size-control-md); box-sizing: border-box;
   border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md);
   background: transparent;
 }
+/* inline-flex + centre: the label sits in the middle of the track whatever
+   padding a feature adds (0517 fixed the height, not the padding). */
 .ain-seg__btn {
+  display: inline-flex; align-items: center; justify-content: center;
   flex: 1; border: 0; background: transparent; border-radius: 0;
-  font: inherit; font-size: 11.5px; color: var(--ain-color-text-muted); padding: 5px 8px; cursor: pointer;
+  font: inherit; font-size: var(--ain-font-size-sm); color: var(--ain-color-text-muted); padding: 0 8px; cursor: pointer;
   white-space: nowrap;
   transition: background .1s, color .1s;
 }
