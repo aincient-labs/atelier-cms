@@ -406,17 +406,18 @@ final class PageStore {
         }
       }
     }
+    // Typed SDC booleans (BOOLEAN_PROPS: accordion `exclusive`, gallery
+    // `lightbox`) — coerce ALWAYS, or a studio text field / model string reaches
+    // the SDC as a string and 500s the render. filter_var maps
+    // "true"/"1"/"yes"/"on" → TRUE and "false"/"0"/""/"no"/"off" → FALSE; any
+    // other free text → FALSE.
+    foreach (ComponentCatalog::BOOLEAN_PROPS as $flag) {
+      if (isset($props[$flag]) && !is_bool($props[$flag])) {
+        $props[$flag] = filter_var($props[$flag], FILTER_VALIDATE_BOOLEAN);
+      }
+    }
     // accordion: the first heterogeneous container.
     if ($name === 'accordion') {
-      // `exclusive` is a typed SDC boolean — coerce ALWAYS (independent of
-      // panels), or a studio text field / model string reaches the SDC as a
-      // string and 500s the render. filter_var maps "true"/"1"/"yes"/"on" → TRUE
-      // and "false"/"0"/""/"no"/"off" → FALSE; any other free text → FALSE.
-      if (isset($props['exclusive'])) {
-        $props['exclusive'] = is_bool($props['exclusive'])
-          ? $props['exclusive']
-          : filter_var($props['exclusive'], FILTER_VALIDATE_BOOLEAN);
-      }
       // Validate each panel's child blocks against the bounded child allow-list
       // (ACCORDION_BLOCKS) — dropping anything unknown or any container, so a
       // panel can never nest a section or another accordion — and clamp each

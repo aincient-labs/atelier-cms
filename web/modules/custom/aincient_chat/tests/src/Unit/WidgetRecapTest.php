@@ -58,7 +58,7 @@ final class WidgetRecapTest extends UnitTestCase {
       'widget' => 'studio_tour',
       'payload' => ['rooms' => [['key' => 'content', 'status' => '3 pages so far'], ['key' => 'globals', 'status' => '']]],
     ]]);
-    $this->assertSame('[shown to the user: room cards — Pages (3 pages so far), Globals]', $line);
+    $this->assertSame('[shown to the user: room cards — Pages (3 pages so far), Navigation & Pages]', $line);
   }
 
   /**

@@ -124,8 +124,25 @@ final class PageSpikeController implements ContainerInjectionInterface {
     ];
     $content = (string) $this->renderer->renderInIsolation($build);
     $path = $this->moduleList->getPath('aincient_pages');
+    $content .= $this->galleryIsland($content, $path);
     $css = base_path() . $path . '/assets/aincient-pages.css?v=' . @filemtime("$path/assets/aincient-pages.css");
     return new Response($this->shell($content, $css, $title, $this->brand->cssVariables(), '', FALSE));
+  }
+
+  /**
+   * The gallery island's script tag, or '' (DECISIONS 0523).
+   *
+   * Carousel controls + lightbox over a carousel that already scrolls with no
+   * JavaScript. Loaded only when a carousel or lightbox gallery rendered; the
+   * studio previews get it too, so the author can try the controls before
+   * publishing. The bespoke shell bypasses #attached (the consent.js precedent).
+   */
+  private function galleryIsland(string $content, string $path): string {
+    if (!str_contains($content, 'data-gallery=')) {
+      return '';
+    }
+    $src = htmlspecialchars(base_path() . $path . '/js/gallery.js?v=' . @filemtime("$path/js/gallery.js"), ENT_QUOTES);
+    return "\n<script src=\"$src\" defer></script>";
   }
 
   /**
@@ -274,6 +291,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
       $islandSrc = htmlspecialchars(base_path() . $path . '/js/collection.js?v=' . @filemtime("$path/js/collection.js"), ENT_QUOTES);
       $content .= "\n<script src=\"$islandSrc\" defer></script>";
     }
+    $content .= $this->galleryIsland($content, $path);
     // The site brand: a :root override injected after the stylesheet, so the
     // design tokens reskin every component with no rebuild.
     $brandCss = $this->brand->cssVariables();
@@ -740,6 +758,23 @@ final class PageSpikeController implements ContainerInjectionInterface {
     if (in_array($name, ComponentCatalog::RENDERER_VARIANT_COMPONENTS, TRUE) && ($props['variant'] ?? '') === '') {
       $props['variant'] = 'default';
     }
+    // A component that GAINS a `variant` enum (gallery, DECISIONS 0523) has
+    // stored slots saved before it existed: an absent variant reaches the SDC
+    // as "" and 500s the page. Backfill the declared default (the first listed),
+    // the same value PageStore::clampProps() writes on the next save.
+    if (($props['variant'] ?? '') === '') {
+      $variants = $this->catalog->discovered()->variantsFor($name);
+      if ($variants) {
+        $props['variant'] = $variants[0];
+      }
+    }
+    // Typed SDC booleans (accordion `exclusive`, gallery `lightbox`): the SDC
+    // throws on a string, so never hand it one, whichever path led here.
+    foreach (ComponentCatalog::BOOLEAN_PROPS as $flag) {
+      if (isset($props[$flag]) && !is_bool($props[$flag])) {
+        $props[$flag] = filter_var($props[$flag], FILTER_VALIDATE_BOOLEAN);
+      }
+    }
     // Image SLOTS: a (component, prop) mapped in VIEW_MODES renders through Rift
     // as a responsive <picture> render array in the named view mode, lifted OUT
     // of the validated string props into an SDC #slot (a render array can't live
@@ -830,6 +865,8 @@ final class PageSpikeController implements ContainerInjectionInterface {
       return $props;
     }
     $map = ['rows' => $rowsProp, 'image' => (string) ($rows[$rowsProp]['image'] ?? 'image'), 'view_mode' => (string) ($rows[$rowsProp]['view_mode'] ?? '')];
+    $styles = $rows[$rowsProp]['styles'] ?? [];
+    $map['styles'] = is_array($styles) ? array_filter(array_map('strval', $styles), static fn($k) => preg_match('/^[a-z]+$/', (string) $k) === 1, ARRAY_FILTER_USE_KEY) : [];
     if ($map['view_mode'] === '' || !is_array($props[$map['rows']] ?? NULL)) {
       return $props;
     }
@@ -842,6 +879,16 @@ final class PageSpikeController implements ContainerInjectionInterface {
       $token = is_array($row) ? ($row[$map['image']] ?? NULL) : NULL;
       if (!is_string($token) || !$this->embed->isToken($token)) {
         continue;
+      }
+      // Extra per-row URLs in named image styles (`styles: {suffix: style}`,
+      // '' = the original file): the gallery carousel's uncropped slide and the
+      // lightbox's full-size image (DECISIONS 0523). Rift's view modes crop to
+      // a fixed ratio, so these are plain URLs, not pictures.
+      foreach ($map['styles'] as $suffix => $style) {
+        $url = $this->embed->url($token, $style === '' ? NULL : $style);
+        if ($url !== NULL) {
+          $props[$map['rows']][$i][$map['image'] . '_' . $suffix] = $url;
+        }
       }
       $picture = $this->embed->picture($token, $map['view_mode'], $langcode, [
         'rift_container_query' => ['enable_container_queries' => TRUE],

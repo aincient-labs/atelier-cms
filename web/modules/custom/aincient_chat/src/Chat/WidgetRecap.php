@@ -42,8 +42,8 @@ final class WidgetRecap {
   private const ROOMS = [
     'content' => 'Pages',
     'media' => 'Library',
-    'design_system' => 'Design System',
-    'globals' => 'Globals',
+    'design_system' => 'Identity',
+    'globals' => 'Navigation & Pages',
   ];
 
   /**

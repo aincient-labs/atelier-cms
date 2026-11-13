@@ -30,6 +30,7 @@ class AssetExtractorTest extends UnitTestCase {
         <video poster="/sites/default/files/poster.jpg"><source src="/sites/default/files/clip.mp4"></video>
         <script src="/modules/custom/x/js/app.js"></script>
         <a href="/pages/bar">a page link, not an asset</a>
+        <a href="/sites/default/files/full.png" data-asset>a lightbox target</a>
       </body></html>
       HTML;
 
@@ -46,6 +47,7 @@ class AssetExtractorTest extends UnitTestCase {
       '/sites/default/files/poster.jpg',
       '/sites/default/files/clip.mp4',
       '/modules/custom/x/js/app.js',
+      '/sites/default/files/full.png',
     ];
     foreach ($expected as $url) {
       $this->assertContains($url, $urls);

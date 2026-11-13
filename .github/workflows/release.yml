@@ -35,7 +35,8 @@ name: Release image
 # the image. Verification is opt-in for consumers (see the sign step for the
 # exact `cosign verify` invocation).
 #
-# Secrets: COSIGN_PRIVATE_KEY + COSIGN_PASSWORD (image signing). Composer
+# Secrets: COSIGN_PRIVATE_KEY + COSIGN_PASSWORD (image signing), in the `release`
+# Environment (main + v* tags only), never repo/org-wide. Composer
 # authenticates to the GitHub API with the built-in GITHUB_TOKEN (rate-limit
 # avoidance only). FlowDrop resolves from public drupal.org — the old private
 # FLOWDROP_TOKEN PAT is no longer needed.
@@ -50,6 +51,9 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   # Gate the publish on the same PHP Kernel tests CI runs (agent loop +
   # Commands). The smoke test only proves the container installs/upgrades/rolls
@@ -60,10 +64,10 @@ jobs:
     name: PHP Kernel tests (agent loop + Commands)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Set up PHP 8.4
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.4'
           extensions: gd, pdo_sqlite, sqlite3, mbstring, dom, xml, curl, intl, zip, bcmath, opcache
@@ -71,7 +75,7 @@ jobs:
           tools: composer:v2
 
       - name: Cache Composer downloads
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/composer
           key: composer-${{ hashFiles('composer.lock') }}
@@ -121,7 +125,7 @@ jobs:
     name: Converge unit tests (bats)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # run.sh executes the suite in the bats/bats image; Docker is preinstalled.
       - name: Run converge bats suite
@@ -151,19 +155,19 @@ jobs:
       # with the release it descends from (`git describe --tags` below), and a
       # shallow clone carries no tags — the stamp would silently fall back to
       # 0.0.0 and every edge install would look older than every floor.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
       # No setup-qemu-action: each arch builds on its own native silicon.
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       # Expose the Actions cache runtime token to plain `run:` steps so smoke.sh's
       # raw `docker buildx build --cache-to type=gha` can reach the cache backend
       # (these vars exist in the job but aren't exported to shell steps by default).
       - name: Expose GHA cache to buildx
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
@@ -206,7 +210,7 @@ jobs:
           echo "stamping $(printf '%s' "$EXT" | tr ',' '\n' | wc -l) shipped extensions" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -310,7 +314,7 @@ jobs:
       # Each arch uploads a marker file named for its image digest; the merge job
       # downloads both to reconstruct the digest list.
       - name: Upload digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: digest-${{ matrix.arch }}
           path: /tmp/digests/*
@@ -324,31 +328,48 @@ jobs:
     name: Merge manifest + tag
     needs: build
     runs-on: ubuntu-latest
+    # The signing key lives ONLY in this Environment's secrets (COSIGN_PRIVATE_KEY,
+    # COSIGN_PASSWORD), and the Environment admits only main and v* tags — so no
+    # other job, branch, PR or repository can read it.
+    environment: release
     permissions:
       contents: read
       packages: write
     steps:
       - name: Download digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: /tmp/digests
           pattern: digest-*
           merge-multiple: true
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Keyless signing (below) needs the cosign binary; the signature is minted
-      # against the GHCR login above.
+      # The signing step (below) needs the cosign binary; the signature is pushed
+      # with the GHCR login above. Fetched directly and checked against a pinned
+      # SHA-256 — no third-party action runs in the job that holds the signing key.
+      # Bump: change both values from the release's cosign_checksums.txt
+      # (https://github.com/sigstore/cosign/releases). Stays on v2: v3 changes the
+      # default signature format, which the documented `cosign verify` must match.
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+        env:
+          COSIGN_VERSION: v2.5.2
+          COSIGN_SHA256: bcfeae05557a9f313ee4392d2f335d0ff69ebbfd232019e3736fb04999fe1734
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/cosign \
+            "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64"
+          echo "${COSIGN_SHA256}  /tmp/cosign" | sha256sum -c -
+          sudo install -m 0755 /tmp/cosign /usr/local/bin/cosign
+          /usr/local/bin/cosign version
 
       # github.repository is already owner/repo (aincient-labs/atelier-cms); lowercase
       # it defensively for GHCR so this publishes ghcr.io/aincient-labs/atelier-cms
@@ -381,7 +402,7 @@ jobs:
           echo "${IMAGE}:${TAGS[0]} (linux/amd64, linux/arm64 — native, smoke-validated)" >> "$GITHUB_STEP_SUMMARY"
 
       # Cosign signature with our own key pair. The private key + its password
-      # are repo/org secrets (COSIGN_PRIVATE_KEY, COSIGN_PASSWORD); the matching
+      # are secrets of the `release` Environment (COSIGN_PRIVATE_KEY, COSIGN_PASSWORD); the matching
       # public key ships in this repo as cosign.pub. The signature is stored
       # alongside the image in GHCR, so pulling needs nothing extra. Verification
       # is opt-in for consumers:
@@ -394,7 +415,9 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
         run: |
           set -euo pipefail
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY "${IMAGE}@${DIGEST}"
+          # Absolute path: an earlier step can prepend to PATH (GITHUB_PATH), and
+          # this binary receives the private key. Only the hash-checked install runs.
+          /usr/local/bin/cosign sign --yes --key env://COSIGN_PRIVATE_KEY "${IMAGE}@${DIGEST}"
           echo "Signed ${IMAGE}@${DIGEST} (cosign key)" >> "$GITHUB_STEP_SUMMARY"
 
   # The release's CycloneDX SBOMs (umbrella DECISIONS 0503, D-02): one per image
@@ -416,7 +439,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Generate
         run: |
@@ -428,7 +451,7 @@ jobs:
           { echo '### SBOMs'; echo '```'; cat "$RUNNER_TEMP/sbom/counts.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom
           path: ${{ runner.temp }}/sbom/*.cdx.json

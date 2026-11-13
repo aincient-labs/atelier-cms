@@ -1,10 +1,14 @@
 name: Gallery
 status: experimental
 group: 'AIncient Landing'
-description: 'A grid of images (screenshots, work, photos). columns reflows the grid.'
+description: 'A set of images (screenshots, work, photos): a grid, or a carousel to step through one by one; optional full-size lightbox.'
 props:
   type: object
   properties:
+    variant:
+      type: string
+      enum: [grid, carousel]
+      default: grid
     tone:
       type: string
       enum: [default, muted, brand, inverted]
@@ -16,6 +20,9 @@ props:
       type: integer
       enum: [2, 3, 4]
       default: 3
+    lightbox:
+      type: boolean
+      default: false
     images:
       type: array
       description: 'Array of { image, caption }. caption optional.'
@@ -29,18 +36,26 @@ thirdPartySettings:
       images:
         image: image
         view_mode: gallery
-    use: 'A grid of images (screenshots, work, photos). columns reflows the grid.'
+        # Extra per-row URLs (DECISIONS 0523): `image_slide` = an uncropped
+        # scale for the carousel, `image_full` = the original for the lightbox.
+        styles:
+          slide: wide
+          full: ''
+    use: 'A set of images. variant grid = a tiled overview (screenshots, team photos, product shots); columns reflows it. variant carousel = one image at a time, shown whole and never cropped, stepped through with arrows or a swipe; use it for artwork, a portfolio piece, a photo series. lightbox = clicking an image opens it full-size; turn it on for artwork and photography.'
     props:
+      variant: grid|carousel
       tone: ''
       eyebrow: ''
       heading: ''
       subheading: ''
       columns: 2|3|4
+      lightbox: ''
       images: '[{image,caption}]'
     # Preview fixtures for the Components studio (DECISIONS 0455) — page-schema props.
     examples:
       - name: 'Bakery counter'
         props:
+          variant: grid
           eyebrow: 'From the oven'
           heading: 'What we baked this week'
           subheading: 'Everything is shaped by hand and sold the same day.'
@@ -54,6 +69,7 @@ thirdPartySettings:
               caption: 'Rye and sunflower loaf'
       - name: 'Studio portfolio'
         props:
+          variant: grid
           eyebrow: 'Selected work'
           heading: 'Recent projects'
           columns: 2
@@ -64,6 +80,7 @@ thirdPartySettings:
               caption: 'Linden Street offices, a converted print works'
       - name: 'Product screens'
         props:
+          variant: grid
           heading: 'A closer look at the app'
           columns: 4
           images:
@@ -75,3 +92,19 @@ thirdPartySettings:
               caption: 'New invoice'
             - image: 'placeholder:portrait'
               caption: 'Monthly report'
+      - name: 'Portfolio piece'
+        props:
+          variant: carousel
+          lightbox: true
+          eyebrow: 'Ink on paper, 2026'
+          heading: 'Harbour at low tide'
+          subheading: 'Six studies drawn on site over one week in March.'
+          images:
+            - image: 'placeholder:portrait'
+              caption: 'First study, morning light'
+            - image: 'placeholder:landscape'
+              caption: 'The slipway from the north wall'
+            - image: 'placeholder:portrait'
+              caption: 'Moored boats, detail'
+            - image: 'placeholder:square'
+              caption: 'Final drawing'

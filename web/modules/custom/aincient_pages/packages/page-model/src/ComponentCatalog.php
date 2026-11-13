@@ -134,6 +134,7 @@ final class ComponentCatalog {
     'questions' => 'repeatable Q&A pairs: [{question,answer}]. `answer` accepts inline Markdown (links/bold/italic/code).',
     'cards' => 'repeatable tiles for a grid container: [{title,body,icon,image,cta_label,cta_url}]. `body` accepts inline Markdown (links/bold/italic/code).',
     'exclusive' => 'whether at most one panel may be open at a time (boolean).',
+    'lightbox' => 'whether clicking an image opens it full-size in an overlay viewer (boolean).',
     'panels' => 'repeatable disclosure panels: [{label, open, blocks:[{component,props}]}].',
   ];
 
@@ -219,7 +220,7 @@ final class ComponentCatalog {
    * the SDC's `type: boolean` prop (which 500s the render). A new boolean prop
    * word MUST be added here.
    */
-  public const BOOLEAN_PROPS = ['exclusive'];
+  public const BOOLEAN_PROPS = ['exclusive', 'lightbox'];
 
   /**
    * TRUE if a prop holds a boolean (render a checkbox — see BOOLEAN_PROPS).

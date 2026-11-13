@@ -66,6 +66,12 @@ final class AssetExtractor {
     foreach ($xpath->query('//script[@src]') as $element) {
       $urls[] = $element->getAttribute('src');
     }
+    // A link whose TARGET is a file the page needs (marked `data-asset`), e.g.
+    // a gallery lightbox's full-size image (DECISIONS 0523). Plain a[href]
+    // points at pages, which the inventory and link checker own.
+    foreach ($xpath->query('//a[@href][@data-asset]') as $element) {
+      $urls[] = $element->getAttribute('href');
+    }
     foreach ($xpath->query('//link[@href]') as $element) {
       if (in_array(strtolower($element->getAttribute('rel')), self::ASSET_LINK_RELS, TRUE)) {
         $urls[] = $element->getAttribute('href');

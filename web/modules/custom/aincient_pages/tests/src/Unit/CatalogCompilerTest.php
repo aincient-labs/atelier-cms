@@ -393,6 +393,7 @@ final class CatalogCompilerTest extends UnitTestCase {
       'hero' => ['centered', 'split'],
       'content' => ['image-right', 'image-left', 'text-only'],
       'divider' => ['line', 'space', 'label'],
+      'gallery' => ['grid', 'carousel'],
     ], $catalog->variants());
 
     $this->assertSame(

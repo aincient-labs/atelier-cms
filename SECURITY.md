@@ -86,6 +86,14 @@ key ships in this repo as [`cosign.pub`](cosign.pub):
 cosign verify --key cosign.pub ghcr.io/aincient-labs/atelier-cms:latest
 ```
 
+The signing key was replaced in November 2026. Images released **after 0.27.0** verify against
+[`cosign.pub`](cosign.pub); **0.27.0 and earlier** were signed with the previous key, kept as
+[`cosign-2026-07.pub`](cosign-2026-07.pub):
+
+```bash
+cosign verify --key cosign-2026-07.pub ghcr.io/aincient-labs/atelier-cms:v0.27.0
+```
+
 ## What's inside: SBOMs and VEX
 
 Each release lists everything it ships in a **CycloneDX SBOM** (software bill of materials),

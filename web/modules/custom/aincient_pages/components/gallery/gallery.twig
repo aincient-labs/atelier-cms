@@ -10,8 +10,11 @@
   3: 'sm:grid-cols-2 lg:grid-cols-3',
   4: 'sm:grid-cols-2 lg:grid-cols-4',
 }[columns|default(3)] %}
-
-<section class="{{ tone_class }}">
+{% set carousel = variant|default('grid') == 'carousel' %}
+{% set count = images|default([])|length %}
+{# data-gallery loads the island (js/gallery.js, DECISIONS 0523). A plain grid
+   without a lightbox carries no hook, so it renders exactly as before. #}
+<section class="{{ tone_class }}"{% if carousel or lightbox %} data-gallery="{{ carousel ? 'carousel' : 'grid' }}"{% endif %}>
   <div class="mx-auto max-w-7xl px-6 py-20 lg:py-24">
     {% if eyebrow or heading or subheading %}
       <div class="mb-12 max-w-2xl">
@@ -20,16 +23,73 @@
         {% if subheading %}<p class="mt-4 text-lg {{ on_dark ? '' : 'text-muted-foreground' }}">{{ subheading|inline_md }}</p>{% endif %}
       </div>
     {% endif %}
-    <div class="grid gap-4 {{ cols }}">
-      {% for img in images %}
-        <figure class="overflow-hidden rounded-[var(--card-radius)] ring-1 ring-border">
-          {# image_html is a container-query Rift picture pre-rendered by the
-             renderer (slots can't nest per gallery cell); image is its raw-URL
-             fallback. Alt rides inside the picture (aria-label) for image_html. #}
-          {% if img.image_html %}{{ img.image_html|raw }}{% elseif img.image %}<img src="{{ img.image }}" alt="{{ img.caption }}" class="aspect-[4/3] h-full w-full object-cover transition duration-300 hover:scale-105">{% endif %}
-          {% if img.caption %}<figcaption class="bg-card text-card-foreground px-3 py-2 text-xs text-muted-foreground">{{ img.caption|inline_md }}</figcaption>{% endif %}
-        </figure>
-      {% endfor %}
-    </div>
+    {% if carousel %}
+      {# Scroll-snap track: swipes and scrolls with no JavaScript. Each slide
+         shows the WHOLE image (object-contain) — artwork is never cropped. #}
+      <div data-gallery-carousel>
+        <ul class="flex snap-x snap-mandatory gap-6 overflow-x-auto overscroll-x-contain scroll-smooth pb-4 data-enhanced:pb-0 data-enhanced:[scrollbar-width:none] motion-reduce:scroll-auto focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current" data-gallery-track tabindex="0" role="region" aria-roledescription="carousel" aria-label="{{ heading|default('Gallery') }}">
+          {% for img in images %}
+            {% set alt = img.image_alt|default(img.caption|default('')) %}
+            <li class="flex w-full shrink-0 snap-center flex-col items-center justify-center" role="group" aria-roledescription="slide" aria-label="{{ loop.index }} of {{ count }}" data-gallery-slide>
+              {% if lightbox %}<a href="{{ img.image_full|default(img.image) }}" class="block cursor-zoom-in rounded-[var(--card-radius)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current" data-gallery-open="{{ loop.index0 }}" data-asset>{% endif %}
+              <img src="{{ img.image_slide|default(img.image) }}" alt="{{ alt }}" loading="lazy" decoding="async" class="h-auto max-h-[min(70vh,44rem)] w-auto max-w-full rounded-[var(--card-radius)] object-contain">
+              {% if lightbox %}</a>{% endif %}
+              {% if img.caption %}<p class="mt-4 max-w-prose text-center text-sm {{ on_dark ? '' : 'text-muted-foreground' }}" data-gallery-caption>{{ img.caption|inline_md }}</p>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        {% if count > 1 %}
+          {# Controls are hidden until the island runs; without it the track
+             still scrolls. #}
+          <div class="mt-6 hidden items-center justify-center gap-4" data-gallery-controls>
+            <button type="button" class="inline-flex size-11 items-center justify-center rounded-full ring-1 ring-current transition hover:bg-current/10 disabled:invisible focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current" data-gallery-prev aria-label="Previous image">
+              <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <p class="min-w-16 text-center text-sm tabular-nums" data-gallery-counter aria-live="polite">1 / {{ count }}</p>
+            <button type="button" class="inline-flex size-11 items-center justify-center rounded-full ring-1 ring-current transition hover:bg-current/10 disabled:invisible focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current" data-gallery-next aria-label="Next image">
+              <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="grid gap-4 {{ cols }}">
+        {% for img in images %}
+          <figure class="overflow-hidden rounded-[var(--card-radius)] ring-1 ring-border">
+            {# image_html is a container-query Rift picture pre-rendered by the
+               renderer (slots can't nest per gallery cell); image is its raw-URL
+               fallback. Alt rides inside the picture (aria-label) for image_html. #}
+            {% if lightbox %}<a href="{{ img.image_full|default(img.image) }}" class="block cursor-zoom-in focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-current" data-gallery-open="{{ loop.index0 }}" data-asset aria-label="{{ img.image_alt|default(img.caption|default('Open image')) }}">{% endif %}
+            {% if img.image_html %}{{ img.image_html|raw }}{% elseif img.image %}<img src="{{ img.image }}" alt="{{ img.caption }}" class="aspect-[4/3] h-full w-full object-cover transition duration-300 hover:scale-105">{% endif %}
+            {% if lightbox %}</a>{% endif %}
+            {% if img.caption %}<figcaption class="bg-card text-card-foreground px-3 py-2 text-xs text-muted-foreground"{% if lightbox %} data-gallery-caption{% endif %}>{{ img.caption|inline_md }}</figcaption>{% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if lightbox and count > 0 %}
+      {# One full-size viewer per gallery, filled by the island. The overlay is
+         always near-black, whatever the section tone. #}
+      <dialog class="m-0 h-dvh max-h-none w-screen max-w-none bg-transparent p-0 text-white backdrop:bg-black/95" data-gallery-dialog aria-label="{{ heading|default('Image viewer') }}">
+        <div class="flex h-full w-full flex-col items-center justify-center gap-4 p-4 sm:p-8">
+          <img alt="" class="max-h-[80vh] max-w-full object-contain" data-gallery-full>
+          <p class="max-w-prose text-center text-sm" data-gallery-full-caption></p>
+          <div class="flex items-center gap-4">
+            {% if count > 1 %}
+              <button type="button" class="inline-flex size-11 items-center justify-center rounded-full ring-1 ring-white/60 hover:bg-white/10 disabled:invisible focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" data-gallery-full-prev aria-label="Previous image">
+                <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <p class="min-w-16 text-center text-sm tabular-nums" data-gallery-full-counter aria-live="polite"></p>
+              <button type="button" class="inline-flex size-11 items-center justify-center rounded-full ring-1 ring-white/60 hover:bg-white/10 disabled:invisible focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" data-gallery-full-next aria-label="Next image">
+                <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            {% endif %}
+          </div>
+        </div>
+        <button type="button" class="absolute right-4 top-4 inline-flex size-11 items-center justify-center rounded-full ring-1 ring-white/60 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" data-gallery-close aria-label="Close">
+          <svg aria-hidden="true" viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </dialog>
+    {% endif %}
   </div>
 </section>

@@ -7,6 +7,23 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.28.0] — 2026-11-13
+
+**Galleries that step through images one at a time, with a full-size viewer.**
+- The gallery component has a **carousel** layout: one image at a time, shown whole instead of
+  cropped, with previous/next buttons, a counter, arrow keys and swipe. Ask the page assistant to
+  "make the images a carousel", or pick the layout in the page studio. Grids look as before.
+- A gallery can open its images full size in a **lightbox** (arrow keys to step, Esc to close),
+  in both layouts. Both work in exported static sites.
+- The assistants use the room names you see in the console (the brand room is now called
+  **Identity**), and say plainly that new components come from component packs.
+- The image signing key was replaced. Verify images from this release on with the new
+  [`cosign.pub`](cosign.pub); `cosign-2026-07.pub` verifies earlier ones.
+- Dependency updates, including Drush 13.8.1 and Metatag 2.2.7.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.27.0] — 2026-11-12
 
 **A calmer, more accessible console that works better on phones.**
