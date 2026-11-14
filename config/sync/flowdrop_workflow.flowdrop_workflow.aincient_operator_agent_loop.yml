@@ -5,6 +5,8 @@ dependencies:
   config:
     - flowdrop_node_type.flowdrop_node_type.aincient_agent_engine
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_list_pages
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_read_docs_page
+    - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_search_docs
     - flowdrop_node_type.flowdrop_node_type.aincient_flows_aincient_capability_studio_tour
     - flowdrop_node_type.flowdrop_node_type.chat_input
     - flowdrop_node_type.flowdrop_node_type.chat_output
@@ -24,7 +26,7 @@ third_party_settings:
           port: message
       sub_workflow_replies: false
 id: aincient_operator_agent_loop
-label: 'Atelier Assistant'
+label: General
 description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
 nodes:
   -
@@ -167,6 +169,8 @@ nodes:
             - When the ask maps to ONE room — "build me a landing page", "change the colours", "swap the logo", "make an image" — call it with exactly that one room, e.g. rooms: ["content"]. The user then gets a single card that opens the right room, and their sentence travels with them into that room's composer. Do NOT hand back the whole map for a specific ask.
             - Only OMIT "rooms" for a genuine tour: "show me around", "what can I do here", or the first message of a fresh conversation.
           - aincient_list_pages — renders a table of the existing pages; each row opens that page in its studio.
+          - aincient_search_docs — searches the Atelier docs shipped with this version; returns the best sections with their links.
+          - aincient_read_docs_page — reads one whole docs page (slug or link from a search result).
           Call one tool at a time. Before a tool call, write exactly ONE short plain sentence saying what you are doing.
 
           # WIDGET RULE
@@ -182,6 +186,8 @@ nodes:
           # HONESTY & LIMITS
           - You cannot edit pages, brand, or settings from this room — the specialised studios do that, each with its own assistant. Never pretend otherwise; walk the user to the right room instead.
           - If you don't know something or lack the tool to check it, say so plainly and offer what you CAN do. Never guess or invent site facts.
+          - For any question about how Atelier works, what it can or cannot do, where something is in the console, or how to install, update, back up or deploy it: call aincient_search_docs FIRST — even when you think you already know the answer (your answer is checked against what the search returns, so an answer with no search behind it can't be confirmed) and answer from what it returns. End that answer with the link of the docs page you used, as a Markdown link (e.g. [Component packs](https://aincient-labs.com/docs/component-packs)). Use aincient_read_docs_page when one section is not enough. If the docs don't cover it, say so — never describe a feature, menu or setting the docs don't mention.
+          - GROUNDING: every menu name, button label, setting, command, path or click-sequence you give must appear word for word in a docs result or a tool result from this conversation. The same goes for what Atelier DOES ("the app will prompt you", "it backs up first") and for workarounds or integrations you suggest: only what the docs say. When the docs don't cover a request, say so, offer what the docs say Atelier CAN do nearby, and stop — don't invent a third-party setup. If the exact step isn't there, say "The docs don't spell out that step" and link the closest page; read_docs_page first if a section looks cut short. "I don't know" or "the docs don't say" is a GOOD answer — a plausible-sounding guess is a wrong one, because the user will go looking for a button that isn't there.
           - Nobody can create a new section type (component) inside Atelier — not you, not any studio. Pages are built from the components the site already has; the Components room only switches existing ones on or off. New components come from developer-built component packs (docs: /docs/component-packs). If asked, say so plainly and suggest the closest existing component. Common asks already have one: an image slider, carousel or lightbox is the `gallery` component (carousel variant, lightbox on) — that is page work, so point them to Pages.
           - If a tool call is declined or fails, don't retry it — ask what they'd like instead.
 
@@ -268,6 +274,38 @@ nodes:
         requiresConfirmation: ''
       metadata:
         node_type_id: aincient_flows_aincient_capability_studio_tour
+    measured:
+      width: 280
+      height: 100
+  -
+    id: aincient_flows_aincient_capability_search_docs.1
+    position:
+      x: -420
+      'y': 580
+    data:
+      label: 'Capability: Search the docs'
+      config:
+        nodeType: tool
+        maxRetries: 0
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_search_docs
+    measured:
+      width: 280
+      height: 100
+  -
+    id: aincient_flows_aincient_capability_read_docs_page.1
+    position:
+      x: -420
+      'y': 700
+    data:
+      label: 'Capability: Read a docs page'
+      config:
+        nodeType: tool
+        maxRetries: 0
+        requiresConfirmation: ''
+      metadata:
+        node_type_id: aincient_flows_aincient_capability_read_docs_page
     measured:
       width: 280
       height: 100
@@ -390,6 +428,44 @@ edges:
         edgeType: tool
         sourcePortDataType: tool
     sourceHandle: aincient_flows_aincient_capability_studio_tour.1-output-tool
+    targetHandle: aincient_agent_engine.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+  -
+    id: aincient_flows_aincient_capability_search_docs.1-aincient_flows_aincient_capability_search_docs.1-output-tool-aincient_agent_engine.1-aincient_agent_engine.1-input-tool
+    source: aincient_flows_aincient_capability_search_docs.1
+    target: aincient_agent_engine.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_search_docs.1-output-tool
+    targetHandle: aincient_agent_engine.1-input-tool
+    style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
+    markerEnd:
+      type: arrowclosed
+      width: 16
+      height: 16
+      color: var(--fd-edge-tool)
+    class: flowdrop--edge--tool
+  -
+    id: aincient_flows_aincient_capability_read_docs_page.1-aincient_flows_aincient_capability_read_docs_page.1-output-tool-aincient_agent_engine.1-aincient_agent_engine.1-input-tool
+    source: aincient_flows_aincient_capability_read_docs_page.1
+    target: aincient_agent_engine.1
+    data:
+      targetNodeType: universalNode
+      targetCategory: agents
+      metadata:
+        edgeType: tool
+        sourcePortDataType: tool
+    sourceHandle: aincient_flows_aincient_capability_read_docs_page.1-output-tool
     targetHandle: aincient_agent_engine.1-input-tool
     style: 'stroke: var(--fd-edge-tool); stroke-dasharray: 5 3;'
     markerEnd:

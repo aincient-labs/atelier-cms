@@ -43,7 +43,7 @@ final class CapabilityToolDeriver extends DeriverBase implements ContainerDerive
    * how the brand verbs (`aincient_brand:*`) arrive since the module moved
    * tiers (Phase E.5, 0436).
    */
-  private const PROVIDERS = ['aincient_pages:', 'aincient_onboarding:'];
+  private const PROVIDERS = ['aincient_pages:', 'aincient_onboarding:', 'aincient_core:'];
 
   public function __construct(
     private readonly CapabilityManager $capabilityManager,

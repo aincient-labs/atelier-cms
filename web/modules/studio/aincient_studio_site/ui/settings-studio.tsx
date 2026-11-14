@@ -212,9 +212,9 @@ export function SettingsStudio({ onClose }: { onClose: () => void }) {
           publishTitle="Publish the settings to the live site"
         />
         <IconButton
-          label="Close settings studio"
+          label="Close Settings"
           className="ain-topbar__leave"
-          title="Leave settings studio"
+          title="Leave Settings"
           onClick={onClose}
         >
           <XIcon />

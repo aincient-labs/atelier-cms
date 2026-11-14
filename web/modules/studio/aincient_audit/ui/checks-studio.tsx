@@ -506,8 +506,8 @@ export function ChecksStudio({ onClose }: { onClose: () => void }) {
         <IconButton
           className="ain-topbar__leave"
           onClick={backOrClose}
-          label={nodeId ? "Back to page list" : "Close checks studio"}
-          title={nodeId ? "Back to the page list" : "Leave checks studio"}
+          label={nodeId ? "Back to page list" : "Close Checks"}
+          title={nodeId ? "Back to the page list" : "Leave Checks"}
         >
           <XIcon />
         </IconButton>

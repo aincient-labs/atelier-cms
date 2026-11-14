@@ -1,0 +1,4 @@
+ask: How do I switch to a different AI provider later?
+kind: covered
+expect:
+  links_any: [/docs/quickstart, /docs/onboarding]

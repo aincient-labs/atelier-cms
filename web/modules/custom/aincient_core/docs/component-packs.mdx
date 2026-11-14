@@ -1,0 +1,142 @@
+---
+title: "Component packs"
+description: "Add your own sections to the page agent's palette — an ordinary Drupal module, a local dev loop with live reload, and a CI pipeline that ships a deployable image"
+---
+
+A **component pack** adds new sections to the [component library](/components): components
+your editors and the page agent can place, validated and governed exactly like the
+built-ins. A pack is an ordinary Drupal module whose components carry a small block of
+Atelier metadata — there is no plugin API to learn beyond Drupal's own
+[single-directory components](https://www.drupal.org/docs/develop/theming-drupal/using-single-directory-components).
+
+<Note>
+  This page is for developers. If you only want to restyle the built-in sections, start
+  with [Bring your own components](/bring-your-own-components) — replacement is simpler
+  and may be all you need. Packs require Atelier CMS `0.10.0` or later.
+</Note>
+
+## Start from the template
+
+Two equivalent starting points:
+
+- Run `atelier pack new my_pack` with the [Atelier CLI](https://github.com/aincient-labs/manager) —
+  it scaffolds the whole pack with your module name in place.
+- Or use the [`atelier-pack-template`](https://github.com/aincient-labs/atelier-pack-template)
+  repository on GitHub ("Use this template") and rename `my_pack` throughout.
+
+The scaffold is a complete, shippable pack: one example component, the pack manifest, a
+CSS build, a dev compose overlay, and a CI workflow that produces your deployable image.
+
+## What makes a module a pack
+
+Two files, beyond ordinary module structure:
+
+```yaml title="atelier.pack.yml"
+api: 1
+name: my_pack
+requires:
+  atelier: '^0.10'
+provides: [components]
+owns: []
+```
+
+And Atelier metadata on each component:
+
+```yaml title="components/spotlight/spotlight.component.yml"
+name: Spotlight
+props:
+  # your JSON-schema props, like any single-directory component
+thirdPartySettings:
+  atelier:
+    tier: section
+    use: 'A wide editorial spotlight with one strong claim and a supporting image.'
+    examples:
+      - '{"component": "spotlight", "props": {"heading": "…", "claim": "…"}}'
+```
+
+The `use:` line and `examples:` are how the agent decides when to place your component —
+they travel into its prompt verbatim, so write them like you mean them. Every pack
+component passes the same **admission gate** the built-ins pass before it reaches the
+palette; a component the gate rejects is excluded and reported, never half-admitted.
+
+## The dev loop
+
+```bash
+atelier pack dev
+```
+
+brings up a pinned Atelier appliance with your pack mounted and developer overlays
+enabled: edit a Twig or CSS file, refresh, see it — no container restart. A Tailwind
+watcher rebuilds your stylesheet, and the pack **gallery** at
+`/atelier/packs/my_pack/gallery` renders every declared example at three widths, in
+light and inverted tones.
+
+- `atelier pack validate` — the admission gate, the manifest check, and a CSS lint;
+  exactly what a production boot runs. The lint reads the CSS you wrote — `build/input.css`
+  and the files it imports, such as `build/pack.css` — not the compiled
+  `assets/my_pack.css`, so a fresh scaffold validates without warnings. A pack with no
+  build step is linted on its stylesheet directly.
+- `atelier mcp` — a stdio MCP server exposing the ground truth (catalog, gate, prompt
+  manifest, rendered examples, design tokens) to coding agents like Claude Code:
+
+```json
+{ "mcpServers": { "atelier": { "command": "atelier", "args": ["mcp"] } } }
+```
+
+`atelier pack dev` also syncs the appliance's token/utility preset into your repo, so
+your CSS builds against the exact Atelier version you develop against.
+
+## The contract
+
+- **Tokens, not hex.** Route every colour and size through the design tokens
+  (`var(--…)`) so a rebrand reaches your markup — the same
+  [token contract](/bring-your-own-components#the-token-contract) replacements follow.
+- **CSS only, for now.** There is no JavaScript channel yet: server-rendered Twig,
+  styled through the tokens.
+- **A pack is a module.** It runs with full Drupal power. Installing a pack is exactly
+  as much trust as installing any Drupal module — there is no sandbox.
+- **A pack brings no new agent verbs.** A pack ships components, page kinds, providers
+  and (later) console studios — never a new capability for the AI to call. Atelier's
+  capability roster is reviewed as a whole: every verb the agent can reach is reversible
+  and internal, which is what makes it safe for the agent to act on content it did not
+  write. `atelier pack validate` **rejects** a pack containing a
+  `src/Plugin/AiCapability/` directory. If your pack needs an action the agent can take,
+  talk to us — that is a change to the product's security floor, not a directory you add.
+
+## Ship: an image, not a deployment script
+
+Your pack bakes into a derived image, the same shape as
+[markup replacement](/bring-your-own-components#the-shape-a-derived-image):
+
+```dockerfile
+FROM ghcr.io/aincient-labs/atelier-cms:v0.10.0
+COPY . /opt/drupal/web/modules/custom/my_pack
+COPY dev/pack.yml /opt/drupal/packs.d/my_pack.yml
+```
+
+The `packs.d/` file is the enablement declaration — the appliance enables declared packs
+on every boot, idempotently, after config import. The scaffold's GitHub workflow is the
+full reference pipeline: it rebuilds your CSS and fails on drift, builds the image, boots
+it against a throwaway database, runs the admission gate and `atelier:kind-check` inside
+the booted appliance, smokes the gallery, and pushes the validated image to your
+registry. Deployment is that image tag; an Atelier upgrade is a PR bumping the `FROM`
+pin, which the same pipeline proves your pack against before anything ships.
+
+## Governance: kinds and constraints
+
+Adding components widens the space the agent composes in; two console surfaces narrow it
+again per site:
+
+- **Page kinds** scope which components, tones, and variants each kind of page may use —
+  a blog post doesn't offer the landing-page palette.
+- The **Components room** in the console can turn any component off site-wide; it
+  leaves the agent's palette and can't be placed again, while sections that already use
+  it are kept (see [Choose which components your site uses](/components#choose-which-components-your-site-uses)).
+
+Changing a kind after pages exist is checked, not guessed: `drush atelier:kind-check`
+reports every slot a narrowing would affect, per page and block, before you deploy it — it never
+rewrites content.
+
+If you're building a pack, we'd like to hear about it — the roadmap is shaped by real
+client component libraries. Reach us via
+[aincient-labs on GitHub](https://github.com/aincient-labs).

@@ -1,0 +1,299 @@
+---
+title: "Manage a site on a server"
+description: "Attach an Atelier site that already runs on a server, then update, back up, restore and open it from the desktop app or the atelier CLI over SSH."
+---
+
+Your Atelier can run on a server while you manage it from your own computer. The Manager reaches the server over SSH and asks the server's own `atelier` command to do the work. Nothing about the site moves: its database, files and containers stay on the server.
+
+A site on a server sits in the same list as the [sites on this computer](/several-sites). You pick it the same way, with `--site` or the switcher in the desktop app.
+
+<Note>
+  The Manager **attaches** to a site that already runs on a server. It doesn't install one there yet. Set the server up first, for example with the [one-line installer](/quickstart#install), then attach it from here.
+</Note>
+
+## Before you start
+
+- **SSH access.** You can log in to the server with `ssh` from this computer, as the user that installed Atelier there.
+- **A running site.** Atelier is installed and running on the server. A server set up with the one-line installer has one site, called `default`.
+- **The `atelier` command on the server.** If the server doesn't have it, the Manager copies a matching Linux build (x86_64 or arm64) to `~/.local/bin/atelier` when you attach. If the server has an older version than your Manager, you're asked before it's replaced. The older one is left where it is.
+
+## Attach the site
+
+Choose how the Manager logs in. You have two options.
+
+### Use your own SSH setup
+
+If you already log in to the server with a key or an alias, use that. An alias from your `~/.ssh/config` works as is. See the OpenSSH [`ssh_config` manual](https://man.openbsd.org/ssh_config) for how to set one up.
+
+```bash
+atelier sites add shop --host deploy@vps.example.com --remote-site default
+```
+
+`--host` takes an alias, a host name or `user@host`. `--remote-site` is the site's short name on the server. Leave it out if it's the same as the name you give it here.
+
+### Let the Manager make a key
+
+```bash
+atelier sites add shop --host deploy@vps.example.com --remote-site default --key guided
+```
+
+The Manager creates a key just for this server and keeps it in your operating system's keychain. It shows you one line to add to `~/.ssh/authorized_keys` on the server, plus a command that adds it. Log in to the server, run that command, then press Enter. The Manager tests the login before it goes on.
+
+Either way, the Manager checks that the server answers and that the site is running before it adds anything. If something is wrong, nothing is added.
+
+### In the desktop app
+
+Open the site switcher at the top right and choose **Add a site…**, then **On a server**. Fill in a name, a short name, the server (an SSH alias, a host or `user@host`) and the site's short name on the server. Then pick **Use my SSH setup**, or **Make a key just for this server** and use **Show the key to add**.
+
+## Work with the site
+
+Every command takes `--site <SLUG>`, as it does for a local site:
+
+```bash
+atelier --site shop app status
+atelier --site shop app update
+atelier --site shop data backup
+atelier --site shop doctor
+```
+
+These work on a site on a server: `app status`, `app check-update`, `app update`, `app start`, `app stop`, `app open`, `data backup`, `data list`, `data restore`, `site export`, `site freeze`, `site snapshots`, `site use`, `site live`, `site prune` and `doctor`. Their output comes from the server as it happens. A command that fails on the server fails here with the same exit code.
+
+In the desktop app, switch to the site and use the window as usual. The switcher shows where each site runs and whether it's running. If the server doesn't answer, the app says so and offers to try again.
+
+A few commands are refused for a site on a server, and the message names the server:
+
+- **Run them on the server instead:** `app reinstall`, `app down`, `app channel`, `app logs`, `app password` and `ai model`. For example, `ssh deploy@vps.example.com atelier --site default app logs`.
+- **Only for sites on this computer:** `app install`, `app view`, `pack` and `mcp`.
+
+`atelier app update --all` updates the sites on this computer only. Update a site on a server on its own with `--site`.
+
+`site export` writes the export on the server, and tells you so.
+
+## Open the console
+
+```bash
+atelier --site shop app open
+```
+
+If you recorded the site's public address, the console opens there. Without one, the Manager opens an SSH tunnel and the console opens at `http://127.0.0.1:<port>`, on a port between 41300 and 41399. Sign in with your usual account.
+
+On the command line the tunnel stays open until you press Ctrl-C. In the desktop app it stays open until you switch to another site or quit the app.
+
+Record or forget the public address at any time:
+
+```bash
+atelier sites set-domain shop cms.example.com
+atelier sites set-domain shop --clear
+```
+
+A plain host name means `https://`. Give a full address such as `http://cms.example.com:8080` for anything else. You can also pass `--domain` when you add the site.
+
+## Back up and restore
+
+```bash
+atelier --site shop data backup
+```
+
+The backup is made on the server, then copied to this computer in `~/.atelier/remote/shop/backups`. The copy is checked against the server's size and checksum. Add `--no-copy` to keep it on the server only.
+
+`atelier --site shop data list` shows both: the backups on the server and the copies on this computer.
+
+To restore, point at a backup file:
+
+```bash
+atelier --site shop data restore ~/.atelier/remote/shop/backups/<file>.tar.gz
+```
+
+A file on this computer is uploaded to the server, checked and restored there. To restore a backup that is already on the server, give its path there and add `--on-server`.
+
+Each backup records which site it came from. Restoring another site's backup is refused unless you add `--other-site`. A backup made before backups carried this record still restores, with a warning.
+
+## Confirmations
+
+Every confirmation names the site and where it runs, for example *Restore Shop on deploy@vps.example.com?*. That way you can't mistake a server site for one on this computer.
+
+When a site on a server is **live**, running, whether visitors see its live pages or a frozen snapshot, a change to it asks you to type the site's short name. A frozen site counts: a restore still replaces what editors did, and the next freeze shows it to visitors. That covers update, restore, stop, freeze, switching snapshots, going live and pruning snapshots. In a script, pass both flags:
+
+```bash
+atelier --site shop app update --yes --confirm-slug shop
+```
+
+`--yes` alone isn't enough on a live site on a server, and a wrong slug refuses the change.
+
+## Check the connection
+
+```bash
+atelier --site shop doctor
+```
+
+`doctor` first checks the SSH login and the server's `atelier` command from this computer. Then it shows the server's own report. Each group of checks is labelled with the machine it ran on, so you can tell this computer's problems from the server's.
+
+## Remove the site from the list
+
+```bash
+atelier sites remove shop
+```
+
+This only takes the site off your list. Nothing on the server is touched. A key the Manager made stays in your keychain, and adding the site again reuses it.
+
+## Pair a site without SSH (experimental)
+
+<Note title="Experimental: for testers">
+  Pairing needs the **engine**, a helper that runs next to your site and can start, stop and lock it. To do that it holds the server's Docker socket, which is full control (root) of that server. It is new and still under security review. Use it on a test site, not one you depend on. It is off unless you turn it on, on the server and in the Manager.
+</Note>
+
+With the engine on the server, a Manager can reach the site over HTTPS instead of SSH. The engine answers only at `/_atelier/engine/` on the site's own address and publishes no port of its own.
+
+Each Manager that pairs gets its own token, kept in your operating system's keychain. The first Manager to pair is the site's **primary**. Every later one joins by asking, and the primary lets it in.
+
+### Turn on experimental features
+
+- **Desktop app:** open **System**, find **Experimental features** and tick **Turn on experimental features**.
+- **Command line:** add `--experimental` to every engine command and every command for a paired site. Without it, the command refuses and changes nothing.
+
+### Add the engine on the server
+
+The site must be reachable over **HTTPS**. The Manager refuses a plain `http://` address.
+
+If a TLS proxy such as Caddy, Traefik or nginx sits in front of the site, list the proxy's address in the site's `.env` first:
+
+```bash
+ATELIER_TRUSTED_PROXIES=10.0.0.5
+```
+
+It takes IP addresses or CIDR ranges, separated by commas. With a proxy listed, the site's port listens on `127.0.0.1` only, so the proxy is the only way in from outside. A range that trusts every address, such as `0.0.0.0/0`, is refused.
+
+The engine image isn't published yet. Build it on the server from the [Manager's source](https://github.com/aincient-labs/manager) with `engine/build.sh`, which makes `atelier-engine:dev`. Then, on the server:
+
+```bash
+atelier engine enable --experimental
+```
+
+From a Manager that already reaches the site over SSH, run `atelier --experimental --site shop engine enable` instead. In the desktop app, switch to that site and choose **Add the engine to this site** under **System → Experimental features**.
+
+The engine starts with the site. The output ends with the site's address and an **install code** like `ABCD-EFGH-JKLM-NPQR`. Keep it: it pairs your first Manager, and it works once.
+
+Lost it, or used it already? Make a new one over SSH. It replaces any unused code.
+
+```bash
+docker exec atelier-engine-1 atelier engine admin install-code
+```
+
+`atelier-engine-1` is the container's name on a server set up with the one-line installer. `docker ps` shows it on yours. From a Manager that reaches the site over SSH, `atelier --experimental --site shop engine install-code` does the same.
+
+### Pair your first Manager
+
+```bash
+atelier --experimental sites add shop --url https://cms.example.com
+```
+
+The Manager asks for the install code. You can also pass `--install-code`, but then the code lands in your shell history. `--name` sets what this Manager is called in the site's list. It defaults to your computer's name.
+
+This Manager becomes the site's primary.
+
+In the desktop app, choose **Add a site…**, then **On a server**, then **With an install code**. Fill in the site's address, the install code and this Manager's name.
+
+### Add another Manager
+
+On the new Manager:
+
+```bash
+atelier --experimental sites join shop --url https://cms.example.com
+```
+
+It shows an 8-character code and waits. In the desktop app, choose **Add a site…**, **On a server**, then **Ask to join**.
+
+On the primary Manager:
+
+```bash
+atelier --experimental --site shop engine requests
+atelier --experimental --site shop engine approve
+```
+
+`requests` lists who is waiting: name, address and how long ago they asked. `approve` asks you to **type** the code that the new Manager shows. Then it asks you to confirm, naming the site. In the desktop app, open **System → Experimental features → Managers** and choose **Approve…** next to the request.
+
+The new Manager stops waiting once it's approved. A request expires after 10 minutes. Ask again for a new code.
+
+### Why you type the code
+
+Anyone who can reach the site's address can ask to join. A list of requests with an **Approve** button would let a stranger's request through with one mistaken click.
+
+The code exists only on the new Manager's screen. The primary never shows it, and neither does the site. Typing it proves that you are looking at the Manager you are letting in. For the same reason the desktop app doesn't accept a pasted or dropped code. Never type a code that reached you by email or from a website.
+
+### What works on a paired site
+
+These go through the engine:
+
+- `app status` shows whether the site is running.
+- `app start` wakes the site.
+- `app open` opens the console at the site's address.
+- `site freeze` serves the snapshot instead of the live site. It takes no options here.
+- `site live` switches back to the live site.
+- `site lockdown` and `site unlock`. See [Lock down a site](#lock-down-a-site).
+- `site rest`, `site wake` and `engine wake-code`. See [Resting mode](/resting-mode).
+
+In the desktop app, switch to the site and use the window as usual. Actions that need SSH are refused with a note naming what works.
+
+Everything else needs SSH: updates, backups, restores, logs, `doctor`, snapshots and exports. Run those on the server, or attach a Manager to the site [over SSH](#attach-the-site).
+
+`atelier sites list` shows a paired site as `engine-paired`.
+
+### See and remove Managers
+
+```bash
+atelier --experimental --site shop engine managers
+```
+
+This lists every Manager paired with the site, the most senior first: its id, name, whether it's the primary and when it was last seen.
+
+You can remove a Manager in four places:
+
+- **From a Manager:** `atelier --experimental --site shop engine revoke <ID>`. A Manager can only remove ones that joined after it. In the desktop app, use **Revoke** in the Managers panel.
+- **From the console:** **Settings → Managers** lists the paired Managers and can revoke any of them except the primary. It needs the **Administer paired Managers** permission, which no role has by default. Administrators have it.
+- **Over SSH:** `docker exec atelier-engine-1 atelier engine admin revoke <ID>` removes any Manager, including the primary.
+- **The Manager itself:** `atelier --experimental --site shop engine forget` ends this Manager's pairing, deletes its token from the keychain and takes the site off its list. In the desktop app, choose **Forget this site on this Manager**.
+
+A removed Manager says *This Manager was removed from* the site and offers to forget it. A Manager that isn't the primary and goes unused for 90 days is removed on its own. The primary is kept.
+
+`atelier sites remove shop` only takes the site off this Manager's list. The pairing stays, and so does the token. Use `engine forget` to end it.
+
+The console never pairs a Manager and never shows a code. If the site itself is compromised, it can't add a Manager of its own.
+
+### Lock down a site
+
+If you think the site has been compromised, lock it down:
+
+```bash
+atelier --experimental --site shop site lockdown
+```
+
+Lockdown stops the site at once. It also:
+
+- removes every Manager that joined after the one that called it,
+- drops every waiting request,
+- closes pairing and waking until the site is unlocked.
+
+Run over SSH, with `docker exec atelier-engine-1 atelier engine admin lockdown`, it removes every Manager except the primary.
+
+To end it, run `site unlock` from the Manager that locked it down, a more senior one, or over SSH with `engine admin unlock`. The site is then [resting](/resting-mode), with waking open again. Wake it with `site wake`. In the desktop app, use **Lock the site down** and **Unlock** under **System → Experimental features**.
+
+### Remove the engine
+
+```bash
+atelier engine remove --experimental
+```
+
+Run this on the server, or with `--experimental --site shop` from a Manager that reaches the site over SSH. In the desktop app, choose **Remove the engine**. A resting site is woken first, then the stack restarts without the engine and checks that the site runs. Paired Managers stop working. The engine's data volumes are kept.
+
+A site that is locked down must be unlocked before the engine can be removed.
+
+## Not covered yet
+
+- **Installing on a bare server.** Set the server up yourself first.
+- **Lockdown without the engine.** Lockdown needs the engine. Without it, stop the site with `app stop`.
+- **Pairing without SSH is experimental.** See [Pair a site without SSH](#pair-a-site-without-ssh-experimental).
+
+## Things to know
+
+- `atelier sites list` shows sites on a server as `remote`, with their host. It doesn't contact the servers, so it stays fast and works offline. Use `app status` to ask a server.
+- The console tunnel uses `127.0.0.1`, not `localhost`, so its sign-in stays separate from the sites on this computer.

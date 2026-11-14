@@ -1,0 +1,6 @@
+# The docs name an "Analytics" consent category reserved for a FUTURE feature —
+# an answer must not present it as something you can turn on today.
+ask: Does Atelier show me how many people visit my site?
+kind: uncovered
+expect:
+  prose_not: '/google analytics|plausible|matomo|umami/i'

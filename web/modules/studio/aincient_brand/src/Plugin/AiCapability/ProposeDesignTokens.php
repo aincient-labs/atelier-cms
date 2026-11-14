@@ -119,7 +119,7 @@ final class ProposeDesignTokens extends CapabilityBase implements ExecutableCapa
     $payload['count'] = $count;
 
     $summary = 'Design token file — ' . $count . ' token' . ($count === 1 ? '' : 's')
-      . ' found. Preview to see them live in the studio, then Publish there to save.';
+      . ' found. Preview to see them live in the Identity room, then Publish there to save.';
     if (!empty($payload['rejected'])) {
       $summary .= ' (Skipped invalid: ' . implode(', ', $payload['rejected']) . '.)';
     }

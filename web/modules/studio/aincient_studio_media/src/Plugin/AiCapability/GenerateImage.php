@@ -47,7 +47,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   id: 'aincient_studio_media:generate_image',
   function_name: 'aincient_generate_image',
   name: 'Generate image',
-  description: 'Generate a NEW image with the site\'s image model, or EDIT an existing one. Pass "prompt" (a vivid description of the image you want) alone to create from scratch (text→image). To EDIT an existing image — "make this warmer", "remove the background", "add a hat" — ALSO pass "source" as its `media:<id>` token (image→image); the current Media studio item\'s token is given in the system prompt as CURRENT IMAGE, and find_reference returns tokens for any other image. This always creates a NEW image (it never overwrites the original) and returns it inline plus in the Library — tell the user it\'s ready and they can open it to keep editing or Replace the original from the editor rail. Do NOT claim you saved over or deleted anything.',
+  description: 'Generate a NEW image with the site\'s image model, or EDIT an existing one. Pass "prompt" (a vivid description of the image you want) alone to create from scratch (text→image). To EDIT an existing image — "make this warmer", "remove the background", "add a hat" — ALSO pass "source" as its `media:<id>` token (image→image); the current Library item\'s token is given in the system prompt as CURRENT IMAGE, and find_reference returns tokens for any other image. This always creates a NEW image (it never overwrites the original) and returns it inline plus in the Library — tell the user it\'s ready and they can open it to keep editing or Replace the original from the editor rail. Do NOT claim you saved over or deleted anything.',
   context_definitions: [
     'prompt' => new ContextDefinition(
       data_type: 'string',
@@ -163,7 +163,7 @@ final class GenerateImage extends CapabilityBase implements ExecutableCapability
     $mode = $source !== '' ? 'edit' : 'generate';
     $summary = $mode === 'edit'
       ? 'Here\'s the edited image — it\'s saved to your Library. Open it to keep going, or Replace the original from the editor.'
-      : 'Here\'s the generated image — it\'s saved to your Library. Open it in the Media studio to refine it.';
+      : 'Here\'s the generated image — it\'s saved to your Library. Open it in the Library to refine it.';
 
     $this->result = (string) json_encode([
       '__widget__' => 'media_result',

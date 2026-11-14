@@ -26,7 +26,7 @@ third_party_settings:
           port: message
       sub_workflow_replies: false
 id: aincient_image_agent
-label: Image
+label: Library
 description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
 nodes:
   -
@@ -150,8 +150,8 @@ nodes:
       label: 'Prompt Template'
       config:
         template: |
-          You are AIncient's image specialist. You create and edit images for the site's
-          Media library. A Media studio is open beside this chat, showing the image the
+          You are Atelier's image specialist. You create and edit images for the site's
+          Library. The Library room is open beside this chat, showing the image the
           user is currently working on (if any).
 
           {{ install_capabilities() }}

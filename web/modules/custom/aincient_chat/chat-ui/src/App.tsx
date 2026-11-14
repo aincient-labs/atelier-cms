@@ -1073,7 +1073,7 @@ function ChatThread({ onToggleSidebar, docked = false }: { onToggleSidebar: () =
           // turn can't produce edits that would fail the fence and be lost. The
           // "Take over" affordance is in the studio banner alongside this.
           <div className="ain-composer-locked" role="status">
-            This page is being edited in another session. Take over in the studio to make changes.
+            This page is being edited in another session. Take over in the room to make changes.
           </div>
         ) : (
           <>
@@ -1755,7 +1755,7 @@ function RoomAgentPicker() {
         <CrumbMenu
           ariaLabel="Agent"
           className="ain-crumb--agent"
-          trigger={<span className="ain-crumb__value">{currentAgent?.label ?? "Select agent"}</span>}
+          trigger={<span className="ain-crumb__value">{currentAgent?.label ?? "Select assistant"}</span>}
           options={agents.map((a) => ({ key: a.id, label: a.label, selected: a.id === agentValue }))}
           onChoose={(id) => pickAgent(id)}
         />
@@ -1767,7 +1767,7 @@ function RoomAgentPicker() {
       <Dialog
         open={confirming != null}
         onOpenChange={(open) => !open && setConfirming(null)}
-        title="Switch agent?"
+        title="Switch assistant?"
         description={
           <>
             This conversation runs on <strong>{pinned?.label}</strong> and can&apos;t switch agents midway.
@@ -1943,7 +1943,7 @@ function StudioLoading() {
       <div className="ain-panelbar">
         <span className="ain-skeleton ain-skeleton--btn" />
       </div>
-      <LoadingState variant="fields" label="Loading studio" />
+      <LoadingState variant="fields" label="Loading room" />
     </aside>
   );
 }

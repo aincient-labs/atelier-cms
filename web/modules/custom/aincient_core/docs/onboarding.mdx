@@ -1,0 +1,134 @@
+---
+title: "Connect AI & choose models"
+description: "Connect your AI providers and bind a model to each role so every room is ready to work."
+---
+
+The first-run wizard connects your AI providers and picks the models Atelier uses, so a fresh install is ready to work in a couple of minutes.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — Connect AI & choose models"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+A fresh install ships keyless, so the wizard runs automatically the first time you open the console. It has two steps.
+
+## 1. Connect your AI
+
+Connect one provider or several:
+
+<CardGroup cols={3}>
+  <Card title="Anthropic" />
+  <Card title="OpenAI" />
+  <Card title="Google Gemini" />
+  <Card title="Mistral" />
+  <Card title="Ollama (local)" />
+  <Card title="OpenAI-compatible endpoint" />
+</CardGroup>
+
+Paste each provider's API key (or, for Ollama, your server URL). Each credential is validated against the provider before anything is saved — Atelier asks it for its model list, so "Connected" means a real answer came back — and it is stored on your own server, never in code or git.
+
+<Note>
+Atelier runs in a container, so `localhost` points at the container itself — not the machine where Ollama runs. To reach an Ollama server on the host, use `http://host.docker.internal:11434` instead of `http://localhost:11434`.
+</Note>
+
+<Tip>
+Ollama needs no key at all — the server URL is the whole credential, and nothing leaves your infrastructure. Atelier asks your server what each pulled model can do, so embedding models are kept out of the picker and a model that can't call tools is labelled as such. The chat rooms drive tools, so prefer a tool-capable model for the *task* and *high thinking* roles.
+</Tip>
+
+### Something else that speaks the OpenAI API
+
+DeepSeek, Groq, OpenRouter, a LiteLLM proxy, vLLM, LM Studio — Atelier serves all of them through the **OpenAI-compatible endpoint** row. It's the one provider that asks for two things: the **base URL** to call, and an **API key**.
+
+Give it the service's root address — `https://api.deepseek.com`, or wherever your own proxy lives. Atelier appends `/v1` itself, so leave that off. Then, exactly as with any other provider, it asks the endpoint for its model list before saving anything: connect succeeds only if a real catalogue comes back.
+
+<Note>
+A self-hosted proxy usually runs on the same machine as Atelier — and inside the container, `localhost` is the container. Use `http://host.docker.internal:<port>` to reach a server on the host.
+</Note>
+
+(OpenAI and Mistral don't need this row — they have their own above, and Atelier speaks each vendor's native API rather than the compatibility shim.)
+
+<Tip>
+Connecting Google Gemini also turns on image generation. One Google AI Studio key powers both Gemini chat and Nano Banana image generation.
+</Tip>
+
+## 2. Choose your models
+
+Atelier works in **roles**, not per-chat model picks. There are three chat roles — *high thinking*, *task*, and *fast* — plus *image description* and *image generation*.
+
+You only have to answer one question: **what matters most to you?**
+
+- **Best value** — the cheapest models that still do the job. Good for high volume and low stakes.
+- **Balanced** — good results at a sensible price. The right choice for most sites.
+- **Best quality** — the most capable models available. Costs more per turn.
+
+Atelier fills in every role from the profile you pick, choosing only models the providers you connected can actually serve. Nothing is bound that your key can't run.
+
+Want to decide each role yourself? **Choose per role** opens a picker for every one. Touching any of them switches you out of the profile and into your own selection — nothing is overwritten behind your back.
+
+Because you bind a model to a role (never to a single conversation), swapping one model rebinds every room that uses that role. Choose once, and the whole console follows.
+
+### Keeping the suggestions current
+
+Which model is the right one changes on roughly a weekly cadence — models get retired, prices move, a provider's fast tier overtakes another's mid tier. So the profiles come from a document we publish and keep up to date at
+[aincient-labs.com/atelier/models.yml](https://aincient-labs.com/atelier/models.yml) (plain text — read it before you trust it).
+
+Your install ships with a snapshot of that document, which is what you see by default and what keeps a fully offline install working. **Check for updates**, under the profiles, fetches the current one. That fetch is the only time Atelier contacts us, it happens only when you click, and it sends nothing about your site — see [Privacy](/privacy).
+
+## Supplying a key from the environment
+
+You can hand Atelier a provider key through an environment variable instead of the wizard. There are two forms, and **the name you choose decides who owns the key afterwards.**
+
+### A key the server owns
+
+```bash
+ATELIER_ANTHROPIC_API_KEY=sk-…
+```
+
+This key is read fresh on every request and **never written to the database** — it survives no backup, appears in no dump, and rotates by changing the variable and restarting. Use it when the secret must not live in the database at all: a platform with managed secrets, a Kubernetes cluster, or any image you build from a database dump.
+
+<Note>
+This form wins over anything stored through the wizard, so the provider shows as **Set by this server** in the connect step, with no key field and no Disconnect. That's deliberate: Atelier can't out-rank a variable it doesn't own, and a button that silently did nothing would be worse than no button. To change or remove such a provider, change the variable and restart.
+</Note>
+
+### A starting key the site owner owns
+
+```bash
+ATELIER_DEFAULT_ANTHROPIC_API_KEY=sk-…
+```
+
+This one is a **default, not a rule**. It's copied into the site's credential store once, on the first boot after you set it, and from then on it's an ordinary key: it appears in the wizard normally, the owner can replace it, and if they disconnect it, it stays disconnected — the next restart won't put it back.
+
+Because it's applied exactly once, changing the value later has no effect; the site already has its copy. And unlike the form above, this key **does** live in the database, so it will appear in backups and dumps.
+
+### The pattern
+
+Both forms use the provider's id in capitals — `ATELIER_MISTRAL_API_KEY`, `ATELIER_DEFAULT_OPENAI_COMPATIBLE_API_KEY`, and so on. Providers that need a base URL as well take `ATELIER_<PROVIDER>_ENDPOINT` (or `ATELIER_DEFAULT_<PROVIDER>_ENDPOINT`); for Ollama, where the URL *is* the credential, that variable is all you need.
+
+Seeds are applied automatically when the container starts. On an install that doesn't use the Atelier container, apply them yourself:
+
+```bash
+drush aincient:seed-credentials
+```
+
+## Changing providers or models later
+
+You can revisit the wizard any time:
+
+- Open the avatar menu (top-right) and choose **Set up AI providers**, or visit `/atelier?onboarding=1`.
+- Already-connected providers show as **Connected**, so you only fill in what's new.
+
+To rebind a role without the wizard:
+
+- Reopen the wizard from the avatar menu → **Set up AI providers**.
+- Or from your terminal: `atelier ai model set <role> <provider> <model>`.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" href="/quickstart" icon="rocket">
+    Get from install to your first published change.
+  </Card>
+  <Card title="The console" href="/console" icon="layout-dashboard">
+    Learn your way around the rooms.
+  </Card>
+</CardGroup>

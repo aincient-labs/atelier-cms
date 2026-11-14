@@ -73,13 +73,16 @@ final class AiGateway {
    * @param string $tag
    *   A short call-site tag for logging/metering attribution (e.g.
    *   `aincient_chat_thread_namer`).
+   * @param int $maxTokens
+   *   Output cap for this call; 0 = the provider bridge's default (Anthropic's
+   *   is 1000 — too small for a structured verdict with a rewritten reply).
    *
    * @return string
    *   The model's text, trimmed. Empty string when the role is unbound or the
    *   provider cannot chat — a caller that needs to distinguish "no AI
    *   configured" from "AI said nothing" should check {@see self::canText()}.
    */
-  public function text(string $prompt, string $role = ModelRoles::TASK, string $tag = ''): string {
+  public function text(string $prompt, string $role = ModelRoles::TASK, string $tag = '', int $maxTokens = 0): string {
     $target = $this->chatTargetFor($role);
     if ($target === NULL) {
       return '';
@@ -92,6 +95,7 @@ final class AiGateway {
       new MessageBag(Message::ofUser($prompt)),
       $tag,
       UsageSinkInterface::OPERATION_CHAT,
+      $maxTokens > 0 ? ['max_tokens' => $maxTokens] : [],
     );
 
     return $this->unpacker->text($result);
@@ -363,9 +367,9 @@ final class AiGateway {
    * @throws \Aincient\Inference\Exception\ProviderConfigurationException
    *   When the provider turns out not to be configured after all.
    */
-  private function invoke(string $providerId, string $modelId, MessageBag $bag, string $tag, string $operation): object {
+  private function invoke(string $providerId, string $modelId, MessageBag $bag, string $tag, string $operation, array $extra = []): object {
     try {
-      $options = $this->registry->adapter($providerId)->translateOptions($this->options());
+      $options = $this->registry->adapter($providerId)->translateOptions($extra + $this->options());
       $platform = $this->registry->platform($providerId);
     }
     catch (ProviderConfigurationException $e) {

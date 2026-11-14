@@ -100,6 +100,8 @@ const NODE_PHRASES: Record<string, [present: string, past: string]> = {
 const CAPABILITY_PHRASES: Record<string, [present: string, past: string]> = {
   list_pages: ["Looking through your pages", "Looked through your pages"],
   find_reference: ["Looking something up", "Looked something up"],
+  search_docs: ["Checking the docs", "Checked the docs"],
+  read_docs_page: ["Reading the docs", "Read the docs"],
   preview_page: ["Previewing the page", "Previewed the page"],
   reset_preview: ["Clearing the preview", "Cleared the preview"],
   run_page_audit: ["Checking the page", "Checked the page"],

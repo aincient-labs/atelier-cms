@@ -1,0 +1,192 @@
+---
+title: "Hardening your site"
+description: "What Atelier assumes about where it runs, and what to set before you put a site on a public address: TLS, trusted hosts, loopback binding, secrets, backups and removal"
+---
+
+Atelier's defaults are made for trying it on your own computer. Before a site faces the internet, or a network you don't trust, a few settings are yours to make. This page lists them in the order to do them.
+
+## What Atelier assumes
+
+- **One site, one owner.** Each install is a single-tenant appliance: one site, with its own database, files and keys. It runs on your computer or on a server you control.
+- **One published port.** A site runs three containers: `edge` (nginx), `app` and `db`. Only `edge` listens on the host. It uses port `41221` unless you set `HTTP_PORT` in `.env`. The application and the database publish nothing.
+- **No TLS in the stack.** `edge` speaks plain http. For a public address, put a TLS reverse proxy in front of it.
+
+## Put TLS in front
+
+Point a reverse proxy at the edge port and let it handle the certificate. `edge` passes the proxy's `X-Forwarded-Proto` on to the application, so the site builds `https://` links. It sends an HSTS header only for requests that arrived over https, so a plain-http visit never receives one.
+
+Caddy gets and renews the certificate for you:
+
+```text
+cms.example.com {
+    reverse_proxy 127.0.0.1:41221
+}
+```
+
+Traefik, in a dynamic configuration file:
+
+```yaml
+http:
+  routers:
+    atelier:
+      rule: Host(`cms.example.com`)
+      entryPoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      service: atelier
+  services:
+    atelier:
+      loadBalancer:
+        servers:
+          - url: http://127.0.0.1:41221
+```
+
+Both are examples. Adjust the entry point and resolver names to your own setup.
+
+## Set the trusted hosts
+
+`AINCIENT_TRUSTED_HOSTS` lists the host names the site answers to, as comma-separated PHP regular expressions. Add it to `.env`:
+
+```bash
+AINCIENT_TRUSTED_HOSTS='^cms\.example\.com$,^www\.example\.com$'
+```
+
+If you also open the site on your own computer, add the local names too. The Manager opens and checks the site at `http://localhost:<port>`, and a host that isn't on the list gets a 400 error:
+
+```bash
+AINCIENT_TRUSTED_HOSTS='^cms\.example\.com$,^www\.example\.com$,^localhost$,^127\.0\.0\.1$'
+```
+
+With the variable unset, the site accepts any host name and logs a warning. That is fine for a first look on your own computer. Set it before you expose the site, then recreate the containers so they read the new value. A restart is not enough, because the containers read `.env` when they are created:
+
+```bash
+atelier app down
+atelier app start
+```
+
+`down` without `--wipe` keeps your data. For a site other than the default, add `--site <slug>` to both commands (see [Several sites on one computer](#several-sites-on-one-computer)).
+
+## Keep it on your computer
+
+The compose file publishes the edge port as `"${HTTP_PORT:-41221}:80"`, which listens on every network interface of the machine. If the site is only for you, or only for a reverse proxy running on the same machine, listen on the loopback address instead. Change the line in `compose.yaml` to:
+
+```yaml
+    ports:
+      - "127.0.0.1:41221:80"
+```
+
+Edit the mapping itself. Don't put an address into `HTTP_PORT`: the installer and the Manager read that value as a port number and use it to build the console address. If you have changed the port, use your own number in both places.
+
+The Manager keeps a hand-edited `compose.yaml` through normal updates. If a repair replaces the file, the old one is moved aside, and you apply this edit again. The curl installer behaves differently: every run rewrites `compose.yaml`, and the [quickstart](/quickstart#upgrade) upgrades a curl install by re-running it. After each installer run, apply the edit again, then run `atelier app down` and `atelier app start` (or `docker compose up -d` from the install directory) so the new mapping takes effect. Or use the Manager, which doesn't have this problem.
+
+## Several sites on one computer
+
+Every stack's `compose.yaml` starts with `name: atelier`. The Manager separates your sites by passing `-p <project>` to Docker Compose, with the project `atelier` for the default install in `~/.atelier` and `atelier-<slug>` for a site you added, which lives in `~/.atelier/sites/<slug>`.
+
+Plain `docker compose` doesn't pass `-p`, so it always acts on the default site, even when you run it inside `~/.atelier/sites/blog`. That is why this page uses the `atelier` command wherever one exists. Add `--site <slug>` to target another site:
+
+```bash
+atelier --site blog app down
+```
+
+The raw `docker compose` commands below are for the default install. For any other site, add `-p atelier-<slug>`, for example `docker compose -p atelier-blog exec db psql …`.
+
+## What the edge adds to every response
+
+| Header | Effect |
+|---|---|
+| `X-Content-Type-Options: nosniff` | Browsers use the declared content type and do not guess. |
+| `Referrer-Policy: strict-origin-when-cross-origin` | Other sites receive your origin, not the full address of the page. |
+| `X-Frame-Options: SAMEORIGIN` | Other sites cannot show your pages in a frame. |
+| `Permissions-Policy` | Denies camera, microphone, geolocation and payment to the page. |
+| `Strict-Transport-Security: max-age=31536000` | Browsers use https for this site for one year. Sent only for requests that arrived over https. |
+
+These headers also apply to the saved pages of a [frozen site](/freeze-and-live) and to the "Atelier is starting" page.
+
+The public site does not send a `Content-Security-Policy` header yet. If you need one, add it in your reverse proxy and test it against your pages first.
+
+## Secrets and `.env`
+
+The `.env` file in the install directory (`~/.atelier` for the default install) holds the secrets for the stack.
+
+- **`HASH_SALT`** must be at least 32 characters. The site does not start without it. The installer and the Manager generate one for you.
+- **`DB_PASSWORD`** is a random value for the database. New installs get one automatically.
+
+Keep `.env` private. The installer sets its mode to `600`, so only your user can read it. Don't commit it or copy it into a chat or a ticket.
+
+Installs made before this change use the shared default database password. The database is not reachable from outside the stack, and `atelier doctor` flags the default. A later update will rotate it.
+
+### If you lose `.env`
+
+The database keeps the password it was created with. A new `.env` without that `DB_PASSWORD` means the application can no longer sign in to it. You can set a new password from inside the database container, which doesn't need the old one:
+
+1. Generate a password and add it to `.env` as `DB_PASSWORD=<value>`:
+
+   ```bash
+   openssl rand -hex 24
+   ```
+
+2. Set the same value on the database, from the install directory:
+
+   ```bash
+   docker compose exec db psql -U aincient -d aincient -c "ALTER USER aincient PASSWORD '<value>';"
+   ```
+
+   This is the default install. For another site, name its project, for example `docker compose -p atelier-blog exec db psql …`. Without `-p`, the command changes the password of the default site's database.
+
+3. Recreate the containers so the application picks up the new value:
+
+   ```bash
+   atelier app down
+   atelier app start
+   ```
+
+   For another site, add `--site <slug>`.
+
+Back up `.env` with your other secrets so you don't need this.
+
+## The first admin password
+
+On the first start, Atelier makes a random admin password and writes it to `private/INITIAL_ADMIN_PASSWORD` inside the `private` volume. It is not written to the server log. The installer prints it once when it finishes. To read it back later:
+
+```bash
+atelier app password
+```
+
+Sign in, then change it under your [account](/account). To set a new one from the command line, run `atelier app password --set <newpass>`. For a site other than the default, add `--site <slug>`.
+
+## Backups are secrets
+
+Your AI provider keys live in the database, so every backup made with `atelier data backup` contains them. Treat a backup the way you treat `.env`: store it somewhere private, encrypt it if it leaves your machine, and delete the ones you no longer need. If a backup ends up somewhere it should not be, replace the keys at your AI provider. See [Security incident response](/incident-response).
+
+## The development compose file has an updater
+
+Installs made by the curl installer or the Manager run no updater and never mount the Docker socket. Only the development `compose.yaml` in the source repository adds an `updater` container. It mounts `/var/run/docker.sock`, so anything that can run code inside it has the same reach as root on that machine. Don't run that file on a shared or public machine. To see what each release ships, read the [SBOM](/sbom).
+
+## Removing everything
+
+Stop the site and delete its containers and volumes:
+
+```bash
+atelier app down --wipe
+```
+
+For a site other than the default, add `--site <slug>`. The command asks you to confirm first.
+
+Without the Manager, from the install directory of the default install:
+
+```bash
+docker compose down -v
+```
+
+> **Warning.** Plain `docker compose down -v` always acts on the default site, whichever directory you run it in. To remove another site this way, use `docker compose -p atelier-<slug> down -v`. Check the project name first: the wrong one deletes a different site's data.
+
+This deletes the database, the uploaded files and the `private` volume, which holds the saved pages and the admin password. It cannot be undone. Then delete your backups and the install directory (`~/.atelier` for the default install), which holds `.env`.
+
+## Related
+
+- [Manage a site on a server](/server-sites)
+- [Host your exported site](/deploy)
+- [Privacy](/privacy)
+- [Security incident response](/incident-response)
+- [What's inside: SBOMs and VEX](/sbom)

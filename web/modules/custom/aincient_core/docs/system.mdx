@@ -1,0 +1,69 @@
+---
+title: "The System back-office"
+description: "A deliberately small set of technical settings, kept out of your way — the console stays home"
+---
+
+Almost everything you do lives in the console. A few technical settings live in the **System** back-office, and Atelier keeps that on purpose small.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — The System back-office"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+## Where it is
+
+Open the System back-office at `/admin`, reachable from your **account menu**. When you're done, a **← Console** link jumps you straight back to `/atelier`. You'll rarely need to visit — the console is home.
+
+## What lives there
+
+Atelier keeps the back-office to just the technical settings that don't belong in a room:
+
+<CardGroup cols={2}>
+  <Card title="People" icon="users">
+    Manage accounts and roles — who can sign in and what they can do.
+  </Card>
+  <Card title="AI metering" icon="gauge">
+    See your AI usage and cost per turn, plus its settings.
+  </Card>
+  <Card title="Mail delivery" icon="mail">
+    Configure how your site sends email. See [email](/email).
+  </Card>
+  <Card title="Languages" icon="languages">
+    Add and manage the languages your site is available in. See [multilingual pages](/translation).
+  </Card>
+</CardGroup>
+
+<Note>
+  The back-office is intentionally minimal. Building pages, media, brand, and everything day-to-day happens in the console — not here.
+</Note>
+
+## Which version am I running?
+
+Open **Reports → Status report** at `/admin/reports/status` and look for the **Atelier version** row.
+
+Atelier ships as a container image that updates itself when you pull a newer one, so this row — not the date you installed — is what tells you which Atelier you're actually running. **Include it whenever you report a problem**: it's the difference between a bug we've already fixed in a newer image and one we haven't heard about.
+
+You'll see one of three things:
+
+- **A version like `v0.1.0`** — a released image. This is the normal answer.
+- **A version with `+edge.` and a short code**, like `v0.5.1+edge.a1b2c3d` — a rolling build off our main branch rather than a release. The version in front is the last release it contains; the code after it identifies the exact build. Newer, but less settled — include the whole string. (Builds published before August 2026 read `edge+` and a code, with no version in front.) Edge is for testing; see [channels](/quickstart#which-builds-you-get) to move back to released versions.
+- **"Development"** — not a released image at all, which is expected if you're running Atelier from source. If you installed from a release and still see this, mention that too.
+
+<Tip>
+  The same page lists your PHP and database versions and flags anything Atelier thinks needs attention — so it's a good screenshot to attach to a bug report as-is.
+</Tip>
+
+<Tip>
+  If you're not sure where a setting lives, start in the console. Only reach for `/admin` when you need People, AI metering, Mail, or Languages — then use **← Console** to get back to work.
+</Tip>
+
+<CardGroup cols={2}>
+  <Card title="Email delivery" href="/email" icon="mail">
+    Set up how Fernway sends its email.
+  </Card>
+  <Card title="Your account" href="/account" icon="user">
+    Manage your own profile and access.
+  </Card>
+</CardGroup>

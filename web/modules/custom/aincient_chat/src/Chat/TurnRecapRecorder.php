@@ -92,4 +92,55 @@ final class TurnRecapRecorder {
     }
   }
 
+  /**
+   * Replace the text of the session's last assistant turn in the model's buffer.
+   *
+   * Used when the docs verifier rewrote a reply (DECISIONS 0525): the user saw
+   * the checked text, so the model's memory of its own turn must be the same —
+   * or its next turn repeats the claim that was taken out. Only replaces when
+   * the stored turn still starts with the original reply. Best-effort.
+   */
+  public function reviseLastReply(int $sessionId, string $original, string $revised): void {
+    if ($sessionId === 0 || $original === $revised) {
+      return;
+    }
+    try {
+      if (!\Drupal::hasService('flowdrop_memory.manager')) {
+        return;
+      }
+      $memory = \Drupal::service('flowdrop_memory.manager');
+      $lock = \Drupal::lock();
+      $lockName = 'flowdrop_memory_buffer:' . self::SCOPE . ':' . $sessionId . ':' . self::KEY;
+      if (!$lock->acquire($lockName, 5.0)) {
+        $lock->wait($lockName, 5);
+        if (!$lock->acquire($lockName, 5.0)) {
+          $this->logger->warning('Could not lock the conversation of session @id to revise a reply.', ['@id' => $sessionId]);
+          return;
+        }
+      }
+      try {
+        $messages = $memory->get(self::SCOPE, (string) $sessionId, self::KEY, [], self::BACKEND);
+        $last = is_array($messages) && $messages !== [] ? array_key_last($messages) : NULL;
+        if ($last === NULL || !is_array($messages[$last]) || ($messages[$last]['role'] ?? '') !== 'assistant') {
+          return;
+        }
+        $content = (string) ($messages[$last]['content'] ?? '');
+        if (!str_starts_with(trim($content), trim($original))) {
+          return;
+        }
+        $messages[$last]['content'] = $revised . substr(trim($content), strlen(trim($original)));
+        $memory->set(self::SCOPE, (string) $sessionId, self::KEY, $messages, NULL, self::BACKEND);
+      }
+      finally {
+        $lock->release($lockName);
+      }
+    }
+    catch (\Throwable $e) {
+      $this->logger->warning('Could not revise the last reply of session @id: @m', [
+        '@id' => $sessionId,
+        '@m' => $e->getMessage(),
+      ]);
+    }
+  }
+
 }

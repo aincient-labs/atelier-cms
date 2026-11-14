@@ -1,0 +1,51 @@
+---
+title: "Back up and restore"
+description: "Take a backup of your whole site before a big change, and restore it if you need to go back — from the desktop app or the terminal"
+---
+
+A backup is a copy of everything on your site: the database (pages, settings, your brand) and
+the uploaded files (images). Take one before a big change, and restore it if you want to go back.
+Backups are saved on your computer, in `~/.atelier/backups`.
+
+## In the desktop app
+
+Open the **Backups** tab.
+
+- **Back up now** makes a backup straight away.
+- **Your backups** lists the backups on this computer. Pick one and click **Restore** to put the
+  site back the way it was, or **Save a copy…** to keep the file somewhere else.
+- **Restore from a file on my computer…** restores a backup file you saved elsewhere.
+
+## In the terminal
+
+```bash
+atelier data backup                 # back up now
+atelier data backup --label before-redesign   # add a label to the file name
+atelier data list                   # list your backups
+atelier data restore <file>         # restore one (asks you to confirm)
+```
+
+A backup is a `.tar.gz` file. Each one records which site it came from, and restoring another
+site's backup is refused unless you add `--other-site`.
+
+<Note>
+  Restoring replaces the site's current database and files with the backup's. Anything you
+  changed after the backup was taken is lost, so back up first if you might want it.
+</Note>
+
+## Before a big change
+
+Two tools help, and they do different jobs:
+
+- **A backup** keeps everything, so you can go back after any change, including an update.
+- **A snapshot** in [Freeze & Live](/freeze-and-live) keeps the *published* site on show to
+  visitors while you keep working, and you can switch back in seconds. Backups include your
+  snapshots.
+
+Your AI provider keys are stored in the database, so every backup contains them. Keep backups
+somewhere private. See [Hardening](/hardening).
+
+## Sites on a server
+
+For a site you manage on a server, the same commands take `--site`. The backup is made on the
+server and copied to this computer. See [Sites on a server](/server-sites#back-up-and-restore).

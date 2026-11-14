@@ -46,8 +46,8 @@ final class StudioCapabilityGate implements CapabilityGateInterface {
       return NULL;
     }
     return sprintf(
-      'The %s studio is switched off, so %s is not available. Ask the operator to switch it on in Settings.',
-      $owner->label(),
+      'The %s room is switched off, so %s is not available. Ask the operator to switch it on in Settings.',
+      $owner->uiName(),
       $capabilityId,
     );
   }

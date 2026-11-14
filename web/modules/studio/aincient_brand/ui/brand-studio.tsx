@@ -143,7 +143,7 @@ type BrandStatus = { stage: string; locked: boolean };
  *  (mirrors BrandRepository::STAGES + the agent's status directive). */
 const STAGE_ORDER = ["ideating", "guided", "polish"] as const;
 const STAGE_META: Record<string, { label: string; blurb: string }> = {
-  ideating: { label: "Ideating", blurb: "Explore freely — the agent may reshape the whole brand." },
+  ideating: { label: "Ideating", blurb: "Explore freely — the assistant may reshape the whole brand." },
   guided: { label: "Guided", blurb: "Honour the inputs you supply; don’t invent new directions." },
   polish: { label: "Polish", blurb: "Minimal, surgical changes — no cross-axis drift." },
 };
@@ -1011,7 +1011,7 @@ export function IdentityStudio({ onClose }: { onClose: () => void }) {
           discardTitle="Discard draft — revert the preview to the saved brand and start a fresh chat"
           publishTitle="Publish the draft to the live site"
         />
-        <IconButton className="ain-topbar__leave" onClick={onClose} label="Close identity studio" title="Leave identity studio">
+        <IconButton className="ain-topbar__leave" onClick={onClose} label="Close Identity" title="Leave Identity">
           <XIcon />
         </IconButton>
       </StudioActionsPortal>
@@ -1384,7 +1384,7 @@ function IdentityCard({
             label="Description"
             value={draft.identity.guidelines.description}
             onChange={(v) => onGuideline("description", v)}
-            placeholder="What the site is about (for meta + the agent)"
+            placeholder="What the site is about (for meta + the assistant)"
             multiline
           />
           <IdentityTextField
@@ -1505,7 +1505,7 @@ function StatusControl({
             Locked
           </span>
         )}
-        <span className="ain-design-system-status__hint">{status.locked ? "The brand is settled — the agent makes minimal, single-axis changes only." : meta.blurb}</span>
+        <span className="ain-design-system-status__hint">{status.locked ? "The brand is settled — the assistant makes minimal, single-axis changes only." : meta.blurb}</span>
       </div>
       <SegmentedControl
         label="Brand stage"
@@ -1527,7 +1527,7 @@ function StatusControl({
             Lock the brand
           </span>
           <span className="ain-field__hint">
-            Pins the brand — the agent won’t make sweeping or cross-axis changes, whatever the stage.
+            Pins the brand — the assistant won’t make sweeping or cross-axis changes, whatever the stage.
           </span>
         </span>
       </label>

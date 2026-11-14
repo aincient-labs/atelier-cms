@@ -1,0 +1,4 @@
+ask: Can visitors pay for my drawings directly on my Atelier site?
+kind: uncovered
+expect:
+  prose_not: '/stripe|paypal|payment (link|button|component|section)/i'

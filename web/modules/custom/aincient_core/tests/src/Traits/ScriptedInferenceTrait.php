@@ -58,6 +58,15 @@ trait ScriptedInferenceTrait {
   }
 
   /**
+   * One reply per call, in order; the last one repeats.
+   *
+   * @param list<string> $texts
+   */
+  private function scriptInferenceTexts(array $texts): void {
+    \Drupal::state()->set(ScriptedAdapter::TEXT_KEY, array_values($texts));
+  }
+
+  /**
    * Scripts the finish reason the provider reports for the next call.
    *
    * Not called = the provider reports none, which is a real state and must keep

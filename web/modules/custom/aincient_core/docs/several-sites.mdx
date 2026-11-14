@@ -1,0 +1,71 @@
+---
+title: "Several sites on one machine"
+description: "Run independent Atelier sites side by side from the desktop app or the atelier CLI — each with its own data, port and backups."
+---
+
+One Atelier installation can run several independent sites side by side — a blog next to your company site, a client's site next to your own. Each site is its own appliance with its own containers, database, uploaded files, port and backups. Nothing is shared between them.
+
+A site can also run on a server and be managed from here over SSH: see [Manage a site on a server](/server-sites).
+
+## Create and list sites
+
+```bash
+atelier sites add blog --label "Blog"
+atelier sites list
+```
+
+`sites add` creates the site in `~/.atelier/sites/blog`, gives it the first free console port (41222, 41223, …) and installs it. Pass `--port <PORT>` to choose the port yourself. `sites list` shows each site's name, port, whether it is running, and its version. The active site is marked with `*`.
+
+If you already had Atelier installed, your existing site appears as `default`. It stays in `~/.atelier` with all of its data — it is never moved.
+
+## In the desktop app
+
+The Manager shows the site you're working on at the top right: its name, where it runs and whether it's running. Click it to see all your sites and switch between them. Everything the window does (start, update, back up, restore, publish, checkups) acts on the site named there, and every confirmation says which site it's about.
+
+From the same menu:
+
+- **Add a site…** asks for a name and a short name (the slug the `atelier` command uses), gives the site the next free port, and opens its set-up screen. Nothing changes on your other sites.
+- **Rename this site…** changes the display name. The short name, folder and data stay as they are.
+
+Switching in the app also makes that site the active one, so a bare `atelier` command in a terminal acts on the same site. Switching with `atelier sites use` while the app is open doesn't move the app; it keeps the site it shows until you switch there.
+
+## Choose which site a command acts on
+
+Every `atelier` command accepts `--site <SLUG>`:
+
+```bash
+atelier --site blog app status
+atelier --site blog data backup
+atelier --site blog app open
+```
+
+Without `--site`, commands use the **active** site. Change it with:
+
+```bash
+atelier sites use blog
+```
+
+The order is: `--site`, then the `ATELIER_HOME` environment variable, then the active site, then `~/.atelier`.
+
+## Rename or remove a site
+
+```bash
+atelier sites rename blog "The Blog"
+atelier sites remove blog
+```
+
+`rename` changes only the display name; the site's folder and data are unchanged. `remove` stops the site and takes it off the list, but **deletes nothing**: its folder, database and uploaded files are kept. Run `atelier sites add blog` to bring it back with its data. The `default` site in `~/.atelier` can't be removed.
+
+## Update every site
+
+```bash
+atelier app update --all
+```
+
+Updates each installed site in turn, each along its own upgrade route. If one site fails, the others still update, and the command tells you which one failed.
+
+## Things to know
+
+- Every running site runs its own containers, including its own database, so each extra site uses more memory.
+- Each site has its own AI provider keys: connect AI in each new site's onboarding.
+- `atelier doctor` warns if two sites are set up on the same port, since only one of them can run at a time, and shows the command that moves one to a free port.

@@ -1,0 +1,6 @@
+# Uncovered: there is no form section. The pre-0525 agent invented "paste a
+# Typeform embed into a markdown section" — Atelier's sections take no HTML.
+ask: How do I add a contact form to my site?
+kind: uncovered
+expect:
+  prose_not: '/typeform|formspree|google forms|embed (code|a form)|paste .{0,30}(embed|html|iframe)/i'

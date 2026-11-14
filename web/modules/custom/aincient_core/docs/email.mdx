@@ -1,0 +1,101 @@
+---
+title: "Email delivery"
+description: "Atelier sends transactional email — password resets, account and update notices — through a transport you choose: log-only, SMTP, or an API provider"
+---
+
+Atelier sends transactional email on your behalf: password resets, account
+notices, and update alerts. Where those messages actually go is up to you — pick
+a delivery method that suits your setup.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — Email delivery"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+<Note>
+A fresh install sends nothing to the outside world. Until you connect a
+transport, email is written to your site's log so nothing is lost — and nothing
+is silently delivered.
+</Note>
+
+While email is log-only, password reset by email can't work, so the sign-in page
+says so and the **Reset your password** page explains how to get back in instead
+of offering to send a link: use **Edit my site** in the Atelier manager (or `atelier app open`), then set
+a password under [My account](/account).
+
+## Choose how email is delivered
+
+Open **System** from your account menu, then go to **Configuration → Mail
+delivery** (`/admin/config/aincient/mail`). You have three options.
+
+<CardGroup cols={3}>
+  <Card title="Log only" icon="file-text">
+    The default. Messages are recorded in your site's log instead of being sent.
+    Good for trying Atelier out before you connect real delivery.
+  </Card>
+  <Card title="SMTP server" icon="server">
+    Send through any SMTP server — your own, or a provider that gives you SMTP
+    credentials. Enter the host, port, username, and password.
+  </Card>
+  <Card title="API provider" icon="send">
+    Send through a hosted email API (SendGrid or Postmark). Enter the provider's
+    API key.
+  </Card>
+</CardGroup>
+
+## Connect a transport
+
+<Steps>
+  <Step title="Open Mail delivery">
+    From the console, open your account menu, choose **System**, then
+    **Configuration → Mail delivery**.
+  </Step>
+  <Step title="Pick a delivery method">
+    Choose **SMTP server** or **API provider**. The fields you need appear
+    below your choice.
+  </Step>
+  <Step title="Enter your credentials">
+    Fill in the server details or API key. Your key is stored securely on your
+    site and is never written to your exported configuration or to version
+    control.
+  </Step>
+  <Step title="Send a test email">
+    Enter a recipient under **Send a test email** and click **Send test email**.
+    Atelier sends a real message using the values on screen — even before you
+    save — so you can confirm delivery works.
+  </Step>
+  <Step title="Save">
+    Click **Save configuration**. From now on, Atelier's transactional email
+    goes through your transport.
+  </Step>
+</Steps>
+
+<Tip>
+Changing your delivery method later never re-exposes a stored key. Leave the
+key or password field blank to keep the one you already saved.
+</Tip>
+
+## Who your email is from
+
+The sender name and address don't live here — they come from your site
+identity. Atelier sends as the name and email address set in **Site
+information**, so there's one place to manage your brand's identity.
+
+If you ever need a different sender for email specifically, set a **From address
+override** on the Mail delivery page. Leave it blank to send as your Site
+information address.
+
+<Note>
+If you haven't set a sender address yet, add one in **Site information** —
+otherwise email falls back to a placeholder address that may be filtered by
+recipients.
+</Note>
+
+## API providers
+
+SendGrid and Postmark are supported with a single API key. Some providers need
+an extra package installed before they can send; if a test fails with a
+transport error, that package isn't available on your install yet. SMTP works on
+every install with no extra setup.

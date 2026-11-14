@@ -1,0 +1,193 @@
+---
+title: "Host your exported site"
+description: "Put your static export online — Netlify, Cloudflare Pages, Vercel, GitHub Pages, or any static host"
+---
+
+You've [exported your site](/static-export) as plain files. Now put it on the web. A static export is
+ordinary HTML, CSS, images, and assets, so it runs on **any** static host — pick whichever you already use.
+The steps below all start from the same folder Atelier produced.
+
+## Build the export first
+
+If you run the appliance with the [`atelier` CLI](/quickstart), one command exports your site and drops the
+files on your machine, ready to deploy:
+
+```bash
+atelier site export
+```
+
+By default this writes the site to `aincient-export/` in the current directory and runs a link check so you
+know the snapshot is self-contained.
+
+<Note>
+  **Set your final domain with `--base-url`.** Page canonicals, `og:` tags, and the sitemap bake in the
+  address you render against. Export for the domain you'll publish to:
+
+  ```bash
+  atelier site export --base-url https://your-domain.com
+  ```
+
+  For a first test deploy you can skip this and fix it before you point a custom domain at the site.
+</Note>
+
+<Tip>
+  Prefer a single file to upload or hand off? `atelier site export --zip` also packages `aincient-export.zip`.
+  Add `--include-config --include-users` for a full "own your data" bundle (see [Export a static site](/static-export)).
+</Tip>
+
+Re-run `atelier site export` any time you publish changes and re-deploy — every host below supports that.
+
+## Fastest: the deploy template
+
+Don't want to configure a host by hand? The [**atelier-deploy-template**](https://github.com/aincient-labs/atelier-deploy-template)
+repo is pre-wired for every host below. Put your export in its `site/` folder and push — start from any of
+these one-click links:
+
+- [**Use this template**](https://github.com/aincient-labs/atelier-deploy-template/generate) — create your own copy on GitHub (best for GitHub Pages)
+- [**Deploy to Netlify**](https://app.netlify.com/start/deploy?repository=https://github.com/aincient-labs/atelier-deploy-template)
+- [**Deploy to Cloudflare**](https://deploy.workers.cloudflare.com/?url=https://github.com/aincient-labs/atelier-deploy-template)
+- [**Deploy with Vercel**](https://vercel.com/new/clone?repository-url=https://github.com/aincient-labs/atelier-deploy-template)
+
+The buttons deploy the template's placeholder first; connect the host, then push your export to `site/` and
+it redeploys automatically. Prefer to set a host up by hand? Keep reading.
+
+## Netlify
+
+<Steps>
+<Step title="Drag and drop (fastest)">
+  Open [app.netlify.com/drop](https://app.netlify.com/drop) and drop your `aincient-export` folder onto the
+  page. It's live in seconds on a `*.netlify.app` address.
+</Step>
+<Step title="Or use the CLI">
+  ```bash
+  npm i -g netlify-cli
+  netlify deploy --prod --dir=aincient-export
+  ```
+</Step>
+<Step title="Or connect a Git repo">
+  Commit the export to a repo and add a `netlify.toml` so Netlify serves the folder as-is (no build step —
+  Atelier already built it):
+
+  ```toml
+  [build]
+  publish = "aincient-export"
+  ```
+</Step>
+</Steps>
+
+Official docs: [Netlify — create deploys](https://docs.netlify.com/site-deploys/create-deploys/) · [Netlify CLI](https://docs.netlify.com/cli/get-started/).
+
+## Cloudflare Pages
+
+<Steps>
+<Step title="Direct upload">
+  In the Cloudflare dashboard: **Workers & Pages → Create → Pages → Upload assets**, then upload the
+  `aincient-export` folder.
+</Step>
+<Step title="Or use Wrangler">
+  ```bash
+  npm i -g wrangler
+  wrangler pages deploy aincient-export
+  ```
+</Step>
+<Step title="Or connect a Git repo">
+  Point a Pages project at your repo, leave the **build command empty**, and set the **build output
+  directory** to `aincient-export`.
+</Step>
+</Steps>
+
+Official docs: [Cloudflare Pages — Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/) · [direct upload](https://developers.cloudflare.com/pages/get-started/direct-upload/).
+
+## Vercel
+
+<Steps>
+<Step title="Deploy the folder with the CLI">
+  ```bash
+  npm i -g vercel
+  vercel deploy aincient-export --prod
+  ```
+</Step>
+<Step title="Or connect a Git repo">
+  Import the repo, choose framework preset **Other**, leave the build command empty, and set the **output
+  directory** to `aincient-export`. Optionally commit a `vercel.json`:
+
+  ```json
+  {
+    "outputDirectory": "aincient-export"
+  }
+  ```
+</Step>
+</Steps>
+
+Official docs: [Vercel — Git deploys](https://vercel.com/docs/deployments/git) · [Vercel CLI](https://vercel.com/docs/cli).
+
+## GitHub Pages
+
+<Steps>
+<Step title="Create a repo and add the files">
+  Copy the contents of `aincient-export/` into a new repository. **Add an empty `.nojekyll` file** at the
+  root — without it, GitHub Pages' Jekyll step strips folders that start with an underscore.
+</Step>
+<Step title="Deploy with GitHub Actions">
+  Commit this workflow as `.github/workflows/pages.yml`. It publishes the whole repo (adjust `path:` if your
+  files live in a subfolder):
+
+  ```yaml
+  name: Deploy to GitHub Pages
+  on:
+    push:
+      branches: [main]
+  permissions:
+    contents: read
+    pages: write
+    id-token: write
+  jobs:
+    deploy:
+      runs-on: ubuntu-latest
+      environment:
+        name: github-pages
+        url: ${{ steps.deployment.outputs.page_url }}
+      steps:
+        - uses: actions/checkout@v4
+        - uses: actions/upload-pages-artifact@v3
+          with:
+            path: .
+        - id: deployment
+          uses: actions/deploy-pages@v4
+  ```
+</Step>
+<Step title="Turn it on">
+  In the repo, go to **Settings → Pages** and set the source to **GitHub Actions**. Your site publishes on
+  each push to `main`.
+</Step>
+</Steps>
+
+Official docs: [GitHub Pages — custom Actions workflow](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+<Note>
+  On a project site the URL includes a subpath (`username.github.io/repo`). Export with a matching
+  `--base-url` (e.g. `https://username.github.io/repo`) so links and canonicals resolve correctly, or use a
+  [custom domain](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site).
+</Note>
+
+## Any static host
+
+The export is just files, so it works on everything else too — no framework required:
+
+- **Your own server:** copy `aincient-export/` into your web root (nginx, Apache, Caddy). Point the server
+  at the folder and you're done.
+- **Object storage + CDN:** sync to an S3 bucket, Cloudflare R2, Google Cloud Storage, etc. and front it
+  with a CDN. For example: `aws s3 sync aincient-export s3://your-bucket --delete`. Official guides:
+  [AWS S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html) ·
+  [Cloudflare R2](https://developers.cloudflare.com/r2/buckets/public-buckets/) ·
+  [Google Cloud Storage](https://cloud.google.com/storage/docs/hosting-static-website).
+- **Anything that serves a folder** — even a USB stick or a local `python -m http.server` for a quick look.
+
+<CardGroup cols={2}>
+  <Card title="Export a static site" href="/static-export" icon="download">
+    What a static export includes and how "own your data" works.
+  </Card>
+  <Card title="SEO & presence" href="/seo-presence" icon="search">
+    Get canonicals, sitemaps, and metadata right before you publish.
+  </Card>
+</CardGroup>

@@ -1,0 +1,8 @@
+# Nina's report: the assistant said components can be created in a "Design
+# System studio". They come from developer-built packs; the room is Identity.
+ask: Can I create my own new component in the Design System studio?
+kind: covered
+expect:
+  links_any: [/docs/component-packs, /docs/components, /docs/bring-your-own-components]
+  mention_all: ['/pack/i']
+  prose_not: '/you can (create|build|add) (a |your own )?(new )?component (in|from) the (studio|console|design system)/i'

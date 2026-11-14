@@ -1,0 +1,70 @@
+---
+title: "What's inside: SBOMs and VEX"
+description: "Every Atelier release lists what it ships in a CycloneDX SBOM; a VEX file says which scanner findings cannot affect it. Where to find them and how to scan them"
+---
+
+Every release of Atelier and the Atelier Manager comes with a **software bill of materials (SBOM)**: a list of every package, library and operating-system component it ships, with versions. Feed it to a vulnerability scanner and you know whether a new advisory touches the version you run, without unpacking anything.
+
+The files use [CycloneDX](https://cyclonedx.org/), which most scanners and dependency tools read.
+
+## Where to find them
+
+| Product | Where | Since |
+|---|---|---|
+| Atelier (the appliance) | the release's assets on [GitHub](https://github.com/aincient-labs/atelier-cms/releases), `*.cdx.json` | releases after 0.21.0 |
+| Atelier image on GHCR | SBOM and build provenance attestations on the image itself | releases after 0.21.0 |
+| Atelier Manager (CLI + desktop app) | the release's assets on [GitHub](https://github.com/aincient-labs/manager/releases), `*.cdx.json` | 0.14.0 |
+
+An Atelier release has one SBOM per image the appliance runs, plus an index:
+
+| File | Covers |
+|---|---|
+| `atelier-cms.cdx.json` | The Atelier image: Drupal and its modules, PHP packages, Debian packages, the ImageMagick we compile from source and the npm packages bundled into the console |
+| `db.cdx.json` | The database server (PostgreSQL with pgvector) |
+| `edge.cdx.json` | The web server in front of your site (nginx) |
+| `updater.cdx.json` | The updater's base image |
+| `appliance.cdx.json` | The index: which image, by digest, each file describes. It lists no packages itself |
+
+A Manager release has one file per program and platform: `atelier-cli-<target>.cdx.json` for the CLI and `atelier-manager-<target>.cdx.json` for the desktop app.
+
+## Download
+
+```bash
+gh release download v0.14.0 -R aincient-labs/manager --pattern '*.cdx.json'
+```
+
+Or open the release page and download the files under **Assets**. For an Atelier release, use `-R aincient-labs/atelier-cms` and its tag.
+
+The attestation on an Atelier image (SPDX format) reads straight from the registry:
+
+```bash
+docker buildx imagetools inspect ghcr.io/aincient-labs/atelier-cms:<tag> --format '{{ json .SBOM }}'
+```
+
+## Scan
+
+Any CycloneDX-aware scanner works. With [grype](https://github.com/anchore/grype):
+
+```bash
+grype sbom:atelier-cms.cdx.json --vex vex.openvex.json
+```
+
+`--vex` applies our statements about findings that cannot affect Atelier (next section). Take `vex.openvex.json` from the root of the [atelier-cms repository](https://github.com/aincient-labs/atelier-cms) at the same tag as the SBOM.
+
+## VEX: findings that don't apply
+
+Scanners match package names and versions. They can't tell whether the vulnerable code is ever reached. When it isn't, for example a flaw in a part of a library Atelier never calls, or an advisory filed against a different product with the same name, we record that in a **VEX** file ([OpenVEX](https://openvex.dev/)): which advisory, which package, and why Atelier is not affected. A scanner given the file moves those findings to "ignored", so what's left is what matters.
+
+`vex.openvex.json` sits at the root of the [atelier-cms](https://github.com/aincient-labs/atelier-cms) repository, and of the [manager](https://github.com/aincient-labs/manager) repository once it has a statement to make.
+
+## What we do with them
+
+- We scan the latest two releases of Atelier and the Manager against new advisories every week.
+- Only the latest release is supported, so a fix ships in the next release. Each [security advisory](https://aincient-labs.com/security/) says whether the release before the latest was affected.
+- To report a problem you found, see [the security policy](https://github.com/aincient-labs/atelier-cms/security/policy).
+
+<Tip>
+  Something in your scan looks wrong for Atelier? Check the version first: `atelier app status` shows the release you run, and the SBOM must be from that release's tag.
+</Tip>
+
+Related: [security incident response](/incident-response) · [verify the image you run](/incident-response#5-verify)

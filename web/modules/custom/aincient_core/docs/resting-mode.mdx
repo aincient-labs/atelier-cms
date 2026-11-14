@@ -1,0 +1,127 @@
+---
+title: "Resting mode"
+description: "Let a site rest: visitors keep reading a snapshot while the application and database stop. Wake it from a paired Manager or with its wake code."
+---
+
+A resting site stops its application and its database. Visitors still read every page, served from a snapshot. Nothing runs that needs the live application, so a small server does almost no work for a site nobody is editing.
+
+When you want to work on the site again, you wake it. It's ready in about a minute.
+
+<Note title="Experimental: for testers">
+  Resting mode needs the **engine**, the helper that can start and stop your site. The engine is experimental and still under security review. Turn on experimental features and add the engine first, as described in [Pair a site without SSH](/server-sites#pair-a-site-without-ssh-experimental). Use it on a test site, not one you depend on.
+</Note>
+
+## What visitors see
+
+Resting builds on [Freeze & Live](/freeze-and-live). Before the site stops, Atelier freezes it: it takes a fresh snapshot and serves it.
+
+While the site rests:
+
+- **Ordinary pages** come from that snapshot, as they do on a frozen site. A page missing from the snapshot shows its "not found" page.
+- **Sign-in, forms and anything else that needs the application** get a calm page titled *This site is resting* instead. It says that sign-in and forms are paused, and links to the home page. It is sent as `503`, so search engines treat it as a pause, not a missing page.
+- **The console at `/atelier`** shows the same page with a form to enter the site's wake code.
+
+Visitors and crawlers can't wake the site. Reading pages, following links or sending a form never starts it. Only the wake code at `/atelier` or a paired Manager does.
+
+## Put a site to rest
+
+```bash
+atelier --experimental --site shop site rest
+```
+
+The Manager asks first. On a running site on a server you type the site's short name, as for any change to a live site. In a script, pass `--yes --confirm-slug shop`.
+
+Resting happens in two steps:
+
+1. Atelier freezes the site: a fresh snapshot of every published page, which visitors then see.
+2. Then the application and the database stop.
+
+If the freeze fails, nothing stops. The site stays awake, and the error says why.
+
+On a site with the engine, **stopping is resting**: `atelier --site shop app stop` rests the site, and in the desktop app the home screen's button reads **Rest** and asks first. **System → Experimental features → Put the site to rest** does the same. The home screen then says *Your website is resting*, and the site list says *Resting*.
+
+`atelier --site shop app status` shows the engine's state: resting, waking, awake, locked down or stopped.
+
+## Wake a site
+
+Waking starts the database and the application again. It takes up to about a minute on a small server.
+
+### From a paired Manager
+
+```bash
+atelier --experimental --site shop site wake
+```
+
+Waking doesn't ask first: visitors lose nothing. In the desktop app, choose **Wake my website** on the home screen, or **Wake the site** under **System → Experimental features**.
+
+### With the wake code
+
+Open the site's console at `/atelier`, enter the wake code and choose **Wake**. A progress page follows the wake and opens the console when the site is ready. Then sign in as usual.
+
+The wake code wakes the site. It doesn't sign anyone in, and it isn't a password for the console.
+
+### After waking
+
+Visitors keep seeing the snapshot taken when the site went to rest. Your edits reach them when you freeze again, or when you switch the site back to live:
+
+```bash
+atelier --experimental --site shop site live
+```
+
+You, signed in, see the live site as usual. See [Freeze & Live](/freeze-and-live).
+
+## Manage the wake code
+
+A site has no wake code until you make one. Make one, or replace the current one:
+
+```bash
+atelier --experimental --site shop engine wake-code --rotate
+```
+
+The code is shown **once**. The site keeps only a fingerprint of it, so store it somewhere safe, such as a password manager. Making a new code replaces the old one.
+
+Turn waking by code off:
+
+```bash
+atelier --experimental --site shop engine wake-code --revoke
+```
+
+Then only a paired Manager can wake the site. Without `--rotate` or `--revoke`, the command only says whether a code is set.
+
+In the desktop app, use **Make a new wake code** and **Turn waking by code off** under **System → Experimental features**.
+
+Wrong codes are limited. After too many wrong tries from one address, that address has to wait. After too many from everywhere, waking by code pauses for everyone for a while. A paired Manager can still wake the site during a pause.
+
+## Rest again when idle
+
+A woken site goes back to rest on its own after 30 minutes without console activity. Visitors reading pages don't count; only signed-in work in the console does.
+
+Change the minutes in the site's `.env`:
+
+```bash
+ATELIER_IDLE_REST_MINUTES=60
+```
+
+`0` turns the idle timer off. The site then rests only when you ask.
+
+## Resting and lockdown
+
+[Lockdown](/server-sites#lock-down-a-site) is resting with waking turned off. Neither the wake code nor a Manager can wake the site, and `site rest` is refused.
+
+After `site unlock`, the site is still resting, with waking open again. Wake it when you're ready.
+
+## Good to know
+
+- **Resting needs the engine.** Without it, `site rest` refuses, and `site wake` points you to `app start`.
+- **Starting is waking.** On a site with the engine, `app start` and the desktop app's **Wake my website** wake it. A locked-down site can't be started until it is unlocked.
+- **Started by hand.** If the site is started some other way, for example with `docker compose start` on the server, the engine notices and treats it as woken. The idle timer then applies.
+- **Removing the engine** wakes a resting site first. See [Remove the engine](/server-sites#remove-the-engine).
+
+<CardGroup cols={2}>
+  <Card title="Freeze & Live" href="/freeze-and-live" icon="snowflake">
+    Serve visitors a snapshot while you keep editing.
+  </Card>
+  <Card title="Manage a site on a server" href="/server-sites" icon="server">
+    Attach over SSH, or pair a Manager through the engine.
+  </Card>
+</CardGroup>

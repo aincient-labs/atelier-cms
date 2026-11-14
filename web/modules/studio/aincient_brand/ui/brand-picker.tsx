@@ -168,7 +168,7 @@ function BrandPicker(payload: BrandPickerPayload) {
       <div className="ain-design-system-pick__head">
         <span className="ain-design-system-pick__title">Quick brand</span>
         <span className="ain-design-system-pick__hint">
-          {historical ? "From earlier in this conversation" : "Previews in the studio — Publish to apply"}
+          {historical ? "From earlier in this conversation" : "Previews in the room — Publish to apply"}
         </span>
       </div>
 

@@ -37,7 +37,7 @@ export function brandPreviewCardText(payload: BrandCardCopySource): {
       : `Applied to preview · ${count} change${count === 1 ? "" : "s"}`,
     note: historical
       ? "staged earlier — no longer active"
-      : "Preview only — Publish in the studio to apply it site-wide",
+      : "Preview only — Publish in the room to apply it site-wide",
   };
 }
 

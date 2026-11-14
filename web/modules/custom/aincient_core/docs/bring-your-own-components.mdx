@@ -1,0 +1,101 @@
+---
+title: "Bring your own components"
+description: "Swap the markup of any built-in section from your own module — a derived image plus Drupal's component replacement, styled through the design tokens"
+---
+
+The [component library](/components) is deliberately curated: the agent composes from a
+closed set of sections so every page it produces looks designed. But agencies and teams
+with their own design system usually want one thing first: **keep the grammar, swap the
+markup**. That is supported today, with ordinary Drupal tools and no fork.
+
+<Note>
+  This page is for developers. Everything here happens in a module and a Dockerfile —
+  nothing in the console changes, and editors keep working exactly as before.
+</Note>
+
+## The shape: a derived image
+
+The appliance is a versioned Docker image. Your customisation is a second, *derived* image:
+a five-line Dockerfile that starts from a pinned Atelier release and copies one module in.
+
+```dockerfile
+FROM ghcr.io/aincient-labs/atelier-cms:v0.10.0
+COPY my_components /opt/drupal/web/modules/custom/my_components
+```
+
+Deploying is then an image tag, upgrades are a PR that bumps the `FROM` pin, and a
+rollback restores code and content together — the same lifecycle as a stock appliance.
+Never edit the running container or mount code into production: anything outside the
+image is invisible to snapshots and reappears differently after an upgrade.
+
+## Replace a built-in's markup
+
+Drupal's component system has first-class replacement: a single-directory component in
+your module can declare that it **replaces** one of ours. Same name, same props, same
+place in the agent's grammar — your HTML.
+
+```yaml title="my_components/components/hero/hero.component.yml"
+name: Hero
+replaces: 'aincient_pages:hero'
+props:
+  # Copy the original's props schema verbatim — the replacement must accept
+  # exactly what the validator sends the original.
+```
+
+Copy the original component's `.component.yml` props from the
+`aincient_pages/components/` directory of the release you pinned, keep the schema
+identical, and write your own Twig. The page agent, the validator, and every existing
+page keep working: they speak in component names and props, and the renderer picks up
+your implementation.
+
+In the Components room, a replaced component shows a **Replaced by** badge with your
+module's name. The site owner can preview your version and the original side by side
+(**Compare**), and switch one back with **Use original instead** — your module stays
+installed, the site just renders the original until they switch it on again.
+
+Component replacement is core Drupal — see the official
+[single-directory components documentation](https://www.drupal.org/docs/develop/theming-drupal/using-single-directory-components)
+for the mechanics.
+
+## The token contract
+
+Every built-in styles itself through the site's **design tokens** — CSS custom properties
+the Identity room writes (`--brand-primary`, `--brand-accent`,
+`--neutral-surface`, `--neutral-ink`, `--font-family-display`, the radius and shadow
+scales, and so on). That is the whole reason a rebrand reskins the entire site with zero
+component edits.
+
+Your replacement markup must honour the same contract:
+
+- **Colours come from tokens, never raw values.** `color: var(--neutral-ink)`, not
+  `color: #111`. A hardcoded hex survives the first rebrand looking wrong.
+- **Fonts come from `--font-family-base` / `--font-family-display`.** The brand's
+  self-hosted web fonts only apply to markup that asks for them.
+- **Never dim text with `opacity`.** Use the muted foreground token
+  (`--neutral-muted-foreground`) — opacity-dimmed text breaks contrast in one theme or
+  the other, and the accessibility checks will flag it.
+- **Respect the `tone` prop.** Sections render on `default`, `muted`, `brand`, or
+  `inverted` surfaces; your markup should key its surface and on-colours off the tone it
+  is given, like the originals do.
+
+## Adding new components: packs
+
+Replacement changes how a section *looks*, not which sections exist. To add **new**
+components to the agent's palette — placed, validated, and governed like the built-ins —
+build a [component pack](/component-packs): an ordinary Drupal module with a small
+manifest, a local dev loop with live reload and a component gallery, and a CI reference
+pipeline that ships your pack as a deployable image.
+
+## What's not supported (yet)
+
+- **Component JavaScript.** The contract is CSS-only for now: server-rendered Twig,
+  styled through the tokens. Interactive behaviour beyond what the built-ins ship has no
+  supported channel yet.
+- **New agent capabilities.** A module may add components, page kinds and providers —
+  and, ahead, console studios — but never a new verb for the AI to call.
+  `atelier pack validate` rejects a `src/Plugin/AiCapability/` directory: the capability
+  roster is reviewed as a whole so that everything the agent can reach stays reversible
+  and internal.
+
+If you're building against this, we'd like to hear about it — the roadmap is shaped by
+real client component libraries. Reach us via [aincient-labs on GitHub](https://github.com/aincient-labs).

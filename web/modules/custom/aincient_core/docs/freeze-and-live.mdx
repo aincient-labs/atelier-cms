@@ -1,0 +1,77 @@
+---
+title: "Freeze & Live"
+description: "Serve visitors a finished, versioned snapshot of your site while you keep editing — and switch back to live in one click"
+---
+
+Atelier can serve your visitors in two ways. **Live** is the default: every visit is rendered from your published content, so a change reaches visitors the moment you publish it. **Frozen** serves a snapshot instead — a fixed copy of the whole site from the moment you froze it, stored as plain files.
+
+While the site is frozen, nothing you publish reaches visitors until you freeze again. You, and anyone else who is logged in, always see the live site — on the public pages and in the console — so you check your edits on the real URLs.
+
+## Why freeze
+
+- **Release a whole version at once.** Edit and publish many pages over a week, then freeze once. Visitors go from the old site to the new one in a single step.
+- **Undo in one click.** Every snapshot is kept. If a release goes wrong, serve the previous snapshot. No export, no restore.
+- **Faster, calmer pages.** A frozen page is a file. It is served with cache headers a CDN understands, and an ordinary page view never touches the database.
+
+## Freeze the site
+
+In the console, open **Settings** and find **Snapshots**.
+
+1. Optionally give the snapshot a name, such as *Spring launch*.
+2. Choose **Freeze now**. Atelier renders every published page — this takes a few seconds on a small site, longer with many images.
+3. When it finishes, visitors see the new snapshot. The status line reads *Visitors see snapshot Spring launch. You see the live site.*
+
+If the export finds a problem — usually a link to a page that does not exist — the snapshot is taken but **not** served, and the problems are listed. Fix them and freeze again, or choose **Serve it anyway**.
+
+## Switch between versions
+
+The Snapshots list shows **Live** at the top, then every snapshot, newest first. The one visitors currently see is marked.
+
+- **Serve this** switches visitors to that snapshot immediately. Nothing restarts.
+- **Serve live** goes back to rendering every visit. Snapshots are kept.
+- **View** opens a snapshot so you can see exactly what visitors see, or look at an older version before serving it.
+- **Keep** marks a snapshot as permanent. Housekeeping never removes a kept snapshot.
+
+<Note>
+  Publishing a page while the site is frozen saves it and shows it to you, but visitors keep seeing the snapshot until you freeze again. The console shows *Visitors see snapshot …* whenever this is the case.
+</Note>
+
+## From the command line
+
+The same verbs exist in the `atelier` CLI:
+
+```bash
+atelier site freeze --label "Spring launch"   # snapshot the site and serve it
+atelier site snapshots                          # list snapshots; ● marks what visitors see
+atelier site use 20260910-1102-spring-launch    # serve that snapshot
+atelier site live                               # back to live
+atelier site prune --keep 10                    # delete old snapshots (kept and served ones stay)
+```
+
+Inside the appliance these are `drush aincient:freeze`, `aincient:snapshots`, `aincient:use`, `aincient:live` and `aincient:prune`.
+
+## Good to know
+
+- **Backups include snapshots.** `atelier data backup` bundles them, and a restore brings back both the snapshots and which one was being served.
+- **Disk.** Each snapshot holds a full copy of the site's pages, stylesheets and resized images. Housekeeping keeps the ten most recent snapshots plus everything you marked as kept.
+- **A page missing from the snapshot** shows the snapshot's own "not found" page. While a snapshot is served, ordinary page views never reach the live application — which is also why the public site stays up while Atelier updates itself. Freezing is not a security lockdown: sign-in, the console, form submissions and signed-in requests still reach the application. For that, see [Security incident response](/incident-response).
+- **Site search** returns no results to visitors while frozen: a search is answered from the snapshot, which holds no results. Forms still work — a form submission reaches the live application.
+- **Behind a CDN.** Frozen pages are sent with `Cache-Control: public, max-age=300` and an `X-Atelier-Served: frozen` header; logged-in responses stay private. After switching snapshots, allow up to five minutes for cached pages to refresh, or purge your CDN.
+
+## Let the site rest (experimental)
+
+Resting builds on freezing. A resting site takes a fresh snapshot, then stops its application and database. While it rests, visitors see:
+
+- every ordinary page, from that snapshot, as on a frozen site;
+- a short *This site is resting* page instead of sign-in, forms or anything else that needs the application.
+
+Visitors can't wake the site. See [Resting mode](/resting-mode) for how to rest and wake it.
+
+<CardGroup cols={2}>
+  <Card title="Export a static site" href="/static-export" icon="download">
+    Take a snapshot with you and host it anywhere.
+  </Card>
+  <Card title="Editorial workflow" href="/editorial-workflow" icon="check">
+    How publishing individual pages works.
+  </Card>
+</CardGroup>

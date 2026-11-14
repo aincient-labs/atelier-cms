@@ -1,0 +1,4 @@
+ask: Can I import my old blog posts from WordPress?
+kind: uncovered
+expect:
+  prose_not: '/(wordpress )?import(er)? (tool|plugin|module|feature)|wp all import|export .{0,20}xml/i'

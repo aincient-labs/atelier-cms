@@ -415,7 +415,7 @@ export function PagePreview({ lenses, lens, onLensChange, pins, onPin, focus }: 
             />
           )
         ) : (
-          <EmptyState variant="stage" hint="Ask the agent to build a page, or add a section in the studio.">
+          <EmptyState variant="stage" hint="Ask the assistant to build a page, or add a section yourself.">
             Your page preview appears here.
           </EmptyState>
         )

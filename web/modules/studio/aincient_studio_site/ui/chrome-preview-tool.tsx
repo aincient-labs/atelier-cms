@@ -133,7 +133,7 @@ function ChromePreviewCard({ payload, toolCallId }: { payload: ChromePreviewPayl
       <span className="ain-brandprev__dot" aria-hidden="true" />
       <div className="ain-brandprev__body">
         <span className="ain-brandprev__label">{label}</span>
-        <span className="ain-brandprev__hint">Preview only — Publish in the studio to apply it site-wide</span>
+        <span className="ain-brandprev__hint">Preview only — Publish in the room to apply it site-wide</span>
         {payload.rejected && payload.rejected.length > 0 && (
           <span className="ain-brandprev__rejected">Skipped invalid: {payload.rejected.join(", ")}</span>
         )}

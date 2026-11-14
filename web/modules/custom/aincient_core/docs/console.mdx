@@ -1,0 +1,134 @@
+---
+title: "The console"
+description: "Your workspace for building the site by chatting — organised into rooms, with a human-approval model at its core"
+---
+
+The console is where you run Atelier. It's a chat workspace at `/atelier`: you talk to an
+assistant, it does the work, and a live preview shows you the result. You're always in exactly
+one **room** — a focused workspace for one kind of task — and you switch between them as
+your work changes.
+
+<Frame caption="The Atelier operator console — describe what you want and the assistant builds it">
+
+![The Atelier operator console welcome screen with suggested prompts](/images/console.png)
+
+</Frame>
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — The console"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+## Rooms
+
+A room pairs a chat with the right assistant and the right preview for one job. You move between
+rooms from the top bar, and the Atelier wordmark always takes you home to the **General**
+chat.
+
+<CardGroup cols={2}>
+  <Card title="General" icon="messages-square">
+    The home room. Ask how something works (it answers from these docs and links the page),
+    or ask it to create, update or find content. This is where the wordmark returns you.
+  </Card>
+  <Card title="Pages" icon="layout-grid" href="/page-studio">
+    Build pages section by section, rendered live on your brand.
+  </Card>
+  <Card title="Library" icon="images" href="/media-studio">
+    Your reusable ingredients — media and reusable blocks. Upload, organise, and generate
+    images.
+  </Card>
+  <Card title="Identity" icon="palette" href="/brand-studio">
+    Set your site's visual identity. The assistant previews brand directions; you publish.
+  </Card>
+  <Card title="Navigation & Pages" icon="panels-top-left" href="/globals-studio">
+    Arrange the header and footer, edit their menus, and choose the front page, 404 and 403
+    pages.
+  </Card>
+  <Card title="Settings" icon="settings" href="/site-settings">
+    Site email, font privacy, Freeze & Live snapshots, and removing example content.
+  </Card>
+  <Card title="Components" icon="blocks" href="/components">
+    Which section types the site offers, with their tones and variants.
+  </Card>
+</CardGroup>
+
+In the top bar, **Pages** and **Library** sit alongside a **Site** menu that groups the four
+set-up rooms — **Identity**, **Navigation & Pages**, **Settings** and **Components** — since
+you visit those less often. Each
+room keeps its own chat history and its own new conversations, so switching rooms doesn't
+tangle your work. When a room offers more than one assistant, a picker at the top of the chat
+lets you choose which one a new conversation uses.
+
+<Card title="Finding your way around" icon="compass" href="/navigation">
+  How the room switcher, deep links, and jumps to your live site fit together.
+</Card>
+
+## How a conversation works
+
+You describe what you want in plain language. The assistant replies with one short framing
+sentence and gets to work — it doesn't narrate every step. As it works:
+
+- The **preview** updates live so you see the real result, not a description of it.
+- The assistant works on an **unsaved draft**, never your live site.
+- You keep refining in chat, or edit the draft directly in the room's structured editor.
+
+Each conversation is a **thread**. When its work is done — for example when you publish a new
+page — the thread wraps up and you start a fresh one for the next change.
+
+<Card title="Conversations & threads" icon="messages-square" href="/threads">
+  Threads, the assistant picker, voice dictation, and wrapping up finished work.
+</Card>
+
+## The approval model
+
+The console is built around one rule: **the assistant proposes, you approve.** Nothing reaches
+your live site without an explicit action from you.
+
+<Note>
+  The assistant has no power to publish on its own. Brand directions and page layouts stay drafts
+  until you press **Publish**.
+</Note>
+
+Drafts and previews keep the assistant fast while you stay the publisher, and any step that would
+change your site pauses for your approval first.
+
+<Card title="AI proposes, you approve" icon="shield-check" href="/approval-model">
+  The full picture: drafts, Publish and Discard, and approval pauses.
+</Card>
+
+## Moving between the console and your site
+
+The console is your workspace; the live site is what it produces. A jump to the live site
+opens a **new tab** (so your unsaved draft and open conversation stay put), while moving
+around inside the workspace stays in the **same tab**. The globe in the top bar opens your
+live site any time, and on the live site an operator sees a small **Edit in Console** pill to
+jump back. The account menu (your avatar, top-right) also has a **System** door to the
+technical back office at `/admin` — you rarely need it; the console is home.
+
+<Card title="Your account" icon="user" href="/account">
+  The identity card, managing your account in-console, and the System door.
+</Card>
+
+## What you can do here
+
+<Steps>
+  <Step title="Connect your AI">
+    On a fresh install the [onboarding wizard](/onboarding) walks you through connecting a
+    provider and choosing your models.
+  </Step>
+  <Step title="Set your brand">
+    Open the [Identity room](/brand-studio) and describe the identity you want.
+    Preview, then publish — it flows through to every page.
+  </Step>
+  <Step title="Build pages">
+    Under **Pages**, click **New page**, give it a title, and you land in the [Pages
+    room](/page-studio) ready to build. Describe the page and the assistant composes it from the
+    [component library](/components), live on your brand.
+  </Step>
+  <Step title="Manage content">
+    In the General room, ask the assistant to create, update, or find content. The same
+    approval model applies to anything that changes your site.
+  </Step>
+</Steps>

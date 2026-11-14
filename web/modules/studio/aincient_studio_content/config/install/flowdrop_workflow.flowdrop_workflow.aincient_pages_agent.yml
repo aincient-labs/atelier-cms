@@ -24,7 +24,7 @@ third_party_settings:
           port: message
       sub_workflow_replies: false
 id: aincient_pages_agent
-label: 'Page Studio'
+label: Pages
 description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
 nodes:
   -

@@ -290,9 +290,9 @@ export function GlobalsStudio({ onClose }: { onClose: () => void }) {
           publishTitle="Publish the draft to the live site"
         />
         <IconButton
-          label="Close navigation & pages studio"
+          label="Close Navigation & Pages"
           className="ain-topbar__leave"
-          title="Leave navigation & pages studio"
+          title="Leave Navigation & Pages"
           onClick={onClose}
         >
           <XIcon />

@@ -140,6 +140,15 @@ services:
       - '@aincient_chat.turn_scratchpad_sweeper'
       - '@aincient_chat.turn_pipelines'
       - '@aincient_chat.turn_recap_recorder'
+      - '@aincient_chat.docs_answer_verifier'
+
+  # Checks a docs-grounded reply against the docs text its turn retrieved and
+  # removes unsupported claims before the user sees it (DECISIONS 0525).
+  aincient_chat.docs_answer_verifier:
+    class: Drupal\aincient_chat\Chat\DocsAnswerVerifier
+    arguments:
+      - '@aincient_core.inference.gateway'
+      - '@logger.channel.aincient_chat'
 
   # Appends a one-line recap of a turn's cards to the model's conversation
   # buffer (DECISIONS 0464). Best-effort; FlowDrop memory resolved lazily.

@@ -282,8 +282,8 @@ export function ImpactPanel({ rows, busy, onPublish, onCancel }: {
       </h4>
       <p className="ain-components__hint">
         {rows.length === 1
-          ? "It keeps rendering as it is — Content marks it “No longer offered”, and it can’t be placed again."
-          : "They keep rendering as they are — Content marks them “No longer offered”, and they can’t be placed again."}
+          ? "It keeps rendering as it is — Pages marks it “No longer offered”, and it can’t be placed again."
+          : "They keep rendering as they are — Pages marks them “No longer offered”, and they can’t be placed again."}
       </p>
       <ul className="ain-components__impactlist">
         {groups.slice(0, IMPACT_GROUP_LIMIT).map((g) => (

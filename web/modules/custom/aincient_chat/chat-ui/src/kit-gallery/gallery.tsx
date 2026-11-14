@@ -410,7 +410,7 @@ export function KitGallery() {
             <EmptyState icon={<DocumentIcon />}>Nothing here yet — describe a page in the chat and it lands here.</EmptyState>
           </div>
           <div className="ain-kitgallery__stage">
-            <EmptyState variant="stage" hint="Ask the agent to build a page, or add a section in the studio.">
+            <EmptyState variant="stage" hint="Ask the assistant to build a page, or add a section yourself.">
               Your page preview appears here.
             </EmptyState>
           </div>

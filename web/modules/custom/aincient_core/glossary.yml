@@ -1,0 +1,191 @@
+# Atelier glossary — the ONE home for product names (DECISIONS 0526).
+#
+# Every name a user reads (console rooms, menus, the assistants, the desktop
+# app, recurring concepts) has one entry here. Change a name HERE first, then
+# the code, prompts and docs follow; the checks below fail until they do.
+#
+# Fields
+#   name      The canonical name, exactly as the UI shows it.
+#   short     A shorter form the UI also shows (the phone crumb), if any.
+#   say       How to write it in prose when the bare name is ambiguous.
+#   kind      room | menu | assistant | app | place | concept
+#   means     One sentence: what it is, for a site owner.
+#   studio    Studio id(s) whose console name must equal `name` (or `short`).
+#   agent     Workflow id(s) whose label must equal `name` (the agent picker
+#             and "Handing this to …" show it).
+#   docs      The docs page that owns it (path under /docs).
+#   aliases   Other names that are still correct (rare).
+#   retired   Old names. Never in shipped prompts or agent labels; in the docs
+#             only next to the word "formerly".
+#   contexts  Where the name may appear: console, docs, prompts, developer.
+#             A term limited to `developer` belongs in developer docs only.
+#
+# Checks that read this file
+#   - The docs (bundled copy, aincient_core/docs): no retired name except in a
+#     sentence with "formerly", and no `developer`-only term outside
+#     `developer_pages`. The Glossary page itself is generated (GlossaryPage).
+#   - GlossaryTest (aincient_core, Unit): studio names, agent labels, the nav
+#     group name, and retired names in shipped prompts.
+#   - DocsAnswerVerifier + the docs eval give the checker these definitions.
+#   - The website Glossary page is generated from it (plans/docs-search.md G4).
+
+# Docs pages written for developers: `developer`-context terms are allowed here.
+developer_pages: [bring-your-own-components, component-packs, server-sites, hardening, sbom, incident-response]
+
+terms:
+  general:
+    name: 'General'
+    kind: room
+    means: "The console's home room, reached by clicking the site's wordmark. Its assistant answers questions and hands work to the other rooms."
+    agent: [aincient_operator_agent_loop]
+    docs: /docs/console
+    retired: ['General studio']
+    contexts: [console, docs, prompts]
+
+  studio:
+    name: 'studio'
+    kind: concept
+    means: 'Your studio is the whole Atelier workspace at /atelier: the top bar, its rooms, and the chat.'
+    docs: /docs/console
+    contexts: [console, docs, prompts]
+
+  room:
+    name: 'room'
+    kind: concept
+    means: 'One part of your studio for one job, such as Pages, Library or Identity. Each room has its own chat and assistant.'
+    docs: /docs/console
+    contexts: [console, docs, prompts]
+
+  assistant:
+    name: 'assistant'
+    kind: concept
+    means: 'The AI you chat with in a room. Each room has its own assistant; it proposes changes and you publish them.'
+    docs: /docs/approval-model
+    contexts: [console, docs, prompts]
+
+  agent:
+    name: 'agent'
+    kind: concept
+    means: 'The workflow behind an assistant (a FlowDrop agent loop). A developer term.'
+    contexts: [developer]
+
+  pages:
+    name: 'Pages'
+    kind: room
+    means: "Build and manage the site's pages beside a live preview. Its assistant composes pages section by section."
+    studio: [content]
+    agent: [aincient_pages_agent]
+    docs: /docs/page-studio
+    retired: ['Pages studio', 'Page Studio', 'Content studio']
+    contexts: [console, docs, prompts]
+
+  library:
+    name: 'Library'
+    kind: room
+    means: 'The shelf of reusable images and blocks. Generate, edit and describe images there.'
+    studio: [media, library]
+    agent: [aincient_image_agent]
+    docs: /docs/media-studio
+    retired: ['Library studio', 'Media studio', 'Media library']
+    contexts: [console, docs, prompts]
+
+  site:
+    name: 'Site'
+    kind: menu
+    means: 'The small menu in the top bar that opens the four set-up rooms: Identity, Navigation & Pages, Settings and Components.'
+    docs: /docs/console
+    retired: ['Site Information']
+    contexts: [console, docs, prompts]
+
+  identity:
+    name: 'Identity'
+    kind: room
+    means: "The site's look and voice: colours, typography, shape, name, tagline, logo and favicon."
+    studio: [design_system]
+    agent: [brand_studio]
+    docs: /docs/brand-studio
+    retired: ['Identity studio', 'Brand Studio', 'Brand studio', 'Design System studio']
+    contexts: [console, docs, prompts]
+
+  navigation:
+    name: 'Navigation & Pages'
+    short: 'Navigation'
+    kind: room
+    means: 'The main and footer menus, the front page and 404 page, and how the header and footer are arranged.'
+    studio: [globals]
+    agent: [aincient_chrome_agent]
+    docs: /docs/globals-studio
+    retired: ['Navigation & Pages studio', 'Globals', 'Globals studio']
+    contexts: [console, docs, prompts]
+
+  settings:
+    name: 'Settings'
+    kind: room
+    means: 'Site email, privacy and consent, and Freeze & Live snapshots.'
+    studio: [settings]
+    docs: /docs/site-settings
+    retired: ['Settings studio']
+    contexts: [console, docs, prompts]
+
+  components:
+    name: 'Components'
+    kind: room
+    means: 'Which section types (hero, gallery, pricing, …) the site offers, with their tones and variants. New components come from developer-built packs.'
+    studio: [components]
+    agent: [aincient_components_agent]
+    docs: /docs/components
+    retired: ['Components studio']
+    contexts: [console, docs, prompts]
+
+  checks:
+    name: 'Checks'
+    kind: room
+    means: 'Page health audits (SEO, meta tags, internal links) with fixes staged as drafts. Off by default; an operator switches it on.'
+    studio: [checks]
+    agent: [aincient_audit_agent]
+    docs: /docs/checks
+    retired: ['Checks studio', 'Page audit agent']
+    contexts: [console, docs]
+
+  system_backoffice:
+    name: 'System'
+    say: 'the System back-office'
+    kind: place
+    means: "A few technical settings (people, roles) outside the console, opened from the account menu's System door."
+    docs: /docs/system
+    contexts: [console, docs, prompts]
+
+  desktop_app:
+    name: 'desktop app'
+    say: 'the Atelier desktop app'
+    kind: app
+    means: 'The app that installs, updates, backs up and runs Atelier on your computer.'
+    aliases: ['Atelier Manager']
+    docs: /docs/quickstart
+    retired: ['Atelier app']
+    contexts: [docs, prompts]
+
+  desktop_system_tab:
+    name: 'System'
+    say: "the desktop app's System tab"
+    kind: place
+    means: "The desktop app's tab with Your installation, Check for updates and the update banner."
+    docs: /docs/quickstart
+    retired: ['Settings → Your installation']
+    contexts: [docs, prompts]
+
+  desktop_backups_tab:
+    name: 'Backups'
+    say: "the desktop app's Backups tab"
+    kind: place
+    means: "The desktop app's tab for making a backup of the whole site and restoring one."
+    docs: /docs/backups
+    contexts: [docs, prompts]
+
+  freeze_and_live:
+    name: 'Freeze & Live'
+    kind: concept
+    means: 'Snapshots of the published site that visitors are served while you keep editing.'
+    docs: /docs/freeze-and-live
+    retired: ['Freeze and Live']
+    contexts: [console, docs, prompts]

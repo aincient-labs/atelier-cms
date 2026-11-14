@@ -1,0 +1,9 @@
+# The question that started 0525: the agent invented a "System menu" (and the
+# docs themselves said "Settings"). Answer: the banner's Update button, or
+# System → Your installation → Check for updates (quickstart#upgrade).
+ask: How do I update Atelier to the newest version? I installed it with the desktop app.
+kind: covered
+expect:
+  links_any: [/docs/quickstart]
+  mention_all: ['/\bUpdate\b/', '/Check for updates|banner/i']
+  prose_not: '/Settings\s*(→|>|->)\s*Your installation/i'

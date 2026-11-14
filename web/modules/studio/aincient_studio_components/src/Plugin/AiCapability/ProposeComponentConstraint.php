@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * The Components agent's ONLY edit tool (DECISIONS 0455, P2). Like its chrome
  * and brand siblings it writes NOTHING: it emits a `components_proposal` widget
- * envelope the Components studio merges into the staged draft of one scope
+ * envelope the Components room merges into the staged draft of one scope
  * (everywhere, or one page type), and the human publishes it — after the
  * impact list — with the studio's Publish button. It never writes a pack and
  * treats pack and built-in components alike (0368).
@@ -29,7 +29,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   id: 'aincient_studio_components:propose_component_constraint',
   function_name: 'aincient_propose_component_constraint',
   name: 'Propose component changes',
-  description: 'Stage a change to which components, variants and tones this site offers, in the user\'s Components studio. It does NOT publish: the change appears as unsaved in the studio and the user reviews the affected pages and publishes it. scope is "site" (everywhere) or a page type id from COMPONENTS STATE. changes_json is a JSON object of operations: turn_off / turn_on (lists of component names), variants_off / variants_on and tones_off / tones_on (objects of component name => list; in the site scope tones_off {"*": [...]} turns a tone off for every component), and for a page type only: include_new (true = new pack components are allowed automatically), opener (a component name, or "" for none) and limits (component name => max per page, 0 = no limit). Use only names listed in COMPONENTS STATE. Existing sections are always kept on their pages; turning something off only stops new placements.',
+  description: 'Stage a change to which components, variants and tones this site offers, in the user\'s Components room. It does NOT publish: the change appears as unsaved in the studio and the user reviews the affected pages and publishes it. scope is "site" (everywhere) or a page type id from COMPONENTS STATE. changes_json is a JSON object of operations: turn_off / turn_on (lists of component names), variants_off / variants_on and tones_off / tones_on (objects of component name => list; in the site scope tones_off {"*": [...]} turns a tone off for every component), and for a page type only: include_new (true = new pack components are allowed automatically), opener (a component name, or "" for none) and limits (component name => max per page, 0 = no limit). Use only names listed in COMPONENTS STATE. Existing sections are always kept on their pages; turning something off only stops new placements.',
   context_definitions: [
     'scope' => new ContextDefinition(data_type: 'string', label: new TranslatableMarkup('Scope'), description: new TranslatableMarkup('"site" for everywhere, or a page type id (e.g. "landing", "block").'), required: FALSE),
     'changes_json' => new ContextDefinition(data_type: 'string', label: new TranslatableMarkup('Changes'), description: new TranslatableMarkup('A JSON object of operations, e.g. {"turn_off":["pricing","newsletter"],"tones_off":{"stats":["inverted"]}}.'), required: TRUE),

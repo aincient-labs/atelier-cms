@@ -7,6 +7,22 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.29.0] — 2026-11-14
+
+**The General assistant answers from the Atelier docs, and checks its answers.**
+- The docs ship inside Atelier. Ask the General assistant how to do something, or whether Atelier
+  can, and it looks it up in the docs and links the page it used.
+- Before you see an answer, a second check compares it with the docs and removes anything they
+  don't say, such as an invented menu, feature or workaround. When the docs don't cover something,
+  the assistant says so and links the closest page instead of guessing.
+- The console uses one set of names: the whole workspace is your studio, each part is a **room**,
+  and the AI you chat with is an **assistant**. The assistants carry their room's name.
+- New docs pages: a Glossary of every name (with the old ones), "What Atelier doesn't do", and
+  "Back up and restore".
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.28.0] — 2026-11-13
 
 **Galleries that step through images one at a time, with a full-size viewer.**

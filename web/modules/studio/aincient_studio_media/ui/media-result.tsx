@@ -185,7 +185,7 @@ function MediaResultCard({ payload, toolCallId }: { payload: MediaResultPayload;
             }
           }}
         >
-          {opening ? "Opening…" : isSuggestion ? "View in Media studio" : "Open in Media studio"}
+          {opening ? "Opening…" : isSuggestion ? "View in Library" : "Open in Library"}
         </Button>
         {!isSuggestion && (
           <Button type="button" variant="secondary" disabled={discarding} onClick={() => void toggleDiscard(!discarded)}>

@@ -1,0 +1,95 @@
+---
+title: "Privacy & consent"
+description: "Atelier is privacy-first by default — fonts are self-hosted or consent-gated, and visitors choose what third parties to allow"
+---
+
+Atelier is built for an EU-first world, so it never quietly sends your visitors' data to a
+third party. Anything that would reach an outside service — web fonts today, analytics and
+embeds later — is either served from your own site or gated behind the visitor's consent.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — Privacy & consent"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+<Note>
+Nothing non-essential loads until a visitor opts in. Until then, your pages use the system
+font and make no third-party request.
+</Note>
+
+## Choose how your brand fonts load
+
+When you pick a Google font in the Identity room, you decide how it reaches your public pages.
+
+<CardGroup cols={2}>
+  <Card title="Self-host (private)" icon="shield-check">
+    Atelier downloads the font to your own site, so visitors load it from your origin. No
+    request ever goes to Google, and no cookie banner is needed.
+  </Card>
+  <Card title="Load from Google" icon="globe">
+    The font loads from Google Fonts, which shares the visitor's IP address with Google — so
+    visitors are asked for consent first. Until they accept, the system font is shown.
+  </Card>
+</CardGroup>
+
+You set this in the Identity room under **Web fonts** → **Font delivery**. Self-host is the
+strongest privacy choice; it fetches the font once when you publish.
+
+## The consent banner
+
+When your site loads something from a third party (right now, that's Google-delivered fonts),
+visitors see a privacy banner the first time they arrive.
+
+<Steps>
+  <Step title="The banner appears">
+    A visitor can **Accept all**, choose **Only necessary**, or **Customize** which categories
+    to allow. Nothing non-essential loads until they choose.
+  </Step>
+  <Step title="Their choice is remembered">
+    The decision is stored on the visitor's own device for a year. A quiet **Privacy & cookies**
+    button lets them change it any time.
+  </Step>
+  <Step title="The banner stays honest">
+    It only appears when something third-party is actually in use. If all your fonts are
+    self-hosted, visitors never see a banner at all.
+  </Step>
+</Steps>
+
+The banner uses **your** brand's colours and typography, so it looks like part of your site.
+
+### Categories
+
+| Category | What it covers |
+|---|---|
+| **Necessary** | Essential for the site to work. Always on. |
+| **External fonts** | Brand typefaces loaded from Google Fonts (only when you choose Google delivery). |
+| **Analytics** | Anonymous usage measurement. Reserved for a future feature. |
+| **Embeds** | Third-party embeds such as video or maps. Reserved for a future feature. |
+
+<Tip>
+Want zero banners? Set your brand fonts to **Self-host** in the Identity room. With no
+third-party requests, there's nothing to consent to.
+</Tip>
+
+## What Atelier itself sends us
+
+Nothing, unless you ask it to. Your installation does not phone home: there is no telemetry, no
+usage ping, no licence check, and no background call on install or on a schedule.
+
+There is exactly one exception, and it is a button you press. **Check for updates**, next to the
+model presets in [Connect AI & choose models](/onboarding), downloads the current model
+recommendations from `aincient-labs.com/atelier/models.yml`. It is a plain GET of a plain text
+file:
+
+- **Sent:** nothing about your site — no identifier, no configuration, no content, no list of
+  which providers you connected. Only the request itself, which necessarily carries your server's
+  IP address the way any download does.
+- **Counted:** we count the download in aggregate, the same way we count a page view on our
+  website, so we can tell the recommendations are being used. It is not tied to you or your site.
+- **Skippable:** your install ships with a snapshot of that document. Never press the button and
+  Atelier still works, offline and indefinitely — the suggestions just stay as of your release.
+
+Your AI provider keys are a separate matter: those are stored on your own server and are used to
+talk to the provider you chose (Anthropic, OpenAI, Google, your own Ollama). They never reach us.

@@ -57,6 +57,10 @@ final class CapabilityRosterTaintGuardTest extends UnitTestCase {
     'ProposeComponentConstraint',
     'ProposeDesignTokens',
     'ProposeMediaName',
+    // Read-only docs search + page read over the docs SHIPPED in this release
+    // (aincient_core/docs), not fetched: our own text, so nothing tainted
+    // enters the model through them (plans/docs-search.md D5). Taint-safe.
+    'ReadDocsPage',
     'ReadMetaTags',
     'ResetPreview',
     // Routing-only: emits a `logo_handoff` card that deep-links to Identity →
@@ -65,6 +69,7 @@ final class CapabilityRosterTaintGuardTest extends UnitTestCase {
     // internal (DECISIONS 0372, Phase 3). Taint-safe.
     'RouteLogoImage',
     'RunPageAudit',
+    'SearchDocs',
     'StudioTour',
   ];
 

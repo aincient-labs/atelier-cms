@@ -1,0 +1,94 @@
+---
+title: "Read these docs with AI"
+description: "This whole documentation set is published as plain text — hand it to Claude, ChatGPT, or your editor's assistant and ask it anything about Atelier"
+---
+
+You already build your site by talking to an assistant. It would be odd if the manual for
+that were locked up in a format only a browser can read.
+
+So it isn't. Every page here is published twice: once as the page you're reading, and
+once as plain text meant for a machine. Point your own AI assistant at it and ask your
+question there instead of hunting through the sidebar.
+
+## Or ask Atelier's own assistant
+
+The **General** assistant in your console already has these docs — the copy that shipped
+with the version you're running, so it never describes a feature you don't have yet. Ask
+it "can I add my own components?" or "how do I update?" and it looks the answer up here
+first, then links the page it used. It works offline and needs no extra key.
+
+## Three sizes, depending on what you're asking
+
+| If you're… | Give your assistant |
+| --- | --- |
+| already on the page that covers it | the **Copy Markdown** button at the top of it |
+| not sure which page holds the answer | `aincient-labs.com/llms-full.txt` — every page, one file |
+| happy to let the assistant choose | `aincient-labs.com/llms.txt` — an index of every page |
+
+### One page
+
+Every page has a **Copy Markdown** button at the top, next to the title. It puts that
+page — clean text, no navigation, no styling — on your clipboard, ready to paste into a
+chat. The button beside it opens the same page as a raw file if you'd rather link to it
+than paste it.
+
+Reach for this when you're already looking at the right page and want to ask something
+it doesn't quite answer.
+
+### Everything
+
+The complete documentation, every page concatenated into one file:
+
+```
+https://aincient-labs.com/llms-full.txt
+```
+
+Paste that URL into an assistant that can fetch links and ask it to read the file first.
+It's a single request, so there's nothing to crawl and nothing to miss — useful when you
+don't yet know which part of Atelier your question belongs to.
+
+### Just the map
+
+An index of every page, with a one-line description of each:
+
+```
+https://aincient-labs.com/llms.txt
+```
+
+Give an assistant this and it can choose the page that matches your question and fetch
+only that one. Lighter than the full file, and usually enough.
+
+## What to actually ask
+
+The docs describe how Atelier works. Your assistant can turn that into something
+specific to what you're doing:
+
+- "Read this file, then tell me how to move my finished site onto Cloudflare Pages."
+- "Which provider should I connect if I want image generation, and what does it cost?"
+- "I want a second language on the site. What order do I do things in?"
+- "Explain the approval model — what exactly is live and what's still a draft?"
+
+<Tip>
+  Answers get better when the assistant can quote the docs back to you. If it says
+  something that doesn't match what you see in your console, ask it which page that came
+  from — the docs move, and a model's memory of them may be older than this file.
+</Tip>
+
+## Where this comes from
+
+`llms.txt` is a small shared convention for publishing a site in a form language models
+can read — see [llmstxt.org](https://llmstxt.org) for the specification. Both files
+above are generated from these same pages at build time, so they're never a stale copy:
+if it's in the sidebar, it's in the text.
+
+The marketing site publishes its own [`/llms.txt`](https://aincient-labs.com/llms.txt)
+describing the product and how to install it, and links onward to both files here.
+
+<CardGroup cols={2}>
+  <Card title="Export a static site" href="/static-export" icon="package">
+    The same idea, applied to your site: take the whole thing with you as plain files.
+  </Card>
+  <Card title="Connect AI & choose models" href="/onboarding" icon="plug">
+    Set up the providers Atelier itself uses to build your site.
+  </Card>
+</CardGroup>

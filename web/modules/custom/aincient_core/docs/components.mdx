@@ -1,0 +1,208 @@
+---
+title: "Component library"
+description: "The curated set of sections the Pages assistant composes — broad enough to build marketing sites, blogs, and news sites without bespoke components"
+---
+
+Every page you build in the [Pages room](/page-studio) is assembled from a curated
+component library. The assistant never writes HTML or CSS — it arranges these named
+**sections**, and each one is individually designed and reskins automatically from your
+brand. The set is deliberately broad: you can build a marketing site, a company site, or a
+news/blog site from it without custom components.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — Component library"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+<Note>
+  Every component renders with your live brand tokens. Change a colour or font in the Identity
+  room and the whole library reskins — see [Pages always respect the
+  brand](/page-studio#pages-always-respect-the-brand). Developers can extend this set with
+  their own sections — see [Component packs](/component-packs).
+</Note>
+
+## Sections
+
+Sections stack top to bottom to make a page. You ask for them in plain language ("add a
+pricing section", "put testimonials after the features") and the assistant places them.
+
+### Opening and structure
+
+- **`hero`** — the top-of-page opener, the only full-viewport section. Centered or split
+  with an image. Open every page with one.
+- **`logos`** — a quiet row of partner or customer logos for instant "trusted by"
+  credibility.
+- **`divider`** — a light separator between sections: a rule, breathing space, or a small
+  centered label.
+
+### Telling your story
+
+- **`content`** — a prose block paired with an image (or text-only). Alternate the image
+  side as you stack these.
+- **`markdown`** — a block of long-form body text you author in Markdown (headings, lists,
+  links, bold/italic, blockquotes), rendered with a reading-optimised prose measure. Reach
+  for it when you have free-form formatted copy that no structured section models.
+- **`features`** — a heading plus a grid of feature cards with icons.
+- **`stats`** — a row of headline numbers for social proof.
+- **`gallery`** — a set of images, in one of two arrangements:
+  - **grid** (the default) — a tiled overview: screenshots, product shots, team photos.
+  - **carousel** — one image at a time, shown whole and never cropped. Visitors step
+    through with the arrow buttons, the arrow keys, or a swipe. Made for artwork, a
+    portfolio piece, or a photo series.
+
+  Turn on **lightbox** and clicking an image opens it full size, with arrows to move
+  between images and Esc to close. See [Show artwork one image at a time](#show-artwork-one-image-at-a-time).
+- **`image`** — a single standalone image with an optional caption (a figure). Reach for it
+  to place one picture on its own — a screenshot, photo, diagram, or chart — when `content`
+  (image *with* text) and `gallery` (a *set* of images) don't fit.
+- **`banner`** — a short, bold full-width statement band.
+
+### Building trust
+
+- **`testimonials`** — customer quotes, one strong quote or a grid of several.
+- **`team`** — the people behind the company, with head-shots, names, and roles.
+- **`faq`** — frequently-asked questions in an expand-to-read list (plain-text answers).
+- **`accordion`** — an expand-to-read list whose panels hold **rich** content (formatted
+  copy, lists, links — and a figure), not just plain text. Each panel can mix Markdown text
+  and a single image. Reach for it for layered detail — documentation, how-tos, spec
+  breakdowns. Set it to open one panel at a time, or allow several at once.
+
+### Converting
+
+- **`pricing`** — plan tiers side by side, with one tier highlighted.
+- **`newsletter`** — an email sign-up band.
+- **`cta`** — a closing call-to-action band. Close every page with one.
+
+## Layout
+
+- **`grid`** — a bounded grid of equal **card** tiles. Reach for it only when no named
+  section fits — for example a set of resource links or related items. You set the number
+  of columns and the tiles reflow.
+
+<Tip>
+  You rarely place a `grid` directly — most layouts are better served by a named section
+  like `features` or `gallery`. The assistant picks the right one for what you describe.
+</Tip>
+
+## Choose which components your site uses
+
+Open **Site → Components** in the console to see every component your site offers and
+decide which ones it uses. Only administrators see this room.
+
+- **The centre shows each component, live.** Every component renders from a built-in
+  example in your published brand, so you see what you are offering before anyone places
+  it. Click one to look at it alone, switch its tone, and check it at phone (375),
+  tablet (768) and desktop (1280) widths.
+- **The rail on the right is where you decide.** Components are grouped by what they do
+  (Openers, Story, Media, Social proof, Conversion, Structure, From your site), and each
+  row shows how many pages and blocks use it. Search, or filter to **Unused**, **Off** or
+  **Packs**.
+- **Expand a row** to read what the component is for, turn off individual variants or
+  tones for that component alone, and see the pages and blocks that use it.
+- **Nothing changes until you Publish.** Untick freely, then **Publish** to apply it, or
+  **Discard** to drop the changes. **Tones everywhere** turns a tone off for
+  every component at once; at least one tone always stays on.
+
+### Page types and blocks
+
+The **Applies to** menu at the top of the rail switches what you are deciding for:
+**Everywhere** (the whole site), one **page type** such as Landing page, or **Block**
+under *Reusable* (the reusable blocks you place on pages). A component turned off everywhere shows as
+locked in every page type, with a link back to Everywhere.
+
+For a page type you also choose:
+
+- **New components from packs** — *Allowed automatically* offers a newly installed pack's
+  components on this page type straight away; *Off until I allow them* keeps them off
+  until you tick them.
+- **Opener** — the section every new page of this type starts with, such as a hero.
+- **Max per page** — in a component's expanded row, how many of it one page may hold.
+
+A page type with a fixed layout, such as a blog post, has nothing to place, so it shows
+a notice instead of components.
+
+### Publishing shows what it affects
+
+When a change touches pages or blocks that already use something you turned off,
+**Publish** first lists them, grouped by page, and asks you to **Publish anyway** or
+**Cancel**. Nothing on those pages changes; the list is so you know where the
+**No longer offered** markers will appear.
+
+### Ask the Components assistant
+
+The chat beside the room can **review your components** — which ones fit what your site
+is for, which are unused, and which tones read poorly with your published brand — and
+make changes you ask for, everywhere or for one page type ("we never sell online, turn
+off pricing", "landing pages should open with a hero"). It never publishes: a change it
+makes appears in the rail as unsaved, and you review the affected pages and **Publish**
+it yourself, or **Discard** it.
+
+### Components from packs
+
+Components that come from a [component pack](/component-packs) show the pack's name and
+sit under **Other**. A pack component that doesn't meet Atelier's rules is listed under
+**Can't be used**, with the reason. When a pack replaces one of the built-in components,
+the row shows **Replaced by** and the pack's name: select it to see the pack's version,
+the original, or both side by side (**Compare**), and use **Use original instead** to
+go back to the original on this site. Like every change here, it applies when you
+Publish.
+
+### Turning a component off keeps existing sections
+
+A component you turn off can't be added again — the assistant stops offering it and it is
+gone from the section picker — but **sections already on your pages stay and keep
+rendering**. The same goes for a variant or tone you turn off. In the
+[Pages room](/page-studio) those sections show a **No longer offered** marker; you can
+still edit them, and **Replace…** swaps one for a component your site still offers, in
+the same spot.
+
+## Show artwork one image at a time
+
+A portfolio page usually wants each piece seen whole, one after another, and opened full
+size. Ask for it in plain words:
+
+> Make a page for my drawing series *Harbour at low tide*: a short intro, then the six
+> drawings one at a time, and let visitors open each one full size.
+
+The assistant places a `gallery` with **carousel** and **lightbox** turned on. Add your images
+in the section's fields (or ask the assistant to use ones from your [Library](/media-studio)),
+and write a caption for each — it shows under the image and in the full-size view.
+
+To change an existing gallery, open it in the [Pages room](/page-studio) and set
+**Variant** to `carousel` and tick **Lightbox**, or ask: "make the gallery a carousel with
+a lightbox".
+
+<Tip>
+  The carousel works without JavaScript too: it still swipes and scrolls, and each image
+  links to its full-size file. A [static export](/static-export) carries the carousel and
+  the full-size images with it.
+</Tip>
+
+## How sections stay consistent
+
+- **Tone** — every section accepts a tone (`default`, `muted`, `brand`, `inverted`) that
+  picks its surface colour from your brand. Adjacent sections alternate automatically so a
+  page never blurs together.
+- **Columns** — grids (features, gallery, team, pricing, the `grid` container) take a
+  column count; the items reflow responsively on smaller screens.
+- **Variant** — some sections offer a named arrangement, such as a `centered` or `split`
+  hero, a left/right image on a content section, or a `grid` or `carousel` gallery.
+- **Anchors** — every section accepts an `anchor`: a short slug such as `pricing` that makes
+  the section reachable as `#pricing` from any link on the page (or `/plans#pricing` from
+  another page). Headings inside a `markdown` section get one automatically from their
+  text — "## Our team" is reachable as `#our-team`. Ask for it ("add a *See pricing* button
+  that jumps to the pricing section") or set it in the section's Appearance fields.
+- **Inline formatting** — longer text fields (a subheading, body copy, a bio, quote,
+  answer, pricing description, or caption) accept light Markdown: links `[text](url)`,
+  `**bold**`, `*italic*`, and `` `code` ``. Just ask for it ("link _Oxford_ to their site")
+  and the assistant writes it in. Short labels (headings, button text, names) stay plain.
+
+<Tip>
+  Inline formatting is intentionally limited to text marks. For a full block of formatted
+  copy — headings, lists, blockquotes — use the `markdown` section instead.
+</Tip>
+
+Because the palette is curated and every option is a good one, any page the assistant composes
+looks designed — on your brand, every time.

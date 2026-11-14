@@ -1,0 +1,256 @@
+---
+title: "Quickstart"
+description: "Install Atelier and reach your console in a few minutes"
+---
+
+Atelier ships as a single self-installing container image. You run it locally with Docker,
+and the image installs and configures Drupal itself on first boot. When it finishes, you open
+the console and start building by chatting.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — Install"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+## Prerequisites
+
+Before you begin, you need:
+
+- **Docker** with the **Compose** plugin — Docker Desktop on Mac/Windows, or Docker Engine
+  plus `docker compose` on Linux. How you check depends on the install path you pick below:
+  - **Desktop app (A):** install Docker Desktop and start it. Nothing to type — the app
+    checks for Docker itself and tells you if it's missing or not running.
+  - **Homebrew or one-line installer (B, C):** open a terminal (on macOS: the **Terminal**
+    app), type `docker compose version` and press Enter. It should print a version number.
+- A credential for **an AI provider** — an API key from [Anthropic](https://console.anthropic.com/),
+  [OpenAI](https://platform.openai.com/api-keys), [Google Gemini](https://aistudio.google.com/apikey)
+  (a Gemini key also unlocks image generation) or [Mistral](https://console.mistral.ai/api-keys), or
+  the URL of a local [Ollama](https://ollama.com/) server, which needs no key at all. You can also
+  add these later in the in-app onboarding wizard, which lets you connect one provider or several.
+
+## Install
+
+Pick whichever path fits. All three land the **same appliance** under `~/.atelier`, and
+each is safe to re-run (re-running is an in-place, idempotent upgrade). No AI key is needed
+here — you connect an AI provider in the console's first-run onboarding wizard.
+
+<Steps>
+  <Step title="Install Atelier — pick one">
+    **A · Desktop app (easiest).** A double-click manager that installs, updates, and backs
+    up your site — no terminal needed. The macOS build is Apple-signed & notarized, so it
+    opens with no security warning. [Download for macOS or Linux from the latest
+    release](https://github.com/aincient-labs/manager/releases/latest) and grab the file for
+    your system (`.dmg` on macOS; AppImage / `.deb` / `.rpm` on Linux). *A Windows app is on
+    the way — use Homebrew or the one-liner there for now.*
+
+    **B · Homebrew (macOS & Linux).** The same manager as a CLI — install once, then operate
+    with short commands:
+
+    ```bash
+    brew install aincient-labs/tap/atelier
+    atelier app install
+    ```
+
+    **C · One-line installer (any Docker host).** No CLI to install first; lays down the
+    Compose stack and starts it. Ideal for servers and headless hosts:
+
+    ```bash
+    curl -fsSL https://aincient-labs.com/atelier/install.sh | bash
+    ```
+
+    Paths B and C are typed into a terminal, the same place you checked Docker. Path A
+    needs no terminal at all: open the app and click **Set up Atelier**.
+
+    First boot takes a minute or two while the container installs and configures itself.
+  </Step>
+  <Step title="Open the console">
+    Visit **http://localhost:41221/** and log in, then go to **/atelier** for the operator
+    console.
+  </Step>
+</Steps>
+
+<Tip>
+  Prefer to manage the stack yourself? The installer writes a `compose.yaml` and a `.env`
+  template to `~/.atelier`, so you can run it directly instead. Set `HASH_SALT` in `.env`
+  (run `openssl rand -hex 32`), then run `docker compose up -d` — connect an AI provider in
+  the console's onboarding wizard afterward.
+</Tip>
+
+## Admin login
+
+The admin username is `admin`. If you didn't set a password, a random one is generated on
+first boot and saved with your install, so you can always recover it. Manage it with the
+`atelier` CLI:
+
+```bash
+# Show the password generated on first boot
+atelier app password
+
+# Set a new password
+atelier app password --set 'YourNewPassword'
+
+# Open the console in your browser
+atelier app open
+```
+
+<Tip>
+  Locked out, and your site can't send password-reset email yet? Choose **Edit my site** in
+  the Atelier manager (or run `atelier app open`): it signs you in with a one-time link, no
+  password needed. Then set a
+  new password under [My account](/account).
+</Tip>
+
+## First run
+
+Once you're in the console, the onboarding wizard runs first if AI isn't connected yet. It
+walks you through two quick steps:
+
+<Steps>
+  <Step title="Connect your AI">
+    Connect one provider or several — **Anthropic**, **OpenAI**, **Google Gemini**,
+    **Mistral**, or a local **Ollama** server. Paste each API key (or, for Ollama, your
+    server URL); it's validated against the provider before anything is saved, and stored
+    on your own server — never in code or git. You can run chat on one provider and images
+    on another. DeepSeek, Groq, OpenRouter, a LiteLLM proxy and anything else that speaks
+    the OpenAI API connect through the **OpenAI-compatible endpoint** row, which asks for a
+    base URL as well as a key — see [Connect AI & choose models](/onboarding).
+
+    Connecting **Google Gemini** turns on image generation too: one Google AI Studio key
+    powers both Gemini chat and Nano Banana image generation.
+  </Step>
+  <Step title="Choose your models">
+    Atelier works in **roles** — *high thinking*, *task*, and *fast* for chat, plus *image
+    description* and *image generation*. Pick a model for each from any provider you
+    connected; the wizard suggests sensible defaults. Change any of them now, or come back
+    anytime — see **Changing providers later** below.
+
+    Each room uses the role that fits its work: the Identity and Pages rooms reason with
+    *high thinking*, while the everyday assistant runs on *task*. You never pick a model
+    per chat — the role does it for you, so swapping one model rebinds every room that
+    uses it at once.
+  </Step>
+</Steps>
+
+### Changing providers later
+
+To add a provider, rotate a key, or change which model a role uses, reopen the wizard from
+the console: click your avatar (top-right) → **Set up AI providers**, or visit
+`/atelier?onboarding=1` directly. It opens pre-filled with your current providers and model
+choices — already-connected providers show as **Connected**, and finishing without changes
+leaves your existing setup (and your name) untouched. Only site administrators see this
+option.
+
+After that, you're in the [console](/console) — pick a room and start chatting:
+
+- Open the [Identity room](/brand-studio) to set your site's identity.
+- Open the [Pages room](/page-studio) to build your first page.
+
+<Tip>
+  You can change providers or rebind a role to a different model any time — open the avatar
+  menu (top-right) and choose **Set up AI providers** to revisit the wizard. Already-connected
+  providers show as **Connected**, so you only fill in what's new. See
+  [Onboarding](/onboarding#changing-providers-or-models-later) for the details.
+</Tip>
+
+## Upgrade
+
+**Desktop app.** When a new version is ready, the app shows a banner, **A new version of Atelier
+is ready.**, with an **Update** button — click it. To check yourself, open the **System** tab and,
+under **Your installation**, click **Check for updates**. Updating keeps all your pages and
+settings.
+
+**Terminal.** Run `atelier app update`, or re-run the installer — it pulls the newer image and
+recreates the app, which converges in place:
+
+```bash
+curl -fsSL https://aincient-labs.com/atelier/install.sh | bash
+```
+
+The app snapshots its database, runs any pending updates, health-checks, and automatically
+rolls back if something fails. Your database and uploaded files live in Docker volumes and
+survive upgrades.
+
+<Note>
+  Your own settings are kept across upgrades. An update never resets your site name, your
+  chosen AI provider, or your model choices — it only ships new features and fixes.
+</Note>
+
+### Upgrading from a much older version
+
+Most upgrades are one step. Occasionally a new version can't move a very old site straight to
+the newest one — when a release removes something, it can only upgrade sites that have already
+been through the version that removed it. When that applies to you, Atelier routes you through
+the versions in between rather than failing:
+
+```bash
+$ atelier app update
+This upgrade takes more than one step
+
+  from 0.1.1
+  1. 0.3.0   (0.4.0 can't migrate a site this old directly)
+  2. 0.4.0
+```
+
+Each step updates and health-checks your site before the next one starts, and a full backup is
+taken before the first. `atelier app check-update` shows the same route beforehand, so you know
+whether an update is a minute or a coffee break. The desktop app asks the same question.
+
+<Note>
+  You don't have to work any of this out. If you upgrade by hand — `docker compose pull`, or
+  re-running the installer — and your site is too old for the image you pulled, Atelier stops
+  **before changing anything** and tells you which version to go through first. Nothing is
+  migrated, so starting the previous image again puts you exactly back.
+</Note>
+
+### Which builds you get
+
+**Stable is the supported channel, and the only one the desktop app offers.** It is the image tagged
+`:latest`, retagged each time we cut a release.
+
+There is also **edge** — every build off our main branch (`:edge`), unreleased and liable to break.
+It exists for testing a fix before it ships, not for a site you care about, so it is reached
+deliberately from the CLI and never by picking a menu item:
+
+```bash
+atelier app channel            # which channel am I on?
+atelier app channel stable     # follow released versions
+atelier app channel edge --now # follow unreleased builds (asks you to confirm)
+```
+
+In the desktop app, it's the **Updates** row under **System → Your installation**. If an install is already on
+edge, the row says so and lets you move back to released versions.
+
+<Note>
+  Edge can run ahead of the newest release, and a site's database only ever migrates *forward*.
+  Moving from edge back to stable is therefore a step backwards: Atelier takes a snapshot first
+  and rolls the database back if the switch fails, but take your own backup
+  (`atelier data backup`) before doing it on a site you care about.
+</Note>
+
+To pin one exact version instead — no updates at all until you change it:
+
+```bash
+AINCIENT_IMAGE=ghcr.io/aincient-labs/atelier-cms:v0.1.2 \
+  curl -fsSL https://aincient-labs.com/atelier/install.sh | bash
+```
+
+## Manage the stack
+
+Run these from your install directory:
+
+```bash
+docker compose stop      # stop, keep data
+docker compose up -d     # start again
+docker compose down      # remove containers, keep data
+docker compose down -v   # remove containers AND wipe all data (fresh start)
+```
+
+<Note>
+  This setup is for **local evaluation**. The container answers any host header and is meant
+  for `localhost`. Don't expose it on a public address without setting
+  `AINCIENT_TRUSTED_HOSTS`. No data leaves your machine except calls to your chosen AI
+  provider for the AI features, using the credential you provide (and nothing at all if you
+  run a local model server like Ollama).
+</Note>

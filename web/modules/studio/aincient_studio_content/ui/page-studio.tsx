@@ -1013,9 +1013,9 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
           />
         )}
         <IconButton
-          label={atListing ? "Close page studio" : "Back to page list"} className="ain-topbar__leave"
+          label={atListing ? "Close Pages" : "Back to page list"} className="ain-topbar__leave"
           onClick={backOrClose}
-          title={atListing ? "Leave page studio" : "Back to the page list"}
+          title={atListing ? "Leave Pages" : "Back to the page list"}
         >
           <XIcon />
         </IconButton>
@@ -1234,7 +1234,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
           )
         }
       >
-        {hasContent ? "Matches the saved page" : "Empty page — add a section or ask the agent"}
+        {hasContent ? "Matches the saved page" : "Empty page — add a section or ask the assistant"}
       </StudioStatus>
 
       {lang && mode && (
@@ -1368,7 +1368,7 @@ export function PageStudio({ onClose }: { onClose: () => void }) {
                   <p className="ain-studio__groupnote">
                     {layoutLocked
                       ? "No sections — this translation inherits its layout from the source."
-                      : "No sections yet. Add one below, or ask the agent to build the page."}
+                      : "No sections yet. Add one below, or ask the assistant to build the page."}
                   </p>
                 )}
                 {/* Empty state: one prominent "add first section" trigger. */}
@@ -2526,7 +2526,7 @@ function ChecksRow({ nodeId, lang, dirty, savedVid }: { nodeId: string; lang: st
         size="sm"
         className="ain-content-checks__open"
         onClick={() => window.location.assign(pageDeepLink("checks", nodeId, consoleBase(), lang))}
-        title="Open this page in the Checks studio"
+        title="Open this page in Checks"
       >
         Open Checks <ArrowRightIcon />
       </Button>

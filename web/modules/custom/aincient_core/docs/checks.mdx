@@ -1,0 +1,95 @@
+---
+title: "Checking page health"
+description: "See what's holding a page back and fix it — with AI staging the repair into your draft for approval"
+---
+
+The **Checks** room reviews a page's health and helps you fix what it finds.
+
+<Note>
+  Checks is available when it's enabled for your site. If you don't see it in the console, it may not be turned on for your install.
+</Note>
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — Checking page health"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+## What Checks looks at
+
+Checks runs deterministic checks on a page and reports what it finds. It covers:
+
+- **SEO** — the signals that help search engines understand your page.
+- **Meta tags** — the title and description that show up in search results and shares.
+- **Internal-link integrity** — whether links to your other pages actually resolve.
+
+Findings are grouped **worst-first**: fails first, then warnings, then passes. For Fernway Botanical Studio's care-guide page, that might surface a missing meta description at the top and a healthy internal link near the bottom.
+
+## Fix with AI
+
+For anything Checks flags, an assistant can stage a minimal fix into your draft. You can apply it at three scopes:
+
+- **A single finding** — fix just one flagged item.
+- **A whole check** — resolve every finding under one category at once.
+- **Fix all issues** — let the assistant work through everything it can.
+
+<Note>
+  The assistant proposes; it stages a **minimal** fix into your **draft**. You review it and nothing changes on your live site until you click **Publish**.
+</Note>
+
+## Review what changed
+
+Fixes are staged into your draft, and Checks grades that draft straight away, before you save. A finding the fix cleared shows **Fixed in draft**. Each row starts with a line giving its status, its area (meta, content or structure), and who changed it: **Atelier** or **You**. Below that come the finding and the field's current value. Click a row to open it: the explanation, where the issue sits, and its **Fix with AI** and **Edit** buttons appear there. A passing or fixed row shrinks to a single line until you open it.
+
+When changes are staged, a banner at the top of the findings sums them up, for example "4 changes staged · 1 needs you":
+
+- **Filters**: **Needs you** lists issues you sent to Atelier that still fail after its fix. **Changed** lists every field that changed since your last save. **All** shows the full report. After a fix, Checks opens on **Changed**.
+- **Previous / Next**: walk through the rows with the arrows, or press **J** and **K**. Opening a row shows what changed word by word, plus a **Revert** button that puts back the value from your last save.
+- **Reviewed meter**: counts the changed rows you've opened. It's only a reading aid: you can save or publish at any time.
+
+On a row that still needs you, **See Atelier's reply** jumps to the assistant's answer in the chat, which usually says why it couldn't make the fix.
+
+The fix card in the chat lists the fields that changed. Click one to jump to its row in Checks.
+
+When you save, the revision message records who changed which field, for example "Atelier: Meta description · You: Page title".
+
+## See it in context
+
+The preview next to the findings has three views, picked in its top bar:
+
+- **Page**: the page itself. A pin marks each section with an issue or a staged change, for example "1 fail · changed". Click a pin to open its row in the findings.
+- **Search result**: how the page shows up in search, with your last saved version beside your draft.
+- **Share card**: how a link to the page unfurls on social media and in chat apps, again saved beside draft.
+
+The number on a view counts the open issues it shows. Opening a row switches to the view that shows it: a meta description opens **Search result**, an Open Graph tag opens **Share card**, and a broken link scrolls the page to the section that contains it.
+
+## One row per fix
+
+Findings that one edit fixes share a row:
+
+- **Share card**: when two or more Open Graph tags need work, they fold into one row. Open it to see each tag's value, what changed, and its own **Edit** and **Revert**. **Fix the card with AI** sends all of them in one request.
+- **Broken links**: a page that links to the same missing page from several places gets one row, which says how many links go there and lists every place the link is written. Click a place to scroll the page to it. **Fix with AI** asks Atelier to point every copy at the same working page in one edit.
+
+## Edit inline and re-run
+
+You can also edit the page directly here:
+
+- Adjust the **page title** or a **meta tag** inline.
+- A live **character-range gauge** shows whether your text sits in the ideal length range as you type.
+- **Re-run** (at the top of the findings) recomputes them after a change.
+
+Saving and publishing work exactly as they do in the Pages room: the same buttons sit in the
+same place at the top right, and they follow your site's review steps. If the page is in review
+and you can't approve it, Checks won't offer Publish either.
+
+To open Checks from the Pages room, use the **Checks** row in the editing panel. It shows how
+many checks the saved page fails or warns on. Unsaved edits aren't checked until you save them.
+
+<Tip>
+  Work top-down: fix the fails first, re-run, then clear the warnings. Let **Fix all issues** handle the routine repairs, and reserve your attention for the wording that only you can get right.
+</Tip>
+
+<Card title="Building pages" href="/page-studio" icon="layout">
+  Where the page you're checking gets built and published.
+</Card>

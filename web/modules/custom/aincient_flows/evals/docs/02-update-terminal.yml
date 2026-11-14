@@ -1,0 +1,5 @@
+ask: I installed Atelier with the install script in the terminal. How do I update it?
+kind: covered
+expect:
+  links_any: [/docs/quickstart]
+  mention_all: ['/atelier app update|install\.sh/']

@@ -1,0 +1,4 @@
+ask: Is there an iPhone app so I can edit my site from my phone?
+kind: uncovered
+expect:
+  prose_not: '/app store|download the (atelier )?(ios|iphone|mobile) app/i'

@@ -1,0 +1,60 @@
+---
+title: "AI proposes, you approve"
+description: "The assistant works on a draft and shows a preview — your live site changes only when you press Publish."
+---
+
+Atelier's defining stance is simple: the assistant proposes, and you approve. Nothing reaches your live site until you say so.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — AI proposes, you approve"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+This is architectural, not a setting you can switch off. The assistant never changes your live site on its own. It works on an unsaved draft and shows you a live preview — and your site changes only when you press **Publish**.
+
+<Note>
+**The guarantee:** the assistant only ever edits an unsaved draft and shows a live preview. Your live site changes solely when you click **Publish**. The assistant cannot publish for you.
+</Note>
+
+Two mechanisms enforce this.
+
+## Drafts and Publish
+
+In the **Identity** and **Pages** rooms, the assistant only edits a draft.
+
+<Steps>
+  <Step title="The assistant proposes">
+    You describe a change; the assistant updates the draft and renders a live preview.
+  </Step>
+  <Step title="You review">
+    Look over the preview until it's right — keep refining with the assistant as needed.
+  </Step>
+  <Step title="You decide">
+    Press **Publish** to make it live, or **Discard** to throw the draft away. Discard asks you to confirm, so you can't wipe work by accident.
+  </Step>
+</Steps>
+
+## Generated images: saved, but still yours to decide
+
+One thing works a little differently. When you generate or edit an image, it's saved to your **Library** right away — because generation costs real money and Atelier won't discard what you paid to create. That's a private Library item, not a change to your live site: it reaches visitors only when you place it on a page and **Publish**. And it's still your call — every image is a new item, nothing is overwritten, and you can **Delete** it. See [generating & editing images](/ai-images).
+
+## Approval pauses
+
+When a conversation reaches a step that would change your site, it pauses and asks you to approve before continuing.
+
+You approve, and only then does the step run — exactly once. Nothing happens behind your back, and nothing runs twice.
+
+## Why it matters
+
+You get the speed of an assistant with the control of a human editor. The assistant does the heavy lifting; you stay the one who decides what goes live.
+
+<CardGroup cols={2}>
+  <Card title="The console" href="/console" icon="layout-dashboard">
+    See where drafts and previews live.
+  </Card>
+  <Card title="The Pages room" href="/page-studio" icon="file-pen">
+    Compose pages section by section on a draft.
+  </Card>
+</CardGroup>

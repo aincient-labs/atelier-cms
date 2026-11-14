@@ -1,0 +1,4 @@
+ask: How do I add alt text to my images?
+kind: covered
+expect:
+  links_any: [/docs/alt-text, /docs/images, /docs/media-studio, /docs/accessibility]

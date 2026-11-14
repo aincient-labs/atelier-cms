@@ -23,7 +23,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * alone the agent "notices" the logo and silently does nothing. This routes it:
  * a `logo_handoff` generative-UI card that says images can't be placed from chat
  * and DEEP-LINKS to Identity → Logo, where the human drops the file into the
- * logo picker (the whole logo lives in the Identity studio, DECISIONS 0372).
+ * logo picker (the whole logo lives in the Identity room, DECISIONS 0372).
  *
  * Routing-ONLY, and taint-safe by construction (DECISIONS 0368): it PLACES
  * nothing. It writes no field, uploads no file, touches no media — it emits a
@@ -43,7 +43,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
   id: 'aincient_brand:route_logo_image',
   function_name: 'aincient_route_logo_image',
   name: 'Route logo image to Identity',
-  description: 'Hand the operator off to the Identity studio\'s Logo field when they ATTACHED an image this turn and want it used as the site LOGO, brand mark, wordmark, or FAVICON. Images cannot be placed from chat — you have no tool that sets a logo/favicon image, and the attachment\'s bytes are not kept — so call this INSTEAD of trying to apply it: it shows the user a card that explains this and opens Identity → Logo, where they drop the file into the picker. Pass asset="favicon" when they asked about the favicon / browser-tab icon, otherwise "logo". Use ONLY for an attached IMAGE meant as a logo/favicon; a design/token FILE goes to propose_design_tokens, and a described look with no image goes to the specialists.',
+  description: 'Hand the operator off to the Identity room\'s Logo field when they ATTACHED an image this turn and want it used as the site LOGO, brand mark, wordmark, or FAVICON. Images cannot be placed from chat — you have no tool that sets a logo/favicon image, and the attachment\'s bytes are not kept — so call this INSTEAD of trying to apply it: it shows the user a card that explains this and opens Identity → Logo, where they drop the file into the picker. Pass asset="favicon" when they asked about the favicon / browser-tab icon, otherwise "logo". Use ONLY for an attached IMAGE meant as a logo/favicon; a design/token FILE goes to propose_design_tokens, and a described look with no image goes to the specialists.',
   context_definitions: [
     'asset' => new ContextDefinition(
       data_type: 'string',

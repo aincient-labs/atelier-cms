@@ -1,0 +1,6 @@
+# Nina's report: "docker compose version" — where do I type that?
+ask: The quickstart says to run docker compose version. Where do I type that?
+kind: covered
+expect:
+  links_any: [/docs/quickstart]
+  mention_all: ['/terminal/i']

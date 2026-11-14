@@ -150,7 +150,7 @@ export function GlobalsPreview() {
                 else frameEls.current.delete(layer.key);
               }}
               className={`ain-preview__frame${layer.shown ? " is-shown" : ""}`}
-              title="Globals preview"
+              title="Navigation & Pages preview"
               srcDoc={layer.html}
               onLoad={(e) => {
                 interceptPreviewLinks(e.currentTarget.contentDocument);

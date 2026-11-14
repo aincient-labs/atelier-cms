@@ -167,6 +167,34 @@ function aincient_core_schema(): array {
 
   $schema['aincient_demo_content'] = aincient_core_demo_content_table();
 
+  $schema['aincient_search_chunk'] = [
+    'description' => 'Keyword-search rows, one per section of a searchable text, tagged by source (docs today; site content later). See SearchIndex.',
+    'fields' => [
+      'id' => ['type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE],
+      'source' => [
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Which corpus the row belongs to, e.g. docs.',
+      ],
+      'ref' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The item within the source, e.g. a docs page slug.',
+      ],
+      'title' => ['type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''],
+      'heading' => ['type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''],
+      'url' => ['type' => 'varchar', 'length' => 512, 'not null' => TRUE, 'default' => ''],
+      'body' => ['type' => 'text', 'size' => 'big', 'not null' => FALSE],
+    ],
+    'primary key' => ['id'],
+    'indexes' => [
+      'source_ref' => ['source', 'ref'],
+    ],
+  ];
   return $schema;
 }
 
@@ -718,4 +746,19 @@ function aincient_core_update_11014(): string {
     $message .= ' Kept, another installed module needs them: ' . implode(', ', $kept) . '.';
   }
   return $message;
+}
+
+/**
+ * Create the `aincient_search_chunk` table on existing sites (docs search).
+ *
+ * The definition is read from aincient_core_schema() so fresh and upgraded
+ * sites get the same table. The docs are indexed on the first search
+ * (SearchIndex::ensureDocsIndexed()), not here.
+ */
+function aincient_core_update_11015(): void {
+  $schema = \Drupal::database()->schema();
+  if ($schema->tableExists('aincient_search_chunk')) {
+    return;
+  }
+  $schema->createTable('aincient_search_chunk', aincient_core_schema()['aincient_search_chunk']);
 }

@@ -86,7 +86,7 @@ export function DesignTokenAdmission(payload: DesignTokenAdmissionPayload) {
       )}
 
       {state === "previewed" && (
-        <p className="ain-design-system-tokenadmit__result">Previewing in the studio — click <strong>Publish</strong> there to save.</p>
+        <p className="ain-design-system-tokenadmit__result">Previewing in the room — click <strong>Publish</strong> there to save.</p>
       )}
       {state === "dismissed" && (
         <p className="ain-design-system-tokenadmit__result">Kept for this turn only — nothing was previewed.</p>

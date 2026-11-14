@@ -1,0 +1,4 @@
+ask: How do I put my site online with Cloudflare Pages?
+kind: covered
+expect:
+  links_any: [/docs/deploy, /docs/static-export]

@@ -68,7 +68,7 @@ function ProposalCard({ payload, toolCallId }: { payload: ComponentProposal; too
           Staged for {where} · {count} change{count === 1 ? "" : "s"}
         </span>
         {payload.reason && <span className="ain-brandprev__hint">{payload.reason}</span>}
-        <span className="ain-brandprev__hint">Not live yet — review it in the studio and Publish to apply it</span>
+        <span className="ain-brandprev__hint">Not live yet — review it in the room and Publish to apply it</span>
         {skipped.length > 0 && (
           <span className="ain-brandprev__rejected">Not applied (it would leave nothing to choose): {skipped.join(", ")}</span>
         )}

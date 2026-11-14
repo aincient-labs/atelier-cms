@@ -111,7 +111,7 @@ describe("brandPreviewCardText", () => {
     });
     expect(historical).toBe(false);
     expect(label).toBe("Applied to preview · 3 changes");
-    expect(note).toBe("Preview only — Publish in the studio to apply it site-wide");
+    expect(note).toBe("Preview only — Publish in the room to apply it site-wide");
   });
 
   it("labels a reset without a change count", () => {

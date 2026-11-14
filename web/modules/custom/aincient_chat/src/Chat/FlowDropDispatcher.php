@@ -120,6 +120,7 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
     private readonly TurnScratchpadSweeper $scratchpadSweeper,
     private readonly TurnPipelines $pipelines,
     private readonly TurnRecapRecorder $recaps,
+    private readonly DocsAnswerVerifier $docsVerifier,
   ) {}
 
   /**
@@ -315,7 +316,149 @@ final class FlowDropDispatcher implements ResumableFlowDispatcherInterface {
         }
         $this->persistTurnWidgets((int) $session->id(), $widgets, $turn->assistantMessageIds);
         $this->recaps->record((int) $session->id(), $widgets);
+        $text = yield from $this->checkAgainstDocs($text, $turn->pipelineId, (int) $session->id(), $turn->assistantMessageIds, $message, $workflowId);
         yield from $this->resultEvents($text);
+    }
+  }
+
+  /**
+   * Run the docs verifier on a reply whose turn used the docs tools (0525).
+   *
+   * Only plain-prose replies are checked (a widget envelope is not a claim), and
+   * only when the turn retrieved docs text — that text is the verifier's whole
+   * world. A revision replaces the reply everywhere it lives: what streams now,
+   * the stored session message (what a reload shows) and the model's buffer
+   * (what its next turn remembers).
+   *
+   * @return \Generator<int, \Drupal\aincient_chat\Event\ChatEvent, mixed, string>
+   *   Yields status frames; returns the reply to show.
+   */
+  private function checkAgainstDocs(string $text, ?string $pipelineId, int $sessionId, array $messageIds, string $question = '', string $workflowId = ''): \Generator {
+    if (trim($text) === '' || WidgetEnvelope::decode($text) !== NULL) {
+      return $text;
+    }
+    $evidence = $this->docsEvidence($pipelineId);
+    $agentSearched = $evidence !== [];
+    if (!$agentSearched && $workflowId === WorkflowCatalog::FALLBACK_WORKFLOW && \Drupal::hasService('aincient_core.search_index')) {
+      // The General assistant answered without searching (eval 2026-11-13:
+      // "where do I change colours" → straight from its prompt). Its reply is
+      // still checked — against the docs search for the user's own question,
+      // so a claim the docs don't back can't slip through by skipping the tool.
+      $index = \Drupal::service('aincient_core.search_index');
+      $evidence = [$index::formatDocsHits($question, $index->searchDocs($question, 5))];
+    }
+    if ($evidence === []) {
+      return $text;
+    }
+    $facts = DocsAnswerVerifier::consoleFacts($workflowId !== '' ? $workflowId : WorkflowCatalog::FALLBACK_WORKFLOW);
+    yield ChatEvent::status('Checking the answer against the docs…');
+    $check = $this->docsVerifier->verify($text, $facts === '' ? $evidence : array_merge($evidence, [$facts]));
+    yield ChatEvent::debugStatus(sprintf('Docs check: %s%s', $check['status'], $check['unsupported'] === [] ? '' : ' — removed: ' . implode(' | ', $check['unsupported'])), ['docs_check' => $check['status'], 'docs_removed' => $check['unsupported']]);
+    if ($check['status'] === 'supported' && $agentSearched) {
+      // A grounded answer names its source: add the top page when the reply
+      // links none (the eval's alt-text answer was right but unsourced).
+      $withLink = self::withDocsLink($text, $evidence);
+      if ($withLink !== $text) {
+        $check = ['status' => 'revised', 'text' => $withLink, 'unsupported' => []];
+      }
+    }
+    if ($check['status'] === 'revised' && $agentSearched && $check['unsupported'] !== []) {
+      $check['text'] = self::withDocsLink($check['text'], $evidence);
+    }
+    if (!$agentSearched && in_array($check['status'], ['supported', 'revised'], TRUE) && !str_contains($check['text'], 'aincient-labs.com/docs')) {
+      // The assistant skipped the search but its checked reply names a room
+      // or page the dispatcher's search found: link that page, so the answer
+      // still names its source (eval G5: "where do I change colours", 0/3).
+      $source = DocsAnswerVerifier::namedSource($check['text'], $evidence);
+      if ($source !== '') {
+        $check = [
+          'status' => 'revised',
+          'text' => rtrim($check['text']) . "\n\nMore in the docs: " . $source,
+          'unsupported' => $check['unsupported'],
+        ];
+        yield ChatEvent::debugStatus('Docs link added from the dispatcher search: ' . $source, ['docs_link' => 'dispatcher']);
+      }
+    }
+    elseif (!$agentSearched && $check['status'] === 'revised' && str_contains($check['text'], 'aincient-labs.com/docs')) {
+      // The check's rewrite already linked a page from the dispatcher search.
+      yield ChatEvent::debugStatus('Docs link from the dispatcher search kept by the check', ['docs_link' => 'dispatcher']);
+    }
+    if ($check['status'] === 'supported' || $check['status'] === 'skipped') {
+      return $text;
+    }
+    $this->logger->notice('Docs check revised a reply (pipeline @p): @claims', [
+      '@p' => $pipelineId ?? '?',
+      '@claims' => implode(' | ', $check['unsupported']),
+    ]);
+    $this->replaceStoredReply($messageIds, $text, $check['text']);
+    $this->recaps->reviseLastReply($sessionId, $text, $check['text']);
+    return $check['text'];
+  }
+
+  /**
+   * The reply plus a "More in the docs" link when it links no docs page.
+   */
+  private static function withDocsLink(string $text, array $evidence): string {
+    if (str_contains($text, 'aincient-labs.com/docs')) {
+      return $text;
+    }
+    $source = DocsAnswerVerifier::firstSource($evidence);
+    return $source === '' ? $text : rtrim($text) . "\n\nMore in the docs: " . $source;
+  }
+
+  /**
+   * The docs tools' results from a turn's job trail, in order.
+   *
+   * @return list<string>
+   */
+  private function docsEvidence(?string $pipelineId): array {
+    if ($pipelineId === NULL || $pipelineId === '') {
+      return [];
+    }
+    $storage = \Drupal::entityTypeManager()->getStorage('flowdrop_pipeline');
+    $evidence = [];
+    foreach ($storage->loadMultiple($this->pipelines->withDescendants($pipelineId)) as $pipeline) {
+      if (!method_exists($pipeline, 'getJobs')) {
+        continue;
+      }
+      foreach ($pipeline->getJobs() as $job) {
+        $output = (string) ($job->get('output_data')->value ?? '');
+        if (!str_contains($output, 'tool_results') && !str_contains($output, 'tool_messages')) {
+          continue;
+        }
+        $data = json_decode($output, TRUE);
+        $rows = is_array($data) ? ($data['tool_results'] ?? $data['tool_messages'] ?? NULL) : NULL;
+        foreach (is_array($rows) ? $rows : [] as $row) {
+          $content = $row['content'] ?? NULL;
+          if (!is_string($content)) {
+            continue;
+          }
+          $inner = json_decode($content, TRUE);
+          $candidate = is_array($inner) && isset($inner['message']) && is_string($inner['message']) ? $inner['message'] : $content;
+          if (DocsAnswerVerifier::isEvidence($candidate) && !in_array($candidate, $evidence, TRUE)) {
+            $evidence[] = $candidate;
+          }
+        }
+      }
+    }
+    return $evidence;
+  }
+
+  /**
+   * Rewrite the stored assistant message that carried the original reply.
+   */
+  private function replaceStoredReply(array $messageIds, string $original, string $revised): void {
+    $storage = \Drupal::entityTypeManager()->getStorage('flowdrop_session_message');
+    foreach ($messageIds as $id) {
+      try {
+        $message = $storage->load($id);
+        if ($message !== NULL && trim((string) $message->getContent()) === trim($original)) {
+          $message->set('content', $revised)->save();
+        }
+      }
+      catch (\Throwable $e) {
+        $this->logger->warning('Could not store the checked reply (@id): @msg', ['@id' => $id, '@msg' => $e->getMessage()]);
+      }
     }
   }
 

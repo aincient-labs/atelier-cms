@@ -1,0 +1,155 @@
+---
+title: "Security incident response"
+description: "What to do when a security advisory affects your site, or you suspect it has been attacked: contain, fix, check, recover"
+---
+
+Use this page when an [Atelier security advisory](https://aincient-labs.com/security/) affects your version, or you think someone has tampered with your site. Work top to bottom.
+
+## In a hurry
+
+```bash
+atelier app status                              # 1  which version am I on?
+atelier site freeze --label "before-incident"   # 2  visitors get saved pages
+cd ~/.atelier && docker compose stop app        # 3  application off, site up
+atelier data backup --label suspect             # 4  keep a copy as evidence
+atelier app update                              # 6  patch (restarts the app)
+atelier site live                               # 9  once you've checked
+```
+
+| Phase | Steps | Done when |
+|---|---|---|
+| **Contain** · minutes | 1 Find out · 2 Freeze · 3 Lock down | Nothing on the internet reaches the application |
+| **Fix** · hours | 4 Back up · 5 Verify · 6 Update | You run the patched, genuine image |
+| **Recover** · a day or two | 7 Check · 8 Clean up · 9 Go live | You know nothing got in |
+
+Want to check your version against an advisory yourself? Every release lists what it ships: see [SBOMs and VEX](/sbom).
+
+<Tip>
+  Subscribe before you need it: [`/security/feed.xml`](https://aincient-labs.com/security/feed.xml) carries security releases only, so every entry means *act*.
+</Tip>
+
+## Contain
+
+### 1. Find out if you're affected
+
+Run `atelier app status` and compare the version with the advisory's affected range (for example `< 0.19.1`). Rated **critical**? Do steps 2 and 3 now.
+
+### 2. Freeze
+
+```bash
+atelier site freeze --label "before-incident"
+```
+
+Visitors get a saved copy of every page, and you get a record of the site before the incident to compare against later. See [Freeze & Live](/freeze-and-live).
+
+<Note>
+  **Freezing is not a lockdown.** Signing in, the console and form submissions still reach the application, and an attacker can pose as any of them. Step 3 closes that.
+</Note>
+
+If the freeze reports a broken link, it isn't served. Serve it anyway with `atelier site use <id>`.
+
+### 3. Lock down
+
+```bash
+cd ~/.atelier && docker compose stop app
+```
+
+Only the application stops. The front door keeps serving the snapshot, and Docker won't restart a container you stopped by hand. Use your own appliance folder if it isn't `~/.atelier` (see [several sites](/several-sites)).
+
+**Degraded, not down:**
+
+| | Frozen | Locked down |
+|---|---|---|
+| Pages | Yes | Yes |
+| Forms | Yes | **No** |
+| Site search | **No** | **No** |
+| Sign in, console, editing | Yes | **No** — a "starting" page |
+| Application reachable from the internet | Yes | **No** |
+
+Tip: add your email address to the contact page *before* step 2, so visitors still have a way to reach you.
+
+<Note>
+  `atelier site lockdown` and a Manager button are on the roadmap. Until then, it's this Docker command.
+</Note>
+
+No appliance at all? [Export the site](/static-export) and [host it elsewhere](/deploy). The same features stop working there.
+
+## Fix
+
+### 4. Back up
+
+```bash
+atelier data backup --label suspect
+```
+
+If someone got in, this copy holds their changes. Keep it anyway: it's evidence, and your newest work. `atelier data list` shows all backups in `~/.atelier/backups`.
+
+### 5. Verify
+
+```bash
+cosign verify --key cosign.pub ghcr.io/aincient-labs/atelier-cms:latest
+```
+
+Every image is signed. Get `cosign.pub` from the [repository](https://github.com/aincient-labs/atelier-cms).
+
+### 6. Update
+
+```bash
+atelier app update
+```
+
+The update snapshots the database, migrates, and rolls back on its own if the new version isn't healthy. It also **starts the application again**, which ends the lockdown. A frozen site stays up for visitors throughout. Confirm the new version with `atelier app status`.
+
+## Recover
+
+### 7. Check what happened
+
+<Steps>
+  <Step title="People">
+    **People** in the [System](/system) back-office: unknown accounts, unexpected roles, sign-ins you can't explain.
+  </Step>
+  <Step title="Content">
+    **Settings → Snapshots → View** your step 2 snapshot and compare it with the live site. Start with the homepage, contact details, legal pages, links and downloads.
+  </Step>
+  <Step title="Brand, menus, settings">
+    One changed link in a menu or footer reaches every page.
+  </Step>
+  <Step title="Logs">
+    `atelier app logs app` — errors around the advisory date, requests for paths your site doesn't have.
+  </Step>
+</Steps>
+
+### 8. Clean up
+
+| You found… | Do this |
+|---|---|
+| **Nothing** | If the advisory said code could run on the server, rotate secrets anyway (below). |
+| **Something** | Don't repair in place. Restore a backup from **before** the window (`atelier data restore <file>`), update again, re-apply your recent work by hand, rotate every secret. |
+| **Signs code ran on the machine** | Treat the machine as untrusted: fresh install on a clean host, restore the pre-incident backup there, rotate everything. |
+
+**Secrets to rotate:**
+
+- **AI provider keys:** make a new key at the provider and revoke the old one, then avatar menu → **Set up AI providers**. A key [set from the environment](/onboarding#supplying-a-key-from-the-environment) rotates by changing the variable and restarting.
+- **Passwords:** everyone changes theirs; admin via `atelier app password --set "<new>"`.
+- **Mail:** rotate at your [mail service](/email) and update it in Atelier.
+
+### 9. Go live
+
+```bash
+atelier site live
+```
+
+Or freeze the patched site and stay frozen — a good default for a site that rarely changes.
+
+## Found something new?
+
+Report a vulnerability that isn't already published privately via [SECURITY.md](https://github.com/aincient-labs/atelier-cms/blob/main/SECURITY.md), not in a public issue.
+
+<CardGroup cols={2}>
+  <Card title="Freeze & Live" href="/freeze-and-live" icon="snowflake">
+    How snapshots are served, switched and kept.
+  </Card>
+  <Card title="Export a static site" href="/static-export" icon="download">
+    Take the whole site with you as plain files.
+  </Card>
+</CardGroup>

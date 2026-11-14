@@ -218,7 +218,7 @@ function PagePreviewCard({ payload, toolCallId }: { payload: PagePreviewPayload;
             ))}
           </ul>
         )}
-        <span className="ain-brandprev__hint">Preview only — Publish in the studio to save the page</span>
+        <span className="ain-brandprev__hint">Preview only — Publish in the room to save the page</span>
         {refused.length > 0 && (
           <span className="ain-brandprev__rejected">
             Refused: {refused.map((r) => r.reason ?? r.op ?? "unusable op").join(" ")}

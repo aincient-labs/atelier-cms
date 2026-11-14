@@ -1,0 +1,6 @@
+ask: Where do I change my site's colours and fonts?
+kind: covered
+expect:
+  links_any: [/docs/brand-studio, /docs/brand-editor]
+  mention_all: ['/Identity/']
+  prose_not: '/Design System studio/i'

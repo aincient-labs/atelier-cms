@@ -23,8 +23,8 @@ third_party_settings:
           port: message
       sub_workflow_replies: false
 id: aincient_chrome_agent
-label: Globals
-description: 'Chrome studio agent: a stategraph agent loop (reason ⇄ dispatch preview_chrome ⇄ loop_back) driving the Globals live preview — header/footer layout + brand identity.'
+label: 'Navigation & Pages'
+description: 'Chrome studio agent: a stategraph agent loop (reason ⇄ dispatch preview_chrome ⇄ loop_back) driving the Navigation & Pages live preview — header/footer layout + brand identity.'
 nodes:
   -
     id: chat_input.1

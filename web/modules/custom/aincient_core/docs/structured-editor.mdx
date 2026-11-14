@@ -1,0 +1,91 @@
+---
+title: "Editing sections by hand"
+description: "Edit any section's fields directly in the Pages room — no chat required — and watch the same draft re-render live."
+---
+
+You and the assistant edit the same draft, and you don't have to use chat to do it.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — structured section editor"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+<Note>
+  The assistant never publishes on its own. Every edit — from chat or from the editor — updates
+  an **unsaved draft** and re-renders the preview. Your page goes live only when you click
+  **Publish**.
+</Note>
+
+## The structured editor
+
+In the **Pages** room, the structured editor lists your page's sections in order. Each
+section is a collapsible card: expand one to edit its fields, collapse it to scan the whole
+page. It sits beside the live preview, so you always see what your change does.
+
+Reach for the editor when you know exactly what to change — a headline, a price, the order
+of two sections — and want to change it directly instead of describing it in chat.
+
+## Add, remove, and reorder sections
+
+You shape the page from the editor as well as from chat:
+
+- **Add** a section from the component library at any position.
+- **Remove** a section you no longer want.
+- **Reorder** sections with the move buttons, or by dragging a card up or down.
+- **Collapse** or **expand** each card to focus on the section you're working on.
+
+The preview re-renders the moment you make a change, so reordering the Fernway Botanical
+Studio hero above its "Meet the growers" story is instant and visible.
+
+## Edit a section's props
+
+Open a card and you edit that section's fields directly. Depending on the section, you'll
+find:
+
+- **Tone** — an enum control with `default`, `muted`, `brand`, and `inverted`. Adjacent
+  sections auto-alternate so a page never blurs together.
+- **Variant** — an enum control for a section's named arrangement, such as a split or
+  centered hero.
+- **Anchor** — a slug (`pricing`) that makes the section a link target: any link field can
+  point at it as `#pricing`. Available on every section, under Appearance.
+- **Repeatable rows** — add, remove, and reorder items like feature cards or pricing tiers.
+- **Accordion panels** — the expandable panels of an accordion section.
+- **Media and block pickers** — choose an image or a reusable block by reference.
+- **Multiline text** — longer copy fields such as a subheading or body paragraph.
+- **Toggles** — on/off switches for a section's options.
+
+For example, set the Fernway hero's **variant** to split, its **tone** to `brand`, and add
+two rows to the features grid ("Repotting clinic", "Plant-sitting") — all without typing a
+sentence of chat.
+
+## Click the preview to jump to a section
+
+You don't have to hunt through the card list. Click any section in the live preview and its
+card opens and scrolls into view in the editor, ready to edit. It's the fastest way to go
+from "that band looks wrong" to changing it.
+
+## Track and revert unsaved changes
+
+Every unsaved edit is marked so you always know what you've touched:
+
+- A per-field **accent dot** marks a field you've changed but not yet published.
+- You can **revert a single field** back to its published value without losing your other
+  edits.
+- Each card shows its own **dirty count**, and the room shows a **total** across the page.
+
+Nothing is saved until you **Publish**. Until then the live site is untouched, and you can
+revert field by field or **Discard** the whole draft.
+
+<CardGroup cols={2}>
+
+<Card title="Build a page in the Pages room" icon="layout-dashboard" href="/page-studio">
+  See how chat and the structured editor share one draft — and how to publish it.
+</Card>
+
+<Card title="The component library" icon="blocks" href="/components">
+  Every section you add or edit comes from this curated set, and reskins from your brand.
+</Card>
+
+</CardGroup>

@@ -496,3 +496,13 @@ services:
     class: Drupal\aincient_core\Access\AtelierDevAccessCheck
     tags:
       - { name: access_check, applies_to: _atelier_dev }
+
+  # --- Docs search (plans/docs-search.md) -------------------------------------
+  # The Atelier docs bundled with this release (aincient_core/docs, copied from
+  # the website by the umbrella's bin/sync-docs) and the keyword index the
+  # assistant's search_docs / read_docs_page tools read.
+  aincient_core.docs_corpus:
+    class: Drupal\aincient_core\Docs\DocsCorpus
+  aincient_core.search_index:
+    class: Drupal\aincient_core\Search\SearchIndex
+    arguments: ['@database', '@state', '@aincient_core.docs_corpus']

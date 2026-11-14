@@ -1,0 +1,55 @@
+---
+title: "Your account"
+description: "See who you are and manage your profile without leaving the console."
+---
+
+The account flyout lets you check your identity and manage your profile right inside the console.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — Your account"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+## Your identity card
+
+Open the flyout from your avatar in the top-right. It shows a read-only identity card with your name, email, roles, and status — a quick check of who you're signed in as.
+
+## Manage account
+
+Click your avatar in the top-right of the console and choose **Manage account**. It opens an
+in-console pane where you can:
+
+- Change your email.
+- Change your password.
+- Set your timezone.
+- Upload or remove your avatar.
+
+There's no need to leave the console for a Drupal form.
+
+<Note>
+Changing your email or password re-verifies your current password on the server for safety. One
+exception: right after you sign in with a one-time link (for example **Edit my site** in the Atelier
+manager, or `atelier app open`), you can set a password without entering a current one. Use this to get back to password
+sign-in when email password reset isn't set up on your site.
+</Note>
+
+## One-time sign-in links
+
+Opening a one-time sign-in link while you're already signed in:
+
+- **As the same user** — takes you straight to the console.
+- **As someone else** — asks **Switch account?**. Choose **Sign out and continue** to sign in as the
+  link's user, or stay signed in as yourself; the link stays usable until it expires.
+
+## Other doors in the menu
+
+The same menu holds two more entries:
+
+- **Set up AI providers** — reopens the onboarding wizard.
+- **System** — for site administrators, a door to the technical back office at `/admin`.
+
+<Card title="Connect AI & choose models" href="/onboarding" icon="plug">
+  Reconnect providers or rebind a model to a role.
+</Card>

@@ -1,0 +1,121 @@
+---
+title: "When something's wrong"
+description: "Run a checkup on your Atelier — and let it repair most problems for you"
+---
+
+Atelier runs on your own computer, which means when something breaks, the answer is usually
+on your machine rather than on a server you can't reach. The manager has a **checkup** that
+looks at everything in order and tells you what it found — and can repair most of it for you.
+
+## Run a checkup
+
+**In the desktop app**, go to **System → Troubleshoot** and choose **Run a checkup**. You'll get
+a list grouped into *your computer*, *Atelier itself*, and *your website*, with a note under
+anything that needs attention. If the problems are ones Atelier can fix, a **Repair what you
+can** button appears.
+
+**In the terminal**, the same checkup is one command:
+
+```bash
+atelier doctor
+```
+
+That only looks — it never changes anything. To repair what it found:
+
+```bash
+atelier doctor --fix
+```
+
+## What it checks
+
+The checkup works outward-in, because a problem in one layer makes the next one impossible to
+judge. If it can't get past a layer, everything below is marked **skipped** rather than failed —
+"we couldn't look" and "we looked and it's broken" are different answers, and you'd chase the
+wrong thing if they looked the same.
+
+<CardGroup cols={3}>
+  <Card title="Your computer" icon="laptop">
+    Docker is installed and running, the Compose plugin is there, nothing else has taken
+    Atelier's port, and there's enough free disk space.
+  </Card>
+  <Card title="Atelier itself" icon="box">
+    Atelier's own setup files are intact, both of its parts are running, and neither is stuck
+    restarting over and over.
+  </Card>
+  <Card title="Your website" icon="globe">
+    Your site starts up, no half-finished update is left over, your uploaded images are still
+    writable, the site passes its own health check, and an AI model is connected.
+  </Card>
+</CardGroup>
+
+## What a repair does
+
+Repairs go from gentlest to strongest, and stop as soon as your site is well again — so if
+clearing a cache was all it took, nothing further runs.
+
+<Steps>
+  <Step title="Put back missing setup files">
+    If one of Atelier's own files is damaged, it's rewritten. Your old file is kept alongside
+    rather than deleted, in case you'd customised it.
+  </Step>
+  <Step title="Start Atelier, and wait for it">
+    Then it waits until your site genuinely answers, rather than assuming it's ready the moment
+    it starts.
+  </Step>
+  <Step title="Clear the caches">
+    The single most common cure for a site that's behaving strangely after an update.
+  </Step>
+  <Step title="Finish any half-applied update">
+    If an upgrade stopped partway, this completes it.
+  </Step>
+  <Step title="Repair your uploads folder">
+    Occasionally a restore leaves your images owned by the wrong account, which quietly breaks
+    new uploads while everything else looks fine.
+  </Step>
+  <Step title="Run Atelier's self-repair">
+    The strongest step. It takes a snapshot of your site first and puts it straight back if the
+    repair doesn't help.
+  </Step>
+</Steps>
+
+<Note>
+  **A repair never deletes anything.** Every step is reversible — the worst case is that it
+  takes a few minutes and doesn't help. Removing Atelier, reinstalling it, and restoring a
+  backup are *not* part of a repair; if one of those is what you need, the checkup says so and
+  leaves the decision to you.
+</Note>
+
+## When an action stops partway
+
+Updates, backups, restores and exports show their steps as rows of blocks while they run. If
+one stops, the window stays open on the step that failed (marked red), with the error and the
+log underneath. Choose **Copy report** to copy what ran, which step failed, how long each step
+took and the end of the log. Paste that into your report.
+
+## If it still isn't fixed
+
+<Steps>
+  <Step title="Restore a backup">
+    If your site itself is damaged rather than just stuck, go to **Backups** and restore the
+    most recent one. See [keeping your work safe](/static-export).
+  </Step>
+  <Step title="Report it">
+    Include the checkup's output — from the terminal, `atelier doctor --json` gives a complete
+    report you can paste in — and, if an action failed, its **Copy report** text. Add the **Atelier version** from
+    [Reports → Status report](/system#which-version-am-i-running) too.
+  </Step>
+</Steps>
+
+<Tip>
+  The checkup is safe to run anytime, and safe to suggest to someone else — on its own it only
+  reads. Nothing changes until you ask for a repair.
+</Tip>
+
+<CardGroup cols={2}>
+  <Card title="Which version am I running?" href="/system" icon="info">
+    The one detail worth including in every bug report.
+  </Card>
+  <Card title="Install and update" href="/quickstart" icon="download">
+    Setting Atelier up, and keeping it current.
+  </Card>
+</CardGroup>

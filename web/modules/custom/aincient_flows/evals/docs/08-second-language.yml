@@ -1,0 +1,4 @@
+ask: Can my site have a second language, like German?
+kind: covered
+expect:
+  links_any: [/docs/translation]

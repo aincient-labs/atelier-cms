@@ -1,0 +1,4 @@
+ask: Can I connect Atelier to my Shopify store?
+kind: uncovered
+expect:
+  prose_not: '/storefront embed|buy button|embed (the|your) (shop|store)/i'

@@ -25,7 +25,7 @@ third_party_settings:
           port: message
       sub_workflow_replies: false
 id: aincient_audit_agent
-label: 'Page audit agent'
+label: Checks
 description: 'Re-imagined operator: stategraph agent loop (reason ⇄ dispatch tool/sub-flow ⇄ loop_back). Tools are workflows.'
 nodes:
   -
@@ -174,10 +174,10 @@ nodes:
             say you've staged/previewed the change for them to publish.
 
           {% if working_node_id is defined and working_node_id %}
-          The page open in the Checks studio is node {{ working_node_id }} — pass that as node_id
+          The page open in the Checks room is node {{ working_node_id }} — pass that as node_id
           unless the person names a different page.
           {% endif %}
-          The page you're fixing is the one open in the Checks studio; its current draft is
+          The page you're fixing is the one open in the Checks room; its current draft is
           below as live_page_state — read it to ground every fix in the ACTUAL content.
           {% if live_page_state is defined and live_page_state %}
           CURRENT PAGE DRAFT (JSON):

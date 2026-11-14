@@ -1,0 +1,4 @@
+ask: Can I export my site as plain static files and host them somewhere else?
+kind: covered
+expect:
+  links_any: [/docs/static-export, /docs/deploy]

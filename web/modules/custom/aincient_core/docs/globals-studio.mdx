@@ -1,0 +1,117 @@
+---
+title: "Navigation & Pages"
+description: "Arrange the header and footer, edit their menus, and choose the front page, 404 and 403 pages — nothing goes live until you publish"
+---
+
+**Navigation & Pages** is where you shape what wraps every page: how the **header** and
+**footer** are arranged, the links in their menus, and which pages answer at the site root and
+when something goes wrong. Edit it directly in the rail, or describe what you want and let the
+assistant preview it. Nothing goes live until you click **Publish**.
+
+Formerly called **Globals**.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — Navigation & Pages"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+<Note>
+  The assistant never publishes on its own. It edits an **unsaved draft** held in your browser.
+  Your changes go live only when you press **Publish**.
+</Note>
+
+## Open it
+
+In the console's top bar, open the **Site** menu and choose **Navigation & Pages** (on a phone
+the crumb reads **Navigation**). You get a live preview of your header and footer around a
+placeholder page, a chat beside it, and an editor rail with three tabs.
+
+## The three tabs
+
+<CardGroup cols={3}>
+  <Card title="Header" icon="panel-top">
+    Logo position (left or centre), **logo size** (small, medium or large), whether the header
+    sticks on scroll, nav alignment, and the **header menu**.
+  </Card>
+  <Card title="Footer" icon="panel-bottom">
+    Footer layout (inline or stacked), **logo size**, whether the tagline shows, whether the
+    "Made with Atelier" credit shows, and the **footer menu**.
+  </Card>
+  <Card title="Pages" icon="file-text">
+    Which page serves as the **front page**, the **not-found (404)** page and the
+    **access-denied (403)** page. See [Front page, 404 and 403](#front-page-404-and-403).
+  </Card>
+</CardGroup>
+
+The site name, tagline, logo and favicon that the header and footer show are set in
+[Identity](/brand-studio). The site email address and font privacy are in **Settings**.
+
+## Front page, 404 and 403
+
+On the **Pages** tab, point each slot at a page you've built:
+
+- **Front page** — the page shown at your site's root address.
+- **Not-found page (404)** — shown when a visitor opens an address that doesn't exist.
+- **Access-denied page (403)** — shown when a visitor isn't allowed to see a page.
+
+Pick any published page from the same picker used everywhere else in the console. Every slot is
+optional: an empty slot uses the default, clearing it puts the default back, and deleting a page
+a slot points at safely resets that slot. On **Publish** the choice takes effect immediately.
+
+<Tip>
+  Build a friendly 404 that links back to your best pages. A lost visitor is one good link away
+  from staying.
+</Tip>
+
+## Editing by chat
+
+Describe what you want and the assistant previews it instantly — for example:
+
+- *"Centre the logo and stop the header sticking."*
+- *"Make the logo bigger."*
+- *"Make the footer stacked and hide its tagline."*
+
+The assistant applies its change to the **same draft** the rail edits, so the live preview
+re-renders and the edited fields light up in the rail with an unsaved-change count. Keep
+refining in chat or tweak the fields directly, then **Publish** when you're happy, or
+**Discard** to go back to what is live.
+
+## Menus are yours to edit
+
+The assistant arranges the header and footer, but it does **not** edit your menus. You manage
+header and footer links yourself in the menu editor on the **Header** and **Footer** tabs: add,
+rename, re-point, reorder or remove a link. If you ask the assistant to change a link, it
+points you to the menu editor. More in [Menus](/menus).
+
+### Link to a page, or to any URL
+
+Each link targets one of two things — flip the **URL ｜ Page** switch under its label:
+
+- **Page** — pick one of your published pages. The link then **tracks that page**: it always
+  points at the page's current published URL, so renaming or re-aliasing the page keeps the
+  menu correct with no extra work.
+- **URL** — type any address yourself: a path on your own site (`/about`, `/pricing`) or a full
+  external link (`https://…`).
+
+### Nested menus (sub-menus)
+
+Menus can nest as deep as you like. To give a link sub-items, use its **go-in** control
+(the chevron with a child-count badge). The editor drills into that link and shows just its
+children, with a breadcrumb (e.g. `Header menu › Products`) to step back up.
+
+On the published site, nesting renders automatically: in the **header** a parent link opens a
+drop-down (on hover and on keyboard focus); in the **footer** children group as a column under
+their parent.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Identity" icon="palette" href="/brand-studio">
+    Name, tagline, logo, favicon, colours and type — what the header and footer display.
+  </Card>
+  <Card title="Pages" icon="file-text" href="/page-studio">
+    Build the pages your menus link to.
+  </Card>
+</CardGroup>

@@ -1,0 +1,82 @@
+---
+title: "Header & footer menus"
+description: "Manage your navigation yourself in the Navigation & Pages room — links that track your pages, nest as deep as you like, and publish site-wide"
+---
+
+The assistant shapes your layout and identity, but it doesn't touch your navigation — you manage the header and footer links yourself in the inline menu editor in the **Navigation & Pages** room, or add a page straight from the page itself.
+
+{/* VIDEO PLACEHOLDER (hidden) — walkthrough pending; see docs/demo/video-index.md.
+    When filmed, restore the embed:
+    <Frame><iframe className="w-full aspect-video rounded-xl"
+      src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Atelier — header and footer menus"
+      frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen></iframe></Frame> */}
+
+<Note>
+  Menus are yours to edit. The assistant won't add, rename, or reorder navigation links — it shapes the page content and brand around them.
+</Note>
+
+## Open the menu editor
+
+From the top nav, open the **Site** menu, choose **Navigation & Pages**, then switch to the **Header** or **Footer** tab. Each tab holds an inline editor for that menu.
+
+## Manage links
+
+In either tab you can:
+
+- **Add** a new link.
+- **Rename** its label.
+- **Re-point** it at a different destination.
+- **Reorder** links by dragging them, or with move up / move down.
+- **Nest** a link under another by dropping it on that link's submenu button, or with **Nest under previous link**. **Move out of submenu** (or dropping it on a breadcrumb) takes it back up a level.
+- **Show or hide** a link with the **Shown** toggle.
+- **Remove** a link entirely.
+
+## Point a link at a page or a URL
+
+Each link targets one of two things. Flip the **URL ｜ Page** switch under its label to choose:
+
+<CardGroup cols={2}>
+  <Card title="Page" icon="file">
+    Pick one of your published pages. The link then **tracks** that page — it always points at the page's current published URL, so renaming or re-aliasing the page keeps the menu correct on its own.
+  </Card>
+  <Card title="URL" icon="link">
+    Type any address — a path like `/workshops`, or a full external link like `https://…`.
+  </Card>
+</CardGroup>
+
+For Fernway Botanical Studio, you might set a **Page** link to your Care Guides page and a **URL** link to your Instagram — side by side in the same header.
+
+## Nest menus as deep as you like
+
+Menus can nest to any depth. Use a link's **go-in** control — the chevron with a child-count badge — to drill into its children. Drag a link onto another link's go-in control to nest it there. A breadcrumb like `Header menu › Workshops` shows where you are, and you step back up through it.
+
+On the published site, nesting renders automatically:
+
+- A **header** parent opens a drop-down of its children.
+- **Footer** children group as a column under their parent.
+
+## Add a page from the page itself
+
+The common case — "put this page in the menu" — doesn't need the menu editor. Open the page in the **Pages** room and use **Add to menu** in its side panel: pick the **Main** or **Footer** menu, and where it goes (top level, or under one of the links already there). The link is added to the menu's **draft**, not published: choose **Review in Navigation** to see it in place, then publish from there. If the page is already in that menu, it tells you instead of adding it twice.
+
+The draft lives in your browser tab until you publish or discard it, so publish before you reload the page.
+
+## Publish
+
+<Steps>
+  <Step title="Edit the menu">
+    Add, reorder, and re-point links in the Header or Footer tab. Your changes stay in an unsaved draft.
+  </Step>
+  <Step title="Publish">
+    Click **Publish**. The header and footer update **site-wide** immediately.
+  </Step>
+</Steps>
+
+<Tip>
+  Use **Page** links wherever you can. Because they follow the page, you can rename or re-alias a page later without ever coming back to fix a broken menu item.
+</Tip>
+
+<Card title="Navigation & Pages" icon="globe" href="/globals-studio">
+  See the full room — header, footer, and special-page routing in one place.
+</Card>

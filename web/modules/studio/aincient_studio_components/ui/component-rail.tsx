@@ -382,8 +382,8 @@ export function ComponentRail({ onClose }: { onClose: () => void }) {
         <IconButton
           className="ain-topbar__leave"
           onClick={onClose}
-          label="Close components studio"
-          title="Leave components studio"
+          label="Close Components"
+          title="Leave Components"
         >
           <XIcon />
         </IconButton>
@@ -458,7 +458,7 @@ export function ComponentRail({ onClose }: { onClose: () => void }) {
           <StudioGroup
             id={fieldAnchorId("constraint.components")}
             title="Components"
-            note="Which building blocks this site uses. Unchecked components can no longer be placed. Sections already on pages stay and keep rendering — Content marks them “No longer offered” — but the agent and the studios stop offering them."
+            note="Which building blocks this site uses. Unchecked components can no longer be placed. Sections already on pages stay and keep rendering — Pages marks them “No longer offered” — but the assistants stop offering them."
           >
             <ComponentTools query={query} filter={filter} onQuery={setQuery} onFilter={setFilter} />
             {groups.length === 0 && (

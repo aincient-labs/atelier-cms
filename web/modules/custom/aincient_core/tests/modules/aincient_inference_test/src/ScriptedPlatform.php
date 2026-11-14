@@ -56,7 +56,7 @@ final class ScriptedPlatform implements PlatformInterface {
         new TextResult('Here is the picture you asked for.'),
         new BinaryResult((string) $this->state->get(ScriptedAdapter::IMAGE_KEY, 'scripted-png-bytes'), 'image/png'),
       ])
-      : new TextResult((string) $this->state->get(ScriptedAdapter::TEXT_KEY, 'Scripted answer.'));
+      : new TextResult($this->nextText());
 
     // Filed under the same metadata key a real bridge's TokenUsageExtractor uses,
     // on the result object itself — PlainConverter reports no extractor, so
@@ -118,6 +118,21 @@ final class ScriptedPlatform implements PlatformInterface {
       }
     }
     return $parts;
+  }
+
+
+  /**
+   * The scripted text: a string answers every call; a list answers one call
+   * each, in order, and its last entry repeats once the list runs out.
+   */
+  private function nextText(): string {
+    $text = $this->state->get(ScriptedAdapter::TEXT_KEY, 'Scripted answer.');
+    if (!is_array($text)) {
+      return (string) $text;
+    }
+    $next = (string) (count($text) > 1 ? array_shift($text) : reset($text));
+    $this->state->set(ScriptedAdapter::TEXT_KEY, $text);
+    return $next;
   }
 
 }

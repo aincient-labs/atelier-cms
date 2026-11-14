@@ -1,0 +1,5 @@
+ask: I want an image slider with a fullscreen view for my drawings portfolio. Is that possible?
+kind: covered
+expect:
+  links_any: [/docs/components]
+  mention_all: ['/carousel/i', '/lightbox/i']

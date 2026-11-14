@@ -12,3 +12,19 @@ services:
       - '@aincient_pages.brand'
       - '@aincient_pages.token_resolver'
       - '@aincient_pages.color_contrast'
+
+  # Live-turn eval for the General assistant's docs answers (0525): real turns
+  # through the console's processor (so the runtime docs check is measured),
+  # judged against whole docs pages by an independent reasoning-role call.
+  aincient_flows.docs_eval_judge:
+    class: Drupal\aincient_flows\Eval\DocsEvalJudge
+    arguments:
+      - '@aincient_core.inference.gateway'
+      - '@aincient_core.docs_corpus'
+      - '@aincient_core.search_index'
+  aincient_flows.docs_eval_runner:
+    class: Drupal\aincient_flows\Eval\DocsEvalRunner
+    arguments:
+      - '@entity_type.manager'
+      - '@account_switcher'
+      - '@aincient_flows.docs_eval_judge'
