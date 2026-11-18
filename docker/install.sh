@@ -84,6 +84,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U aincient -d aincient"]
       interval: 10s
       retries: 10
+    restart: unless-stopped
   app:
     image: ${AINCIENT_IMAGE:-ghcr.io/aincient-labs/atelier-cms:latest}
     depends_on:

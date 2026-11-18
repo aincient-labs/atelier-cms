@@ -7,6 +7,31 @@ A backup is a copy of everything on your site: the database (pages, settings, yo
 the uploaded files (images). Take one before a big change, and restore it if you want to go back.
 Backups are saved on your computer, in `~/.atelier/backups`.
 
+Atelier also backs up by itself: before every update, and before every restore (so you can undo a
+restore too). These show in the list as **Before update** and **Before restore**. Atelier keeps the
+newest 3 automatic backups, counted from this version on, and removes older ones, but only after an
+update or restore has worked. If an attempt fails, and on every retry, they are all kept. The backup
+you just restored is never removed. Backups you make yourself are never removed.
+
+Automatic backups from earlier versions are never removed by themselves. **Free up space** (in
+**System → Disk space**) lists them for each site, unticked, and `atelier app cleanup --older-backups`
+removes them.
+
+A backup includes the images you attached in chat, and a restore puts them back. Restoring a backup
+taken before this version leaves the current chat images as they are.
+
+If the safety backup before a restore can't be taken (a full disk, a read-only backups folder),
+the restore stops and your site is left as it was. The app then offers **Restore without a safety
+copy**. It asks first, because what is on the site now is replaced for good. In the terminal, use
+`atelier data restore <file> --no-safety-backup`.
+
+If the backup before an update can't be taken (for example, a stopped site that won't start), the
+update stops. The app then offers **Update without a backup**, and asks first. In the terminal, use
+`atelier app update --no-backup`.
+
+You can restore while the site runs but isn't answering, for example after an update broke it.
+**Back up now** waits until the site answers.
+
 ## In the desktop app
 
 Open the **Backups** tab.

@@ -463,7 +463,16 @@
    pane. Scoped to .ain-confirm so the account pane and the "+" birth form stay
    one scale. */
 .ain-confirm .ain-field { gap: 5px; }
-.ain-confirm .ain-field__input,
+/* Single-line controls are fixed-height boxes: grow the box to control-lg and
+   keep vertical padding at 0. Padding inside the 30px md box left a native
+   <select> a 12px content box, clipping its 13px text (the "+" New page form). */
+.ain-confirm .ain-field__input {
+  font-size: var(--ain-font-size-md); padding: 0 11px;
+  height: var(--ain-size-control-lg); min-height: var(--ain-size-control-lg); max-height: var(--ain-size-control-lg);
+}
+/* Textareas grow with content: restore the auto height and the vertical padding. */
+.ain-confirm textarea.ain-field__input { height: auto; min-height: 3.2em; max-height: none; padding: 8px 11px; }
+/* The filter-select trigger is content-sized (no fixed height), so padding is safe. */
 .ain-confirm .ain-selfield__trigger { font-size: var(--ain-font-size-md); padding: 8px 11px; }
 .ain-account__avatarrow { display: flex; align-items: center; gap: 12px; padding-bottom: 4px; }
 /* Square, like every other identity avatar (top bar, flyout) — the pane is

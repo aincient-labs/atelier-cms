@@ -81,8 +81,12 @@ here — you connect an AI provider in the console's first-run onboarding wizard
 ## Admin login
 
 The admin username is `admin`. If you didn't set a password, a random one is generated on
-first boot and saved with your install, so you can always recover it. Manage it with the
-`atelier` CLI:
+first boot and saved with your install, so you can always recover it.
+
+**Desktop app.** On **Home**, **Edit my site** opens the console already signed in. **Sign in**
+opens the login page in your browser, and **Reset password** sets a new password.
+
+**Terminal.** Manage it with the `atelier` CLI:
 
 ```bash
 # Show the password generated on first boot
@@ -156,10 +160,29 @@ After that, you're in the [console](/console) — pick a room and start chatting
 
 ## Upgrade
 
-**Desktop app.** When a new version is ready, the app shows a banner, **A new version of Atelier
-is ready.**, with an **Update** button — click it. To check yourself, open the **System** tab and,
-under **Your installation**, click **Check for updates**. Updating keeps all your pages and
-settings.
+**Desktop app.** The **Home** tab always says whether you're up to date and when it last checked.
+The app checks when it opens and every 6 hours; choose **Check now** to check yourself. When a new
+version is ready, the app shows **A new version of Atelier is ready.** with an **Update** button
+and a **What's new** link. Before it updates, the app backs up your site, so you can go back from
+the **Backups** tab if you need to. Updating keeps all your pages and settings. If you changed settings (for example the site's `.env`)
+and you are already on the latest version, **Update** applies them on the same version and says
+"Applied your changed settings". No backup is needed for that. If the backup before an update can't
+be taken (a full disk, a backups folder that is read-only), the update stops, and the app offers
+**Update without a backup** (it asks first). In the terminal, that is `atelier app update --no-backup`.
+
+Before anything is downloaded or backed up, **Update** checks that your site is ready. If something
+is wrong, it changes nothing and lists each reason, with a button for it:
+
+- Docker isn't answering: **Restart Docker**.
+- Your computer's disk, or Docker's own disk, has less than 2 GB free: **Free up space**.
+- The site's database was removed: **Backups**, then restore.
+- Part of the site is disconnected from its network: **Start your site** reconnects it.
+- Part of the site ran out of memory, or keeps restarting: give Docker more memory in its
+  settings, or choose **Run a checkup**.
+- The site is locked: **Unlock**.
+
+A stopped site is fine. **Update** starts it for its backup. In the terminal, `atelier app update`
+lists the same reasons and exits with code 5. If the site is busy with another operation, it exits with code 6 (see [When something's wrong](/troubleshooting)).
 
 **Terminal.** Run `atelier app update`, or re-run the installer — it pulls the newer image and
 recreates the app, which converges in place:
@@ -238,7 +261,16 @@ AINCIENT_IMAGE=ghcr.io/aincient-labs/atelier-cms:v0.1.2 \
 
 ## Manage the stack
 
-Run these from your install directory:
+**Desktop app.** Start and stop your site with the button on **Home**. **System → Reset & remove** removes
+Atelier, and keeps your data unless you tick the box to erase it. **System → Disk space → Free up
+space** removes Atelier's downloads no site is using, such as old versions (`atelier app cleanup` in
+the terminal). It lists what will go, with sizes, and asks first (`--yes` skips the question,
+`--dry-run` only lists). Anything one of your sites needs to start stays, even while that site is
+stopped. Your sites' data and backups are never touched, except older automatic backups you tick
+(`--older-backups`). After each update, Atelier removes by itself only its own old downloads and
+the exact base versions it used before.
+
+**Terminal.** Run these from your install directory:
 
 ```bash
 docker compose stop      # stop, keep data

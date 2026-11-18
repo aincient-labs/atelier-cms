@@ -36,7 +36,7 @@ wrong thing if they looked the same.
 <CardGroup cols={3}>
   <Card title="Your computer" icon="laptop">
     Docker is installed and running, the Compose plugin is there, nothing else has taken
-    Atelier's port, and there's enough free disk space.
+    Atelier's port, there's enough free disk space, and Docker has enough memory.
   </Card>
   <Card title="Atelier itself" icon="box">
     Atelier's own setup files are intact, both of its parts are running, and neither is stuck
@@ -92,17 +92,92 @@ one stops, the window stays open on the step that failed (marked red), with the 
 log underneath. Choose **Copy report** to copy what ran, which step failed, how long each step
 took and the end of the log. Paste that into your report.
 
+## An update or start stops at "Starting the containers"
+
+Docker sometimes leaves part of your site half-started after your computer sleeps or Docker
+restarts. Atelier clears it and starts once more by itself, keeping your data. If it still says
+**Docker couldn't start your site**, quit and reopen Docker Desktop, then choose **Update** (or
+**Start**) again. Your site's data is safe.
+
+If Docker has left your site's network half connected, so the site can't reach its database,
+Atelier says to restart Docker, and **Run a checkup** reports it. Click **Restart Docker** (the
+button names the app you run it in: Docker Desktop, OrbStack, Colima or Rancher Desktop). Atelier
+lists everything else running in Docker that the restart will stop, asks first, restarts Docker,
+waits for it to answer, and starts your site again. On the command line: `atelier docker restart`.
+
+OrbStack restarts only its Docker engine (`orbctl restart docker`), so your OrbStack Linux machines
+keep running. Colima restarts the profile you use, not only the default one.
+
+If part of your site has lost its connection to the network altogether, **Run a checkup** says so
+and starting the site fixes it: Atelier reconnects it and restarts the site. No Docker restart is
+needed.
+
+On Linux with Docker Engine, Atelier can't restart Docker for you. Run
+`sudo systemctl restart docker`, then start the site again.
+
+If part of your site is disconnected, an update refuses until **Start your site** reconnects it.
+
+## Not enough disk space
+
+Atelier checks free space in two places: your computer's disk, where your backups are saved, and
+Docker's own disk, where your site's database lives. **Run a checkup** warns below 5 GB. Below
+2 GB, updates are refused. Choose **Free up space** (**System → Disk space**) to remove what
+Atelier no longer needs. Docker's disk is read from inside the running site, so it shows
+"unknown" while the site is stopped.
+
+If your computer's disk fills up while a backup is being saved, Atelier says so, instead of
+giving a vague error.
+
+## Out of memory
+
+When Docker stops part of your site because it ran out of memory, Atelier says so. It also says
+where to give Docker more memory: in Docker Desktop, OrbStack, Colima or Rancher Desktop,
+whichever runs Docker on your computer. **Run a checkup** shows how much memory Docker has and
+warns below 4 GB. It also warns if Docker stopped part of your site for lack of memory in the last
+day. Until the site runs again, an update refuses and tells you why.
+
+## "Your site's database was removed"
+
+If the database was removed from Docker, Atelier no longer starts your site as a new, empty one.
+Start stops and names your latest backup. Go to **Backups** (it works while the site is stopped)
+and restore it, or run `atelier data restore <file>`. A database you erased yourself (**Remove and
+erase**, or `atelier app down --wipe`) still starts as a fresh site.
+
+## Your site is busy
+
+Only one operation runs on a site at a time. The app and `atelier` commands share this: an update,
+a backup, a restore, a start or stop, and so on. If you start a second one, Atelier refuses and says
+what is already running, for example "Your site is busy: an update started 2 minutes ago is still
+running." Wait for it to finish, then try again. In the terminal, `atelier` exits with code 6.
+
+If the app or the terminal that ran it crashed, the site is free again straight away. There is
+nothing to unlock.
+
+## A failed update leaves a log
+
+After a failed update, Atelier saves what every part of your site logged to
+`<site folder>/logs/update-<date>-<time>.log`, and the error names the file. For the default site,
+that folder is `~/.atelier`. Atelier keeps the newest 10. Passwords and keys are left out. Attach the
+file when you ask for help.
+
+## An update didn't finish
+
+If a multi-step update stopped partway, **Home** shows **Continue update** and
+`atelier app check-update` says the update didn't finish. Choose **Continue update**: it carries on
+to the version the update was heading for. Your before-update backup and old versions are kept
+until it has worked.
+
 ## If it still isn't fixed
 
 <Steps>
   <Step title="Restore a backup">
     If your site itself is damaged rather than just stuck, go to **Backups** and restore the
-    most recent one. See [keeping your work safe](/static-export).
+    most recent one. See [Back up and restore](/backups).
   </Step>
   <Step title="Report it">
     Include the checkup's output — from the terminal, `atelier doctor --json` gives a complete
-    report you can paste in — and, if an action failed, its **Copy report** text. Add the **Atelier version** from
-    [Reports → Status report](/system#which-version-am-i-running) too.
+    report you can paste in — and, if an action failed, its **Copy report** text, plus the update log from `logs/` if an update failed. Add the **Atelier version** too: the desktop app shows it under **System → Your
+    installation**, and `atelier app status` prints it.
   </Step>
 </Steps>
 

@@ -168,6 +168,10 @@ FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f0
 # on) and xc: (the probes below). No external delegates. The build fails if a
 # TIFF write still works. `apt-get upgrade`: the slim base can lag Debian's
 # security archive (zlib, 2026-11) — the release scan would block it otherwise.
+# APT_REFRESH: a cached layer keeps the old upgrade (local and CI build caches),
+# so when the scan flags Debian packages that have a fix, set this to the date
+# to force a fresh upgrade (apache2 2.4.71 + libpq 17.12, 2026-11-18).
+ARG APT_REFRESH=2026-11-18
 ARG DEBIAN_FRONTEND=noninteractive
 STOPSIGNAL SIGWINCH
 EXPOSE 80

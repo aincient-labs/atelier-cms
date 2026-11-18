@@ -56,7 +56,7 @@ atelier --site shop data backup
 atelier --site shop doctor
 ```
 
-These work on a site on a server: `app status`, `app check-update`, `app update`, `app start`, `app stop`, `app open`, `data backup`, `data list`, `data restore`, `site export`, `site freeze`, `site snapshots`, `site use`, `site live`, `site prune` and `doctor`. Their output comes from the server as it happens. A command that fails on the server fails here with the same exit code.
+These work on a site on a server: `app status`, `app check-update`, `app update`, `app start`, `app stop`, `app open`, `data backup`, `data list`, `data restore`, `site export`, `site freeze`, `site snapshots`, `site use`, `site live`, `site prune` and `doctor`. Their output comes from the server as it happens. A command that fails on the server fails here with the same exit code. An update the server refuses because the site isn't ready exits with code 5, and its reasons are shown as the server wrote them. A site busy with another operation exits with code 6.
 
 In the desktop app, switch to the site and use the window as usual. The switcher shows where each site runs and whether it's running. If the server doesn't answer, the app says so and offers to try again.
 

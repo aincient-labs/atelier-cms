@@ -7,6 +7,20 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.29.1] — 2026-11-18
+
+**Security release. Update now.**
+- Drupal core is updated to 11.4.13. This fixes a critical flaw that can let an attacker use the
+  installer to take over a site (SA-CORE-2026-017), and a moderately critical deserialization
+  weakness (SA-CORE-2026-018).
+- The image's Apache web server (2.4.71) and PostgreSQL client libraries (17.12) are updated to
+  Debian's latest security fixes.
+- The database service now restarts with Docker, like the app and edge services.
+- Dropdowns in dialogs no longer cut off their text.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.29.0] — 2026-11-14
 
 **The General assistant answers from the Atelier docs, and checks its answers.**

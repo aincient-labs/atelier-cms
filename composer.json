@@ -43,10 +43,10 @@
         "drupal/admin_theme": "^1.1",
         "drupal/config_ignore": "^3.4",
         "drupal/config_split": "^2.0.2",
-        "drupal/core": "^11.4.10",
-        "drupal/core-composer-scaffold": "^11.4.10",
-        "drupal/core-project-message": "^11.4.10",
-        "drupal/core-recipe-unpack": "^11.4.10",
+        "drupal/core": "^11.4.13",
+        "drupal/core-composer-scaffold": "^11.4.13",
+        "drupal/core-project-message": "^11.4.13",
+        "drupal/core-recipe-unpack": "^11.4.13",
         "drupal/crop": "^2.6",
         "drupal/csv_serialization": "^4.0.1",
         "drupal/file_mdm": "^3.2",
@@ -198,6 +198,6 @@
     },
     "require-dev": {
         "drupal/coffee": "^2.0.1",
-        "drupal/core-dev": "^11.4.10"
+        "drupal/core-dev": "^11.4.13"
     }
 }

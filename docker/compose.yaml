@@ -34,6 +34,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U aincient -d aincient"]
       interval: 10s
       retries: 10
+    restart: unless-stopped
 
   app:
     # Pin a tag in production; `latest` here is what the updater pulls.
