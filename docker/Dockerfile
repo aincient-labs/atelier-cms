@@ -136,6 +136,9 @@ RUN mkdir -p /split /app/web/modules/contrib /app/web/modules/engine \
 RUN find /app /split -exec touch -h -t 202401010000 {} +
 
 # --- Stage 2: runtime -------------------------------------------------------
+# TRANSITIONAL (DECISIONS 0537): docker/base/Dockerfile carries this same OS
+# block as the future pinned base image. Until 0537 M3 swaps this stage to
+# `FROM ghcr.io/aincient-labs/atelier-base:<date>@sha256:…`, change BOTH.
 FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS runtime
 
 # The runtime is Debian's own packages — PHP 8.4, Apache, ImageMagick — on the

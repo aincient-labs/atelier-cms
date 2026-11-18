@@ -1,0 +1,223 @@
+name: Base image
+
+# Publishes ghcr.io/aincient-labs/atelier-base — the OS layer of the appliance
+# (Debian trixie-slim + PHP 8.4, Apache, ImageMagick, PostgreSQL client), built
+# from docker/base/Dockerfile. DECISIONS 0537.
+#
+# Publishing a base changes nothing for users: the app image (docker/Dockerfile)
+# pins the base BY DIGEST, and the pin moves only in a cms commit
+# (bin/base-image bump) that ships inside a normal release. That is the point —
+# an Atelier update re-downloads the ~56 MB of OS packages only when we chose to
+# move them, not on every release.
+#
+#   push to main touching docker/base/**  → new base
+#   manual (workflow_dispatch)            → new base with Debian's latest fixes
+#
+# No schedule (owner, 2026-11-19): a base is rebuilt on demand — when the
+# release scan blocks on a base package, or when we choose to refresh. Claude may
+# dispatch it (`gh workflow run base.yml -R aincient-labs/atelier-cms`): it
+# publishes nothing users get until a cms commit pins it.
+#
+# Tags: YYYY-MM-DD (UTC build date) + sha-<short>. Never `latest`: nothing may
+# float, the app pins a digest.
+#
+# Order is load-bearing:
+#   1. each arch builds ONCE, with no cache (apt must see today's archive — a
+#      cached apt layer is exactly the stale-package bug this image exists to
+#      make visible), and pushes UNTAGGED by digest;
+#   2. that exact digest is scanned (grype, fixable High/Critical blocks, same
+#      rule and VEX as the release gate, DECISIONS 0505) — the scanned bytes
+#      are the published bytes;
+#   3. only when both arches pass does `merge` tag the multi-arch index and
+#      sign it. A failed scan leaves an untagged digest nobody can be told to
+#      use.
+#
+# No labels outside dev.atelier.base.* (set in the Dockerfile): the app image
+# inherits base labels and must never inherit one the Manager reads. Package
+# metadata goes on the manifest as annotations instead, which are not inherited.
+#
+# Secrets: COSIGN_PRIVATE_KEY + COSIGN_PASSWORD in the `release` Environment
+# (main + v* only) — the same key that signs the app image (cosign.pub).
+
+on:
+  push:
+    branches: [main]
+    paths: ['docker/base/**', '.github/workflows/base.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: base-image
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GRYPE_IMAGE: anchore/grype:v0.121.1@sha256:6b06708b036f74b2cd70e94b706b4586af96d1932e6ac46255940b2e39dd44a9
+
+jobs:
+  build:
+    name: Build + scan (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { arch: amd64, platform: linux/amd64, runner: ubuntu-latest }
+          - { arch: arm64, platform: linux/arm64, runner: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # --no-cache --pull: see the header. rewrite-timestamp + a fixed
+      # SOURCE_DATE_EPOCH keep file mtimes out of the layer digest (same
+      # constant as release.yml).
+      - name: Build + push by digest
+        env:
+          SOURCE_DATE_EPOCH: '1704067200'
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/atelier-base"
+          VERSION="$(date -u +%Y-%m-%d)"
+          docker buildx build --no-cache --pull \
+            --platform "${{ matrix.platform }}" \
+            --build-arg "BASE_VERSION=${VERSION}" \
+            --build-arg "BASE_REVISION=${GITHUB_SHA}" \
+            --attest type=sbom \
+            --attest type=provenance,mode=max \
+            -f docker/base/Dockerfile \
+            --output "type=image,name=${IMAGE},push-by-digest=true,name-canonical=true,push=true,rewrite-timestamp=true" \
+            --metadata-file /tmp/meta.json \
+            docker/base
+          digest="$(jq -r '."containerimage.digest"' /tmp/meta.json)"
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
+          echo "DIGEST=${digest}" >> "$GITHUB_ENV"
+          mkdir -p /tmp/digests && touch "/tmp/digests/${digest#sha256:}"
+          echo "pushed (untagged) ${IMAGE}@${digest} (${{ matrix.platform }})" >> "$GITHUB_STEP_SUMMARY"
+
+      # The release gate's rule (bin/release-appliance grype_blocking): a
+      # High/Critical match with a fixed version blocks. Scans the pushed
+      # digest for THIS platform, so the scanned bytes are the published ones.
+      - name: Scan the pushed digest
+        env:
+          GRYPE_REGISTRY_AUTH_AUTHORITY: ghcr.io
+          GRYPE_REGISTRY_AUTH_USERNAME: ${{ github.actor }}
+          GRYPE_REGISTRY_AUTH_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -f vex.openvex.json ]; then args=(--vex /src/vex.openvex.json); fi
+          docker run --rm -v "$PWD:/src:ro" \
+            -e GRYPE_REGISTRY_AUTH_AUTHORITY -e GRYPE_REGISTRY_AUTH_USERNAME -e GRYPE_REGISTRY_AUTH_PASSWORD \
+            "$GRYPE_IMAGE" "registry:${IMAGE}@${DIGEST}" --platform "${{ matrix.platform }}" \
+            ${args[@]+"${args[@]}"} -o json -q > /tmp/scan.json
+          jq -e '.matches | type == "array"' /tmp/scan.json >/dev/null
+          blocking="$(jq -r '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")
+              | select(.vulnerability.fix.state == "fixed")
+              | [.vulnerability.id, .artifact.name, .artifact.version, .vulnerability.severity,
+                 ((.vulnerability.fix.versions // []) | join(", "))]]
+            | unique | .[] | @tsv' /tmp/scan.json)"
+          if [ -n "$blocking" ]; then
+            { echo '### Blocked: fixable High/Critical in the base'; echo '```'; echo "$blocking"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            echo "$blocking" >&2
+            echo "::error::fixable High/Critical findings in the base — Debian has not published the fix to this mirror yet, or a package needs a VEX statement. Nothing was tagged." >&2
+            exit 1
+          fi
+          echo "scan: 0 fixable High/Critical ($(jq '.matches | length' /tmp/scan.json) matches in all)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: base-digest-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Merge manifest + tag + sign
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: /tmp/digests
+          pattern: base-digest-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Same pinned, hash-checked cosign as release.yml; no third-party action
+      # runs in the job that holds the signing key.
+      - name: Install cosign
+        env:
+          COSIGN_VERSION: v2.5.2
+          COSIGN_SHA256: bcfeae05557a9f313ee4392d2f335d0ff69ebbfd232019e3736fb04999fe1734
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/cosign \
+            "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64"
+          echo "${COSIGN_SHA256}  /tmp/cosign" | sha256sum -c -
+          sudo install -m 0755 /tmp/cosign /usr/local/bin/cosign
+
+      - name: Create + push multi-arch manifest
+        id: manifest
+        working-directory: /tmp/digests
+        run: |
+          set -euo pipefail
+          srcs=()
+          for f in *; do [[ "$f" =~ ^[0-9a-f]{64}$ ]] && srcs+=("ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/atelier-base@sha256:${f}"); done
+          [ "${#srcs[@]}" -eq 2 ] || { echo "expected 2 arch digests, got ${#srcs[@]}" >&2; exit 1; }
+          IMAGE="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/atelier-base"
+          VERSION="$(date -u +%Y-%m-%d)"
+          docker buildx imagetools create \
+            -t "${IMAGE}:${VERSION}" -t "${IMAGE}:sha-${GITHUB_SHA::7}" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --annotation "index:org.opencontainers.image.description=Atelier CMS base: Debian trixie-slim, PHP 8.4, Apache, ImageMagick" \
+            --annotation "index:org.opencontainers.image.licenses=GPL-2.0-or-later" \
+            "${srcs[@]}"
+          DIGEST="$(docker buildx imagetools inspect "${IMAGE}:${VERSION}" --format '{{.Manifest.Digest}}')"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### ${IMAGE}:${VERSION}"
+            echo "Pin it in cms: \`bin/base-image bump ${DIGEST}\`"
+            echo '```'
+            echo "FROM ${IMAGE}:${VERSION}@${DIGEST}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sign the manifest
+        env:
+          IMAGE: ${{ steps.manifest.outputs.image }}
+          DIGEST: ${{ steps.manifest.outputs.digest }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          /usr/local/bin/cosign sign --yes --key env://COSIGN_PRIVATE_KEY "${IMAGE}@${DIGEST}"
+          echo "Signed ${IMAGE}@${DIGEST} (cosign key)" >> "$GITHUB_STEP_SUMMARY"
