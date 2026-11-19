@@ -18,8 +18,9 @@ name: Base image
 # dispatch it (`gh workflow run base.yml -R aincient-labs/atelier-cms`): it
 # publishes nothing users get until a cms commit pins it.
 #
-# Tags: YYYY-MM-DD (UTC build date) + sha-<short>. Never `latest`: nothing may
-# float, the app pins a digest.
+# Tags: YYYY-MM-DD.<run number> (UTC date of the run's start, unique per run —
+# a tag is never moved, so a base any release pinned keeps its name) +
+# sha-<short>. Never `latest`: nothing may float, the app pins a digest.
 #
 # Order is load-bearing:
 #   1. each arch builds ONCE, with no cache (apt must see today's archive — a
@@ -56,8 +57,20 @@ env:
   GRYPE_IMAGE: anchore/grype:v0.121.1@sha256:6b06708b036f74b2cd70e94b706b4586af96d1932e6ac46255940b2e39dd44a9
 
 jobs:
+  # One version string for the whole run: the label baked into both arches and
+  # the tag must agree even if the run crosses UTC midnight.
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - id: v
+        run: echo "tag=$(date -u +%Y-%m-%d).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build + scan (${{ matrix.arch }})
+    needs: version
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -90,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/atelier-base"
-          VERSION="$(date -u +%Y-%m-%d)"
+          VERSION='${{ needs.version.outputs.tag }}'
           docker buildx build --no-cache --pull \
             --platform "${{ matrix.platform }}" \
             --build-arg "BASE_VERSION=${VERSION}" \
@@ -147,7 +160,7 @@ jobs:
 
   merge:
     name: Merge manifest + tag + sign
-    needs: build
+    needs: [version, build]
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -193,7 +206,12 @@ jobs:
           for f in *; do [[ "$f" =~ ^[0-9a-f]{64}$ ]] && srcs+=("ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/atelier-base@sha256:${f}"); done
           [ "${#srcs[@]}" -eq 2 ] || { echo "expected 2 arch digests, got ${#srcs[@]}" >&2; exit 1; }
           IMAGE="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/atelier-base"
-          VERSION="$(date -u +%Y-%m-%d)"
+          VERSION='${{ needs.version.outputs.tag }}'
+          # A tag is never moved (a pinned base must keep its name); the run
+          # number makes it unique, this is the belt to that braces.
+          if docker buildx imagetools inspect "${IMAGE}:${VERSION}" >/dev/null 2>&1; then
+            echo "${IMAGE}:${VERSION} already exists — refusing to move a base tag" >&2; exit 1
+          fi
           docker buildx imagetools create \
             -t "${IMAGE}:${VERSION}" -t "${IMAGE}:sha-${GITHUB_SHA::7}" \
             --annotation "index:org.opencontainers.image.source=https://github.com/${{ github.repository }}" \

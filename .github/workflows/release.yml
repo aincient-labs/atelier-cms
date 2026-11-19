@@ -176,8 +176,9 @@ jobs:
       # Builds aincient/cms:smoke for THIS arch (gha-cached, per-arch scope) and
       # runs install → upgrade → rollback against a real container on native
       # silicon. Exits non-zero on any failure, which fails the job before
-      # anything is pushed. The cached vendor (composer) + apt layers are reused
-      # across runs. Per-arch cache scope keeps the two arches from clobbering
+      # anything is pushed. The cached vendor (composer) layers are reused across
+      # runs; the OS is the pinned atelier-base image (0537), pulled, never rebuilt
+      # here. Per-arch cache scope keeps the two arches from clobbering
       # each other's layers.
       - name: Smoke-test the appliance
         env:
@@ -227,10 +228,10 @@ jobs:
       # (id=composer_github_token), fed the built-in GITHUB_TOKEN.
       # Reproducible layer digests. Without this, every built layer records its
       # files' build-time mtimes, so a build-cache MISS (GHA's 10 GB LRU evicts
-      # the vendor/apt layers, or a cancel-in-progress aborts the cache export)
-      # republishes the big core+contrib+vendor (~75 MB) and Debian-packages (~188 MB)
-      # layers under NEW digests even though their contents are byte-identical —
-      # and every appliance re-pulls ~260 MB it already has. rewrite-timestamp
+      # the vendor layers, or a cancel-in-progress aborts the cache export)
+      # republishes the big core+contrib+vendor (~75 MB) layers under NEW digests
+      # even though their contents are byte-identical — and every appliance
+      # re-pulls layers it already has. rewrite-timestamp
       # caps all file mtimes in the exported layers at SOURCE_DATE_EPOCH, so
       # identical content always yields an identical digest regardless of when or
       # whether it was cached. SOURCE_DATE_EPOCH is a FIXED constant on purpose:

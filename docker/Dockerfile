@@ -136,101 +136,33 @@ RUN mkdir -p /split /app/web/modules/contrib /app/web/modules/engine \
 RUN find /app /split -exec touch -h -t 202401010000 {} +
 
 # --- Stage 2: runtime -------------------------------------------------------
-# TRANSITIONAL (DECISIONS 0537): docker/base/Dockerfile carries this same OS
-# block as the future pinned base image. Until 0537 M3 swaps this stage to
-# `FROM ghcr.io/aincient-labs/atelier-base:<date>@sha256:…`, change BOTH.
-FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS runtime
+# The OS layer — Debian trixie-slim + PHP 8.4, Apache, ImageMagick (coder
+# allowlist), PostgreSQL client, and the checks that prove them — is its own
+# image, built from docker/base/Dockerfile by .github/workflows/base.yml and
+# pinned here BY DIGEST (DECISIONS 0537). apt-get is never reproducible, so while
+# it ran in this build every release re-published ~56 MB of packages and every
+# appliance re-downloaded them. Now an update downloads only what changed in
+# Atelier; the OS moves only when a cms commit moves this pin:
+#
+#   bin/base-image bump [YYYY-MM-DD | sha256:…]   (umbrella) — checks the base is
+#   public, multi-arch and cosign-signed, then rewrites this line.
+#
+# The digest is the authority; the date tag is for humans. Never pin a tag alone.
+FROM ghcr.io/aincient-labs/atelier-base:2026-11-19@sha256:3d5835a640b1a20ce2a52516974d14dd44d2b2207436a41f1f40348ba427667f AS runtime
 
-# The runtime is Debian's own packages — PHP 8.4, Apache, ImageMagick — on the
-# official slim base, with nothing compiled. Before this the image came from
-# php:8.4-apache plus a from-source ImageMagick: that base installs a compiler
-# toolchain ($PHPIZE_DEPS, ~335 MB) in one of ITS layers, and purging it in ours
-# hid it from scanners but could never shrink the download — a later layer
-# cannot take bytes out of an earlier one. Debian packages also put PHP and
-# ImageMagick under Debian's security tracker, so the release scan sees them as
-# what they are, and the layer is reproducible (apt, not autotools).
-#
-# What the official php image gave us that Debian does not, re-created below:
-# Apache logging to the container's stdout/stderr, the apache2-foreground
-# launcher (clears a stale pid file so a restarted container comes up), and
-# Apache's SIGWINCH graceful stop.
-#
-# PHP version floor: Debian backports security fixes into its own package
-# version, so PHP_VERSION can stay at a number while carrying later fixes. The
-# floor still guards the case it exists for — a stale cached layer older than
-# the PHP2Shell fix (CVE-2026-109618/109619, fixed in 8.4.27).
-#
-# Extension parity with the php:8.4-apache image is checked by name below; Debian
-# packages a few extensions that image did not load (calendar, exif, ffi, …) —
-# they are disabled so the attack surface does not grow with the swap.
-#
-# Debian's ImageMagick reads far more formats than our old source build (TIFF,
-# JPEG 2000, RAW, DjVu, …), and every reader is parsing surface for an uploaded
-# file. policy.xml narrows it to an allowlist: the formats imagemagick.settings
-# enables (PNG, JPEG, GIF, WebP, AVIF), HEIC/HEIF (the libheif coder AVIF rides
-# on) and xc: (the probes below). No external delegates. The build fails if a
-# TIFF write still works. `apt-get upgrade`: the slim base can lag Debian's
-# security archive (zlib, 2026-11) — the release scan would block it otherwise.
-# APT_REFRESH: a cached layer keeps the old upgrade (local and CI build caches),
-# so when the scan flags Debian packages that have a fix, set this to the date
-# to force a fresh upgrade (apache2 2.4.71 + libpq 17.12, 2026-11-18).
-ARG APT_REFRESH=2026-11-18
-ARG DEBIAN_FRONTEND=noninteractive
-STOPSIGNAL SIGWINCH
-EXPOSE 80
-RUN set -eux \
-    && apt-get update && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends \
-        ca-certificates curl \
-        apache2 libapache2-mod-php8.4 \
-        php8.4-cli php8.4-common php8.4-curl php8.4-gd php8.4-mbstring php8.4-opcache \
-        php8.4-pgsql php8.4-readline php8.4-sqlite3 php8.4-xml php8.4-zip \
-        imagemagick libheif-plugin-aomenc libheif-plugin-dav1d libheif-plugin-libde265 \
-        postgresql-client unzip tar gzip \
-    && rm -rf /var/lib/apt/lists/* \
-    && php -r 'exit(version_compare(PHP_VERSION, "8.4.27", "<") ? 1 : 0);' \
-    && for m in calendar exif ffi ftp gettext pgsql shmop sockets sysvmsg sysvsem sysvshm xsl; do \
-         if [ -e "/etc/php/8.4/mods-available/$m.ini" ]; then phpdismod -s ALL "$m"; fi; \
-       done \
-    && sed -i 's#</policymap>#  <policy domain="delegate" rights="none" pattern="*"/>\n  <policy domain="coder" rights="none" pattern="*"/>\n  <policy domain="coder" rights="read|write" pattern="{AVIF,GIF,HEIC,HEIF,JPEG,JPG,PNG,PNG8,PNG24,PNG32,PNG48,PNG64,PNG00,WEBP,XC}"/>\n</policymap>#' /etc/ImageMagick-7/policy.xml \
-    && grep -q 'pattern="{AVIF,GIF,' /etc/ImageMagick-7/policy.xml \
-    && a2dismod -q mpm_event || true \
-    && a2enmod -q mpm_prefork php8.4 rewrite headers \
-    && ln -sfT /dev/stderr /var/log/apache2/error.log \
-    && ln -sfT /dev/stdout /var/log/apache2/access.log \
-    && ln -sfT /dev/stdout /var/log/apache2/other_vhosts_access.log \
-    && printf '%s\n' \
-      '#!/bin/sh' \
-      'set -e' \
-      ': "${APACHE_CONFDIR:=/etc/apache2}"' \
-      '. "$APACHE_CONFDIR/envvars"' \
-      'rm -f "$APACHE_PID_FILE"' \
-      'mkdir -p "$APACHE_RUN_DIR" "$APACHE_LOCK_DIR" "$APACHE_LOG_DIR"' \
-      'exec apache2 -DFOREGROUND "$@"' \
-      > /usr/local/bin/apache2-foreground \
-    && chmod +x /usr/local/bin/apache2-foreground \
-    && apache2ctl -t \
-    && hash -r && ! command -v gcc && ! command -v cc && ! command -v make \
-    && pkgs="$(dpkg-query -W -f='${Package}\n')" \
-    && ! printf '%s\n' "$pkgs" | grep -E -e '-dev(:|$)' \
-    && php -m > /tmp/php-m \
+# Defence against a wrong pin: the base proves all of this when it is built, so
+# here it is a cheap re-check that writes no file (an empty layer). PHP floor =
+# the PHP2Shell fix (CVE-2026-109618/109619); the extension list is the parity
+# set the base guarantees; no compiler may ride along.
+RUN php -r 'exit(version_compare(PHP_VERSION, "8.4.27", "<") ? 1 : 0);' \
+    && mods="$(php -m)" \
     && for ext in ctype curl date dom fileinfo filter gd hash iconv json libxml mbstring openssl pcre PDO \
          pdo_pgsql pdo_sqlite Phar posix random readline Reflection session SimpleXML sodium SPL sqlite3 \
          standard tokenizer xml xmlreader xmlwriter 'Zend OPcache' zip zlib; do \
-         grep -qx "$ext" /tmp/php-m || { echo "missing PHP extension: $ext" >&2; exit 1; }; done \
-    && rm /tmp/php-m \
-    && php -r '$g = gd_info(); exit($g["WebP Support"] && $g["JPEG Support"] && $g["FreeType Support"] && $g["PNG Support"] ? 0 : 1);' \
-    && for bin in psql pg_dump unzip tar gzip convert magick; do command -v "$bin" || exit 1; done \
-    # Debian's list carries a module column (`AVIF  HEIC  rw+`); accept it, as smoke.sh does.
-    && magick -list format > /tmp/magick-formats \
-    && grep -qE '^[[:space:]]*AVIF\*?[[:space:]]+([A-Z0-9]+[[:space:]]+)?rw' /tmp/magick-formats \
-    && for fmt in HEIC WEBP PNG JPEG; do grep -qE "^[[:space:]]*${fmt}\*?[[:space:]]+([A-Z0-9]+[[:space:]]+)?r" /tmp/magick-formats || exit 1; done \
-    && rm /tmp/magick-formats \
-    && magick -size 8x8 xc:red /tmp/avif-probe.avif && magick /tmp/avif-probe.avif /tmp/avif-probe.png \
-    && magick -size 8x8 xc:red /tmp/probe.webp && magick -size 8x8 xc:red /tmp/probe.jpg \
-    && convert -size 8x8 xc:red /tmp/probe-v6.avif \
-    && ! magick -size 8x8 xc:red /tmp/probe.tiff 2>/dev/null \
-    && rm /tmp/avif-probe.avif /tmp/avif-probe.png /tmp/probe.webp /tmp/probe.jpg /tmp/probe-v6.avif
+         printf '%s\n' "$mods" | grep -qx "$ext" || { echo "missing PHP extension: $ext — wrong base pinned?" >&2; exit 1; }; done \
+    && for bin in apache2 apache2-foreground psql pg_dump magick; do command -v "$bin" >/dev/null || exit 1; done \
+    && ! command -v gcc && ! command -v make \
+    && grep -q 'pattern="{AVIF,GIF,' /etc/ImageMagick-7/policy.xml
 
 ENV DRUPAL_ROOT=/opt/drupal/web
 WORKDIR /opt/drupal
@@ -453,10 +385,10 @@ RUN { find /opt/drupal \( -path /opt/drupal/web/sites/default/files -o -path /op
 #
 # MUST stay at the end of the file. These are zero-byte metadata layers, but a
 # build-arg changes on every deploy — placed earlier, it would invalidate every
-# COPY/RUN below it and re-digest the big core+contrib+vendor (~75 MB) and
-# Debian-packages (~188 MB) layers, defeating the SOURCE_DATE_EPOCH reproducibility
-# work in the release workflow and making every appliance re-pull ~260 MB it
-# already has.
+# COPY/RUN below it and re-digest the big core+contrib+vendor (~75 MB) layers,
+# defeating the SOURCE_DATE_EPOCH reproducibility work in the release workflow
+# and making every appliance re-pull layers it already has. (The OS packages are
+# the pinned base image, 0537 — no build-arg here can touch them.)
 #
 # Both default to "dev": a local `docker build` (and docker/tests/smoke.sh)
 # passes no build-arg, and an unstamped image must be recognisably NOT a

@@ -66,7 +66,7 @@ RUN set -eux \
        done \
     && sed -i 's#</policymap>#  <policy domain="delegate" rights="none" pattern="*"/>\n  <policy domain="coder" rights="none" pattern="*"/>\n  <policy domain="coder" rights="read|write" pattern="{AVIF,GIF,HEIC,HEIF,JPEG,JPG,PNG,PNG8,PNG24,PNG32,PNG48,PNG64,PNG00,WEBP,XC}"/>\n</policymap>#' /etc/ImageMagick-7/policy.xml \
     && grep -q 'pattern="{AVIF,GIF,' /etc/ImageMagick-7/policy.xml \
-    && a2dismod -q mpm_event || true \
+    && { a2dismod -q mpm_event || true; } \
     && a2enmod -q mpm_prefork php8.4 rewrite headers \
     && ln -sfT /dev/stderr /var/log/apache2/error.log \
     && ln -sfT /dev/stdout /var/log/apache2/access.log \

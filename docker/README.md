@@ -331,9 +331,33 @@ manager calls those the **stable** and **edge** channels and can move between th
 existed carry `:edge` in their `.env` and are moved onto `:latest` once, by both the manager
 and a re-run of `install.sh`.
 
-> The published image is currently **linux/amd64 only** (what the CI runner builds and
-> smokes). Apple-Silicon testers run it under emulation; add a buildx multi-arch step if
-> native arm64 becomes a requirement.
+The image is native **linux/amd64 + linux/arm64** (each arch built and smoke-tested on its own
+runner, merged into one manifest, cosign-signed).
+
+### Layers: the OS is a pinned base image (DECISIONS 0537)
+
+The image is two images. **`ghcr.io/aincient-labs/atelier-base`** is the OS layer — Debian
+trixie-slim + PHP 8.4, Apache, ImageMagick (coder allowlist), PostgreSQL client — built from
+[`base/Dockerfile`](base/Dockerfile) by the `Base image` workflow (`.github/workflows/base.yml`):
+no cache, each arch pushed untagged, scanned (fixable High/Critical blocks), then tagged
+`YYYY-MM-DD` and signed. `docker/Dockerfile` pins it **by digest** in its runtime `FROM`.
+
+Why: `apt-get` is never reproducible, so while it ran in the app build every release re-published
+~56 MB of packages and every appliance re-downloaded them. With the pin, an update downloads only
+the layers Atelier changed; the OS moves only when a cms commit moves the pin, and that release's
+changelog says "OS packages updated".
+
+- **Refresh the OS** (a scan blocked on a Debian package, or a deliberate refresh — there is no
+  schedule): `gh workflow run base.yml -R aincient-labs/atelier-cms`, wait for it, then in the
+  umbrella `bin/base-image bump` (checks public + both arches + cosign, rewrites the `FROM` line),
+  commit in cms, release as usual.
+- **Change what the OS contains**: edit `base/Dockerfile`; the push to atelier-cms `main` builds a
+  new base; bump to it as above. Nothing reaches users until the bump ships.
+- **Guards**: `bin/release-appliance prepare` runs `base pin` (the pin is public, multi-arch,
+  signed) and `base layer reuse` (the smoke image starts with exactly the base's layers). A
+  published base that any release pinned is never deleted — old tags must stay rebuildable.
+- **Base labels** are only `dev.atelier.base.*`; the app image inherits them and must never inherit
+  a label the Manager reads.
 
 ## Try it
 
