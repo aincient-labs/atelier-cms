@@ -7,6 +7,19 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.29.2] — 2026-11-19
+
+**Smaller updates from the next release on.**
+- The image's operating system packages now come from a separate, signed base image that only
+  changes when the system packages need a refresh. Until now every update downloaded a new copy
+  of them (about 56 MB). From the release after this one, an update downloads only what changed
+  in Atelier itself.
+- This update still downloads the system packages once (about 56–59 MB), as previous updates did.
+  The site itself is unchanged: same Drupal, PHP, Apache and PostgreSQL client versions as 0.29.1.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.29.1] — 2026-11-18
 
 **Security release. Update now.**
