@@ -241,6 +241,6 @@ aincient_pages.site_constraint:
           type: string
     overrides_off:
       type: sequence
-      label: 'Built-in components rendered as the ORIGINAL although a pack overrides them (SDC ids, e.g. aincient_pages:hero)'
+      label: 'Built-in components rendered as the ORIGINAL although a pack overrides them (SDC ids, e.g. atelier:hero)'
       sequence:
         type: string

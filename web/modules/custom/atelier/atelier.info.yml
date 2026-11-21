@@ -1,0 +1,6 @@
+# Atelier — Copyright (C) 2026 AIncient Labs. Licensed GPL-2.0-or-later.
+name: 'Atelier components'
+type: module
+description: "Atelier's built-in page components (atelier:hero, atelier:card, …). Laid out like a component pack and admitted by the same gate, but first-party: it ships with Atelier and cannot be uninstalled while Atelier Pages is installed (DECISIONS 0534)."
+package: AIncient
+core_version_requirement: ^11

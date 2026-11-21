@@ -38,7 +38,7 @@ final class PageAliasTest extends KernelTestBase {
     // entities); KernelTestBase does not auto-enable declared dependencies, and
     // pathauto/token walk every entity type's fields on a node save (0359).
     'file',
-    'aincient_core', 'aincient_pages',
+    'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   protected function setUp(): void {

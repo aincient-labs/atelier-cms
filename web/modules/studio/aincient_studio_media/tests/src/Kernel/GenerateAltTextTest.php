@@ -37,7 +37,7 @@ final class GenerateAltTextTest extends KernelTestBase {
   protected static $modules = [
     'system', 'user', 'field', 'text', 'file', 'image', 'media',
     'workflows', 'content_moderation', 'key',
-    'aincient_core', 'aincient_inference_test', 'aincient_pages', 'aincient_studio_media',
+    'aincient_core', 'aincient_inference_test', 'atelier', 'aincient_pages', 'aincient_studio_media',
   ];
 
   protected function setUp(): void {

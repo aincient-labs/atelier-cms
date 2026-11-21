@@ -27,7 +27,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 final class ShippedIdentityLogoUpdateTest extends KernelTestBase {
 
   protected static $modules = [
-    'system', 'user', 'field', 'text', 'file', 'image', 'media', 'node', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'system', 'user', 'field', 'text', 'file', 'image', 'media', 'node', 'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   /** The owner's other identity values, which the update must never touch. */

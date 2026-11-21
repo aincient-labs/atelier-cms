@@ -133,6 +133,11 @@ again per site:
   leaves the agent's palette and can't be placed again, while sections that already use
   it are kept (see [Choose which components your site uses](/components#choose-which-components-your-site-uses)).
 
+A kind your pack ships in `config/install` names components by their full id,
+`provider:name`: `atelier:hero` for a built-in, `my_pack:spotlight` for your own. Since
+0.30.0 a bare `hero` is still accepted, stored as the full id and logged as a warning;
+from 0.32.0 it is refused. `pack-validate` lists every bare name it finds.
+
 Changing a kind after pages exist is checked, not guessed: `drush atelier:kind-check`
 reports every slot a narrowing would affect, per page and block, before you deploy it — it never
 rewrites content.

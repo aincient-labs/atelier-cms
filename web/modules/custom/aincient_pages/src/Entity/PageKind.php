@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Entity;
 
+use Aincient\PageModel\ComponentId;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\Attribute\ConfigEntityType;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
@@ -140,21 +142,21 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
    * {@inheritdoc}
    */
   public function components(): array {
-    return $this->components;
+    return ComponentId::shortenKind(['components' => $this->components])['components'];
   }
 
   /**
    * {@inheritdoc}
    */
   public function opener(): ?string {
-    return $this->opener === '' ? NULL : $this->opener;
+    return $this->opener === '' ? NULL : ComponentId::short($this->opener);
   }
 
   /**
    * {@inheritdoc}
    */
   public function limits(): array {
-    return $this->limits;
+    return ComponentId::shortenKind(['limits' => $this->limits])['limits'];
   }
 
   /**
@@ -169,7 +171,41 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
   }
 
   public function removed(): array {
-    return array_values(array_filter($this->removed, 'is_string'));
+    return array_values(array_map(ComponentId::short(...), array_filter($this->removed, 'is_string')));
+  }
+
+  /**
+   * Store full component ids (DECISIONS 0536).
+   *
+   * The getters hand out short names (everything above storage speaks them
+   * in A0); the stored values are `provider:name`. The Components studio
+   * qualifies before it saves; anything still bare here came from config
+   * written before 0.30.0 — a pack's config/install — and is qualified with a
+   * warning: bare names are refused from Atelier 0.32.0.
+   */
+  public function preSave(EntityStorageInterface $storage): void {
+    parent::preSave($storage);
+    $values = [
+      'components' => $this->components,
+      'limits' => $this->limits,
+      'opener' => $this->opener,
+      'removed' => $this->removed,
+    ];
+    $bare = ComponentId::bareNamesInKind($values);
+    if ($bare === []) {
+      return;
+    }
+    $providers = ComponentId::providers(\Drupal::service('aincient_pages.catalog')->discovered());
+    $values = ComponentId::qualifyKind($values, $providers);
+    $this->components = $values['components'];
+    $this->limits = $values['limits'];
+    $this->opener = $values['opener'];
+    $this->removed = $values['removed'];
+    \Drupal::logger('aincient_pages')->warning('Page kind @kind names components without their provider (@names). They were stored as @full. Write the full ids in the config that ships this kind — bare names are refused from Atelier 0.32.0.', [
+      '@kind' => $this->id(),
+      '@names' => implode(', ', $bare),
+      '@full' => implode(', ', array_map(static fn(string $n): string => ComponentId::qualify($n, $providers), $bare)),
+    ]);
   }
 
   public function isCollectionSource(): bool {

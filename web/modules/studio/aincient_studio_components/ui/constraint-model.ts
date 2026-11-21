@@ -38,7 +38,7 @@ export type ComponentEntry = {
   use: string;
   /** The SDC's own description (may be absent from an older manifest). */
   description?: string;
-  /** '' = virtual built-in, 'aincient_pages' = built-in, else a pack module. */
+  /** '' = virtual built-in, 'atelier' = built-in, else a pack module. */
   provider: string;
   group: string;
   variants: string[];
@@ -406,7 +406,7 @@ export function entriesInGroupOrder(entries: ComponentEntry[]): ComponentEntry[]
 /** A pack component: contributed by a module other than the built-ins. */
 export function isPack(entry: ComponentEntry): boolean {
   const p = (entry.provider ?? "").trim();
-  return p !== "" && p !== "aincient_pages";
+  return p !== "" && p !== "atelier";
 }
 
 /** Pages + blocks that use the component. */
@@ -1101,6 +1101,6 @@ const BUILTIN_SUMMARIES: Record<string, string> = {
 
 /** The rail's one-line summary of a component (built-in map, else the SDC's description). */
 export function componentSummary(entry: Pick<ComponentEntry, "name" | "provider" | "description">): string {
-  const builtin = entry.provider === "" || entry.provider === "aincient_pages";
+  const builtin = entry.provider === "" || entry.provider === "atelier";
   return (builtin ? BUILTIN_SUMMARIES[entry.name] : undefined) ?? entry.description ?? "";
 }

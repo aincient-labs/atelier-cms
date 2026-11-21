@@ -39,7 +39,7 @@ final class ConsoleChatReachTest extends KernelTestBase {
     'aincient_core',
     'workflows',
     'content_moderation',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_chat',
   ];
 

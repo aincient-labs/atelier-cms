@@ -15,7 +15,7 @@ import {
 
 describe("provider provenance", () => {
   it("treats aincient_pages and empty/missing providers as built-in", () => {
-    expect(isBuiltInProvider("aincient_pages")).toBe(true);
+    expect(isBuiltInProvider("atelier")).toBe(true);
     expect(isBuiltInProvider("")).toBe(true);
     expect(isBuiltInProvider(undefined)).toBe(true);
     expect(isBuiltInProvider("atelier_test_pack")).toBe(false);
@@ -28,7 +28,7 @@ describe("provider provenance", () => {
 
   it("groups built-ins first with no label, add-ons after under humanized headers", () => {
     const groups = groupByProvider([
-      { component: "hero", provider: "aincient_pages" },
+      { component: "hero", provider: "atelier" },
       { component: "widget", provider: "atelier_test_pack" },
       { component: "legacy", provider: "" },
       { component: "gizmo", provider: "atelier_test_pack" },

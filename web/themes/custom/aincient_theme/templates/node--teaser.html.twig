@@ -1,7 +1,7 @@
 {#
 /**
  * @file
- * Node teaser → the shared aincient_pages:article-teaser SDC.
+ * Node teaser → the shared atelier:article-teaser SDC.
  *
  * Listings render through the SAME token-driven component system as the page
  * builder, so a brand change reskins teasers with no rebuild. Props are built
@@ -9,7 +9,7 @@
  */
 #}
 <div class="mb-6">
-  {{ include('aincient_pages:article-teaser', {
+  {{ include('atelier:article-teaser', {
     title: teaser.title,
     url: teaser.url,
     summary: teaser.summary,

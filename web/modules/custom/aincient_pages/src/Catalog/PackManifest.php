@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\aincient_pages\Catalog;
 
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\Component\Serialization\Exception\InvalidDataTypeException;
 use Drupal\Component\Serialization\Yaml;
 
@@ -78,6 +79,13 @@ final class PackManifest {
   public static function validate(array $manifest, string $module): array {
     $errors = [];
     $warnings = [];
+
+    // `atelier` is the built-in components' module (DECISIONS 0534) and ships
+    // no manifest, so a manifest under that name is always a third-party pack
+    // that would take the built-ins' ids.
+    if ($module === ComponentCatalog::BUILTIN_PROVIDER) {
+      $errors[] = sprintf('the module name "%s" is reserved for Atelier\'s built-in components — rename the pack module (e.g. "<agency>_components") and its component ids with it.', $module);
+    }
 
     // `api` is the one mandatory key: refuse unknown majors rather than
     // guessing at a future contract (same rule as the component gate).

@@ -45,7 +45,7 @@
     {% if articles is not empty %}
       <div class="grid gap-6 {{ cols }}" data-collection-list>
         {% for a in articles %}
-          {{ include('aincient_pages:article-teaser', a|merge({on_dark: on_dark}), with_context = false) }}
+          {{ include('atelier:article-teaser', a|merge({on_dark: on_dark}), with_context = false) }}
         {% endfor %}
       </div>
       {% if is_index and archive_url %}

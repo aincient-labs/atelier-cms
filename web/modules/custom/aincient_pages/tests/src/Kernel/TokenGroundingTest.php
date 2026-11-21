@@ -23,7 +23,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 #[RunTestsInSeparateProcesses]
 final class TokenGroundingTest extends KernelTestBase {
 
-  protected static $modules = ['system', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
+  protected static $modules = ['system', 'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages'];
 
   private function resolver(): TokenResolver {
     return $this->container->get('aincient_pages.token_resolver');

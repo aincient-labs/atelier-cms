@@ -28,7 +28,7 @@ final class BuiltinExamplesTest extends KernelTestBase {
 
   protected static $modules = [
     'system', 'user', 'file', 'image', 'media', 'link', 'menu_link_content', 'node', 'field', 'text',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   protected function setUp(): void {
@@ -57,7 +57,7 @@ final class BuiltinExamplesTest extends KernelTestBase {
     $discovered = $this->container->get('aincient_pages.catalog')->discovered();
     return array_values(array_filter(
       $discovered->placeableNames(),
-      static fn(string $n): bool => ($discovered->placeable($n)['provider'] ?? '') === 'aincient_pages',
+      static fn(string $n): bool => ($discovered->placeable($n)['provider'] ?? '') === 'atelier',
     ));
   }
 
@@ -66,7 +66,7 @@ final class BuiltinExamplesTest extends KernelTestBase {
     $discovered = $catalog->discovered();
     $renderer = $this->container->get('aincient_pages.example_renderer');
     $store = $this->container->get('aincient_pages.store');
-    $placeholders = $this->container->get('extension.list.module')->getPath('aincient_pages') . '/images/placeholders';
+    $placeholders = $this->container->get('extension.list.module')->getPath('atelier') . '/images/placeholders';
 
     $builtins = $this->builtins();
     $this->assertCount(20, $builtins, 'The 20 placeable built-ins: ' . implode(', ', $builtins));
@@ -145,7 +145,7 @@ final class BuiltinExamplesTest extends KernelTestBase {
    */
   public function testGateHasNoExampleWarningsForBuiltins(): void {
     $definitions = $this->container->get('plugin.manager.sdc')->getDefinitions();
-    $ours = array_filter($definitions, static fn(array $d): bool => ($d['provider'] ?? '') === 'aincient_pages');
+    $ours = array_filter($definitions, static fn(array $d): bool => ($d['provider'] ?? '') === 'atelier');
     foreach (AdmissionGate::check($ours, ['block']) as $id => $verdict) {
       $name = (string) ($ours[$id]['machineName'] ?? $id);
       if (!in_array($name, $this->builtins(), TRUE)) {

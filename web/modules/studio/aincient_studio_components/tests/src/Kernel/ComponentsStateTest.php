@@ -28,7 +28,7 @@ final class ComponentsStateTest extends KernelTestBase {
 
   protected static $modules = [
     'system', 'user', 'field', 'filter', 'text', 'node', 'key',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     'aincient_chat', 'aincient_studio_components',
   ];
 

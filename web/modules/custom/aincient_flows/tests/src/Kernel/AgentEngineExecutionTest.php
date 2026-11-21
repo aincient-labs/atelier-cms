@@ -47,7 +47,7 @@ final class AgentEngineExecutionTest extends WorkflowExecutionTestBase {
     // Shipped workflows carry flowdrop_playground third-party settings (FlowDrop 2.7).
     'flowdrop_playground',
     'aincient_core',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_onboarding',
     'aincient_flows',
   ];

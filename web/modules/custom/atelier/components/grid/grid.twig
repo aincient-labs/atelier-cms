@@ -22,7 +22,7 @@
     {% endif %}
     <div class="grid gap-6 {{ cols }}">
       {% for c in cards %}
-        {{ include('aincient_pages:card', c|merge({ tone: tone|default('default') }), with_context = false) }}
+        {{ include('atelier:card', c|merge({ tone: tone|default('default') }), with_context = false) }}
       {% endfor %}
     </div>
   </div>

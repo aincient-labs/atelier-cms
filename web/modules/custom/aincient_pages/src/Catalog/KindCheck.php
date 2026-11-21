@@ -6,6 +6,7 @@ namespace Drupal\aincient_pages\Catalog;
 
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Aincient\PageModel\Catalog\EffectiveCatalog;
+use Aincient\PageModel\ComponentId;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -57,6 +58,8 @@ final class KindCheck {
       if (!is_array($structure)) {
         continue;
       }
+      // Stored ids are full (DECISIONS 0536); the kind catalog is short.
+      $structure = ComponentId::shortenStructure($structure);
       // The stored kind; a missing/unknown type degrades to landing — the
       // exact fallback the validator and renderer apply (never fatal). A block
       // is always checked under the block kind.

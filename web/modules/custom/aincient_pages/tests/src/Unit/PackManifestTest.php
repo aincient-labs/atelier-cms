@@ -33,6 +33,15 @@ final class PackManifestTest extends UnitTestCase {
     $this->assertSame([], $warnings);
   }
 
+  /**
+   * A pack may not take the built-ins' module name (DECISIONS 0534).
+   */
+  public function testAtelierModuleNameIsReserved(): void {
+    $errors = self::errors(self::manifest(), 'atelier');
+    $this->assertCount(1, $errors);
+    $this->assertStringContainsString('reserved', $errors[0]);
+  }
+
   public function testMissingApiIsRejected(): void {
     $m = self::manifest();
     unset($m['api']);

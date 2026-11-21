@@ -68,7 +68,7 @@ final class PackValidator {
       $pack = [
         'found' => $manifest['found'],
         'errors' => array_merge($manifest['errors'], $fence, $studioErrors),
-        'warnings' => array_merge($manifest['warnings'], $studioWarnings),
+        'warnings' => array_merge($manifest['warnings'], $studioWarnings, LegacyIdScan::scan($path)),
       ];
       if ($verdicts === [] && !$manifest['found'] && $pack['errors'] === [] && $pack['warnings'] === []) {
         throw new \InvalidArgumentException(sprintf('Module "%s" provides no atelier-carrying components (no SDC with thirdPartySettings.atelier) and no %s. Is it installed?', $module, PackManifest::FILENAME));

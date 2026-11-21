@@ -71,7 +71,7 @@ final class SiteChrome {
     private readonly RouteMatchInterface $routeMatch,
   ) {}
 
-  /** Props for the `aincient_pages:site-header` SDC. */
+  /** Props for the `atelier:site-header` SDC. */
   public function headerProps(): array {
     return [
       'name' => $this->identity->name(),
@@ -219,7 +219,7 @@ final class SiteChrome {
     return NULL;
   }
 
-  /** Props for the `aincient_pages:site-footer` SDC. */
+  /** Props for the `atelier:site-footer` SDC. */
   public function footerProps(): array {
     $note = $this->identity->footerNote();
     if ($note === '') {
@@ -329,12 +329,12 @@ final class SiteChrome {
    *
    * The reusable entry point: give it a menu machine name and a presentation
    * variant ('header' dropdown / 'footer' grouped list) and get the
-   * `aincient_pages:menu` component populated with that menu's nested links.
+   * `atelier:menu` component populated with that menu's nested links.
    */
   public function menu(string $menuName, string $variant = 'header'): array {
     return [
       '#type' => 'component',
-      '#component' => 'aincient_pages:menu',
+      '#component' => 'atelier:menu',
       '#props' => [
         'items' => $this->nav($menuName),
         'name' => $menuName,

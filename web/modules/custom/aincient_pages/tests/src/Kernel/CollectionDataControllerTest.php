@@ -30,7 +30,7 @@ final class CollectionDataControllerTest extends KernelTestBase {
 
   use UserCreationTrait;
 
-  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
+  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages'];
 
   private string $hash;
 

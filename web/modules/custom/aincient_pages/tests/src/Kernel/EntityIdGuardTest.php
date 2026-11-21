@@ -27,7 +27,7 @@ final class EntityIdGuardTest extends KernelTestBase {
    */
   protected static $modules = [
     'system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation',
-    'aincient_core', 'aincient_pages',
+    'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   /**

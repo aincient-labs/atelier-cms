@@ -30,7 +30,7 @@ final class PageModerationStateTest extends KernelTestBase {
 
   protected static $modules = [
     'system', 'user', 'field', 'text', 'node', 'language', 'content_translation',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   protected function setUp(): void {

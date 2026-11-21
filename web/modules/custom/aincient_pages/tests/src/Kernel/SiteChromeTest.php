@@ -29,7 +29,7 @@ final class SiteChromeTest extends KernelTestBase {
     'menu_link_content',
     'language',
     'field', 'text', 'filter', 'node', 'content_translation',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   protected function setUp(): void {
@@ -213,7 +213,7 @@ final class SiteChromeTest extends KernelTestBase {
     MenuLinkContent::create(['title' => 'About', 'link' => ['uri' => 'internal:/'], 'menu_name' => 'main'])->save();
     $build = $this->chrome()->menu('main', 'header');
     $this->assertSame('component', $build['#type']);
-    $this->assertSame('aincient_pages:menu', $build['#component']);
+    $this->assertSame('atelier:menu', $build['#component']);
     $this->assertSame('main', $build['#props']['name']);
     $this->assertSame('header', $build['#props']['variant']);
     $this->assertContains('About', array_column($build['#props']['items'], 'label'));

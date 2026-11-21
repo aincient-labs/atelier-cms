@@ -42,7 +42,7 @@ final class ThreadEditorialStateTest extends KernelTestBase {
     'flowdrop_node_type', 'flowdrop_node_processor', 'flowdrop_workflow',
     'flowdrop_orchestration', 'flowdrop_runtime', 'flowdrop_pipeline',
     'flowdrop_job', 'flowdrop_session', 'flowdrop_interrupt', 'flowdrop_memory',
-    'aincient_core', 'aincient_pages', 'aincient_chat',
+    'aincient_core', 'atelier', 'aincient_pages', 'aincient_chat',
   ];
 
   /**

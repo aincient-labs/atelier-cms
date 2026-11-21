@@ -25,7 +25,7 @@ final class ChromePreviewApplierTest extends KernelTestBase {
     'user',
     'link',
     'menu_link_content',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages', 'aincient_chat', 'aincient_studio_site',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages', 'aincient_chat', 'aincient_studio_site',
   ];
 
   protected function setUp(): void {

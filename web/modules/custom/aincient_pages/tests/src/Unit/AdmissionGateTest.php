@@ -128,11 +128,11 @@ final class AdmissionGateTest extends UnitTestCase {
   public function testBuiltinWinsANameCollisionPerDefinition(): void {
     $verdicts = AdmissionGate::checkEach([
       'acme_pack:promo' => self::def('promo', self::section(), [], 'acme_pack'),
-      'aincient_pages:promo' => self::def('promo', self::section(), [], 'aincient_pages'),
+      'atelier:promo' => self::def('promo', self::section(), [], 'atelier'),
     ]);
-    $this->assertSame([], $verdicts['aincient_pages:promo']['errors']);
+    $this->assertSame([], $verdicts['atelier:promo']['errors']);
     $this->assertCount(1, $verdicts['acme_pack:promo']['errors']);
-    $this->assertStringContainsString('name collides with "aincient_pages:promo"', $verdicts['acme_pack:promo']['errors'][0]);
+    $this->assertStringContainsString('name collides with "atelier:promo"', $verdicts['acme_pack:promo']['errors'][0]);
   }
 
   /**
@@ -205,7 +205,7 @@ final class AdmissionGateTest extends UnitTestCase {
     $this->assertSame([], $verdict['errors']);
     $this->assertStringContainsString('no "examples" declared', implode(' ', $verdict['warnings']));
 
-    $builtin = AdmissionGate::check([self::def('promo', $atelier, [], 'aincient_pages')])['promo'];
+    $builtin = AdmissionGate::check([self::def('promo', $atelier, [], 'atelier')])['promo'];
     $this->assertSame([], $builtin['warnings'], 'Built-ins are exempt from the examples warning.');
   }
 
@@ -216,10 +216,10 @@ final class AdmissionGateTest extends UnitTestCase {
    */
   public function testRealShippedComponentsPassTheGate(): void {
     $definitions = [];
-    foreach (glob(dirname(__DIR__, 3) . '/components/*/*.component.yml') as $file) {
+    foreach (glob(dirname(__DIR__, 4) . '/atelier/components/*/*.component.yml') as $file) {
       $name = basename(dirname($file));
-      $definitions['aincient_pages:' . $name] = Yaml::parseFile($file) + [
-        'provider' => 'aincient_pages',
+      $definitions['atelier:' . $name] = Yaml::parseFile($file) + [
+        'provider' => 'atelier',
         'machineName' => $name,
       ];
     }

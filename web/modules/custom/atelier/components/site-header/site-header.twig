@@ -17,7 +17,7 @@
     </a>
     {% if nav %}
       <nav aria-label="Primary" class="hidden md:flex text-sm font-medium text-foreground {{ is_centered ? 'justify-center' : 'flex-1 ' ~ nav_justify }}">
-        {{ include('aincient_pages:menu', { items: nav, name: 'main', variant: 'header', align: nav_alignment|default('end') }, with_context = false) }}
+        {{ include('atelier:menu', { items: nav, name: 'main', variant: 'header', align: nav_alignment|default('end') }, with_context = false) }}
       </nav>
     {% endif %}
     {% if language_links|default([])|length > 1 %}

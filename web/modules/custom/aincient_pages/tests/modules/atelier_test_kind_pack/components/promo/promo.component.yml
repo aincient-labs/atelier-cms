@@ -1,0 +1,50 @@
+# The kind pack's own section, named bare in its page kind.
+name: Promo
+status: experimental
+group: 'Atelier test kind pack'
+description: 'One product shot beside a single claim.'
+props:
+  type: object
+  properties:
+    variant:
+      type: string
+      enum: [left, right]
+      default: left
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    eyebrow: { type: string }
+    heading: { type: string }
+    claim: { type: string }
+    cta_label: { type: string }
+    cta_url: { type: string }
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 46
+    icon: ◈
+    use: 'One product shot beside a single claim. Use once, below the hero.'
+    props:
+      variant: left|right
+      tone: ''
+      eyebrow: ''
+      heading: ''
+      claim: ''
+      cta_label: ''
+      cta_url: ''
+    prop_vocab:
+      claim: 'the single bold claim sentence shown beside the product shot.'
+    # Phase 4: the declared render fixture — gallery input, Phase 5 few-shot,
+    # visual-regression baseline. Story-shaped (name?, props, slots?).
+    examples:
+      - name: default
+        props:
+          variant: left
+          tone: default
+          eyebrow: 'New'
+          heading: 'The claim, made visible'
+          claim: 'One product shot beside a single claim.'
+          cta_label: 'See it'
+          cta_url: 'https://example.com'

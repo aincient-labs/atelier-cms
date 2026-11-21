@@ -8,6 +8,10 @@ core_version_requirement: ^11
 # field_page_structure + field_page_content), so the pages get the full node
 # ecosystem for free.
 dependencies:
+  # The built-in components live in the first-party `atelier` module (DECISIONS
+  # 0534): ids are plain SDC ids (atelier:hero). Depending on it is what keeps
+  # it from being uninstalled while pages exist.
+  - atelier
   # The Media studio's generate_image capability resolves the site's image model
   # through the aincient_core model-role layer (the explicit `image` role binding),
   # so image generation is provider-neutral like every other LLM call.

@@ -273,3 +273,17 @@ function aincient_pages_config_ignore_settings_alter(array &$settings): void {
   $settings[] = 'aincient_pages.page_kind.*';
   $settings[] = 'aincient_pages.site_constraint';
 }
+
+/**
+ * Implements hook_modules_installed().
+ *
+ * A section stored as `unresolved:<name>` (its module was missing at the
+ * 0.30.0 rewrite) gets its full id back once a module provides the name
+ * (DECISIONS 0536, failure modes S6.3). A no-op on a site with none.
+ */
+function aincient_pages_modules_installed(array $modules, bool $is_syncing): void {
+  if (in_array('aincient_pages', $modules, TRUE)) {
+    return;
+  }
+  \Drupal::service('aincient_pages.component_id_rewrite')->resolveAfterInstall();
+}

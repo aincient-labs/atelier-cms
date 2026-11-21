@@ -38,10 +38,10 @@ final class ComponentCatalogTest extends UnitTestCase {
   private static function catalog(): EffectiveCatalog {
     if (self::$catalog === NULL) {
       $definitions = [];
-      foreach (glob(dirname(__DIR__, 3) . '/components/*/*.component.yml') as $file) {
+      foreach (glob(dirname(__DIR__, 4) . '/atelier/components/*/*.component.yml') as $file) {
         $name = basename(dirname($file));
-        $definitions['aincient_pages:' . $name] = Yaml::parseFile($file) + [
-          'provider' => 'aincient_pages',
+        $definitions['atelier:' . $name] = Yaml::parseFile($file) + [
+          'provider' => 'atelier',
           'machineName' => $name,
         ];
       }
@@ -371,7 +371,7 @@ final class ComponentCatalogTest extends UnitTestCase {
       );
       // The SDC schema itself DOES carry the enum, with the chrome-light `bare`
       // value the renderer backfills for a panel child.
-      $sdc = Yaml::parseFile(sprintf('%s/components/%s/%s.component.yml', dirname(__DIR__, 3), $name, $name));
+      $sdc = Yaml::parseFile(sprintf('%s/atelier/components/%s/%s.component.yml', dirname(__DIR__, 4), $name, $name));
       $this->assertContains(
         'bare',
         $sdc['props']['properties']['variant']['enum'] ?? [],

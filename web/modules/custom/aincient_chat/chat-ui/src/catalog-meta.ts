@@ -12,7 +12,7 @@
 /** The provider whose components are the default experience — rendered with no
  *  group header and no provenance chip. An entry with no provider at all is
  *  treated the same (the manifest sends '' for legacy defs). */
-const BUILT_IN_PROVIDER = "aincient_pages";
+const BUILT_IN_PROVIDER = "atelier";
 
 /** Whether a manifest entry's provider is the built-in default (no provenance
  *  chrome in the picker). */
@@ -39,7 +39,7 @@ export type ProviderGroup<T> = {
 };
 
 /**
- * Group picker entries by provider: the built-ins (provider 'aincient_pages'
+ * Group picker entries by provider: the built-ins (provider 'atelier'
  * or '') come first as one label-less group; every other provider follows in
  * order of first appearance, under a humanized header. Grouping is
  * presentation-only — the caller's flat list keeps its own semantics (e.g.

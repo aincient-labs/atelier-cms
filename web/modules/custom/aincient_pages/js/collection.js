@@ -10,7 +10,7 @@
  * from the HTTP cache) and appends the remaining tiles in page-sized chunks.
  *
  * Vanilla, no framework, no build step. Tiles are built from the SAME markup +
- * classes as aincient_pages:article-teaser, so they inherit the compiled
+ * classes as atelier:article-teaser, so they inherit the compiled
  * Tailwind + brand tokens with no drift and nothing new for the CSS to compile.
  *
  * NB filter state (location.hash / popstate) is intentionally not wired yet:
@@ -129,7 +129,7 @@
     el.textContent = 'Showing ' + shown + ' of ' + total + ' posts';
   }
 
-  // Mirrors aincient_pages:article-teaser (its exact classes, so no CSS drift).
+  // Mirrors atelier:article-teaser (its exact classes, so no CSS drift).
   function tile(record) {
     var article = document.createElement('article');
     article.className = 'group flex flex-col overflow-hidden border bg-card text-card-foreground transition rounded-[var(--card-radius)] border-[color:var(--card-border)] shadow-[var(--card-shadow)] hover:border-[color:var(--primary)] hover:shadow-[var(--shadow-md)]';

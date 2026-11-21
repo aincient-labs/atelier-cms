@@ -33,7 +33,7 @@ final class ChatBindingOnSaveTest extends WorkflowExecutionTestBase {
     'flowdrop_memory',
     'flowdrop_playground',
     'aincient_core',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_onboarding',
     'aincient_flows',
   ];

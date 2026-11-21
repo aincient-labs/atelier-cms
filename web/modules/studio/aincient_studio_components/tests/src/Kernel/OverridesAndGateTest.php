@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
  * Pack overrides in the Components rail, and the gate's "Can't be used" group
  * (DECISIONS 0455, P3/P4a/P4b).
  *
- * `atelier_test_override_pack` replaces aincient_pages:hero. The manifest must
+ * `atelier_test_override_pack` replaces atelier:hero. The manifest must
  * say so per entry, the owner's "Use original instead" (`overrides_off`) must
  * store only real overrides and re-render the site (the `rendered` tag) only
  * when it changes, and the studio preview's `original: true` must reach the
@@ -32,7 +32,7 @@ final class OverridesAndGateTest extends KernelTestBase {
   protected static $modules = [
     'system', 'user', 'file', 'image', 'media', 'link', 'menu_link_content',
     'field', 'filter', 'text', 'node', 'key',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     'aincient_chat', 'aincient_studio_components', 'atelier_test_override_pack',
   ];
 
@@ -86,7 +86,7 @@ final class OverridesAndGateTest extends KernelTestBase {
     $this->assertSame('atelier_test_override_pack:hero', $hero['replaced_by']['id']);
     $this->assertSame('Hero (override pack)', $hero['replaced_by']['label']);
     $this->assertFalse($hero['override_off']);
-    $this->assertSame('aincient_pages', $hero['provider'], 'The catalog keeps the original\'s metadata.');
+    $this->assertSame('atelier', $hero['provider'], 'The catalog keeps the original\'s metadata.');
 
     foreach ($byName as $name => $entry) {
       if ($name === 'hero') {
@@ -103,11 +103,11 @@ final class OverridesAndGateTest extends KernelTestBase {
    * Only a real override can be switched off; the switch reaches negotiation.
    */
   public function testOverridesOffStoresOnlyRealOverrides(): void {
-    $result = $this->save(['overrides_off' => ['aincient_pages:hero', 'aincient_pages:cta']]);
+    $result = $this->save(['overrides_off' => ['atelier:hero', 'atelier:cta']]);
     $this->assertSame(200, $result['status']);
     $this->assertSame(['overrides_off'], $result['applied']);
-    $this->assertSame(['aincient_pages:hero'], $result['constraint']['overrides_off']);
-    $this->assertSame(['aincient_pages:hero'], $this->config('aincient_pages.site_constraint')->get('overrides_off'));
+    $this->assertSame(['atelier:hero'], $result['constraint']['overrides_off']);
+    $this->assertSame(['atelier:hero'], $this->config('aincient_pages.site_constraint')->get('overrides_off'));
 
     $byName = $this->byName($result);
     $this->assertTrue($byName['hero']['override_off']);
@@ -115,8 +115,8 @@ final class OverridesAndGateTest extends KernelTestBase {
     $this->assertFalse($byName['cta']['override_off']);
 
     $this->container->get('Drupal\Core\Theme\ComponentNegotiator')->clearCache();
-    $provider = $this->container->get('plugin.manager.sdc')->find('aincient_pages:hero')->getPluginDefinition()['provider'];
-    $this->assertSame('aincient_pages', $provider);
+    $provider = $this->container->get('plugin.manager.sdc')->find('atelier:hero')->getPluginDefinition()['provider'];
+    $this->assertSame('atelier', $provider);
 
     // And switching it back on empties the list.
     $this->assertSame([], $this->save(['overrides_off' => []])['constraint']['overrides_off']);
@@ -132,12 +132,12 @@ final class OverridesAndGateTest extends KernelTestBase {
     $this->save(['tones' => ['inverted']]);
     $this->assertNotFalse($cache->get('ain_probe'), 'A tones-only publish must not flush every rendered page.');
 
-    $this->save(['overrides_off' => ['aincient_pages:hero']]);
+    $this->save(['overrides_off' => ['atelier:hero']]);
     $this->assertFalse($cache->get('ain_probe'), 'Switching an override changes every page\'s rendering.');
 
     // An unchanged overrides_off (re-publishing the same slice) keeps renders.
     $cache->set('ain_probe', 'x', -1, ['rendered']);
-    $this->save(['overrides_off' => ['aincient_pages:hero']]);
+    $this->save(['overrides_off' => ['atelier:hero']]);
     $this->assertNotFalse($cache->get('ain_probe'), 'An unchanged overrides_off must not flush renders.');
   }
 
@@ -146,7 +146,7 @@ final class OverridesAndGateTest extends KernelTestBase {
    *
    * One render per test (process): Drupal's TwigEnvironment memoises the
    * template class per component NAME for the life of the process, so a
-   * second render of `aincient_pages:hero` in the same process reuses the
+   * second render of `atelier:hero` in the same process reuses the
    * first one's negotiated template. Compare issues two HTTP requests, so the
    * studio is unaffected; the scoping of withOriginals() itself is pinned at
    * the negotiation level by OverrideNegotiationTest::testWithOriginalsIsScoped.
@@ -222,7 +222,7 @@ final class OverridesAndGateTest extends KernelTestBase {
       'examples' => [['props' => ['heading' => 'Hi']]],
     ];
     $definitions = [
-      'aincient_pages:hero' => ['machineName' => 'hero', 'provider' => 'aincient_pages', 'name' => 'Hero', 'thirdPartySettings' => ['atelier' => $atelier()]],
+      'atelier:hero' => ['machineName' => 'hero', 'provider' => 'atelier', 'name' => 'Hero', 'thirdPartySettings' => ['atelier' => $atelier()]],
       'acme_pack:hero' => ['machineName' => 'hero', 'provider' => 'acme_pack', 'name' => 'Acme hero', 'thirdPartySettings' => ['atelier' => $atelier()]],
     ];
     $blocked = ConstraintController::blocked($definitions);
@@ -237,7 +237,7 @@ final class OverridesAndGateTest extends KernelTestBase {
     $cases = [
       'unknown or missing atelier api version (NULL) — this build understands api: 1.' => 'Made for a different version of Atelier.',
       'unknown tier "widget" (section|layout|reference|content|chrome).' => 'Its pack declares a kind of component Atelier does not know.',
-      'name collides with "aincient_pages:hero" — component names are globally unique (one word, one concept).' => 'Another component already uses this name.',
+      'name collides with "atelier:hero" — component names are globally unique (one word, one concept).' => 'Another component already uses this name.',
       '"grid" is a reserved layout word — it cannot name a section component.' => 'Its name is reserved by Atelier.',
       'prop "price" is not in the locked vocabulary and declares no pack-local meaning (thirdPartySettings.atelier.prop_vocab.price).' => 'It has a field Atelier cannot fill.',
       'variant "wide" is hinted to the agent but absent from the SDC schema enum (centered|split) — the clamp would 500 the render.' => 'One of its variants is declared incorrectly.',

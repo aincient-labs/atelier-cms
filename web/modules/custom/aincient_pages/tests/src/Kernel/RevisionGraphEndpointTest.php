@@ -35,7 +35,7 @@ final class RevisionGraphEndpointTest extends KernelTestBase {
 
   protected static $modules = [
     'system', 'user', 'field', 'text', 'filter', 'node', 'language', 'content_translation',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     'revision_graph',
     // The route's permission (`use aincient studio content`) is derived from
     // the Content studio's manifest, so the studio frame + module must exist.

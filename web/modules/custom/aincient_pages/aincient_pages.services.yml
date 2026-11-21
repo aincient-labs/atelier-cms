@@ -261,4 +261,10 @@ services:
   aincient_pages.component_negotiator:
     class: Drupal\aincient_pages\Theme\OverrideAwareComponentNegotiator
     decorates: Drupal\Core\Theme\ComponentNegotiator
-    arguments: ['@theme.manager', '@config.factory']
+    arguments: ['@theme.manager', '@config.factory', '@state', '@logger.channel.aincient_pages', '@Drupal\Core\Theme\Component\SchemaCompatibilityChecker']
+  # The one-time rewrite of stored component names to full ids (0.30.0,
+  # DECISIONS 0536) — run by the post_update, and again over `unresolved:`
+  # rows only when a module is installed.
+  aincient_pages.component_id_rewrite:
+    class: Drupal\aincient_pages\Update\ComponentIdRewrite
+    arguments: ['@database', '@aincient_pages.catalog', '@plugin.manager.sdc', '@config.factory', '@entity_type.manager', '@logger.channel.aincient_pages']

@@ -78,6 +78,12 @@ final class ComponentCatalog {
    * text) + `image` (a single figure beneath/between the copy). Widen as more
    * block-friendly `bare` variants land (gallery/stats/logos).
    */
+  /**
+   * The module that ships the built-in components (DECISIONS 0534): their SDC
+   * ids are `atelier:<name>`. The one place that names it.
+   */
+  public const BUILTIN_PROVIDER = 'atelier';
+
   public const ACCORDION_BLOCKS = ['markdown', 'image'];
 
   /**

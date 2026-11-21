@@ -4,7 +4,7 @@
    components, so this one stylesheet covers everything the theme renders. */
 @source "../templates/**/*.twig";
 @source "../*.theme";
-@source "../../../../modules/custom/aincient_pages/components/**/*.twig";
+@source "../../../../modules/custom/atelier/components/**/*.twig";
 
 /* ── Design tokens ─────────────────────────────────────────────────────────
    The @theme inline var→utility maps + :root base defaults are GENERATED from

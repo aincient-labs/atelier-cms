@@ -30,7 +30,7 @@ final class CollectionResolverTest extends KernelTestBase {
 
   use UserCreationTrait;
 
-  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'language', 'content_translation', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
+  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'language', 'content_translation', 'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages'];
 
   protected function setUp(): void {
     parent::setUp();

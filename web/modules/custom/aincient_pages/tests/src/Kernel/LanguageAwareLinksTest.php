@@ -55,7 +55,7 @@ final class LanguageAwareLinksTest extends KernelTestBase {
     'workflows', 'content_moderation',
     'token', 'path', 'path_alias', 'pathauto',
     'file',
-    'aincient_core', 'aincient_pages',
+    'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   protected function setUp(): void {

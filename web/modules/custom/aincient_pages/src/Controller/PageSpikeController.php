@@ -837,7 +837,7 @@ final class PageSpikeController implements ContainerInjectionInterface {
       // The provider comes from discovery (W3): a pack component renders from
       // its own module. Unknown names keep the historic prefix (they only
       // reach here from trusted internal calls; a bad name fails loudly).
-      '#component' => $this->catalog->discovered()->pluginId($name) ?? "aincient_pages:$name",
+      '#component' => $this->catalog->discovered()->pluginId($name) ?? ComponentCatalog::BUILTIN_PROVIDER . ":$name",
       '#props' => $this->resolveEmbeds($props, $name),
     ];
     if ($slots !== []) {

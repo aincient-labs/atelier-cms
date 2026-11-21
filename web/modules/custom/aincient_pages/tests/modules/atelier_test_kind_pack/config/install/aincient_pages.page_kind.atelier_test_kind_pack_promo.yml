@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - atelier_test_kind_pack
+id: atelier_test_kind_pack_promo
+label: 'Promo page'
+hint: 'A short promo page.'
+mode: composition
+components:
+  hero: {  }
+  promo:
+    variants: [left]
+opener: promo
+limits:
+  hero: 1
+collection_source: false
+fragment: false
+removed:
+  - newsletter
+include_new: false

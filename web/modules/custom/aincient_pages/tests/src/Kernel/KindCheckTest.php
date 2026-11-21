@@ -23,7 +23,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 #[RunTestsInSeparateProcesses]
 final class KindCheckTest extends KernelTestBase {
 
-  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
+  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages'];
 
   protected function setUp(): void {
     parent::setUp();
@@ -68,8 +68,8 @@ final class KindCheckTest extends KernelTestBase {
       'field_page_structure' => json_encode([
         'type' => 'landing',
         'slots' => [
-          ['id' => 's1', 'component' => 'hero', 'variant' => 'split'],
-          ['id' => 's2', 'component' => 'newsletter'],
+          ['id' => 's1', 'component' => 'atelier:hero', 'variant' => 'split'],
+          ['id' => 's2', 'component' => 'atelier:newsletter'],
         ],
       ]),
     ]);

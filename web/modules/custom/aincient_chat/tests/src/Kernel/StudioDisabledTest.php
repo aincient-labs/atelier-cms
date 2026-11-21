@@ -60,7 +60,7 @@ final class StudioDisabledTest extends KernelTestBase {
     'aincient_core',
     'workflows',
     'content_moderation',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_chat',
     // `design_system`, `media`, `globals` and `content` are studio MODULES now
     // (Phase E, DECISIONS 0432 / 0434 / 0435 / 0436); the built-in list below

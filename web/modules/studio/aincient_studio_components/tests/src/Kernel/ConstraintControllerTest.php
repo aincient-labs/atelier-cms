@@ -34,7 +34,7 @@ final class ConstraintControllerTest extends KernelTestBase {
     'system',
     'user',
     'field', 'filter', 'text', 'node', 'key',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     'aincient_chat', 'aincient_studio_components',
   ];
 
@@ -79,6 +79,8 @@ final class ConstraintControllerTest extends KernelTestBase {
     // And it stuck: a fresh manifest agrees.
     $state = json_decode((string) $this->controller()->manifest()->getContent(), TRUE);
     $this->assertSame(['newsletter'], $state['constraint']['components']);
+    // Stored with full ids (DECISIONS 0536).
+    $this->assertSame(['atelier:newsletter'], $this->config('aincient_pages.site_constraint')->get('components'));
   }
 
   /**
@@ -117,6 +119,7 @@ final class ConstraintControllerTest extends KernelTestBase {
     $this->assertSame(['centered'], $landing->variantsFor('hero'));
     $this->assertStringContainsString('variant(centered)', $landing->signature('hero'));
     $this->assertSame([], $result['effective']['warnings']);
+    $this->assertSame(['atelier:hero' => ['split']], $this->config('aincient_pages.site_constraint')->get('variants'));
   }
 
   /**
@@ -136,6 +139,7 @@ final class ConstraintControllerTest extends KernelTestBase {
   public function testUnknownComponentRemovalIsStoredAndWarned(): void {
     $result = $this->save(['components' => ['spotlight']]);
     $this->assertSame(['spotlight'], $result['constraint']['components']);
+    $this->assertSame(['unresolved:spotlight'], $this->config('aincient_pages.site_constraint')->get('components'), 'A name no provider ships is stored unresolved.');
     $this->assertNotEmpty($result['effective']['warnings']);
     $this->assertContains('hero', $result['effective']['placeable'], 'The palette survives the unknown removal.');
   }
@@ -169,7 +173,7 @@ final class ConstraintControllerTest extends KernelTestBase {
     $this->assertSame(2, $state['version']);
     $byName = array_column($state['components'], NULL, 'name');
     $hero = $byName['hero'];
-    $this->assertSame('aincient_pages', $hero['provider']);
+    $this->assertSame('atelier', $hero['provider']);
     $this->assertSame('openers', $hero['group']);
     $this->assertSame(['centered', 'split'], $hero['variants']);
     $this->assertContains('inverted', $hero['tones']);
@@ -189,6 +193,7 @@ final class ConstraintControllerTest extends KernelTestBase {
     $result = $this->save(['component_tones' => ['stats' => ['inverted']]]);
     $this->assertSame(200, $result['status']);
     $this->assertSame(['stats' => ['inverted']], $result['constraint']['component_tones']);
+    $this->assertSame(['atelier:stats' => ['inverted']], $this->config('aincient_pages.site_constraint')->get('component_tones'));
     $catalog = $this->container->get('aincient_pages.catalog');
     $catalog->reset();
     $this->assertNotContains('inverted', $catalog->for('landing')->tonesFor('stats'));

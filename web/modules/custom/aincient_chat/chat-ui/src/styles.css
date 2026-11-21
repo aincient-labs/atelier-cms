@@ -2353,7 +2353,7 @@ textarea.ain-field__input--mono { font-family: var(--ain-font-mono); line-height
 .ain-serp__title { margin: 3px 0; font-size: 18px; font-weight: 500; line-height: 1.3; color: var(--ain-color-text); }
 .ain-serp__desc { margin: 0; font-size: 12.5px; color: var(--ain-color-text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* in-site teaser card (mirrors the aincient_pages:article-teaser SDC) */
+/* in-site teaser card (mirrors the atelier:article-teaser SDC) */
 .ain-teasercard { border: 1px solid var(--ain-color-border); border-radius: var(--ain-radius-md); overflow: hidden; background: var(--ain-color-surface); }
 .ain-teasercard__img { aspect-ratio: 16 / 9; background: var(--ain-color-surface-raised); display: flex; align-items: flex-end; padding: 10px; }
 .ain-teasercard__img img { width: 100%; height: 100%; object-fit: cover; }

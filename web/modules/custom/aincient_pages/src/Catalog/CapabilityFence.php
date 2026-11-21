@@ -72,6 +72,7 @@ final class CapabilityFence {
   public const ATELIER_MODULES = [
     'aincient_onboarding',
     'aincient_pages',
+    'atelier',
   ];
 
   /**

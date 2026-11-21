@@ -52,7 +52,7 @@ final class ChecksStudioModuleTest extends KernelTestBase {
     'flowdrop_interrupt',
     'flowdrop_memory',
     'aincient_core',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_chat',
     // The capability tool deriver (the `aincient_capability:*` nodes) is
     // aincient_flows'; the studio's verbs reach it by tier, not by name.

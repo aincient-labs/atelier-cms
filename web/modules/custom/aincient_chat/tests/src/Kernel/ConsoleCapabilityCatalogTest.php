@@ -53,7 +53,7 @@ final class ConsoleCapabilityCatalogTest extends KernelTestBase {
     'aincient_inference_test',
     'workflows',
     'content_moderation',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_chat',
     // The Media room is a studio MODULE now (Phase E, DECISIONS 0432).
     'aincient_studio_media',

@@ -7,13 +7,32 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.30.0] — 2026-11-21
+
+**Built-in components get their own namespace. Your site looks and works the same.**
+- Atelier's built-in components move into their own `atelier` module, so each one now has a
+  full id such as `atelier:hero`. This prepares for component packs that bring a component
+  with the same short name as a built-in.
+- The update rewrites the component names stored in your pages and blocks once, in every
+  revision and language. On a site with a long edit history this makes the first start after
+  the update a little slower. If anything goes wrong during it, the update rolls back to the
+  database as it was and your site keeps running the previous version.
+- A section whose component no installed module provides is kept, not deleted, and comes back
+  if you install the module that provides it.
+- **If you build packs:** old `aincient_pages:<name>` ids in your components and templates keep
+  working until 0.32.0, with a warning; `pack-validate` lists every file to change. Page kinds
+  name components by full id. See [Bring your own components](https://aincient-labs.com/docs/bring-your-own-components).
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.29.3] — 2026-11-21
 
 **Security release. Update now.**
 - PHP is updated to 8.4.28 (Debian 8.4.28-1~deb13u1). This fixes nine flaws in PHP, five of
   them rated critical, including session-handling bugs that can lead to remote code execution.
 - Nothing else changes: same Drupal, Apache and PostgreSQL client versions as 0.29.2. The update
-  downloads the new system-packages layer once (about 56–59 MB).
+  downloads the new system-packages layer once (about 66–68 MB).
 
 To update, run `atelier app update`, or re-run the installer as described in the quickstart's
 **Upgrade** section.

@@ -25,7 +25,7 @@ final class GalleryVariantsTest extends KernelTestBase {
     'user',
     'link',
     'menu_link_content',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   private const IMAGES = [

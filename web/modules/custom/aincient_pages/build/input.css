@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* Scan the component templates + controller for utility classes. */
-@source "../components/**/*.twig";
+@source "../../atelier/components/**/*.twig";
 @source "../src/**/*.php";
 
 /* ── Design tokens ─────────────────────────────────────────────────────────

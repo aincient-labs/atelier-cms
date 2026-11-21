@@ -172,12 +172,12 @@ function aincient_theme_preprocess_page(array &$variables): void {
   $chrome = \Drupal::service('aincient_pages.chrome');
   $variables['site_header'] = [
     '#type' => 'component',
-    '#component' => 'aincient_pages:site-header',
+    '#component' => 'atelier:site-header',
     '#props' => $chrome->headerProps(),
   ];
   $variables['site_footer'] = [
     '#type' => 'component',
-    '#component' => 'aincient_pages:site-footer',
+    '#component' => 'atelier:site-footer',
     '#props' => $chrome->footerProps(),
   ];
 
@@ -256,7 +256,7 @@ function aincient_theme_preprocess_maintenance_page(array &$variables): void {
  *
  * Build clean, plain-string meta (author + date) for every node, plus the full
  * teaser prop bag, so node templates render through the token-driven
- * aincient_pages:article-teaser SDC (listings) and the shared prose styles
+ * atelier:article-teaser SDC (listings) and the shared prose styles
  * (full view) — consistent with the page builder. Computing strings here keeps
  * the templates free of field/entity plumbing.
  */

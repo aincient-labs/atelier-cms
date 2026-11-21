@@ -71,7 +71,7 @@ final class AdmissionGate {
     }
     // Built-ins claim their names first: on a collision the pack is the one
     // refused, whatever order discovery returned the providers in.
-    uasort($definitions, static fn (array $a, array $b): int => (($b['provider'] ?? '') === 'aincient_pages') <=> (($a['provider'] ?? '') === 'aincient_pages'));
+    uasort($definitions, static fn (array $a, array $b): int => (($b['provider'] ?? '') === ComponentCatalog::BUILTIN_PROVIDER) <=> (($a['provider'] ?? '') === ComponentCatalog::BUILTIN_PROVIDER));
 
     foreach ($definitions as $id => $definition) {
       $atelier = $definition['thirdPartySettings']['atelier'] ?? NULL;
@@ -183,7 +183,7 @@ final class AdmissionGate {
           }
         }
       }
-      elseif ($isPlaceable && $provider !== 'aincient_pages' && $provider !== '') {
+      elseif ($isPlaceable && $provider !== ComponentCatalog::BUILTIN_PROVIDER && $provider !== '') {
         $warnings[] = 'no "examples" declared — the gallery cannot render this component and the agent gets no few-shot for it.';
       }
 

@@ -38,7 +38,7 @@ final class WorkflowModerationTest extends KernelTestBase {
 
   protected static $modules = [
     'system', 'user', 'field', 'text', 'node', 'language', 'content_translation',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     // Test-only: its provenance field (revision_graph_parent) records which
     // revision each save was built on — the structural witness for per-language
     // heads. Product code never depends on it.

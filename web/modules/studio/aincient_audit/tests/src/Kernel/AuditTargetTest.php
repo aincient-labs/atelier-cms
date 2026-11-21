@@ -75,7 +75,7 @@ final class AuditTargetTest extends KernelTestBase {
     'flowdrop_interrupt',
     'flowdrop_memory',
     'aincient_core',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_audit',
     'aincient_flows',
   ];

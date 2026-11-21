@@ -8,6 +8,7 @@ use Aincient\PageModel\Catalog\AdmissionGate;
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\Catalog\ExampleRenderer;
 use Aincient\PageModel\ComponentCatalog;
+use Aincient\PageModel\ComponentId;
 use Drupal\aincient_pages\UsageIndex;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -116,11 +117,13 @@ final class ConstraintController implements ContainerInjectionInterface {
 
     $config = $this->configFactory->getEditable('aincient_pages.site_constraint');
     $applied = [];
+    // Stored ids are full (DECISIONS 0536); the pane speaks short names.
+    $providers = ComponentId::providers($this->catalog->discovered());
 
     if (is_array($data['components'] ?? NULL)) {
       // Unknown names are stored anyway (a pack may be temporarily uninstalled;
       // its removal must survive) — the compiler warns, never fatals.
-      $config->set('components', array_values(array_unique(array_map('strval', $data['components']))));
+      $config->set('components', ComponentId::qualifyConstraint(['components' => array_values(array_unique(array_map('strval', $data['components'])))], $providers)['components']);
       $applied[] = 'components';
     }
     if (is_array($data['tones'] ?? NULL)) {
@@ -148,7 +151,7 @@ final class ConstraintController implements ContainerInjectionInterface {
           $variants[$name] = $removed;
         }
       }
-      $config->set('variants', $variants);
+      $config->set('variants', ComponentId::qualifyConstraint(['variants' => $variants], $providers)['variants']);
       $applied[] = 'variants';
     }
     if (is_array($data['component_tones'] ?? NULL)) {
@@ -165,7 +168,7 @@ final class ConstraintController implements ContainerInjectionInterface {
           }
         }
       }
-      $config->set('component_tones', $componentTones);
+      $config->set('component_tones', ComponentId::qualifyConstraint(['component_tones' => $componentTones], $providers)['component_tones']);
       $applied[] = 'component_tones';
     }
 
@@ -272,13 +275,7 @@ final class ConstraintController implements ContainerInjectionInterface {
       // Pack components the admission gate refused — the rail's "Can't be
       // used" group, each with a plain-language reason (P3).
       'blocked' => self::blocked($definitions),
-      'constraint' => [
-        'overrides_off' => $overridesOff,
-        'components' => $config->get('components') ?? [],
-        'tones' => $config->get('tones') ?? [],
-        'variants' => (object) ($config->get('variants') ?? []),
-        'component_tones' => (object) ($config->get('component_tones') ?? []),
-      ],
+      'constraint' => ['overrides_off' => $overridesOff] + self::shortConstraint($config->get('components'), $config->get('tones'), $config->get('variants'), $config->get('component_tones')),
       'vocabulary' => [
         'components' => $components,
         'tones' => ComponentCatalog::TONES,
@@ -293,6 +290,23 @@ final class ConstraintController implements ContainerInjectionInterface {
   }
 
   /**
+   * The stored constraint as the pane reads it: short names (DECISIONS 0536).
+   */
+  private static function shortConstraint(mixed $components, mixed $tones, mixed $variants, mixed $componentTones): array {
+    $short = ComponentId::shortenConstraint([
+      'components' => is_array($components) ? $components : [],
+      'variants' => is_array($variants) ? $variants : [],
+      'component_tones' => is_array($componentTones) ? $componentTones : [],
+    ]);
+    return [
+      'components' => $short['components'],
+      'tones' => is_array($tones) ? $tones : [],
+      'variants' => (object) $short['variants'],
+      'component_tones' => (object) $short['component_tones'],
+    ];
+  }
+
+  /**
    * Which pack overrides each built-in: original SDC id => the replacement.
    *
    * @return array<string, array{id: string, provider: string, label: string}>
@@ -302,6 +316,10 @@ final class ConstraintController implements ContainerInjectionInterface {
     foreach ($definitions as $id => $definition) {
       $target = $definition['replaces'] ?? NULL;
       if (is_string($target) && $target !== '') {
+        // A pack written before 0.30.0 still names the original by its old id
+        // (`aincient_pages:hero`); key it by the id the original has now, the
+        // one overrides_off and the rail use (bridge ends in 0.32.0).
+        $target = ComponentId::bridge($target) ?? $target;
         $out[$target] = [
           'id' => (string) $id,
           'provider' => (string) ($definition['provider'] ?? ''),

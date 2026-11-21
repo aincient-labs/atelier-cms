@@ -26,7 +26,7 @@ final class PackEndToEndTest extends KernelTestBase {
     'user',
     'link',
     'menu_link_content',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     'atelier_test_pack',
   ];
 

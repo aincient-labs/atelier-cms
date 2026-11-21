@@ -42,7 +42,7 @@ final class ManagersTest extends KernelTestBase {
     'workflows',
     'content_moderation',
     'aincient_core',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_export',
     'aincient_chat',
     'aincient_studio_site',

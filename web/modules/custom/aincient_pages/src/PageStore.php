@@ -8,6 +8,7 @@ use Aincient\PageModel\AnchorSlug;
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Aincient\PageModel\Catalog\EffectiveCatalog;
 use Aincient\PageModel\ComponentCatalog;
+use Aincient\PageModel\ComponentId;
 use Aincient\PageModel\PageSchemaCodec;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -1110,11 +1111,14 @@ final class PageStore {
     // The entity's own label key: `title` for a page node, `name` for a block
     // media entity (DECISIONS 0138) — so the same schema write drives both.
     $node->set($node->getEntityType()->getKey('label'), $clean['title']);
-    $node->set('field_page_content', json_encode($split['content']));
+    // Storage holds full component ids (DECISIONS 0536); everything above it
+    // still speaks short names in A0 — ComponentId is the one translator.
+    $providers = ComponentId::providers($this->catalog->discovered());
+    $node->set('field_page_content', json_encode(ComponentId::qualifyContent($split['content'], $providers)));
     // Source translation, or a translation that owns its layout, persists the
     // structure; a symmetric translation leaves it empty to inherit the source.
     if ($this->ownsStructure($node)) {
-      $node->set('field_page_structure', json_encode($split['structure']));
+      $node->set('field_page_structure', json_encode(ComponentId::qualifyStructure($split['structure'], $providers)));
     }
     else {
       $node->set('field_page_structure', '');
@@ -1928,7 +1932,15 @@ final class PageStore {
       return [];
     }
     $data = json_decode((string) $node->get($field)->value, TRUE);
-    return is_array($data) ? $data : [];
+    if (!is_array($data)) {
+      return [];
+    }
+    // Stored ids are full (DECISIONS 0536); the schema above storage is short.
+    return match ($field) {
+      'field_page_structure' => ComponentId::shortenStructure($data),
+      'field_page_content' => ComponentId::shortenContent($data),
+      default => $data,
+    };
   }
 
   /**

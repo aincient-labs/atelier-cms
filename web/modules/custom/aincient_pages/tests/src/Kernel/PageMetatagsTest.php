@@ -27,7 +27,7 @@ final class PageMetatagsTest extends KernelTestBase {
   protected static $modules = [
     'system', 'user', 'field', 'text', 'token', 'path', 'path_alias', 'node',
     'metatag', 'file', 'image', 'media', 'workflows', 'content_moderation',
-    'aincient_core', 'aincient_pages',
+    'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   protected function setUp(): void {

@@ -26,7 +26,7 @@ final class KindControllerTest extends KernelTestBase {
 
   protected static $modules = [
     'system', 'user', 'field', 'filter', 'text', 'node', 'key',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     'aincient_chat', 'aincient_studio_components',
   ];
 
@@ -79,6 +79,14 @@ final class KindControllerTest extends KernelTestBase {
     $this->assertSame(['split'], $result['effective']['variants']['hero']);
     $this->assertSame('hero', $result['effective']['opener']);
     $this->assertSame(['cta' => 1], $result['effective']['limits']);
+    // Stored with full ids (DECISIONS 0536); the studio still reads short names.
+    $raw = $this->config('aincient_pages.page_kind.landing');
+    $this->assertSame(['atelier:hero'], array_keys($raw->get('components')));
+    $this->assertSame('atelier:hero', $raw->get('opener'));
+    $this->assertSame(['atelier:cta' => 1], $raw->get('limits'));
+    $this->assertSame(['atelier:pricing'], $raw->get('removed'));
+    $this->assertSame('hero', $result['kind']['opener']);
+    $this->assertSame(['pricing'], $result['kind']['removed']);
 
     $hold = $this->post('save', ['include_new' => FALSE, 'components' => ['hero' => [], 'cta' => []]], 'landing');
     $this->assertEqualsCanonicalizing(['hero', 'cta'], $hold['effective']['placeable']);

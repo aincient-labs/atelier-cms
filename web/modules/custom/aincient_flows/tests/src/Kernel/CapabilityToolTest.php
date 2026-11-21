@@ -49,7 +49,7 @@ final class CapabilityToolTest extends KernelTestBase {
     'aincient_core',
     'workflows',
     'content_moderation',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     // `preview_chrome` — the one capability below with free-text JSON args and
     // no content prerequisite — is the Site studios' verb (Phase E.3), and
     // `preview_page` — the schema / ops fixture — is the Content studio's

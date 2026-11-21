@@ -21,7 +21,7 @@ final class LockControllerInputTest extends KernelTestBase {
   protected static $modules = [
     'system',
     'user',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   protected function setUp(): void {

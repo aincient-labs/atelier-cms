@@ -34,7 +34,7 @@ final class PreviewPageTest extends KernelTestBase {
     'text',
     'key',
     'aincient_core',
-    'workflows', 'content_moderation', 'aincient_pages',
+    'workflows', 'content_moderation', 'atelier', 'aincient_pages',
     // The verb is the Content studio's (Phase E.4): its module, and the studio
     // frame it depends on.
     'filter', 'aincient_chat', 'aincient_studio_content',

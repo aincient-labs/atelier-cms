@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages\Catalog;
 
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\aincient_pages\Controller\PageSpikeController;
 use Drupal\Core\DependencyInjection\ClassResolverInterface;
 use Drupal\Core\Extension\ModuleExtensionList;
@@ -25,7 +26,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Example images (D9): a `placeholder:<name>` value anywhere in an example's
  * props resolves to a shipped file — the declaring module's
- * `images/placeholders/<name>.svg`, else aincient_pages' set. Only this renderer
+ * `images/placeholders/<name>.svg`, else the built-ins' set (atelier). Only this renderer
  * resolves the token: it is never a media entity and a page cannot store it.
  */
 final class ExampleRenderer {
@@ -167,7 +168,7 @@ final class ExampleRenderer {
    * The URL of a shipped placeholder: the provider's own first, then ours.
    */
   private function placeholderUrl(string $name, string $provider): ?string {
-    foreach (array_unique(array_filter([$provider, 'aincient_pages'])) as $module) {
+    foreach (array_unique(array_filter([$provider, ComponentCatalog::BUILTIN_PROVIDER])) as $module) {
       try {
         $path = $this->moduleList->getPath($module);
       }

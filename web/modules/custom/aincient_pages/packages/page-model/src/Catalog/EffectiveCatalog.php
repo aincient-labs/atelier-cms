@@ -358,12 +358,12 @@ final class EffectiveCatalog {
    *
    * A client's `spotlight` carries no model prior the way our `hero` does, so
    * its first declared example (the gallery fixture) is inlined as a concrete
-   * add_section shape. Built-ins (provider `aincient_pages`) and virtual defs
+   * add_section shape. Built-ins (provider `atelier`) and virtual defs
    * (provider '') stay bare — priors exist and the prompt budget stays flat.
    */
   private function fewShot(string $name, array $def): ?string {
     $provider = (string) ($def['provider'] ?? '');
-    if ($provider === '' || $provider === 'aincient_pages') {
+    if ($provider === '' || $provider === ComponentCatalog::BUILTIN_PROVIDER) {
       return NULL;
     }
     $props = ($def['examples'] ?? [])[0]['props'] ?? NULL;

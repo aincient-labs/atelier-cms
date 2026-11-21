@@ -44,8 +44,8 @@ final class ChromeUtilitiesAreBuiltTest extends TestCase {
    * Chrome components whose class attributes drive the assertions.
    */
   private const COMPONENTS = [
-    'web/modules/custom/aincient_pages/components/site-header/site-header.twig',
-    'web/modules/custom/aincient_pages/components/site-footer/site-footer.twig',
+    'web/modules/custom/atelier/components/site-header/site-header.twig',
+    'web/modules/custom/atelier/components/site-footer/site-footer.twig',
   ];
 
   /**

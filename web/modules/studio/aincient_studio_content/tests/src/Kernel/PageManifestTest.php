@@ -23,7 +23,7 @@ final class PageManifestTest extends KernelTestBase {
   protected static $modules = [
     'system',
     'user',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     'atelier_test_pack',
   ];
 
@@ -57,7 +57,7 @@ final class PageManifestTest extends KernelTestBase {
     $byName = array_column($manifest['sections'], NULL, 'component');
     $this->assertSame('◆', $byName['hero']['icon']);
     $this->assertSame('section', $byName['hero']['tier']);
-    $this->assertSame('aincient_pages', $byName['hero']['provider']);
+    $this->assertSame('atelier', $byName['hero']['provider']);
     $this->assertSame('atelier_test_pack', $byName['spotlight']['provider'], 'A pack component declares its provenance.');
   }
 

@@ -12,7 +12,7 @@ const TONES = ["default", "muted", "brand", "inverted"];
 
 function entry(name: string, variants: string[] = [], tones: string[] = TONES): ComponentEntry {
   return {
-    name, tier: "section", icon: "", use: "", provider: "aincient_pages", group: "other",
+    name, tier: "section", icon: "", use: "", provider: "atelier", group: "other",
     variants, tones, examples: [], usage: { pages: 0, blocks: 0, variants: {}, tones: {} },
   };
 }

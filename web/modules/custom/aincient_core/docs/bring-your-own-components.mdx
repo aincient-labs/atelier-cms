@@ -36,14 +36,14 @@ place in the agent's grammar — your HTML.
 
 ```yaml title="my_components/components/hero/hero.component.yml"
 name: Hero
-replaces: 'aincient_pages:hero'
+replaces: 'atelier:hero'
 props:
   # Copy the original's props schema verbatim — the replacement must accept
   # exactly what the validator sends the original.
 ```
 
 Copy the original component's `.component.yml` props from the
-`aincient_pages/components/` directory of the release you pinned, keep the schema
+`atelier/components/` directory of the release you pinned, keep the schema
 identical, and write your own Twig. The page agent, the validator, and every existing
 page keep working: they speak in component names and props, and the renderer picks up
 your implementation.
@@ -52,6 +52,16 @@ In the Components room, a replaced component shows a **Replaced by** badge with 
 module's name. The site owner can preview your version and the original side by side
 (**Compare**), and switch one back with **Use original instead** — your module stays
 installed, the site just renders the original until they switch it on again.
+
+### Built-in ids since 0.30.0
+
+Since Atelier 0.30.0 the built-in components live in the `atelier` module, so their ids
+are `atelier:<name>` (`atelier:hero`, `atelier:card`). Before, they were
+`aincient_pages:<name>`. Code written against the old ids keeps working until 0.32.0:
+a `replaces: 'aincient_pages:hero'` or a Twig `include('aincient_pages:card')` is read as
+the new id, and the site logs a warning once per old id. `pack-validate` warns about
+each file that still uses one. Rename them before 0.32.0, which removes the old ids.
+`atelier` is reserved: no pack can use it as its name.
 
 Component replacement is core Drupal — see the official
 [single-directory components documentation](https://www.drupal.org/docs/develop/theming-drupal/using-single-directory-components)

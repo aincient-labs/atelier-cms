@@ -50,7 +50,7 @@ final class StudioAccessTest extends KernelTestBase {
     'aincient_core',
     'workflows',
     'content_moderation',
-    'aincient_pages',
+    'atelier', 'aincient_pages',
     'aincient_chat',
     // The gated-studio fixture: every built-in is a studio MODULE now (Phase E,
     // DECISIONS 0431–0436), so the access rule is proven on the test manifest.

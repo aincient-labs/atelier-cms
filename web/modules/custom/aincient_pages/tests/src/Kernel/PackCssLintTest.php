@@ -23,7 +23,7 @@ final class PackCssLintTest extends KernelTestBase {
     'user',
     'link',
     'menu_link_content',
-    'workflows', 'content_moderation', 'aincient_core', 'aincient_pages',
+    'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages',
     'atelier_test_build_pack',
     'atelier_test_dirty_pack',
     'atelier_test_hand_pack',

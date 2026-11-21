@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Aincient\PageModel\Catalog;
 
 use Aincient\PageModel\ComponentCatalog;
+use Aincient\PageModel\ComponentId;
 
 /**
  * Pure compile step: SDC definitions ∩ site-constraint ∩ kind → an
@@ -69,6 +70,9 @@ final class CatalogCompiler {
    */
   public static function compile(array $definitions, ?PageKindDefinitionInterface $kind, array $constraint = [], string $kindId = 'landing', array $fallback = []): EffectiveCatalog {
     $warnings = [];
+    // The stored constraint holds full ids from 0.30.0 (DECISIONS 0536); the
+    // compiler keys on short names until A1. Kinds shorten in their getters.
+    $constraint = ComponentId::shortenConstraint($constraint);
 
     // 1. Discover: every definition carrying the atelier contract, by tier —
     // AFTER the admission gate (§3.3, the hard floor): a rejected def is

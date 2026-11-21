@@ -7,6 +7,7 @@ namespace Drupal\aincient_studio_components\Controller;
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Drupal\aincient_pages\Catalog\KindCheck;
 use Aincient\PageModel\ComponentCatalog;
+use Aincient\PageModel\ComponentId;
 use Drupal\aincient_pages\Entity\PageKindInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
@@ -102,7 +103,9 @@ final class KindController implements ContainerInjectionInterface {
     if (!$entity->isComposition()) {
       return new JsonResponse(['error' => 'This kind has a fixed layout — there is nothing to place.'], 422);
     }
-    foreach ($values as $key => $value) {
+    // Stored ids are full (DECISIONS 0536); the studio speaks short names.
+    $stored = ComponentId::qualifyKind($values, ComponentId::providers($this->catalog->discovered()));
+    foreach ($stored as $key => $value) {
       $entity->set($key, $value);
     }
     $entity->save();
@@ -179,7 +182,7 @@ final class KindController implements ContainerInjectionInterface {
       ],
       // What the site layer has already turned off — locked in a kind scope.
       'site_off' => [
-        'components' => $site->get('components') ?? [],
+        'components' => ComponentId::shortenConstraint(['components' => $site->get('components') ?? []])['components'],
         'tones' => $site->get('tones') ?? [],
       ],
       'scopes' => $this->scopes(),

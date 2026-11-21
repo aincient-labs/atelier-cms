@@ -22,7 +22,7 @@ final class PageStoreTest extends KernelTestBase {
 
   use EditorialWorkflowTestTrait;
 
-  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'aincient_pages'];
+  protected static $modules = ['system', 'user', 'field', 'text', 'node', 'workflows', 'content_moderation', 'aincient_core', 'atelier', 'aincient_pages'];
 
   protected function setUp(): void {
     parent::setUp();
@@ -107,6 +107,55 @@ final class PageStoreTest extends KernelTestBase {
 
   private function store(): PageStore {
     return $this->container->get('aincient_pages.store');
+  }
+
+  /**
+   * Storage holds full ids; PageStore hands out short names (DECISIONS 0536,
+   * failure modes R2). Accordion children (content layer) are qualified too;
+   * a prop value equal to a component name is not a component (R3).
+   */
+  public function testStorageHoldsFullIdsAndReadsShortNames(): void {
+    $schema = [
+      'type' => 'landing',
+      'title' => 'Ids',
+      'sections' => [
+        ['component' => 'hero', 'props' => ['variant' => 'centered', 'heading' => 'hero']],
+        ['component' => 'accordion', 'props' => [
+          'panels' => [['label' => 'One', 'blocks' => [['component' => 'markdown', 'props' => ['markdown' => 'x']]]]],
+        ]],
+      ],
+    ];
+    $id = $this->store()->store($schema);
+    $node = $this->container->get('entity_type.manager')->getStorage('node')->load($id);
+
+    $structure = json_decode((string) $node->get('field_page_structure')->value, TRUE);
+    $this->assertSame(['atelier:hero', 'atelier:accordion'], array_column($structure['slots'], 'component'));
+    $content = json_decode((string) $node->get('field_page_content')->value, TRUE);
+    $slot = $structure['slots'][1]['id'];
+    $this->assertSame('atelier:markdown', $content['slots'][$slot]['panels'][0]['blocks'][0]['component']);
+    $this->assertSame('hero', $content['slots'][$structure['slots'][0]['id']]['heading'], 'A prop value is never rewritten.');
+
+    $resolved = $this->store()->resolve($node);
+    $this->assertSame(['hero', 'accordion'], array_column($resolved['sections'], 'component'));
+    $this->assertSame('markdown', $resolved['sections'][1]['props']['panels'][0]['blocks'][0]['component']);
+  }
+
+  /**
+   * Rows the 0.30.0 rewrite has not reached (bare names) and rows it could
+   * not map (`unresolved:`) read as short names — no behaviour change.
+   */
+  public function testBareAndUnresolvedStoredNamesStillRead(): void {
+    $id = $this->store()->store(['type' => 'landing', 'title' => 'Old', 'sections' => [
+      ['component' => 'hero', 'props' => ['variant' => 'centered', 'heading' => 'A']],
+      ['component' => 'cta', 'props' => ['heading' => 'B']],
+    ]]);
+    $node = $this->container->get('entity_type.manager')->getStorage('node')->load($id);
+    $structure = json_decode((string) $node->get('field_page_structure')->value, TRUE);
+    $structure['slots'][0]['component'] = 'hero';
+    $structure['slots'][1]['component'] = 'unresolved:cta';
+    $node->set('field_page_structure', json_encode($structure));
+
+    $this->assertSame(['hero', 'cta'], array_column($this->store()->resolve($node)['sections'], 'component'));
   }
 
   public function testCollectionClampsQueryKnobsToTheGrammar(): void {

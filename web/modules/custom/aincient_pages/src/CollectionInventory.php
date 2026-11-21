@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_pages;
 
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\ComponentId;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
@@ -130,6 +131,7 @@ final class CollectionInventory {
         continue;
       }
       $structure = json_decode((string) $node->get('field_page_structure')->value, TRUE);
+      $structure = is_array($structure) ? ComponentId::shortenStructure($structure) : NULL;
       // Only composition kinds own a section stack a collection can sit in —
       // a recipe page (blog) has slots for nothing.
       if (!is_array($structure) || !$this->catalog->for((string) ($structure['type'] ?? ''))->isComposition()) {

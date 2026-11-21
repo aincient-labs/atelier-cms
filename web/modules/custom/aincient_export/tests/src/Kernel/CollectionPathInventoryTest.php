@@ -29,7 +29,7 @@ final class CollectionPathInventoryTest extends KernelTestBase {
   protected static $modules = [
     'system', 'user', 'field', 'text', 'filter', 'node', 'file', 'image',
     'path_alias', 'workflows', 'content_moderation', 'aincient_core',
-    'aincient_pages', 'aincient_export',
+    'atelier', 'aincient_pages', 'aincient_export',
   ];
 
   protected function setUp(): void {
@@ -57,9 +57,9 @@ final class CollectionPathInventoryTest extends KernelTestBase {
       'field_page_structure' => json_encode([
         'type' => 'landing',
         'slots' => [
-          ['id' => 'aaaa', 'component' => 'collection', 'mode' => 'index', 'source' => 'blog', 'sort' => 'newest'],
+          ['id' => 'aaaa', 'component' => 'atelier:collection', 'mode' => 'index', 'source' => 'blog', 'sort' => 'newest'],
           // A strip contributes NO JSON/archive path.
-          ['id' => 'bbbb', 'component' => 'collection', 'mode' => 'strip', 'source' => 'blog', 'sort' => 'newest'],
+          ['id' => 'bbbb', 'component' => 'atelier:collection', 'mode' => 'strip', 'source' => 'blog', 'sort' => 'newest'],
         ],
       ]),
     ])->save();

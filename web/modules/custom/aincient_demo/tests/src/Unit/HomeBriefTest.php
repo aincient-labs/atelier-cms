@@ -42,11 +42,11 @@ final class HomeBriefTest extends UnitTestCase {
    */
   private function catalog(): EffectiveCatalog {
     $definitions = [];
-    $dir = dirname(__DIR__, 4) . '/aincient_pages/components';
+    $dir = dirname(__DIR__, 4) . '/atelier/components';
     foreach (glob($dir . '/*/*.component.yml') as $file) {
       $name = basename(dirname($file));
-      $definitions['aincient_pages:' . $name] = Yaml::parseFile($file) + [
-        'provider' => 'aincient_pages',
+      $definitions['atelier:' . $name] = Yaml::parseFile($file) + [
+        'provider' => 'atelier',
         'machineName' => $name,
       ];
     }

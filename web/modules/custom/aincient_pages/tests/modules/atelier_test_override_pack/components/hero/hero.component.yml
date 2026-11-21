@@ -31,4 +31,4 @@ slots:
   image:
     title: 'Hero image'
     description: 'Responsive <picture> built by the renderer from the image media token.'
-replaces: 'aincient_pages:hero'
+replaces: 'atelier:hero'

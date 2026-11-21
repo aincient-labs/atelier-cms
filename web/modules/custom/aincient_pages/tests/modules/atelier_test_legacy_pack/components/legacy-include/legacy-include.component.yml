@@ -1,0 +1,9 @@
+# Includes a built-in by its pre-0.30.0 id. No atelier metadata: the gate
+# ignores it; only rendering is under test.
+name: 'Legacy include'
+status: experimental
+group: 'Atelier test legacy pack'
+props:
+  type: object
+  properties:
+    label: { type: string }

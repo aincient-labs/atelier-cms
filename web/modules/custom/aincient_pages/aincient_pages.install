@@ -687,3 +687,26 @@ function aincient_pages_update_10019(): \Drupal\Core\StringTranslation\Translata
   $config->save();
   return t('Cleared the shipped @keys (media:7), which no one had chosen.', ['@keys' => implode(' and ', $keys)]);
 }
+
+/**
+ * Enable the `atelier` module, the new home of the built-in components.
+ *
+ * DECISIONS 0534: the 28 built-ins moved from aincient_pages/components to
+ * atelier/components, so their SDC ids are now `atelier:<name>`. This runs
+ * before any post_update (the stored-name rewrite, 0535) and before
+ * config:import, so no render or rewrite ever runs with the components'
+ * provider missing (plans/namespaced-components-a0-failure-modes.md S1).
+ */
+function aincient_pages_update_10020(): \Drupal\Core\StringTranslation\TranslatableMarkup {
+  $handler = \Drupal::moduleHandler();
+  if ($handler->moduleExists('atelier')) {
+    return t('The atelier module is already enabled.');
+  }
+  $path = \Drupal::service('extension.list.module')->getPathname('atelier');
+  if (!str_ends_with(dirname($path), 'modules/custom/atelier')) {
+    // A third-party module named `atelier` would take the built-ins' place.
+    throw new \RuntimeException(sprintf('A module named "atelier" at %s clashes with Atelier\'s built-in components. Rename that module, then update again.', dirname($path)));
+  }
+  \Drupal::service('module_installer')->install(['atelier'], FALSE);
+  return t('Enabled the atelier module (built-in components).');
+}

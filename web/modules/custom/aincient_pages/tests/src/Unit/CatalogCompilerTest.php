@@ -33,8 +33,8 @@ final class CatalogCompilerTest extends UnitTestCase {
    */
   private function fixtureDefinitions(): array {
     return [
-      'aincient_pages:alpha' => [
-        'provider' => 'aincient_pages',
+      'atelier:alpha' => [
+        'provider' => 'atelier',
         'machineName' => 'alpha',
         'thirdPartySettings' => [
           'atelier' => [
@@ -51,8 +51,8 @@ final class CatalogCompilerTest extends UnitTestCase {
           ],
         ],
       ],
-      'aincient_pages:omega' => [
-        'provider' => 'aincient_pages',
+      'atelier:omega' => [
+        'provider' => 'atelier',
         'machineName' => 'omega',
         'thirdPartySettings' => [
           'atelier' => [
@@ -68,8 +68,8 @@ final class CatalogCompilerTest extends UnitTestCase {
           ],
         ],
       ],
-      'aincient_pages:frame' => [
-        'provider' => 'aincient_pages',
+      'atelier:frame' => [
+        'provider' => 'atelier',
         'machineName' => 'frame',
         'thirdPartySettings' => [
           'atelier' => [
@@ -85,8 +85,8 @@ final class CatalogCompilerTest extends UnitTestCase {
           ],
         ],
       ],
-      'aincient_pages:mirror' => [
-        'provider' => 'aincient_pages',
+      'atelier:mirror' => [
+        'provider' => 'atelier',
         'machineName' => 'mirror',
         'thirdPartySettings' => [
           'atelier' => [
@@ -102,8 +102,8 @@ final class CatalogCompilerTest extends UnitTestCase {
         ],
       ],
       // No atelier contract — must never reach the palette.
-      'aincient_pages:naked' => [
-        'provider' => 'aincient_pages',
+      'atelier:naked' => [
+        'provider' => 'atelier',
         'machineName' => 'naked',
       ],
     ];
@@ -163,11 +163,11 @@ final class CatalogCompilerTest extends UnitTestCase {
    */
   public function testCollidingPackDoesNotDropTheBuiltin(): void {
     $builtins = $this->fixtureDefinitions();
-    $pack = ['acme_pack:alpha' => ['provider' => 'acme_pack'] + $builtins['aincient_pages:alpha']];
+    $pack = ['acme_pack:alpha' => ['provider' => 'acme_pack'] + $builtins['atelier:alpha']];
     foreach ([$pack + $builtins, $builtins + $pack] as $definitions) {
       $catalog = CatalogCompiler::compile($definitions, NULL);
       $this->assertSame(['omega', 'alpha'], $catalog->sectionNames());
-      $this->assertSame('aincient_pages', $catalog->sections()['alpha']['provider']);
+      $this->assertSame('atelier', $catalog->sections()['alpha']['provider']);
       $this->assertCount(1, $catalog->warnings());
       $this->assertStringContainsString('"acme_pack:alpha" rejected', $catalog->warnings()[0]);
     }
@@ -181,8 +181,8 @@ final class CatalogCompilerTest extends UnitTestCase {
     $catalog = CatalogCompiler::compile($this->fixtureDefinitions(), NULL);
     $this->assertArrayHasKey('block', $catalog->reference());
     $this->assertNull($catalog->pluginId('block'));
-    $this->assertSame('aincient_pages:alpha', $catalog->pluginId('alpha'));
-    $this->assertSame('aincient_pages:frame', $catalog->pluginId('frame'));
+    $this->assertSame('atelier:alpha', $catalog->pluginId('alpha'));
+    $this->assertSame('atelier:frame', $catalog->pluginId('frame'));
     $this->assertNull($catalog->pluginId('ghost'));
   }
 
@@ -411,12 +411,12 @@ final class CatalogCompilerTest extends UnitTestCase {
    */
   private function realDefinitions(): array {
     $definitions = [];
-    $files = glob(dirname(__DIR__, 3) . '/components/*/*.component.yml');
+    $files = glob(dirname(__DIR__, 4) . '/atelier/components/*/*.component.yml');
     $this->assertNotEmpty($files, 'No .component.yml files found on disk.');
     foreach ($files as $file) {
       $name = basename(dirname($file));
-      $definitions['aincient_pages:' . $name] = Yaml::parseFile($file) + [
-        'provider' => 'aincient_pages',
+      $definitions['atelier:' . $name] = Yaml::parseFile($file) + [
+        'provider' => 'atelier',
         'machineName' => $name,
       ];
     }

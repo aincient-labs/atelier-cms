@@ -85,7 +85,7 @@ function entry(name: string, over: Partial<ComponentEntry> = {}): ComponentEntry
     tier: "section",
     icon: "",
     use: "",
-    provider: "aincient_pages",
+    provider: "atelier",
     group: "other",
     variants: [],
     tones: [],
@@ -283,7 +283,7 @@ describe("grouping, filters, search, status", () => {
     expect(groups[4].entries.map((e) => e.name)).toEqual(["acme_ticker"]);
   });
 
-  it("isPack: '' and aincient_pages are built-in, anything else is a pack", () => {
+  it("isPack: '' and atelier are built-in, anything else is a pack", () => {
     expect(isPack(HERO)).toBe(false);
     expect(isPack(BLOCK)).toBe(false);
     expect(isPack(PACK)).toBe(true);
@@ -611,12 +611,12 @@ const OVERRIDDEN = entry("hero", {
 describe("overrides_off in the site draft", () => {
   it("seeds from the stored constraint, deduped, and defaults to empty", () => {
     expect(seedConstraintDraft(manifest()).overrides_off).toEqual([]);
-    const m = manifest({ overrides_off: ["aincient_pages:hero", "aincient_pages:hero"] });
-    expect(seedConstraintDraft(m).overrides_off).toEqual(["aincient_pages:hero"]);
+    const m = manifest({ overrides_off: ["atelier:hero", "atelier:hero"] });
+    expect(seedConstraintDraft(m).overrides_off).toEqual(["atelier:hero"]);
   });
 
   it("the original's id is provider:name", () => {
-    expect(originalId(OVERRIDDEN)).toBe("aincient_pages:hero");
+    expect(originalId(OVERRIDDEN)).toBe("atelier:hero");
   });
 
   it("stages the switch as a change: dirty, cloned, discarded with the draft", () => {
@@ -628,21 +628,21 @@ describe("overrides_off in the site draft", () => {
     expect(countDirty(base, off)).toBe(1);
     const clone = cloneConstraintDraft(off);
     clone.overrides_off.push("x:y");
-    expect(off.overrides_off).toEqual(["aincient_pages:hero"]);
+    expect(off.overrides_off).toEqual(["atelier:hero"]);
     // Switching back is clean again, and never duplicates.
     expect(countDirty(base, setOverrideOff(off, OVERRIDDEN, false))).toBe(0);
-    expect(setOverrideOff(off, OVERRIDDEN, true).overrides_off).toEqual(["aincient_pages:hero"]);
+    expect(setOverrideOff(off, OVERRIDDEN, true).overrides_off).toEqual(["atelier:hero"]);
   });
 
   it("refuses a component no pack overrides", () => {
     const base = seedConstraintDraft(manifest());
     expect(setOverrideOff(base, HERO, true)).toBe(base);
-    expect(isOverrideOff({ ...base, overrides_off: ["aincient_pages:hero"] }, HERO)).toBe(false);
+    expect(isOverrideOff({ ...base, overrides_off: ["atelier:hero"] }, HERO)).toBe(false);
   });
 
   it("is sent on Publish", () => {
     const draft = setOverrideOff(seedConstraintDraft(manifest()), OVERRIDDEN, true);
-    expect(toSavePayload(draft).overrides_off).toEqual(["aincient_pages:hero"]);
+    expect(toSavePayload(draft).overrides_off).toEqual(["atelier:hero"]);
   });
 });
 
@@ -702,7 +702,7 @@ describe("filterBlocked", () => {
 
 describe("componentSummary", () => {
   it("gives a built-in its plain-language line, never the model-facing use", () => {
-    const s = componentSummary({ name: "features", provider: "aincient_pages", description: "columns reflow the cards." });
+    const s = componentSummary({ name: "features", provider: "atelier", description: "columns reflow the cards." });
     expect(s).toBe("A short intro and a row of cards, each naming one thing you offer.");
     expect(componentSummary({ name: "block", provider: "" })).toMatch(/reusable block/);
   });

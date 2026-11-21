@@ -40,7 +40,7 @@ final class PageTranslationAliasTest extends KernelTestBase {
     // aincient_core hard-depends on file (ContextLedgerEntry references File
     // entities) and pathauto/token walk every entity type's fields on save.
     'file',
-    'aincient_core', 'aincient_pages',
+    'aincient_core', 'atelier', 'aincient_pages',
   ];
 
   protected function setUp(): void {

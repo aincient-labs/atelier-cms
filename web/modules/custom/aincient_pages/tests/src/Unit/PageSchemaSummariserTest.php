@@ -31,10 +31,10 @@ final class PageSchemaSummariserTest extends UnitTestCase {
 
   private function summariser(): PageSchemaSummariser {
     $definitions = [];
-    foreach (glob(dirname(__DIR__, 3) . '/components/*/*.component.yml') as $file) {
+    foreach (glob(dirname(__DIR__, 4) . '/atelier/components/*/*.component.yml') as $file) {
       $name = basename(dirname($file));
-      $definitions['aincient_pages:' . $name] = Yaml::parseFile($file) + [
-        'provider' => 'aincient_pages',
+      $definitions['atelier:' . $name] = Yaml::parseFile($file) + [
+        'provider' => 'atelier',
         'machineName' => $name,
       ];
     }
