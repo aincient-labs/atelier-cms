@@ -148,7 +148,7 @@ RUN find /app /split -exec touch -h -t 202401010000 {} +
 #   public, multi-arch and cosign-signed, then rewrites this line.
 #
 # The digest is the authority; the date tag is for humans. Never pin a tag alone.
-FROM ghcr.io/aincient-labs/atelier-base:2026-11-19@sha256:3d5835a640b1a20ce2a52516974d14dd44d2b2207436a41f1f40348ba427667f AS runtime
+FROM ghcr.io/aincient-labs/atelier-base:2026-11-21.3@sha256:561c2adb905a268355eeffdd5849c632e9fa94475e012a7d58e4e20723f3bea5 AS runtime
 
 # Defence against a wrong pin: the base proves all of this when it is built, so
 # here it is a cheap re-check that writes no file (an empty layer). PHP floor =

@@ -7,6 +7,17 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.29.3] — 2026-11-21
+
+**Security release. Update now.**
+- PHP is updated to 8.4.28 (Debian 8.4.28-1~deb13u1). This fixes nine flaws in PHP, five of
+  them rated critical, including session-handling bugs that can lead to remote code execution.
+- Nothing else changes: same Drupal, Apache and PostgreSQL client versions as 0.29.2. The update
+  downloads the new system-packages layer once (about 56–59 MB).
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.29.2] — 2026-11-19
 
 **Smaller updates from the next release on.**
