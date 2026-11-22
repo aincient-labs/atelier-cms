@@ -36,7 +36,13 @@ interface PageKindDefinitionInterface {
   public function hint(): string;
 
   /**
-   * The component narrowing map: name => {variants?: [...], tones?: [...]}.
+   * The component narrowing map: id => {variants?: [...], tones?: [...]}.
+   *
+   * Every component reference a kind hands out (here, opener, limits,
+   * removed) is as STORED: a full id "provider:name" from 0.30.0 (0536). A
+   * full id names exactly one component — it picks that one when two share a
+   * short name (0539); a bare name (pre-0.30.0 pack input, test stand-ins)
+   * means whichever component the palette offers under that name.
    *
    * An EMPTY map means "the whole discovered palette" — no narrowing — so a
    * newly installed pack component reaches the kind without editing it. A

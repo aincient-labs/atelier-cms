@@ -36,43 +36,42 @@ final class AdmissionGate {
   private const TIERS = ['section', 'layout', 'reference', 'content', 'chrome'];
 
   /**
-   * Check every atelier-carrying definition. Keyed by component name; each
-   * verdict: ['tier' => ?string, 'errors' => string[], 'warnings' => string[]].
-   * A def with errors must be excluded from the catalog.
+   * Check every atelier-carrying definition. Keyed by full id
+   * ("provider:name") — a short name is not an identity since 0539; each
+   * verdict: ['tier' => ?string, 'provider' => string, 'errors' => string[],
+   * 'warnings' => string[]]. A def with errors must be excluded from the
+   * catalog.
    *
    * @param array<string, array> $definitions
    *   SDC plugin definitions (or parsed .component.yml stand-ins carrying
    *   'provider' + 'machineName' + 'thirdPartySettings').
    * @param string[] $virtualNames
    *   Names reserved by virtual (non-SDC) defs — e.g. 'block'.
+   *
+   * @return array<string, array{tier: ?string, provider: string, errors: string[], warnings: string[]}>
    */
   public static function check(array $definitions, array $virtualNames = ['block']): array {
     $verdicts = [];
     foreach (self::checkEach($definitions, $virtualNames) as $id => $verdict) {
-      $verdicts[(string) $definitions[$id]['machineName']] = $verdict;
+      $verdicts[$verdict['provider'] . ':' . (string) $definitions[$id]['machineName']] = $verdict;
     }
     return $verdicts;
   }
 
   /**
-   * The same verdicts keyed by definition (plugin id), not by name.
-   *
-   * On a name collision check() keeps only the LATER def's verdict, so a
-   * rejected pack component would read as the verdict of the built-in it
-   * collides with. Callers that act per definition use this.
+   * The same verdicts keyed by the caller's own definition keys (the SDC
+   * plugin id for real definitions).
    *
    * @return array<string, array{tier: ?string, provider: string, errors: string[], warnings: string[]}>
    */
   public static function checkEach(array $definitions, array $virtualNames = ['block']): array {
     $verdicts = [];
+    $virtual = array_fill_keys($virtualNames, TRUE);
+    // name => the first def that claimed it: id, provider, tier, paired.
     $seen = [];
-    foreach ($virtualNames as $name) {
-      $seen[$name] = '(virtual)';
-    }
     // Built-ins claim their names first: on a collision the pack is the one
-    // refused, whatever order discovery returned the providers in.
+    // refused (or paired), whatever order discovery returned the providers in.
     uasort($definitions, static fn (array $a, array $b): int => (($b['provider'] ?? '') === ComponentCatalog::BUILTIN_PROVIDER) <=> (($a['provider'] ?? '') === ComponentCatalog::BUILTIN_PROVIDER));
-
     foreach ($definitions as $id => $definition) {
       $atelier = $definition['thirdPartySettings']['atelier'] ?? NULL;
       if (!is_array($atelier)) {
@@ -99,9 +98,33 @@ final class AdmissionGate {
         $errors[] = sprintf('unknown tier "%s" (section|layout|reference|content|chrome).', $tier);
       }
 
-      // Rule 1 — globally unique names; reserved layout words stay reserved.
+      // Rule 1 — names are globally unique (one word, one concept), with ONE
+      // exception (DECISIONS 0539): a pack component may share a built-in's
+      // name when both are placeable in the same tier — a same-name pair; each
+      // page kind offers one of them and a page holds one. Never across tiers,
+      // never a chrome or content name (the renderer asks for those by short
+      // name: site-header, card, prose…), never two packs, never a second
+      // pack. Virtual names, the renderer's special names and the reserved
+      // layout words stay global (D-06).
       if (isset($seen[$name])) {
-        $errors[] = sprintf('name collides with %s — component names are globally unique (one word, one concept).', $seen[$name]);
+        $first = $seen[$name];
+        $pair = !$first['paired']
+          && $first['provider'] === ComponentCatalog::BUILTIN_PROVIDER
+          && $provider !== ComponentCatalog::BUILTIN_PROVIDER
+          && $first['tier'] === $tier
+          && in_array($tier, self::PLACEABLE_TIERS, TRUE);
+        if ($pair) {
+          $seen[$name]['paired'] = TRUE;
+        }
+        else {
+          $errors[] = sprintf('name collides with %s — component names are globally unique (one word, one concept); a pack may share a name only with a built-in section, layout or reference of the same tier.', $first['id']);
+        }
+      }
+      if (isset($virtual[$name])) {
+        $errors[] = sprintf('"%s" is reserved for Atelier\'s virtual %s section — choose another name.', $name, $name);
+      }
+      elseif ($provider !== ComponentCatalog::BUILTIN_PROVIDER && in_array($name, ComponentCatalog::RENDERER_RESERVED, TRUE)) {
+        $errors[] = sprintf('"%s" is reserved for Atelier\'s built-in %s — the renderer treats it specially; choose another name.', $name, $name);
       }
       if (in_array($name, ComponentCatalog::LAYOUT_RESERVED, TRUE) && !in_array($tier, ['layout', 'content'], TRUE)) {
         $errors[] = sprintf('"%s" is a reserved layout word — it cannot name a %s component.', $name, $tier ?: 'pack');
@@ -194,9 +217,8 @@ final class AdmissionGate {
       if ($stylesheet !== '' && (!str_ends_with($stylesheet, '.css') || str_starts_with($stylesheet, '/') || str_contains($stylesheet, '..'))) {
         $errors[] = sprintf('stylesheet "%s" must be a module-relative .css path (no leading /, no ..).', $stylesheet);
       }
-
-      $seen[$name] = sprintf('"%s:%s"', $provider, $name);
       $verdicts[$id] = ['tier' => $tier ?: NULL, 'provider' => $provider, 'errors' => $errors, 'warnings' => $warnings];
+      $seen[$name] ??= ['id' => sprintf('"%s:%s"', $provider, $name), 'provider' => $provider, 'tier' => $tier, 'paired' => FALSE];
     }
     return $verdicts;
   }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\aincient_pages\Unit;
 
 use Aincient\PageModel\Catalog\AdmissionGate;
+use Aincient\PageModel\ComponentCatalog;
 use Drupal\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Yaml\Yaml;
@@ -53,7 +54,20 @@ final class AdmissionGateTest extends UnitTestCase {
    * The errors for one named verdict.
    */
   private static function errors(array $definitions, string $name): array {
-    return AdmissionGate::check($definitions)[$name]['errors'];
+    return self::verdict($definitions, $name)['errors'];
+  }
+
+  /**
+   * The verdict for one short name (each fixture holds one def per name
+   * unless it says otherwise).
+   */
+  private static function verdict(array $definitions, string $name): array {
+    foreach (AdmissionGate::check($definitions) as $id => $verdict) {
+      if (str_ends_with($id, ':' . $name)) {
+        return $verdict;
+      }
+    }
+    throw new \LogicException("No verdict for $name.");
   }
 
   /**
@@ -107,32 +121,79 @@ final class AdmissionGateTest extends UnitTestCase {
   }
 
   /**
-   * Names are globally unique (one word, one concept): the SECOND def to
-   * claim a name is the one rejected, naming the def it collided with.
+   * Names are unique per provider, not globally (DECISIONS 0539): a pack
+   * component and a built-in that share a short name are both admitted, in
+   * either discovery order — each page kind offers one of them.
    */
-  public function testNameCollisionRejectsTheSecondDef(): void {
+  public function testASameNamePairIsAdmitted(): void {
+    $pack = ['acme_pack:promo' => self::def('promo', self::section(), [], 'acme_pack')];
+    $builtin = ['atelier:promo' => self::def('promo', self::section(), [], 'atelier')];
+    foreach ([$pack + $builtin, $builtin + $pack] as $definitions) {
+      $verdicts = AdmissionGate::check($definitions);
+      $this->assertEqualsCanonicalizing(['acme_pack:promo', 'atelier:promo'], array_keys($verdicts));
+      $this->assertSame([], $verdicts['acme_pack:promo']['errors']);
+      $this->assertSame([], $verdicts['atelier:promo']['errors']);
+    }
+  }
+
+  /**
+   * Everything else that shares a name still collides (0539 allows only a
+   * pack + built-in pair of the same placeable tier): two packs (the second
+   * refused), a second pack beside a pair, a pack sharing a built-in CONTENT
+   * or CHROME name (the renderer asks for those by short name), and a pack
+   * sharing a built-in section name from another tier.
+   */
+  public function testOnlyAPackAndABuiltinOfTheSamePlaceableTierMayShareAName(): void {
     $verdicts = AdmissionGate::check([
       'x_pack:promo' => self::def('promo', self::section()),
       'y_pack:promo' => self::def('promo', self::section(), [], 'y_pack'),
     ]);
-    $this->assertSame('y_pack', $verdicts['promo']['provider'], 'The colliding (second) def is the surviving verdict.');
-    $this->assertCount(1, $verdicts['promo']['errors']);
-    $this->assertStringContainsString('name collides with "x_pack:promo"', $verdicts['promo']['errors'][0]);
+    $this->assertSame([], $verdicts['x_pack:promo']['errors']);
+    $this->assertStringContainsString('name collides with "x_pack:promo"', $verdicts['y_pack:promo']['errors'][0]);
+
+    $verdicts = AdmissionGate::check([
+      'atelier:promo' => self::def('promo', self::section(), [], 'atelier'),
+      'a_pack:promo' => self::def('promo', self::section(), [], 'a_pack'),
+      'b_pack:promo' => self::def('promo', self::section(), [], 'b_pack'),
+    ]);
+    $this->assertSame([], $verdicts['a_pack:promo']['errors'], 'The first pack pairs with the built-in.');
+    $this->assertStringContainsString('name collides with "atelier:promo"', $verdicts['b_pack:promo']['errors'][0]);
+
+    foreach (['content', 'chrome'] as $tier) {
+      $verdicts = AdmissionGate::check([
+        'atelier:byline' => self::def('byline', ['api' => 1, 'tier' => $tier, 'props' => []], [], 'atelier'),
+        'acme_pack:byline' => self::def('byline', ['api' => 1, 'tier' => $tier, 'props' => []], [], 'acme_pack'),
+      ]);
+      $this->assertStringContainsString('name collides with "atelier:byline"', $verdicts['acme_pack:byline']['errors'][0], $tier);
+    }
+
+    $verdicts = AdmissionGate::check([
+      'atelier:promo' => self::def('promo', self::section(), [], 'atelier'),
+      'acme_pack:promo' => self::def('promo', ['api' => 1, 'tier' => 'content', 'props' => []], [], 'acme_pack'),
+    ]);
+    $this->assertStringContainsString('name collides with "atelier:promo"', $verdicts['acme_pack:promo']['errors'][0]);
   }
 
   /**
-   * checkEach() keys by definition, so the def a collision did NOT refuse keeps
-   * its clean verdict — and a built-in claims its name before any pack, even
-   * when discovery lists the pack first.
+   * The virtual `block` name stays reserved for every provider.
    */
-  public function testBuiltinWinsANameCollisionPerDefinition(): void {
-    $verdicts = AdmissionGate::checkEach([
-      'acme_pack:promo' => self::def('promo', self::section(), [], 'acme_pack'),
-      'atelier:promo' => self::def('promo', self::section(), [], 'atelier'),
-    ]);
-    $this->assertSame([], $verdicts['atelier:promo']['errors']);
-    $this->assertCount(1, $verdicts['acme_pack:promo']['errors']);
-    $this->assertStringContainsString('name collides with "atelier:promo"', $verdicts['acme_pack:promo']['errors'][0]);
+  public function testVirtualNameIsReservedForEveryProvider(): void {
+    $errors = self::errors([self::def('block', self::section(), [], 'acme_pack')], 'block');
+    $this->assertCount(1, $errors);
+    $this->assertStringContainsString('reserved for Atelier\'s virtual block section', $errors[0]);
+  }
+
+  /**
+   * Names the renderer treats specially stay Atelier's (0539): a pack's
+   * `markdown` is refused; the built-in itself is not.
+   */
+  public function testRendererReservedNamesAreRefusedForPacks(): void {
+    foreach (ComponentCatalog::RENDERER_RESERVED as $name) {
+      $errors = self::errors([self::def($name, self::section(), [], 'acme_pack')], $name);
+      $this->assertCount(1, $errors, $name);
+      $this->assertStringContainsString('reserved for Atelier\'s built-in', $errors[0]);
+      $this->assertSame([], self::errors([self::def($name, self::section(), [], 'atelier')], $name), "atelier:$name");
+    }
   }
 
   /**
@@ -169,7 +230,7 @@ final class AdmissionGateTest extends UnitTestCase {
     $this->assertStringContainsString('SDC slot "image" is an image slot but declares no image_props.image.view_mode', $errors[0]);
 
     $mapped = self::def('promo', self::section(['image_props' => ['image' => ['view_mode' => 'card']]]), $slots);
-    $verdict = AdmissionGate::check([$mapped])['promo'];
+    $verdict = self::verdict([$mapped], 'promo');
     $this->assertSame([], $verdict['errors']);
     $this->assertSame([], $verdict['warnings']);
   }
@@ -179,7 +240,7 @@ final class AdmissionGateTest extends UnitTestCase {
    * baseline every rejection test above is one flip away from.
    */
   public function testCleanMinimalSectionPasses(): void {
-    $verdict = AdmissionGate::check([self::def('promo', self::section())])['promo'];
+    $verdict = self::verdict([self::def('promo', self::section())], 'promo');
     $this->assertSame('section', $verdict['tier']);
     $this->assertSame([], $verdict['errors']);
     $this->assertSame([], $verdict['warnings']);
@@ -201,11 +262,11 @@ final class AdmissionGateTest extends UnitTestCase {
   public function testPackPlaceableWithoutExamplesWarns(): void {
     $atelier = self::section();
     unset($atelier['examples']);
-    $verdict = AdmissionGate::check([self::def('promo', $atelier)])['promo'];
+    $verdict = self::verdict([self::def('promo', $atelier)], 'promo');
     $this->assertSame([], $verdict['errors']);
     $this->assertStringContainsString('no "examples" declared', implode(' ', $verdict['warnings']));
 
-    $builtin = AdmissionGate::check([self::def('promo', $atelier, [], 'atelier')])['promo'];
+    $builtin = self::verdict([self::def('promo', $atelier, [], 'atelier')], 'promo');
     $this->assertSame([], $builtin['warnings'], 'Built-ins are exempt from the examples warning.');
   }
 

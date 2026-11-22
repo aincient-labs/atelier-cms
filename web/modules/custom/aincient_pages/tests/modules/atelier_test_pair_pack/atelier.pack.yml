@@ -1,0 +1,7 @@
+# The same-name pair fixture (DECISIONS 0539).
+api: 1
+name: atelier_test_pair_pack
+requires:
+  atelier: '^0.9'
+provides: [components]
+owns: []

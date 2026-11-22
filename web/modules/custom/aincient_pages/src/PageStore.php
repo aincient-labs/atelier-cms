@@ -7,6 +7,7 @@ namespace Drupal\aincient_pages;
 use Aincient\PageModel\AnchorSlug;
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Aincient\PageModel\Catalog\EffectiveCatalog;
+use Aincient\PageModel\Catalog\PageComponents;
 use Aincient\PageModel\ComponentCatalog;
 use Aincient\PageModel\ComponentId;
 use Aincient\PageModel\PageSchemaCodec;
@@ -194,8 +195,10 @@ final class PageStore {
       // It is clamped against the discovered palette (the admission-gated
       // floor), so a kept slot is still a valid render of a real component.
       $kept = $this->keptSlot($section, $keep);
-      if (!in_array($name, $catalog->placeableNames(), TRUE)) {
-        if ($kept === NULL || !in_array($name, $this->catalog->discovered()->placeableNames(), TRUE)) {
+      // placeable() takes a short name or the offered component's full id
+      // (a switch marks its choice with the full id, 0539).
+      if ($catalog->placeable($name) === NULL) {
+        if ($kept === NULL || !$this->catalog->discovered()->isPlaceable($name)) {
           continue;
         }
         $props = $this->clampProps($this->catalog->discovered(), $name, $section['props'] ?? NULL, FALSE, $kept);
@@ -348,7 +351,7 @@ final class PageStore {
     // a model string, then clamp into the component's declared column range so
     // it can't exceed the SDC enum (features tops at 3; wider grids allow 4).
     if (isset($props['columns'])) {
-      $def = $catalog->placeable($name);
+      $def = $catalog->placeable($name) ?? $catalog->def($name);
       $allowed = isset($def['props']['columns'])
         ? array_map('intval', explode('|', $def['props']['columns']))
         : [2, 3];
@@ -604,6 +607,11 @@ final class PageStore {
    *                     component?}                   converts the section IN PLACE, same id.
    *   - remove_section {id|index}                    drop a section
    *   - reorder        {order: [id|int,…]}           permutation of all slots
+   *   - switch_components {}                         0539: convert every section
+   *                                                   holding the older one of a
+   *                                                   same-name pair, in place.
+   *                                                   add/update_section are
+   *                                                   refused until it ran.
    *
    * The section ops target the landing section list; set_content targets the blog
    * body. The two regimes never mix: an op belonging to the other regime is
@@ -655,7 +663,7 @@ final class PageStore {
     $used = [];
     $keep = self::keepSet($schema);
     foreach ($schema['sections'] ?? [] as $section) {
-      if (in_array($section['component'] ?? '', $this->catalog->discovered()->placeableNames(), TRUE)) {
+      if ($this->catalog->discovered()->isPlaceable((string) ($section['component'] ?? ''))) {
         $work['sections'][] = [
           'id' => $this->slotId($section['id'] ?? NULL, $used),
           'component' => $section['component'],
@@ -666,12 +674,25 @@ final class PageStore {
 
     $rejected = [];
     foreach ($ops as $i => $op) {
+      // Per op: a set_meta {type} earlier in this batch (an unborn draft) may
+      // have changed the kind, and with it what a short name means (0539).
+      $components = $this->components((string) $work['type']);
       $type = is_array($op) ? (string) ($op['op'] ?? '') : '';
       if (is_array($op)) {
         $op = self::normalizeOpShape($op);
       }
       try {
+        // One component per short name per page (0539): while the page holds
+        // the older one of a same-name pair, nothing may place or change a
+        // component until the owner has agreed to switch them all.
+        if (in_array($type, ['add_section', 'update_section'], TRUE) && ($outdated = $components->outdated($work['sections'])) !== []) {
+          throw new \InvalidArgumentException($this->switchFirst($outdated, $work['sections']));
+        }
         switch ($type) {
+          case 'switch_components':
+            $work['sections'] = $this->switchComponents($components, $work['sections']);
+            break;
+
           case 'set_meta':
             if (isset($op['type']) && is_string($op['type']) && isset($this->catalog->kinds()[$op['type']])) {
               // The type is chosen at birth and locked (DECISIONS 0378). On a
@@ -886,6 +907,74 @@ final class PageStore {
     }
 
     return ['schema' => $this->validate($work, $keep), 'rejected' => $rejected];
+  }
+
+  /**
+   * The refusal that asks for the switch: what is outdated, and what the
+   * switch would drop — so the agent can ask the owner first (0539).
+   *
+   * @param list<array{id: string, from: string, to: string, name: string}> $outdated
+   */
+  private function switchFirst(array $outdated, array $sections): string {
+    $byName = [];
+    foreach ($outdated as $row) {
+      $byName[$row['name']][] = $row;
+    }
+    $parts = [];
+    foreach ($byName as $name => $rows) {
+      $dropped = $this->switchDrops($rows, $sections);
+      $parts[] = sprintf('%d "%s" section%s%s', count($rows), $name, count($rows) === 1 ? '' : 's', $dropped === [] ? '' : sprintf(' (the switch drops: %s)', implode(', ', $dropped)));
+    }
+    return sprintf(
+      'this page still uses an older version of %s, and the site now offers a newer one under the same name. A page can use only one of them, so nothing can be added or changed until they are switched. Ask the owner whether to switch them; if they agree, send {"op":"switch_components"} first (it converts every such section in place and keeps its id), then your edit. Do not remove and re-add sections instead.',
+      implode(', ', $parts),
+    );
+  }
+
+  /**
+   * Prop names the switch would drop for these outdated sections.
+   *
+   * @return string[]
+   */
+  private function switchDrops(array $rows, array $sections): array {
+    $props = [];
+    foreach ($sections as $section) {
+      foreach ($rows as $row) {
+        if ((string) ($section['id'] ?? '') === $row['id']) {
+          foreach (array_keys(is_array($section['props'] ?? NULL) ? $section['props'] : []) as $key) {
+            $props[$key] = TRUE;
+          }
+        }
+      }
+    }
+    $target = $this->catalog->discovered()->def($rows[0]['to']);
+    $keeps = array_keys((array) ($target['props'] ?? []));
+    $dropped = array_diff(array_keys($props), $keeps, ['anchor']);
+    sort($dropped);
+    return array_values($dropped);
+  }
+
+  /**
+   * Convert every outdated section to the component the kind offers under
+   * its name, in place: same id, same position, props carried over and
+   * clamped to the new component by validate() (0539).
+   */
+  private function switchComponents(PageComponents $components, array $sections): array {
+    $ids = array_column($components->outdated($sections), 'to', 'id');
+    if ($ids === []) {
+      throw new \InvalidArgumentException('nothing to switch — every section already uses the component this page offers under its name.');
+    }
+    foreach ($sections as &$section) {
+      $id = (string) ($section['id'] ?? '');
+      if (isset($ids[$id])) {
+        // The FULL id, deliberately: it marks the switch as the owner's choice,
+        // so the save keeps it (a stale short name for this slot would keep the
+        // stored one). The page reads back short after the save.
+        $section['component'] = $ids[$id];
+      }
+    }
+    unset($section);
+    return $sections;
   }
 
   /**
@@ -1106,19 +1195,35 @@ final class PageStore {
     // The stored layout is the keep set: a slot that already exists survives a
     // narrowed catalog (DECISIONS 0455, P0). A new node has nothing stored.
     $keep = $node->isNew() ? [] : self::keepSet($this->storedStructure($node));
+    // A draft loaded before a same-name pair existed says `testimonials` and
+    // meant the component the slot stores. Where the stored slot (same id)
+    // holds the other one of the pair, keep it: a save never switches a
+    // section the owner did not agree to switch (0539 review).
+    foreach ($schema['sections'] ?? [] as $i => $section) {
+      $id = is_array($section) ? ($section['id'] ?? NULL) : NULL;
+      $name = is_array($section) ? (string) ($section['component'] ?? '') : '';
+      $held = is_string($id) ? (string) ($keep[$id]['component'] ?? '') : '';
+      if ($name !== '' && !str_contains($name, ':') && str_contains($held, ':') && ComponentId::short($held) === $name) {
+        $schema['sections'][$i]['component'] = $held;
+      }
+    }
     $clean = $this->validate($schema, $keep);
     $split = PageSchemaCodec::split($clean, $this->isRecipe($clean['type']));
     // The entity's own label key: `title` for a page node, `name` for a block
     // media entity (DECISIONS 0138) — so the same schema write drives both.
     $node->set($node->getEntityType()->getKey('label'), $clean['title']);
-    // Storage holds full component ids (DECISIONS 0536); everything above it
-    // still speaks short names in A0 — ComponentId is the one translator.
-    $providers = ComponentId::providers($this->catalog->discovered());
-    $node->set('field_page_content', json_encode(ComponentId::qualifyContent($split['content'], $providers)));
+    // Storage holds full component ids (DECISIONS 0536); a short name means
+    // what the page's kind offers under it, else the site's (0539).
+    $components = $this->components($clean['type']);
+    $mixes = $components->mixes($clean['sections'] ?? []);
+    if ($mixes !== []) {
+      throw new ComponentMixException($mixes);
+    }
+    $node->set('field_page_content', json_encode(ComponentId::mapContent($split['content'], $components->resolve(...))));
     // Source translation, or a translation that owns its layout, persists the
     // structure; a symmetric translation leaves it empty to inherit the source.
     if ($this->ownsStructure($node)) {
-      $node->set('field_page_structure', json_encode(ComponentId::qualifyStructure($split['structure'], $providers)));
+      $node->set('field_page_structure', json_encode(ComponentId::mapStructure($split['structure'], $components->resolve(...))));
     }
     else {
       $node->set('field_page_structure', '');
@@ -1925,6 +2030,24 @@ final class PageStore {
   }
 
   /**
+   * What component references mean on a page of this kind (0539).
+   */
+  public function components(string $type): PageComponents {
+    return new PageComponents($this->catalog->for($type), $this->catalog->discovered());
+  }
+
+  /**
+   * The kind a stored page or block belongs to.
+   */
+  private function kindOf(ContentEntityInterface $node): string {
+    if ($node->getEntityTypeId() !== 'node') {
+      return BlockStore::KIND;
+    }
+    $stored = $node->hasField('field_page_type') ? (string) ($node->getUntranslated()->get('field_page_type')->value ?? '') : '';
+    return $stored !== '' ? $stored : 'landing';
+  }
+
+  /**
    * Decode a node's JSON field value to an array (empty array if absent/blank).
    */
   private function decode(ContentEntityInterface $node, string $field): array {
@@ -1935,10 +2058,13 @@ final class PageStore {
     if (!is_array($data)) {
       return [];
     }
-    // Stored ids are full (DECISIONS 0536); the schema above storage is short.
+    // Stored ids are full (DECISIONS 0536). A stored id reads short when the
+    // short name means exactly it on this page, else it keeps its full id —
+    // the other one of a same-name pair (0539). A pair-free site reads short.
+    $components = $this->components($this->kindOf($node));
     return match ($field) {
-      'field_page_structure' => ComponentId::shortenStructure($data),
-      'field_page_content' => ComponentId::shortenContent($data),
+      'field_page_structure' => ComponentId::mapStructure($data, $components->canonical(...)),
+      'field_page_content' => ComponentId::mapContent($data, $components->canonical(...)),
       default => $data,
     };
   }

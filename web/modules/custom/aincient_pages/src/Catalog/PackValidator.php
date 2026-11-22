@@ -6,6 +6,7 @@ namespace Drupal\aincient_pages\Catalog;
 
 use Aincient\PageModel\Catalog\AdmissionGate;
 use Aincient\PageModel\Catalog\StylesheetLint;
+use Aincient\PageModel\ComponentId;
 use Drupal\Component\Plugin\PluginManagerInterface;
 use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Theme\ComponentPluginManager;
@@ -47,10 +48,9 @@ final class PackValidator {
    *   When a named module provides neither atelier components nor a manifest.
    */
   public function validate(string $module = ''): array {
-    // Always gate over ALL definitions, then filter the report: a name
-    // collision with a built-in (or another pack) is only visible when the
-    // whole namespace is checked — validating a module in isolation would
-    // pass a component the real boot rejects.
+    // Always gate over ALL definitions, then filter the report: the virtual
+    // names are only visible when the whole site is checked. Keyed by full
+    // id — a pack may share a short name with a built-in (0539).
     $definitions = $this->componentManager->getDefinitions();
     $verdicts = AdmissionGate::check($definitions);
 
@@ -84,7 +84,7 @@ final class PackValidator {
     $cssIssues = [];
     $authoredByRoot = [];
     foreach ($definitions as $definition) {
-      $name = (string) ($definition['machineName'] ?? '');
+      $name = (string) ($definition['provider'] ?? '') . ':' . (string) ($definition['machineName'] ?? '');
       $sheet = (string) ($definition['thirdPartySettings']['atelier']['stylesheet'] ?? '');
       if ($sheet === '' || !isset($verdicts[$name])) {
         continue;
@@ -110,13 +110,13 @@ final class PackValidator {
 
     $rows = [];
     $rejected = 0;
-    foreach ($verdicts as $name => $verdict) {
+    foreach ($verdicts as $id => $verdict) {
       if ($verdict['errors'] !== []) {
         $rejected++;
       }
-      $warnings = array_merge($verdict['warnings'], $cssIssues[$name] ?? []);
+      $warnings = array_merge($verdict['warnings'], $cssIssues[$id] ?? []);
       $rows[] = [
-        'component' => $name,
+        'component' => ComponentId::short($id),
         'tier' => $verdict['tier'] ?? '',
         'provider' => $verdict['provider'],
         'status' => $verdict['errors'] !== [] ? 'REJECTED' : ($warnings !== [] ? 'WARN' : 'OK'),

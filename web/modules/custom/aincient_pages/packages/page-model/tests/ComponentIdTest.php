@@ -127,4 +127,18 @@ final class ComponentIdTest extends TestCase {
     $this->assertSame(['opener' => ''], ComponentId::qualifyKind(['opener' => ''], self::PROVIDERS), 'No opener stays no opener.');
   }
 
+  /**
+   * A short-name UI re-save keeps each name on the provider it is stored with
+   * (0539 review): `testimonials` stays the built-in even where a pack's wins.
+   */
+  public function testProvidersPreferringKeepsTheStoredProvider(): void {
+    $providers = ['testimonials' => 'acme', 'hero' => 'atelier', 'spotlight' => 'acme'];
+    $map = ComponentId::providersPreferring($providers, ['atelier:testimonials', 'unresolved:ghost', 'aincient_pages:hero', 'faq']);
+    $this->assertSame('atelier', $map['testimonials']);
+    $this->assertSame('atelier', $map['hero']);
+    $this->assertSame('acme', $map['spotlight']);
+    $this->assertArrayNotHasKey('ghost', $map);
+    $this->assertSame('atelier:testimonials', ComponentId::qualify('testimonials', $map));
+  }
+
 }

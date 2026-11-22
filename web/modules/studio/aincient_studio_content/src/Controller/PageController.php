@@ -7,6 +7,7 @@ namespace Drupal\aincient_studio_content\Controller;
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
 use Aincient\PageModel\Catalog\EffectiveCatalog;
 use Aincient\PageModel\ComponentCatalog;
+use Drupal\aincient_pages\ComponentMixException;
 use Drupal\aincient_pages\Controller\PageSpikeController;
 use Drupal\aincient_pages\EditLock;
 use Drupal\aincient_pages\Exception\RevisionConflictException;
@@ -162,6 +163,10 @@ final class PageController implements ContainerInjectionInterface {
     catch (RevisionConflictException $e) {
       return $this->conflict($e);
     }
+    catch (ComponentMixException $e) {
+      // One component per short name per page (0539): refused, never repaired.
+      return new JsonResponse(['error' => $e->getMessage(), 'code' => 'component_mix', 'mixes' => $e->mixes], 422);
+    }
     return $result === NULL
       ? new JsonResponse(['error' => 'That page does not exist, or the language is not configured.'], 404)
       : new JsonResponse($result);
@@ -197,6 +202,10 @@ final class PageController implements ContainerInjectionInterface {
     }
     catch (RevisionConflictException $e) {
       return $this->conflict($e);
+    }
+    catch (ComponentMixException $e) {
+      // One component per short name per page (0539): refused, never repaired.
+      return new JsonResponse(['error' => $e->getMessage(), 'code' => 'component_mix', 'mixes' => $e->mixes], 422);
     }
     // NULL here means the publish/approve transition isn't legal for this user.
     return $result === NULL

@@ -104,7 +104,9 @@ final class KindController implements ContainerInjectionInterface {
       return new JsonResponse(['error' => 'This kind has a fixed layout — there is nothing to place.'], 422);
     }
     // Stored ids are full (DECISIONS 0536); the studio speaks short names.
-    $stored = ComponentId::qualifyKind($values, ComponentId::providers($this->catalog->discovered()));
+    // A short name keeps the provider the kind already stores for it (0539).
+    $current = array_merge(array_map('strval', array_keys($entity->components())), array_map('strval', array_keys($entity->limits())), $entity->removed(), [(string) $entity->opener()]);
+    $stored = ComponentId::qualifyKind($values, ComponentId::providersPreferring(ComponentId::providers($this->catalog->discovered()), $current));
     foreach ($stored as $key => $value) {
       $entity->set($key, $value);
     }
@@ -167,10 +169,12 @@ final class KindController implements ContainerInjectionInterface {
         'mode' => $entity->mode(),
         'fragment' => $entity->isFragment(),
         'include_new' => $entity->includesNew(),
-        'components' => (object) $entity->components(),
-        'removed' => $entity->removed(),
-        'opener' => $entity->opener() ?? '',
-        'limits' => (object) $entity->limits(),
+        // The studio picker speaks short names until release B adds the pair
+        // choice (0539); the save qualifies them again.
+        'components' => (object) ComponentId::shortenKind(['components' => $entity->components()])['components'],
+        'removed' => array_values(array_map(ComponentId::short(...), $entity->removed())),
+        'opener' => $entity->opener() === NULL ? '' : ComponentId::short($entity->opener()),
+        'limits' => (object) ComponentId::shortenKind(['limits' => $entity->limits()])['limits'],
       ],
       'effective' => [
         'placeable' => $effective->placeableNames(),

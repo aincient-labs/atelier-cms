@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\aincient_studio_content\Controller;
 
 use Drupal\aincient_pages\BlockStore;
+use Drupal\aincient_pages\ComponentMixException;
 use Drupal\aincient_pages\Exception\RevisionConflictException;
 use Drupal\aincient_pages\NodeModeration;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
@@ -104,6 +105,10 @@ final class BlockController implements ContainerInjectionInterface {
     catch (RevisionConflictException $e) {
       return $this->conflict($e);
     }
+    catch (ComponentMixException $e) {
+      // One component per short name (0539): refused, never repaired.
+      return new JsonResponse(['error' => $e->getMessage(), 'code' => 'component_mix', 'mixes' => $e->mixes], 422);
+    }
     return $result === NULL
       ? new JsonResponse(['error' => 'That block does not exist, or the language is not configured.'], 404)
       : new JsonResponse($result);
@@ -128,6 +133,10 @@ final class BlockController implements ContainerInjectionInterface {
     }
     catch (RevisionConflictException $e) {
       return $this->conflict($e);
+    }
+    catch (ComponentMixException $e) {
+      // One component per short name (0539): refused, never repaired.
+      return new JsonResponse(['error' => $e->getMessage(), 'code' => 'component_mix', 'mixes' => $e->mixes], 422);
     }
     return $result === NULL
       ? new JsonResponse(['error' => "You don’t have permission to publish this block."], 403)
@@ -214,6 +223,10 @@ final class BlockController implements ContainerInjectionInterface {
     }
     catch (RevisionConflictException $e) {
       return $this->conflict($e);
+    }
+    catch (ComponentMixException $e) {
+      // One component per short name (0539): refused, never repaired.
+      return new JsonResponse(['error' => $e->getMessage(), 'code' => 'component_mix', 'mixes' => $e->mixes], 422);
     }
     return $result === NULL
       ? new JsonResponse(['error' => "That change isn’t available — the block may have moved on, or you don’t hold this transition."], 403)

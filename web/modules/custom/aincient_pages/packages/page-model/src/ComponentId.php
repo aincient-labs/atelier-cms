@@ -115,18 +115,87 @@ final class ComponentId {
   }
 
   /**
-   * A stored structure layer with short names (`slots[].component`).
+   * {@see providers()}, except that a short name keeps the provider it
+   * already has in $stored — so re-saving a kind or the site constraint from
+   * a short-name UI never moves `atelier:testimonials` onto a pack's
+   * `testimonials` (DECISIONS 0539 review).
+   *
+   * @param array<string, string> $providers
+   * @param iterable<string> $stored
+   *   Full ids as stored now.
+   *
+   * @return array<string, string>
    */
-  public static function shortenStructure(array $structure): array {
-    return self::mapStructure($structure, self::short(...));
+  public static function providersPreferring(array $providers, iterable $stored): array {
+    foreach ($stored as $id) {
+      if (!is_string($id) || !str_contains($id, ':')) {
+        continue;
+      }
+      $id = self::bridge($id) ?? $id;
+      $provider = substr($id, 0, (int) strpos($id, ':'));
+      if ($provider !== self::UNRESOLVED) {
+        $providers[self::short($id)] = $provider;
+      }
+    }
+    return $providers;
+  }
+
+  /**
+   * Short name → provider for a name written BEFORE 0.30.0 (bare names).
+   *
+   * Until A1 a short name was globally unique and the built-in claimed it
+   * first, so a bare `testimonial` in old data always meant the built-in —
+   * even on a site where a pack's `testimonial` now wins the pair choice
+   * (DECISIONS 0539). The 0.30.0 rewrite and a pack's bare-name kind map
+   * with this, never with {@see providers()}, or a straight 0.29 → A1
+   * upgrade would move built-in sections onto the pack's component.
+   *
+   * @return array<string, string>
+   */
+  public static function legacyProviders(EffectiveCatalog $discovered): array {
+    $map = self::providers($discovered);
+    $builtin = ComponentCatalog::BUILTIN_PROVIDER . ':';
+    foreach ($discovered->hiddenIds() as $id) {
+      if (str_starts_with($id, $builtin)) {
+        $map[self::short($id)] = ComponentCatalog::BUILTIN_PROVIDER;
+      }
+    }
+    return $map;
+  }
+
+  /**
+   * A stored structure layer with short names (`slots[].component`).
+   *
+   * @param string[] $keep
+   *   Full ids to keep as they are: the hidden one of a same-name pair
+   *   (DECISIONS 0539) — shortening it would render the other one.
+   */
+  public static function shortenStructure(array $structure, array $keep = []): array {
+    return self::mapStructure($structure, self::shortUnless($keep));
   }
 
   /**
    * A stored content layer with short names
    * (`slots.<id>.panels[].blocks[].component`, the accordion's children).
+   *
+   * @param string[] $keep
+   *   As for {@see shortenStructure()}.
    */
-  public static function shortenContent(array $content): array {
-    return self::mapContent($content, self::short(...));
+  public static function shortenContent(array $content, array $keep = []): array {
+    return self::mapContent($content, self::shortUnless($keep));
+  }
+
+  /**
+   * short(), except for the ids in $keep.
+   *
+   * @param string[] $keep
+   */
+  private static function shortUnless(array $keep): \Closure {
+    if ($keep === []) {
+      return self::short(...);
+    }
+    $keep = array_flip($keep);
+    return static fn(string $id): string => isset($keep[$id]) ? $id : self::short($id);
   }
 
   /**

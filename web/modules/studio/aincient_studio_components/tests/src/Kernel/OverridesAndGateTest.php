@@ -210,10 +210,10 @@ final class OverridesAndGateTest extends KernelTestBase {
   }
 
   /**
-   * A pack component reusing a built-in's name is blocked — the built-in it
-   * collides with is NOT.
+   * A pack component sharing a built-in's short name is admitted, not
+   * blocked (DECISIONS 0539): each kind offers one of the pair.
    */
-  public function testBlockedCollisionDoesNotBlameTheBuiltIn(): void {
+  public function testASameNamePairIsNotBlocked(): void {
     $atelier = static fn(): array => [
       'api' => 1,
       'tier' => 'section',
@@ -225,9 +225,7 @@ final class OverridesAndGateTest extends KernelTestBase {
       'atelier:hero' => ['machineName' => 'hero', 'provider' => 'atelier', 'name' => 'Hero', 'thirdPartySettings' => ['atelier' => $atelier()]],
       'acme_pack:hero' => ['machineName' => 'hero', 'provider' => 'acme_pack', 'name' => 'Acme hero', 'thirdPartySettings' => ['atelier' => $atelier()]],
     ];
-    $blocked = ConstraintController::blocked($definitions);
-    $this->assertSame(['acme_pack'], array_column($blocked, 'provider'));
-    $this->assertSame('Another component already uses this name.', $blocked[0]['reason'] ?? NULL);
+    $this->assertSame([], ConstraintController::blocked($definitions));
   }
 
   /**
@@ -237,7 +235,7 @@ final class OverridesAndGateTest extends KernelTestBase {
     $cases = [
       'unknown or missing atelier api version (NULL) — this build understands api: 1.' => 'Made for a different version of Atelier.',
       'unknown tier "widget" (section|layout|reference|content|chrome).' => 'Its pack declares a kind of component Atelier does not know.',
-      'name collides with "atelier:hero" — component names are globally unique (one word, one concept).' => 'Another component already uses this name.',
+      '"block" is reserved for Atelier\'s virtual block section — choose another name.' => 'Its name is reserved by Atelier.',
       '"grid" is a reserved layout word — it cannot name a section component.' => 'Its name is reserved by Atelier.',
       'prop "price" is not in the locked vocabulary and declares no pack-local meaning (thirdPartySettings.atelier.prop_vocab.price).' => 'It has a field Atelier cannot fill.',
       'variant "wide" is hinted to the agent but absent from the SDC schema enum (centered|split) — the clamp would 500 the render.' => 'One of its variants is declared incorrectly.',

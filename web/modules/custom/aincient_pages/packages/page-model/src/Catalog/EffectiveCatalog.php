@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Aincient\PageModel\Catalog;
 
 use Aincient\PageModel\ComponentCatalog;
+use Aincient\PageModel\ComponentId;
 
 /**
  * The compiled, immutable component palette ONE page kind sees.
@@ -54,6 +55,11 @@ final class EffectiveCatalog {
    * @param string[] $warnings
    *   Never-fatal degradations collected at compile (unknown component in a
    *   kind, typo'd variant, missing opener…) — surfaced, never thrown.
+   * @param array<string, array> $hidden
+   *   Admitted components this palette does NOT offer because another
+   *   component with the same short name won the pair choice (DECISIONS
+   *   0539), keyed by full id. Pages may still hold them: render and the
+   *   in-chat switch resolve them through {@see defById()}.
    */
   public function __construct(
     private readonly string $kind,
@@ -70,6 +76,7 @@ final class EffectiveCatalog {
     private readonly bool $collectionSource,
     private readonly string $hint,
     private readonly array $warnings,
+    private readonly array $hidden = [],
   ) {}
 
   /**
@@ -146,7 +153,28 @@ final class EffectiveCatalog {
    * The def for any placeable name, or NULL.
    */
   public function placeable(string $name): ?array {
+    if (str_contains($name, ':')) {
+      // A full id is placeable here only when it is the one this palette
+      // OFFERS under its short name (0539) — never the hidden one of a pair.
+      $short = ComponentId::short($name);
+      $def = $this->sections[$short] ?? $this->layout[$short] ?? $this->reference[$short] ?? NULL;
+      return $def !== NULL && $this->defById($name) === $def && !isset($this->hidden[$name]) ? $def : NULL;
+    }
     return $this->sections[$name] ?? $this->layout[$name] ?? $this->reference[$name] ?? NULL;
+  }
+
+  /**
+   * Whether a page that ALREADY holds this component may keep and render it:
+   * offered here (short name or full id), or the hidden one of a same-name
+   * pair by full id (0539). Never a test for a new placement — that is
+   * {@see placeable()}.
+   */
+  public function isPlaceable(string $name): bool {
+    if ($this->placeable($name) !== NULL) {
+      return TRUE;
+    }
+    $def = str_contains($name, ':') ? ($this->hidden[$name] ?? NULL) : NULL;
+    return $def !== NULL && in_array($def['tier'] ?? '', ['section', 'layout', 'reference'], TRUE);
   }
 
   /**
@@ -158,7 +186,7 @@ final class EffectiveCatalog {
     if ($def === NULL || ($def['provider'] ?? '') === '') {
       return NULL;
     }
-    return $def['provider'] . ':' . $name;
+    return $def['provider'] . ':' . ComponentId::short($name);
   }
 
   /**
@@ -178,10 +206,48 @@ final class EffectiveCatalog {
   /**
    * The def for ANY discovered component across all five tiers — what the
    * RENDERER resolves against (it also builds chrome and content atoms), where
-   * {@see placeable()} is the author/agent-facing allow-list.
+   * {@see placeable()} is the author/agent-facing allow-list. Takes a short
+   * name (the one offered) or a full id (exactly that one, 0539).
    */
   public function def(string $name): ?array {
+    // A full id names exactly one component — offered or hidden (0539): what
+    // a page that stores the other one of a pair renders with.
+    if (str_contains($name, ':')) {
+      return $this->defById($name);
+    }
     return $this->placeable($name) ?? $this->chrome[$name] ?? $this->contentAtoms[$name] ?? NULL;
+  }
+
+  /**
+   * The def for a full id ("provider:name") — offered or hidden — or NULL.
+   *
+   * What a page that stores full ids renders against: a short name is not an
+   * identity once two providers may share it (DECISIONS 0539).
+   */
+  public function defById(string $id): ?array {
+    if (isset($this->hidden[$id])) {
+      return $this->hidden[$id];
+    }
+    $name = ComponentId::short($id);
+    $def = $this->def($name);
+    if ($def === NULL) {
+      return NULL;
+    }
+    $provider = (string) ($def['provider'] ?? '');
+    if ($provider === '') {
+      // A virtual def (`block`): stored as `atelier:block` since 0.30.0.
+      return $id === $name || $id === ComponentCatalog::BUILTIN_PROVIDER . ':' . $name ? $def : NULL;
+    }
+    return $id === $provider . ':' . $name ? $def : NULL;
+  }
+
+  /**
+   * Full ids of the admitted components this palette hides (0539).
+   *
+   * @return string[]
+   */
+  public function hiddenIds(): array {
+    return array_keys($this->hidden);
   }
 
   /**
@@ -202,6 +268,16 @@ final class EffectiveCatalog {
    * The variant enum for one component, or NULL when it has none.
    */
   public function variantsFor(string $name): ?array {
+    if (str_contains($name, ':')) {
+      if ($this->placeable($name) !== NULL) {
+        return $this->variants[ComponentId::short($name)] ?? NULL;
+      }
+      // The hidden one of a pair (0539): its own declared variants, never
+      // narrowed (it is only ever a kept slot).
+      $hint = (string) ($this->hidden[$name]['props']['variant'] ?? '');
+      $values = array_values(array_filter(array_map('trim', explode('|', $hint)), static fn(string $v): bool => $v !== ''));
+      return $values === [] ? NULL : $values;
+    }
     return $this->variants[$name] ?? NULL;
   }
 

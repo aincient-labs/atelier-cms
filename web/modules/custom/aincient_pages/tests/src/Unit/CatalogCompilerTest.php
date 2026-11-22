@@ -158,19 +158,69 @@ final class CatalogCompilerTest extends UnitTestCase {
   }
 
   /**
-   * A pack component that reuses a built-in's name is refused on its own: the
-   * built-in stays in the palette, whichever order discovery listed them in.
+   * The fixtures plus a pack `alpha` that shares the built-in's short name.
    */
-  public function testCollidingPackDoesNotDropTheBuiltin(): void {
+  private function pairDefinitions(): array {
     $builtins = $this->fixtureDefinitions();
-    $pack = ['acme_pack:alpha' => ['provider' => 'acme_pack'] + $builtins['atelier:alpha']];
-    foreach ([$pack + $builtins, $builtins + $pack] as $definitions) {
+    $pack = $builtins['atelier:alpha'];
+    $pack['provider'] = 'acme_pack';
+    $pack['thirdPartySettings']['atelier']['use'] = 'Acme alpha section.';
+    $pack['thirdPartySettings']['atelier']['examples'] = [['props' => ['heading' => 'A']]];
+    return ['acme_pack:alpha' => $pack] + $builtins;
+  }
+
+  /**
+   * A same-name pair (DECISIONS 0539): both admitted; the palette offers ONE
+   * per short name — the pack's by default (a new built-in lands hidden) —
+   * in either discovery order. The hidden one still resolves by full id.
+   */
+  public function testASameNamePairOffersThePackAndHidesTheBuiltin(): void {
+    $pair = $this->pairDefinitions();
+    $reversed = array_reverse($pair, TRUE);
+    foreach ([$pair, $reversed] as $definitions) {
       $catalog = CatalogCompiler::compile($definitions, NULL);
       $this->assertSame(['omega', 'alpha'], $catalog->sectionNames());
-      $this->assertSame('atelier', $catalog->sections()['alpha']['provider']);
-      $this->assertCount(1, $catalog->warnings());
-      $this->assertStringContainsString('"acme_pack:alpha" rejected', $catalog->warnings()[0]);
+      $this->assertSame('acme_pack', $catalog->sections()['alpha']['provider']);
+      $this->assertSame('acme_pack:alpha', $catalog->pluginId('alpha'));
+      $this->assertSame(['atelier:alpha'], $catalog->hiddenIds());
+      $this->assertSame('atelier', $catalog->defById('atelier:alpha')['provider']);
+      $this->assertSame('acme_pack', $catalog->defById('acme_pack:alpha')['provider']);
+      $this->assertSame([], $catalog->warnings());
     }
+  }
+
+  /**
+   * A kind that names one of a pair exactly offers that one.
+   */
+  public function testAKindNamingTheBuiltinExactlyOffersIt(): void {
+    $catalog = CatalogCompiler::compile($this->pairDefinitions(), $this->kind(components: ['atelier:alpha' => [], 'atelier:omega' => []]));
+    $this->assertSame('atelier', $catalog->sections()['alpha']['provider']);
+    $this->assertSame(['acme_pack:alpha'], $catalog->hiddenIds());
+    $this->assertSame(['omega', 'alpha'], $catalog->sectionNames());
+  }
+
+  /**
+   * A removal means the short name, as it always did — every stored removal
+   * was written meaning "no testimonials" (0539 review): a full-id removal of
+   * one of a pair turns the name off, never the other one on.
+   */
+  public function testARemovalTurnsTheNameOffForBothOfAPair(): void {
+    foreach (['acme_pack:alpha', 'atelier:alpha', 'alpha'] as $removed) {
+      $catalog = CatalogCompiler::compile($this->pairDefinitions(), NULL, ['components' => [$removed]]);
+      $this->assertNotContains('alpha', $catalog->sectionNames(), "site constraint removes $removed");
+      $catalog = CatalogCompiler::compile($this->pairDefinitions(), $this->kind(removed: [$removed]));
+      $this->assertNotContains('alpha', $catalog->sectionNames(), "kind removes $removed");
+    }
+  }
+
+  /**
+   * On a site with no pair, full ids (as stored since 0.30.0) and bare names
+   * compile to the same palette (0539 R3: pair-free sites see nothing new).
+   */
+  public function testFullIdsAndBareNamesCompileTheSameWithoutAPair(): void {
+    $bare = CatalogCompiler::compile($this->fixtureDefinitions(), $this->kind(components: ['alpha' => ['variants' => ['split']]], opener: 'alpha', limits: ['alpha' => 2], removed: ['omega']), ['components' => ['omega'], 'variants' => ['alpha' => ['centered']]]);
+    $full = CatalogCompiler::compile($this->fixtureDefinitions(), $this->kind(components: ['atelier:alpha' => ['variants' => ['split']]], opener: 'atelier:alpha', limits: ['atelier:alpha' => 2], removed: ['atelier:omega']), ['components' => ['atelier:omega'], 'variants' => ['atelier:alpha' => ['centered']]]);
+    $this->assertEquals(serialize($bare), serialize($full));
   }
 
   /**

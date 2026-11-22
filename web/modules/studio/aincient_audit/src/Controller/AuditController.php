@@ -6,6 +6,7 @@ namespace Drupal\aincient_audit\Controller;
 
 use Drupal\aincient_audit\AuditEngine;
 use Drupal\aincient_audit\AuditTarget;
+use Drupal\aincient_pages\ComponentMixException;
 use Drupal\aincient_pages\PageStore;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\node\NodeInterface;
@@ -87,7 +88,14 @@ final class AuditController implements ContainerInjectionInterface {
       return new JsonResponse(['error' => 'Not an AIncient page.'], 404);
     }
     $draft = clone $head;
-    $this->store->writeSchema($draft, $data['schema']);
+    try {
+      $this->store->writeSchema($draft, $data['schema']);
+    }
+    catch (ComponentMixException $e) {
+      // The unsaved draft mixes a same-name pair (0539): nothing to audit
+      // until it is switched; the save refuses it the same way.
+      return new JsonResponse(['error' => $e->getMessage(), 'code' => 'component_mix'], 422);
+    }
     try {
       return new JsonResponse($this->engine->auditUnsaved($draft));
     }

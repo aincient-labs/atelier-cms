@@ -22,5 +22,10 @@
 # version with a published :vX.Y.Z tag, because that tag is the waypoint the
 # manager pulls. A floor naming an unreleased version strands every old install.
 #
+# `bin/release-appliance prepare` enforces the "when": its `upgrade floor` gate
+# (umbrella bin/upgrade-floor-check) fails a release that removed an update
+# function, one of our modules or a drupal/* package since the last release
+# without raising this value, or that names an unreleased version.
+#
 # Format: one bare X.Y.Z (no leading v), comments and blank lines ignored.
 0.1.0

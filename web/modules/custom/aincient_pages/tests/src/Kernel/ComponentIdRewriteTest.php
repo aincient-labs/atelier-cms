@@ -228,4 +228,23 @@ final class ComponentIdRewriteTest extends KernelTestBase {
     $this->assertSame(['atelier_test_pack:spotlight'], $this->config('aincient_pages.site_constraint')->get('components'));
   }
 
+  /**
+   * A straight 0.29 → A1 upgrade on a site that already has a pack sharing a
+   * built-in's short name: a bare name in old data meant the built-in (the
+   * gate refused the pack's then), so the rewrite keeps it there — it never
+   * follows the pair choice onto the pack's component (DECISIONS 0539).
+   */
+  public function testOldBareNamesStayOnTheBuiltinWhenAPairExists(): void {
+    $this->container->get('module_installer')->install(['atelier_test_pair_pack']);
+    $this->assertSame('atelier_test_pair_pack', $this->container->get('aincient_pages.catalog')->discovered()->sections()['testimonials']['provider'], 'The pack wins the pair choice.');
+    $node = Node::create([
+      'type' => 'aincient_page', 'title' => 'Proof', 'status' => 1,
+      'field_page_structure' => json_encode(['type' => 'landing', 'slots' => [['id' => 'q', 'component' => 'testimonials']]]),
+      'field_page_content' => json_encode(['title' => 'Proof', 'slots' => ['q' => ['heading' => 'Kind words']]]),
+    ]);
+    $node->save();
+    $this->rewrite();
+    $this->assertSame(['atelier:testimonials'], $this->stored('field_page_structure'));
+  }
+
 }

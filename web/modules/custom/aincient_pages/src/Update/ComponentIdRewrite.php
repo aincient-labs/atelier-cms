@@ -71,7 +71,7 @@ final class ComponentIdRewrite {
     // by update 10020 in the same run).
     $this->components->clearCachedDefinitions();
     $this->catalog->reset();
-    $providers = ComponentId::providers($this->catalog->discovered());
+    $providers = ComponentId::legacyProviders($this->catalog->discovered());
     if (!in_array(ComponentCatalog::BUILTIN_PROVIDER, $providers, TRUE)) {
       throw new \RuntimeException('Atelier\'s built-in components are not discovered (is the atelier module enabled?), so stored component names cannot be mapped. Nothing was changed.');
     }

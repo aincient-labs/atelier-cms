@@ -699,13 +699,16 @@ function aincient_pages_update_10019(): \Drupal\Core\StringTranslation\Translata
  */
 function aincient_pages_update_10020(): \Drupal\Core\StringTranslation\TranslatableMarkup {
   $handler = \Drupal::moduleHandler();
-  if ($handler->moduleExists('atelier')) {
-    return t('The atelier module is already enabled.');
-  }
+  // Checked even when `atelier` is already enabled: a third-party module of
+  // that name enabled by hand would otherwise pass as the built-ins' home
+  // (A0 review, R-3) — and the rewrite after this maps names onto it.
   $path = \Drupal::service('extension.list.module')->getPathname('atelier');
   if (!str_ends_with(dirname($path), 'modules/custom/atelier')) {
     // A third-party module named `atelier` would take the built-ins' place.
     throw new \RuntimeException(sprintf('A module named "atelier" at %s clashes with Atelier\'s built-in components. Rename that module, then update again.', dirname($path)));
+  }
+  if ($handler->moduleExists('atelier')) {
+    return t('The atelier module is already enabled.');
   }
   \Drupal::service('module_installer')->install(['atelier'], FALSE);
   return t('Enabled the atelier module (built-in components).');

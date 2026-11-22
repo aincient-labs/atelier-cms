@@ -340,17 +340,22 @@ The image is two images. **`ghcr.io/aincient-labs/atelier-base`** is the OS laye
 trixie-slim + PHP 8.4, Apache, ImageMagick (coder allowlist), PostgreSQL client — built from
 [`base/Dockerfile`](base/Dockerfile) by the `Base image` workflow (`.github/workflows/base.yml`):
 no cache, each arch pushed untagged, scanned (fixable High/Critical blocks), then tagged
-`YYYY-MM-DD` and signed. `docker/Dockerfile` pins it **by digest** in its runtime `FROM`.
+`YYYY-MM-DD.<run number>` (unique per run, never moved) and signed. `docker/Dockerfile` pins it **by digest** in its runtime `FROM`.
 
 Why: `apt-get` is never reproducible, so while it ran in the app build every release re-published
-~56 MB of packages and every appliance re-downloaded them. With the pin, an update downloads only
-the layers Atelier changed; the OS moves only when a cms commit moves the pin, and that release's
-changelog says "OS packages updated".
+~56–68 MB of packages and every appliance re-downloaded them. With the pin, an update downloads only
+the layers Atelier changed (measured v0.29.3 → v0.30.0: 5 of 27 layers, 6.2 MB); the OS moves only
+when a cms commit moves the pin, and that release's changelog says "OS packages updated" (one
+extra download of the package layer, ~66–68 MB).
 
-- **Refresh the OS** (a scan blocked on a Debian package, or a deliberate refresh — there is no
-  schedule): `gh workflow run base.yml -R aincient-labs/atelier-cms`, wait for it, then in the
-  umbrella `bin/base-image bump` (checks public + both arches + cosign, rewrites the `FROM` line),
-  commit in cms, release as usual.
+- **Refresh the OS** (a scan blocked on a Debian package — PHP itself is one: `php8.4-*` come from
+  Debian — or a deliberate refresh; there is no schedule): `gh workflow run base.yml -R
+  aincient-labs/atelier-cms`, wait for it, then in the umbrella `bin/base-image bump` (newest dated
+  tag; checks public + both arches + cosign, rewrites the `FROM` line), commit in cms, release as
+  usual.
+- **A security fix in the OS** ships alone as a patch release, ahead of any feature work on main:
+  changelog `### Security`, website advisory (0538). Precedent: 0.29.3 (PHP 8.4.28, base
+  `2026-11-21.3`), released before 0.30.0 and the feature merge re-applied on top.
 - **Change what the OS contains**: edit `base/Dockerfile`; the push to atelier-cms `main` builds a
   new base; bump to it as above. Nothing reaches users until the bump ships.
 - **Guards**: `bin/release-appliance prepare` runs `base pin` (the pin is public, multi-arch,

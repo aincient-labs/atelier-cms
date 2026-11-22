@@ -70,8 +70,16 @@ final class CatalogCompiler {
    */
   public static function compile(array $definitions, ?PageKindDefinitionInterface $kind, array $constraint = [], string $kindId = 'landing', array $fallback = []): EffectiveCatalog {
     $warnings = [];
-    // The stored constraint holds full ids from 0.30.0 (DECISIONS 0536); the
-    // compiler keys on short names until A1. Kinds shorten in their getters.
+    // Stored constraint and kinds hold full ids (DECISIONS 0536). A REMOVAL
+    // means the short name — "no testimonials" — exactly as before a pair
+    // could exist: every stored removal was written meaning that (0539
+    // review). A kind's ALLOW entry or opener naming a full id picks that one
+    // of a same-name pair (below); otherwise names compile short, as before.
+    $virtual = array_keys(self::VIRTUAL_REFERENCE);
+    $exact = static fn(string $id): bool => str_contains($id, ':') && !in_array(ComponentId::short($id), $virtual, TRUE);
+    $kindComponents = $kind?->components() ?? [];
+    $kindRemoved = $kind?->removed() ?? [];
+    $preferred = array_values(array_filter(array_merge(array_map('strval', array_keys($kindComponents)), [(string) ($kind?->opener() ?? '')]), $exact));
     $constraint = ComponentId::shortenConstraint($constraint);
 
     // 1. Discover: every definition carrying the atelier contract, by tier —
@@ -82,6 +90,7 @@ final class CatalogCompiler {
     // must not take the built-in down with it.
     $verdicts = AdmissionGate::checkEach($definitions, array_keys(self::VIRTUAL_REFERENCE));
     $tiers = ['section' => [], 'layout' => [], 'reference' => [], 'chrome' => [], 'content' => []];
+    $found = [];
     foreach ($definitions as $id => $definition) {
       $atelier = $definition['thirdPartySettings']['atelier'] ?? NULL;
       if (!is_array($atelier)) {
@@ -96,7 +105,8 @@ final class CatalogCompiler {
         $warnings[] = sprintf('component "%s:%s" rejected by the admission gate: %s', (string) ($definition['provider'] ?? ''), $name, implode(' ', $verdicts[$id]['errors']));
         continue;
       }
-      $tiers[$tier][$name] = [
+      $fullId = (string) ($definition['provider'] ?? '') . ':' . $name;
+      $found[$fullId] = [$tier, $name, [
         'provider' => (string) ($definition['provider'] ?? ''),
         'tier' => $tier,
         'order' => (int) ($atelier['order'] ?? 0),
@@ -114,7 +124,34 @@ final class CatalogCompiler {
         // fragments — inlined into the manifest for PACK components only
         // (a client's names carry no model prior; ours do).
         'examples' => is_array($atelier['examples'] ?? NULL) ? $atelier['examples'] : [],
-      ];
+      ]];
+    }
+
+    // 1b. The pair choice (DECISIONS 0539). A short name may belong to a
+    // built-in and one pack (the gate allows no other overlap); the palette
+    // offers ONE — the one the kind names exactly, else the pack's (a new
+    // built-in sharing a pack component's name lands hidden), else the
+    // built-in. The other stays reachable by full id for render and the
+    // in-chat switch, never offered.
+    $byName = [];
+    foreach ($found as $fullId => [, $name]) {
+      $byName[$name][] = $fullId;
+    }
+    $hidden = [];
+    foreach ($byName as $name => $ids) {
+      usort($ids, static function (string $a, string $b) use ($preferred): int {
+        $rank = static fn(string $id): int => in_array($id, $preferred, TRUE) ? 0 : (str_starts_with($id, ComponentCatalog::BUILTIN_PROVIDER . ':') ? 2 : 1);
+        return [$rank($a), $a] <=> [$rank($b), $b];
+      });
+      foreach ($ids as $i => $fullId) {
+        [$tier, , $def] = $found[$fullId];
+        if ($i === 0) {
+          $tiers[$tier][$name] = $def;
+        }
+        else {
+          $hidden[$fullId] = $def;
+        }
+      }
     }
     foreach (self::VIRTUAL_REFERENCE as $name => $def) {
       $tiers['reference'][$name] ??= $def + ['provider' => '', 'tier' => 'reference', 'icon' => '', 'image_props' => [], 'rows' => [], 'examples' => []];
@@ -159,7 +196,7 @@ final class CatalogCompiler {
     $toneRemovals = is_array($constraint['component_tones'] ?? NULL) ? $constraint['component_tones'] : [];
 
     // 3. Kind narrowing — an allow-list when non-empty; empty = whole palette.
-    $allow = $kind?->components() ?? [];
+    $allow = ComponentId::shortenKind(['components' => $kindComponents])['components'];
     // "Allowed automatically" (includesNew): the map only narrows variants /
     // tones of the components it names; the deny list (3b) turns things off.
     if ($allow !== [] && !($kind?->includesNew() ?? FALSE)) {
@@ -181,7 +218,7 @@ final class CatalogCompiler {
     // list + a deny list = every component (new pack ones included) except
     // these (DECISIONS 0455). A fragment kind (block) never holds a `block`
     // slot: the one-level-deep floor BlockStore also enforces.
-    $deny = $kind?->removed() ?? [];
+    $deny = array_values(array_map(ComponentId::short(...), array_filter($kindRemoved, 'is_string')));
     if ($kind?->isFragment() ?? !empty($fallback['fragment'])) {
       $deny[] = 'block';
     }
@@ -253,13 +290,13 @@ final class CatalogCompiler {
     }
 
     // 5. Opener + limits, never-fatal.
-    $opener = $kind?->opener();
+    $opener = $kind?->opener() === NULL ? NULL : ComponentId::short((string) $kind->opener());
     if ($opener !== NULL && !isset($tiers['section'][$opener])) {
       $warnings[] = sprintf('kind "%s" opener "%s" is not an available section — ignored.', $kind?->id() ?? $kindId, $opener);
       $opener = NULL;
     }
     $limits = [];
-    foreach ($kind?->limits() ?? [] as $name => $max) {
+    foreach (ComponentId::shortenKind(['limits' => $kind?->limits() ?? []])['limits'] as $name => $max) {
       if (isset($tiers['section'][$name]) || isset($tiers['layout'][$name]) || isset($tiers['reference'][$name])) {
         $limits[$name] = max(1, (int) $max);
       }
@@ -283,6 +320,7 @@ final class CatalogCompiler {
       collectionSource: $kind?->isCollectionSource() ?? (bool) ($fallback['collection_source'] ?? FALSE),
       hint: $kind?->hint() ?? (string) ($fallback['hint'] ?? ''),
       warnings: $warnings,
+      hidden: $hidden,
     );
   }
 

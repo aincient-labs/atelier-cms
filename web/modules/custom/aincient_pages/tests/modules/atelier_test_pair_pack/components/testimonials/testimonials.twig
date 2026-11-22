@@ -1,0 +1,6 @@
+{# The pair pack's testimonials — a single quote (distinguishable in renders). #}
+<section class="pair-testimonial" data-tone="{{ tone|default('default') }}">
+  {% if heading %}<h2>{{ heading }}</h2>{% endif %}
+  {% if quote %}<blockquote class="pair-testimonial__quote">{{ quote }}</blockquote>{% endif %}
+  {% if author %}<p class="pair-testimonial__author">{{ author }}</p>{% endif %}
+</section>

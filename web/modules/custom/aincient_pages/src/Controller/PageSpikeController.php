@@ -9,6 +9,7 @@ use Drupal\aincient_pages\BrandRepository;
 use Drupal\aincient_pages\CollectionInventory;
 use Drupal\aincient_pages\CollectionResolver;
 use Aincient\PageModel\Catalog\ComponentCatalogInterface;
+use Aincient\PageModel\Catalog\PageComponents;
 use Aincient\PageModel\ComponentCatalog;
 use Drupal\aincient_pages\ConsentSettings;
 use Drupal\aincient_pages\EntityEmbedResolver;
@@ -352,11 +353,17 @@ final class PageSpikeController implements ContainerInjectionInterface {
     // The DISCOVERED palette, not the kind's: a slot the site or kind has since
     // stopped offering is kept by PageStore and must still render (DECISIONS
     // 0455, P0). Narrowing governs new placements; the admission gate is the floor.
-    $placeable = $this->catalog->discovered()->placeableNames();
+    $discovered = $this->catalog->discovered();
+    // A short name means what the page's kind offers under it (0539); render
+    // against discovery under the name discovery gives that same component.
+    $type = is_string($data['type'] ?? NULL) ? $data['type'] : '';
+    $components = new PageComponents($type === '' ? $discovered : $this->catalog->for($type), $discovered);
     foreach ($data['sections'] ?? [] as $section) {
-      $name = $section['component'] ?? '';
-      // Guardrail: only known placeable components (sections + layout + refs).
-      if (!in_array($name, $placeable, TRUE)) {
+      $name = $components->forDiscovered((string) ($section['component'] ?? ''));
+      $section['component'] = $name;
+      // Guardrail: only known placeable components (sections + layout + refs)
+      // — by short name, or by full id for the hidden one of a pair (0539).
+      if (!$discovered->isPlaceable($name)) {
         continue;
       }
 
@@ -380,8 +387,13 @@ final class PageSpikeController implements ContainerInjectionInterface {
         if ($inner === NULL) {
           continue;
         }
+        // The block's sections read relative to the BLOCK's kind (a media
+        // block is the `block` kind; a legacy block node reads as a landing
+        // page): resolve them through it, as the page's own sections (0539).
+        $innerComponents = new PageComponents($this->catalog->for(($parsed['type'] ?? '') === 'media' ? BlockStore::KIND : 'landing'), $discovered);
         $group = [];
         foreach ($inner as $innerSection) {
+          $innerSection['component'] = $innerComponents->forDiscovered((string) ($innerSection['component'] ?? ''));
           $b = $this->renderSection($innerSection, $langcode, $identify);
           if ($b !== NULL) {
             $group[] = $b;

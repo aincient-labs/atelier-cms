@@ -7,6 +7,23 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.31.0] — 2026-11-22
+
+**Component packs can bring their own version of a built-in section. Your site looks and works the same.**
+- A pack may now ship a component with the same name as one of Atelier's built-in sections,
+  for example its own **Testimonials**. Your site then offers the pack's version for new
+  sections, and pages that already use the built-in keep it and look exactly as before.
+- A page uses one version or the other, never both. Before the assistant changes a page that
+  still uses the built-in, it asks whether to switch that page's sections to the new version
+  and tells you which of their fields the new one doesn't have. A page type that lists the
+  built-in by name keeps offering it.
+- The update changes nothing stored in your site. On a site without such a pack, nothing changes.
+- **If you build packs:** see [Component packs](https://aincient-labs.com/docs/component-packs#sharing-a-name-with-a-built-in)
+  for which names a pack may share and which stay Atelier's.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.30.0] — 2026-11-21
 
 **Built-in components get their own namespace. Your site looks and works the same.**

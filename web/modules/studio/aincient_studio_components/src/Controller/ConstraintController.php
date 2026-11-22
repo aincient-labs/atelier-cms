@@ -118,7 +118,15 @@ final class ConstraintController implements ContainerInjectionInterface {
     $config = $this->configFactory->getEditable('aincient_pages.site_constraint');
     $applied = [];
     // Stored ids are full (DECISIONS 0536); the pane speaks short names.
-    $providers = ComponentId::providers($this->catalog->discovered());
+    // A short name keeps the provider the constraint already stores for it
+    // (0539): a re-save never moves the built-in's entries onto a pack's.
+    $raw = $config->getRawData();
+    $current = array_merge(
+      array_filter((array) ($raw['components'] ?? []), 'is_string'),
+      array_map('strval', array_keys((array) ($raw['variants'] ?? []))),
+      array_map('strval', array_keys((array) ($raw['component_tones'] ?? []))),
+    );
+    $providers = ComponentId::providersPreferring(ComponentId::providers($this->catalog->discovered()), $current);
 
     if (is_array($data['components'] ?? NULL)) {
       // Unknown names are stored anyway (a pack may be temporarily uninstalled;
@@ -366,7 +374,7 @@ final class ConstraintController implements ContainerInjectionInterface {
       str_contains($error, 'atelier api version') => 'Made for a different version of Atelier.',
       str_starts_with($error, 'unknown tier') => 'Its pack declares a kind of component Atelier does not know.',
       str_starts_with($error, 'name collides') => 'Another component already uses this name.',
-      str_contains($error, 'reserved layout word') => 'Its name is reserved by Atelier.',
+      str_contains($error, 'reserved layout word'), str_contains($error, "reserved for Atelier's virtual"), str_contains($error, "reserved for Atelier's built-in") => 'Its name is reserved by Atelier.',
       str_contains($error, 'locked vocabulary') => 'It has a field Atelier cannot fill.',
       str_starts_with($error, 'variant ') => 'One of its variants is declared incorrectly.',
       str_contains($error, 'image slot') => 'It has an image area Atelier cannot fill.',

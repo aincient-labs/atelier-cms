@@ -138,6 +138,25 @@ A kind your pack ships in `config/install` names components by their full id,
 0.30.0 a bare `hero` is still accepted, stored as the full id and logged as a warning;
 from 0.32.0 it is refused. `pack-validate` lists every bare name it finds.
 
+### Sharing a name with a built-in
+
+Since 0.31.0 a pack component may have the same short name as a built-in section,
+layout or reference of the same tier, for example `my_pack:testimonials` beside
+`atelier:testimonials`. Only one pack can share a given name, and two packs can't share
+a name with each other. Each page kind offers one component per name: the one the kind
+names by full id; otherwise yours, because a pack is installed on purpose; otherwise the
+built-in. A page holds only one of the two, so the agent and your editors keep using the
+short name `testimonials`. A page that still holds the other one is switched first, in
+the chat, after the owner agrees. If you want the built-in's markup changed everywhere,
+replace it with `replaces:` instead (see
+[Bring your own components](/bring-your-own-components#replace-a-built-ins-markup)).
+
+Some names stay Atelier's for every pack, because the page agent or the renderer treats
+them specially: the layout words (`grid`, `card`, `stack`), `block`, `accordion`,
+`collection`, `embed`, `image` and `markdown`. So do the built-in chrome and content
+components, such as `site-header`, `site-footer`, `menu`, `prose` and `byline`. The
+admission gate refuses a pack component that uses one.
+
 Changing a kind after pages exist is checked, not guessed: `drush atelier:kind-check`
 reports every slot a narrowing would affect, per page and block, before you deploy it — it never
 rewrites content.

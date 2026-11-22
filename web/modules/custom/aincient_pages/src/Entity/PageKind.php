@@ -142,21 +142,21 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
    * {@inheritdoc}
    */
   public function components(): array {
-    return ComponentId::shortenKind(['components' => $this->components])['components'];
+    return $this->components;
   }
 
   /**
    * {@inheritdoc}
    */
   public function opener(): ?string {
-    return $this->opener === '' ? NULL : ComponentId::short($this->opener);
+    return $this->opener === '' ? NULL : $this->opener;
   }
 
   /**
    * {@inheritdoc}
    */
   public function limits(): array {
-    return ComponentId::shortenKind(['limits' => $this->limits])['limits'];
+    return $this->limits;
   }
 
   /**
@@ -171,14 +171,14 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
   }
 
   public function removed(): array {
-    return array_values(array_map(ComponentId::short(...), array_filter($this->removed, 'is_string')));
+    return array_values(array_filter($this->removed, 'is_string'));
   }
 
   /**
    * Store full component ids (DECISIONS 0536).
    *
-   * The getters hand out short names (everything above storage speaks them
-   * in A0); the stored values are `provider:name`. The Components studio
+   * The getters hand out the stored values, `provider:name` (the compiler
+   * makes the pair choice from them, 0539). The Components studio
    * qualifies before it saves; anything still bare here came from config
    * written before 0.30.0 — a pack's config/install — and is qualified with a
    * warning: bare names are refused from Atelier 0.32.0.
@@ -195,7 +195,7 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
     if ($bare === []) {
       return;
     }
-    $providers = ComponentId::providers(\Drupal::service('aincient_pages.catalog')->discovered());
+    $providers = ComponentId::legacyProviders(\Drupal::service('aincient_pages.catalog')->discovered());
     $values = ComponentId::qualifyKind($values, $providers);
     $this->components = $values['components'];
     $this->limits = $values['limits'];

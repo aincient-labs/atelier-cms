@@ -95,6 +95,15 @@ final class ComponentCatalog {
   public const LAYOUT_RESERVED = ['grid', 'card', 'stack'];
 
   /**
+   * Built-in names the renderer and the page store treat specially (props
+   * expanded, children flattened, embeds resolved; `image` and `markdown` are
+   * also the accordion's child blocks, looked up by short name). A pack may not share
+   * them (DECISIONS 0539): the special handling would apply to the wrong
+   * component. Like the layout words, reserved for every provider.
+   */
+  public const RENDERER_RESERVED = ['accordion', 'collection', 'embed', 'image', 'markdown'];
+
+  /**
    * Enumerations shared across the grammar.
    */
   public const TONES = ['default', 'muted', 'brand', 'inverted'];

@@ -60,6 +60,13 @@ class OverrideAwareComponentNegotiator extends ComponentNegotiator {
    */
   private array $noted = [];
 
+  /**
+   * The definitions with old-id `replaces:` bridged, once per request.
+   *
+   * @var array<string, array>|null
+   */
+  private ?array $bridged = NULL;
+
   public function __construct(
     ThemeManagerInterface $themeManager,
     private readonly ConfigFactoryInterface $configFactory,
@@ -90,7 +97,11 @@ class OverrideAwareComponentNegotiator extends ComponentNegotiator {
     if ($this->originals || in_array($component_id, $this->overridesOff(), TRUE)) {
       return $fallback;
     }
-    return parent::negotiate($component_id, $this->bridgeReplaces($all_definitions)) ?? $fallback;
+    // The bridged map depends only on the definitions, which do not change
+    // within a request — computed once, not per rendered component (A0
+    // review, R-6). A rebuilt container brings a new negotiator.
+    $this->bridged ??= $this->bridgeReplaces($all_definitions);
+    return parent::negotiate($component_id, $this->bridged) ?? $fallback;
   }
 
   /**

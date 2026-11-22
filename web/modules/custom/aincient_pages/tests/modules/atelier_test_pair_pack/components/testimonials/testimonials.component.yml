@@ -1,0 +1,37 @@
+# A pack `testimonials` beside the built-in `atelier:testimonials` — NOT a
+# `replaces:` override: both are admitted, each kind offers one (0539).
+name: 'Testimonials (pair pack)'
+status: experimental
+group: 'Atelier test pair pack'
+description: 'One big customer quote.'
+props:
+  type: object
+  properties:
+    tone:
+      type: string
+      enum: [default, muted, brand, inverted]
+      default: default
+    heading: { type: string }
+    quote: { type: string }
+    author: { type: string }
+thirdPartySettings:
+  atelier:
+    api: 1
+    tier: section
+    order: 91
+    icon: ❞
+    use: 'One big customer quote, centred.'
+    props:
+      tone: ''
+      heading: ''
+      quote: ''
+      author: ''
+    prop_vocab:
+      quote: 'the customer quote, one or two sentences.'
+      author: 'who said it — a name, optionally with a role.'
+    examples:
+      - name: default
+        props:
+          heading: 'Kind words'
+          quote: 'It just works.'
+          author: 'Ada'
