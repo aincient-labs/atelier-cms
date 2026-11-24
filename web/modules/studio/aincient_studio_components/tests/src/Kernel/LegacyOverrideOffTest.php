@@ -15,11 +15,11 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * A pack written before 0.30.0 overrides the hero by its OLD id.
  *
- * `atelier_test_legacy_pack` says `replaces: 'aincient_pages:hero'`. The
- * 0.30.0 rewrite stores the owner's "Use original instead" as atelier:hero, so
- * the rail must still report the override and a studio save must keep the
- * switch — before the fix the save intersected with the old key and silently
- * emptied overrides_off, bringing the pack's hero back on every page.
+ * `atelier_test_legacy_pack` says `replaces: 'aincient_pages:hero'`. Since
+ * 0.32.0 that overrides nothing (DECISIONS 0534), so the rail must not list it
+ * as an override and "Use original instead" has nothing to switch: a stored
+ * switch for it is dropped on the next studio save, which is harmless because
+ * the original already renders.
  *
  * @group aincient
  */
@@ -53,25 +53,21 @@ final class LegacyOverrideOffTest extends KernelTestBase {
     return json_decode((string) $response->getContent(), TRUE) + ['status' => $response->getStatusCode()];
   }
 
-  public function testLegacyReplacesKeysByTheNewId(): void {
+  public function testOldReplacesIsNotListedAsAnOverride(): void {
     $replacements = ConstraintController::replacements($this->container->get('plugin.manager.sdc')->getDefinitions());
-    $this->assertArrayHasKey('atelier:hero', $replacements);
+    $this->assertArrayNotHasKey('atelier:hero', $replacements);
     $this->assertArrayNotHasKey('aincient_pages:hero', $replacements);
-    $this->assertSame('atelier_test_legacy_pack', $replacements['atelier:hero']['provider']);
   }
 
-  public function testSwitchedOffLegacyOverrideSurvivesAStudioSave(): void {
-    // The state the post_update leaves: the switch stored under the new id.
+  public function testStudioSaveDropsASwitchForAnOldReplaces(): void {
     $this->config('aincient_pages.site_constraint')->set('overrides_off', ['atelier:hero'])->save();
 
     $result = $this->save(['overrides_off' => ['atelier:hero']]);
     $this->assertSame(200, $result['status']);
-    $this->assertSame(['atelier:hero'], $result['constraint']['overrides_off']);
-    $this->assertSame(['atelier:hero'], $this->config('aincient_pages.site_constraint')->get('overrides_off'));
+    $this->assertSame([], $result['constraint']['overrides_off']);
 
     $hero = array_column($result['components'], NULL, 'name')['hero'];
-    $this->assertTrue($hero['override_off']);
-    $this->assertSame('atelier_test_legacy_pack', $hero['replaced_by']['provider']);
+    $this->assertNull($hero['replaced_by'] ?? NULL);
   }
 
 }

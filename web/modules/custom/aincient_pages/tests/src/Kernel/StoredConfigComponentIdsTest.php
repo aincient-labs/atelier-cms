@@ -94,18 +94,19 @@ final class StoredConfigComponentIdsTest extends KernelTestBase {
 
     $logged = $this->container->get('database')->select('watchdog', 'w')->fields('w', ['message', 'variables'])->condition('type', 'aincient_pages')->execute()->fetchAll();
     $messages = array_map(fn($row) => strtr($row->message, unserialize($row->variables)), $logged);
-    $this->assertNotEmpty(array_filter($messages, fn(string $m) => str_contains($m, 'atelier_test_kind_pack_promo') && str_contains($m, 'refused from Atelier 0.32.0')));
+    $this->assertNotEmpty(array_filter($messages, fn(string $m) => str_contains($m, 'atelier_test_kind_pack_promo') && str_contains($m, 'pack-validate refuses bare names since Atelier 0.32.0')));
   }
 
   /**
-   * pack-validate names the bare kind before anyone installs the pack.
+   * pack-validate rejects the bare kind before anyone installs the pack
+   * (since 0.32.0; a warning in 0.30 and 0.31).
    */
-  public function testPackValidateWarnsAboutABareKind(): void {
+  public function testPackValidateRejectsABareKind(): void {
     $this->enableModules(['atelier_test_kind_pack']);
     $report = $this->container->get('aincient_pages.pack_validator')->validate('atelier_test_kind_pack');
-    $warnings = implode("\n", $report['pack']['warnings']);
-    $this->assertStringContainsString('config/install/aincient_pages.page_kind.atelier_test_kind_pack_promo.yml names components without their provider (hero, promo, newsletter)', $warnings);
-    $this->assertSame(0, $report['rejected']);
+    $errors = implode("\n", $report['pack']['errors']);
+    $this->assertStringContainsString('config/install/aincient_pages.page_kind.atelier_test_kind_pack_promo.yml names components without their provider (hero, promo, newsletter)', $errors);
+    $this->assertSame(1, $report['rejected']);
   }
 
 }

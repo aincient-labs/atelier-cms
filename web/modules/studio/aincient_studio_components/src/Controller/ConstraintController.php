@@ -324,10 +324,12 @@ final class ConstraintController implements ContainerInjectionInterface {
     foreach ($definitions as $id => $definition) {
       $target = $definition['replaces'] ?? NULL;
       if (is_string($target) && $target !== '') {
-        // A pack written before 0.30.0 still names the original by its old id
-        // (`aincient_pages:hero`); key it by the id the original has now, the
-        // one overrides_off and the rail use (bridge ends in 0.32.0).
-        $target = ComponentId::bridge($target) ?? $target;
+        // Since 0.32.0 an old built-in target (`aincient_pages:hero`) is
+        // not bridged: it overrides nothing at render, so it is not listed
+        // as an override here either (DECISIONS 0534).
+        if (!isset($definitions[$target])) {
+          continue;
+        }
         $out[$target] = [
           'id' => (string) $id,
           'provider' => (string) ($definition['provider'] ?? ''),

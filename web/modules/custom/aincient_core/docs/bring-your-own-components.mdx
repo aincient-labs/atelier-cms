@@ -57,10 +57,10 @@ installed, the site just renders the original until they switch it on again.
 
 Since Atelier 0.30.0 the built-in components live in the `atelier` module, so their ids
 are `atelier:<name>` (`atelier:hero`, `atelier:card`). Before, they were
-`aincient_pages:<name>`. Code written against the old ids keeps working until 0.32.0:
-a `replaces: 'aincient_pages:hero'` or a Twig `include('aincient_pages:card')` is read as
-the new id, and the site logs a warning once per old id. `pack-validate` warns about
-each file that still uses one. Rename them before 0.32.0, which removes the old ids.
+`aincient_pages:<name>`. Since 0.32.0 the old ids no longer work: a Twig
+`include('aincient_pages:card')` fails to find the component, and a
+`replaces: 'aincient_pages:hero'` overrides nothing, so the original renders.
+`pack-validate` rejects a pack that still uses one and names each file with the new id.
 `atelier` is reserved: no pack can use it as its name.
 
 Component replacement is core Drupal — see the official

@@ -15,8 +15,9 @@ use Aincient\PageModel\Catalog\EffectiveCatalog;
  *  - writes qualify ({@see qualifyStructure()}, {@see qualifyContent()}) from
  *    the provider of the ORIGINAL component (an override never owns a name),
  *  - a name no installed provider ships is stored as `unresolved:<name>`,
- *  - a pack id written before the move is bridged ({@see bridge()}) for two
- *    minor releases (0.30, 0.31), then the bridge is removed.
+ *  - an old built-in id (`aincient_pages:<name>`) in STORED data is read as
+ *    its new id ({@see bridge()}) for as long as the 0.30.0 rewrite ships;
+ *    pack CODE lost that bridge in 0.32.0 (DECISIONS 0534).
  * Nothing else may read or write the `component` of a stored slot.
  */
 final class ComponentId {

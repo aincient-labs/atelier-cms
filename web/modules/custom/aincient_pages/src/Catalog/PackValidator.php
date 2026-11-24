@@ -67,8 +67,9 @@ final class PackValidator {
       [$studioErrors, $studioWarnings] = $this->gradeStudios($module, $manifest['manifest']);
       $pack = [
         'found' => $manifest['found'],
-        'errors' => array_merge($manifest['errors'], $fence, $studioErrors),
-        'warnings' => array_merge($manifest['warnings'], $studioWarnings, LegacyIdScan::scan($path)),
+        // Ids written before 0.30.0 are refused since 0.32.0 (DECISIONS 0534, 0536).
+        'errors' => array_merge($manifest['errors'], $fence, $studioErrors, LegacyIdScan::scan($path)),
+        'warnings' => array_merge($manifest['warnings'], $studioWarnings),
       ];
       if ($verdicts === [] && !$manifest['found'] && $pack['errors'] === [] && $pack['warnings'] === []) {
         throw new \InvalidArgumentException(sprintf('Module "%s" provides no atelier-carrying components (no SDC with thirdPartySettings.atelier) and no %s. Is it installed?', $module, PackManifest::FILENAME));

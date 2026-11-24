@@ -7,6 +7,21 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.32.0] — 2026-11-24
+
+**Security update for the template engine and system libraries; the old component ids retire as announced.**
+- Twig, the template engine every page renders through, is updated to 3.31.1. This fixes ten
+  published flaws, among them one where a variable could skip HTML escaping.
+- Operating-system packages are updated: the Kerberos libraries get Debian's fix for six flaws
+  rated high.
+- Component packs: the old built-in ids `aincient_pages:<name>`, which kept working since 0.30.0,
+  are gone. Use `atelier:<name>`. `pack-validate` now rejects a pack that still uses an old id or
+  a page kind with bare component names, and names each file to fix. Sites without packs see no
+  change, and your pages and settings are not touched.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.31.0] — 2026-11-22
 
 **Component packs can bring their own version of a built-in section. Your site looks and works the same.**

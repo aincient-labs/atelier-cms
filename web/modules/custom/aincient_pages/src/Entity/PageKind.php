@@ -181,7 +181,8 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
    * makes the pair choice from them, 0539). The Components studio
    * qualifies before it saves; anything still bare here came from config
    * written before 0.30.0 — a pack's config/install — and is qualified with a
-   * warning: bare names are refused from Atelier 0.32.0.
+   * warning. pack-validate refuses bare names since 0.32.0; a save still
+   * qualifies them rather than throwing, so a module install never half-fails.
    */
   public function preSave(EntityStorageInterface $storage): void {
     parent::preSave($storage);
@@ -201,7 +202,7 @@ final class PageKind extends ConfigEntityBase implements PageKindInterface {
     $this->limits = $values['limits'];
     $this->opener = $values['opener'];
     $this->removed = $values['removed'];
-    \Drupal::logger('aincient_pages')->warning('Page kind @kind names components without their provider (@names). They were stored as @full. Write the full ids in the config that ships this kind — bare names are refused from Atelier 0.32.0.', [
+    \Drupal::logger('aincient_pages')->warning('Page kind @kind names components without their provider (@names). They were stored as @full. Write the full ids in the config that ships this kind — pack-validate refuses bare names since Atelier 0.32.0.', [
       '@kind' => $this->id(),
       '@names' => implode(', ', $bare),
       '@full' => implode(', ', array_map(static fn(string $n): string => ComponentId::qualify($n, $providers), $bare)),
