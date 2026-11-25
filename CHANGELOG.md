@@ -7,6 +7,22 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.32.1] — 2026-11-25
+
+**Security update for Drupal core, Symfony and the CSV library.**
+- Drupal core is updated to 11.4.14. This fixes an access bypass that the Drupal security team
+  rates highly critical (SA-CORE-2026-019).
+- The Symfony components Atelier runs on are updated to 7.4.24 and 8.1.12. This fixes the flaws
+  published on 25 November, among them ways to make the expression parser and CSV decoding hang
+  or crash a process, and generated links or HTTP client credentials that could reach another host.
+- league/csv is updated to 9.29.1. This fixes a denial of service in its character-set conversion.
+- The image is built with Composer 2.11.3.
+
+Nothing else changes: your pages, settings and content are not touched.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.32.0] — 2026-11-24
 
 **Security update for the template engine and system libraries; the old component ids retire as announced.**

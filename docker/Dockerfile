@@ -6,7 +6,7 @@
 # Build from the repo root:  docker build -f docker/Dockerfile -t aincient/cms:dev .
 
 # --- Stage 1: resolve PHP dependencies (core + contrib + vendor) ------------
-FROM composer:2@sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb6722ac87d0 AS vendor
+FROM composer:2@sha256:0049ce90b432795bf413a738b073963ada1a689e1a8708104684baafe94586ec AS vendor
 WORKDIR /app
 # Copy only the manifests first so this layer caches until deps change.
 COPY composer.json composer.lock patches.lock.json ./
