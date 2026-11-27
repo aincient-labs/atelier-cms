@@ -8,7 +8,10 @@ use Aincient\Inference\Exception\ProviderConfigurationException;
 use Aincient\Inference\ProviderAdapterInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
+use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 use Symfony\AI\Platform\Bridge\Anthropic\Factory as AnthropicFactory;
+use Symfony\AI\Platform\Bridge\Anthropic\ModelCatalog as AnthropicModelCatalog;
+use Symfony\AI\Platform\Capability;
 use Symfony\AI\Platform\PlatformInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -110,6 +113,13 @@ final class AnthropicAdapter implements ProviderAdapterInterface {
     return AnthropicFactory::createPlatform(
       apiKey: $credential,
       httpClient: $this->httpClient,
+      // The bridge's static list lags Anthropic (0.32.1 stops at
+      // claude-sonnet-5), while the picker offers whatever `/v1/models`
+      // returns; the decorator lets a model the picker offered actually resolve.
+      modelCatalog: new LiveModelCatalog(
+        new AnthropicModelCatalog(),
+        static fn (string $name, array $options): Claude => new Claude($name, Capability::cases(), $options),
+      ),
       baseUrl: $endpoint !== '' ? rtrim($endpoint, '/') : self::DEFAULT_ENDPOINT,
     );
   }

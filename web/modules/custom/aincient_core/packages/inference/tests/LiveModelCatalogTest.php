@@ -9,6 +9,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
+use Symfony\AI\Platform\Bridge\Anthropic\Claude;
+use Symfony\AI\Platform\Bridge\Anthropic\ModelCatalog as AnthropicModelCatalog;
 use Symfony\AI\Platform\Bridge\Gemini\Gemini;
 use Symfony\AI\Platform\Bridge\Gemini\ModelCatalog as GeminiModelCatalog;
 use Symfony\AI\Platform\Bridge\Mistral\Mistral;
@@ -25,7 +27,7 @@ use Symfony\AI\Platform\Capability;
  * see. Without this, binding a model the picker showed fails as
  * `ModelNotFoundException` on the first turn — which reads like a broken key.
  *
- * Run across all three bridges that use it, built exactly as the adapters build
+ * Run across all four bridges that use it, built exactly as the adapters build
  * it, so an adapter changing its construction without this test mirroring the
  * change shows up as a failure rather than as untested production code.
  */
@@ -41,6 +43,15 @@ final class LiveModelCatalogTest extends TestCase {
    *   class that bridge's model client requires].
    */
   public static function cataloguesProvider(): iterable {
+    yield 'anthropic' => [
+      new LiveModelCatalog(
+        new AnthropicModelCatalog(),
+        static fn (string $n, array $o): Claude => new Claude($n, Capability::cases(), $o),
+      ),
+      'claude-sonnet-4-5',
+      'claude-sonnet-9-9-from-the-future',
+      Claude::class,
+    ];
     yield 'gemini' => [
       new LiveModelCatalog(
         new GeminiModelCatalog(),
@@ -125,7 +136,9 @@ final class LiveModelCatalogTest extends TestCase {
     $model = $catalog->getModel($unknown . '?temperature=0.2');
 
     $this->assertSame($unknown, $model->getName());
-    $this->assertSame(['temperature' => '0.2'], $model->getOptions());
+    // Only the parsed option is asserted: a bridge may add defaults of its own
+    // (the Claude class always sets `max_tokens`).
+    $this->assertSame('0.2', $model->getOptions()['temperature'] ?? NULL);
   }
 
 }

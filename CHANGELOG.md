@@ -7,6 +7,19 @@ public snapshot published from the development source.
 > `bin/atelier-overlay/`. When you run `bin/deploy-atelier`, add the new deploy's
 > line here (it mirrors the ledger subject in `bin/atelier-deploys.tsv`).
 
+## [0.32.2] — 2026-11-27
+
+**The newest Claude models work.**
+- The model picker offers every Claude model your Anthropic key can use, but Atelier only
+  accepted the ones it already knew about. Choosing a newer one, such as Claude Sonnet 5.5 or
+  Claude Haiku 5.5, stopped the first chat with "Anthropic does not offer … to this key". Atelier
+  now uses any model the picker offers, as it already did for OpenAI, Mistral and Gemini.
+
+Nothing else changes: your pages, settings and content are not touched.
+
+To update, run `atelier app update`, or re-run the installer as described in the quickstart's
+**Upgrade** section.
+
 ## [0.32.1] — 2026-11-25
 
 **Security update for Drupal core, Symfony and the CSV library.**
